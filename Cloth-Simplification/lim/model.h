@@ -19,7 +19,7 @@
 #include <map>
 #include <vector>
 
-#include "lim/program.h"
+#include "program.h"
 
 #define MAX_BONE_INFLUENCE 4
 
@@ -38,7 +38,7 @@ struct Vertex {
 struct Texture {
     unsigned int id;
     std::string type;
-    std::string path;
+    std::string path; // relative path+filename or only filename
 }; 
 
 struct Mesh {
@@ -125,222 +125,218 @@ public:
     }
 };
 
-unsigned int TextureFromFile(const char *path, const std::string &directory, bool gamma = false)
-{
-    std::string filename = std::string(path);
-    filename = directory + '/' + filename;
 
-    unsigned int textureID;
-    glGenTextures(1, &textureID);
 
-    int width, height, nrComponents;
-    unsigned char *data = stbi_load(filename.c_str(), &width, &height, &nrComponents, 0);
-    if (data)
-    {
-        GLenum format;
-        if (nrComponents == 1)
-            format = GL_RED;
-        else if (nrComponents == 3)
-            format = GL_RGB;
-        else if (nrComponents == 4)
-            format = GL_RGBA;
-
-        glBindTexture(GL_TEXTURE_2D, textureID);
-        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        stbi_image_free(data);
-    }
-    else
-    {
-        std::cout << "Texture failed to load at path: " << path << std::endl;
-        stbi_image_free(data);
-    }
-
-    return textureID;
-}
-
-class Model 
-{
-public:
-    // model data 
-    std::vector<Texture> textures_loaded;	// stores all the textures loaded so far, optimization to make sure textures aren't loaded more than once.
-    std::vector<Mesh>    meshes;
-    std::string directory;
+struct Model {
+    std::vector<Texture> textures_loaded;
+    std::vector<Mesh> meshes;
+    std::string directory; // for load texture
     bool gammaCorrection;
-
-    // constructor, expects a filepath to a 3D model.
-    Model(std::string const &path, bool gamma = false) : gammaCorrection(gamma)
-    {
-        loadModel(path);
-    }
-
-    // draws the model, and thus all its meshes
-    void Draw(Program &shader)
-    {
-        for(unsigned int i = 0; i < meshes.size(); i++)
-            meshes[i].Draw(shader);
-    }
     
 private:
-    // loads a model with supported ASSIMP extensions from file and stores the resulting meshes in the meshes vector.
-    void loadModel(std::string const &path)
-    {
-        // read file via ASSIMP
-        Assimp::Importer importer;
-        const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
-        // check for errors
-        if(!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) // if is Not Zero
-        {
-            std::cout << "ERROR::ASSIMP:: " << importer.GetErrorString() << std::endl;
-            return;
-        }
-        // retrieve the directory path of the filepath
-        directory = path.substr(0, path.find_last_of('/'));
+    // load texture
+    unsigned int TextureFromFile(const char *path, bool toLinear = true) {
+        std::string filename = std::string(path);
+        filename = directory + '/' + filename;
 
-        // process ASSIMP's root node recursively
-        processNode(scene->mRootNode, scene);
-    }
+        unsigned int texID;
+        glGenTextures(1, &texID);
 
-    // processes a node in a recursive fashion. Processes each individual mesh located at the node and repeats this process on its children nodes (if any).
-    void processNode(aiNode *node, const aiScene *scene)
-    {
-        // process each mesh located at the current node
-        for(unsigned int i = 0; i < node->mNumMeshes; i++)
-        {
-            // the node object only contains indices to index the actual objects in the scene. 
-            // the scene contains all the data, node is just to keep stuff organized (like relations between nodes).
-            aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-            meshes.push_back(processMesh(mesh, scene));
-        }
-        // after we've processed all of the meshes (if any) we then recursively process each of the children nodes
-        for(unsigned int i = 0; i < node->mNumChildren; i++)
-        {
-            processNode(node->mChildren[i], scene);
-        }
-
-    }
-
-    Mesh processMesh(aiMesh *mesh, const aiScene *scene)
-    {
-        // data to fill
-        std::vector<Vertex> vertices;
-        std::vector<unsigned int> indices;
-        std::vector<Texture> textures;
-
-        // walk through each of the mesh's vertices
-        for(unsigned int i = 0; i < mesh->mNumVertices; i++)
-        {
-            Vertex vertex;
-            glm::vec3 vector; // we declare a placeholder vector since assimp uses its own vector class that doesn't directly convert to glm's vec3 class so we transfer the data to this placeholder glm::vec3 first.
-            // positions
-            vector.x = mesh->mVertices[i].x;
-            vector.y = mesh->mVertices[i].y;
-            vector.z = mesh->mVertices[i].z;
-            vertex.Position = vector;
-            // normals
-            if (mesh->HasNormals())
-            {
-                vector.x = mesh->mNormals[i].x;
-                vector.y = mesh->mNormals[i].y;
-                vector.z = mesh->mNormals[i].z;
-                vertex.Normal = vector;
-            }
-            // texture coordinates
-            if(mesh->mTextureCoords[0]) // does the mesh contain texture coordinates?
-            {
-                glm::vec2 vec;
-                // a vertex can contain up to 8 different texture coordinates. We thus make the assumption that we won't 
-                // use models where a vertex can have multiple texture coordinates so we always take the first set (0).
-                vec.x = mesh->mTextureCoords[0][i].x; 
-                vec.y = mesh->mTextureCoords[0][i].y;
-                vertex.TexCoords = vec;
-                // tangent
-                vector.x = mesh->mTangents[i].x;
-                vector.y = mesh->mTangents[i].y;
-                vector.z = mesh->mTangents[i].z;
-                vertex.Tangent = vector;
-                // bitangent
-                vector.x = mesh->mBitangents[i].x;
-                vector.y = mesh->mBitangents[i].y;
-                vector.z = mesh->mBitangents[i].z;
-                vertex.Bitangent = vector;
-            }
-            else
-                vertex.TexCoords = glm::vec2(0.0f, 0.0f);
-
-            vertices.push_back(vertex);
-        }
-        // now wak through each of the mesh's faces (a face is a mesh its triangle) and retrieve the corresponding vertex indices.
-        for(unsigned int i = 0; i < mesh->mNumFaces; i++)
-        {
-            aiFace face = mesh->mFaces[i];
-            // retrieve all indices of the face and store them in the indices vector
-            for(unsigned int j = 0; j < face.mNumIndices; j++)
-                indices.push_back(face.mIndices[j]);        
-        }
-        // process materials
-        aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];    
-        // we assume a convention for sampler names in the shaders. Each diffuse texture should be named
-        // as 'texture_diffuseN' where N is a sequential number ranging from 1 to MAX_SAMPLER_NUMBER. 
-        // Same applies to other texture as the following list summarizes:
-        // diffuse: texture_diffuseN
-        // specular: texture_specularN
-        // normal: texture_normalN
-
-        // 1. diffuse maps
-        std::vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
-        textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
-        // 2. specular maps
-        std::vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
-        textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
-        // 3. normal maps
-        std::vector<Texture> normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_normal");
-        textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
-        // 4. height maps
-        std::vector<Texture> heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_height");
-        textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
+        int w, h, channels;
+        // 0 => comp 있는대로
+        void* buf = stbi_load(filename.c_str(), &w, &h, &channels, 0);
         
-        Mesh rst;
-        return rst;
+        if (!buf) {
+            fprintf(stderr,"Texture failed to load at path: %s\n", path);
+            stbi_image_free(buf);
+            return texID;
+        }
+
+        // load into vram
+        GLenum format;
+        switch (channels) {
+            case 1 : format = GL_ALPHA;     break;
+            case 3 : format = GL_RGB;       break;
+            case 4 : 
+                if( !toLinear) format = GL_RGBA;  
+                else format = GL_SRGB8_ALPHA8; // if hdr => 10bit
+                break;
+        }
+
+        glGenTextures(1, &texID);
+        glBindTexture(GL_TEXTURE_2D, texID);
+
+        // 0~1 반복 x
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);//GL_REPEAT
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        // GL_NEAREST : texel만 읽음
+        // GL_LINEAR : 주변점 선형보간
+        // texture을 키울때는 선형보간말고 다른방법 없음.
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        // GL_LINEAR_MIPMAP_LINEAR : mipmap에서 찾아서 4점을 보간하고 다른 mipmap에서 찾아서 또 섞는다.
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+
+        // level : 0 mipmap의 가장큰 level, 나머지는 알아서 생성
+        // internalformat: 파일에 저장된값, format: 사용할값
+        // 따라서 srgb에서 rgb로 선형공간으로 색이 이동되고 계산된후 다시 감마보정을 해준다.
+        // GL_SRGB8_ALPHA8 8은 채널이 8비트 그냥은 10비트
+        glTexImage2D(GL_TEXTURE_2D, 0, format, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, buf);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        stbi_image_free(buf);
+        return texID;
     }
 
-    // checks all material textures of a given type and loads the textures if they're not loaded yet.
-    // the required info is returned as a Texture struct.
-    std::vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type, std::string typeName)
-    {
+    std::vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type, std::string typeName) {
         std::vector<Texture> textures;
-        for(unsigned int i = 0; i < mat->GetTextureCount(type); i++)
-        {
+        for(unsigned int i = 0; i < mat->GetTextureCount(type); i++) {
             aiString str;
             mat->GetTexture(type, i, &str);
-            // check if texture was loaded before and if so, continue to next iteration: skip loading a new texture
+            const char* filename = str.C_Str(); // or dir
             bool skip = false;
-            for(unsigned int j = 0; j < textures_loaded.size(); j++)
-            {
-                if(std::strcmp(textures_loaded[j].path.data(), str.C_Str()) == 0)
-                {
+            // to skip loading same texture 
+            for(unsigned int j = 0; j < textures_loaded.size(); j++) {
+                if(std::strcmp(textures_loaded[j].path.data(), filename) == 0) {
                     textures.push_back(textures_loaded[j]);
-                    skip = true; // a texture with the same filepath has already been loaded, continue to next one. (optimization)
+                    skip = true;
                     break;
                 }
             }
-            if(!skip)
-            {   // if texture hasn't been loaded already, load it
+            if(!skip) {
                 Texture texture;
-                texture.id = TextureFromFile(str.C_Str(), this->directory);
+                texture.id = TextureFromFile(filename, false);
                 texture.type = typeName;
-                texture.path = str.C_Str();
+                texture.path = filename;
                 textures.push_back(texture);
                 textures_loaded.push_back(texture);  // store it as texture loaded for entire model, to ensure we won't unnecesery load duplicate textures.
             }
         }
         return textures;
+    }
+
+    Mesh processMesh(aiMesh *mesh, const aiScene *scene) {
+        std::vector<Vertex> vertices;
+        std::vector<unsigned int> indices;
+        std::vector<Texture> textures;
+
+        // - per vertex
+        for(unsigned int i = 0; i < mesh->mNumVertices; i++) {
+            Vertex vertex;
+            glm::vec3 v; // it can be pos, norm and uv
+            // positions
+            v.x = mesh->mVertices[i].x;
+            v.y = mesh->mVertices[i].y;
+            v.z = mesh->mVertices[i].z;
+            vertex.Position = v;
+            // normals
+            if (mesh->HasNormals()) {
+                v.x = mesh->mNormals[i].x;
+                v.y = mesh->mNormals[i].y;
+                v.z = mesh->mNormals[i].z;
+                vertex.Normal = v;
+            }
+            // texture coordinates
+            // 버텍스당 최대 8개의 uv를 가질수있다
+            if(mesh->mTextureCoords[0]) {
+                glm::vec2 uv;
+                uv.x = mesh->mTextureCoords[0][i].x; 
+                uv.y = mesh->mTextureCoords[0][i].y;
+                vertex.TexCoords = uv;
+                // tangent
+                v.x = mesh->mTangents[i].x;
+                v.y = mesh->mTangents[i].y;
+                v.z = mesh->mTangents[i].z;
+                vertex.Tangent = v;
+                // bitangent
+                v.x = mesh->mBitangents[i].x;
+                v.y = mesh->mBitangents[i].y;
+                v.z = mesh->mBitangents[i].z;
+                vertex.Bitangent = v;
+            }
+            else {
+                vertex.TexCoords = glm::vec2(0.0f, 0.0f);
+            }
+
+            vertices.push_back(vertex);
+        }
+        
+        // - per triangle
+        for(unsigned int i = 0; i < mesh->mNumFaces; i++) {
+            aiFace face = mesh->mFaces[i];
+            for(unsigned int j = 0; j < face.mNumIndices; j++)
+                indices.push_back(face.mIndices[j]);        
+        }
+
+
+        // - materials per texture type
+        aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+
+        // 1. diffuse maps
+        std::vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
+        textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
+
+        // 2. specular maps
+        std::vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
+        textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
+
+        // 3. normal maps
+        std::vector<Texture> normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_normal");
+        textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
+
+        // 4. height maps
+        std::vector<Texture> heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_height");
+        textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
+        
+        Mesh rst;
+        return Mesh();
+    }
+
+    void processNode(aiNode *node, const aiScene *scene)
+    {
+        // in current node
+        for(unsigned int i = 0; i < node->mNumMeshes; i++)
+        {
+            aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
+            meshes.push_back(processMesh(mesh, scene));
+        }
+        for(unsigned int i = 0; i < node->mNumChildren; i++)
+        {
+            processNode(node->mChildren[i], scene);
+        }
+    }
+
+    void loadModel(const std::string&path) {
+        Assimp::Importer loader;
+        // aiProcess_Triangulate : 다각형이 있다면 삼각형으로
+        // aiProcess_FlipUVs : opengl 텍스쳐 밑에서 읽는문제 or stbi_set_flip_vertically_on_load(true)
+        // aiProcess_GenNormals : 노멀이 없으면 생성
+        // aiProcess_SplitLargeMeshes : 큰 mesh를 작은 sub mesh로 나눠줌
+        // aiProcess_OptimizeMeshes : mesh를 합쳐서 draw call을 줄인다.
+
+        unsigned int pFrags =  aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace;
+        const aiScene* scene = loader.ReadFile(path,pFrags);
+        
+        if(!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE 
+                  || !scene->mRootNode) {
+            fprintf(stderr, "%s\n", loader.GetErrorString());
+            return;
+        }
+
+        directory = path.substr(0, path.find_last_of('/'));
+
+        // recursive fashion
+        processNode(scene->mRootNode, scene);
+    }
+public :
+    Model(std::string const &path, bool gamma = false)
+        : gammaCorrection(gamma) 
+    {
+        loadModel(path);
+    }
+
+    void Draw(Program &shader) {
+        for(unsigned int i = 0; i < meshes.size(); i++)
+            meshes[i].Draw(shader);
     }
 };
 #endif // !MODEL_H
