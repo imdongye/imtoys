@@ -6,6 +6,8 @@
 // GLFW
 #include <GLFW/glfw3.h>
 
+#include "lim/model.h"    
+
 
 // This example is taken from https://learnopengl.com/
 // https://learnopengl.com/code_viewer.php?code=getting-started/hellowindow2
