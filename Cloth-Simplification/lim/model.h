@@ -1,4 +1,7 @@
+//
+// 2022-07-20 / im dong ye
 // edit learnopengl code
+//
 
 #ifndef MODEL_H
 #define MODEL_H
@@ -26,11 +29,11 @@
 // 4byte * (3+3+2+3+3+4+3) = 21
 // offsetof(Vertex, Normal) = 12
 struct Vertex {
-    glm::vec3 Position;
-    glm::vec3 Normal;
-    glm::vec2 TexCoords;
-    glm::vec3 Tangent;
-    glm::vec3 Bitangent;
+    glm::vec3 pos;
+    glm::vec3 norm;
+    glm::vec2 uv;
+    glm::vec3 tangent;
+    glm::vec3 bitangent;
 	int m_BoneIDs[MAX_BONE_INFLUENCE];
 	float m_Weights[MAX_BONE_INFLUENCE];
 };
@@ -69,36 +72,45 @@ private:
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
         // - normal
         glEnableVertexAttribArray(1);	
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Normal));
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, norm));
         // - tex coord
         glEnableVertexAttribArray(2);	
-        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoords));
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, uv));
         // - tangent
         glEnableVertexAttribArray(3);
-        glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Tangent));
+        glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, tangent));
         // - bi tangnet
         glEnableVertexAttribArray(4);
-        glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Bitangent));
+        glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, bitangent));
+
 		// - bone ids
 		glEnableVertexAttribArray(5);
 		glVertexAttribIPointer(5, 4, GL_INT, sizeof(Vertex), (void*)offsetof(Vertex, m_BoneIDs));
-
-		// weights
+		// - weights
 		glEnableVertexAttribArray(6);
 		glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, m_Weights));
+
         glBindVertexArray(0);
     }
 public:
-    Mesh() {
+    Mesh(std::vector<Vertex>& vertices, std::vector<unsigned int>& indices, std::vector<Texture>& textures)
+    {
+        this->vertices = vertices;
+        this->indices = indices;
+        this->textures = textures;
+
+        // now that we have all the required data, set the vertex buffers and its attribute pointers.
         setupMesh();
     }
-    void Draw(Program& shader) {
+
+    void Draw(Program& program) {
         // texture unifrom var name texture_specularN ...
         unsigned int diffuseNr  = 1;
         unsigned int specularNr = 1;
         unsigned int normalNr   = 1;
         unsigned int heightNr   = 1;
         unsigned int loc = 0;
+
         for(unsigned int i = 0; i < textures.size(); i++) {
             std::string number;
             std::string name = textures[i].type;
@@ -112,11 +124,11 @@ public:
                 number = std::to_string(heightNr++);
 
             glActiveTexture(GL_TEXTURE0 + i);
-            loc = glGetUniformLocation(shader.ID, (name + number).c_str());
+            loc = glGetUniformLocation(program.ID, (name + number).c_str());
             glUniform1i(loc, i); // to sampler2d
             glBindTexture(GL_TEXTURE_2D, textures[i].id);
         }
-        
+
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(indices.size()), GL_UNSIGNED_INT, 0);
 
@@ -124,8 +136,6 @@ public:
         glActiveTexture(GL_TEXTURE0);
     }
 };
-
-
 
 struct Model {
     std::vector<Texture> textures_loaded;
@@ -227,13 +237,13 @@ private:
             v.x = mesh->mVertices[i].x;
             v.y = mesh->mVertices[i].y;
             v.z = mesh->mVertices[i].z;
-            vertex.Position = v;
+            vertex.pos = v;
             // normals
             if (mesh->HasNormals()) {
                 v.x = mesh->mNormals[i].x;
                 v.y = mesh->mNormals[i].y;
                 v.z = mesh->mNormals[i].z;
-                vertex.Normal = v;
+                vertex.norm = v;
             }
             // texture coordinates
             // 버텍스당 최대 8개의 uv를 가질수있다
@@ -241,20 +251,20 @@ private:
                 glm::vec2 uv;
                 uv.x = mesh->mTextureCoords[0][i].x; 
                 uv.y = mesh->mTextureCoords[0][i].y;
-                vertex.TexCoords = uv;
+                vertex.uv = uv;
                 // tangent
                 v.x = mesh->mTangents[i].x;
                 v.y = mesh->mTangents[i].y;
                 v.z = mesh->mTangents[i].z;
-                vertex.Tangent = v;
+                vertex.tangent = v;
                 // bitangent
                 v.x = mesh->mBitangents[i].x;
                 v.y = mesh->mBitangents[i].y;
                 v.z = mesh->mBitangents[i].z;
-                vertex.Bitangent = v;
+                vertex.bitangent = v;
             }
             else {
-                vertex.TexCoords = glm::vec2(0.0f, 0.0f);
+                vertex.uv = glm::vec2(0.0f, 0.0f);
             }
 
             vertices.push_back(vertex);
@@ -286,9 +296,8 @@ private:
         // 4. height maps
         std::vector<Texture> heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_height");
         textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
-        
-        Mesh rst;
-        return Mesh();
+
+        return Mesh(vertices, indices, textures);
     }
 
     void processNode(aiNode *node, const aiScene *scene)
