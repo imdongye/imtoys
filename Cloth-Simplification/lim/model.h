@@ -19,7 +19,7 @@
 #include <map>
 #include <vector>
 
-#include "lim/program.h"
+#include "program.h"
 
 #define MAX_BONE_INFLUENCE 4
 

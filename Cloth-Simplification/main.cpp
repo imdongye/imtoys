@@ -4,7 +4,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #define STB_IMAGE_IMPLEMENTATION
-#include "lim/model.h"    
+#include "lim/model.h"
 
 const GLuint WIDTH = 800, HEIGHT = 600;
 

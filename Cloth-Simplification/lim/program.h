@@ -1,8 +1,5 @@
-
-
-
-#ifndef program_h
-#define program_h
+#ifndef PROGRAM_H
+#define PROGRAM_H
 
 struct Program {
 public :
