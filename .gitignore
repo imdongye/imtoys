@@ -2,3 +2,6 @@
 /lib/
 x64/
 *vcxproj*
+/.vs
+/*.sln
+glad.c
