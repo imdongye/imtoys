@@ -1,9 +1,13 @@
 //
-// 2022-07-21 / im dongye
-// edit learnopengl code
+//  2022-07-21 / im dongye
+//  edit learnopengl code
 //
-// when controll with function => auto mat update
-// when edit prop => must menual update 
+//  when controll with function => auto mat update
+//  when edit prop => must menual update 
+//
+//  TODO list :
+//  1. roll
+//
 //
 
 
@@ -31,8 +35,8 @@ const float ROLL        =  0.f;    // Z
 const float SPEED       =  2.5f;
 const float SENSITIVITY =  0.1f;
 const float FOVY        =  45.f;  // ZOOM
-const float MAX_FOVY    =  60.f;
-const float MIN_FOVY    =  2.f;
+const float MAX_FOVY    =  170.f;
+const float MIN_FOVY    =  10.f;
 
 
 // An abstract camera class that processes input and calculates the corresponding Euler Angles,
@@ -71,6 +75,15 @@ private:
         up    = glm::normalize(glm::cross(right, front));
     }
 public:
+    // menual update
+    void updateViewMat() {
+        updateCameraVectors();
+        viewMat = glm::lookAt(pos, pos + front, glm::vec3(0,1,0)); // todo: roll => edit up
+    }
+    void updateProjMat(const float aspect=1.0f, const float zNear=0.1f, const float zFar=100.f) {
+        projMat = glm::perspective(glm::radians(fovy), aspect, zNear, zFar);
+    }
+public:
     Camera(glm::vec3 _position = glm::vec3(0.0f, 0.0f, 0.0f), float _yaw=YAW, float _pitch=PITCH, float _aspect=1.0f)
         : front(glm::vec3(0.0f, 0.0f, -1.0f)), movementSpeed(SPEED), mouseSensitivity(SENSITIVITY), fovy(FOVY)
         , roll(ROLL), zNear(0.1f), zFar(100.f)
@@ -82,13 +95,6 @@ public:
         aspect = _aspect;
         updateViewMat();
         updateProjMat();
-    }
-    void updateViewMat() {
-        updateCameraVectors();
-        viewMat = glm::lookAt(pos, pos + front, glm::vec3(0,1,0)); // todo: roll => edit up
-    }
-    void updateProjMat(const float aspect=1.0f, const float zNear=0.1f, const float zFar=100.f) {
-        projMat = glm::perspective(glm::radians(fovy), aspect, zNear, zFar);
     }
     void ProcessKeyboard(Camera_Movement direction, float deltaTime) {
         float velocity = movementSpeed * deltaTime;
@@ -119,11 +125,8 @@ public:
     }
     void ProcessMouseScroll(float yoffset)
     {
-        fovy -= (float)yoffset; // todo: fow graph
-        if (fovy < MIN_FOVY)
-            fovy = MIN_FOVY;
-        if (fovy > MAX_FOVY)
-            fovy = MAX_FOVY; 
+        fovy = fovy * pow(1.03, -yoffset);
+        fovy = glm::clamp(fovy, MIN_FOVY, MAX_FOVY);
         updateProjMat();
     }
 };

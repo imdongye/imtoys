@@ -1,6 +1,10 @@
 //
-// 2022-07-20 / im dong ye
-// edit learnopengl code
+//  2022-07-20 / im dong ye
+//  edit learnopengl code
+//
+//  TODO list:
+//  1. rigging
+//  2. cleanUp
 //
 
 #ifndef MODEL_H
@@ -35,7 +39,7 @@ struct Vertex {
 };
 
 struct Texture {
-    unsigned int id;
+    GLuint id;
     std::string type;
     std::string path; // relative path+filename or only filename
 }; 
@@ -43,11 +47,11 @@ struct Texture {
 struct Mesh {
 public:
     std::vector<Vertex> vertices;
-    std::vector<unsigned int> indices;
+    std::vector<GLuint> indices;
     std::vector<Texture> textures;
-    unsigned int VAO = 0;
+    GLuint VAO = 0;
 private:
-    unsigned int VBO, EBO;
+    GLuint VBO, EBO;
 
     void setupMesh() {
         glGenVertexArrays(1, &VAO);
@@ -60,7 +64,7 @@ private:
         glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), &vertices[0], GL_STATIC_DRAW);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLuint), &indices[0], GL_STATIC_DRAW);
 
         // VAO setting //
         // - position
@@ -89,7 +93,8 @@ private:
         glBindVertexArray(0);
     }
 public:
-    Mesh(std::vector<Vertex>& vertices, std::vector<unsigned int>& indices, std::vector<Texture>& textures)
+    Mesh(std::vector<Vertex>& vertices, std::vector<GLuint>& indices, std::vector<Texture>& textures)
+        : VAO(0)
     {
         this->vertices = vertices;
         this->indices = indices;
@@ -98,54 +103,56 @@ public:
         // now that we have all the required data, set the vertex buffers and its attribute pointers.
         setupMesh();
     }
-
+    ~Mesh() { 
+        glDeleteVertexArrays(1, &VAO);
+    }
     void draw(Program& program) {
         // texture unifrom var name texture_specularN ...
-        unsigned int diffuseNr  = 1;
-        unsigned int specularNr = 1;
-        unsigned int normalNr   = 1;
-        unsigned int heightNr   = 1;
-        unsigned int loc = 0;
+        GLuint diffuseNr  = 0;
+        GLuint specularNr = 0;
+        GLuint normalNr   = 0;
+        GLuint heightNr   = 0;
+        GLuint loc = 0;
 
-        for(unsigned int i = 0; i < textures.size(); i++) {
-            std::string number;
-            std::string name = textures[i].type;
-            if(name == "texture_diffuse")
-                number = std::to_string(diffuseNr++);
-            else if(name == "texture_specular")
-                number = std::to_string(specularNr++);
-            else if(name == "texture_normal")
-                number = std::to_string(normalNr++);
-             else if(name == "texture_height")
-                number = std::to_string(heightNr++);
-
+        for(GLuint i = 0; i < textures.size(); i++) {
+            std::string type = textures[i].type;
+            int num = 0;
+            // uniform samper2d nr is start with 1
+            if( type=="texture_diffuse" )       num = ++diffuseNr;
+            else if( type=="texture_specular" ) num = ++specularNr;
+            else if( type=="texture_normal" )   num = ++normalNr;
+            else if( type=="texture_height" )   num = ++heightNr;
+                
+            std::string name = type+std::to_string(num);
             glActiveTexture(GL_TEXTURE0 + i);
-            loc = glGetUniformLocation(program.ID, (name + number).c_str());
+            loc = glGetUniformLocation(program.ID, name.c_str());
             glUniform1i(loc, i); // to sampler2d
             glBindTexture(GL_TEXTURE_2D, textures[i].id);
         }
 
         glBindVertexArray(VAO);
-        glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(indices.size()), GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, static_cast<GLuint>(indices.size()), GL_UNSIGNED_INT, 0);
 
         glBindVertexArray(0);
         glActiveTexture(GL_TEXTURE0);
     }
 };
 
+// ================================================================================================= //
 struct Model {
+    std::string name;
     std::vector<Texture> textures_loaded;
     std::vector<Mesh> meshes;
     std::string directory; // for load texture
-    bool gammaCorrection;
     
 private:
     // load texture
-    unsigned int textureFromFile(const char *path, bool toLinear = true) {
+    GLuint textureFromFile(const char *path, bool toLinear = true) {
+        std::cout<<path<<std::endl;
         std::string filename = std::string(path);
         filename = directory + '/' + filename;
 
-        unsigned int texID;
+        GLuint texID;
         glGenTextures(1, &texID);
 
         int w, h, channels;
@@ -195,13 +202,15 @@ private:
 
     std::vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type, std::string typeName) {
         std::vector<Texture> textures;
-        for(unsigned int i = 0; i < mat->GetTextureCount(type); i++) {
+        for(GLuint i = 0; i < mat->GetTextureCount(type); i++) {
             aiString str;
             mat->GetTexture(type, i, &str);
             const char* filename = str.C_Str(); // or dir
-            bool skip = false;
+
+            // check already loaded
             // to skip loading same texture 
-            for(unsigned int j = 0; j < textures_loaded.size(); j++) {
+            bool skip = false;
+            for(GLuint j = 0; j < textures_loaded.size(); j++) {
                 if(std::strcmp(textures_loaded[j].path.data(), filename) == 0) {
                     textures.push_back(textures_loaded[j]);
                     skip = true;
@@ -222,11 +231,11 @@ private:
 
     Mesh processMesh(aiMesh *mesh, const aiScene *scene) {
         std::vector<Vertex> vertices;
-        std::vector<unsigned int> indices;
+        std::vector<GLuint> indices;
         std::vector<Texture> textures;
 
         // - per vertex
-        for(unsigned int i = 0; i < mesh->mNumVertices; i++) {
+        for(GLuint i = 0; i < mesh->mNumVertices; i++) {
             Vertex vertex;
             glm::vec3 v; // it can be pos, norm and uv
             // positions
@@ -267,9 +276,9 @@ private:
         }
         
         // - per triangle
-        for(unsigned int i = 0; i < mesh->mNumFaces; i++) {
+        for(GLuint i = 0; i < mesh->mNumFaces; i++) {
             aiFace face = mesh->mFaces[i];
-            for(unsigned int j = 0; j < face.mNumIndices; j++)
+            for(GLuint j = 0; j < face.mNumIndices; j++)
                 indices.push_back(face.mIndices[j]);        
         }
 
@@ -300,50 +309,63 @@ private:
     void processNode(aiNode *node, const aiScene *scene)
     {
         // in current node
-        for(unsigned int i = 0; i < node->mNumMeshes; i++)
-        {
+        for(GLuint i = 0; i < node->mNumMeshes; i++) {
             aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
             meshes.push_back(processMesh(mesh, scene));
         }
-        for(unsigned int i = 0; i < node->mNumChildren; i++)
-        {
+        for(GLuint i = 0; i < node->mNumChildren; i++) {
             processNode(node->mChildren[i], scene);
         }
     }
     void cleanUp() {
     }
 public :
-    Model(bool gamma = false): gammaCorrection(gamma) {}
+    Model() {}
 
-    void loadModel(const std::string&path) {
+    void load(const std::string& path) {
+        {
+            size_t slashPos = path.find_last_of('/');
+	        if( slashPos == std::string::npos ) {
+                name = path;
+                directory = "";
+            }
+            else if(slashPos == path.length()-1) {
+                name = "";
+                directory = path;
+            }
+            else {
+                name = path.substr(slashPos+1);
+                directory = path.substr(0, path.find_last_of('/'));
+            }
+        }
+
         Assimp::Importer loader;
         // aiProcess_Triangulate : 다각형이 있다면 삼각형으로
         // aiProcess_FlipUVs : opengl 텍스쳐 밑에서 읽는문제 or stbi_set_flip_vertically_on_load(true)
         // aiProcess_GenNormals : 노멀이 없으면 생성
         // aiProcess_SplitLargeMeshes : 큰 mesh를 작은 sub mesh로 나눠줌
         // aiProcess_OptimizeMeshes : mesh를 합쳐서 draw call을 줄인다.
-
-        unsigned int pFrags =  aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace;
+        GLuint pFrags =  aiProcess_Triangulate | aiProcess_GenSmoothNormals 
+                               | aiProcess_FlipUVs | aiProcess_CalcTangentSpace;
         const aiScene* scene = loader.ReadFile(path,pFrags);
         
         if(!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE 
                   || !scene->mRootNode) {
             fprintf(stderr, "%s\n", loader.GetErrorString());
             return;
-        }
-
-        directory = path.substr(0, path.find_last_of('/'));
+        } 
 
         cleanUp();
 
         // recursive fashion
         processNode(scene->mRootNode, scene);
-        std::cout<<"done";
+        fprintf(stdout, "model %s load success\n", name.c_str());
     }
 
     void draw(Program &program) {
-        for(unsigned int i = 0; i < meshes.size(); i++)
+        for(GLuint i = 0; i < meshes.size(); i++)
             meshes[i].draw(program);
     }
 };
+
 #endif // !MODEL_H

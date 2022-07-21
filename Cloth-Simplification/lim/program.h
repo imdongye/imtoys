@@ -1,7 +1,15 @@
 //
-// 2022-07-20 / im dong ye
-// edit learnopengl code + toys.h by prof shin
+//	2022-07-20 / im dong ye
+//	edit learnopengl code + toys.h by prof shin
 //
+//	to use : shadowProgram.attatch("sp_shadow.vert").attatch("shadow.frag")
+//						 .attach("shadow.geom").link();
+//
+//	TODO list:
+//  1. bind with method
+//
+//
+
 
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -121,6 +129,7 @@ public:
 		glCompileShader( sid );
 		checkCompileErrors( sid, type );
 		glAttachShader( ID, sid );
+		fprintf(stdout, "program%d attch %s success\n",ID,path);
 
 		return *this;
 	}
@@ -129,6 +138,7 @@ public:
 		glUseProgram ( ID );
 		checkCompileErrors(ID, "program");
 		cleanUpWithoutID(); // 링크된 후 필요없음
+		fprintf(stdout, "program%d linking success\n",ID);
 		return *this;
 	}
 	Program& use() {
@@ -139,7 +149,7 @@ public:
 	template<typename T> Program & bind(std::string const & name, T&& value)
     {
         int location = glGetUniformLocation(ID, name.c_str());
-        if (location == -1) fprintf(stderr, "Missing Uniform: %s\n", name.c_str());
+        if (location == -1) fprintf(stderr, "missing uniform: %s\n", name.c_str());
         else bind(location, std::forward<T>(value));
         return *this;
     }

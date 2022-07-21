@@ -1,4 +1,7 @@
-
+//
+//  for test simplification and normal map baking.
+//  2022-07-21 / im dongye
+//
 
 #include <iostream>
 #include <glad/glad.h>
@@ -9,13 +12,15 @@
 #include "lim/camera.h"
 #include "lim/model.h"
 
-const GLuint SCR_WIDTH = 800, SCR_HEIGHT = 600;
+using namespace std;
+using namespace glm;
+
+const GLuint INIT_WIDTH = 800, INIT_HEIGHT = 600;
 
 // camera
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
-float lastX = SCR_WIDTH / 2.0f;
-float lastY = SCR_HEIGHT / 2.0f;
-bool firstMouse = true;
+float lastX = INIT_WIDTH / 2.0f;
+float lastY = INIT_HEIGHT / 2.0f;
 
 // timing
 float deltaTime = 0.0f;
@@ -30,13 +35,19 @@ void init() {
         .attatch("shader/diffuse.fs")
         .link();
 
-    model.loadModel("archive/tests/stanford-bunny.obj");
+    model.load("archive/backpack/backpack.obj");
+    //model.load("archive/tests/stanford-bunny.obj");
 }
 
 void render(GLFWwindow* win) {
     GLuint loc, pid;
-    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glBindFramebuffer(GL_FRAMEBUFFER, GL_NONE);
+    glEnable(GL_FRAMEBUFFER_SRGB);// match intensity and Voltage
+    glClearColor(0.25f, 0.25f, 0.5f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);// z-buffer clipping
+    glEnable(GL_CULL_FACE);// back face removal
+    //glFrontFace(GL_CCW);
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     program.use();
     pid = program.ID;
@@ -73,15 +84,13 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
     float xpos = static_cast<float>(xposIn);
     float ypos = static_cast<float>(yposIn);
-    if (firstMouse) {
-        lastX = xpos;
-        lastY = ypos;
-        firstMouse = false;
-    }
-    float xoffset = xpos - lastX;
-    float yoffset = lastY - ypos; // reverse
+    float xoff = xpos - lastX;
+    float yoff = lastY - ypos; // reverse
+
+    if (!glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1)) return;
+
     lastX = xpos; lastY = ypos;
-    camera.ProcessMouseMovement(xoffset, yoffset);
+    camera.ProcessMouseMovement(xoff, yoff);
 }
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
     camera.ProcessMouseScroll(static_cast<float>(yoffset));
@@ -108,7 +117,7 @@ int main() {
     // glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
    glfwWindowHint(GLFW_SAMPLES, 8); // multisampling sample 3x3
 
-    GLFWwindow* win = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "simplification", NULL, NULL);
+    GLFWwindow* win = glfwCreateWindow(INIT_WIDTH, INIT_HEIGHT, "simplification", NULL, NULL);
     if (win == NULL) {
         std::cout << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
