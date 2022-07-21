@@ -17,6 +17,7 @@
 #include <cassert>
 #include <memory>
 
+
 struct Program {
 public:
 	GLuint ID=0;
@@ -100,6 +101,7 @@ public:
 	Program& reset() {
 		cleanUp();
 		ID = glCreateProgram();
+        return *this;
 	}
 	Program& attatch(const char* path) {
 		if( ID==0 ) ID = glCreateProgram();
