@@ -99,7 +99,7 @@ public:
         setupMesh();
     }
 
-    void Draw(Program& program) {
+    void draw(Program& program) {
         // texture unifrom var name texture_specularN ...
         unsigned int diffuseNr  = 1;
         unsigned int specularNr = 1;
@@ -141,7 +141,7 @@ struct Model {
     
 private:
     // load texture
-    unsigned int TextureFromFile(const char *path, bool toLinear = true) {
+    unsigned int textureFromFile(const char *path, bool toLinear = true) {
         std::string filename = std::string(path);
         filename = directory + '/' + filename;
 
@@ -210,7 +210,7 @@ private:
             }
             if(!skip) {
                 Texture texture;
-                texture.id = TextureFromFile(filename, false);
+                texture.id = textureFromFile(filename, false);
                 texture.type = typeName;
                 texture.path = filename;
                 textures.push_back(texture);
@@ -293,6 +293,7 @@ private:
         std::vector<Texture> heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_height");
         textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
 
+        std::cout<<"mesh ";
         return Mesh(vertices, indices, textures);
     }
 
@@ -309,6 +310,10 @@ private:
             processNode(node->mChildren[i], scene);
         }
     }
+    void cleanUp() {
+    }
+public :
+    Model(bool gamma = false): gammaCorrection(gamma) {}
 
     void loadModel(const std::string&path) {
         Assimp::Importer loader;
@@ -329,19 +334,16 @@ private:
 
         directory = path.substr(0, path.find_last_of('/'));
 
+        cleanUp();
+
         // recursive fashion
         processNode(scene->mRootNode, scene);
-    }
-public :
-    Model(std::string const &path, bool gamma = false)
-        : gammaCorrection(gamma) 
-    {
-        loadModel(path);
+        std::cout<<"done";
     }
 
-    void Draw(Program &shader) {
+    void draw(Program &program) {
         for(unsigned int i = 0; i < meshes.size(); i++)
-            meshes[i].Draw(shader);
+            meshes[i].draw(program);
     }
 };
 #endif // !MODEL_H
