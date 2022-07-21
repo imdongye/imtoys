@@ -6,7 +6,8 @@
 #ifndef PROGRAM_H
 #define PROGRAM_H
 
-#include <glad/glad.h>
+// #include <GL/glew.h>
+#include <glad/glad.h> 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
@@ -27,7 +28,27 @@ private:
 	GLuint geomID=0;
 	GLuint compID=0;
 private:
-	GLuint createAuto(const std::string& filename, std::string& get_type) {
+	static inline void checkCompileErrors(GLuint shader, std::string type) {
+		GLint success;
+        GLchar infoLog[1024];
+        if (type != "program") {
+            glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+            if (!success) {
+                glGetShaderInfoLog(shader, 1024, NULL, infoLog);
+                std::cout << "ERROR::SHADER_COMPILATION_ERROR of type: " << type << "\n" << infoLog 
+					<< "\n -- --------------------------------------------------- -- " << std::endl;
+            }
+        }
+        else {
+            glGetProgramiv(shader, GL_LINK_STATUS, &success);
+            if (!success) {
+                glGetProgramInfoLog(shader, 1024, NULL, infoLog);
+                std::cout << "ERROR::PROGRAM_LINKING_ERROR of type: " << type << "\n" << infoLog 
+					<< "\n -- --------------------------------------------------- -- " << std::endl;
+            }
+        }
+	}
+	GLuint createShaderAuto(const std::string& filename, std::string& get_type) {
         auto index = filename.rfind(".");
         auto ext = filename.substr(index + 1);
         if (ext=="vert"||ext=="vs") {
@@ -50,53 +71,17 @@ private:
 			get_type = "compute";
 			return compID;
 		}
-        else return 0;
-    }
-	static inline void printInfoProgramLog(GLuint obj )
-	{
-		int infologLength = 0, charsWritten  = 0;
-		glGetProgramiv( obj, GL_INFO_LOG_LENGTH, &infologLength );
-		if( infologLength <=0 ) return;
-		std::cerr<<"Program Info:"<<std::endl;
-		char *infoLog = new char[infologLength];
-		glGetProgramInfoLog( obj, infologLength, &charsWritten, infoLog );
-		std::cerr<<infoLog<<std::endl;
-		delete [] infoLog;
-	}
-	static inline void printInfoShaderLog(GLuint obj )
-	{
-		int infologLength = 0, charsWritten  = 0;
-		glGetProgramiv( obj, GL_INFO_LOG_LENGTH, &infologLength );
-		if( infologLength <=0 ) return;
-		std::cerr<<"Program Info:"<<std::endl;
-		char* infoLog = new char[infologLength];
-		glGetProgramInfoLog( obj, infologLength, &charsWritten, infoLog );
-		std::cerr<<infoLog<<std::endl;
-		delete [] infoLog;
-	}
-	static inline void checkCompileErrors(GLuint shader, std::string type) {
-		GLint success;
-        GLchar infoLog[1024];
-        if (type != "program") {
-            glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-            if (!success) {
-                glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-                std::cout << "ERROR::SHADER_COMPILATION_ERROR of type: " << type << "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
-            }
-        }
         else {
-            glGetProgramiv(shader, GL_LINK_STATUS, &success);
-            if (!success) {
-                glGetProgramInfoLog(shader, 1024, NULL, infoLog);
-                std::cout << "ERROR::PROGRAM_LINKING_ERROR of type: " << type << "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
-            }
-        }
-	}
+			get_type = ext;
+			return 0;
+		}
+    }
 	// Disable Copying and Assignment
     Program(Program const &) = delete;
     Program & operator=(Program const &) = delete;
 public:
 	Program(): ID(0) {}
+
 	// chaining //
 	Program& reset() {
 		cleanUp();
@@ -106,22 +91,31 @@ public:
 	Program& attatch(const char* path) {
 		if( ID==0 ) ID = glCreateProgram();
 
+		std::string type;
+		GLuint sid = createShaderAuto(path, type);
+		if(sid==0) {
+			std::cerr<<"[error] "<<type<<" extension is not supported.";
+			return *this;
+		}
+
 		// load text
 		std::string scode;
 		std::ifstream file;
+		std::stringstream ss;
 		file.exceptions(std::ifstream::failbit|std::ifstream::badbit);
 		try {
 			file.open(path);
-			std::stringstream ss;
 			ss<<file.rdbuf();
 			file.close();
 			scode = ss.str();
 		} catch( std::ifstream::failure& e ) {
-			std::cerr<< "[error] fail read : "<<path<<". what? "<<e.what()<<std::endl;
+			std::cerr<<"[error] fail read : "<<path<<". what? "<<e.what()<<std::endl;
+		}
+		if(scode.length()<1) {
+			std::cerr<<"[error]"<<path<<" shader code is not loaded properly"<<std::endl;
+			return *this;
 		}
 		// compile
-		std::string type;
-		GLuint sid = createAuto(path, type);
 		const GLchar* ccode = scode.c_str();
 		glShaderSource( sid, 1, &ccode, nullptr );
 		glCompileShader( sid );
@@ -134,7 +128,7 @@ public:
 		glLinkProgram( ID );
 		glUseProgram ( ID );
 		checkCompileErrors(ID, "program");
-		cleanUpWithoutID();
+		cleanUpWithoutID(); // 링크된 후 필요없음
 		return *this;
 	}
 	Program& use() {
