@@ -111,23 +111,24 @@ public:
         GLuint diffuseNr  = 0;
         GLuint specularNr = 0;
         GLuint normalNr   = 0;
-        GLuint heightNr   = 0;
+        GLuint ambientNr  = 0;
         GLuint loc = 0;
 
         for(GLuint i = 0; i < textures.size(); i++) {
             std::string type = textures[i].type;
-            int num = 0;
             // uniform samper2d nr is start with 1
-            if( type=="texture_diffuse" )       num = ++diffuseNr;
-            else if( type=="texture_specular" ) num = ++specularNr;
-            else if( type=="texture_normal" )   num = ++normalNr;
-            else if( type=="texture_height" )   num = ++heightNr;
+            // omit 0th
+            int backNum = 0;
+            if( type=="map_Kd" )        backNum = ++diffuseNr;
+            else if( type=="map_Ks" )   backNum = ++specularNr;
+            else if( type=="map_Bump" ) backNum = ++normalNr;
+            else if( type=="map_Ka" )   backNum = ++ambientNr;
                 
-            std::string name = type+std::to_string(num);
+            std::string varName = type + std::to_string(backNum);
             glActiveTexture(GL_TEXTURE0 + i);
-            loc = glGetUniformLocation(program.ID, name.c_str());
-            glUniform1i(loc, i); // to sampler2d
             glBindTexture(GL_TEXTURE_2D, textures[i].id);
+            loc = glGetUniformLocation(program.ID, varName.c_str());
+            glUniform1i(loc, i); // to sampler2d
         }
 
         glBindVertexArray(VAO);
@@ -139,6 +140,60 @@ public:
 };
 
 // ================================================================================================= //
+ GLuint loadTextureFromFile(const char *cpath, bool toLinear = true) {
+    std::cout<<cpath<<std::endl;
+    std::string spath = std::string(spath);
+
+    GLuint texID=0;
+    glGenTextures(1, &texID);
+
+    int w, h, channels;
+    // 0 => comp 있는대로
+    void* buf = stbi_load(cpath, &w, &h, &channels, 0);
+        
+    if (!buf) {
+        fprintf(stderr,"Texture failed to load at path: %s\n", cpath);
+        stbi_image_free(buf);
+        return texID;
+    } else {
+        fprintf(stdout,"Texture loaded : %s , %dx%d, %d channels\n", cpath, w, h, channels);
+    }
+
+    // load into vram
+    GLenum format;
+    switch (channels) {
+        case 1: format = GL_ALPHA; break;
+        case 2: format = 0; break;
+        case 3: format = GL_RGB; break;
+        case 4: {
+            if( !toLinear) format = GL_RGBA;  
+            else format = GL_SRGB8_ALPHA8; // if hdr => 10bit
+        }break;
+    }
+
+    glGenTextures(1, &texID);
+    glBindTexture(GL_TEXTURE_2D, texID);
+
+    // 0~1 반복 x
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);//GL_REPEAT
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    // GL_NEAREST : texel만 읽음
+    // GL_LINEAR : 주변점 선형보간
+    // texture을 키울때는 선형보간말고 다른방법 없음.
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    // GL_LINEAR_MIPMAP_LINEAR : mipmap에서 찾아서 4점을 보간하고 다른 mipmap에서 찾아서 또 섞는다.
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    // level : 0 mipmap의 가장큰 level, 나머지는 알아서 생성
+    // internalformat: 파일에 저장된값, format: 사용할값
+    // 따라서 srgb에서 rgb로 선형공간으로 색이 이동되고 계산된후 다시 감마보정을 해준다.
+    // GL_SRGB8_ALPHA8 8은 채널이 8비트 그냥은 10비트
+    glTexImage2D(GL_TEXTURE_2D, 0, format, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, buf);
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    stbi_image_free(buf);
+    return texID;
+}
+
 struct Model {
     std::string name;
     std::vector<Texture> textures_loaded;
@@ -147,81 +202,36 @@ struct Model {
     
 private:
     // load texture
-    GLuint textureFromFile(const char *path, bool toLinear = true) {
-        std::cout<<path<<std::endl;
-        std::string filename = std::string(path);
-        filename = directory + '/' + filename;
-
-        GLuint texID;
-        glGenTextures(1, &texID);
-
-        int w, h, channels;
-        // 0 => comp 있는대로
-        void* buf = stbi_load(filename.c_str(), &w, &h, &channels, 0);
-        
-        if (!buf) {
-            fprintf(stderr,"Texture failed to load at path: %s\n", path);
-            stbi_image_free(buf);
-            return texID;
-        }
-
-        // load into vram
-        GLenum format;
-        switch (channels) {
-            case 1 : format = GL_ALPHA;     break;
-            case 3 : format = GL_RGB;       break;
-            case 4 : 
-                if( !toLinear) format = GL_RGBA;  
-                else format = GL_SRGB8_ALPHA8; // if hdr => 10bit
-                break;
-        }
-
-        glGenTextures(1, &texID);
-        glBindTexture(GL_TEXTURE_2D, texID);
-
-        // 0~1 반복 x
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);//GL_REPEAT
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        // GL_NEAREST : texel만 읽음
-        // GL_LINEAR : 주변점 선형보간
-        // texture을 키울때는 선형보간말고 다른방법 없음.
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        // GL_LINEAR_MIPMAP_LINEAR : mipmap에서 찾아서 4점을 보간하고 다른 mipmap에서 찾아서 또 섞는다.
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-
-        // level : 0 mipmap의 가장큰 level, 나머지는 알아서 생성
-        // internalformat: 파일에 저장된값, format: 사용할값
-        // 따라서 srgb에서 rgb로 선형공간으로 색이 이동되고 계산된후 다시 감마보정을 해준다.
-        // GL_SRGB8_ALPHA8 8은 채널이 8비트 그냥은 10비트
-        glTexImage2D(GL_TEXTURE_2D, 0, format, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, buf);
-        glGenerateMipmap(GL_TEXTURE_2D);
-
-        stbi_image_free(buf);
-        return texID;
-    }
-
-    std::vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type, std::string typeName) {
+    std::vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type) {
         std::vector<Texture> textures;
         for(GLuint i = 0; i < mat->GetTextureCount(type); i++) {
             aiString str;
             mat->GetTexture(type, i, &str);
-            const char* filename = str.C_Str(); // or dir
+            const char* texPath = str.C_Str(); // filename or dir
+            printf("%s\n", texPath);
 
             // check already loaded
             // to skip loading same texture 
             bool skip = false;
             for(GLuint j = 0; j < textures_loaded.size(); j++) {
-                if(std::strcmp(textures_loaded[j].path.data(), filename) == 0) {
+                if(std::strcmp(textures_loaded[j].path.data(), texPath)==0) {
                     textures.push_back(textures_loaded[j]);
                     skip = true;
                     break;
                 }
             }
+            // load texture
             if(!skip) {
                 Texture texture;
-                texture.id = textureFromFile(filename, false);
-                texture.type = typeName;
-                texture.path = filename;
+                std::string fullTexPath = directory+std::string(texPath);
+                texture.id = loadTextureFromFile(fullTexPath.c_str(), false);
+                switch(type) {
+                case aiTextureType_DIFFUSE: texture.type = "map_Kd";
+                case aiTextureType_SPECULAR: texture.type = "map_Ks";
+                case aiTextureType_AMBIENT: texture.type = "map_Ka";
+                case aiTextureType_HEIGHT: texture.type = "map_Bump";
+                }
+                texture.path = texPath;
                 textures.push_back(texture);
                 textures_loaded.push_back(texture);  // store it as texture loaded for entire model, to ensure we won't unnecesery load duplicate textures.
             }
@@ -282,27 +292,26 @@ private:
                 indices.push_back(face.mIndices[j]);        
         }
 
-
-        // - materials per texture type
+        // - materials. per texture type
         aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
         // 1. diffuse maps
-        std::vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
+        std::vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE);
         textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
 
         // 2. specular maps
-        std::vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
+        std::vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR);
         textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
 
         // 3. normal maps
-        std::vector<Texture> normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_normal");
+        std::vector<Texture> normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT);
         textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
 
-        // 4. height maps
-        std::vector<Texture> heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_height");
+        // 4. ambient maps
+        std::vector<Texture> heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT);
         textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
 
-        std::cout<<"mesh ";
+        std::cout<<"mesh";
         return Mesh(vertices, indices, textures);
     }
 

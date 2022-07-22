@@ -35,11 +35,6 @@ Model model;
 
 
 void init() {
-    ofstream wr;
-    wr.open("a.txt");
-    wr<<"asdf"<<endl;
-    wr.close();
-    
     program.attatch("shader/diffuse.vs")
         .attatch("shader/diffuse.fs")
         .link();
@@ -54,7 +49,7 @@ void render(GLFWwindow* win) {
     glEnable(GL_FRAMEBUFFER_SRGB);// match intensity and Voltage
     glClearColor(0.25f, 0.25f, 0.5f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);// z-buffer clipping
-    glEnable(GL_CULL_FACE);// back face removal
+    //glEnable(GL_CULL_FACE);// back face removal
     //glFrontFace(GL_CCW);
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
