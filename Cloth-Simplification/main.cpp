@@ -2,6 +2,10 @@
 //  for test simplification and normal map baking.
 //  2022-07-21 / im dongye
 //
+//
+//  if you mac you must set
+//  Product->schema->edit-schema->run->option->custom-working-dir
+//
 
 #include <iostream>
 #include <glad/glad.h>
@@ -31,6 +35,11 @@ Model model;
 
 
 void init() {
+    ofstream wr;
+    wr.open("a.txt");
+    wr<<"asdf"<<endl;
+    wr.close();
+    
     program.attatch("shader/diffuse.vs")
         .attatch("shader/diffuse.fs")
         .link();
