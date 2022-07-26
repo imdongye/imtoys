@@ -2,6 +2,9 @@
 //  2022-07-20 / im dong ye
 //  edit learnopengl code
 //
+// texture uniform sampler2d variable name rule
+// map_Kd0, map_Kd1 ...
+// 
 //  TODO list:
 //  1. rigging
 //  2. cleanUp
@@ -20,136 +23,23 @@
 
 #include <iostream>
 #include <string>
+#include <functional>
 #include <vector>
 
 #include "program.h"
 
 #define MAX_BONE_INFLUENCE 4
 
-// 4byte * (3+3+2+3+3+4+3) = 21
-// offsetof(Vertex, Normal) = 12
-struct Vertex {
-    glm::vec3 pos;
-    glm::vec3 norm;
-    glm::vec2 uv;
-    glm::vec3 tangent;
-    glm::vec3 bitangent;
-	int m_BoneIDs[MAX_BONE_INFLUENCE];
-	float m_Weights[MAX_BONE_INFLUENCE];
-};
-
-struct Texture {
-    GLuint id;
-    std::string type;
-    std::string path; // relative path+filename or only filename
-}; 
-
-struct Mesh {
-public:
-    std::vector<Vertex> vertices;
-    std::vector<GLuint> indices;
-    std::vector<Texture> textures;
-    GLuint VAO = 0;
-private:
-    GLuint VBO, EBO;
-
-    void setupMesh() {
-        glGenVertexArrays(1, &VAO);
-        glGenBuffers(1, &VBO);
-        glGenBuffers(1, &EBO);
-
-        glBindVertexArray(VAO);
-
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), &vertices[0], GL_STATIC_DRAW);
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLuint), &indices[0], GL_STATIC_DRAW);
-
-        // VAO setting //
-        // - position
-        glEnableVertexAttribArray(0);	
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
-        // - normal
-        glEnableVertexAttribArray(1);	
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, norm));
-        // - tex coord
-        glEnableVertexAttribArray(2);	
-        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, uv));
-        // - tangent
-        glEnableVertexAttribArray(3);
-        glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, tangent));
-        // - bi tangnet
-        glEnableVertexAttribArray(4);
-        glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, bitangent));
-
-		// - bone ids
-		glEnableVertexAttribArray(5);
-		glVertexAttribIPointer(5, 4, GL_INT, sizeof(Vertex), (void*)offsetof(Vertex, m_BoneIDs));
-		// - weights
-		glEnableVertexAttribArray(6);
-		glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, m_Weights));
-
-        glBindVertexArray(0);
-    }
-public:
-    Mesh(std::vector<Vertex>& vertices, std::vector<GLuint>& indices, std::vector<Texture>& textures)
-        : VAO(0)
-    {
-        this->vertices = vertices;
-        this->indices = indices;
-        this->textures = textures;
-
-        // now that we have all the required data, set the vertex buffers and its attribute pointers.
-        setupMesh();
-    }
-    ~Mesh() { 
-        glDeleteVertexArrays(1, &VAO);
-    }
-    void draw(Program& program) {
-        // texture unifrom var name texture_specularN ...
-        GLuint diffuseNr  = 0;
-        GLuint specularNr = 0;
-        GLuint normalNr   = 0;
-        GLuint ambientNr  = 0;
-        GLuint loc = 0;
-
-        for(GLuint i = 0; i < textures.size(); i++) {
-            std::string type = textures[i].type;
-            // uniform samper2d nr is start with 1
-            // omit 0th
-            int backNum = 0;
-            if( type=="map_Kd" )        backNum = ++diffuseNr;
-            else if( type=="map_Ks" )   backNum = ++specularNr;
-            else if( type=="map_Bump" ) backNum = ++normalNr;
-            else if( type=="map_Ka" )   backNum = ++ambientNr;
-                
-            std::string varName = type + std::to_string(backNum);
-            glActiveTexture(GL_TEXTURE0 + i);
-            glBindTexture(GL_TEXTURE_2D, textures[i].id);
-            loc = glGetUniformLocation(program.ID, varName.c_str());
-            glUniform1i(loc, i); // to sampler2d
-        }
-
-        glBindVertexArray(VAO);
-        glDrawElements(GL_TRIANGLES, static_cast<GLuint>(indices.size()), GL_UNSIGNED_INT, 0);
-
-        glBindVertexArray(0);
-        glActiveTexture(GL_TEXTURE0);
-    }
-};
-
-// ================================================================================================= //
- GLuint loadTextureFromFile(const char *cpath, bool toLinear = true) {
-    std::cout<<cpath<<std::endl;
+GLuint loadTextureFromFile(const char *cpath, bool toLinear = true) {
     std::string spath = std::string(spath);
+    fprintf(stdout,"loading texture %s.\n", cpath);
 
     GLuint texID=0;
     glGenTextures(1, &texID);
 
     int w, h, channels;
     // 0 => comp 있는대로
-    void* buf = stbi_load(cpath, &w, &h, &channels, 0);
+    void* buf = stbi_load(cpath, &w, &h, &channels, 4); // todo: 0
         
     if (!buf) {
         fprintf(stderr,"Texture failed to load at path: %s\n", cpath);
@@ -194,12 +84,229 @@ public:
     return texID;
 }
 
-struct Model {
+// 4byte * (3+3+2+3+3+4+4) = 88
+// offsetof(Vertex, Normal) = 12
+struct Vertex {
+    glm::vec3 pos;
+    glm::vec3 norm;
+    glm::vec2 uv;
+    glm::vec3 tangent;
+    glm::vec3 bitangent;
+	int m_BoneIDs[MAX_BONE_INFLUENCE];
+	float m_Weights[MAX_BONE_INFLUENCE];
+};
+
+struct Texture {
+    GLuint id;
+    std::string type;
+    std::string path; // relative path+filename or only filename
+}; 
+
+class Mesh {
+public:
+    const char* name;
+    std::vector<Vertex> vertices;
+    std::vector<GLuint> indices;
+    std::vector<Texture> textures;
+    GLuint angles; // set size of indices
+private:
+    GLuint VAO, VBO, EBO;
+    GLenum drawMode;
+private:
+    // disable copying
+    Mesh(Mesh const &) = delete;
+    Mesh & operator=(Mesh const &) = delete;
+public:
+    Mesh(const char* _name="", const GLuint& _angle=3)
+        : VAO(0), name(_name), angles(_angle)
+    {
+        // todo: apply every face diff draw mode
+        switch( angles ) {
+        case 3: drawMode = GL_TRIANGLES; break;
+        case 2: drawMode = GL_LINE_STRIP; break;
+        case 4: drawMode = GL_TRIANGLE_FAN; break;
+        }
+    }
+    ~Mesh() { glDeleteVertexArrays(1, &VAO); }
+    Mesh(const std::vector<Vertex>& _vertices
+        , const std::vector<GLuint>& _indices
+        , const std::vector<Texture>& _textures
+        , const char* _name="", const GLuint& _angle=3)
+        : Mesh(_name, _angle)
+    {
+        vertices = _vertices; // todo: fix deep copy
+        indices = _indices;
+        textures = _textures;
+        setupMesh();
+    }
+    void draw(Program& program) {
+        // texture unifrom var name texture_specularN ...
+        GLuint diffuseNr  = 0;
+        GLuint specularNr = 0;
+        GLuint normalNr   = 0;
+        GLuint ambientNr  = 0;
+        GLuint loc = 0;
+
+        for(GLuint i = 0; i < textures.size(); i++) {
+            std::string type = textures[i].type;
+            // uniform samper2d nr is start with 1
+            // omit 0th
+            int backNum = 0;
+            if( type=="map_Kd" )        backNum = ++diffuseNr;
+            else if( type=="map_Ks" )   backNum = ++specularNr;
+            else if( type=="map_Bump" ) backNum = ++normalNr;
+            else if( type=="map_Ka" )   backNum = ++ambientNr;
+                
+            std::string varName = type + std::to_string(backNum);
+            glActiveTexture(GL_TEXTURE0 + i);
+            glBindTexture(GL_TEXTURE_2D, textures[i].id);
+            loc = glGetUniformLocation(program.ID, varName.c_str());
+            glUniform1i(loc, i); // to sampler2d
+        }
+
+        glBindVertexArray(VAO);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO); // need?
+        glDrawElements(drawMode, static_cast<GLuint>(indices.size()), GL_UNSIGNED_INT, 0);
+
+        glBindVertexArray(0);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+        glActiveTexture(GL_TEXTURE0);
+    }
+    void cleanUp() {
+        if(VAO!=0) {
+            glDeleteVertexArrays(1, &VAO);
+            VAO=0;
+        }
+    }
+private:
+    void setupMesh() {
+        glGenVertexArrays(1, &VAO);
+        printf("vao: %d\n", VAO);
+        glGenBuffers(1, &VBO);
+        glGenBuffers(1, &EBO);
+
+        glBindVertexArray(VAO);
+
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), &vertices[0], GL_STATIC_DRAW);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLuint), &indices[0], GL_STATIC_DRAW);
+
+        // VAO setting //
+        // - position
+        glEnableVertexAttribArray(0);	
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+        // - normal
+        glEnableVertexAttribArray(1);	
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, norm));
+        // - tex coord
+        glEnableVertexAttribArray(2);	
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, uv));
+        // - tangent
+        glEnableVertexAttribArray(3);
+        glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, tangent));
+        // - bi tangnet
+        glEnableVertexAttribArray(4);
+        glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, bitangent));
+
+		// - bone ids
+		glEnableVertexAttribArray(5);
+		glVertexAttribIPointer(5, MAX_BONE_INFLUENCE, GL_INT, sizeof(Vertex), (void*)offsetof(Vertex, m_BoneIDs));
+		// - weights
+		glEnableVertexAttribArray(6);
+		glVertexAttribPointer(6, MAX_BONE_INFLUENCE, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, m_Weights));
+
+        glBindVertexArray(0);
+        
+        glDeleteBuffers(1, &VBO);
+        glDeleteBuffers(1, &EBO);
+    }
+};
+
+class Model {
+public:
+    glm::vec3 posision;
+    glm::quat rotation;
+    glm::vec3 scale;
+private:
     std::string name;
     std::vector<Texture> textures_loaded;
-    std::vector<Mesh> meshes;
+    std::vector<std::unique_ptr<Mesh>> meshes;// unique ptr makes clear auto
     std::string directory; // for load texture
-    
+private:
+    // Disable Copying and Assignment
+    Model(Model const &) = delete;
+    Model & operator=(Model const &) = delete;
+public :
+    Model() {}
+    Model(const std::string& path) { load(path); }// todo: string_view
+    // 왜 외부에서 외부에서 생성한 mesh객체의 unique_ptr을 우측값 참조로 받아 push_back할 수 없는거지
+    Model(std::function<void(std::vector<Vertex>& _vertices
+                            , std::vector<GLuint>& _indices
+                            , std::vector<Texture>& _textures)> genMeshFunc
+        , const char* _name ="")
+        :name(_name)
+    { 
+        std::vector<Vertex> vertices;
+        std::vector<GLuint> indices;
+        std::vector<Texture> textures;
+        genMeshFunc(vertices, indices, textures);
+
+        meshes.push_back(std::make_unique<Mesh>(vertices, indices, textures, _name));
+
+        fprintf(stdout, "\ngen model mesh : %s, v%d\n", _name, meshes.back()->vertices.size());
+    }
+    void cleanUp() {
+        for(auto& mesh : meshes) {
+            mesh->cleanUp();
+        }
+        meshes.clear();
+    }
+    void load(const std::string& path) {
+        cleanUp();
+
+        size_t slashPos = path.find_last_of('/');
+	    if( slashPos == std::string::npos ) {
+            name = path;
+            name = name.substr(0, name.find_last_of('.'));
+            directory = "";
+        }
+        else if(slashPos == path.length()-1) {
+            name = "";
+            directory = path;
+        }
+        else {
+            name = path.substr(slashPos+1);
+            name = name.substr(0, name.find_last_of('.'));
+            directory = path.substr(0, path.find_last_of('/'))+"/";
+        }
+
+        fprintf(stdout, "\nmodel loading : %s\n", name.c_str());
+        Assimp::Importer loader;
+        // aiProcess_Triangulate : 다각형이 있다면 삼각형으로
+        // aiProcess_FlipUVs : opengl 텍스쳐 밑에서 읽는문제 or stbi_set_flip_vertically_on_load(true)
+        // aiProcess_GenNormals : 노멀이 없으면 생성
+        // aiProcess_SplitLargeMeshes : 큰 mesh를 작은 sub mesh로 나눠줌
+        // aiProcess_OptimizeMeshes : mesh를 합쳐서 draw call을 줄인다.
+        GLuint pFrags =  aiProcess_Triangulate | aiProcess_GenSmoothNormals 
+                               | aiProcess_FlipUVs | aiProcess_CalcTangentSpace;
+        const aiScene* scene = loader.ReadFile(path, pFrags);
+        
+        if(!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE 
+                  || !scene->mRootNode) {
+            fprintf(stderr, "%s\n", loader.GetErrorString());
+            return;
+        } 
+
+        // recursive fashion
+        parseNode(scene->mRootNode, scene);
+        fprintf(stdout, "model loaded : %s\n", name.c_str());
+    }
+    void draw(Program &program) {
+        for(GLuint i = 0; i < meshes.size(); i++)
+            meshes[i]->draw(program);
+    }
 private:
     // load texture
     std::vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type) {
@@ -207,8 +314,7 @@ private:
         for(GLuint i = 0; i < mat->GetTextureCount(type); i++) {
             aiString str;
             mat->GetTexture(type, i, &str);
-            const char* texPath = str.C_Str(); // filename or dir
-            printf("%s\n", texPath);
+            const char* texPath = str.C_Str(); 
 
             // check already loaded
             // to skip loading same texture 
@@ -224,12 +330,14 @@ private:
             if(!skip) {
                 Texture texture;
                 std::string fullTexPath = directory+std::string(texPath);
-                texture.id = loadTextureFromFile(fullTexPath.c_str(), false);
+
+                texture.id = loadTextureFromFile(fullTexPath.c_str(), true);
+
                 switch(type) {
-                case aiTextureType_DIFFUSE: texture.type = "map_Kd";
-                case aiTextureType_SPECULAR: texture.type = "map_Ks";
-                case aiTextureType_AMBIENT: texture.type = "map_Ka";
-                case aiTextureType_HEIGHT: texture.type = "map_Bump";
+                case aiTextureType_DIFFUSE: texture.type = "map_Kd"; break;
+                case aiTextureType_SPECULAR: texture.type = "map_Ks"; break;
+                case aiTextureType_AMBIENT: texture.type = "map_Ka"; break;
+                case aiTextureType_HEIGHT: texture.type = "map_Bump"; break;
                 }
                 texture.path = texPath;
                 textures.push_back(texture);
@@ -238,54 +346,35 @@ private:
         }
         return textures;
     }
-
-    Mesh processMesh(aiMesh *mesh, const aiScene *scene) {
+    void parseMesh(aiMesh *mesh, const aiScene *scene) {
         std::vector<Vertex> vertices;
         std::vector<GLuint> indices;
         std::vector<Texture> textures;
+        GLuint angles = 3;
 
         // - per vertex
+        Vertex vertex;
         for(GLuint i = 0; i < mesh->mNumVertices; i++) {
-            Vertex vertex;
-            glm::vec3 v; // it can be pos, norm and uv
-            // positions
-            v.x = mesh->mVertices[i].x;
-            v.y = mesh->mVertices[i].y;
-            v.z = mesh->mVertices[i].z;
-            vertex.pos = v;
-            // normals
+            vertex.pos = glm::vec3(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z);
             if (mesh->HasNormals()) {
-                v.x = mesh->mNormals[i].x;
-                v.y = mesh->mNormals[i].y;
-                v.z = mesh->mNormals[i].z;
-                vertex.norm = v;
+                vertex.norm = glm::vec3(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z);
             }
-            // texture coordinates
-            // 버텍스당 최대 8개의 uv를 가질수있다
+            // 버텍스당 최대 8개의 uv를 가질수있지만 하나만.
             if(mesh->mTextureCoords[0]) {
-                glm::vec2 uv;
-                uv.x = mesh->mTextureCoords[0][i].x; 
-                uv.y = mesh->mTextureCoords[0][i].y;
-                vertex.uv = uv;
+                vertex.uv = glm::vec2(mesh->mTextureCoords[0][i].x,  mesh->mTextureCoords[0][i].y);
                 // tangent
-                v.x = mesh->mTangents[i].x;
-                v.y = mesh->mTangents[i].y;
-                v.z = mesh->mTangents[i].z;
-                vertex.tangent = v;
+                vertex.tangent = glm::vec3(mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z);
                 // bitangent
-                v.x = mesh->mBitangents[i].x;
-                v.y = mesh->mBitangents[i].y;
-                v.z = mesh->mBitangents[i].z;
-                vertex.bitangent = v;
+                vertex.bitangent = glm::vec3(mesh->mBitangents[i].x, mesh->mBitangents[i].y, mesh->mBitangents[i].z);
             }
             else {
-                vertex.uv = glm::vec2(0.0f, 0.0f);
+                vertex.uv = glm::vec2(0.0f);
             }
-
             vertices.push_back(vertex);
         }
         
-        // - per triangle
+        // - per triangles
+        angles = mesh->mFaces[0].mNumIndices;
         for(GLuint i = 0; i < mesh->mNumFaces; i++) {
             aiFace face = mesh->mFaces[i];
             for(GLuint j = 0; j < face.mNumIndices; j++)
@@ -294,86 +383,36 @@ private:
 
         // - materials. per texture type
         aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-
         // 1. diffuse maps
         std::vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE);
         textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
-
         // 2. specular maps
         std::vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR);
         textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
-
         // 3. normal maps
         std::vector<Texture> normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT);
         textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
-
         // 4. ambient maps
         std::vector<Texture> heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT);
         textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
 
-        std::cout<<"mesh";
-        return Mesh(vertices, indices, textures);
-    }
+        fprintf(stdout,"mesh loaded : %s, set%d, verts%d\n", mesh->mName.C_Str(), angles, vertices.size());
 
-    void processNode(aiNode *node, const aiScene *scene)
+        // c++
+        //std::unique_ptr<Mesh>(new Mesh(vertices, indices, textures, mesh->mName.C_Str(), angles));
+        // c++ 14
+        meshes.push_back(std::make_unique<Mesh>(vertices, indices, textures
+                                               , mesh->mName.C_Str(), angles));
+    }
+    void parseNode(aiNode *node, const aiScene *scene)
     {
         // in current node
         for(GLuint i = 0; i < node->mNumMeshes; i++) {
-            aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-            meshes.push_back(processMesh(mesh, scene));
+            parseMesh(scene->mMeshes[node->mMeshes[i]], scene);
         }
         for(GLuint i = 0; i < node->mNumChildren; i++) {
-            processNode(node->mChildren[i], scene);
+            parseNode(node->mChildren[i], scene);
         }
-    }
-    void cleanUp() {
-    }
-public :
-    Model() {}
-
-    void load(const std::string& path) {
-        {
-            size_t slashPos = path.find_last_of('/');
-	        if( slashPos == std::string::npos ) {
-                name = path;
-                directory = "";
-            }
-            else if(slashPos == path.length()-1) {
-                name = "";
-                directory = path;
-            }
-            else {
-                name = path.substr(slashPos+1);
-                directory = path.substr(0, path.find_last_of('/'));
-            }
-        }
-
-        Assimp::Importer loader;
-        // aiProcess_Triangulate : 다각형이 있다면 삼각형으로
-        // aiProcess_FlipUVs : opengl 텍스쳐 밑에서 읽는문제 or stbi_set_flip_vertically_on_load(true)
-        // aiProcess_GenNormals : 노멀이 없으면 생성
-        // aiProcess_SplitLargeMeshes : 큰 mesh를 작은 sub mesh로 나눠줌
-        // aiProcess_OptimizeMeshes : mesh를 합쳐서 draw call을 줄인다.
-        GLuint pFrags =  aiProcess_Triangulate | aiProcess_GenSmoothNormals 
-                               | aiProcess_FlipUVs | aiProcess_CalcTangentSpace;
-        const aiScene* scene = loader.ReadFile(path,pFrags);
-        
-        if(!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE 
-                  || !scene->mRootNode) {
-            fprintf(stderr, "%s\n", loader.GetErrorString());
-            return;
-        } 
-
-        cleanUp();
-
-        // recursive fashion
-        processNode(scene->mRootNode, scene);
-        fprintf(stdout, "model %s load success\n", name.c_str());
-    }
-
-    void draw(Program &program) {
-        for(GLuint i = 0; i < meshes.size(); i++)
-            meshes[i].draw(program);
     }
 };
 

@@ -19,42 +19,62 @@
 using namespace std;
 using namespace glm;
 
-const GLuint INIT_WIDTH = 800, INIT_HEIGHT = 600;
+const GLuint SCR_WIDTH = 800, SCR_HEIGHT = 600;
 
 // camera
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
-float lastX = INIT_WIDTH / 2.0f;
-float lastY = INIT_HEIGHT / 2.0f;
+float lastX = SCR_WIDTH / 2.0f;
+float lastY = SCR_HEIGHT / 2.0f;
 
 // timing
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
 Program program;
-Model model;
+vector<unique_ptr<Model>> models;
 
+
+void makeGround(vector<Vertex>& vertices
+            , vector<GLuint>& indices
+            , vector<Texture>& textures) {
+    const float half = 4.0;
+    vertices.push_back({{-half, 0, -half}, {0, 1, 0}});
+    vertices.push_back({{half, 0, -half}, {0, 1, 0}});
+    vertices.push_back({{-half, 0, half}, {0, 1, 0}});
+    vertices.push_back({{half, 0, half}, {0, 1, 0}});
+
+    indices.insert(indices.end(), {0,1,2});
+    indices.insert(indices.end(), {0,2,3});
+}
+void makeTriangle(vector<Vertex>& vertices
+                 , vector<GLuint>& indices
+                 , vector<Texture>& textures) {
+    vertices.push_back({{-0.5f, -0.5f, 0.f}});
+    vertices.push_back({{0.5f, -0.5f, 0.f}});
+    vertices.push_back({{0.0, 0.5, 0.f}});
+    
+    indices.insert(indices.end(), {0,1,2});
+}
 
 void init() {
-    program.attatch("shader/diffuse.vs")
-        .attatch("shader/diffuse.fs")
-        .link();
-
-    model.load("archive/backpack/backpack.obj");
-    //model.load("archive/tests/stanford-bunny.obj");
+    program.attatch("shader/diffuse.vs").attatch("shader/diffuse.fs").link();
+    models.push_back(make_unique<Model>("archive/backpack/backpack.obj"));
+    //models.push_back(make_unique<Model>("archive/tests/igea.obj"));
+    models.push_back(make_unique<Model>(makeGround, "ground"));
+    //models.push_back(make_unique<Model>(makeQuad(), "ground"));
 }
 
 void render(GLFWwindow* win) {
-    GLuint loc, pid;
     glBindFramebuffer(GL_FRAMEBUFFER, GL_NONE);
-    glEnable(GL_FRAMEBUFFER_SRGB);// match intensity and Voltage
     glClearColor(0.25f, 0.25f, 0.5f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);// z-buffer clipping
     //glEnable(GL_CULL_FACE);// back face removal
     //glFrontFace(GL_CCW);
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-    program.use();
-    pid = program.ID;
+    ////////////////////////
+    GLuint loc, pid;
+    pid = program.use();
 
     loc = glGetUniformLocation(pid, "projection");
     glUniformMatrix4fv(loc, 1, GL_FALSE, &camera.projMat[0][0]);
@@ -69,7 +89,11 @@ void render(GLFWwindow* win) {
     loc = glGetUniformLocation(pid, "model");
     glUniformMatrix4fv(loc, 1, GL_FALSE, &modelMat[0][0]);
 
-    model.draw(program);
+    for (auto& model : models) {
+        model->draw(program);
+    }
+    ////////////////////////
+
 
     glfwSwapBuffers(win);
 }
@@ -121,7 +145,7 @@ int main() {
     // glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
    glfwWindowHint(GLFW_SAMPLES, 8); // multisampling sample 3x3
 
-    GLFWwindow* win = glfwCreateWindow(INIT_WIDTH, INIT_HEIGHT, "simplification", NULL, NULL);
+    GLFWwindow* win = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "simplification", NULL, NULL);
     if (win == NULL) {
         std::cout << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
@@ -142,6 +166,7 @@ int main() {
 
     stbi_set_flip_vertically_on_load(true);
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_FRAMEBUFFER_SRGB);// match intensity and Voltage
 
     init();
 

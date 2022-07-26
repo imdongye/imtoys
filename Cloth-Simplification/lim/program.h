@@ -10,11 +10,9 @@
 //
 //
 
-
 #ifndef PROGRAM_H
 #define PROGRAM_H
 
-// #include <GL/glew.h>
 #include <glad/glad.h> 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -26,16 +24,104 @@
 #include <cassert>
 #include <memory>
 
-
-struct Program {
+class Program {
 public:
-	GLuint ID=0;
+	GLuint ID;
 private:
-	GLuint vertID=0;
-	GLuint fragID=0;
-	GLuint geomID=0;
-	GLuint compID=0;
+	GLuint vertID;
+	GLuint fragID;
+	GLuint geomID;
+	GLuint compID;
 private:
+	// Disable Copying and Assignment
+    Program(Program const &) = delete;
+    Program & operator=(Program const &) = delete;
+public:
+	Program(): ID(0) {}
+	~Program() { cleanUp(); }
+
+	// chaining //
+	Program& reset() {
+		cleanUp();
+		ID = glCreateProgram();
+        return *this;
+	}
+	Program& operator+=(const char* path) {
+		return attatch(path);
+	}
+	Program& attatch(const char* path) {
+		if( ID==0 ) ID = glCreateProgram();
+
+		std::string type;
+		GLuint sid = createShaderAuto(path, type);
+		if(sid==0) {
+			std::cerr<<"[error] "<<type<<" extension is not supported.";
+			return *this;
+		}
+
+		// load text
+		std::string scode;
+		std::ifstream file;
+		std::stringstream ss;
+		file.exceptions(std::ifstream::failbit|std::ifstream::badbit);
+		try {
+			file.open(path);
+			ss<<file.rdbuf();
+			file.close();
+			scode = ss.str();
+		} catch( std::ifstream::failure& e ) {
+			std::cerr<<"[error] fail read : "<<path<<". what? "<<e.what()<<std::endl;
+		}
+		if(scode.length()<1) {
+			std::cerr<<"[error]"<<path<<" shader code is not loaded properly"<<std::endl;
+			return *this;
+		}
+		// compile
+		const GLchar* ccode = scode.c_str();
+		glShaderSource( sid, 1, &ccode, nullptr );
+		glCompileShader( sid );
+		checkCompileErrors( sid, type );
+		glAttachShader( ID, sid );
+		fprintf(stdout, "program%d attch %s success\n",ID,path);
+
+		return *this;
+	}
+	Program& link() {
+		glLinkProgram( ID );
+		glUseProgram ( ID );
+		checkCompileErrors(ID, "program");
+		cleanUpWithoutID(); // 링크된 후 필요없음
+		fprintf(stdout, "program%d linking success\n",ID);
+		return *this;
+	}
+	GLuint use() {
+		glUseProgram(ID);
+		return ID;
+	}
+	// todo: bind
+	template<typename T> Program & bind(std::string const & name, T&& value)
+    {
+        int location = glGetUniformLocation(ID, name.c_str());
+        if (location == -1) fprintf(stderr, "missing uniform: %s\n", name.c_str());
+        else bind(location, std::forward<T>(value));
+        return *this;
+    }
+	void cleanUp() {
+		if( ID ) glDeleteProgram( ID );
+		if( vertID ) glDeleteShader( vertID );
+		if( fragID ) glDeleteShader( fragID );
+		if( geomID ) glDeleteShader( geomID );
+		if( compID ) glDeleteShader( compID );
+		ID = vertID = fragID = geomID = compID = 0;
+	}
+private:
+	void cleanUpWithoutID() {
+		if( vertID ) glDeleteShader( vertID );
+		if( fragID ) glDeleteShader( fragID );
+		if( geomID ) glDeleteShader( geomID );
+		if( compID ) glDeleteShader( compID );
+		vertID = fragID = geomID = compID = 0;
+	}
 	static inline void checkCompileErrors(GLuint shader, std::string type) {
 		GLint success;
         GLchar infoLog[1024];
@@ -84,93 +170,6 @@ private:
 			return 0;
 		}
     }
-	// Disable Copying and Assignment
-    Program(Program const &) = delete;
-    Program & operator=(Program const &) = delete;
-public:
-	Program(): ID(0) {}
-
-	// chaining //
-	Program& reset() {
-		cleanUp();
-		ID = glCreateProgram();
-        return *this;
-	}
-	Program& attatch(const char* path) {
-		if( ID==0 ) ID = glCreateProgram();
-
-		std::string type;
-		GLuint sid = createShaderAuto(path, type);
-		if(sid==0) {
-			std::cerr<<"[error] "<<type<<" extension is not supported.";
-			return *this;
-		}
-
-		// load text
-		std::string scode;
-		std::ifstream file;
-		std::stringstream ss;
-		file.exceptions(std::ifstream::failbit|std::ifstream::badbit);
-		try {
-			file.open(path);
-			ss<<file.rdbuf();
-			file.close();
-			scode = ss.str();
-		} catch( std::ifstream::failure& e ) {
-			std::cerr<<"[error] fail read : "<<path<<". what? "<<e.what()<<std::endl;
-		}
-		if(scode.length()<1) {
-			std::cerr<<"[error]"<<path<<" shader code is not loaded properly"<<std::endl;
-			return *this;
-		}
-		// compile
-		const GLchar* ccode = scode.c_str();
-		glShaderSource( sid, 1, &ccode, nullptr );
-		glCompileShader( sid );
-		checkCompileErrors( sid, type );
-		glAttachShader( ID, sid );
-		fprintf(stdout, "program%d attch %s success\n",ID,path);
-
-		return *this;
-	}
-	Program& link() {
-		glLinkProgram( ID );
-		glUseProgram ( ID );
-		checkCompileErrors(ID, "program");
-		cleanUpWithoutID(); // 링크된 후 필요없음
-		fprintf(stdout, "program%d linking success\n",ID);
-		return *this;
-	}
-	Program& use() {
-		glUseProgram(ID);
-		return *this;
-	}
-	// todo: bind
-	template<typename T> Program & bind(std::string const & name, T&& value)
-    {
-        int location = glGetUniformLocation(ID, name.c_str());
-        if (location == -1) fprintf(stderr, "missing uniform: %s\n", name.c_str());
-        else bind(location, std::forward<T>(value));
-        return *this;
-    }
-	void cleanUp() {
-		if( ID ) glDeleteProgram( ID );
-		if( vertID ) glDeleteShader( vertID );
-		if( fragID ) glDeleteShader( fragID );
-		if( geomID ) glDeleteShader( geomID );
-		if( compID ) glDeleteShader( compID );
-		ID = vertID = fragID = geomID = compID = 0;
-	}
-	void cleanUpWithoutID() {
-		if( vertID ) glDeleteShader( vertID );
-		if( fragID ) glDeleteShader( fragID );
-		if( geomID ) glDeleteShader( geomID );
-		if( compID ) glDeleteShader( compID );
-		vertID = fragID = geomID = compID = 0;
-	}
-	~Program() {
-		cleanUp();
-	}
 };
 
 #endif // !PROGRAM_H

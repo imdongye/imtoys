@@ -7,9 +7,9 @@
 //
 //  TODO list :
 //  1. roll
+//  2. add centric rotate mode
 //
 //
-
 
 #ifndef CAMERA_H
 #define CAMERA_H
@@ -38,10 +38,7 @@ const float FOVY        =  45.f;  // ZOOM
 const float MAX_FOVY    =  170.f;
 const float MIN_FOVY    =  10.f;
 
-
-// An abstract camera class that processes input and calculates the corresponding Euler Angles,
-// Vectors and Matrices for use in OpenGL
-struct Camera {
+class Camera {
 public:
     // camera options
     float movementSpeed;
@@ -61,28 +58,7 @@ public:
     glm::vec3 right;
     glm::mat4 viewMat;
     glm::mat4 projMat;
-
-private:
-    void updateCameraVectors() {
-        glm::vec3 f;
-        f.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-        f.y = sin(glm::radians(pitch));
-        f.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-        front = glm::normalize(f);
-        // normalize the vectors, because their length gets closer to 0 the more you look up 
-        // or down which resu in slower movement.
-        right = glm::normalize(glm::cross(front, glm::vec3(0,1,0))); 
-        up    = glm::normalize(glm::cross(right, front));
-    }
-public:
-    // menual update
-    void updateViewMat() {
-        updateCameraVectors();
-        viewMat = glm::lookAt(pos, pos + front, glm::vec3(0,1,0)); // todo: roll => edit up
-    }
-    void updateProjMat(const float aspect=1.0f, const float zNear=0.1f, const float zFar=100.f) {
-        projMat = glm::perspective(glm::radians(fovy), aspect, zNear, zFar);
-    }
+    glm::mat4 vpMat;
 public:
     Camera(glm::vec3 _position = glm::vec3(0.0f, 0.0f, 0.0f), float _yaw=YAW, float _pitch=PITCH, float _aspect=1.0f)
         : front(glm::vec3(0.0f, 0.0f, -1.0f)), movementSpeed(SPEED), mouseSensitivity(SENSITIVITY), fovy(FOVY)
@@ -128,6 +104,30 @@ public:
         fovy = fovy * pow(1.03, -yoffset);
         fovy = glm::clamp(fovy, MIN_FOVY, MAX_FOVY);
         updateProjMat();
+    }
+private:
+    void updateCameraVectors() {
+        glm::vec3 f;
+        f.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+        f.y = sin(glm::radians(pitch));
+        f.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+        front = glm::normalize(f);
+        // normalize the vectors, because their length gets closer to 0 the more you look up 
+        // or down which resu in slower movement.
+        right = glm::normalize(glm::cross(front, glm::vec3(0,1,0))); 
+        up    = glm::normalize(glm::cross(right, front));
+    }
+    void updateVPMat() {
+        vpMat = viewMat*projMat;
+    }
+public:
+    // menual update
+    void updateViewMat() {
+        updateCameraVectors();
+        viewMat = glm::lookAt(pos, pos + front, glm::vec3(0,1,0)); // todo: roll => edit up
+    }
+    void updateProjMat(const float aspect=1.0f, const float zNear=0.1f, const float zFar=100.f) {
+        projMat = glm::perspective(glm::radians(fovy), aspect, zNear, zFar);
     }
 };
 #endif

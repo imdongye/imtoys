@@ -1,5 +1,6 @@
 /include/
 /lib/
+/dlls/
 x64/
 *vcxproj*
 /.vs
