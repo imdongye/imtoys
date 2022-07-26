@@ -5,15 +5,15 @@ layout (location = 2) in vec2 aTexCoords;
 
 out vec2 TexCoords;
 
-uniform mat4 model = mat4(1,0,0,0,
+uniform mat4 modelMat = mat4(1,0,0,0,
                           0,1,0,0,
                           0,0,1,0,
                           0,0,0,1);
-uniform mat4 view = mat4(1,0,0,0,
+uniform mat4 viewMat = mat4(1,0,0,0,
                          0,1,0,0,
                          0,0,1,0,
                          0,0,0,1);
-uniform mat4 projection= mat4(1,0,0,0,
+uniform mat4 projMat= mat4(1,0,0,0,
                               0,1,0,0,
                               0,0,1,0,
                               0,0,0,1);
@@ -21,5 +21,5 @@ uniform mat4 projection= mat4(1,0,0,0,
 void main()
 {
     TexCoords = aTexCoords;    
-    gl_Position = projection * view * model * vec4(aPos, 1.0);
+    gl_Position = projMat * viewMat * modelMat * vec4(aPos, 1.0);
 }

@@ -16,6 +16,7 @@
 #include <glad/glad.h> 
 
 #include <glm/glm.hpp>
+#include <glm/gtx/quaternion.hpp>
 #include <stb_image.h>
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -226,9 +227,10 @@ private:
 
 class Model {
 public:
-    glm::vec3 posision;
+    glm::vec3 position;
     glm::quat rotation;
     glm::vec3 scale;
+    glm::mat4 modelMat;
 private:
     std::string name;
     std::vector<Texture> textures_loaded;
@@ -239,15 +241,19 @@ private:
     Model(Model const &) = delete;
     Model & operator=(Model const &) = delete;
 public :
-    Model() {}
-    Model(const std::string& path) { load(path); }// todo: string_view
+    Model() : position(glm::vec3(0)), rotation(glm::quat()), scale(glm::vec3(1))
+    {
+        updateModelMat();
+    }
+    Model(const std::string& path) : Model() { load(path); }// todo: string_view
     // 왜 외부에서 외부에서 생성한 mesh객체의 unique_ptr을 우측값 참조로 받아 push_back할 수 없는거지
     Model(std::function<void(std::vector<Vertex>& _vertices
                             , std::vector<GLuint>& _indices
                             , std::vector<Texture>& _textures)> genMeshFunc
         , const char* _name ="")
-        :name(_name)
-    { 
+        :Model()
+    {
+        name = std::string(_name);
         std::vector<Vertex> vertices;
         std::vector<GLuint> indices;
         std::vector<Texture> textures;
@@ -304,8 +310,18 @@ public :
         fprintf(stdout, "model loaded : %s\n", name.c_str());
     }
     void draw(Program &program) {
+        GLuint loc = glGetAttribLocation(program.ID, "modelMat");
+        glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(modelMat));
+        
         for(GLuint i = 0; i < meshes.size(); i++)
             meshes[i]->draw(program);
+    }
+    void updateModelMat() {
+        
+        glm::mat4 translateMat = glm::translate(position);
+        glm::mat4 scaleMat = glm::scale(scale);
+        glm::mat4 rotateMat = glm::toMat4(rotation);
+        modelMat = translateMat * rotateMat * scaleMat;
     }
 private:
     // load texture

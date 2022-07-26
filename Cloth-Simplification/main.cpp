@@ -22,7 +22,7 @@ using namespace glm;
 const GLuint SCR_WIDTH = 800, SCR_HEIGHT = 600;
 
 // camera
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+Camera camera(SCR_WIDTH/(float)SCR_HEIGHT, glm::vec3(0.0f, 0.0f, 3.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 
@@ -38,13 +38,13 @@ void makeGround(vector<Vertex>& vertices
             , vector<GLuint>& indices
             , vector<Texture>& textures) {
     const float half = 4.0;
-    vertices.push_back({{-half, 0, -half}, {0, 1, 0}});
-    vertices.push_back({{half, 0, -half}, {0, 1, 0}});
     vertices.push_back({{-half, 0, half}, {0, 1, 0}});
     vertices.push_back({{half, 0, half}, {0, 1, 0}});
+    vertices.push_back({{half, 0, -half}, {0, 1, 0}});
+    vertices.push_back({{-half, 0, -half}, {0, 1, 0}});
 
-    indices.insert(indices.end(), {0,1,2});
-    indices.insert(indices.end(), {0,2,3});
+    indices.insert(indices.end(), {0,1,3});
+    indices.insert(indices.end(), {1,2,3});
 }
 void makeTriangle(vector<Vertex>& vertices
                  , vector<GLuint>& indices
@@ -58,9 +58,10 @@ void makeTriangle(vector<Vertex>& vertices
 
 void init() {
     program.attatch("shader/diffuse.vs").attatch("shader/diffuse.fs").link();
-    models.push_back(make_unique<Model>("archive/backpack/backpack.obj"));
+    //models.push_back(make_unique<Model>("archive/backpack/backpack.obj"));
     //models.push_back(make_unique<Model>("archive/tests/igea.obj"));
     models.push_back(make_unique<Model>(makeGround, "ground"));
+    models.back()->position = vec3(0,-4,0);
     //models.push_back(make_unique<Model>(makeQuad(), "ground"));
 }
 
@@ -76,18 +77,14 @@ void render(GLFWwindow* win) {
     GLuint loc, pid;
     pid = program.use();
 
-    loc = glGetUniformLocation(pid, "projection");
-    glUniformMatrix4fv(loc, 1, GL_FALSE, &camera.projMat[0][0]);
+    loc = glGetUniformLocation(pid, "projMat");
+    glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(camera.projMat));//&camera.projMat[0][0]);
     
-    loc = glGetUniformLocation(pid, "view");
-    glUniformMatrix4fv(loc, 1, GL_FALSE, &camera.viewMat[0][0]);
-
-    glm::mat4 modelMat = glm::mat4(1.0f);
-    modelMat = glm::translate(modelMat, glm::vec3(0.0f, 0.0f, 0.0f));
-    modelMat = glm::scale(modelMat, glm::vec3(1.0f, 1.0f, 1.0f));
+    loc = glGetUniformLocation(pid, "viewMat");
+    glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(camera.viewMat));
     
-    loc = glGetUniformLocation(pid, "model");
-    glUniformMatrix4fv(loc, 1, GL_FALSE, &modelMat[0][0]);
+    // maybe vpMat
+    // modelMat is declare in model draw
 
     for (auto& model : models) {
         model->draw(program);
@@ -98,40 +95,60 @@ void render(GLFWwindow* win) {
     glfwSwapBuffers(win);
 }
 
-
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode) {
-    //std::cout << key << std::endl;
+void processInput(GLFWwindow *win) {
+    if (glfwGetKey(win, GLFW_KEY_W) == GLFW_PRESS)
+        camera.processMoveInput(FORWARD, deltaTime);
+    if (glfwGetKey(win, GLFW_KEY_S) == GLFW_PRESS)
+        camera.processMoveInput(BACKWARD, deltaTime);
+    if (glfwGetKey(win, GLFW_KEY_A) == GLFW_PRESS)
+        camera.processMoveInput(LEFT, deltaTime);
+    if (glfwGetKey(win, GLFW_KEY_D) == GLFW_PRESS)
+        camera.processMoveInput(RIGHT, deltaTime);
+}
+void key_callback(GLFWwindow* win, int key, int scancode, int action, int mode) {
+    camera.processKey(key, action);
+    
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, GL_TRUE);
+        glfwSetWindowShouldClose(win, GL_TRUE);
 }
-void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
+void framebuffer_size_callback(GLFWwindow* win, int width, int height) {
     glViewport(0, 0, width, height);
-    camera.aspect = width/(float)height;
-    camera.updateProjMat();
+    camera.setAspect(width/(float)height);
 }
-void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
+void cursor_callback(GLFWwindow* win, double xposIn, double yposIn) {
+    int w, h;
+    glfwGetWindowSize(win, &w, &h);
+    
     float xpos = static_cast<float>(xposIn);
     float ypos = static_cast<float>(yposIn);
     float xoff = xpos - lastX;
     float yoff = lastY - ypos; // reverse
 
-    if (!glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1)) return;
-
+    int btn = 0;
+    if (glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_LEFT)) btn = 1;
+    else if (glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_RIGHT)) btn = 2;
+    else if (glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_MIDDLE)) btn = 3;
+    else return;
+    
     lastX = xpos; lastY = ypos;
-    camera.ProcessMouseMovement(xoff, yoff);
+    camera.processMouse(xoff, yoff, btn, w, h);
 }
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
-    camera.ProcessMouseScroll(static_cast<float>(yoffset));
+void mouse_btn_callback(GLFWwindow* win, int button, int action, int mods) {
+    if(action == GLFW_PRESS) {
+        double xpos, ypos;
+        glfwGetCursorPos(win, &xpos, &ypos);
+        lastX = xpos;
+        lastY = ypos;
+    }
 }
-void processInput(GLFWwindow *window) {
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        camera.ProcessKeyboard(FORWARD, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        camera.ProcessKeyboard(BACKWARD, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        camera.ProcessKeyboard(LEFT, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        camera.ProcessKeyboard(RIGHT, deltaTime);
+void scroll_callback(GLFWwindow* win, double xoffset, double yoffset) {
+    camera.processMouseScroll(static_cast<float>(yoffset));
+}
+void drop_callback(GLFWwindow* win, int count, const char** paths)
+{
+    for (int i = 0; i < count; i++) {
+        models.push_back(make_unique<Model>(paths[i]));
+    }
 }
 
 int main() {
@@ -154,8 +171,10 @@ int main() {
     glfwMakeContextCurrent(win);
     glfwSetKeyCallback(win, key_callback);
     glfwSetFramebufferSizeCallback(win, framebuffer_size_callback);
-    glfwSetCursorPosCallback(win, mouse_callback);
+    glfwSetCursorPosCallback(win, cursor_callback);
+    glfwSetMouseButtonCallback(win, mouse_btn_callback);
     glfwSetScrollCallback(win, scroll_callback);
+    glfwSetDropCallback(win, drop_callback);
     // glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSwapInterval(1);
 
