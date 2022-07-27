@@ -182,7 +182,6 @@ public:
 private:
     void setupMesh() {
         glGenVertexArrays(1, &VAO);
-        printf("vao: %d\n", VAO);
         glGenBuffers(1, &VBO);
         glGenBuffers(1, &EBO);
 
@@ -231,8 +230,8 @@ public:
     glm::quat rotation;
     glm::vec3 scale;
     glm::mat4 modelMat;
-private:
     std::string name;
+private:
     std::vector<Texture> textures_loaded;
     std::vector<std::unique_ptr<Mesh>> meshes;// unique ptr makes clear auto
     std::string directory; // for load texture
@@ -245,7 +244,7 @@ public :
     {
         updateModelMat();
     }
-    Model(const std::string& path) : Model() { load(path); }// todo: string_view
+    Model(const char* path) : Model() { load(path); }// todo: string_view
     // 왜 외부에서 외부에서 생성한 mesh객체의 unique_ptr을 우측값 참조로 받아 push_back할 수 없는거지
     Model(std::function<void(std::vector<Vertex>& _vertices
                             , std::vector<GLuint>& _indices
@@ -269,9 +268,11 @@ public :
         }
         meshes.clear();
     }
-    void load(const std::string& path) {
+    void load(const char* _path) {
         cleanUp();
-
+        std::string path = std::string(_path);
+        std::replace(path.begin(), path.end(), '\\', '/');
+        printf("%s", path.c_str());
         size_t slashPos = path.find_last_of('/');
 	    if( slashPos == std::string::npos ) {
             name = path;

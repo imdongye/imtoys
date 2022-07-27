@@ -60,31 +60,42 @@ void init() {
     program.attatch("shader/diffuse.vs").attatch("shader/diffuse.fs").link();
     //models.push_back(make_unique<Model>("archive/backpack/backpack.obj"));
     //models.push_back(make_unique<Model>("archive/tests/igea.obj"));
-    models.push_back(make_unique<Model>(makeGround, "ground"));
-    models.back()->position = vec3(0,-4,0);
+    models.push_back(make_unique<Model>("archive/tests/stanford-bunny.obj"));
+    //models.push_back(make_unique<Model>(makeGround, "ground"));
+    //models.back()->position = vec3(0,-4,0);
     //models.push_back(make_unique<Model>(makeQuad(), "ground"));
+
+    
+    stbi_set_flip_vertically_on_load(true);
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_FRAMEBUFFER_SRGB);// match intensity and Voltage
+    // back face removal
+    //glEnable(GL_CULL_FACE);
+    //glFrontFace(GL_CCW);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);//GL_POINT
 }
 
 void render(GLFWwindow* win) {
-    glBindFramebuffer(GL_FRAMEBUFFER, GL_NONE);
     glClearColor(0.25f, 0.25f, 0.5f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);// z-buffer clipping
-    //glEnable(GL_CULL_FACE);// back face removal
-    //glFrontFace(GL_CCW);
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
+    
+    
     ////////////////////////
+    glBindFramebuffer(GL_FRAMEBUFFER, GL_NONE);
     GLuint loc, pid;
     pid = program.use();
 
     loc = glGetUniformLocation(pid, "projMat");
-    glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(camera.projMat));//&camera.projMat[0][0]);
+    glUniformMatrix4fv(loc, 1, GL_FALSE, value_ptr(camera.projMat));//&camera.projMat[0][0]);
     
     loc = glGetUniformLocation(pid, "viewMat");
-    glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(camera.viewMat));
+    glUniformMatrix4fv(loc, 1, GL_FALSE, value_ptr(camera.viewMat));
+
+    loc = glGetUniformLocation(pid, "cameraPos");
+    glUniform3fv(loc, 1, value_ptr(camera.position));
     
     // maybe vpMat
-    // modelMat is declare in model draw
+    // modelMat is declare in model->draw
 
     for (auto& model : models) {
         model->draw(program);
@@ -96,24 +107,42 @@ void render(GLFWwindow* win) {
 }
 
 void processInput(GLFWwindow *win) {
-    if (glfwGetKey(win, GLFW_KEY_W) == GLFW_PRESS)
-        camera.processMoveInput(FORWARD, deltaTime);
-    if (glfwGetKey(win, GLFW_KEY_S) == GLFW_PRESS)
-        camera.processMoveInput(BACKWARD, deltaTime);
-    if (glfwGetKey(win, GLFW_KEY_A) == GLFW_PRESS)
-        camera.processMoveInput(LEFT, deltaTime);
-    if (glfwGetKey(win, GLFW_KEY_D) == GLFW_PRESS)
-        camera.processMoveInput(RIGHT, deltaTime);
+    if(glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_LEFT)==GLFW_PRESS) {
+        float moveSpeed = 1.5f;
+        if (glfwGetKey(win, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS) 
+            moveSpeed = 2.5f;
+        if (glfwGetKey(win, GLFW_KEY_W) == GLFW_PRESS)
+            camera.move(FORWARD, deltaTime, moveSpeed);
+        if (glfwGetKey(win, GLFW_KEY_S) == GLFW_PRESS)
+            camera.move(BACKWARD, deltaTime, moveSpeed);
+        if (glfwGetKey(win, GLFW_KEY_A) == GLFW_PRESS)
+            camera.move(LEFT, deltaTime, moveSpeed);
+        if (glfwGetKey(win, GLFW_KEY_D) == GLFW_PRESS)
+            camera.move(RIGHT, deltaTime, moveSpeed);
+        if (glfwGetKey(win, GLFW_KEY_E) == GLFW_PRESS)
+            camera.move(UP, deltaTime, moveSpeed);
+        if (glfwGetKey(win, GLFW_KEY_Q) == GLFW_PRESS)
+            camera.move(DOWN, deltaTime, moveSpeed);
+    }
 }
 void key_callback(GLFWwindow* win, int key, int scancode, int action, int mode) {
-    camera.processKey(key, action);
-    
+    if(glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_LEFT)==GLFW_PRESS 
+        && key == GLFW_KEY_Z) {
+        if(action == GLFW_PRESS) {
+            camera.readyPivot();
+            camera.updatePivotViewMat();
+        }
+        else if(action == GLFW_RELEASE) {
+            camera.readyFree();
+            camera.updateFreeViewMat();
+        }
+    }
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(win, GL_TRUE);
 }
 void framebuffer_size_callback(GLFWwindow* win, int width, int height) {
     glViewport(0, 0, width, height);
-    camera.setAspect(width/(float)height);
+    camera.aspect = width/height;
 }
 void cursor_callback(GLFWwindow* win, double xposIn, double yposIn) {
     int w, h;
@@ -122,16 +151,27 @@ void cursor_callback(GLFWwindow* win, double xposIn, double yposIn) {
     float xpos = static_cast<float>(xposIn);
     float ypos = static_cast<float>(yposIn);
     float xoff = xpos - lastX;
-    float yoff = lastY - ypos; // reverse
+    float yoff = lastY - ypos; // inverse
 
-    int btn = 0;
-    if (glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_LEFT)) btn = 1;
-    else if (glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_RIGHT)) btn = 2;
-    else if (glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_MIDDLE)) btn = 3;
-    else return;
-    
+    if (glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_LEFT)) {
+        if(glfwGetKey(win, GLFW_KEY_Z) == GLFW_PRESS) {
+            if(glfwGetKey(win, GLFW_KEY_X) == GLFW_PRESS) {
+                camera.shiftDist(xoff/w*160.f);
+                camera.shiftZoom(yoff/h*160.f);
+            }
+            else {
+                camera.rotateCamera(xoff/w*160.f, yoff/h*160.f);
+            }
+            camera.updatePivotViewMat();
+        }
+        else {
+            camera.rotateCamera(xoff/w*160.f, yoff/h*160.f);
+            camera.updateFreeViewMat();
+        }
+        
+    }
+    camera.updateProjMat();
     lastX = xpos; lastY = ypos;
-    camera.processMouse(xoff, yoff, btn, w, h);
 }
 void mouse_btn_callback(GLFWwindow* win, int button, int action, int mods) {
     if(action == GLFW_PRESS) {
@@ -141,13 +181,15 @@ void mouse_btn_callback(GLFWwindow* win, int button, int action, int mods) {
         lastY = ypos;
     }
 }
-void scroll_callback(GLFWwindow* win, double xoffset, double yoffset) {
-    camera.processMouseScroll(static_cast<float>(yoffset));
+void scroll_callback(GLFWwindow* win, double xoff, double yoff) {
+    camera.shiftZoom(yoff);
+    camera.updateProjMat();
 }
 void drop_callback(GLFWwindow* win, int count, const char** paths)
 {
     for (int i = 0; i < count; i++) {
         models.push_back(make_unique<Model>(paths[i]));
+        glfwSetWindowTitle(win, models.back()->name.c_str());
     }
 }
 
@@ -157,10 +199,9 @@ int main() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1); // mac support 4.1
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #ifdef __APPLE__
-   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
-    // glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
-   glfwWindowHint(GLFW_SAMPLES, 8); // multisampling sample 3x3
+    glfwWindowHint(GLFW_SAMPLES, 8); // multisampling sample 3x3
 
     GLFWwindow* win = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "simplification", NULL, NULL);
     if (win == NULL) {
@@ -168,6 +209,8 @@ int main() {
         glfwTerminate();
         return -1;
     }
+    // window setting
+    // glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
     glfwMakeContextCurrent(win);
     glfwSetKeyCallback(win, key_callback);
     glfwSetFramebufferSizeCallback(win, framebuffer_size_callback);
@@ -183,10 +226,6 @@ int main() {
         return -1;
     }
 
-    stbi_set_flip_vertically_on_load(true);
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_FRAMEBUFFER_SRGB);// match intensity and Voltage
-
     init();
 
     while (!glfwWindowShouldClose(win)) {
@@ -197,6 +236,7 @@ int main() {
         processInput(win);
 
         render(win);
+
         glfwPollEvents();
     }
     glfwTerminate();
