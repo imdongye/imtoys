@@ -98,14 +98,15 @@ public:
         updateFreeViewMat();
     }
     void readyPivot() {
-        distance = position.length();
-        front = normalize(-position);
+        distance = glm::length(position);
+        front = glm::normalize(-position);
         // front => yaw pitch
         updateRotateFromFront();
     }
     void readyFree() {
-        front = normalize(-position);
+        front = glm::normalize(-position);
         updateRotateFromFront();
+        printCameraState();
     }
     void rotateCamera(float xoff, float yoff) {
         yaw   += xoff;//todo repeat
@@ -130,9 +131,11 @@ public :
         vpMat = viewMat*projMat;
     }
     void updatePivotViewMat() {
-        position = glm::vec3( glm::rotate(glm::radians(yaw), glm::vec3(0,1,0))
+        // -yaw to match obj ro
+        position = glm::vec3( glm::rotate(glm::radians(-yaw), glm::vec3(0,1,0))
                          * glm::rotate(glm::radians(pitch), glm::vec3(1,0,0))
                          * glm::vec4(0,0,distance,1) );
+        printCameraState();
         front = normalize(-position);
         viewMat = glm::lookAt(position, glm::vec3(0), glm::vec3(0,1,0));
     }
@@ -150,6 +153,7 @@ public :
         front = glm::normalize(f);
         right = glm::normalize(glm::cross(front, glm::vec3(0,1,0))); 
         up    = glm::normalize(glm::cross(right, front));
+
         viewMat = glm::lookAt(position, position + front, glm::vec3(0,1,0)); // todo: roll => edit up
     }
     void updateProjMat() {

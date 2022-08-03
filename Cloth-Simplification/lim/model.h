@@ -235,15 +235,17 @@ private:
     std::vector<Texture> textures_loaded;
     std::vector<std::unique_ptr<Mesh>> meshes;// unique ptr makes clear auto
     std::string directory; // for load texture
+    unsigned int numVertices;
 private:
     // Disable Copying and Assignment
     Model(Model const &) = delete;
     Model & operator=(Model const &) = delete;
 public :
-    Model() : position(glm::vec3(0)), rotation(glm::quat()), scale(glm::vec3(1))
+    Model() : position(glm::vec3(0)), rotation(glm::quat()), scale(glm::vec3(1)), numVertices(0)
     {
         updateModelMat();
     }
+    // load model
     Model(const char* path) : Model() { load(path); }// todo: string_view
     // 왜 외부에서 외부에서 생성한 mesh객체의 unique_ptr을 우측값 참조로 받아 push_back할 수 없는거지
     Model(std::function<void(std::vector<Vertex>& _vertices
@@ -267,6 +269,15 @@ public :
             mesh->cleanUp();
         }
         meshes.clear();
+    }
+    unsigned int getNumVertices() {
+        if(numVertices!=0) 
+            return numVertices;
+
+        for(auto& mesh : meshes) {
+            numVertices += mesh->vertices.size();
+        }
+        return numVertices;
     }
     void load(const char* _path) {
         cleanUp();
@@ -309,6 +320,12 @@ public :
         // recursive fashion
         parseNode(scene->mRootNode, scene);
         fprintf(stdout, "model loaded : %s\n", name.c_str());
+    }
+    void exportObj(const char* path) {
+        //aiScene* scene = new aiScene();
+        //aiMesh* mesh = new aiMesh();
+        //mesh->mPrimitiveTypes =AI_PRIMITIVE_TYPE 
+
     }
     void draw(Program &program) {
         GLuint loc = glGetAttribLocation(program.ID, "modelMat");
