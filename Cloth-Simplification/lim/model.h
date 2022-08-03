@@ -32,7 +32,7 @@
 #define MAX_BONE_INFLUENCE 4
 
 GLuint loadTextureFromFile(const char *cpath, bool toLinear = true) {
-    std::string spath = std::string(spath);
+    std::string spath = std::string(cpath);
     fprintf(stdout,"loading texture %s.\n", cpath);
 
     GLuint texID=0;
@@ -43,15 +43,15 @@ GLuint loadTextureFromFile(const char *cpath, bool toLinear = true) {
     void* buf = stbi_load(cpath, &w, &h, &channels, 4); // todo: 0
         
     if (!buf) {
-        fprintf(stderr,"Texture failed to load at path: %s\n", cpath);
+        fprintf(stderr,"texture failed to load at path: %s\n", cpath);
         stbi_image_free(buf);
         return texID;
     } else {
-        fprintf(stdout,"Texture loaded : %s , %dx%d, %d channels\n", cpath, w, h, channels);
+        fprintf(stdout,"texture loaded : %s , %dx%d, %d channels\n", cpath, w, h, channels);
     }
 
     // load into vram
-    GLenum format;
+    GLenum format = GL_RGBA;
     switch (channels) {
         case 1: format = GL_ALPHA; break;
         case 2: format = 0; break;
@@ -88,11 +88,9 @@ GLuint loadTextureFromFile(const char *cpath, bool toLinear = true) {
 // 4byte * (3+3+2+3+3+4+4) = 88
 // offsetof(Vertex, Normal) = 12
 struct Vertex {
-    glm::vec3 pos;
-    glm::vec3 norm;
+    glm::vec3 p, n;
     glm::vec2 uv;
-    glm::vec3 tangent;
-    glm::vec3 bitangent;
+    glm::vec3 tangent, bitangent;
 	int m_BoneIDs[MAX_BONE_INFLUENCE];
 	float m_Weights[MAX_BONE_INFLUENCE];
 };
@@ -199,7 +197,7 @@ private:
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
         // - normal
         glEnableVertexAttribArray(1);	
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, norm));
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, n));
         // - tex coord
         glEnableVertexAttribArray(2);	
         glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, uv));
@@ -262,7 +260,7 @@ public :
 
         meshes.push_back(std::make_unique<Mesh>(vertices, indices, textures, _name));
 
-        fprintf(stdout, "\ngen model mesh : %s, v%d\n", _name, meshes.back()->vertices.size());
+        fprintf(stdout, "\ngen model mesh : %s, verts %lu\n", _name, meshes.back()->vertices.size());
     }
     void cleanUp() {
         for(auto& mesh : meshes) {
@@ -283,7 +281,6 @@ public :
         cleanUp();
         std::string path = std::string(_path);
         std::replace(path.begin(), path.end(), '\\', '/');
-        printf("%s", path.c_str());
         size_t slashPos = path.find_last_of('/');
 	    if( slashPos == std::string::npos ) {
             name = path;
@@ -300,7 +297,7 @@ public :
             directory = path.substr(0, path.find_last_of('/'))+"/";
         }
 
-        fprintf(stdout, "\nmodel loading : %s\n", name.c_str());
+        fprintf(stdout, "model loading : %s\n", name.c_str());
         Assimp::Importer loader;
         // aiProcess_Triangulate : 다각형이 있다면 삼각형으로
         // aiProcess_FlipUVs : opengl 텍스쳐 밑에서 읽는문제 or stbi_set_flip_vertically_on_load(true)
@@ -384,14 +381,15 @@ private:
         std::vector<Vertex> vertices;
         std::vector<GLuint> indices;
         std::vector<Texture> textures;
+        // now only triangle mesh
         GLuint angles = 3;
 
         // - per vertex
         Vertex vertex;
         for(GLuint i = 0; i < mesh->mNumVertices; i++) {
-            vertex.pos = glm::vec3(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z);
+            vertex.p = glm::vec3(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z);
             if (mesh->HasNormals()) {
-                vertex.norm = glm::vec3(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z);
+                vertex.n = glm::vec3(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z);
             }
             // 버텍스당 최대 8개의 uv를 가질수있지만 하나만.
             if(mesh->mTextureCoords[0]) {
@@ -429,20 +427,24 @@ private:
         // 4. ambient maps
         std::vector<Texture> heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT);
         textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
-
-        fprintf(stdout,"mesh loaded : %s, set%d, verts%d\n", mesh->mName.C_Str(), angles, vertices.size());
-
+        
         // c++
         //std::unique_ptr<Mesh>(new Mesh(vertices, indices, textures, mesh->mName.C_Str(), angles));
         // c++ 14
         meshes.push_back(std::make_unique<Mesh>(vertices, indices, textures
                                                , mesh->mName.C_Str(), angles));
     }
+    void printMesh(const Mesh& mesh) {
+        fprintf(stdout,"%-18s, angles %d, verts %-7lu, sets %-7lu\n"
+                , mesh.name, mesh.angles, mesh.vertices.size(), mesh.indices.size());
+    }
     void parseNode(aiNode *node, const aiScene *scene)
     {
         // in current node
         for(GLuint i = 0; i < node->mNumMeshes; i++) {
             parseMesh(scene->mMeshes[node->mMeshes[i]], scene);
+            fprintf(stdout, "mesh loaded : ", i);
+            printMesh(*meshes.back());
         }
         for(GLuint i = 0; i < node->mNumChildren; i++) {
             parseNode(node->mChildren[i], scene);

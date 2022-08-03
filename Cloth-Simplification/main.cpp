@@ -15,12 +15,15 @@
 #include "lim/program.h"
 #include "lim/camera.h"
 #include "lim/model.h"
+#include "lim/simplify.h"
 
 using namespace std;
 using namespace glm;
 
 const GLuint SCR_WIDTH = 800, SCR_HEIGHT = 600;
 
+// anonymous namespace for 외부연결누수
+namespace {
 // camera
 Camera camera(SCR_WIDTH/(float)SCR_HEIGHT, glm::vec3(0.0f, 0.0f, 3.0f));
 float lastX = SCR_WIDTH / 2.0f;
@@ -57,22 +60,21 @@ void makeTriangle(vector<Vertex>& vertices
 }
 
 void init() {
-    program.attatch("shader/diffuse.vs").attatch("shader/diffuse.fs").link();
-    //models.push_back(make_unique<Model>("archive/backpack/backpack.obj"));
-    //models.push_back(make_unique<Model>("archive/tests/igea.obj"));
-    models.push_back(make_unique<Model>("archive/tests/stanford-bunny.obj"));
-    //models.push_back(make_unique<Model>(makeGround, "ground"));
-    //models.back()->position = vec3(0,-4,0);
-    //models.push_back(make_unique<Model>(makeQuad(), "ground"));
-
-    
     stbi_set_flip_vertically_on_load(true);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_FRAMEBUFFER_SRGB);// match intensity and Voltage
     // back face removal
     //glEnable(GL_CULL_FACE);
     //glFrontFace(GL_CCW);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);//GL_POINT
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);//GL_POINT
+    
+    program.attatch("shader/diffuse.vs").attatch("shader/diffuse.fs").link();
+    models.push_back(make_unique<Model>("archive/backpack/backpack.obj"));
+    //models.push_back(make_unique<Model>("archive/tests/igea.obj"));
+    //models.push_back(make_unique<Model>("archive/tests/stanford-bunny.obj"));
+    //models.push_back(make_unique<Model>(makeGround, "ground"));
+    //models.back()->position = vec3(0,-4,0);
+    //models.push_back(make_unique<Model>(makeQuad(), "ground"));
 }
 
 void render(GLFWwindow* win) {
@@ -192,6 +194,24 @@ void drop_callback(GLFWwindow* win, int count, const char** paths)
         glfwSetWindowTitle(win, models.back()->name.c_str());
     }
 }
+void printVersion() {
+    const GLubyte *renderer = glGetString( GL_RENDERER );
+    const GLubyte *vendor = glGetString( GL_VENDOR );
+    const GLubyte *version = glGetString( GL_VERSION );
+    const GLubyte *glslVersion =
+           glGetString( GL_SHADING_LANGUAGE_VERSION );
+     
+    GLint major, minor;
+    glGetIntegerv(GL_MAJOR_VERSION, &major);
+    glGetIntegerv(GL_MINOR_VERSION, &minor);
+     
+    printf("GL Vendor            : %s\n", vendor);
+    printf("GL Renderer          : %s\n", renderer);
+    printf("GL Version (string)  : %s\n", version);
+    printf("GLSL Version         : %s\n\n", glslVersion);
+}
+} // anonymouse namespace
+
 
 int main() {
     if(!glfwInit()) return -1;
@@ -225,7 +245,8 @@ int main() {
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
-
+    
+    printVersion();
     init();
 
     while (!glfwWindowShouldClose(win)) {

@@ -91,7 +91,7 @@ public:
 		glUseProgram ( ID );
 		checkCompileErrors(ID, "program");
 		cleanUpWithoutID(); // 링크된 후 필요없음
-		fprintf(stdout, "program%d linking success\n",ID);
+		fprintf(stdout, "program%d linking success\n\n",ID);
 		return *this;
 	}
 	GLuint use() {
@@ -142,7 +142,7 @@ private:
             }
         }
 	}
-	GLuint createShaderAuto(const std::string& filename, std::string& get_type) {
+	GLuint createShaderAuto(const std::string_view filename, std::string_view get_type) {
         auto index = filename.rfind(".");
         auto ext = filename.substr(index + 1);
         if (ext=="vert"||ext=="vs") {
