@@ -314,12 +314,17 @@ namespace lim {
             fprintf(stdout, "model loading : %s\n", name.c_str());
             Assimp::Importer loader;
             // aiProcess_Triangulate : 다각형이 있다면 삼각형으로
-            // aiProcess_FlipUVs : opengl 텍스쳐 밑에서 읽는문제 or stbi_set_flip_vertically_on_load(true)
+            GLuint pFrags =   aiProcess_Triangulate;
             // aiProcess_GenNormals : 노멀이 없으면 생성
+            pFrags |= aiProcess_GenSmoothNormals;
+            // opengl 텍스쳐 밑에서 읽는문제 or stbi_set_flip_vertically_on_load(true)
+            pFrags |= aiProcess_FlipUVs; 
+            pFrags |= aiProcess_CalcTangentSpace;
+            // 이설정을 안하면 vert array로 중복 vert생성. 키면 shared vertex
+            pFrags |= aiProcess_JoinIdenticalVertices;
             // aiProcess_SplitLargeMeshes : 큰 mesh를 작은 sub mesh로 나눠줌
             // aiProcess_OptimizeMeshes : mesh를 합쳐서 draw call을 줄인다.
-            GLuint pFrags =  aiProcess_Triangulate | aiProcess_GenSmoothNormals 
-                                   | aiProcess_FlipUVs | aiProcess_CalcTangentSpace;
+
             const aiScene* scene = loader.ReadFile(path, pFrags);
         
             if(!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE 
@@ -346,7 +351,6 @@ namespace lim {
                 meshes[i]->draw(program);
         }
         void updateModelMat() {
-        
             glm::mat4 translateMat = glm::translate(position);
             glm::mat4 scaleMat = glm::scale(scale);
             glm::mat4 rotateMat = glm::toMat4(rotation);
@@ -449,8 +453,8 @@ namespace lim {
                                                    , mesh->mName.C_Str(), angles));
         }
         void printMesh(const Mesh& mesh) {
-            fprintf(stdout,"%-18s, angles %d, verts %-7lu, sets %-7lu\n"
-                    , mesh.name, mesh.angles, mesh.vertices.size(), mesh.indices.size());
+            fprintf(stdout,"%-18s, angles %d, verts %-7lu, tris %-7lu\n"
+                    , mesh.name, mesh.angles, mesh.vertices.size(), mesh.indices.size()/3);
         }
         void parseNode(aiNode *node, const aiScene *scene)
         {

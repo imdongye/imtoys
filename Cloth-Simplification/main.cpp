@@ -72,13 +72,14 @@ namespace {
         //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);//GL_POINT
     
         program.attatch("shader/diffuse.vs").attatch("shader/diffuse.fs").link();
-        models.push_back(new Model("archive/backpack/backpack.obj"));
-        simplifyModel(models.back());
-        //models.push_back(make_unique<Model>("archive/tests/igea.obj"));
-        //models.push_back(make_unique<Model>("archive/tests/stanford-bunny.obj"));
+        //models.push_back(new Model("archive/backpack/backpack.obj"));
+        //models.push_back(new Model("archive/tests/igea.obj"));
+        models.push_back(new Model("archive/tests/teapot.obj"));
+        //models.push_back(new Model("archive/tests/stanford-bunny.obj"));
         //models.push_back(make_unique<Model>(makeGround, "ground"));
         //models.back()->position = vec3(0,-4,0);
         //models.push_back(make_unique<Model>(makeQuad(), "ground"));
+        simplifyModel(models.back());
     }
 
     void render(GLFWwindow* win) {
