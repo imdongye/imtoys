@@ -1,3 +1,11 @@
+//
+//	2022-08-07 / im dong ye
+//
+//	TODO list:
+//  1. fix with half edge data structure
+//
+//
+
 #ifndef SIMPLIFY_H
 #define SIMPLIFY_H
 #include <Eigen/core>

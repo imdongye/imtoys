@@ -6,9 +6,9 @@
 // map_Kd0, map_Kd1 ...
 // 
 //  TODO list:
-//  1. rigging
-//  2. cleanUp
-//
+//  1. export
+//  2. rigging
+//  3. not gl_static으로 실시간 vert변화
 
 #ifndef MODEL_H
 #define MODEL_H
@@ -119,7 +119,6 @@ namespace lim {
         // disable copying
         Mesh(Mesh const &) = delete;
         Mesh & operator=(Mesh const &) = delete;
-    public:
         Mesh(const char* _name="", const GLuint& _angle=3)
             : VAO(0), name(_name), angles(_angle)
         {
@@ -130,6 +129,7 @@ namespace lim {
             case 4: drawMode = GL_TRIANGLE_FAN; break;
             }
         }
+    public:
         Mesh(const std::vector<n_model::Vertex>& _vertices
             , const std::vector<GLuint>& _indices
             , const std::vector<Texture>& _textures
@@ -187,9 +187,11 @@ namespace lim {
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
             glActiveTexture(GL_TEXTURE0);
         }
-    private:
+        // upload VRAM
         void setupMesh() {
             const size_t SIZE_OF_VERTEX = sizeof(n_model::Vertex);
+            if(VAO!=0) 
+                glDeleteVertexArrays(1, &VAO);
             glGenVertexArrays(1, &VAO);
             glGenBuffers(1, &VBO);
             glGenBuffers(1, &EBO);
@@ -228,6 +230,7 @@ namespace lim {
 
             glBindVertexArray(0);
         
+            // 이게 왜 가능한거지
             glDeleteBuffers(1, &VBO);
             glDeleteBuffers(1, &EBO);
         }
@@ -336,6 +339,11 @@ namespace lim {
             // recursive fashion
             parseNode(scene->mRootNode, scene);
             fprintf(stdout, "model loaded : %s, %d vertices \n", name.c_str(), getVerticesNum());
+        }
+        void resetupVRAM() {
+            for(Mesh* mesh : meshes) {
+                mesh->setupMesh();
+            }
         }
         void exportObj(const char* path) {
             //aiScene* scene = new aiScene();
