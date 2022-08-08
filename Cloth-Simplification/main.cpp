@@ -79,7 +79,7 @@ namespace {
         //models.push_back(make_unique<Model>(makeGround, "ground"));
         //models.back()->position = vec3(0,-4,0);
         //models.push_back(make_unique<Model>(makeQuad(), "ground"));
-        //simplifyModel(models.back());
+        simplifyModel(models.back());
         models.back()->resetupVRAM();
     }
 
