@@ -52,9 +52,6 @@ namespace
 			else
 				return false;
 		}
-		GLuint getOppo(GLuint vidx) {
-			return (v[0]==vidx) ? v[1] : ((v[1]==vidx) ? v[0] : OOE_uint);
-		}
 		bool isIn(GLuint vidx) {
 			return v[0]==vidx||v[1]==vidx;
 		}
@@ -69,23 +66,22 @@ namespace
 	struct Triangle {
 		GLuint v[3]; // index
 		glm::vec4 plane; // n, -d
-		Edge* e[3];
-		bool removed;
+        bool removed;
 	};
 
 	// for std::make_heap();
 	// like: std::make_heap(edges.begin(), edges.end(), greaterEdgeErr());
 	struct greaterEdgeErr
 	{
-		bool operator()(const Edge* e0, const Edge* e1) const
+		bool operator()(const Edge e0, const Edge e1) const
 		{
-			return e0->edgeError > e0->edgeError;
+			return e0.edgeError > e0.edgeError;
 		}
 	};
 
 	std::vector<lim::n_model::Vertex> vertices;
 	std::vector<Triangle> triangles;
-	std::vector<Edge*> edges;
+	std::vector<Edge> edges;
 	std::vector<std::vector<GLuint>> vertAdjTris;
 	std::vector<glm::mat4> vertQs; // per vertex
 	
@@ -108,47 +104,31 @@ namespace
 		}
 		vertQs[vertexIndex] = qMat;
 	}
-	void updateEdgeError(Edge* e)
+	void updateEdgeError(Edge e)
 	{
-		lim::n_model::Vertex newVert = vertices[e->v[0]];
-		e->edgeQ = vertQs[e->v[0]] + vertQs[e->v[1]];
+		lim::n_model::Vertex newVert = vertices[e.v[0]];
+		e.edgeQ = vertQs[e.v[0]] + vertQs[e.v[1]];
 
 		// new position //
 		//vec4 np = vec4((vertices[e.v[0]].p + vertices[e.v[1]].p) / 2.0f, 1.0);
-		glm::mat4 dtA = e->edgeQ;
+		glm::mat4 dtA = e.edgeQ;
 		dtA = glm::row(dtA,3, glm::vec4(0,0,0,1)); 
 		// dtA * np = vec4(0,0,0,1)
 		glm::vec4 np = glm::inverse(dtA)*glm::vec4(0,0,0,1);
 
 		// new normal //
-		glm::vec3 nn = (vertices[e->v[0]].n + vertices[e->v[1]].n) / 2.0f;
+		glm::vec3 nn = (vertices[e.v[0]].n + vertices[e.v[1]].n) / 2.0f;
 
 		// new uv //
-		glm::vec2 nuv = (vertices[e->v[0]].uv + vertices[e->v[1]].uv) / 2.0f;
+		glm::vec2 nuv = (vertices[e.v[0]].uv + vertices[e.v[1]].uv) / 2.0f;
 
 		newVert.p = np; newVert.n = nn; newVert.uv = nuv;
 
 		// temp is a row vector // vt*Q*v
-		glm::vec4 temp = e->edgeQ * np; 
-		e->edgeError = glm::dot(np, temp);
+		glm::vec4 temp = e.edgeQ * np;
+		e.edgeError = glm::dot(np, temp);
 	}
-	void removeDups() {
-		std::vector<Edge*> nodup;
-		for(GLuint i=0; i<edges.size(); i++) {
-			bool found = false;
-			for(GLuint j=i+1; j<edges.size(); j++) {
-				if(*edges[i] == *edges[j]) {
-					found = true;
-					edges[j]->adjTri[1] = edges[i]->adjTri[0];
-					break;
-				}
-			}
-			if(found == false) {
-				nodup.push_back(edges[i]);
-			}
-		}
-		edges = nodup;
-	}
+
 	void updateGlobal(const lim::Mesh* mesh) {
 		vertices.clear();
 		triangles.clear();
@@ -172,18 +152,15 @@ namespace
 				Triangle& t = triangles[triCount];
 				updatePlane(t);
 
-				Edge* e0 = new Edge(t.v[0], t.v[1]);
-				Edge* e1 = new Edge(t.v[1], t.v[2]);
-				Edge* e2 = new Edge(t.v[2], t.v[0]);
+				Edge e0(t.v[0], t.v[1]);
+				Edge e1(t.v[1], t.v[2]);
+				Edge e2(t.v[2], t.v[0]);
 
-				e0->adjTri[0] = e1->adjTri[0] = e2->adjTri[0] = triCount;
+				e0.adjTri[0] = e1.adjTri[0] = e2.adjTri[0] = triCount;
 
 				edges.push_back(e0);
-				t.e[0] = edges.back();
 				edges.push_back(e1);
-				t.e[1] = edges.back();
 				edges.push_back(e2);
-				t.e[2] = edges.back();
 
 				vertCount = 0;
 				triCount++;
@@ -197,8 +174,22 @@ namespace
 		// already maked duplicated edges in "make triangles"
 		// we just remove duplicates;
 		// O(N^2) + deep copy
-		removeDups();
-
+        std::vector<Edge> nodup;
+        for(GLuint i=0; i<edges.size(); i++) {
+            bool found = false;
+            for(GLuint j=i+1; j<edges.size(); j++) {
+                if(edges[i] == edges[j]) {
+                    found = true;
+                    edges[j].adjTri[1] = edges[i].adjTri[0];
+                    break;
+                }
+            }
+            if(found == false) {
+                nodup.push_back(edges[i]);
+            }
+        }
+        edges = nodup;
+        
 		// update errors
 		vertQs.resize(vertices.size());
 		for (int i=0; i<vertices.size(); i++) {
@@ -212,7 +203,7 @@ namespace
 		// 오름차순으로 정렬후 에러가 적은것을 합친다.
 		make_heap(edges.begin(), edges.end(), greaterEdgeErr());
 		pop_heap(edges.begin(), edges.end());
-		const Edge& r_edge = *edges.back();
+		const Edge& r_edge = edges.back();
 		const GLuint n_idx = r_edge.v[0]; // new vert idx
 		const GLuint d_idx = r_edge.v[1]; // delete vert idx
 
@@ -224,14 +215,14 @@ namespace
 		// 바운더리면 연결삼각형이 한개이고
 		// 공통 버텍스도 한개다.
 		std::vector<GLuint> rmTris;
-		std::vector<Edge*> rmEdges;
+		std::vector<Edge> rmEdges;
 		std::vector<GLuint> uniVerts;
 		if(r_edge.adjTri[0] != OOE_uint)
 			rmTris.push_back(r_edge.adjTri[0]);
 		if(r_edge.adjTri[1] != OOE_uint)
 			rmTris.push_back(r_edge.adjTri[1]);
 
-		for(GLuint rmTri : rmTris) {
+        for(GLuint rmTri : rmTris) {
 			Triangle& tri= triangles[rmTri];
 			tri.removed = true;
 
@@ -241,39 +232,18 @@ namespace
 					break;
 				}
 			}
-
-			// 합쳐지는 edge 맞은편 삼각형 연결
-			const GLuint uniVert = uniVerts.back();
-			GLuint oppoTri = OOE_uint;
-			Edge* oppoEdge = nullptr;
-			for(int i=0; i<3; i++) {
-				Edge* e = tri.e[i];
-				if(*e == Edge(d_idx, uniVert)) {
-					oppoTri = e->adjTri[(e->adjTri[0]==rmTri)?1:0];
-					rmEdges.push_back(e);
-					break;
-				}
-			}
-			for(int i=0; i<3; i++) {
-				Edge* e = tri.e[i];
-				if(*e == Edge(n_idx, uniVert)) {
-					e->adjTri[(e->adjTri[0]==rmTri)?0:1] = oppoTri;
-					oppoEdge = e;
-					break;
-				}
-			}
-			// 삼각형 edge 복구
-			if(oppoTri!=OOE_uint) {
-				Triangle& et = triangles[oppoTri];
-				for(int i=0; i<3; i++) {
-					if(*et.e[i]==Edge(d_idx, uniVert)) {
-						et.e[i] = oppoEdge;
-						break;
-					}
-				}
-			}
+            GLuint uniVert = uniVerts.back();
+            Edge* n_edge;
+            Edge* d_edge;
+            for(Edge& e : edges) {
+                if(e == Edge(n_idx,uniVert))
+                    n_edge = &e;
+                else if(e == Edge(d_idx,uniVert))
+                    d_edge = &e;
+            }
+            n_edge->adjTri[(n_edge->adjTri[0]==rmTri)?0:1] = d_edge->adjTri[(n_edge->adjTri[0]==rmTri)?1:0];
+            edges.erase(std::find(edges.begin(), edges.end(), *d_edge));
 		}
-
 		// update triangle
 		for(GLuint editTriIdx : vertAdjTris[r_edge.v[1]]) {
 			Triangle& tri = triangles[editTriIdx];
@@ -284,47 +254,19 @@ namespace
 				if(tri.v[i] == d_idx) {
 					tri.v[i] = n_idx;
 				}
-				// per edge
-				Edge* t_edge = tri.e[i];
-				if(t_edge->v[0] == d_idx)
-					t_edge->v[0] = n_idx;
-				else if(t_edge->v[1] == d_idx)
-					t_edge->v[1] = n_idx;
 			}
 			vertAdjTris[r_edge.v[0]].push_back(editTriIdx);
 		}
 
-		// get new vert adj edges
-		std::set<Edge*> adjEdges;
-		for(GLuint editTriIdx : vertAdjTris[r_edge.v[0]]) {
-			Triangle& tri = triangles[editTriIdx];
-			if(tri.removed)
-				continue;
-			for(int i=0; i<3; i++) {
-				Edge* t_edge = tri.e[i];
-				if(t_edge->isIn(n_idx)) {
-					adjEdges.insert(t_edge);
-				}
-			}
-		}
-
-		// update Edge Error
-		for(Edge* adjEdge : adjEdges) {
-			updateEdgeError(adjEdge);
-		}
+        for(Edge& e : edges) {
+            if(e.isIn(n_idx)) {
+                updateEdgeError(e);
+            }
+        }
 
 		vertAdjTris[r_edge.v[1]].clear();
 
-		delete edges.back();
 		edges.pop_back();
-
-		// 합쳐지는 edge삭제
-		for(Edge* rmEdge : rmEdges) {
-			std::vector<Edge*>::iterator f=std::find(edges.begin(), edges.end(), rmEdge);
-			delete rmEdge;
-			edges.erase(f);
-		}
-
 	}
 
 	void updateVertsAndTris(lim::Mesh* mesh) {
