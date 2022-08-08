@@ -208,7 +208,7 @@ namespace
 			updateEdgeError(edges[i]);
 		}
 	}
-	void edgeCollapse() {
+	void collapseEdge() {
 		// 오름차순으로 정렬후 에러가 적은것을 합친다.
 		make_heap(edges.begin(), edges.end(), greaterEdgeErr());
 		pop_heap(edges.begin(), edges.end());
@@ -370,7 +370,7 @@ namespace lim {
 
 		while(cur_nr_tris > target_nr_tris) {
 			
-			edgeCollapse();
+			collapseEdge();
 
 			cur_nr_tris-=2;
 		}

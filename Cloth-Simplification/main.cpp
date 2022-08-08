@@ -6,6 +6,9 @@
 //  if you mac you must set
 //  Product->schema->edit-schema->run->option->custom-working-dir
 //
+//  TODO List:
+//  1. nanovg, nuklear, imgui
+//
 
 #include <iostream>
 #include <glad/glad.h>
