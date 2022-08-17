@@ -9,6 +9,7 @@
 //  1. export
 //  2. rigging
 //  3. not gl_static으로 실시간 vert변화
+//  4. width, height, depth 찾아서 -1~1공간으로 scaling
 
 #ifndef MODEL_H
 #define MODEL_H
@@ -107,7 +108,7 @@ namespace lim {
 
     class Mesh {
     public:
-        const char* name;
+        std::string name;
         std::vector<n_model::Vertex> vertices;
         std::vector<GLuint> indices;
         std::vector<Texture> textures;
@@ -233,6 +234,10 @@ namespace lim {
             // 이게 왜 가능한거지
             glDeleteBuffers(1, &VBO);
             glDeleteBuffers(1, &EBO);
+        }
+        void print() const {
+            fprintf(stdout,"%-18s, angles %d, verts %-7lu, tris %-7lu\n"
+                    , name.c_str(), angles, vertices.size(), indices.size()/3);
         }
     };
 
@@ -460,17 +465,13 @@ namespace lim {
             meshes.push_back(new Mesh(vertices, indices, textures
                                                    , mesh->mName.C_Str(), angles));
         }
-        void printMesh(const Mesh& mesh) {
-            fprintf(stdout,"%-18s, angles %d, verts %-7lu, tris %-7lu\n"
-                    , mesh.name, mesh.angles, mesh.vertices.size(), mesh.indices.size()/3);
-        }
         void parseNode(aiNode *node, const aiScene *scene)
         {
             // in current node
             for(GLuint i = 0; i < node->mNumMeshes; i++) {
                 parseMesh(scene->mMeshes[node->mMeshes[i]], scene);
                 fprintf(stdout, "mesh loaded : ", i);
-                printMesh(*meshes.back());
+                (*meshes.back()).print();
             }
             for(GLuint i = 0; i < node->mNumChildren; i++) {
                 parseNode(node->mChildren[i], scene);

@@ -13,7 +13,7 @@ void main()
 {    
     vec3 V = cameraPos - wPos; 
     V = normalize(V);
-    vec3 N = normalize(wNorm);
+    vec3 N = normalize (cross (dFdx(wPos.xyz), dFdy(wPos.xyz)));
 
     FragColor = vec4(dot(N, V)*vec3(1),1);   //texture(map_Kd1, TexCoords);
 }
