@@ -11,6 +11,7 @@
 //  3. not gl_static으로 실시간 vert변화
 //  4. width, height, depth 찾아서 -1~1공간으로 scaling
 //  5. load model 이 모델안에 있는데 따로 빼야될까
+//  6. 언제 어디서 업데이트해줘야하는지 규칙정하기
 
 #ifndef MODEL_H
 #define MODEL_H
@@ -19,6 +20,8 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <glm/gtx/string_cast.hpp>
+
 #include <stb_image.h>
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -251,6 +254,9 @@ namespace lim {
         }
     };
 
+    /// <summary>
+    /// 모델!!
+    /// </summary>
     class Model {
     public:
         glm::vec3 position;
@@ -262,17 +268,25 @@ namespace lim {
         std::vector<Mesh*> meshes;
         std::string directory; // for load texture
         unsigned int verticesNum;
+        glm::vec3 boundary_max;
+        glm::vec3 boundary_min;
     private:
+        glm::mat4 pivotMat;
         // Disable Copying and Assignment
         Model(Model const &) = delete;
         Model & operator=(Model const &) = delete;
     public :
-        Model() : position(glm::vec3(0)), rotation(glm::quat()), scale(glm::vec3(1)), verticesNum(0)
+        Model() : position(glm::vec3(0)), rotation(glm::quat()), scale(glm::vec3(1))
+                , pivotMat(glm::mat4(1.0f)), verticesNum(0) // mat4(1) is identity mat
         {
             updateModelMat();
         }
         // load model
-        Model(const char* path) : Model() { load(path); }// todo: string_view
+        // todo: string_view
+        Model(const char* path) : Model() {
+            load(path); 
+            updateBoundary();
+        }
         // 왜 외부에서 외부에서 생성한 mesh객체의 unique_ptr을 우측값 참조로 받아 push_back할 수 없는거지
         Model(std::function<void(std::vector<n_model::Vertex>& _vertices
                                 , std::vector<GLuint>& _indices
@@ -289,6 +303,8 @@ namespace lim {
             meshes.push_back(new Mesh(vertices, indices, textures, _name));
 
             fprintf(stdout, "\ngen model mesh : %s, verts %lu\n", _name, meshes.back()->vertices.size());
+
+            updateBoundary();
         }
         ~Model() {
             cleanUp();
@@ -309,6 +325,49 @@ namespace lim {
             }
             return verticesNum;
         }
+        void resetVRAM() {
+            for(Mesh* mesh : meshes) {
+                mesh->setupMesh();
+            }
+        }
+        void exportObj(const char* path) {
+            //aiScene* scene = new aiScene();
+            //aiMesh* mesh = new aiMesh();
+            //mesh->mPrimitiveTypes =AI_PRIMITIVE_TYPE 
+
+        }
+        void draw(Program &program) {
+            GLuint loc = glGetUniformLocation(program.ID, "modelMat");
+            glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(modelMat));
+        
+            for(GLuint i = 0; i < meshes.size(); i++)
+                meshes[i]->draw(program);
+        }
+        void updateModelMat() {
+            glm::mat4 translateMat = glm::translate(position);
+            glm::mat4 scaleMat = glm::scale(scale);
+            glm::mat4 rotateMat = glm::toMat4(rotation);
+            modelMat = translateMat * rotateMat * scaleMat * pivotMat;
+            
+            std::cout<<glm::to_string(modelMat)<<std::endl;
+        }
+        void setUnitScaleAndPivot() {
+            glm::vec3 bSize = getBoundarySize();
+            setPivot(boundary_min+bSize/2.0f);
+            const float unit_length = 2.f;
+            float max_axis_length = glm::max(bSize.x, glm::max(bSize.y, bSize.z));
+            scale = glm::vec3(unit_length/max_axis_length);
+            printf("%f\n", max_axis_length);
+            std::cout<<glm::to_string(bSize)<<std::endl;
+            std::cout<<glm::to_string(scale)<<std::endl;
+        }
+        glm::vec3 getBoundarySize() {
+            return boundary_max-boundary_min;
+        }
+        void setPivot(glm::vec3 pivot) {
+            pivotMat = glm::translate(-pivot);
+        }
+    private:
         void load(const char* _path) {
             cleanUp();
             std::string path = std::string(_path);
@@ -355,31 +414,25 @@ namespace lim {
             parseNode(scene->mRootNode, scene);
             fprintf(stdout, "model loaded : %s, %d vertices \n", name.c_str(), getVerticesNum());
         }
-        void resetVRAM() {
+        void updateBoundary() { 
+            if(meshes.size()==0)
+                return;
+            boundary_max = meshes[0]->vertices[0].p;
+            boundary_min = boundary_min;
             for(Mesh* mesh : meshes) {
-                mesh->setupMesh();
+                for(n_model::Vertex& v : mesh->vertices) {
+                    if     ( boundary_max.x < v.p.x ) boundary_max.x = v.p.x;
+                    else if( boundary_min.x > v.p.x ) boundary_min.x = v.p.x;
+
+                    if     ( boundary_max.y < v.p.y ) boundary_max.y = v.p.y;
+                    else if( boundary_min.y > v.p.y ) boundary_min.y = v.p.y;
+
+                    if     ( boundary_max.z < v.p.z ) boundary_max.z = v.p.z;
+                    else if( boundary_min.z > v.p.z ) boundary_min.z = v.p.z;
+                }
             }
         }
-        void exportObj(const char* path) {
-            //aiScene* scene = new aiScene();
-            //aiMesh* mesh = new aiMesh();
-            //mesh->mPrimitiveTypes =AI_PRIMITIVE_TYPE 
 
-        }
-        void draw(Program &program) {
-            GLuint loc = glGetAttribLocation(program.ID, "modelMat");
-            glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(modelMat));
-        
-            for(GLuint i = 0; i < meshes.size(); i++)
-                meshes[i]->draw(program);
-        }
-        void updateModelMat() {
-            glm::mat4 translateMat = glm::translate(position);
-            glm::mat4 scaleMat = glm::scale(scale);
-            glm::mat4 rotateMat = glm::toMat4(rotation);
-            modelMat = translateMat * rotateMat * scaleMat;
-        }
-    private:
         // load texture
         std::vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type) {
             std::vector<Texture> textures;

@@ -75,12 +75,22 @@ void init() {
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);//GL_POINT
     
     program.attatch("shader/diffuse.vs").attatch("shader/diffuse.fs").link();
+
+    models.push_back(new Model(makeGround, "ground"));
+    Model& ground = *models.back();
+
     //models.push_back(new Model("archive/backpack/backpack.obj"));
     //models.push_back(new Model("archive/tests/igea.obj"));
     //models.push_back(new Model("archive/tests/teapot.obj"));
     models.push_back(new Model("archive/tests/stanford-bunny.obj"));
-    //models.push_back(make_unique<Model>(makeGround, "ground"));
-    //models.back()->position = vec3(0,-4,0);
+    Model& m = *models.back();
+    //-1~1
+    m.setUnitScaleAndPivot();
+    m.updateModelMat();
+    
+    ground.position = vec3(0,-m.getBoundarySize().y*m.scale.y*0.5,0);
+    ground.updateModelMat();
+
     //models.push_back(make_unique<Model>(makeQuad(), "ground"));
     fqms::simplifyModel(models.back(), 0.1f);
     models.back()->resetVRAM();
@@ -99,6 +109,7 @@ void render(GLFWwindow* win) {
     loc = glGetUniformLocation(pid, "projMat");
     glUniformMatrix4fv(loc, 1, GL_FALSE, value_ptr(camera.projMat));//&camera.projMat[0][0]);
     
+    // 이걸로 카메라 위치를 얻을수도있음
     loc = glGetUniformLocation(pid, "viewMat");
     glUniformMatrix4fv(loc, 1, GL_FALSE, value_ptr(camera.viewMat));
 
@@ -217,7 +228,10 @@ void printVersion() {
     printf("GL Vendor            : %s\n", vendor);
     printf("GL Renderer          : %s\n", renderer);
     printf("GL Version (string)  : %s\n", version);
-    printf("GLSL Version         : %s\n\n", glslVersion);
+    printf("GLSL Version         : %s\n", glslVersion);
+    int nrAttributes;
+    glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &nrAttributes);
+    std::cout << "Maximum nr of vertex attributes supported: " << nrAttributes << std::endl << std::endl;
 }
 
 
