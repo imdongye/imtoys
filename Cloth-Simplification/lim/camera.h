@@ -28,20 +28,27 @@
 #include <vector>
 
 namespace lim {
-    enum Camera_Movement {
-        FORWARD,
-        BACKWARD,
-        LEFT,
-        RIGHT,
-        UP,
-        DOWN
-    };
-    const float MAX_FOVY = 170.f;
-    const float MIN_FOVY = 10.f;
+    const float SCROLL_SPEED = 1.0f;
+    const float MAX_FOVY = 120.f;
+    const float MIN_FOVY = 20.f;
     const float MAX_DIST = 17.f;
-    const float MIN_DIST = 0.f;
+    const float MIN_DIST = 0.1f;
     class Camera {
     public:
+        enum MOVEMENT {
+            FORWARD,
+            BACKWARD,
+            LEFT,
+            RIGHT,
+            UP,
+            DOWN
+        };
+        enum MODE {
+            M_FREE,
+            M_PIVOT
+        };
+    public:
+        MODE mode;
         // camera options
         float aspect;
         float zNear;
@@ -62,7 +69,7 @@ namespace lim {
         glm::mat4 vpMat;
     public:
         Camera(float _aspect=1.0f, glm::vec3 _position = glm::vec3(0,0,3), glm::vec3 _front = glm::vec3(0,0,-1))
-            : fovy(60), roll(0), zNear(0.1), zFar(100.f)
+            : fovy(60), roll(0), zNear(0.1), zFar(100.f), mode(M_FREE)
         {
             position = _position;
 
@@ -85,35 +92,53 @@ namespace lim {
             updatePivotViewMat(); // for make position
             updateProjMat();
         }
-        void move(Camera_Movement direction, float speed, float deltaTime) {
+        void move(MOVEMENT direction, float speed, float deltaTime) {
             float velocity = speed * deltaTime;
-        
-            switch(direction) {
-            case FORWARD:   position += front * velocity; break;
-            case BACKWARD:  position -= front * velocity; break;
-            case LEFT:      position -= right * velocity; break;
-            case RIGHT:     position += right * velocity; break;
-            case UP:        position += glm::vec3(0,1,0) * velocity; break;
-            case DOWN:      position -= glm::vec3(0,1,0) * velocity; break;
+            
+            if(mode==M_FREE) {
+                switch(direction) {
+                case FORWARD:   position += front * velocity; break;
+                case BACKWARD:  position -= front * velocity; break;
+                case LEFT:      position -= right * velocity; break;
+                case RIGHT:     position += right * velocity; break;
+                case UP:        position += glm::vec3(0,1,0) * velocity; break;
+                case DOWN:      position -= glm::vec3(0,1,0) * velocity; break;
+                }
+                updateFreeViewMat();
+            } 
+            else if(mode==M_PIVOT){
+                switch(direction) {
+                case FORWARD:   shiftDist(-velocity*100); break;
+                case BACKWARD:  shiftDist(velocity*100); break;
+                }
+                updatePivotViewMat();
             }
-            updateFreeViewMat();
         }
         void readyPivot() {
+            mode = M_PIVOT;
             distance = glm::length(position);
             front = glm::normalize(-position);
             // front => yaw pitch
             updateRotateFromFront();
         }
         void readyFree() {
+            mode = M_FREE;
             front = glm::normalize(-position);
             updateRotateFromFront();
             printCameraState();
         }
         void rotateCamera(float xoff, float yoff) {
-            yaw   += xoff;//todo repeat
-            pitch += yoff;
+            rotateCameraYaw(xoff);
+            rotateCameraPitch(yoff);
+        }
+        void rotateCameraYaw(float yaw_off) {
+            yaw   += yaw_off;//todo repeat
+        }
+        void rotateCameraPitch(float pitch_off) {
+            pitch += pitch_off;
             pitch = glm::clamp(pitch, -89.f, 89.f);
         }
+
         void shiftDist(float offset) {
             distance *= pow(1.01, offset);
             distance = glm::clamp(distance, MIN_DIST, MAX_DIST);
@@ -161,8 +186,8 @@ namespace lim {
             projMat = glm::perspective(glm::radians(fovy), aspect, zNear, zFar);
         }
         void printCameraState() {
-            printf("PYR : %f.2, %f.2, %f.2\n", pitch, yaw, roll);
-            printf("POS : %f.2, %f.2, %f.2\n", position.x, position.y, position.z);
+            printf("PYR  : %f.2, %f.2, %f.2\n", pitch, yaw, roll);
+            printf("POS  : %f.2, %f.2, %f.2\n", position.x, position.y, position.z);
             printf("DIST : %f\n", distance);
         }
     };

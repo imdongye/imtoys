@@ -135,17 +135,17 @@ void processInput(GLFWwindow *win) {
         if (glfwGetKey(win, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS) 
             moveSpeed = 2.5f;
         if (glfwGetKey(win, GLFW_KEY_W) == GLFW_PRESS)
-            camera.move(FORWARD, deltaTime, moveSpeed);
+            camera.move(Camera::FORWARD, deltaTime, moveSpeed);
         if (glfwGetKey(win, GLFW_KEY_S) == GLFW_PRESS)
-            camera.move(BACKWARD, deltaTime, moveSpeed);
+            camera.move(Camera::BACKWARD, deltaTime, moveSpeed);
         if (glfwGetKey(win, GLFW_KEY_A) == GLFW_PRESS)
-            camera.move(LEFT, deltaTime, moveSpeed);
+            camera.move(Camera::LEFT, deltaTime, moveSpeed);
         if (glfwGetKey(win, GLFW_KEY_D) == GLFW_PRESS)
-            camera.move(RIGHT, deltaTime, moveSpeed);
+            camera.move(Camera::RIGHT, deltaTime, moveSpeed);
         if (glfwGetKey(win, GLFW_KEY_E) == GLFW_PRESS)
-            camera.move(UP, deltaTime, moveSpeed);
+            camera.move(Camera::UP, deltaTime, moveSpeed);
         if (glfwGetKey(win, GLFW_KEY_Q) == GLFW_PRESS)
-            camera.move(DOWN, deltaTime, moveSpeed);
+            camera.move(Camera::DOWN, deltaTime, moveSpeed);
     }
 }
 void key_callback(GLFWwindow* win, int key, int scancode, int action, int mode) {
@@ -205,7 +205,7 @@ void mouse_btn_callback(GLFWwindow* win, int button, int action, int mods) {
     }
 }
 void scroll_callback(GLFWwindow* win, double xoff, double yoff) {
-    camera.shiftZoom(yoff);
+    camera.shiftZoom(yoff*10.f);
     camera.updateProjMat();
 }
 void drop_callback(GLFWwindow* win, int count, const char** paths)
