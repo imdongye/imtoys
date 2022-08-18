@@ -10,6 +10,7 @@
 //  2. rigging
 //  3. not gl_static으로 실시간 vert변화
 //  4. width, height, depth 찾아서 -1~1공간으로 scaling
+//  5. load model 이 모델안에 있는데 따로 빼야될까
 
 #ifndef MODEL_H
 #define MODEL_H
@@ -43,6 +44,15 @@ namespace lim {
             glm::vec3 tangent, bitangent;
 	        int m_BoneIDs[MAX_BONE_INFLUENCE];
 	        float m_Weights[MAX_BONE_INFLUENCE];
+
+            Vertex& operator=(const Vertex& copy) {
+                p=copy.p; n=copy.n;
+                uv=copy.uv;
+                tangent=copy.tangent; bitangent = copy.bitangent;
+                memcpy(m_BoneIDs, copy.m_BoneIDs, sizeof(int) * MAX_BONE_INFLUENCE);
+                memcpy(m_Weights, copy.m_Weights, sizeof(float) * MAX_BONE_INFLUENCE);
+                return *this;
+            }
         };
     }
 
@@ -331,7 +341,7 @@ namespace lim {
             // 이설정을 안하면 vert array로 중복 vert생성. 키면 shared vertex
             pFrags |= aiProcess_JoinIdenticalVertices;
             // aiProcess_SplitLargeMeshes : 큰 mesh를 작은 sub mesh로 나눠줌
-            // aiProcess_OptimizeMeshes : mesh를 합쳐서 draw call을 줄인다.
+            // aiProcess_OptimizeMeshes : mesh를 합쳐서 draw call을 줄인다. batching?
 
             const aiScene* scene = loader.ReadFile(path, pFrags);
         
@@ -345,7 +355,7 @@ namespace lim {
             parseNode(scene->mRootNode, scene);
             fprintf(stdout, "model loaded : %s, %d vertices \n", name.c_str(), getVerticesNum());
         }
-        void resetupVRAM() {
+        void resetVRAM() {
             for(Mesh* mesh : meshes) {
                 mesh->setupMesh();
             }
