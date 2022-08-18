@@ -80,6 +80,7 @@ void init() {
     Model& ground = *models.back();
 
     //models.push_back(new Model("archive/backpack/backpack.obj"));
+    //models.push_back(new Model("archive/tests/armadillo.obj"));
     //models.push_back(new Model("archive/tests/igea.obj"));
     //models.push_back(new Model("archive/tests/teapot.obj"));
     models.push_back(new Model("archive/tests/stanford-bunny.obj"));
@@ -88,7 +89,7 @@ void init() {
     m.setUnitScaleAndPivot();
     m.updateModelMat();
     
-    ground.position = vec3(0,-m.getBoundarySize().y*m.scale.y*0.5,0);
+    ground.position = vec3(0,-m.getBoundarySize().y*m.scale.y*0.5f,0);
     ground.updateModelMat();
 
     //models.push_back(make_unique<Model>(makeQuad(), "ground"));

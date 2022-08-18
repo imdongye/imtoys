@@ -348,23 +348,19 @@ namespace lim {
             glm::mat4 scaleMat = glm::scale(scale);
             glm::mat4 rotateMat = glm::toMat4(rotation);
             modelMat = translateMat * rotateMat * scaleMat * pivotMat;
-            
-            std::cout<<glm::to_string(modelMat)<<std::endl;
         }
         void setUnitScaleAndPivot() {
             glm::vec3 bSize = getBoundarySize();
-            setPivot(boundary_min+bSize/2.0f);
+            setPivot(boundary_min + bSize*0.5f);
             const float unit_length = 2.f;
             float max_axis_length = glm::max(bSize.x, glm::max(bSize.y, bSize.z));
             scale = glm::vec3(unit_length/max_axis_length);
-            printf("%f\n", max_axis_length);
-            std::cout<<glm::to_string(bSize)<<std::endl;
-            std::cout<<glm::to_string(scale)<<std::endl;
         }
         glm::vec3 getBoundarySize() {
             return boundary_max-boundary_min;
         }
         void setPivot(glm::vec3 pivot) {
+            std::cout<<"pivot: "<<glm::to_string(pivot)<<std::endl;
             pivotMat = glm::translate(-pivot);
         }
     private:
@@ -418,7 +414,7 @@ namespace lim {
             if(meshes.size()==0)
                 return;
             boundary_max = meshes[0]->vertices[0].p;
-            boundary_min = boundary_min;
+            boundary_min = boundary_max;
             for(Mesh* mesh : meshes) {
                 for(n_model::Vertex& v : mesh->vertices) {
                     if     ( boundary_max.x < v.p.x ) boundary_max.x = v.p.x;
@@ -431,6 +427,7 @@ namespace lim {
                     else if( boundary_min.z > v.p.z ) boundary_min.z = v.p.z;
                 }
             }
+            std::cout<<"boundary size: "<<glm::to_string(getBoundarySize())<<std::endl;
         }
 
         // load texture
