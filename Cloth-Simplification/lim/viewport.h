@@ -10,17 +10,19 @@ class Viewport {
 	static GLuint id_generator;
 	lim::Framebuffer* framebuffer;
 	lim::Camera* camera;
+    char name[32];
 public:
 	GLuint width, height;
 public:
 	Viewport(lim::Framebuffer* fb, lim::Camera* cmr)
 		: framebuffer(fb), camera(cmr), id(id_generator++)
 		, boundary_max(0), boundary_min(0) {
+        sprintf(name, "Viewport%d", id);
 	}
 
 	void renderImGui() {
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
-		ImGui::Begin("Viewport"+id);
+		ImGui::Begin(name);
 		auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
 		auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
 		auto viewportOffset = ImGui::GetWindowPos();
@@ -33,7 +35,13 @@ public:
 		auto viewportPanelSize = ImGui::GetContentRegionAvail();
 		width = viewportPanelSize.x;
 		height = viewportPanelSize.y;
+        
+        float x, y;
 
+        x = ImGui::GetCursorScreenPos().x;
+        y = ImGui::GetCursorScreenPos().y;
+        printf("%f %f", x, y);
+        
 		if( framebuffer->width != width
 			|| framebuffer->height != height ) {
 			framebuffer->resize(width, height);

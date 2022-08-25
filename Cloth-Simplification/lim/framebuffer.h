@@ -72,11 +72,9 @@ public:
 	void reset() {
 		if( FBO != 0 )
 			clear();
-		std::cout<<width<<" "<<height<<std::endl;
-
+        
 		glGenTextures(1, &colorTex);
 		glBindTexture(GL_TEXTURE_2D, colorTex);
-		printf("%d texture \n", colorTex);
 		// glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, internalFormat, width, height, GL_FALSE);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
 		// why 2의 승수가 아니여도 돼나?
