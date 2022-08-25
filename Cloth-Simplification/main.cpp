@@ -48,6 +48,7 @@ Camera camera;
 Framebuffer* framebuffer;
 Viewport* viewport;
 Program program;
+Model* oriModel;
 vector<Model*> models;
 
 void init() {
@@ -67,6 +68,20 @@ void init() {
 
 	program.attatch("shader/diffuse.vs").attatch("shader/diffuse.fs").link();
 
+
+
+	//models.push_back(new Model("archive/backpack/backpack.obj"));
+	//models.push_back(new Model("archive/nanosuit/nanosuit.obj"));
+	//models.push_back(new Model("archive/tests/armadillo.obj"));
+	models.push_back(new Model("archive/tests/igea.obj"));
+	//models.push_back(new Model("archive/tests/teapot.obj"));
+	//models.push_back(new Model("archive/tests/stanford-bunny.obj"));
+	//models.push_back(new Model("archive/dwarf/Dwarf_2_Low.obj"));
+	//models.push_back(new Model("archive/nanosuit/nanosuit.obj"));
+	Model& m = *models.back();
+	m.setUnitScaleAndPivot();
+	m.updateModelMat();
+
 	models.push_back(new Model([](vector<Vertex>& vertices
 					 , vector<GLuint>& indices
 					 , vector<Texture>& textures) {
@@ -82,24 +97,9 @@ void init() {
 					 }, "ground"));
 	Model& ground = *models.back();
 
-	//models.push_back(new Model("archive/backpack/backpack.obj"));
-	models.push_back(new Model("archive/nanosuit/nanosuit.obj"));
-	//models.push_back(new Model("archive/tests/armadillo.obj"));
-	//models.push_back(new Model("archive/tests/igea.obj"));
-	//models.push_back(new Model("archive/tests/teapot.obj"));
-	//models.push_back(new Model("archive/tests/stanford-bunny.obj"));
-	//models.push_back(new Model("archive/dwarf/Dwarf_2_Low.obj"));
-	Model& m = *models.back();
-	//-1~1
-	m.setUnitScaleAndPivot();
-	m.updateModelMat();
 
 	ground.position = vec3(0, -m.getBoundarySize().y*m.scale.y*0.5f, 0);
 	ground.updateModelMat();
-
-	//models.push_back(make_unique<Model>(makeQuad(), "ground"));
-	fqms::simplifyModel(models.back(), 0.1f);
-	models.back()->resetVRAM();
 }
 
 void initGUI(GLFWwindow* win) {
@@ -291,6 +291,30 @@ void renderImGui() {
 	ImGui::ShowDemoWindow();
 
 	viewport->renderImGui();
+
+	{
+		static float pct = 0.8f;
+		static int counter = 0;
+
+		ImGui::Begin("Simplify Options");                          // Create a window called "Hello, world!" and append into it.
+
+		ImGui::Text("Hello, Worlds.");               // Display some text (you can use a format strings too)
+
+		ImGui::SliderFloat("float", &pct, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+
+		// Buttons return true when clicked (most widgets return true when edited/activated)
+		if( ImGui::Button("Simplify") ) {
+			fqms::simplifyModel(models[0], pct);
+			models[0]->resetVRAM();
+
+			counter++;
+		}
+		ImGui::SameLine();
+		ImGui::Text("counter = %d", counter);
+
+		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+		ImGui::End();
+	}
 
 
 /////////////////////////////////////////////////////////
