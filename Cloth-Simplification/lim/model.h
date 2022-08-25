@@ -90,14 +90,14 @@ GLuint loadTextureFromFile(const char* cpath, bool toLinear = true) {
 	// load into vram
 	GLenum format = GL_RGBA;
 	switch( channels ) {
-		case 1: format = GL_ALPHA; break;
-		case 2: format = 0; break;
-		case 3: format = GL_RGB; break;
-		case 4:
-		{
-			if( !toLinear ) format = GL_RGBA;
-			else format = GL_SRGB8_ALPHA8; // if hdr => 10bit
-		} break;
+	case 1: format = GL_ALPHA; break;
+	case 2: format = 0; break;
+	case 3: format = GL_RGB; break;
+	case 4:
+	{
+		if( !toLinear ) format = GL_RGBA;
+		else format = GL_SRGB8_ALPHA8; // if hdr => 10bit
+	} break;
 	}
 
 	glGenTextures(1, &texID);
@@ -141,9 +141,9 @@ private:
 		: VAO(0), name(_name), angles(_angle) {
 		// todo: apply every face diff draw mode
 		switch( angles ) {
-			case 3: drawMode = GL_TRIANGLES; break;
-			case 2: drawMode = GL_LINE_STRIP; break;
-			case 4: drawMode = GL_TRIANGLE_FAN; break;
+		case 3: drawMode = GL_TRIANGLES; break;
+		case 2: drawMode = GL_LINE_STRIP; break;
+		case 4: drawMode = GL_TRIANGLE_FAN; break;
 		}
 	}
 public:
@@ -158,9 +158,9 @@ public:
 		setupMesh();
 	}
 	~Mesh() {
-		cleanUp();
+		clear();
 	}
-	void cleanUp() {
+	void clear() {
 		// vector은 heap 에서 언제 사라지지?
 		vertices.clear();
 		indices.clear();
@@ -196,6 +196,7 @@ public:
 		}
 
 		glBindVertexArray(VAO);
+		glBindBuffer(GL_ARRAY_BUFFER, VBO);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO); // need?
 		glDrawElements(drawMode, static_cast<GLuint>(indices.size()), GL_UNSIGNED_INT, 0);
 
@@ -247,8 +248,8 @@ public:
 		glBindVertexArray(0);
 
 		// 이게 왜 가능한거지
-		glDeleteBuffers(1, &VBO);
-		glDeleteBuffers(1, &EBO);
+		//glDeleteBuffers(1, &VBO);
+		//glDeleteBuffers(1, &EBO);
 	}
 	void print() const {
 		fprintf(stdout, "%-18s, angles %d, verts %-7lu, tris %-7lu\n"
@@ -308,11 +309,11 @@ public:
 		updateBoundary();
 	}
 	~Model() {
-		cleanUp();
+		clear();
 	}
-	void cleanUp() {
+	void clear() {
 		for( Mesh* mesh : meshes ) {
-			mesh->cleanUp();
+			mesh->clear();
 			delete mesh;
 		}
 		meshes.clear();
@@ -338,6 +339,7 @@ public:
 
 	}
 	void draw(Program& program) {
+		program.use();
 		GLuint loc = glGetUniformLocation(program.ID, "modelMat");
 		glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(modelMat));
 
@@ -366,7 +368,7 @@ public:
 	}
 private:
 	void load(const char* _path) {
-		cleanUp();
+		clear();
 		std::string path = std::string(_path);
 		std::replace(path.begin(), path.end(), '\\', '/');
 		size_t slashPos = path.find_last_of('/');
@@ -455,10 +457,10 @@ private:
 				texture.id = loadTextureFromFile(fullTexPath.c_str(), true);
 
 				switch( type ) {
-					case aiTextureType_DIFFUSE: texture.type = "map_Kd"; break;
-					case aiTextureType_SPECULAR: texture.type = "map_Ks"; break;
-					case aiTextureType_AMBIENT: texture.type = "map_Ka"; break;
-					case aiTextureType_HEIGHT: texture.type = "map_Bump"; break;
+				case aiTextureType_DIFFUSE: texture.type = "map_Kd"; break;
+				case aiTextureType_SPECULAR: texture.type = "map_Ks"; break;
+				case aiTextureType_AMBIENT: texture.type = "map_Ka"; break;
+				case aiTextureType_HEIGHT: texture.type = "map_Bump"; break;
 				}
 				texture.path = texPath;
 				textures.push_back(texture);

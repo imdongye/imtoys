@@ -36,7 +36,7 @@ const float MAX_DIST = 17.f;
 const float MIN_DIST = 0.1f;
 class Camera {
 public:
-	enum MOVEMENT {
+	enum class MOVEMENT {
 		FORWARD,
 		BACKWARD,
 		LEFT,
@@ -44,9 +44,9 @@ public:
 		UP,
 		DOWN
 	};
-	enum MODE {
-		M_FREE,
-		M_PIVOT
+	enum class MODE {
+		FREE,
+		PIVOT
 	};
 public:
 	MODE mode;
@@ -69,12 +69,12 @@ public:
 	glm::mat4 projMat;
 	glm::mat4 vpMat;
 public:
-	Camera(float _aspect=1.0f, glm::vec3 _position = glm::vec3(0, 0, 3), glm::vec3 _front = glm::vec3(0, 0, -1))
-		: fovy(60), roll(0), zNear(0.1), zFar(100.f), mode(M_FREE) {
-		position = _position;
+	Camera() {}
+	Camera(glm::vec3 _position, glm::vec3 _front, float _aspect)
+		: fovy(60), roll(0), zNear(0.1), zFar(100.f), mode(MODE::FREE) {
 
-		front = _front;
-		front = normalize(front);
+		position = _position;
+		front = normalize(_front);
 		updateRotateFromFront();
 
 		aspect = _aspect;
@@ -82,8 +82,9 @@ public:
 		updateFreeViewMat();
 		updateProjMat();
 	}
-	Camera(float _aspect=1.0f, float _distance = 5.0f, float _yaw=0, float _pitch=0)
-		: fovy(60), roll(0), zNear(0.1), zFar(100.f) {
+	Camera(float _distance, float _yaw, float _pitch, float _aspect)
+		: fovy(60), roll(0), zNear(0.1), zFar(100.f), mode(MODE::PIVOT) {
+
 		distance = _distance;
 		yaw = _yaw;
 		pitch = _pitch;
@@ -94,33 +95,33 @@ public:
 	void move(MOVEMENT direction, float speed, float deltaTime) {
 		float velocity = speed * deltaTime;
 
-		if( mode==M_FREE ) {
+		if( mode==MODE::FREE ) {
 			switch( direction ) {
-			case FORWARD:   position += front * velocity; break;
-			case BACKWARD:  position -= front * velocity; break;
-			case LEFT:      position -= right * velocity; break;
-			case RIGHT:     position += right * velocity; break;
-			case UP:        position += glm::vec3(0, 1, 0) * velocity; break;
-			case DOWN:      position -= glm::vec3(0, 1, 0) * velocity; break;
+			case MOVEMENT::FORWARD:   position += front * velocity; break;
+			case MOVEMENT::BACKWARD:  position -= front * velocity; break;
+			case MOVEMENT::LEFT:      position -= right * velocity; break;
+			case MOVEMENT::RIGHT:     position += right * velocity; break;
+			case MOVEMENT::UP:        position += glm::vec3(0, 1, 0) * velocity; break;
+			case MOVEMENT::DOWN:      position -= glm::vec3(0, 1, 0) * velocity; break;
 			}
 			updateFreeViewMat();
-		} else if( mode==M_PIVOT ) {
+		} else if( mode==MODE::PIVOT ) {
 			switch( direction ) {
-			case FORWARD:   shiftDist(-velocity*100); break;
-			case BACKWARD:  shiftDist(velocity*100); break;
+			case MOVEMENT::FORWARD:   shiftDist(-velocity*100); break;
+			case MOVEMENT::BACKWARD:  shiftDist(velocity*100); break;
 			}
 			updatePivotViewMat();
 		}
 	}
 	void readyPivot() {
-		mode = M_PIVOT;
+		mode = MODE::PIVOT;
 		distance = glm::length(position);
 		front = glm::normalize(-position);
 		// front => yaw pitch
 		updateRotateFromFront();
 	}
 	void readyFree() {
-		mode = M_FREE;
+		mode = MODE::FREE;
 		front = glm::normalize(-position);
 		updateRotateFromFront();
 		printCameraState();
@@ -181,6 +182,7 @@ public:
 		viewMat = glm::lookAt(position, position + front, glm::vec3(0, 1, 0)); // todo: roll => edit up
 	}
 	void updateProjMat() {
+		printf("aspect : %f", aspect);
 		projMat = glm::perspective(glm::radians(fovy), aspect, zNear, zFar);
 	}
 	void printCameraState() {

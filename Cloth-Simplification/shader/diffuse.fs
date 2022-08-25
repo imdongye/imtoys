@@ -1,4 +1,4 @@
-#version 330 core
+#version 410 core
 out vec4 FragColor;
 
 in vec2 texCoords;
@@ -17,6 +17,6 @@ void main()
     V = normalize(V);
     vec3 N = normalize (cross (dFdx(wPos.xyz), dFdy(wPos.xyz)));
 
-    //FragColor = vec4(dot(N, V)*vec3(1),1);   //
-    FragColor = texture(map_Kd0, texCoords);
+    FragColor = vec4(dot(N, V)*vec3(1),1);   //
+    //FragColor = texture(map_Kd0, texCoords);
 }

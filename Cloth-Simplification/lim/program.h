@@ -40,11 +40,11 @@ private:
 	Program& operator=(Program const&) = delete;
 public:
 	Program(): ID(0) {}
-	~Program() { cleanUp(); }
+	~Program() { clear(); }
 
 	// chaining //
 	Program& reset() {
-		cleanUp();
+		clear();
 		ID = glCreateProgram();
 		return *this;
 	}
@@ -92,7 +92,7 @@ public:
 		glLinkProgram(ID);
 		glUseProgram (ID);
 		checkCompileErrors(ID, "program");
-		cleanUpWithoutID(); // 링크된 후 필요없음
+		clearWithoutID(); // 링크된 후 필요없음
 		fprintf(stdout, "program%d linking success\n\n", ID);
 		return *this;
 	}
@@ -107,16 +107,13 @@ public:
 		else bind(location, std::forward<T>(value));
 		return *this;
 	}
-	void cleanUp() {
+	void clear() {
 		if( ID ) glDeleteProgram(ID);
-		if( vertID ) glDeleteShader(vertID);
-		if( fragID ) glDeleteShader(fragID);
-		if( geomID ) glDeleteShader(geomID);
-		if( compID ) glDeleteShader(compID);
-		ID = vertID = fragID = geomID = compID = 0;
+		ID = 0;
+		clearWithoutID();
 	}
 private:
-	void cleanUpWithoutID() {
+	void clearWithoutID() {
 		if( vertID ) glDeleteShader(vertID);
 		if( fragID ) glDeleteShader(fragID);
 		if( geomID ) glDeleteShader(geomID);
