@@ -31,13 +31,12 @@
 
 namespace lim
 {
-
 	const int MAX_BONE_INFLUENCE = 4;
 
 	namespace n_model
 	{
-	// 4byte * (3+3+2+3+3+4+4) = 88
-	// offsetof(Vertex, Normal) = 12
+		// 4byte * (3+3+2+3+3+4+4) = 88
+		// offsetof(Vertex, Normal) = 12
 		struct Vertex
 		{
 			glm::vec3 p, n;
@@ -69,7 +68,6 @@ namespace lim
 	GLuint loadTextureFromFile(const char* cpath, bool toLinear = true)
 	{
 		std::string spath = std::string(cpath);
-		fprintf(stdout, "loading texture %s.\n", cpath);
 
 		GLuint texID=0;
 		glGenTextures(1, &texID);
@@ -144,7 +142,7 @@ namespace lim
 		Mesh(const char* _name="", const GLuint& _angle=3)
 			: VAO(0), name(_name), angles(_angle)
 		{
-// todo: apply every face diff draw mode
+			// todo: apply every face diff draw mode
 			switch( angles )
 			{
 			case 3: drawMode = GL_TRIANGLES; break;
@@ -170,7 +168,7 @@ namespace lim
 		}
 		void clear()
 		{
-// vector은 heap 에서 언제 사라지지?
+			// vector은 heap 에서 언제 사라지지?
 			vertices.clear();
 			indices.clear();
 			textures.clear();
@@ -182,7 +180,7 @@ namespace lim
 		}
 		void draw(Program& program)
 		{
-// texture unifrom var name texture_specularN ...
+			// texture unifrom var name texture_specularN ...
 			GLuint diffuseNr  = 0;
 			GLuint specularNr = 0;
 			GLuint normalNr   = 0;
@@ -358,9 +356,9 @@ namespace lim
 		}
 		void exportObj(const char* path)
 		{
-//aiScene* scene = new aiScene();
-//aiMesh* mesh = new aiMesh();
-//mesh->mPrimitiveTypes =AI_PRIMITIVE_TYPE 
+			//aiScene* scene = new aiScene();
+			//aiMesh* mesh = new aiMesh();
+			//mesh->mPrimitiveTypes =AI_PRIMITIVE_TYPE 
 
 		}
 		void draw(Program& program)
@@ -580,7 +578,7 @@ namespace lim
 		}
 		void parseNode(aiNode* node, const aiScene* scene)
 		{
-// in current node
+			// in current node
 			for( GLuint i=0; i<node->mNumMeshes; i++ )
 			{
 				parseMesh(scene->mMeshes[node->mMeshes[i]], scene);

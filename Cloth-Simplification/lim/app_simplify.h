@@ -4,6 +4,7 @@
 //
 //	TODO list:
 //	1. crtp로 참조 줄이기, 
+//	2. 헤더파일include 중복관리
 //	4. figure out [this](auto&&... args) -> decltype(auto) { return this->fn(std::forward<decltype(args)>(args)...); }
 //
 
@@ -19,30 +20,24 @@ namespace lim
 	class SimplifiyApp: public AppBase
 	{
 	private:
+		Camera* mainCamera;
 		std::vector<Scene*> scenes;
 		std::vector<Viewport*> viewports;
-		Camera* mainCamera;
+		std::unordered_map<Viewport*, Scene*> connectedScene;
 
-		float lastX = scr_width / 2.0f;
-		float lastY = scr_height / 2.0f;
 	public:
 		SimplifiyApp()
 		{
-			printf("simplifyapp\n");
-
-			mainCamera =  new Camera(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0, 0, -1), scr_width/(float)scr_height);
-
 			scenes.push_back(new FirstScene());
-			Camera* camera = new Camera(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0, 0, -1), scr_width/(float)scr_height);
-			viewports.push_back(new Viewport(camera));
+			mainCamera = new Camera(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0, 0, -1), scr_width/(float)scr_height);
+			viewports.push_back(new Viewport(mainCamera));
+			connectedScene[viewports.back()] = scenes.back();
 
-			initCallback();
+			init_callback();
 			initImGui();
 		}
 		~SimplifiyApp()
 		{
-			printf("simplifyapp\n");
-
 			for( Scene* scene : scenes ) delete scene;
 			for( Viewport* viewport : viewports ) delete viewport;
 
@@ -51,13 +46,16 @@ namespace lim
 	private:
 		virtual void update() final
 		{
-			//Scene& scene = *(scenes.back());
-			//Viewport& viewport = *(viewports.back());
-			//scene.render(&viewport);
-			scenes.back()->update();
-			scenes.back()->render(viewports.back());
+			processInput();
+
+			for( std::pair<Viewport*, Scene*> cs : connectedScene )
+			{
+				cs.second->update();
+				cs.second->render(cs.first);
+			}
 			renderImGui();
 
+			// render to screen
 			//scenes.back()->render(0, scr_width, scr_height, mainCamera);
 		}
 	private:
@@ -125,8 +123,8 @@ namespace lim
 					// Buttons return true when clicked (most widgets return true when edited/activated)
 					if( ImGui::Button("Simplify") )
 					{
-						//fqms::simplifyModel(models[0], pct);
-						//models[0]->resetVRAM();
+						fqms::simplifyModel(scenes[0]->models[1], pct);
+						scenes[0]->models[1]->resetVRAM();
 						counter++;
 					}
 					ImGui::SameLine();
@@ -156,7 +154,7 @@ namespace lim
 		}
 
 
-		void initCallback()
+		void init_callback()
 		{
 			//wData.drop_callback = std::bind(&SimplifiyApp::drop_callback, this, std::placeholders::_1, std::placeholders::_2);
 			wData.win_size_callback = [this](int width, int height) {
@@ -181,14 +179,14 @@ namespace lim
 		{
 			for( Viewport* vp : viewports )
 			{
-				if( vp->focused == false ) return;
+				if( vp->focused == false ) continue;
 				Camera& camera = *vp->camera;
 
 				if( glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)==GLFW_PRESS )
 				{
-					float moveSpeed = 1.5f;
-					if( glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS )
-						moveSpeed = 2.5f;
+					float moveSpeed = 1.6f;
+					if( glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS )
+						moveSpeed = 3.2f;
 					if( glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS )
 						camera.move(Camera::MOVEMENT::FORWARD, deltaTime, moveSpeed);
 					if( glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS )
@@ -208,8 +206,7 @@ namespace lim
 		{
 			for( Viewport* vp : viewports )
 			{
-				if( vp->focused == false ) return;
-				printf("%d", key);
+				if( vp->focused == false ) continue;
 				Camera& camera = *vp->camera;
 				if( glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)==GLFW_PRESS
 				   && key == GLFW_KEY_Z )
@@ -229,24 +226,17 @@ namespace lim
 			if( key == GLFW_KEY_ESCAPE && action == GLFW_PRESS )
 				glfwSetWindowShouldClose(window, GL_TRUE);
 		}
-		void win_size_callback(int width, int height)
-		{
-			scr_width = width;
-			scr_height = height;
-		}
-		void cursor_pos_callback(double xposIn, double yposIn)
+		void cursor_pos_callback(double xPos, double yPos)
 		{
 			for( Viewport* vp : viewports )
 			{
-				if( vp->focused == false ) return;
+				if( vp->focused == false ) continue;
 				Camera& camera = *vp->camera;
-				const GLuint w = scr_width;
-				const GLuint h = scr_height;
+				const float w = scr_width;
+				const float h = scr_height;
 
-				float xpos = static_cast<float>(xposIn);
-				float ypos = static_cast<float>(yposIn);
-				float xoff = xpos - lastX;
-				float yoff = lastY - ypos; // inverse
+				float xoff = xPos - vp->cursor_pos_x;
+				float yoff = vp->cursor_pos_y - yPos; // inverse
 
 				if( glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) )
 				{
@@ -270,21 +260,21 @@ namespace lim
 					}
 
 				}
-				lastX = xpos; lastY = ypos;
+				vp->cursor_pos_x = xPos; vp->cursor_pos_y = yPos;
 			}
 		}
 		void mouse_btn_callback(int button, int action, int mods)
 		{
 			for( Viewport* vp : viewports )
 			{
-				if( vp->focused == false ) return;
+				if( vp->hovered == false ) continue;
 				Camera& camera = *vp->camera;
 				if( action == GLFW_PRESS )
 				{
 					double xpos, ypos;
 					glfwGetCursorPos(window, &xpos, &ypos);
-					lastX = xpos;
-					lastY = ypos;
+					vp->cursor_pos_x = xpos;
+					vp->cursor_pos_y = ypos;
 				}
 			}
 		}
@@ -292,18 +282,34 @@ namespace lim
 		{
 			for( Viewport* vp : viewports )
 			{
-				if( vp->focused == false ) return;
+				if( vp->focused == false ) continue;
 				Camera& camera = *vp->camera;
 				camera.shiftZoom(yoff*10.f);
 				camera.updateProjMat();
 			}
 		}
+		void win_size_callback(int width, int height)
+		{
+			scr_width = width;
+			scr_height = height;
+		}
 		void drop_callback(int count, const char** paths)
 		{
-			for( int i = 0; i < count; i++ )
+			printf("%s", paths[0]);
+			for( Viewport* vp : viewports )
 			{
-				//models.push_back(new Model(paths[i]));
-				//glfwSetWindowTitle(window, models.back()->name.c_str());
+				// 다른 window에서 드래그할때 hovered 인식안됨 
+				if( vp->focused == false ) continue;
+				FirstScene* fs = dynamic_cast<FirstScene*>(connectedScene[vp]);
+				for( int i = 0; i < count; i++ )
+				{
+					if( fs==nullptr )
+					{
+						fprintf(stderr, "\nerror : scene down casting error\n");
+						break;
+					}
+					fs->loadModel(paths[i]);
+				}
 			}
 		}
 	};

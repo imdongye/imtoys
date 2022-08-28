@@ -10,7 +10,7 @@
 #ifndef APPLICATION_H
 #define APPLICATION_H
 
-#include "scene.h"
+#include "scene_first.h"
 #include <GLFW/glfw3.h>
 
 namespace lim
@@ -32,8 +32,8 @@ namespace lim
 		float deltaTime; // sec
 		glm::vec4 clear_color ={0.15f, 0.11f, 0.40f, 1.00f};
 
-		GLuint scr_width = 800;
-		GLuint scr_height = 600;
+		GLuint scr_width = 1920;
+		GLuint scr_height = 1080;
 	protected:
 		virtual void update()=0;
 	private:
@@ -41,16 +41,15 @@ namespace lim
 	public:
 		AppBase()
 		{
-			printf("appbase\n");
 			glfwSetErrorCallback(error_callback);
 			if( !glfwInit() ) std::exit(-1);
 			glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 			glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1); // mac support 4.1
 			glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 			// glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
-			#ifdef __APPLE__
+		#ifdef __APPLE__
 			glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-			#endif
+		#endif
 			glfwWindowHint(GLFW_SAMPLES, 8); // multisampling sample 3x3
 
 			window = glfwCreateWindow(scr_width, scr_height, "simplification", NULL, NULL);
@@ -86,8 +85,6 @@ namespace lim
 		}
 		virtual ~AppBase()
 		{
-			printf("appbase\n");
-
 			glfwDestroyWindow(window);
 			glfwTerminate();
 		}
@@ -114,37 +111,37 @@ namespace lim
 				WindowData& data = *(WindowData*)glfwGetWindowUserPointer(win);
 				if( data.win_size_callback )
 					data.win_size_callback(width, height);
-			});
+									  });
 
 			glfwSetKeyCallback(window, [](GLFWwindow* win, int key, int scancode, int action, int mods) {
 				WindowData& data = *(WindowData*)glfwGetWindowUserPointer(win);
 				if( data.key_callback )
 					data.key_callback(key, scancode, action, mods);
-			});
+							   });
 
 			glfwSetMouseButtonCallback(window, [](GLFWwindow* win, int button, int action, int mods) {
 				WindowData& data = *(WindowData*)glfwGetWindowUserPointer(win);
 				if( data.mouse_btn_callback )
 					data.mouse_btn_callback(button, action, mods);
-			});
+									   });
 
 			glfwSetScrollCallback(window, [](GLFWwindow* win, double xOffset, double yOffset) {
 				WindowData& data = *(WindowData*)glfwGetWindowUserPointer(win);
 				if( data.scroll_callback )
 					data.scroll_callback(xOffset, yOffset);
-			});
+								  });
 
 			glfwSetCursorPosCallback(window, [](GLFWwindow* win, double xPos, double yPos) {
 				WindowData& data = *(WindowData*)glfwGetWindowUserPointer(win);
 				if( data.cursor_pos_callback )
 					data.cursor_pos_callback(xPos, yPos);
-			});
+									 });
 
 			glfwSetDropCallback(window, [](GLFWwindow* win, int count, const char** paths) {
 				WindowData& data = *(WindowData*)glfwGetWindowUserPointer(win);
 				if( data.drop_callback )
 					data.drop_callback(count, paths);
-			});
+								});
 		}
 		static void error_callback(int error, const char* description)
 		{

@@ -12,7 +12,6 @@
 
 namespace lim
 {
-
 	class Framebuffer
 	{
 	private:
@@ -72,7 +71,6 @@ namespace lim
 		void resize(GLuint _width, GLuint _height)
 		{
 			width = _width; height = _height;
-			printf("resize %d %d\n", width, height);
 			reset();
 		}
 		void reset()

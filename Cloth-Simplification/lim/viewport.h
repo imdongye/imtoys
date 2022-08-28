@@ -21,6 +21,7 @@ namespace lim
 		lim::Camera* camera;
 		lim::Framebuffer* framebuffer;
 		GLuint width, height;
+		float cursor_pos_x, cursor_pos_y;
 	public:
 		Viewport(lim::Camera* cmr)
 			: boundary_max(0), boundary_min(0)
@@ -57,7 +58,7 @@ namespace lim
 			//printf("%f %f\n", x, y);
 
 			if( framebuffer->width != width
-				|| framebuffer->height != height )
+			   || framebuffer->height != height )
 			{
 				framebuffer->resize(width, height);
 				camera->aspect = width/(float)height;
@@ -72,10 +73,12 @@ namespace lim
 
 			ImGui::Begin("status");
 
-			ImGui::Text("%f %f", x, y);
-			ImGui::Text("%f %f", boundary_min.x, boundary_min.y);
+			ImGui::Text("%.0f %.0f", x, y);
+			ImGui::Text("%.0f %.0f", cursor_pos_x, cursor_pos_y);
+
+			//ImGui::Text("%f %f", boundary_min.x, boundary_min.y);
 			ImGui::Text(hovered?"hoverd":"not hovered");
-			ImGui::Text(hovered?"focused":"not focuesed");
+			ImGui::Text(focused?"focused":"not focuesed");
 
 			ImGui::End();
 		}

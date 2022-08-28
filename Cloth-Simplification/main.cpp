@@ -5,11 +5,12 @@
 //  Product->schema->edit-schema->run->option->custom-working-dir
 //
 
-#include "lim/simplify_app.h"
+#include "lim/app_simplify.h"
 
 
 // rid unused variables warnings
-int main(int, char**) {
+int main(int, char**)
+{
 	lim::SimplifiyApp app;
 	app.run();
 
