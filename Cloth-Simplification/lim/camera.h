@@ -20,11 +20,7 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
-#include <glad/glad.h>
-#include <glm/glm.hpp>
-#include <glm/gtx/transform.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-
+#include "program.h"
 #include <vector>
 
 namespace lim
