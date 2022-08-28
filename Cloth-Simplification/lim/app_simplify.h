@@ -295,22 +295,31 @@ namespace lim
 		}
 		void drop_callback(int count, const char** paths)
 		{
-			printf("%s", paths[0]);
+			FirstScene* fs = dynamic_cast<FirstScene*>(scenes[0]);
+			for( int i = 0; i < count; i++ )
+			{
+				// 여러개들어왔을때 모델파일만 골라서 입력받게 조건처리
+				fs->loadModel(paths[i]);
+			}
+
+			/*
 			for( Viewport* vp : viewports )
 			{
-				// 다른 window에서 드래그할때 hovered 인식안됨 
+				// 다른 window에서 드래그할때 hovered 인식안됨
 				if( vp->focused == false ) continue;
+
 				FirstScene* fs = dynamic_cast<FirstScene*>(connectedScene[vp]);
+				if( fs==nullptr )
+				{
+					fprintf(stderr, "\nerror : scene down casting error\n");
+					break;
+				}
+
 				for( int i = 0; i < count; i++ )
 				{
-					if( fs==nullptr )
-					{
-						fprintf(stderr, "\nerror : scene down casting error\n");
-						break;
-					}
 					fs->loadModel(paths[i]);
 				}
-			}
+			}*/
 		}
 	};
 
