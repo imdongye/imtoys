@@ -17,15 +17,16 @@
 
 namespace lim
 {
-	class SimplifiyApp: public AppBase
+	class SimplifyApp: public AppBase
 	{
 	private:
+		float cameraMoveSpeed;
 		Camera* cameras[2];
 		Scene* scenes[2];
 		Viewport* viewports[2];
 
 	public:
-		SimplifiyApp()
+		SimplifyApp(): cameraMoveSpeed(1.6f)
 		{
 			Scene* originalScene = new Scene();
 			originalScene->loadModel("archive/meshes/stanford-bunny.obj");
@@ -47,7 +48,7 @@ namespace lim
 			init_callback();
 			imgui_modules::initImGui(window);
 		}
-		~SimplifiyApp()
+		~SimplifyApp()
 		{
 			for( Scene* scene : scenes ) delete scene;
 			for( Viewport* viewport : viewports ) delete viewport;
@@ -66,7 +67,6 @@ namespace lim
 			// render to screen
 			//scenes.back()->render(0, scr_width, scr_height, mainCamera);
 		}
-	private:
 		void renderImGui()
 		{
 			imgui_modules::beginImGui();
@@ -107,6 +107,9 @@ namespace lim
 						viewports[1]->camera = cameras[1];
 					}
 				}
+
+				ImGui::SliderFloat("moveSpeed", &cameraMoveSpeed, 1.0f, 3.0f);
+
 				static int shader_idx = 0;
 				if( ImGui::Combo(": shader", &shader_idx, "Nomal Dot View\0Diffuse\0") )
 				{
@@ -123,25 +126,22 @@ namespace lim
 				ImGui::Text("<Original model>");
 				lim::Model& ori = *(scenes[0]->model);
 				ImGui::Text("name : %s", ori.name.c_str());
-				ImGui::Text("#verteces : %d", ori.verticesNum);
-				ImGui::Text("#triangles : %d", ori.trianglesNum);
-				ImGui::Text("#meshes : %d", ori.meshes.size());
-				ImGui::Text("#textures : %d", ori.textures_loaded.size());
+				ImGui::Text("#verteces : %u", ori.verticesNum);
+				ImGui::Text("#triangles : %u", ori.trianglesNum);
+				ImGui::Text("#meshes : %lu", ori.meshes.size());
+				ImGui::Text("#textures : %lu", ori.textures_loaded.size());
 				lim::Model& simp = *(scenes[1]->model);
 				ImGui::NewLine();
 				ImGui::Text("<Simplified model>");
-				ImGui::Text("<한글 model>");
-				ImGui::Text("#verteces : %d", simp.verticesNum);
-				ImGui::Text("#triangles : %d", simp.trianglesNum);
+				ImGui::Text("#verteces : %u", simp.verticesNum);
+				ImGui::Text("#triangles : %u", simp.trianglesNum);
 			} ImGui::End();
 
 			imgui_modules::endImGui(scr_width, scr_height);
 		}
-
-
 		void init_callback()
 		{
-			//wData.drop_callback = std::bind(&SimplifiyApp::drop_callback, this, std::placeholders::_1, std::placeholders::_2);
+			//wData.drop_callback = std::bind(&SimplifyApp::drop_callback, this, std::placeholders::_1, std::placeholders::_2);
 			wData.win_size_callback = [this](int width, int height) {
 				return this->win_size_callback(width, height); };
 
@@ -169,21 +169,21 @@ namespace lim
 
 				if( glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)==GLFW_PRESS )
 				{
-					float moveSpeed = 1.6f;
+					float multiple = 1.0f;
 					if( glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS )
-						moveSpeed = 3.2f;
+						multiple = 1.3f;
 					if( glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS )
-						camera.move(Camera::MOVEMENT::FORWARD, deltaTime, moveSpeed);
+						camera.move(Camera::MOVEMENT::FORWARD, deltaTime, cameraMoveSpeed*multiple);
 					if( glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS )
-						camera.move(Camera::MOVEMENT::BACKWARD, deltaTime, moveSpeed);
+						camera.move(Camera::MOVEMENT::BACKWARD, deltaTime, cameraMoveSpeed*multiple);
 					if( glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS )
-						camera.move(Camera::MOVEMENT::LEFT, deltaTime, moveSpeed);
+						camera.move(Camera::MOVEMENT::LEFT, deltaTime, cameraMoveSpeed*multiple);
 					if( glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS )
-						camera.move(Camera::MOVEMENT::RIGHT, deltaTime, moveSpeed);
+						camera.move(Camera::MOVEMENT::RIGHT, deltaTime, cameraMoveSpeed*multiple);
 					if( glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS )
-						camera.move(Camera::MOVEMENT::UP, deltaTime, moveSpeed);
+						camera.move(Camera::MOVEMENT::UP, deltaTime, cameraMoveSpeed*multiple);
 					if( glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS )
-						camera.move(Camera::MOVEMENT::DOWN, deltaTime, moveSpeed);
+						camera.move(Camera::MOVEMENT::DOWN, deltaTime, cameraMoveSpeed*multiple);
 				}
 			}
 		}

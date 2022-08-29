@@ -312,7 +312,7 @@ namespace lim
 		{
 			load(path);
 			updateNums();
-			fprintf(stdout, "model loaded : %s, vertices: %lu\n", name.c_str(), verticesNum);
+			fprintf(stdout, "model loaded : %s, vertices: %u\n", name.c_str(), verticesNum);
 			updateBoundary();
 		}
 		// 왜 외부에서 외부에서 생성한 mesh객체의 unique_ptr을 우측값 참조로 받아 push_back할 수 없는거지
@@ -330,7 +330,7 @@ namespace lim
 
 			meshes.push_back(new Mesh(vertices, indices, textures, _name));
 			updateNums();
-			fprintf(stdout, "\ngen model mesh : %s, vertices: %lu\n", name.c_str(), verticesNum);
+			fprintf(stdout, "\ngen model mesh : %s, vertices: %u\n", name.c_str(), verticesNum);
 			updateBoundary();
 		}
 		~Model()
