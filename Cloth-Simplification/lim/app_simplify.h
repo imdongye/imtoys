@@ -129,7 +129,7 @@ namespace lim
 				ImGui::Text("#textures : %d", ori.textures_loaded.size());
 				lim::Model& simp = *(scenes[1]->model);
 				ImGui::NewLine();
-				ImGui::Text("<Original model>");
+				ImGui::Text("<Simplified model>");
 				ImGui::Text("#verteces : %d", simp.verticesNum);
 				ImGui::Text("#triangles : %d", simp.trianglesNum);
 			} ImGui::End();
