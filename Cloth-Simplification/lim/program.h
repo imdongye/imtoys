@@ -108,7 +108,7 @@ namespace lim
 			fprintf(stdout, "program%d linking success\n\n", ID);
 			return *this;
 		}
-		GLuint use()
+		GLuint use() const
 		{
 			glUseProgram(ID);
 			return ID;

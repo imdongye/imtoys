@@ -10,8 +10,7 @@
 #ifndef APPLICATION_H
 #define APPLICATION_H
 
-#include "scene_first.h"
-#include <GLFW/glfw3.h>
+#include "scene.h"
 
 namespace lim
 {
@@ -32,8 +31,8 @@ namespace lim
 		float deltaTime; // sec
 		glm::vec4 clear_color ={0.15f, 0.11f, 0.40f, 1.00f};
 
-		GLuint scr_width = 1920;
-		GLuint scr_height = 1080;
+		GLuint scr_width = 1200;
+		GLuint scr_height = 1000;
 	protected:
 		virtual void update()=0;
 	private:

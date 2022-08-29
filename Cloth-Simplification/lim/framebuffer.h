@@ -6,7 +6,6 @@
 #ifndef FRAMEBUFFER_H
 #define FRAMEBUFFER_H
 
-
 #include "program.h"
 #include "imgui_modules.h"
 

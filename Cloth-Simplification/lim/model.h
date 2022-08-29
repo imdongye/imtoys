@@ -139,7 +139,8 @@ namespace lim
 		// disable copying
 		Mesh(Mesh const&) = delete;
 		Mesh& operator=(Mesh const&) = delete;
-		Mesh(const char* _name="", const GLuint& _angle=3)
+	public:
+		Mesh(const std::string& _name="", const GLuint& _angle=3)
 			: VAO(0), name(_name), angles(_angle)
 		{
 			// todo: apply every face diff draw mode
@@ -150,11 +151,10 @@ namespace lim
 			case 4: drawMode = GL_TRIANGLE_FAN; break;
 			}
 		}
-	public:
 		Mesh(const std::vector<n_model::Vertex>& _vertices
 			 , const std::vector<GLuint>& _indices
 			 , const std::vector<Texture>& _textures
-			 , const char* _name="", const GLuint& _angle=3)
+			 , const std::string& _name="", const GLuint& _angle=3)
 			: Mesh(_name, _angle)
 		{
 			vertices = _vertices; // todo: fix deep copy
@@ -178,7 +178,7 @@ namespace lim
 				VAO=0;
 			}
 		}
-		void draw(Program& program)
+		void draw(const Program& program)
 		{
 			// texture unifrom var name texture_specularN ...
 			GLuint diffuseNr  = 0;
@@ -283,7 +283,8 @@ namespace lim
 		std::vector<Texture> textures_loaded;
 		std::vector<Mesh*> meshes;
 		std::string directory; // for load texture
-		unsigned int verticesNum;
+		GLuint verticesNum;
+		GLuint trianglesNum;
 		glm::vec3 boundary_max;
 		glm::vec3 boundary_min;
 	private:
@@ -292,35 +293,44 @@ namespace lim
 		Model(Model const&) = delete;
 		Model& operator=(Model const&) = delete;
 	public:
-		Model(): position(glm::vec3(0)), rotation(glm::quat()), scale(glm::vec3(1))
-			, pivotMat(glm::mat4(1.0f)), verticesNum(0) // mat4(1) is identity mat
+		Model(const std::string& _name = ""): position(glm::vec3(0)), rotation(glm::quat()), scale(glm::vec3(1))
+			, pivotMat(glm::mat4(1.0f)), verticesNum(0), name(_name) // mat4(1) is identity mat
 		{
 			updateModelMat();
+		}
+		Model(const std::vector<Mesh*>& _meshes, const std::vector<Texture>& _textures, const std::string& _name="")
+			:Model(_name)
+		{
+			meshes = _meshes;
+			textures_loaded = _textures;
+			updateNums();
+			updateBoundary();
 		}
 		// load model
 		// todo: string_view
 		Model(const char* path): Model()
 		{
 			load(path);
+			updateNums();
+			fprintf(stdout, "model loaded : %s, %d vertices \n", name.c_str(), verticesNum);
 			updateBoundary();
 		}
 		// 왜 외부에서 외부에서 생성한 mesh객체의 unique_ptr을 우측값 참조로 받아 push_back할 수 없는거지
 		Model(std::function<void(std::vector<n_model::Vertex>& _vertices
 			  , std::vector<GLuint>& _indices
 			  , std::vector<Texture>& _textures)> genMeshFunc
-			  , const char* _name ="")
+			  , std::string _name ="")
 			:Model()
 		{
-			name = std::string(_name);
+			name = _name;
 			std::vector<n_model::Vertex> vertices;
 			std::vector<GLuint> indices;
 			std::vector<Texture> textures;
 			genMeshFunc(vertices, indices, textures);
 
 			meshes.push_back(new Mesh(vertices, indices, textures, _name));
-
-			fprintf(stdout, "\ngen model mesh : %s, verts %lu\n", _name, meshes.back()->vertices.size());
-
+			updateNums();
+			fprintf(stdout, "\ngen model mesh : %s, verts %lu\n", _name, verticesNum);
 			updateBoundary();
 		}
 		~Model()
@@ -336,17 +346,6 @@ namespace lim
 			}
 			meshes.clear();
 		}
-		unsigned int getVerticesNum()
-		{
-			if( verticesNum!=0 )
-				return verticesNum;
-
-			for( Mesh* mesh : meshes )
-			{
-				verticesNum += mesh->vertices.size();
-			}
-			return verticesNum;
-		}
 		void resetVRAM()
 		{
 			for( Mesh* mesh : meshes )
@@ -361,7 +360,7 @@ namespace lim
 			//mesh->mPrimitiveTypes =AI_PRIMITIVE_TYPE 
 
 		}
-		void draw(Program& program)
+		void draw(const Program& program)
 		{
 			program.use();
 			GLuint loc = glGetUniformLocation(program.ID, "modelMat");
@@ -444,7 +443,16 @@ namespace lim
 
 			// recursive fashion
 			parseNode(scene->mRootNode, scene);
-			fprintf(stdout, "model loaded : %s, %d vertices \n", name.c_str(), getVerticesNum());
+		}
+		void updateNums()
+		{
+			verticesNum = 0;
+			trianglesNum = 0;
+			for( Mesh* mesh : meshes )
+			{
+				verticesNum += mesh->vertices.size();
+				trianglesNum += mesh->indices.size()/3;
+			}
 		}
 		void updateBoundary()
 		{
@@ -452,6 +460,7 @@ namespace lim
 				return;
 			boundary_max = meshes[0]->vertices[0].p;
 			boundary_min = boundary_max;
+
 			for( Mesh* mesh : meshes )
 			{
 				for( n_model::Vertex& v : mesh->vertices )

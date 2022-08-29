@@ -6,7 +6,7 @@
 //	1. crtp로 참조 줄이기, 
 //	2. 헤더파일include 중복관리
 //	4. figure out [this](auto&&... args) -> decltype(auto) { return this->fn(std::forward<decltype(args)>(args)...); }
-//
+//	3. dnd 여러개들어왔을때 모델파일만 골라서 입력받게 조건처리
 
 #ifndef SIMPLYFY_APP_H
 #define SIMPLYFY_APP_H
@@ -20,137 +20,121 @@ namespace lim
 	class SimplifiyApp: public AppBase
 	{
 	private:
-		Camera* mainCamera;
-		std::vector<Scene*> scenes;
-		std::vector<Viewport*> viewports;
-		std::unordered_map<Viewport*, Scene*> connectedScene;
+		Camera* cameras[2];
+		Scene* scenes[2];
+		Viewport* viewports[2];
 
 	public:
 		SimplifiyApp()
 		{
-			scenes.push_back(new FirstScene());
-			mainCamera = new Camera(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0, 0, -1), scr_width/(float)scr_height);
-			viewports.push_back(new Viewport(mainCamera));
-			connectedScene[viewports.back()] = scenes.back();
+			Scene* originalScene = new Scene();
+			originalScene->loadModel("archive/meshes/stanford-bunny.obj");
+			scenes[0] = originalScene;
+
+			Scene* simplifiedScene = new Scene();
+			simplifiedScene->loadModel("archive/meshes/stanford-bunny.obj");
+			scenes[1] = simplifiedScene;
+
+			cameras[0] = new Camera(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0, 0, -1), scr_width/(float)scr_height);
+			cameras[1] = new Camera(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0, 0, -1), scr_width/(float)scr_height);
+
+			Viewport* originalView = new Viewport(cameras[0]);
+			viewports[0] = originalView;
+
+			Viewport* simplifiedView = new Viewport(cameras[1]);
+			viewports[1] = simplifiedView;
 
 			init_callback();
-			initImGui();
+			imgui_modules::initImGui(window);
 		}
 		~SimplifiyApp()
 		{
 			for( Scene* scene : scenes ) delete scene;
 			for( Viewport* viewport : viewports ) delete viewport;
 
-			destroyImGui();
+			imgui_modules::destroyImGui();
 		}
 	private:
 		virtual void update() final
 		{
 			processInput();
 
-			for( std::pair<Viewport*, Scene*> cs : connectedScene )
-			{
-				cs.second->update();
-				cs.second->render(cs.first);
-			}
-			renderImGui();
+			scenes[0]->render(viewports[0]);
+			scenes[1]->render(viewports[1]);
 
+			renderImGui();
 			// render to screen
 			//scenes.back()->render(0, scr_width, scr_height, mainCamera);
 		}
 	private:
-		void initImGui()
-		{
-			IMGUI_CHECKVERSION();
-			ImGui::CreateContext();
-			ImGuiIO& io = ImGui::GetIO(); (void)io;
-			io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
-			//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-			io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
-			io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
-			//io.ConfigViewportsNoAutoMerge = true;
-			//io.ConfigViewportsNoTaskBarIcon = true;
-
-			float fontSize = 18.0f;// *2.0f;
-			//io.Fonts->AddFontFromFileTTF("assets/fonts/opensans/OpenSans-Bold.ttf", fontSize);
-			//io.FontDefault = io.Fonts->AddFontFromFileTTF("assets/fonts/opensans/OpenSans-Regular.ttf", fontSize);
-
-			// Setup Dear ImGui style
-			ImGui::StyleColorsDark();
-			//ImGui::StyleColorsLight();
-
-			// When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
-			ImGuiStyle& style = ImGui::GetStyle();
-			if( io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable )
-			{
-				style.WindowRounding = 0.0f;
-				style.Colors[ImGuiCol_WindowBg].w = 1.0f;
-			}
-
-			// Setup Platform/Renderer backends
-			ImGui_ImplGlfw_InitForOpenGL(window, true);
-			ImGui_ImplOpenGL3_Init("#version 410");
-		}
-		void destroyImGui()
-		{
-			ImGui_ImplOpenGL3_Shutdown();
-			ImGui_ImplGlfw_Shutdown();
-			ImGui::DestroyContext();
-		}
 		void renderImGui()
 		{
-			ImGui_ImplOpenGL3_NewFrame();
-			ImGui_ImplGlfw_NewFrame();
-			ImGui::NewFrame();
-			//ImGuizmo::BeginFrame();
+			imgui_modules::beginImGui();
+			imgui_modules::ShowExampleAppDockSpace();
+			ImGui::ShowDemoWindow();
+
+			viewports[0]->renderImGui();
+			viewports[1]->renderImGui();
+
+			ImGui::Begin("Simplify Options");
 			{
-				imgui_modules::ShowExampleAppDockSpace();
+				static float pct = 0.8f;
+				ImGui::SliderFloat("percent", &pct, 0.0f, 1.0f);
 
-				ImGui::ShowDemoWindow();
-
-				viewports.back()->renderImGui();
-
+				if( ImGui::Button("Simplify") )
 				{
-					static float pct = 0.8f;
-					static int counter = 0;
-
-					ImGui::Begin("Simplify Options");                          // Create a window called "Hello, world!" and append into it.
-
-					ImGui::Text("Hello, Worlds.");               // Display some text (you can use a format strings too)
-
-					ImGui::SliderFloat("float", &pct, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-
-					// Buttons return true when clicked (most widgets return true when edited/activated)
-					if( ImGui::Button("Simplify") )
-					{
-						fqms::simplifyModel(scenes[0]->models[1], pct);
-						scenes[0]->models[1]->resetVRAM();
-						counter++;
-					}
-					ImGui::SameLine();
-					ImGui::Text("counter = %d", counter);
-
-					ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-					ImGui::End();
+					scenes[1]->setModel(fqms::simplifyModel(scenes[0]->model, pct));
+					scenes[1]->alignGround();
 				}
-			}
-			ImGuiIO& io = ImGui::GetIO();
-			io.DisplaySize = ImVec2((float)scr_width, (float)scr_height);
+				ImGui::SameLine();
+				ImGui::Text("target triangles = %d", static_cast<int>(scenes[0]->model->trianglesNum*pct));
 
-			ImGui::Render();
-			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+				ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+			} ImGui::End();
 
-			// Magic!
-			// Update and Render additional Platform Windows
-			// (Platform functions may change the current OpenGL context, so we save/restore it to make it easier to paste this code elsewhere.
-			// For this specific demo app we could also call glfwMakeContextCurrent(window) directly)
-			if( io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable )
+
+			ImGui::Begin("Viewing Options");
 			{
-				GLFWwindow* backup_current_context = glfwGetCurrentContext();
-				ImGui::UpdatePlatformWindows();
-				ImGui::RenderPlatformWindowsDefault();
-				glfwMakeContextCurrent(backup_current_context);
-			}
+				static bool isSameCamera = false;
+				if( ImGui::Checkbox(": use same camera", &isSameCamera) )
+				{
+					if( isSameCamera )
+					{
+						viewports[1]->camera = cameras[0];
+					}
+					else
+					{
+						viewports[1]->camera = cameras[1];
+					}
+				}
+				static int shader_idx = 0;
+				if( ImGui::Combo(": shader", &shader_idx, "Nomal Dot View\0Diffuse\0") )
+				{
+					switch( shader_idx )
+					{
+					case 0: break;
+					}
+				}
+			} ImGui::End();
+
+
+			ImGui::Begin("Model Status");
+			{
+				ImGui::Text("<Original model>");
+				lim::Model& ori = *(scenes[0]->model);
+				ImGui::Text("name : %s", ori.name.c_str());
+				ImGui::Text("#verteces : %d", ori.verticesNum);
+				ImGui::Text("#triangles : %d", ori.trianglesNum);
+				ImGui::Text("#meshes : %d", ori.meshes.size());
+				ImGui::Text("#textures : %d", ori.textures_loaded.size());
+				lim::Model& simp = *(scenes[1]->model);
+				ImGui::NewLine();
+				ImGui::Text("<Original model>");
+				ImGui::Text("#verteces : %d", simp.verticesNum);
+				ImGui::Text("#triangles : %d", simp.trianglesNum);
+			} ImGui::End();
+
+			imgui_modules::endImGui(scr_width, scr_height);
 		}
 
 
@@ -295,31 +279,12 @@ namespace lim
 		}
 		void drop_callback(int count, const char** paths)
 		{
-			FirstScene* fs = dynamic_cast<FirstScene*>(scenes[0]);
 			for( int i = 0; i < count; i++ )
 			{
-				// 여러개들어왔을때 모델파일만 골라서 입력받게 조건처리
-				fs->loadModel(paths[i]);
+				scenes[0]->loadModel(paths[i]);
+				scenes[1]->alignGround();
+				break;
 			}
-
-			/*
-			for( Viewport* vp : viewports )
-			{
-				// 다른 window에서 드래그할때 hovered 인식안됨
-				if( vp->focused == false ) continue;
-
-				FirstScene* fs = dynamic_cast<FirstScene*>(connectedScene[vp]);
-				if( fs==nullptr )
-				{
-					fprintf(stderr, "\nerror : scene down casting error\n");
-					break;
-				}
-
-				for( int i = 0; i < count; i++ )
-				{
-					fs->loadModel(paths[i]);
-				}
-			}*/
 		}
 	};
 
