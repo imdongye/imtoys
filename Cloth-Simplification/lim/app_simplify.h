@@ -130,6 +130,7 @@ namespace lim
 				lim::Model& simp = *(scenes[1]->model);
 				ImGui::NewLine();
 				ImGui::Text("<Simplified model>");
+				ImGui::Text("<한글 model>");
 				ImGui::Text("#verteces : %d", simp.verticesNum);
 				ImGui::Text("#triangles : %d", simp.trianglesNum);
 			} ImGui::End();
