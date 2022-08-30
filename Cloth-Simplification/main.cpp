@@ -11,7 +11,7 @@
 // rid unused variables warnings
 int main(int, char**)
 {
-	lim::SimplifiyApp app;
+	lim::SimplifyApp app;
 	app.run();
 
 	return 0;

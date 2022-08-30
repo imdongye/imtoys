@@ -1,6 +1,9 @@
 //
 //	2022-08-26 / im dong ye
 //
+//	TODO list:
+//	1. 한글 지원
+//
 
 #ifndef IMGUI_MODULES_H
 #define IMGUI_MODULES_H
@@ -26,9 +29,9 @@ namespace lim
 			//io.ConfigViewportsNoAutoMerge = true;
 			//io.ConfigViewportsNoTaskBarIcon = true;
 
-			float fontSize = 18.0f;// *2.0f;
-			//io.Fonts->AddFontFromFileTTF("assets/fonts/opensans/OpenSans-Bold.ttf", fontSize);
-			//io.FontDefault = io.Fonts->AddFontFromFileTTF("assets/fonts/opensans/OpenSans-Regular.ttf", fontSize);
+			//float fontSize = 18.0f;// *2.0f;
+			//io.Fonts->AddFontFromFileTTF("fonts/SpoqaHanSansNeo/SpoqaHanSansNeo-Bold.ttf", fontSize);
+			//io.FontDefault = io.Fonts->AddFontFromFileTTF("fonts/SpoqaHanSansNeo/SpoqaHanSansNeo-Regular.ttf", fontSize);
 
 			// Setup Dear ImGui style
 			ImGui::StyleColorsDark();
