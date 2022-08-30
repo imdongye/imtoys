@@ -11,8 +11,6 @@
 #define SCENE_H
 
 #include "model.h";
-#include "program.h"
-#include "camera.h"
 #include "viewport.h"
 
 namespace lim
@@ -22,8 +20,8 @@ namespace lim
 	public:
 		Model* ground=nullptr;
 		Model* model=nullptr;
+		Program* baseProgram=nullptr;
 		std::vector<Model*> models;
-		std::vector<Program*> programs;
 	public:
 		void alignGround()
 		{
@@ -31,9 +29,10 @@ namespace lim
 			ground->position = glm::vec3(0, -model->getBoundarySize().y*model->scale.y*0.5f, 0);
 			ground->updateModelMat();
 		}
-		void loadModel(const char* path)
+		void loadModel(const char* path, Program* program = nullptr)
 		{
-			setModel(new Model(path));
+			if( program == nullptr ) program = baseProgram;
+			setModel(new Model(path, program));
 		}
 		void setModel(Model* _model)
 		{
@@ -49,12 +48,8 @@ namespace lim
 			alignGround();
 		}
 	public:
-		Scene()
+		Scene(Program* _program): baseProgram(_program)
 		{
-			Program& refProg = *(new Program());
-			refProg.attatch("shader/diffuse.vs").attatch("shader/diffuse.fs").link();
-			programs.push_back(&refProg);
-
 			ground = new Model([](std::vector<lim::n_model::Vertex>& vertices
 							   , std::vector<GLuint>& indices
 							   , std::vector<Texture>& textures)
@@ -68,7 +63,7 @@ namespace lim
 
 								   indices.insert(indices.end(), {0,1,3});
 								   indices.insert(indices.end(), {1,2,3});
-							   }, "ground");
+							   }, baseProgram, "ground");
 			ground->position = glm::vec3(0, -1, 0);
 			ground->updateModelMat();
 			models.push_back(ground);
@@ -77,10 +72,8 @@ namespace lim
 		{
 			for( Model* model : models )
 				delete model;
-			for( Program* programs : programs )
-				delete programs;
 		}
-		virtual void render(GLuint fbo, GLuint width, GLuint height, Camera* camera)
+		void render(GLuint fbo, GLuint width, GLuint height, Camera* camera)
 		{
 			glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 			glViewport(0, 0, width, height);
@@ -88,25 +81,9 @@ namespace lim
 			glClearColor(0, 0, 1, 1);
 			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);// z-buffer clipping
 
-			GLuint loc, pid;
-			Program& program = *programs[0];
-			pid = program.use();
-
-			loc = glGetUniformLocation(pid, "projMat");
-			glUniformMatrix4fv(loc, 1, GL_FALSE, value_ptr(camera->projMat));//&camera.projMat[0][0]);
-
-			loc = glGetUniformLocation(pid, "viewMat"); // also get camera pos here
-			glUniformMatrix4fv(loc, 1, GL_FALSE, value_ptr(camera->viewMat));
-
-			loc = glGetUniformLocation(pid, "cameraPos");
-			glUniform3fv(loc, 1, value_ptr(camera->position));
-
-			// maybe vpMat
-			// and modelMat is declare in model->draw
-
 			for( Model* model : models )
 			{
-				model->draw(*programs[0]);
+				model->draw(camera);
 			}
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}

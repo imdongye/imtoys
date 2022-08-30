@@ -13,5 +13,5 @@ uniform vec3 cameraPos;
 
 void main()
 {   
-    FragColor = texture(map_Kd0, texCoords);
+    FragColor = vec4(texCoords.x, texCoords.y, 1, 1);
 }

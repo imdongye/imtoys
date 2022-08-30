@@ -876,8 +876,10 @@ namespace fqms
 		int vertCount=0;
 		for( GLuint idx: mesh->indices )
 		{
-			fqms::triangles[triCount].v[vertCount++] = idx;
-			//fqms::triangles[triCount].uvs
+			fqms::triangles[triCount].v[vertCount] = idx;
+			fqms::triangles[triCount].uvs[vertCount] = vec3f(mesh->vertices[idx].uv.x,
+															 mesh->vertices[idx].uv.y, 1);
+			vertCount++;
 			if( vertCount == 3 )
 			{
 				vertCount = 0;
@@ -913,6 +915,7 @@ namespace fqms
 			for( int i=0; i<3; i++ )
 			{
 				mesh->indices[idxCount++] = tri.v[i];
+				mesh->vertices[tri.v[i]].uv = glm::vec2(tri.uvs[i].x, tri.uvs[i].y);
 			}
 		}
 		mesh->setupMesh();
@@ -950,7 +953,7 @@ namespace fqms
 			if( simp_mesh != nullptr )
 				new_meshes.push_back(simp_mesh);
 		}
-		lim::Model* result = new lim::Model(new_meshes, model->textures_loaded, model->name);
+		lim::Model* result = new lim::Model(new_meshes, model->textures_loaded, model->program, model->name);
 		return result;
 	}
 };

@@ -26,12 +26,15 @@
 #include <string>
 #include <cassert>
 #include <memory>
+#include <functional>
+#include <vector>
 
 namespace lim
 {
 	class Program
 	{
 	public:
+		std::string name;
 		GLuint ID;
 	private:
 		GLuint vertID;
@@ -43,7 +46,7 @@ namespace lim
 		Program(Program const&) = delete;
 		Program& operator=(Program const&) = delete;
 	public:
-		Program(): ID(0) {}
+		Program(const char* _name = "unnamed"): ID(0), name(_name) {}
 		~Program() { clear(); }
 
 		// chaining //

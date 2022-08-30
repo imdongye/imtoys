@@ -22,12 +22,8 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
-#include <iostream>
-#include <string>
-#include <functional>
-#include <vector>
-
 #include "program.h"
+#include "camera.h"
 
 namespace lim
 {
@@ -282,6 +278,7 @@ namespace lim
 		std::string name;
 		std::vector<Texture> textures_loaded;
 		std::vector<Mesh*> meshes;
+		Program* program;
 		std::string directory; // for load texture
 		GLuint verticesNum;
 		GLuint trianglesNum;
@@ -293,13 +290,13 @@ namespace lim
 		Model(Model const&) = delete;
 		Model& operator=(Model const&) = delete;
 	public:
-		Model(const std::string& _name = ""): position(glm::vec3(0)), rotation(glm::quat()), scale(glm::vec3(1))
-			, pivotMat(glm::mat4(1.0f)), verticesNum(0), name(_name) // mat4(1) is identity mat
+		Model(Program* _program, const std::string& _name = ""): position(glm::vec3(0)), rotation(glm::quat()), scale(glm::vec3(1))
+			, pivotMat(glm::mat4(1.0f)), verticesNum(0), name(_name), program(_program) // mat4(1) is identity mat
 		{
 			updateModelMat();
 		}
-		Model(const std::vector<Mesh*>& _meshes, const std::vector<Texture>& _textures, const std::string& _name="")
-			:Model(_name)
+		Model(const std::vector<Mesh*>& _meshes, const std::vector<Texture>& _textures, Program* _program, const std::string& _name="")
+			:Model(_program, _name)
 		{
 			meshes = _meshes;
 			textures_loaded = _textures;
@@ -308,7 +305,7 @@ namespace lim
 		}
 		// load model
 		// todo: string_view
-		Model(const char* path): Model()
+		Model(const char* path, Program* _program): Model(_program)
 		{
 			load(path);
 			updateNums();
@@ -319,10 +316,10 @@ namespace lim
 		Model(std::function<void(std::vector<n_model::Vertex>& _vertices
 			  , std::vector<GLuint>& _indices
 			  , std::vector<Texture>& _textures)> genMeshFunc
+			  , Program* _program
 			  , std::string _name ="")
-			:Model()
+			:Model(_program, _name)
 		{
-			name = _name;
 			std::vector<n_model::Vertex> vertices;
 			std::vector<GLuint> indices;
 			std::vector<Texture> textures;
@@ -360,14 +357,25 @@ namespace lim
 			//mesh->mPrimitiveTypes =AI_PRIMITIVE_TYPE 
 
 		}
-		void draw(const Program& program)
+		void draw(const Camera* camera)
 		{
-			program.use();
-			GLuint loc = glGetUniformLocation(program.ID, "modelMat");
+			GLuint loc, pid;
+			pid = program->use();
+
+			loc = glGetUniformLocation(pid, "projMat");
+			glUniformMatrix4fv(loc, 1, GL_FALSE, value_ptr(camera->projMat));//&camera.projMat[0][0]);
+
+			loc = glGetUniformLocation(pid, "viewMat"); // also get camera pos here
+			glUniformMatrix4fv(loc, 1, GL_FALSE, value_ptr(camera->viewMat));
+
+			loc = glGetUniformLocation(pid, "cameraPos");
+			glUniform3fv(loc, 1, value_ptr(camera->position));
+
+			loc = glGetUniformLocation(pid, "modelMat");
 			glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(modelMat));
 
 			for( GLuint i=0; i<meshes.size(); i++ )
-				meshes[i]->draw(program);
+				meshes[i]->draw(*program);
 		}
 		void updateModelMat()
 		{
