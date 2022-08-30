@@ -17,16 +17,19 @@
 namespace qem
 {
 	struct Triangle { int v[3]; double err[4]; };
-	struct Vertex { glm::vec3 p; glm::mat4 q; };
+	struct Vertex { glm::vec3 p; Eigen::Matrix4f Q; };
+	struct Edge { Vertex v1; Vertex v2; };
 
 	std::vector<Vertex> vertices;
 	std::vector<Triangle> triangles;
+	std::vector<Edge> edges;
 
 	int triangles_initSize = 0;
 
 	void updateGlobal(lim::Mesh* mesh) {
 		vertices.clear();
 		triangles.clear();
+		edges.clear();
 
 		for (lim::n_model::Vertex& v : mesh->vertices)
 		{
@@ -56,18 +59,28 @@ namespace qem
 		{
 			fprintf(stderr, "simplify failed : mesh is not triangle mesh\n");
 		}
+
+		edges.resize(vertices.size());
 	}
 
 	void mesh_simplification(int target_count, double agressiveness = 7, bool verbose = false)
 	{
-		// Calculate Q matrices
+		// Initialize Q matrices
+		for (int i = 0; i < vertices.size(); i++)
+			vertices[i].Q = Eigen::Matrix4f::Zero();
+
+		// Compute Q matrices
 		for (int i = 0; i < triangles.size(); i++)
 		{
+			int vid0 = triangles[i].v[0];
+			int vid1 = triangles[i].v[1];
+			int vid2 = triangles[i].v[2];
+
 			// Plane equation
 			glm::vec3 p1, p2, p3;
-			p1 = vertices[triangles[i].v[0]].p;
-			p2 = vertices[triangles[i].v[1]].p;
-			p3 = vertices[triangles[i].v[2]].p;
+			p1 = vertices[vid0].p;
+			p2 = vertices[vid1].p;
+			p3 = vertices[vid2].p;
 
 			Eigen::Vector4f p;
 			p[0] = p1.y * (p2.z - p3.z) + p2.y * (p3.z - p1.z) + p3.y * (p1.z - p2.z);
@@ -79,10 +92,16 @@ namespace qem
 
 			p /= normalize;
 
-			std::cout << i << "¹øÂ° »ï°¢Çü" << std::endl;
-			std::cout << p[0] << " " << p[1] << " " << p[2] << std::endl;
-			std::cout << p[0] * p[0] + p[1] * p[1] + p[2] * p[2] << std::endl<<std::endl;
-		}
+			Eigen::Matrix4f K = p * p.transpose();
+
+			vertices[vid0].Q += K;
+			vertices[vid1].Q += K;
+			vertices[vid2].Q += K;
+
+			//Select all valid pairs
+			Edge edge;
+			if (vid0 < vid2) { edge.v1 =  }
+		}							   
 
 	}
 
