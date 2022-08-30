@@ -25,7 +25,7 @@ namespace lim
 		Camera* cameras[2];
 		Scene* scenes[2];
 		Viewport* viewports[2];
-		Program* programs[2];
+		Program* programs[3];
 
 	public:
 		SimplifyApp(): cameraMoveSpeed(1.6f)
@@ -36,6 +36,8 @@ namespace lim
 			programs[1] = new Program("Diffuse");
 			programs[1]->attatch("shader/diffuse.vs").attatch("shader/diffuse.fs").link();
 
+			programs[2] = new Program("Uv");
+			programs[2]->attatch("shader/diffuse.vs").attatch("shader/uv.fs").link();
 
 			Scene* originalScene = new Scene(programs[0]);
 			originalScene->loadModel("archive/meshes/stanford-bunny.obj");
@@ -294,7 +296,7 @@ namespace lim
 		{
 			for( int i = 0; i < count; i++ )
 			{
-				scenes[0]->loadModel(paths[i]);
+				scenes[0]->loadModel(paths[i], scenes[0]->model->program);
 				scenes[1]->alignGround();
 				break;
 			}
