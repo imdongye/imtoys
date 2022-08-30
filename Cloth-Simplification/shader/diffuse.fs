@@ -12,11 +12,6 @@ uniform sampler2D map_Ks0;
 uniform vec3 cameraPos;
 
 void main()
-{    
-    vec3 V = cameraPos - wPos; 
-    V = normalize(V);
-    vec3 N = normalize (cross (dFdx(wPos.xyz), dFdy(wPos.xyz)));
-
-    FragColor = vec4(dot(N, V)*vec3(1),1);   //
-    //FragColor *= texture(map_Kd0, texCoords);
+{   
+    FragColor = texture(map_Kd0, texCoords);
 }

@@ -7,6 +7,7 @@
 //	2. 헤더파일include 중복관리
 //	4. figure out [this](auto&&... args) -> decltype(auto) { return this->fn(std::forward<decltype(args)>(args)...); }
 //	3. dnd 여러개들어왔을때 모델파일만 골라서 입력받게 조건처리
+//
 
 #ifndef SIMPLYFY_APP_H
 #define SIMPLYFY_APP_H
@@ -24,15 +25,23 @@ namespace lim
 		Camera* cameras[2];
 		Scene* scenes[2];
 		Viewport* viewports[2];
+		Program* programs[2];
 
 	public:
 		SimplifyApp(): cameraMoveSpeed(1.6f)
 		{
-			Scene* originalScene = new Scene();
+			programs[0] = new Program("Normal Dot View");
+			programs[0]->attatch("shader/ndv.vs").attatch("shader/ndv.fs").link();
+
+			programs[1] = new Program("Diffuse");
+			programs[1]->attatch("shader/diffuse.vs").attatch("shader/diffuse.fs").link();
+
+
+			Scene* originalScene = new Scene(programs[0]);
 			originalScene->loadModel("archive/meshes/stanford-bunny.obj");
 			scenes[0] = originalScene;
 
-			Scene* simplifiedScene = new Scene();
+			Scene* simplifiedScene = new Scene(programs[0]);
 			simplifiedScene->loadModel("archive/meshes/stanford-bunny.obj");
 			scenes[1] = simplifiedScene;
 
@@ -50,8 +59,10 @@ namespace lim
 		}
 		~SimplifyApp()
 		{
+			for( Camera* camera : cameras ) delete camera;
 			for( Scene* scene : scenes ) delete scene;
 			for( Viewport* viewport : viewports ) delete viewport;
+			for( Program* program : programs ) delete program;
 
 			imgui_modules::destroyImGui();
 		}
@@ -99,25 +110,26 @@ namespace lim
 				if( ImGui::Checkbox(": use same camera", &isSameCamera) )
 				{
 					if( isSameCamera )
-					{
 						viewports[1]->camera = cameras[0];
-					}
 					else
-					{
 						viewports[1]->camera = cameras[1];
-					}
 				}
 
 				ImGui::SliderFloat("moveSpeed", &cameraMoveSpeed, 1.0f, 3.0f);
 
-				static int shader_idx = 0;
-				if( ImGui::Combo(": shader", &shader_idx, "Nomal Dot View\0Diffuse\0") )
+				static int prog_idx = 0;
+				std::vector<const char*> comboList;
+				for( Program* prog : programs )
+					comboList.push_back(prog->name.c_str());
+				if( ImGui::Combo(": shader", &prog_idx, comboList.data(), comboList.size()) )
 				{
-					switch( shader_idx )
+					for( Scene* scene : scenes )
 					{
-					case 0: break;
+						scene->model->program = programs[prog_idx];
 					}
 				}
+
+
 			} ImGui::End();
 
 
