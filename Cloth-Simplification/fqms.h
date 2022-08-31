@@ -861,7 +861,7 @@ namespace fqms
 		fqms::vertices.clear();
 		fqms::triangles.clear();
 
-		for( lim::n_model::Vertex& v : mesh->vertices )
+		for( lim::n_mesh::Vertex& v : mesh->vertices )
 		{
 			fqms::Vertex temp;
 			temp.p.x = v.p.x;
@@ -899,7 +899,7 @@ namespace fqms
 
 		for( fqms::Vertex& v : fqms::vertices )
 		{
-			lim::n_model::Vertex temp;
+			lim::n_mesh::Vertex temp;
 			temp.p.x = v.p.x;
 			temp.p.y = v.p.y;
 			temp.p.z = v.p.z;

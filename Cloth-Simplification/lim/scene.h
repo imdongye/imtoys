@@ -50,7 +50,7 @@ namespace lim
 	public:
 		Scene(Program* _program): baseProgram(_program)
 		{
-			ground = new Model([](std::vector<lim::n_model::Vertex>& vertices
+			ground = new Model([](std::vector<lim::n_mesh::Vertex>& vertices
 							   , std::vector<GLuint>& indices
 							   , std::vector<Texture>& textures)
 							   {

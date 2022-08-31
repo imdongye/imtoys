@@ -16,257 +16,11 @@
 #ifndef MODEL_H
 #define MODEL_H
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
+#include "mesh.h"
 
-#include "program.h"
-#include "camera.h"
 
 namespace lim
 {
-	const int MAX_BONE_INFLUENCE = 4;
-
-	namespace n_model
-	{
-		// 4byte * (3+3+2+3+3+4+4) = 88
-		// offsetof(Vertex, Normal) = 12
-		struct Vertex
-		{
-			glm::vec3 p, n;
-			glm::vec2 uv;
-			glm::vec3 tangent, bitangent;
-			int m_BoneIDs[MAX_BONE_INFLUENCE];
-			float m_Weights[MAX_BONE_INFLUENCE];
-
-			Vertex& operator=(const Vertex& copy)
-			{
-				p=copy.p; n=copy.n;
-				uv=copy.uv;
-				tangent=copy.tangent; bitangent = copy.bitangent;
-				memcpy(m_BoneIDs, copy.m_BoneIDs, sizeof(int) * MAX_BONE_INFLUENCE);
-				memcpy(m_Weights, copy.m_Weights, sizeof(float) * MAX_BONE_INFLUENCE);
-				return *this;
-
-			}
-		};
-	} // namespace n_model
-
-	struct Texture
-	{
-		GLuint id;
-		std::string type;
-		std::string path; // relative path+filename or only filename
-	};
-
-	GLuint loadTextureFromFile(const char* cpath, bool toLinear = true)
-	{
-		std::string spath = std::string(cpath);
-
-		GLuint texID=0;
-		glGenTextures(1, &texID);
-
-		int w, h, channels;
-		// 0 => comp 있는대로
-		void* buf = stbi_load(cpath, &w, &h, &channels, 4); // todo: 0
-
-		if( !buf )
-		{
-			fprintf(stderr, "texture failed to load at path: %s\n", cpath);
-			stbi_image_free(buf);
-			return texID;
-		}
-		else
-		{
-			fprintf(stdout, "texture loaded : %s , %dx%d, %d channels\n", cpath, w, h, channels);
-		}
-
-		// load into vram
-		GLenum format = GL_RGBA;
-		switch( channels )
-		{
-		case 1: format = GL_ALPHA; break;
-		case 2: format = 0; break;
-		case 3: format = GL_RGB; break;
-		case 4:
-		{
-			if( !toLinear ) format = GL_RGBA;
-			else format = GL_SRGB8_ALPHA8; // if hdr => 10bit
-		} break;
-		}
-
-		glGenTextures(1, &texID);
-		glBindTexture(GL_TEXTURE_2D, texID);
-
-		// 0~1 반복 x
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);//GL_REPEAT GL_CLAMP_TO_EDGE
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		// GL_NEAREST : texel만 읽음
-		// GL_LINEAR : 주변점 선형보간
-		// texture을 키울때는 선형보간말고 다른방법 없음.
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		// GL_LINEAR_MIPMAP_LINEAR : mipmap에서 찾아서 4점을 보간하고 다른 mipmap에서 찾아서 또 섞는다.
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		// level : 0 mipmap의 가장큰 level, 나머지는 알아서 생성
-		// internalformat: 파일에 저장된값, format: 사용할값
-		// 따라서 srgb에서 rgb로 선형공간으로 색이 이동되고 계산된후 다시 감마보정을 해준다.
-		// GL_SRGB8_ALPHA8 8은 채널이 8비트 그냥은 10비트
-		glTexImage2D(GL_TEXTURE_2D, 0, format, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, buf);
-		glGenerateMipmap(GL_TEXTURE_2D);
-
-		stbi_image_free(buf);
-		return texID;
-	}
-
-	class Mesh
-	{
-	public:
-		std::string name;
-		std::vector<n_model::Vertex> vertices;
-		std::vector<GLuint> indices;
-		std::vector<Texture> textures;
-		GLuint angles; // set size of indices
-	private:
-		GLuint VAO, VBO, EBO;
-		GLenum drawMode;
-	private:
-		// disable copying
-		Mesh(Mesh const&) = delete;
-		Mesh& operator=(Mesh const&) = delete;
-	public:
-		Mesh(const std::string& _name="", const GLuint& _angle=3)
-			: VAO(0), name(_name), angles(_angle)
-		{
-			// todo: apply every face diff draw mode
-			switch( angles )
-			{
-			case 3: drawMode = GL_TRIANGLES; break;
-			case 2: drawMode = GL_LINE_STRIP; break;
-			case 4: drawMode = GL_TRIANGLE_FAN; break;
-			}
-		}
-		Mesh(const std::vector<n_model::Vertex>& _vertices
-			 , const std::vector<GLuint>& _indices
-			 , const std::vector<Texture>& _textures
-			 , const std::string& _name="", const GLuint& _angle=3)
-			: Mesh(_name, _angle)
-		{
-			vertices = _vertices; // todo: fix deep copy
-			indices = _indices;
-			textures = _textures;
-			setupMesh();
-		}
-		~Mesh()
-		{
-			clear();
-		}
-		void clear()
-		{
-			// vector은 heap 에서 언제 사라지지?
-			vertices.clear();
-			indices.clear();
-			textures.clear();
-			if( VAO!=0 )
-			{
-				glDeleteVertexArrays(1, &VAO);
-				VAO=0;
-			}
-		}
-		void draw(const Program& program)
-		{
-			// texture unifrom var name texture_specularN ...
-			GLuint diffuseNr  = 0;
-			GLuint specularNr = 0;
-			GLuint normalNr   = 0;
-			GLuint ambientNr  = 0;
-			GLuint loc = 0;
-
-			for( GLuint i=0; i<textures.size(); i++ )
-			{
-				std::string type = textures[i].type;
-				// uniform samper2d nr is start with 1
-				// omit 0th
-				int backNum = 0;
-				if( type=="map_Kd" )        backNum = diffuseNr++;
-				else if( type=="map_Ks" )   backNum = specularNr++;
-				else if( type=="map_Bump" ) backNum = normalNr++;
-				else if( type=="map_Ka" )   backNum = ambientNr++;
-
-				std::string varName = type + std::to_string(backNum);
-				glActiveTexture(GL_TEXTURE0 + i);
-				glBindTexture(GL_TEXTURE_2D, textures[i].id);
-				loc = glGetUniformLocation(program.ID, varName.c_str());
-				glUniform1i(loc, i); // to sampler2d
-			}
-
-			glBindVertexArray(VAO);
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-			glDrawElements(drawMode, static_cast<GLuint>(indices.size()), GL_UNSIGNED_INT, 0);
-
-			glBindVertexArray(0);
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-			glActiveTexture(GL_TEXTURE0);
-		}
-		// upload VRAM
-		void setupMesh()
-		{
-			const size_t SIZE_OF_VERTEX = sizeof(n_model::Vertex);
-			if( VAO!=0 )
-				glDeleteVertexArrays(1, &VAO);
-			glGenVertexArrays(1, &VAO);
-			glGenBuffers(1, &VBO);
-			glGenBuffers(1, &EBO);
-
-			glBindVertexArray(VAO);
-
-			glBindBuffer(GL_ARRAY_BUFFER, VBO);
-			glBufferData(GL_ARRAY_BUFFER, vertices.size() * SIZE_OF_VERTEX, &vertices[0], GL_STATIC_DRAW);
-
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-			glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLuint), &indices[0], GL_STATIC_DRAW);
-
-			// VAO setting //
-			// - position
-			glEnableVertexAttribArray(0);
-			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, SIZE_OF_VERTEX, (void*)0);
-			// - normal
-			glEnableVertexAttribArray(1);
-			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, SIZE_OF_VERTEX, (void*)offsetof(n_model::Vertex, n));
-			// - tex coord
-			glEnableVertexAttribArray(2);
-			glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, SIZE_OF_VERTEX, (void*)offsetof(n_model::Vertex, uv));
-			// - tangent
-			glEnableVertexAttribArray(3);
-			glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, SIZE_OF_VERTEX, (void*)offsetof(n_model::Vertex, tangent));
-			// - bi tangnet
-			glEnableVertexAttribArray(4);
-			glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, SIZE_OF_VERTEX, (void*)offsetof(n_model::Vertex, bitangent));
-
-			// - bone ids
-			glEnableVertexAttribArray(5);
-			glVertexAttribIPointer(5, MAX_BONE_INFLUENCE, GL_INT, SIZE_OF_VERTEX, (void*)offsetof(n_model::Vertex, m_BoneIDs));
-			// - weights
-			glEnableVertexAttribArray(6);
-			glVertexAttribPointer(6, MAX_BONE_INFLUENCE, GL_FLOAT, GL_FALSE, SIZE_OF_VERTEX, (void*)offsetof(n_model::Vertex, m_Weights));
-
-			glBindVertexArray(0);
-
-			// 이게 왜 가능한거지
-			//glDeleteBuffers(1, &VBO);
-			//glDeleteBuffers(1, &EBO);
-		}
-		void print() const
-		{
-			fprintf(stdout, "%-18s, angles %d, verts %-7lu, tris %-7lu\n"
-					, name.c_str(), angles, vertices.size(), indices.size()/3);
-		}
-	};
-
-	/// <summary>
-	/// 모델!!
-	/// </summary>
 	class Model
 	{
 	public:
@@ -306,20 +60,20 @@ namespace lim
 		// todo: string_view
 		Model(const char* path, Program* _program): Model(_program)
 		{
-			load(path);
+			loadFile(path);
 			updateNums();
 			fprintf(stdout, "model loaded : %s, vertices: %u\n", name.c_str(), verticesNum);
 			updateBoundary();
 		}
 		// 왜 외부에서 외부에서 생성한 mesh객체의 unique_ptr을 우측값 참조로 받아 push_back할 수 없는거지
-		Model(std::function<void(std::vector<n_model::Vertex>& _vertices
+		Model(std::function<void(std::vector<n_mesh::Vertex>& _vertices
 			  , std::vector<GLuint>& _indices
 			  , std::vector<Texture>& _textures)> genMeshFunc
 			  , Program* _program
 			  , std::string _name ="")
 			:Model(_program, _name)
 		{
-			std::vector<n_model::Vertex> vertices;
+			std::vector<n_mesh::Vertex> vertices;
 			std::vector<GLuint> indices;
 			std::vector<Texture> textures;
 			genMeshFunc(vertices, indices, textures);
@@ -341,20 +95,6 @@ namespace lim
 				delete mesh;
 			}
 			meshes.clear();
-		}
-		void resetVRAM()
-		{
-			for( Mesh* mesh : meshes )
-			{
-				mesh->setupMesh();
-			}
-		}
-		void exportObj(const char* path)
-		{
-			//aiScene* scene = new aiScene();
-			//aiMesh* mesh = new aiMesh();
-			//mesh->mPrimitiveTypes =AI_PRIMITIVE_TYPE 
-
 		}
 		void draw(const Camera* camera)
 		{
@@ -400,8 +140,47 @@ namespace lim
 			std::cout<<"pivot: "<<glm::to_string(pivot)<<std::endl;
 			pivotMat = glm::translate(-pivot);
 		}
+		void exportObj(const char* path)
+		{
+			//aiScene* scene = new aiScene();
+			//aiMesh* mesh = new aiMesh();
+			//mesh->mPrimitiveTypes =AI_PRIMITIVE_TYPE 
+		}
 	private:
-		void load(const char* _path)
+		void updateNums()
+		{
+			verticesNum = 0;
+			trianglesNum = 0;
+			for( Mesh* mesh : meshes )
+			{
+				verticesNum += mesh->vertices.size();
+				trianglesNum += mesh->indices.size()/3;
+			}
+		}
+		void updateBoundary()
+		{
+			if( meshes.size()==0 )
+				return;
+			boundary_max = meshes[0]->vertices[0].p;
+			boundary_min = boundary_max;
+
+			for( Mesh* mesh : meshes )
+			{
+				for( n_mesh::Vertex& v : mesh->vertices )
+				{
+					if( boundary_max.x < v.p.x ) boundary_max.x = v.p.x;
+					else if( boundary_min.x > v.p.x ) boundary_min.x = v.p.x;
+
+					if( boundary_max.y < v.p.y ) boundary_max.y = v.p.y;
+					else if( boundary_min.y > v.p.y ) boundary_min.y = v.p.y;
+
+					if( boundary_max.z < v.p.z ) boundary_max.z = v.p.z;
+					else if( boundary_min.z > v.p.z ) boundary_min.z = v.p.z;
+				}
+			}
+			std::cout<<"boundary size: "<<glm::to_string(getBoundarySize())<<std::endl;
+		}
+		void loadFile(const char* _path)
 		{
 			clear();
 			std::string path = std::string(_path);
@@ -426,6 +205,8 @@ namespace lim
 			}
 
 			fprintf(stdout, "model loading : %s\n", name.c_str());
+
+			/* Assimp 설정 */
 			Assimp::Importer loader;
 			// aiProcess_Triangulate : 다각형이 있다면 삼각형으로
 			GLuint pFrags =   aiProcess_Triangulate;
@@ -438,53 +219,18 @@ namespace lim
 			pFrags |= aiProcess_JoinIdenticalVertices;
 			// aiProcess_SplitLargeMeshes : 큰 mesh를 작은 sub mesh로 나눠줌
 			// aiProcess_OptimizeMeshes : mesh를 합쳐서 draw call을 줄인다. batching?
-
 			const aiScene* scene = loader.ReadFile(path, pFrags);
 
 			if( !scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE
 			   || !scene->mRootNode )
 			{
-				fprintf(stderr, "%s\n", loader.GetErrorString());
+				fprintf(stderr, "[error, assimp]%s\n", loader.GetErrorString());
 				return;
 			}
 
 			// recursive fashion
 			parseNode(scene->mRootNode, scene);
 		}
-		void updateNums()
-		{
-			verticesNum = 0;
-			trianglesNum = 0;
-			for( Mesh* mesh : meshes )
-			{
-				verticesNum += mesh->vertices.size();
-				trianglesNum += mesh->indices.size()/3;
-			}
-		}
-		void updateBoundary()
-		{
-			if( meshes.size()==0 )
-				return;
-			boundary_max = meshes[0]->vertices[0].p;
-			boundary_min = boundary_max;
-
-			for( Mesh* mesh : meshes )
-			{
-				for( n_model::Vertex& v : mesh->vertices )
-				{
-					if( boundary_max.x < v.p.x ) boundary_max.x = v.p.x;
-					else if( boundary_min.x > v.p.x ) boundary_min.x = v.p.x;
-
-					if( boundary_max.y < v.p.y ) boundary_max.y = v.p.y;
-					else if( boundary_min.y > v.p.y ) boundary_min.y = v.p.y;
-
-					if( boundary_max.z < v.p.z ) boundary_max.z = v.p.z;
-					else if( boundary_min.z > v.p.z ) boundary_min.z = v.p.z;
-				}
-			}
-			std::cout<<"boundary size: "<<glm::to_string(getBoundarySize())<<std::endl;
-		}
-
 		// load texture
 		std::vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type)
 		{
@@ -531,14 +277,14 @@ namespace lim
 		}
 		void parseMesh(aiMesh* mesh, const aiScene* scene)
 		{
-			std::vector<n_model::Vertex> vertices;
+			std::vector<n_mesh::Vertex> vertices;
 			std::vector<GLuint> indices;
 			std::vector<Texture> textures;
 			// now only triangle mesh
 			GLuint angles = 3;
 
 			// - per vertex
-			n_model::Vertex vertex;
+			n_mesh::Vertex vertex;
 			for( GLuint i=0; i<mesh->mNumVertices; i++ )
 			{
 				vertex.p = glm::vec3(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z);
@@ -598,7 +344,7 @@ namespace lim
 			for( GLuint i=0; i<node->mNumMeshes; i++ )
 			{
 				parseMesh(scene->mMeshes[node->mMeshes[i]], scene);
-				fprintf(stdout, "mesh loaded : ", i);
+				fprintf(stdout, "mesh loaded : ");
 				(*meshes.back()).print();
 			}
 			for( GLuint i=0; i<node->mNumChildren; i++ )
