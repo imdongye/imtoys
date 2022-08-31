@@ -202,8 +202,7 @@ namespace lim
 			}
 
 			glBindVertexArray(VAO);
-			glBindBuffer(GL_ARRAY_BUFFER, VBO);
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO); // need?
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 			glDrawElements(drawMode, static_cast<GLuint>(indices.size()), GL_UNSIGNED_INT, 0);
 
 			glBindVertexArray(0);

@@ -45,11 +45,11 @@ namespace lim
 			glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 			glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1); // mac support 4.1
 			glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-			// glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 		#ifdef __APPLE__
 			glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 		#endif
 			glfwWindowHint(GLFW_SAMPLES, 8); // multisampling sample 3x3
+			// glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
 			window = glfwCreateWindow(scr_width, scr_height, "simplification", NULL, NULL);
 			if( window == NULL )

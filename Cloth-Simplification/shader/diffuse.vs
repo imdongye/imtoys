@@ -24,6 +24,6 @@ void main()
 {
     texCoords = aTexCoords;
     wPos = (modelMat * vec4(aPos, 1.0)).xyz;
-    wNorm = (modelMat * vec4(aNormal, 1.0)).xyz; // do not with nonuniform scale
+    wNorm = (modelMat * vec4(aNormal, 0)).xyz; // do not with nonuniform scale
     gl_Position = projMat * viewMat * vec4(wPos, 1.0);
 }
