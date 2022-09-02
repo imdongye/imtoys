@@ -29,7 +29,6 @@ namespace lim
 		GLFWwindow* window;
 		WindowData wData;
 		float deltaTime; // sec
-		glm::vec4 clear_color ={0.15f, 0.11f, 0.40f, 1.00f};
 
 		GLuint scr_width = 1200;
 		GLuint scr_height = 1000;
@@ -38,7 +37,7 @@ namespace lim
 	private:
 		float lastFrame; // for deltatime
 	public:
-		AppBase()
+		AppBase(GLuint width, GLuint height): scr_width(width), scr_height(height)
 		{
 			glfwSetErrorCallback(error_callback);
 			if( !glfwInit() ) std::exit(-1);

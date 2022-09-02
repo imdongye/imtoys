@@ -17,7 +17,7 @@ namespace lim
 {
 	namespace imgui_modules
 	{
-		static void initImGui(GLFWwindow* window)
+		static inline void initImGui(GLFWwindow* window)
 		{
 			IMGUI_CHECKVERSION();
 			ImGui::CreateContext();
@@ -49,14 +49,14 @@ namespace lim
 			ImGui_ImplGlfw_InitForOpenGL(window, true);
 			ImGui_ImplOpenGL3_Init("#version 410");
 		}
-		static void beginImGui()
+		static inline void beginImGui()
 		{
 			ImGui_ImplOpenGL3_NewFrame();
 			ImGui_ImplGlfw_NewFrame();
 			ImGui::NewFrame();
 			//ImGuizmo::BeginFrame();
 		}
-		static void endImGui(float scr_width, float scr_height)
+		static inline void endImGui(float scr_width, float scr_height)
 		{
 			ImGuiIO& io = ImGui::GetIO();
 			io.DisplaySize = ImVec2(scr_width, scr_height);
@@ -76,7 +76,7 @@ namespace lim
 				glfwMakeContextCurrent(backup_current_context);
 			}
 		}
-		static void destroyImGui()
+		static inline void destroyImGui()
 		{
 			ImGui_ImplOpenGL3_Shutdown();
 			ImGui_ImplGlfw_Shutdown();
@@ -101,7 +101,7 @@ namespace lim
 		// because that window is submitted as part of the part of the NewFrame() call. An easy workaround is that you can create
 		// your own implicit "Debug##2" window after calling DockSpace() and leave it in the window stack for anyone to use.
 			// If you strip some features of, this demo is pretty much equivalent to calling DockSpaceOverViewport()!
-		static void ShowExampleAppDockSpace()
+		static inline void ShowExampleAppDockSpace()
 		{
 			// In most cases you should be able to just call DockSpaceOverViewport() and ignore all the code below!
 			// In this specific demo, we are not using DockSpaceOverViewport() because:

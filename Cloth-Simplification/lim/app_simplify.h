@@ -28,7 +28,7 @@ namespace lim
 		Program* programs[4];
 
 	public:
-		SimplifyApp(): cameraMoveSpeed(1.6f)
+		SimplifyApp(): AppBase(1200, 960), cameraMoveSpeed(1.6f)
 		{
 			programs[0] = new Program("Normal Dot View");
 			programs[0]->attatch("shader/ndv.vs").attatch("shader/ndv.fs").link();

@@ -32,7 +32,7 @@ namespace lim
 		void loadModel(const char* path, Program* program = nullptr)
 		{
 			if( program == nullptr ) program = baseProgram;
-			setModel(new Model(path, program));
+			setModel(new Model(path, program, true));
 		}
 		void setModel(Model* _model)
 		{
@@ -42,9 +42,7 @@ namespace lim
 				delete model;
 			}
 			model = _model;
-			model->setUnitScaleAndPivot();
-			model->updateModelMat();
-			models.push_back(model);
+			models.push_back(_model);
 			alignGround();
 		}
 	public:

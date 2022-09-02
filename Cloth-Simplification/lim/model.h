@@ -58,12 +58,18 @@ namespace lim
 		}
 		// load model
 		// todo: string_view
-		Model(const char* path, Program* _program): Model(_program)
+		Model(const char* path, Program* _program, bool makeNormalized): Model(_program)
 		{
 			loadFile(path);
 			updateNums();
 			fprintf(stdout, "model loaded : %s, vertices: %u\n", name.c_str(), verticesNum);
 			updateBoundary();
+			if( makeNormalized )
+			{
+				setUnitScaleAndPivot();
+				updateModelMat();
+			}
+			printf("\n");
 		}
 		// 왜 외부에서 외부에서 생성한 mesh객체의 unique_ptr을 우측값 참조로 받아 push_back할 수 없는거지
 		Model(std::function<void(std::vector<n_mesh::Vertex>& _vertices
@@ -80,8 +86,9 @@ namespace lim
 
 			meshes.push_back(new Mesh(vertices, indices, textures, _name));
 			updateNums();
-			fprintf(stdout, "\ngen model mesh : %s, vertices: %u\n", name.c_str(), verticesNum);
+			fprintf(stdout, "gen model mesh : %s, vertices: %u\n", name.c_str(), verticesNum);
 			updateBoundary();
+			printf("\n");
 		}
 		~Model()
 		{
@@ -332,9 +339,6 @@ namespace lim
 			std::vector<Texture> heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT);
 			textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
 
-			// c++
-			//std::unique_ptr<Mesh>(new Mesh(vertices, indices, textures, mesh->mName.C_Str(), angles));
-			// c++ 14
 			meshes.push_back(new Mesh(vertices, indices, textures
 							 , mesh->mName.C_Str(), angles));
 		}
@@ -353,5 +357,5 @@ namespace lim
 			}
 		}
 	};
-} // namespace lim
-#endif // !MODEL_H
+}
+#endif

@@ -14,16 +14,21 @@ namespace lim
 	class Framebuffer
 	{
 	private:
-		Program toScrProgram;
+		// BSS 메모리에 저장되어 0으로 초기화된다
+		static Program* toScrProgram;
 	public:
 		GLuint width=0, height=0;
 		GLuint FBO, colorTex, RBO, quadVAO;
 	public:
 		Framebuffer(): FBO(0)
 		{
-			toScrProgram.attatch("shader/fb_to_scr.vs").attatch("shader/fb_to_scr.fs").link();
+			if( toScrProgram == nullptr )
+			{
+				toScrProgram = new Program("toScrProgram");
+				toScrProgram->attatch("shader/fb_to_scr.vs").attatch("shader/fb_to_scr.fs").link();
+			}
 
-			GLuint loc = glGetUniformLocation(toScrProgram.use(), "screenTex");
+			GLuint loc = glGetUniformLocation(toScrProgram->use(), "screenTex");
 			glUniform1i(loc, 0);
 
 			// Array for full-screen quad
@@ -58,7 +63,12 @@ namespace lim
 		~Framebuffer()
 		{
 			clear();
-			toScrProgram.clear();
+			if( quadVAO!=0 )
+			{
+				glDeleteVertexArrays(1, &quadVAO);
+				quadVAO=0;
+			}
+			// static pointer delete가 필요한가?
 		}
 		void clear()
 		{
@@ -125,7 +135,7 @@ namespace lim
 			glClearColor(1, 1, 1, 1);
 			glClear(GL_COLOR_BUFFER_BIT);
 
-			toScrProgram.use();
+			toScrProgram->use();
 			glBindVertexArray(quadVAO);
 			glBindTexture(GL_TEXTURE_2D, colorTex);	// use the color attachment texture as the texture of the quad plane
 			glActiveTexture(GL_TEXTURE0);
@@ -134,7 +144,7 @@ namespace lim
 			glBindVertexArray(0);
 		}
 	};
-
+	Program* Framebuffer::toScrProgram = nullptr;
 } // ! namespace lim
 
 #endif
