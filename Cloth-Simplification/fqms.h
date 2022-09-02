@@ -439,8 +439,8 @@ namespace fqms
 
 					int i0=t.v[j]; Vertex& v0 = vertices[i0];
 					int i1=t.v[(j+1)%3]; Vertex& v1 = vertices[i1];
-					// Border check
-					if( v0.border != v1.border )  continue;
+					// Border check -> 이상한데
+					if (v0.border == 1 || v1.border == 1) continue;
 
 					// Compute vertex to collapse to
 					vec3f p;
@@ -747,8 +747,10 @@ namespace fqms
 							vcount[ofs]++;
 					}
 				}
-				loopj(0, vcount.size()) if( vcount[j]==1 )
-					vertices[vids[j]].border=1;
+				loopj(0, vcount.size()) if (vcount[j] == 1)
+				{
+					vertices[vids[j]].border = 1;
+				}
 			}
 			//initialize errors
 			loopi(0, vertices.size())
@@ -798,6 +800,7 @@ namespace fqms
 			{
 				vertices[i].tstart=dst;
 				vertices[dst].p=vertices[i].p;
+				vertices[dst].border = vertices[i].border;
 				dst++;
 			}
 		loopi(0, triangles.size())
@@ -904,6 +907,7 @@ namespace fqms
 			temp.p.y = v.p.y;
 			temp.p.z = v.p.z;
 			mesh->vertices.push_back(temp);
+			if (v.border == 1) mesh->vertices.back().color = glm::vec3(1, 0, 0); 
 		}
 
 		// make triangles & edge

@@ -4,6 +4,7 @@ out vec4 FragColor;
 in vec2 texCoords;
 in vec3 wPos;
 in vec3 wNorm;
+//in vec3 wColor;
 
 uniform vec3 cameraPos;
 

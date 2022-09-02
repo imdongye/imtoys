@@ -14,6 +14,7 @@
 
 #include "application.h"
 #include "../fqms.h"
+#include "qem.h"
 //#include "simplify.h"
 
 namespace lim
@@ -97,6 +98,7 @@ namespace lim
 				if( ImGui::Button("Simplify") )
 				{
 					scenes[1]->setModel(fqms::simplifyModel(scenes[0]->model, pct));
+					//scenes[1]->setModel(qem::modelSimplification(scenes[0]->model, pct));
 					scenes[1]->alignGround();
 				}
 				ImGui::SameLine();

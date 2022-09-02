@@ -40,11 +40,13 @@ namespace lim
 			glm::vec3 tangent, bitangent;
 			int m_BoneIDs[MAX_BONE_INFLUENCE];
 			float m_Weights[MAX_BONE_INFLUENCE];
+			glm::vec3 color = glm::vec3(1);
 
 			Vertex& operator=(const Vertex& copy)
 			{
 				p=copy.p; n=copy.n;
 				uv=copy.uv;
+				color = copy.color;
 				tangent=copy.tangent; bitangent = copy.bitangent;
 				memcpy(m_BoneIDs, copy.m_BoneIDs, sizeof(int) * MAX_BONE_INFLUENCE);
 				memcpy(m_Weights, copy.m_Weights, sizeof(float) * MAX_BONE_INFLUENCE);
@@ -252,6 +254,11 @@ namespace lim
 			glEnableVertexAttribArray(6);
 			glVertexAttribPointer(6, MAX_BONE_INFLUENCE, GL_FLOAT, GL_FALSE, SIZE_OF_VERTEX, (void*)offsetof(n_model::Vertex, m_Weights));
 
+			// color
+			//glEnableVertexAttribArray(7);
+			//glVertexAttribPointer(7, 3, GL_FLOAT, GL_FALSE, SIZE_OF_VERTEX, (void*)offsetof(n_model::Vertex, color));
+
+
 			glBindVertexArray(0);
 
 			// 이게 왜 가능한거지
@@ -439,7 +446,6 @@ namespace lim
 			pFrags |= aiProcess_JoinIdenticalVertices;
 			// aiProcess_SplitLargeMeshes : 큰 mesh를 작은 sub mesh로 나눠줌
 			// aiProcess_OptimizeMeshes : mesh를 합쳐서 draw call을 줄인다. batching?
-
 			const aiScene* scene = loader.ReadFile(path, pFrags);
 
 			if( !scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE

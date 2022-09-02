@@ -24,7 +24,7 @@ namespace qem
 	std::vector<Triangle> triangles;
 	std::vector<Edge> edges;
 
-	int triangles_initSize = 0;
+	float threshold = 0.0005;
 
 	void updateGlobal(lim::Mesh* mesh) {
 		vertices.clear();
@@ -60,7 +60,6 @@ namespace qem
 			fprintf(stderr, "simplify failed : mesh is not triangle mesh\n");
 		}
 
-		edges.resize(vertices.size());
 	}
 
 	void mesh_simplification(int target_count, double agressiveness = 7, bool verbose = false)
@@ -100,9 +99,34 @@ namespace qem
 
 			//Select all valid pairs
 			Edge edge;
-			if (vid0 < vid2) { edge.v1 =  }
-		}							   
+			if (vid0 < vid1) { edge.v1 = vertices[vid0]; edge.v2 = vertices[vid1];}
+			else { edge.v2 = vertices[vid0]; edge.v1 = vertices[vid1]; }
 
+			if(edges.size() < 1)
+				edges.push_back(edge);
+			else {
+				for (int j = 0; j < edges.size(); j++)
+					if ((edge.v1.p != edges[j].v1.p && edge.v2.p != edges[j].v2.p))
+						edges.push_back(edge);
+			}
+			if (vid0 < vid2) { edge.v1 = vertices[vid0]; edge.v2 = vertices[vid2]; }
+			else { edge.v2 = vertices[vid0]; edge.v1 = vertices[vid2]; }
+
+			for (int j = 0; j < edges.size(); j++)
+				if (edge.v1.p != edges[j].v1.p && edge.v2.p != edges[j].v2.p)
+					edges.push_back(edge);
+
+			if (vid1 < vid2) { edge.v1 = vertices[vid1]; edge.v2 = vertices[vid2]; }
+			else { edge.v2 = vertices[vid1]; edge.v1 = vertices[vid2]; }
+			
+			for (int j = 0; j < edges.size(); j++)
+				if (edge.v1.p != edges[j].v1.p && edge.v2.p != edges[j].v2.p)
+					edges.push_back(edge);
+		}
+		// Duplicated edges 처리하기
+
+		// Compute target v
+		
 	}
 
 
@@ -156,7 +180,7 @@ namespace qem
 		return result;
 	}
 
-	lim::Model* modelSimplification(lim::Model* model, int i, float lived_pct = 0.8f) {
+	lim::Model* modelSimplification(lim::Model* model, float lived_pct = 0.8f) {
 		printf("\nsimplify model : %s, %d vertices\n", model->name.c_str(), model->verticesNum);
 		std::vector<lim::Mesh*> new_meshes;
 		for (lim::Mesh* mesh : model->meshes)
@@ -165,7 +189,7 @@ namespace qem
 			if (simp_mesh != nullptr)
 				new_meshes.push_back(simp_mesh);
 		}
-		lim::Model* result = new lim::Model(new_meshes, model->textures_loaded, model->name);
+		lim::Model* result = new lim::Model(new_meshes, model->textures_loaded, model->program, model->name);
 		return result;
 	}
 };
