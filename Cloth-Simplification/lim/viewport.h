@@ -68,7 +68,7 @@ namespace lim
 				camera->updateProjMat();
 			}
 
-			GLuint texID = framebuffer->colorTex;
+			GLuint texID = framebuffer->postProcessingTex;
 			if( texID!=0 )
 				ImGui::Image(reinterpret_cast<void*>(texID), ImVec2{(float)width, (float)height}, ImVec2{0, 1}, ImVec2{1, 0});
 			ImGui::End();

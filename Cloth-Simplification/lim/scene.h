@@ -74,8 +74,14 @@ namespace lim
 		}
 		void render(Viewport* vp)
 		{
-			if( vp->framebuffer->FBO==0 ) return;
-			render(vp->framebuffer->FBO, vp->framebuffer->width, vp->framebuffer->height, vp->camera);
+			const Framebuffer& fb =  *(vp->framebuffer);
+			if( fb.FBO==0 ) return;
+			render(fb.FBO, fb.width, fb.height, vp->camera);
+
+			glBindFramebuffer(GL_READ_FRAMEBUFFER, fb.FBO);
+			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fb.postProcessingFBO);
+			glBlitFramebuffer(0, 0, fb.width, fb.height, 0, 0, fb.width, fb.height
+							  , GL_COLOR_BUFFER_BIT, GL_NEAREST);
 		}
 	};
 }

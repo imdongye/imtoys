@@ -13,52 +13,55 @@ namespace lim
 {
 	class Framebuffer
 	{
-	private:
+	public:
 		// BSS 메모리에 저장되어 0으로 초기화된다
 		static Program* toScrProgram;
+		static GLuint quadVAO;
+		GLuint postProcessingFBO, colorTex, RBO;
 	public:
 		GLuint width=0, height=0;
-		GLuint FBO, colorTex, RBO, quadVAO;
+		GLuint FBO, postProcessingTex;
 	public:
 		Framebuffer(): FBO(0)
 		{
-			if( toScrProgram == nullptr )
+			if( toScrProgram == 0 )
 			{
 				toScrProgram = new Program("toScrProgram");
 				toScrProgram->attatch("shader/fb_to_scr.vs").attatch("shader/fb_to_scr.fs").link();
+				GLuint loc = glGetUniformLocation(toScrProgram->use(), "screenTex");
+				glUniform1i(loc, 0);
 			}
+			if( quadVAO == 0 )
+			{
+				// Array for full-screen quad
+				GLfloat verts[] ={
+					-1.0f, -1.0f, 0.0f, 1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f,
+					-1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f, -1.0f, 1.0f, 0.0f
+				};
+				GLfloat tc[] ={
+					0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,
+					0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f
+				};
 
-			GLuint loc = glGetUniformLocation(toScrProgram->use(), "screenTex");
-			glUniform1i(loc, 0);
+				// Set up the buffers
+				unsigned int handle[2];
+				glGenBuffers(2, handle);
+				glBindBuffer(GL_ARRAY_BUFFER, handle[0]);
+				glBufferData(GL_ARRAY_BUFFER, 6 * 3 * sizeof(float), verts, GL_STATIC_DRAW);
+				glBindBuffer(GL_ARRAY_BUFFER, handle[1]);
+				glBufferData(GL_ARRAY_BUFFER, 6 * 2 * sizeof(float), tc, GL_STATIC_DRAW);
 
-			// Array for full-screen quad
-			GLfloat verts[] ={
-				-1.0f, -1.0f, 0.0f, 1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f,
-				-1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f, -1.0f, 1.0f, 0.0f
-			};
-			GLfloat tc[] ={
-				0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,
-				0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f
-			};
-
-			// Set up the buffers
-			unsigned int handle[2];
-			glGenBuffers(2, handle);
-			glBindBuffer(GL_ARRAY_BUFFER, handle[0]);
-			glBufferData(GL_ARRAY_BUFFER, 6 * 3 * sizeof(float), verts, GL_STATIC_DRAW);
-			glBindBuffer(GL_ARRAY_BUFFER, handle[1]);
-			glBufferData(GL_ARRAY_BUFFER, 6 * 2 * sizeof(float), tc, GL_STATIC_DRAW);
-
-			// Set up the vertex array object
-			glGenVertexArrays(1, &quadVAO);
-			glBindVertexArray(quadVAO);
-			glBindBuffer(GL_ARRAY_BUFFER, handle[0]);
-			glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-			glEnableVertexAttribArray(0);  // Vertex position
-			glBindBuffer(GL_ARRAY_BUFFER, handle[1]);
-			glVertexAttribPointer((GLuint)1, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
-			glEnableVertexAttribArray(1);  // Texture coordinates
-			glBindVertexArray(0);
+				// Set up the vertex array object
+				glGenVertexArrays(1, &quadVAO);
+				glBindVertexArray(quadVAO);
+				glBindBuffer(GL_ARRAY_BUFFER, handle[0]);
+				glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+				glEnableVertexAttribArray(0);  // Vertex position
+				glBindBuffer(GL_ARRAY_BUFFER, handle[1]);
+				glVertexAttribPointer((GLuint)1, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
+				glEnableVertexAttribArray(1);  // Texture coordinates
+				glBindVertexArray(0);
+			}
 		}
 		~Framebuffer()
 		{
@@ -76,6 +79,10 @@ namespace lim
 			glDeleteTextures(1, &colorTex);
 			glDeleteRenderbuffers(1, &RBO);
 			FBO = colorTex = RBO = 0;
+
+			glDeleteFramebuffers(1, &postProcessingFBO);
+			glDeleteTextures(1, &postProcessingTex);
+			postProcessingFBO = postProcessingTex = 0;
 		}
 		void resize(GLuint _width, GLuint _height)
 		{
@@ -87,30 +94,32 @@ namespace lim
 			if( FBO != 0 )
 				clear();
 
+			glGenFramebuffers(1, &FBO);
+			glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+
+			// glTexStorage2D 텍스쳐 크기 고정
+			// glTexImage2D 텍스쳐크기 변경가능 0, GL_RGBA8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+			// glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, MSAA
+
+			const int samples = 8;
 			glGenTextures(1, &colorTex);
-			glBindTexture(GL_TEXTURE_2D, colorTex);
-			// glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, internalFormat, width, height, GL_FALSE);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
-			// why 2의 승수가 아니여도 돼나?
-			//glTexStorage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, width); // storage는 텍스쳐 크기변경불가능
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-			glBindTexture(GL_TEXTURE_2D, 0);
+			glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, colorTex);
+			glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGB, width, height, GL_TRUE);
+			glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+			// Bind the texture to the FBO
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, colorTex, 0);
+
 
 			// Create the depth buffer (stencil)
 			// render buffer은 셰이더에서 접근할수없는 텍스쳐, 속도면에서 장점
 			glGenRenderbuffers(1, &RBO);
 			glBindRenderbuffer(GL_RENDERBUFFER, RBO);
-			glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
+			glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, GL_DEPTH_COMPONENT, width, height);
 			glBindRenderbuffer(GL_RENDERBUFFER, 0);
-
-
-			glGenFramebuffers(1, &FBO);
-			glBindFramebuffer(GL_FRAMEBUFFER, FBO);
-			// Bind the texture to the FBO
-			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
 			// Bind the depth buffer to the FBO
 			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, RBO);
 
@@ -119,8 +128,27 @@ namespace lim
 			//glDrawBuffers(1, drawBuffers);
 
 			// error check
-			if( glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE ) fprintf(stderr, "FBO Error %d %d\n", width, height);
+			if( glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE )
+				fprintf(stderr, "FBO Error %d %d\n", width, height);
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+
+			/* for pass imgui image and post processing */
+			glGenFramebuffers(1, &postProcessingFBO);
+			glBindFramebuffer(GL_FRAMEBUFFER, postProcessingFBO);
+
+			glGenTextures(1, &postProcessingTex);
+			glBindTexture(GL_TEXTURE_2D, postProcessingTex);
+			glTexImage2D(GL_TEXTURE_2D, samples, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glBindTexture(GL_TEXTURE_2D, 0);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, postProcessingTex, 0);
+
+			if( glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE )
+				fprintf(stderr, "postProcessingFBO Error %d %d\n", width, height);
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
 		void copyToBackBuf()
@@ -138,14 +166,15 @@ namespace lim
 
 			toScrProgram->use();
 			glBindVertexArray(quadVAO);
-			glBindTexture(GL_TEXTURE_2D, colorTex);	// use the color attachment texture as the texture of the quad plane
+			glBindTexture(GL_TEXTURE_2D, postProcessingTex);	// use the color attachment texture as the texture of the quad plane
 			glActiveTexture(GL_TEXTURE0);
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 
 			glBindVertexArray(0);
 		}
 	};
-	Program* Framebuffer::toScrProgram = nullptr;
+	Program* Framebuffer::toScrProgram = 0;
+	GLuint Framebuffer::quadVAO = 0;
 } // ! namespace lim
 
 #endif

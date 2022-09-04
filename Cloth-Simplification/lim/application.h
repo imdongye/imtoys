@@ -47,8 +47,11 @@ namespace lim
 		#ifdef __APPLE__
 			glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 		#endif
-			glfwWindowHint(GLFW_SAMPLES, 8); // multisampling sample 3x3
 			// glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+
+			/* MASS with no framebuffer */
+			// glfwWindowHint(GLFW_SAMPLES, 8); // multisampling sample 3x3
+			// glEnable(GL_MULTISAMPLES);
 
 			window = glfwCreateWindow(scr_width, scr_height, "simplification", NULL, NULL);
 			if( window == NULL )

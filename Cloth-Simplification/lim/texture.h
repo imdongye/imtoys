@@ -75,7 +75,7 @@ namespace lim
 		// level : 0 mipmap의 가장큰 level, 나머지는 알아서 생성
 		// internalformat: 파일에 저장된값, format: 사용할값
 		// 따라서 srgb에서 rgb로 선형공간으로 색이 이동되고 계산된후 다시 감마보정을 해준다.
-		// GL_SRGB8_ALPHA8 8은 채널이 8비트 그냥은 10비트
+		/* srgb -> rgb -> render -> srgb(glEnable(gl_framebuffer_srgb) */
 		glTexImage2D(GL_TEXTURE_2D, 0, format, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, buf);
 		glGenerateMipmap(GL_TEXTURE_2D);
 
