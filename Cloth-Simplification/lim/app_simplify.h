@@ -304,8 +304,9 @@ namespace lim
 		{
 			for( int i = 0; i < count; i++ )
 			{
+				Program* usedProg = models[0]->program;
 				delete models[0];
-				models[0] = new Model(paths[i], programs[0], true);
+				models[0] = new Model(paths[i], usedProg, true);
 				scenes[0]->setModel(models[0]);
 				scenes[1]->setModel(models[0]);
 				break;

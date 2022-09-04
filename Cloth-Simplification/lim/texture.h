@@ -50,12 +50,14 @@ namespace lim
 		{
 		case 1: format = GL_ALPHA; break;
 		case 2: format = 0; break;
-		case 3: format = GL_RGB; break;
+		case 3:
+			if( !toLinear ) format = GL_RGB;
+			else format = GL_SRGB8; // if hdr => 10bit
+			break;
 		case 4:
-		{
 			if( !toLinear ) format = GL_RGBA;
 			else format = GL_SRGB8_ALPHA8; // if hdr => 10bit
-		} break;
+			break;
 		}
 
 		glGenTextures(1, &texID);

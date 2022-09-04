@@ -60,6 +60,7 @@ namespace lim
 		void render(GLuint fbo, GLuint width, GLuint height, Camera* camera)
 		{
 			glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+			glEnable(GL_FRAMEBUFFER_SRGB);
 			glViewport(0, 0, width, height);
 			glEnable(GL_DEPTH_TEST);
 			glClearColor(0, 0, 1, 1);

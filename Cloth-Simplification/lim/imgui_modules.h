@@ -62,6 +62,7 @@ namespace lim
 			io.DisplaySize = ImVec2(scr_width, scr_height);
 
 			ImGui::Render();
+			glDisable(GL_FRAMEBUFFER_SRGB);
 			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 			// Magic!

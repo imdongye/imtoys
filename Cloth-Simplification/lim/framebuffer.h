@@ -129,6 +129,7 @@ namespace lim
 				return;
 
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			glEnable(GL_FRAMEBUFFER_SRGB);
 			glViewport(0, 0, width, height);
 			glDisable(GL_DEPTH_TEST);
 
