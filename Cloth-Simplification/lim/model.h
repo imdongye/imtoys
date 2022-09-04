@@ -29,15 +29,15 @@ namespace lim
 		glm::vec3 scale;
 		glm::mat4 modelMat;
 		std::string name;
-		std::vector<Texture> textures_loaded;
+		std::vector<Texture> textures_loaded; // for prevent dup texture loading
 		std::vector<Mesh*> meshes;
 		Program* program;
-		std::string directory; // for load texture
 		GLuint verticesNum;
 		GLuint trianglesNum;
 		glm::vec3 boundary_max;
 		glm::vec3 boundary_min;
 	private:
+		std::string directory; // for load texture
 		glm::mat4 pivotMat;
 		// Disable Copying and Assignment
 		Model(Model const&) = delete;
@@ -48,28 +48,36 @@ namespace lim
 		{
 			updateModelMat();
 		}
-		Model(const std::vector<Mesh*>& _meshes, const std::vector<Texture>& _textures, Program* _program, const std::string& _name="")
-			:Model(_program, _name)
+		Model(const Model& model, const std::vector<Mesh*>& _meshes)
+			:Model(model.program, model.name)
 		{
 			meshes = _meshes;
-			textures_loaded = _textures;
 			updateNums();
 			updateBoundary();
+
+			textures_loaded = model.textures_loaded;
+			position = model.position;
+			scale = model.scale;
+			rotation = model.rotation;
+			modelMat = model.modelMat;
+			directory = model.directory;
+			pivotMat = model.pivotMat;
 		}
 		// load model
-		// todo: string_view
-		Model(const char* path, Program* _program, bool makeNormalized): Model(_program)
+		Model(const char* path, Program* _program, bool makeNormalized)
+			: Model(_program)
 		{
 			loadFile(path);
+
 			updateNums();
-			fprintf(stdout, "model loaded : %s, vertices: %u\n", name.c_str(), verticesNum);
 			updateBoundary();
+			fprintf(stdout, "model loaded : %s, vertices: %u\n\n", name.c_str(), verticesNum);
+
 			if( makeNormalized )
 			{
 				setUnitScaleAndPivot();
 				updateModelMat();
 			}
-			printf("\n");
 		}
 		// 왜 외부에서 외부에서 생성한 mesh객체의 unique_ptr을 우측값 참조로 받아 push_back할 수 없는거지
 		Model(std::function<void(std::vector<n_mesh::Vertex>& _vertices
@@ -83,12 +91,11 @@ namespace lim
 			std::vector<GLuint> indices;
 			std::vector<Texture> textures;
 			genMeshFunc(vertices, indices, textures);
-
 			meshes.push_back(new Mesh(vertices, indices, textures, _name));
+
 			updateNums();
-			fprintf(stdout, "gen model mesh : %s, vertices: %u\n", name.c_str(), verticesNum);
 			updateBoundary();
-			printf("\n");
+			fprintf(stdout, "gen model mesh : %s, vertices: %u\n\n", name.c_str(), verticesNum);
 		}
 		~Model()
 		{
@@ -134,9 +141,12 @@ namespace lim
 		{
 			glm::vec3 bSize = getBoundarySize();
 			setPivot(boundary_min + bSize*0.5f);
+
 			const float unit_length = 2.f;
 			float max_axis_length = glm::max(bSize.x, glm::max(bSize.y, bSize.z));
 			scale = glm::vec3(unit_length/max_axis_length);
+
+			position = glm::vec3(0, scale.y*bSize.y*0.5f, 0);
 		}
 		glm::vec3 getBoundarySize()
 		{
@@ -234,19 +244,21 @@ namespace lim
 				fprintf(stderr, "[error, assimp]%s\n", loader.GetErrorString());
 				return;
 			}
-
 			// recursive fashion
 			parseNode(scene->mRootNode, scene);
 		}
-		// load texture
 		std::vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type)
 		{
 			std::vector<Texture> textures;
 			for( GLuint i=0; i<mat->GetTextureCount(type); i++ )
 			{
 				aiString str;
+				/* blend 등 attrib에서 bm값이 안읽힘 */
 				mat->GetTexture(type, i, &str);
-				const char* texPath = str.C_Str();
+				std::string strPath(str.C_Str());
+				/* assimp 가 뒤에오는 옵션을 읽지 않음 (ex: eye.png -bm 0.4) */
+				strPath = strPath.substr(0, strPath.find_first_of(' '));
+				const char* texPath = strPath.c_str();
 
 				// check already loaded
 				// to skip loading same texture 

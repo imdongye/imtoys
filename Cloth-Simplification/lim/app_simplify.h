@@ -23,6 +23,7 @@ namespace lim
 	private:
 		float cameraMoveSpeed;
 		Camera* cameras[2];
+		Model* models[2];
 		Scene* scenes[2];
 		Viewport* viewports[2];
 		Program* programs[4];
@@ -42,16 +43,17 @@ namespace lim
 			programs[3] = new Program("bump");
 			programs[3]->attatch("shader/textured.vs").attatch("shader/textured.fs").link();
 
-			Scene* originalScene = new Scene(programs[0]);
-			originalScene->loadModel("archive/meshes/stanford-bunny.obj");
-			scenes[0] = originalScene;
+			models[0] = new Model("archive/meshes/stanford-bunny.obj", programs[0], true);
+			models[1] = nullptr;
 
-			Scene* simplifiedScene = new Scene(programs[0]);
-			simplifiedScene->loadModel("archive/meshes/stanford-bunny.obj");
-			scenes[1] = simplifiedScene;
+			scenes[0] = new Scene(programs[0]);
+			scenes[0]->setModel(models[0]);
 
-			cameras[0] = new Camera(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0, 0, -1), scr_width/(float)scr_height);
-			cameras[1] = new Camera(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0, 0, -1), scr_width/(float)scr_height);
+			scenes[1] = new Scene(programs[0]);
+			scenes[1]->setModel(models[0]);
+
+			cameras[0] = new Camera(glm::vec3(0.0f, 1.0f, 3.0f), glm::vec3(0, 0, -1), scr_width/(float)scr_height);
+			cameras[1] = new Camera(glm::vec3(0.0f, 1.0f, 3.0f), glm::vec3(0, 0, -1), scr_width/(float)scr_height);
 
 			Viewport* originalView = new Viewport(cameras[0]);
 			viewports[0] = originalView;
@@ -65,6 +67,7 @@ namespace lim
 		~SimplifyApp()
 		{
 			for( Camera* camera : cameras ) delete camera;
+			for( Model* model : models ) delete model;
 			for( Scene* scene : scenes ) delete scene;
 			for( Viewport* viewport : viewports ) delete viewport;
 			for( Program* program : programs ) delete program;
@@ -99,8 +102,10 @@ namespace lim
 
 				if( ImGui::Button("Simplify") )
 				{
-					scenes[1]->setModel(fqms::simplifyModel(scenes[0]->model, pct));
-					scenes[1]->alignGround();
+					if( models[1] != nullptr ) delete models[1];
+					models[1] = fqms::simplifyModel(scenes[0]->model, pct);
+
+					scenes[1]->setModel(models[1]);
 				}
 				ImGui::SameLine();
 				ImGui::Text("target triangles = %d", static_cast<int>(scenes[0]->model->trianglesNum*pct));
@@ -299,8 +304,10 @@ namespace lim
 		{
 			for( int i = 0; i < count; i++ )
 			{
-				scenes[0]->loadModel(paths[i], scenes[0]->model->program);
-				scenes[1]->alignGround();
+				delete models[0];
+				models[0] = new Model(paths[i], programs[0], true);
+				scenes[0]->setModel(models[0]);
+				scenes[1]->setModel(models[0]);
 				break;
 			}
 		}

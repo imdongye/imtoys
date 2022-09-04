@@ -22,7 +22,7 @@ namespace lim
 		std::string path; // relative path+filename or only filename
 	};
 
-	GLuint loadTextureFromFile(const char* cpath, bool toLinear = true)
+	static inline GLuint loadTextureFromFile(const char* cpath, bool toLinear = true)
 	{
 		std::string spath = std::string(cpath);
 

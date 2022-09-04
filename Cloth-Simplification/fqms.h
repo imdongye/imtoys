@@ -953,7 +953,7 @@ namespace fqms
 			if( simp_mesh != nullptr )
 				new_meshes.push_back(simp_mesh);
 		}
-		lim::Model* result = new lim::Model(new_meshes, model->textures_loaded, model->program, model->name);
+		lim::Model* result = new lim::Model(*model, new_meshes);
 		return result;
 	}
 };

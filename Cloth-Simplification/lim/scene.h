@@ -5,6 +5,7 @@
 //	1. crtp로 참조 줄이기, 
 //	2. init destroy 생성자소멸자 사용
 //  3. 여러 program 적용
+//	4. shared pointer 사용
 //
 
 #ifndef SCENE_H
@@ -19,34 +20,20 @@ namespace lim
 	{
 	public:
 		Model* ground=nullptr;
-		Model* model=nullptr;
-		Program* baseProgram=nullptr;
+		Model* model=nullptr; // main model
 		std::vector<Model*> models;
 	public:
-		void alignGround()
-		{
-			if( model==nullptr ) return;
-			ground->position = glm::vec3(0, -model->getBoundarySize().y*model->scale.y*0.5f, 0);
-			ground->updateModelMat();
-		}
-		void loadModel(const char* path, Program* program = nullptr)
-		{
-			if( program == nullptr ) program = baseProgram;
-			setModel(new Model(path, program, true));
-		}
 		void setModel(Model* _model)
 		{
 			if( model!=nullptr )
 			{
 				models.erase(std::find(models.begin(), models.end(), model));
-				delete model;
 			}
 			model = _model;
 			models.push_back(_model);
-			alignGround();
 		}
 	public:
-		Scene(Program* _program): baseProgram(_program)
+		Scene(Program* groundProgram)
 		{
 			ground = new Model([](std::vector<lim::n_mesh::Vertex>& vertices
 							   , std::vector<GLuint>& indices
@@ -61,15 +48,14 @@ namespace lim
 
 								   indices.insert(indices.end(), {0,1,3});
 								   indices.insert(indices.end(), {1,2,3});
-							   }, baseProgram, "ground");
-			ground->position = glm::vec3(0, -1, 0);
+							   }, groundProgram, "ground");
+			ground->position = glm::vec3(0, 0, 0);
 			ground->updateModelMat();
 			models.push_back(ground);
 		}
 		virtual ~Scene()
 		{
-			for( Model* model : models )
-				delete model;
+			delete ground;
 		}
 		void render(GLuint fbo, GLuint width, GLuint height, Camera* camera)
 		{
