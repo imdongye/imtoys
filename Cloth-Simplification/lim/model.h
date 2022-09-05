@@ -12,12 +12,12 @@
 //  4. width, height, depth 찾아서 -1~1공간으로 scaling
 //  5. load model 이 모델안에 있는데 따로 빼야될까
 //  6. 언제 어디서 업데이트해줘야하는지 규칙정하기
+//
 
 #ifndef MODEL_H
 #define MODEL_H
 
-#include "mesh.h"
-
+#include "limclude.h"
 
 namespace lim
 {
@@ -110,22 +110,19 @@ namespace lim
 			}
 			meshes.clear();
 		}
-		void draw(const Camera* camera)
+		void draw(const Camera& camera, const Light& light)
 		{
 			GLuint loc, pid;
 			pid = program->use();
 
-			loc = glGetUniformLocation(pid, "projMat");
-			glUniformMatrix4fv(loc, 1, GL_FALSE, value_ptr(camera->projMat));//&camera.projMat[0][0]);
+			setUniform(pid, "projMat", camera.projMat);
+			setUniform(pid, "viewMat", camera.viewMat);
+			setUniform(pid, "modelMat", modelMat);
+			setUniform(pid, "cameraPos", camera.position);
 
-			loc = glGetUniformLocation(pid, "viewMat"); // also get camera pos here
-			glUniformMatrix4fv(loc, 1, GL_FALSE, value_ptr(camera->viewMat));
-
-			loc = glGetUniformLocation(pid, "cameraPos");
-			glUniform3fv(loc, 1, value_ptr(camera->position));
-
-			loc = glGetUniformLocation(pid, "modelMat");
-			glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(modelMat));
+			setUniform(pid, "lightPos", light.position);
+			setUniform(pid, "lightColor", light.color);
+			setUniform(pid, "lightInt", light.intensity);
 
 			for( GLuint i=0; i<meshes.size(); i++ )
 				meshes[i]->draw(*program);

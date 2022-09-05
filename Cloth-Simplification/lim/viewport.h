@@ -4,10 +4,12 @@
 //	TODO list:
 //	1. initial framebuffer size setting
 //
+
 #ifndef VIEWPORT_H
 #define VIEWPORT_H
 
-#include "framebuffer.h"
+#include "limclude.h"
+
 namespace lim
 {
 	class Viewport

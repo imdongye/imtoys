@@ -12,9 +12,7 @@
 #ifndef SIMPLYFY_APP_H
 #define SIMPLYFY_APP_H
 
-#include "application.h"
-#include "../fqms.h"
-//#include "simplify.h"
+#include "limclude.h"
 
 namespace lim
 {
@@ -22,34 +20,39 @@ namespace lim
 	{
 	private:
 		float cameraMoveSpeed;
+		Light light;
 		Camera* cameras[2];
 		Model* models[2];
 		Scene* scenes[2];
 		Viewport* viewports[2];
-		Program* programs[4];
+		std::vector<Program*> programs;
 
 	public:
-		SimplifyApp(): AppBase(1200, 960), cameraMoveSpeed(1.6f)
+		SimplifyApp(): AppBase(1200, 960), cameraMoveSpeed(1.6f), light()
 		{
-			programs[0] = new Program("Normal Dot View");
-			programs[0]->attatch("shader/ndv.vs").attatch("shader/ndv.fs").link();
+			programs.push_back(new Program("Normal Dot View"));
+			programs.back()->attatch("shader/ndv.vs").attatch("shader/ndv.fs").link();
 
-			programs[1] = new Program("Diffuse");
-			programs[1]->attatch("shader/diffuse.vs").attatch("shader/diffuse.fs").link();
+			programs.push_back(new Program("Normal Dot Light"));
+			programs.back()->attatch("shader/ndv.vs").attatch("shader/ndl.fs").link();
 
-			programs[2] = new Program("Uv");
-			programs[2]->attatch("shader/diffuse.vs").attatch("shader/uv.fs").link();
+			programs.push_back(new Program("Diffuse"));
+			programs.back()->attatch("shader/diffuse.vs").attatch("shader/diffuse.fs").link();
 
-			programs[3] = new Program("bump");
-			programs[3]->attatch("shader/textured.vs").attatch("shader/textured.fs").link();
+			programs.push_back(new Program("Uv"));
+			programs.back()->attatch("shader/diffuse.vs").attatch("shader/uv.fs").link();
+
+			programs.push_back(new Program("Bump"));
+			programs.back()->attatch("shader/textured.vs").attatch("shader/textured.fs").link();
+
 
 			models[0] = new Model("archive/meshes/stanford-bunny.obj", programs[0], true);
 			models[1] = nullptr;
 
-			scenes[0] = new Scene(programs[0]);
+			scenes[0] = new Scene(programs[0], light);
 			scenes[0]->setModel(models[0]);
 
-			scenes[1] = new Scene(programs[0]);
+			scenes[1] = new Scene(programs[0], light);
 			scenes[1]->setModel(models[0]);
 
 			cameras[0] = new Camera(glm::vec3(0.0f, 1.0f, 3.0f), glm::vec3(0, 0, -1), scr_width/(float)scr_height);
@@ -138,7 +141,7 @@ namespace lim
 						scene->model->program = programs[prog_idx];
 					}
 				}
-
+				ImGui::DragFloat3("light pos", glm::value_ptr(light.position), 0.1f);
 
 			} ImGui::End();
 

@@ -2,7 +2,7 @@
 //	2022-08-26 / im dong ye
 //
 //	ground모델을 직접가지고 다른 모델들은 참조한다.
-//	참조모델들을 가지고 viewport나 framebuffer에 렌더링한다.
+//	참조모델들과 light로 viewport나 framebuffer에 렌더링한다.
 // 
 //	TODO list:
 //	1. crtp로 참조 줄이기, 
@@ -14,8 +14,7 @@
 #ifndef SCENE_H
 #define SCENE_H
 
-#include "model.h";
-#include "viewport.h"
+#include "limclude.h"
 
 namespace lim
 {
@@ -25,6 +24,7 @@ namespace lim
 		Model* ground=nullptr;
 		Model* model=nullptr; // main model
 		std::vector<Model*> models;
+		Light& light;
 	public:
 		void setModel(Model* _model)
 		{
@@ -36,7 +36,7 @@ namespace lim
 			models.push_back(_model);
 		}
 	public:
-		Scene(Program* groundProgram)
+		Scene(Program* groundProgram, Light& _light): light(_light)
 		{
 			ground = new Model([](std::vector<lim::n_mesh::Vertex>& vertices
 							   , std::vector<GLuint>& indices
@@ -71,7 +71,7 @@ namespace lim
 
 			for( Model* model : models )
 			{
-				model->draw(camera);
+				model->draw(*camera, light);
 			}
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}

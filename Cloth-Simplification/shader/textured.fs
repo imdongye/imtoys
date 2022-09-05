@@ -10,17 +10,16 @@ in vec3 wNor;
 in vec3 vNor;
 in vec2 tUv;
 
-uniform mat4 viewMat = mat4(1);
-uniform vec3 lightPos = vec3(100,100,100);
-uniform vec3 lightDir = vec3(-1,-1,-1);
-uniform float lightInt = 0.8;
+/* light */
+int shadowEnabled = -1;
+vec3 lightPos = vec3(40,300,150);
+float lightInt = 0.8;
+
+/* matarial */
 uniform float ambInt = 0.1;
 uniform int shininess = 20;
 
-uniform int shadowEnabled = -1;
-
 uniform vec3 cameraPos;
-
 uniform sampler2D map_Kd0;
 uniform sampler2D map_Bump0;
 uniform sampler2D map_Ks0;

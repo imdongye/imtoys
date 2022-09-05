@@ -6,28 +6,14 @@
 //						 .attach("shadow.geom").link();
 //
 //	TODO list:
-//  1. bind with method
+//  1. bind with method ( 일단 gltools의 오버로딩된 bind함수 복붙 )
 //	2. include 기능
 //
 
 #ifndef PROGRAM_H
 #define PROGRAM_H
 
-#include <glad/glad.h> 
-#include <glm/glm.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <glm/gtx/quaternion.hpp>
-#include <glm/gtx/string_cast.hpp>
-#include <glm/gtx/transform.hpp>
-
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <string>
-#include <cassert>
-#include <memory>
-#include <functional>
-#include <vector>
+#include "limclude.h"
 
 namespace lim
 {
@@ -98,7 +84,7 @@ namespace lim
 			glCompileShader(sid);
 			checkCompileErrors(sid, type);
 			glAttachShader(ID, sid);
-			fprintf(stdout, "program%d attch %s success\n", ID, path);
+			fprintf(stdout, "[program %s] attch %s success\n", name.c_str(), path);
 
 			return *this;
 		}
@@ -108,7 +94,7 @@ namespace lim
 			glUseProgram (ID);
 			checkCompileErrors(ID, "program");
 			clearWithoutID(); // 링크된 후 필요없음
-			fprintf(stdout, "program%d linking success\n\n", ID);
+			fprintf(stdout, "[program %s] linking success\n\n", name.c_str());
 			return *this;
 		}
 		GLuint use() const
@@ -201,5 +187,47 @@ namespace lim
 			}
 		}
 	};
+
+	static inline void setUniform(GLuint prog, const std::string& name, const int& v)
+	{
+		glUniform1i(glGetUniformLocation(prog, name.c_str()), v);
+	}
+	static inline void setUniform(GLuint prog, const std::string& name, const float& v)
+	{
+		glUniform1f(glGetUniformLocation(prog, name.c_str()), v);
+	}
+	static inline void setUniform(GLuint prog, const std::string& name, const glm::ivec2& v)
+	{
+		glUniform2iv(glGetUniformLocation(prog, name.c_str()), 1, glm::value_ptr(v));
+	}
+	static inline void setUniform(GLuint prog, const std::string& name, const glm::ivec3& v)
+	{
+		glUniform3iv(glGetUniformLocation(prog, name.c_str()), 1, glm::value_ptr(v));
+	}
+	static inline void setUniform(GLuint prog, const std::string& name, const glm::vec2& v)
+	{
+		glUniform2fv(glGetUniformLocation(prog, name.c_str()), 1, glm::value_ptr(v));
+	}
+	static inline void setUniform(GLuint prog, const std::string& name, const glm::vec3& v)
+	{
+		glUniform3fv(glGetUniformLocation(prog, name.c_str()), 1, glm::value_ptr(v));
+	}
+	static inline void setUniform(GLuint prog, const std::string& name, const glm::vec4& v)
+	{
+		glUniform4fv(glGetUniformLocation(prog, name.c_str()), 1, glm::value_ptr(v));
+	}
+	static inline void setUniform(GLuint prog, const std::string& name, const glm::mat3& v)
+	{
+		glUniformMatrix3fv(glGetUniformLocation(prog, name.c_str()), 1, 0, glm::value_ptr(v));
+	}
+	static inline void setUniform(GLuint prog, const std::string& name, const glm::mat4& v)
+	{
+		glUniformMatrix4fv(glGetUniformLocation(prog, name.c_str()), 1, 0, glm::value_ptr(v));
+	}
+	static inline void setUniform(GLuint prog, const std::string& name, const glm::vec3* v, int n)
+	{
+		glUniform3fv(glGetUniformLocation(prog, name.c_str()), n, (GLfloat*)v);
+	}
+
 } // namespace lim
 #endif // !PROGRAM_H

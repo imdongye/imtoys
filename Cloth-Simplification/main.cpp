@@ -5,8 +5,7 @@
 //  Product->schema->edit-schema->run->option->custom-working-dir
 //
 
-#include "lim/app_simplify.h"
-
+#include "lim/limclude.h"
 
 // rid unused variables warnings
 int main(int, char**)

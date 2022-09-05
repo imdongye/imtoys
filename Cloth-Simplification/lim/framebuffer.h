@@ -12,8 +12,7 @@
 #ifndef FRAMEBUFFER_H
 #define FRAMEBUFFER_H
 
-#include "program.h"
-#include "imgui_modules.h"
+#include "limclude.h"
 
 namespace lim
 {
@@ -73,6 +72,10 @@ namespace lim
 				glBindVertexArray(0);
 			}
 		}
+		Framebuffer(GLuint _width, GLuint _height): Framebuffer()
+		{
+			resize(_width, _height);
+		}
 		~Framebuffer()
 		{
 			clear();
@@ -85,25 +88,21 @@ namespace lim
 		}
 		void clear()
 		{
-			glDeleteFramebuffers(1, &multisampledFBO);
-			glDeleteTextures(1, &colorTex);
-			glDeleteRenderbuffers(1, &rbo);
-			multisampledFBO = colorTex = rbo = 0;
+			if( colorTex ) glDeleteTextures(1, &colorTex); colorTex=0;
+			if( rbo ) glDeleteRenderbuffers(1, &rbo); rbo=0;
+			if( multisampledFBO ) glDeleteFramebuffers(1, &multisampledFBO); multisampledFBO=0;
 
-			glDeleteFramebuffers(1, &intermediateFBO);
-			glDeleteTextures(1, &screenTex);
-			intermediateFBO = screenTex = 0;
+			if( screenTex ) glDeleteTextures(1, &screenTex); screenTex=0;
+			if( intermediateFBO ) glDeleteFramebuffers(1, &intermediateFBO); intermediateFBO=0;
 		}
 		void resize(GLuint _width, GLuint _height)
 		{
 			width = _width; height = _height;
-			reset();
+			create();
 		}
-		void reset()
+		void create()
 		{
-			if( multisampledFBO != 0 )
-				clear();
-
+			clear();
 			glGenFramebuffers(1, &multisampledFBO);
 			glBindFramebuffer(GL_FRAMEBUFFER, multisampledFBO);
 

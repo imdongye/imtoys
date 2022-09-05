@@ -20,8 +20,7 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
-#include "program.h"
-#include <vector>
+#include "limclude.h"
 
 namespace lim
 {

@@ -10,7 +10,8 @@
 #ifndef APPLICATION_H
 #define APPLICATION_H
 
-#include "scene.h"
+#include "limclude.h"
+
 
 namespace lim
 {

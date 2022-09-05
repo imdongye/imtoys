@@ -1,8 +1,18 @@
+//
+//	2022-08-26 / im dong ye
 // 
+//	모델 class에서 버텍스 정보를 이파일의 전역변수에 올리고
+//	simplify한다음 전역변수에서 메쉬를 생성해서 새 모델을 반환한다.
+//	
+//	Todo:
+//	1. uv좌표 이상함.
+//	2. boundary도 simplify되는 버그
+//
 
-#pragma once
 #ifndef FQMS_H
 #define FQMS_H
+
+#include "lim/limclude.h"
 
 /////////////////////////////////////////////
 //
@@ -34,8 +44,6 @@
 #include <math.h>
 #include <float.h> //FLT_EPSILON, DBL_EPSILON
 
-#include "lim/model.h"
-#include <GLFW/glfw3.h>
 
 #define loopi(start_l,end_l) for ( int i=start_l;i<end_l;++i )
 #define loopi(start_l,end_l) for ( int i=start_l;i<end_l;++i )

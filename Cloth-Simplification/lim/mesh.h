@@ -2,10 +2,11 @@
 //  2022-07-20 / im dong ye
 //  edit learnopengl code
 //
+
 #ifndef MESH_H
 #define MESH_H
 
-#include "texture.h"
+#include "limclude.h"
 
 namespace lim
 {

@@ -5,13 +5,7 @@
 #ifndef TEXTURE_H
 #define TEXTURE_H
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-
-#include "camera.h"
+#include "limclude.h"
 
 namespace lim
 {
