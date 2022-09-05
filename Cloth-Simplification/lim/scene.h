@@ -1,6 +1,9 @@
 //
 //	2022-08-26 / im dong ye
 //
+//	ground모델을 직접가지고 다른 모델들은 참조한다.
+//	참조모델들을 가지고 viewport나 framebuffer에 렌더링한다.
+// 
 //	TODO list:
 //	1. crtp로 참조 줄이기, 
 //	2. init destroy 생성자소멸자 사용
@@ -75,13 +78,14 @@ namespace lim
 		void render(Viewport* vp)
 		{
 			const Framebuffer& fb =  *(vp->framebuffer);
-			if( fb.FBO==0 ) return;
-			render(fb.FBO, fb.width, fb.height, vp->camera);
+			if( fb.multisampledFBO==0 ) return;
+			render(fb.multisampledFBO, fb.width, fb.height, vp->camera);
 
-			glBindFramebuffer(GL_READ_FRAMEBUFFER, fb.FBO);
-			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fb.postProcessingFBO);
+			glBindFramebuffer(GL_READ_FRAMEBUFFER, fb.multisampledFBO);
+			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fb.intermediateFBO);
 			glBlitFramebuffer(0, 0, fb.width, fb.height, 0, 0, fb.width, fb.height
 							  , GL_COLOR_BUFFER_BIT, GL_NEAREST);
+			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 		}
 	};
 }

@@ -1,8 +1,14 @@
 //
 //	2022-08-24 / im dong ye
 //
-//	TODO list:
+//	처음엔 imgui로 보여주기위한 renderTex를 생성하기위해 만들었다.
+//	mass를 적용하기위해 intermediateFbo를 만들었고 msFbo에 draw하고
+//	intermediateFbo에 blit 해주는 과정을 밖에서 해줘야한다.
+// 
+//	MSAA frame buffer
+//	from : https://learnopengl.com/Advanced-OpenGL/Anti-Aliasing
 //
+
 #ifndef FRAMEBUFFER_H
 #define FRAMEBUFFER_H
 
@@ -14,16 +20,20 @@ namespace lim
 	class Framebuffer
 	{
 	public:
-		// BSS 메모리에 저장되어 0으로 초기화된다
 		static Program* toScrProgram;
 		static GLuint quadVAO;
-		GLuint postProcessingFBO, colorTex, RBO;
-	public:
+
 		GLuint width=0, height=0;
-		GLuint FBO, postProcessingTex;
+		const int samples = 8;
+		GLuint multisampledFBO, colorTex, rbo;
+		GLuint intermediateFBO, screenTex;
 	public:
-		Framebuffer(): FBO(0)
+		Framebuffer()
 		{
+			multisampledFBO=colorTex=rbo=0;
+			intermediateFBO=screenTex=0;
+			width=height=0;
+
 			if( toScrProgram == 0 )
 			{
 				toScrProgram = new Program("toScrProgram");
@@ -75,14 +85,14 @@ namespace lim
 		}
 		void clear()
 		{
-			glDeleteFramebuffers(1, &FBO);
+			glDeleteFramebuffers(1, &multisampledFBO);
 			glDeleteTextures(1, &colorTex);
-			glDeleteRenderbuffers(1, &RBO);
-			FBO = colorTex = RBO = 0;
+			glDeleteRenderbuffers(1, &rbo);
+			multisampledFBO = colorTex = rbo = 0;
 
-			glDeleteFramebuffers(1, &postProcessingFBO);
-			glDeleteTextures(1, &postProcessingTex);
-			postProcessingFBO = postProcessingTex = 0;
+			glDeleteFramebuffers(1, &intermediateFBO);
+			glDeleteTextures(1, &screenTex);
+			intermediateFBO = screenTex = 0;
 		}
 		void resize(GLuint _width, GLuint _height)
 		{
@@ -91,11 +101,11 @@ namespace lim
 		}
 		void reset()
 		{
-			if( FBO != 0 )
+			if( multisampledFBO != 0 )
 				clear();
 
-			glGenFramebuffers(1, &FBO);
-			glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+			glGenFramebuffers(1, &multisampledFBO);
+			glBindFramebuffer(GL_FRAMEBUFFER, multisampledFBO);
 
 			// glTexStorage2D 텍스쳐 크기 고정
 			// glTexImage2D 텍스쳐크기 변경가능 0, GL_RGBA8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
@@ -116,12 +126,12 @@ namespace lim
 
 			// Create the depth buffer (stencil)
 			// render buffer은 셰이더에서 접근할수없는 텍스쳐, 속도면에서 장점
-			glGenRenderbuffers(1, &RBO);
-			glBindRenderbuffer(GL_RENDERBUFFER, RBO);
+			glGenRenderbuffers(1, &rbo);
+			glBindRenderbuffer(GL_RENDERBUFFER, rbo);
 			glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, GL_DEPTH_COMPONENT, width, height);
 			glBindRenderbuffer(GL_RENDERBUFFER, 0);
 			// Bind the depth buffer to the FBO
-			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, RBO);
+			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo);
 
 			// Set the targets for the fragment output variables
 			//GLenum drawBuffers[] ={GL_COLOR_ATTACHMENT0};
@@ -134,18 +144,18 @@ namespace lim
 
 
 			/* for pass imgui image and post processing */
-			glGenFramebuffers(1, &postProcessingFBO);
-			glBindFramebuffer(GL_FRAMEBUFFER, postProcessingFBO);
+			glGenFramebuffers(1, &intermediateFBO);
+			glBindFramebuffer(GL_FRAMEBUFFER, intermediateFBO);
 
-			glGenTextures(1, &postProcessingTex);
-			glBindTexture(GL_TEXTURE_2D, postProcessingTex);
-			glTexImage2D(GL_TEXTURE_2D, samples, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+			glGenTextures(1, &screenTex);
+			glBindTexture(GL_TEXTURE_2D, screenTex);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 			glBindTexture(GL_TEXTURE_2D, 0);
-			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, postProcessingTex, 0);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, screenTex, 0);
 
 			if( glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE )
 				fprintf(stderr, "postProcessingFBO Error %d %d\n", width, height);
@@ -153,7 +163,7 @@ namespace lim
 		}
 		void copyToBackBuf()
 		{
-			if( FBO==0 )
+			if( multisampledFBO==0 )
 				return;
 
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -166,13 +176,14 @@ namespace lim
 
 			toScrProgram->use();
 			glBindVertexArray(quadVAO);
-			glBindTexture(GL_TEXTURE_2D, postProcessingTex);	// use the color attachment texture as the texture of the quad plane
+			glBindTexture(GL_TEXTURE_2D, screenTex);	// use the color attachment texture as the texture of the quad plane
 			glActiveTexture(GL_TEXTURE0);
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 
 			glBindVertexArray(0);
 		}
 	};
+	// BSS 메모리에 저장되어 0으로 초기화되는거 아닌가??
 	Program* Framebuffer::toScrProgram = 0;
 	GLuint Framebuffer::quadVAO = 0;
 } // ! namespace lim
