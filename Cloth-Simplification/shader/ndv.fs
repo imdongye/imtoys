@@ -1,9 +1,9 @@
 #version 410 core
 out vec4 FragColor;
 
-in vec2 texCoords;
 in vec3 wPos;
-in vec3 wNorm;
+in vec3 wNor;
+in vec2 tUv;
 
 uniform vec3 cameraPos;
 

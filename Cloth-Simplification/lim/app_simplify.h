@@ -31,16 +31,16 @@ namespace lim
 		SimplifyApp(): AppBase(1200, 960), cameraMoveSpeed(1.6f), light()
 		{
 			programs.push_back(new Program("Normal Dot View"));
-			programs.back()->attatch("shader/ndv.vs").attatch("shader/ndv.fs").link();
+			programs.back()->attatch("shader/posnoruv.vs").attatch("shader/ndv.fs").link();
 
 			programs.push_back(new Program("Normal Dot Light"));
-			programs.back()->attatch("shader/ndv.vs").attatch("shader/ndl.fs").link();
+			programs.back()->attatch("shader/posnoruv.vs").attatch("shader/ndl.fs").link();
 
 			programs.push_back(new Program("Diffuse"));
-			programs.back()->attatch("shader/diffuse.vs").attatch("shader/diffuse.fs").link();
+			programs.back()->attatch("shader/posnoruv.vs").attatch("shader/diffuse.fs").link();
 
 			programs.push_back(new Program("Uv"));
-			programs.back()->attatch("shader/diffuse.vs").attatch("shader/uv.fs").link();
+			programs.back()->attatch("shader/posnoruv.vs").attatch("shader/uv.fs").link();
 
 			programs.push_back(new Program("Bump"));
 			programs.back()->attatch("shader/textured.vs").attatch("shader/textured.fs").link();
@@ -86,13 +86,15 @@ namespace lim
 			scenes[1]->render(viewports[1]);
 
 			renderImGui();
-			// render to screen
+
+			/* render to screen */
 			//scenes.back()->render(0, scr_width, scr_height, mainCamera);
 		}
 		void renderImGui()
 		{
 			imgui_modules::beginImGui();
 			imgui_modules::ShowExampleAppDockSpace();
+
 			ImGui::ShowDemoWindow();
 
 			viewports[0]->renderImGui();
@@ -141,7 +143,7 @@ namespace lim
 						scene->model->program = programs[prog_idx];
 					}
 				}
-				ImGui::DragFloat3("light pos", glm::value_ptr(light.position), 0.1f);
+				ImGui::DragFloat3("light pos", glm::value_ptr(light.position), 0.1f, -300, 300, "%.1f");
 
 			} ImGui::End();
 
