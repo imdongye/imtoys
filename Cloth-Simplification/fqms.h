@@ -448,7 +448,8 @@ namespace fqms
 					int i0=t.v[j]; Vertex& v0 = vertices[i0];
 					int i1=t.v[(j+1)%3]; Vertex& v1 = vertices[i1];
 					// Border check
-					if( v0.border != v1.border )  continue;
+					/* 백업 if( v0.border != v1.border )  continue; */
+					if( v0.border || v1.border )  continue;
 
 					// Compute vertex to collapse to
 					vec3f p;
@@ -460,11 +461,14 @@ namespace fqms
 
 					if( flipped(p, i1, i0, v1, v0, deleted1) ) continue;
 
+					/* 백업
 					if( (t.attr & TEXCOORD) == TEXCOORD )
 					{
 						update_uvs(i0, v0, p, deleted0);
 						update_uvs(i0, v1, p, deleted1);
-					}
+					}*/
+					update_uvs(i0, v0, p, deleted0);
+					update_uvs(i0, v1, p, deleted1);
 
 					// not flipped, so remove edge
 					v0.p=p;

@@ -25,18 +25,9 @@ namespace lim
 		Model* model=nullptr; // main model
 		std::vector<Model*> models;
 		Light& light;
+		bool enableShadow;
 	public:
-		void setModel(Model* _model)
-		{
-			if( model!=nullptr )
-			{
-				models.erase(std::find(models.begin(), models.end(), model));
-			}
-			model = _model;
-			models.push_back(_model);
-		}
-	public:
-		Scene(Program* groundProgram, Light& _light): light(_light)
+		Scene(Program* groundProgram, Light& _light): light(_light), enableShadow(true)
 		{
 			ground = new Model([](std::vector<lim::n_mesh::Vertex>& vertices
 							   , std::vector<GLuint>& indices
@@ -60,32 +51,49 @@ namespace lim
 		{
 			delete ground;
 		}
+	public:
+		void setModel(Model* _model)
+		{
+			if( model!=nullptr )
+			{
+				models.erase(std::find(models.begin(), models.end(), model));
+			}
+			model = _model;
+			models.push_back(_model);
+		}
+		void render(Camera* camera)
+		{
+			for( Model* model : models )
+			{
+				model->draw(*camera, light);
+			}
+		}
 		void render(GLuint fbo, GLuint width, GLuint height, Camera* camera)
 		{
+			if( enableShadow )
+			{
+				//light.drawShadowMap(models);
+			}
+
 			glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 			glEnable(GL_FRAMEBUFFER_SRGB);
 			glViewport(0, 0, width, height);
 			glEnable(GL_DEPTH_TEST);
 			glClearColor(0, 0, 1, 1);
-			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);// z-buffer clipping
+			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
-			for( Model* model : models )
-			{
-				model->draw(*camera, light);
-			}
+			render(camera);
+
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
 		void render(Viewport* vp)
 		{
-			const Framebuffer& fb =  *(vp->framebuffer);
-			if( fb.multisampledFBO==0 ) return;
-			render(fb.multisampledFBO, fb.width, fb.height, vp->camera);
+			Framebuffer& fb =  *(vp->framebuffer);
+			if( fb.renderable() == false ) return;
 
-			glBindFramebuffer(GL_READ_FRAMEBUFFER, fb.multisampledFBO);
-			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fb.intermediateFBO);
-			glBlitFramebuffer(0, 0, fb.width, fb.height, 0, 0, fb.width, fb.height
-							  , GL_COLOR_BUFFER_BIT, GL_NEAREST);
-			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+			fb.bind();
+			render(vp->camera);
+			fb.unbind();
 		}
 	};
 }

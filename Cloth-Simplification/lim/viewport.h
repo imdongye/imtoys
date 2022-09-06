@@ -29,7 +29,7 @@ namespace lim
 		{
 			id = id_generator++;
 			camera = cmr;
-			framebuffer = new Framebuffer();
+			framebuffer = new MsFramebuffer();
 			hovered = focused = false;
 			width = height = 0;
 			cursor_pos_x = cursor_pos_x = 0;
@@ -70,7 +70,7 @@ namespace lim
 				camera->updateProjMat();
 			}
 
-			GLuint texID = framebuffer->screenTex;
+			GLuint texID = framebuffer->getRenderedTex();
 			if( texID!=0 )
 				ImGui::Image(reinterpret_cast<void*>(texID), ImVec2{(float)width, (float)height}, ImVec2{0, 1}, ImVec2{1, 0});
 			ImGui::End();

@@ -19,12 +19,20 @@ namespace lim
 		glm::vec3 position;
 		glm::vec3 color;
 		float intensity;
-		Framebuffer shadowMap;
-
+		TxFramebuffer shadowMap;
+	public:
 		Light(glm::vec3 _pos ={40, 300, 150}, glm::vec3 _color ={1,1,1}, float _intensity = 1)
-			:position(_pos), color(_color), intensity(_intensity), shadowMap(shadowMapSize, shadowMapSize)
+			:position(_pos), color(_color), intensity(_intensity)
 		{
+			shadowMap.resize(shadowMapSize, shadowMapSize);
 		}
+		~Light() = default;
+	public:
+		void drawShadowMap()
+		{
+			//glBindFramebuffer(shadowMap.)
+		}
+
 	};
 }
 #endif

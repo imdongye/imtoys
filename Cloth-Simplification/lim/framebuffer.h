@@ -8,6 +8,9 @@
 //	MSAA frame buffer
 //	from : https://learnopengl.com/Advanced-OpenGL/Anti-Aliasing
 //
+//	todo:
+//	1. 부모소멸자 호출안하는 방법이 있나? framebuffer::clear두번호출
+//
 
 #ifndef FRAMEBUFFER_H
 #define FRAMEBUFFER_H
@@ -18,19 +21,17 @@ namespace lim
 {
 	class Framebuffer
 	{
-	public:
+	protected:
+		const glm::vec4 clearColor={0,0,1,1};
 		static Program* toScrProgram;
 		static GLuint quadVAO;
-
+		GLuint fbo, colorTex;
+	public:
 		GLuint width=0, height=0;
-		const int samples = 8;
-		GLuint multisampledFBO, colorTex, rbo;
-		GLuint intermediateFBO, screenTex;
 	public:
 		Framebuffer()
 		{
-			multisampledFBO=colorTex=rbo=0;
-			intermediateFBO=screenTex=0;
+			fbo=colorTex=0;
 			width=height=0;
 
 			if( toScrProgram == 0 )
@@ -72,11 +73,7 @@ namespace lim
 				glBindVertexArray(0);
 			}
 		}
-		Framebuffer(GLuint _width, GLuint _height): Framebuffer()
-		{
-			resize(_width, _height);
-		}
-		~Framebuffer()
+		virtual ~Framebuffer()
 		{
 			clear();
 			if( quadVAO!=0 )
@@ -86,85 +83,60 @@ namespace lim
 			}
 			// static pointer delete가 필요한가?
 		}
-		void clear()
+	public:
+		bool renderable()
 		{
-			if( colorTex ) glDeleteTextures(1, &colorTex); colorTex=0;
-			if( rbo ) glDeleteRenderbuffers(1, &rbo); rbo=0;
-			if( multisampledFBO ) glDeleteFramebuffers(1, &multisampledFBO); multisampledFBO=0;
-
-			if( screenTex ) glDeleteTextures(1, &screenTex); screenTex=0;
-			if( intermediateFBO ) glDeleteFramebuffers(1, &intermediateFBO); intermediateFBO=0;
+			return fbo!=0;
 		}
 		void resize(GLuint _width, GLuint _height)
 		{
 			width = _width; height = _height;
 			create();
 		}
-		void create()
-		{
-			clear();
-			glGenFramebuffers(1, &multisampledFBO);
-			glBindFramebuffer(GL_FRAMEBUFFER, multisampledFBO);
-
-			// glTexStorage2D 텍스쳐 크기 고정
-			// glTexImage2D 텍스쳐크기 변경가능 0, GL_RGBA8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
-			// glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, MSAA
-
-			const int samples = 8;
-			glGenTextures(1, &colorTex);
-			glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, colorTex);
-			glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGB, width, height, GL_TRUE);
-			glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-			glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
-			// Bind the texture to the FBO
-			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, colorTex, 0);
-
-
-			// Create the depth buffer (stencil)
-			// render buffer은 셰이더에서 접근할수없는 텍스쳐, 속도면에서 장점
-			glGenRenderbuffers(1, &rbo);
-			glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-			glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, GL_DEPTH_COMPONENT, width, height);
-			glBindRenderbuffer(GL_RENDERBUFFER, 0);
-			// Bind the depth buffer to the FBO
-			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo);
-
-			// Set the targets for the fragment output variables
-			//GLenum drawBuffers[] ={GL_COLOR_ATTACHMENT0};
-			//glDrawBuffers(1, drawBuffers);
-
-			// error check
-			if( glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE )
-				fprintf(stderr, "FBO Error %d %d\n", width, height);
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-
-			/* for pass imgui image and post processing */
-			glGenFramebuffers(1, &intermediateFBO);
-			glBindFramebuffer(GL_FRAMEBUFFER, intermediateFBO);
-
-			glGenTextures(1, &screenTex);
-			glBindTexture(GL_TEXTURE_2D, screenTex);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-			glBindTexture(GL_TEXTURE_2D, 0);
-			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, screenTex, 0);
-
-			if( glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE )
-				fprintf(stderr, "postProcessingFBO Error %d %d\n", width, height);
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		}
 		void copyToBackBuf()
 		{
-			if( multisampledFBO==0 )
-				return;
-
+			textureToBackBuf(getRenderedTex());
+		}
+		void bind()
+		{
+			glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+			glViewport(0, 0, width, height);
+			glEnable(GL_FRAMEBUFFER_SRGB);
+			glEnable(GL_DEPTH_TEST);
+			glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
+			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+		}
+	public:
+		virtual void create()=0;
+		/* 부모 clear을 꼭 호출해줘야함. */
+		virtual void clear()
+		{
+			if( colorTex ) glDeleteTextures(1, &colorTex); colorTex=0;
+			if( fbo ) glDeleteFramebuffers(1, &fbo); fbo=0;
+		}
+		/* msaa할때 오버라이딩함. */
+		virtual void unbind()
+		{
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		}
+		virtual GLuint getRenderedTex()
+		{
+			return colorTex;
+		}
+	protected:
+		inline void createColorTex(GLuint& id)
+		{
+			// glTexStorage2D 텍스쳐 크기 고정
+			// glTexImage2D 텍스쳐크기 변경가능 0, GL_RGBA8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+			glGenTextures(1, &id);
+			glBindTexture(GL_TEXTURE_2D, id);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+			setTexParam(GL_NEAREST);
+			glBindTexture(GL_TEXTURE_2D, 0);
+		}
+	protected:
+		void textureToBackBuf(GLuint texID)
+		{
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 			glEnable(GL_FRAMEBUFFER_SRGB);
 			glViewport(0, 0, width, height);
@@ -175,11 +147,189 @@ namespace lim
 
 			toScrProgram->use();
 			glBindVertexArray(quadVAO);
-			glBindTexture(GL_TEXTURE_2D, screenTex);	// use the color attachment texture as the texture of the quad plane
+			// use the color attachment texture as the texture of the quad plane
+			glBindTexture(GL_TEXTURE_2D, texID);
 			glActiveTexture(GL_TEXTURE0);
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 
 			glBindVertexArray(0);
+		}
+		static inline void setTexParam(GLuint minFilter = GL_LINEAR, GLuint warp = GL_CLAMP_TO_EDGE)
+		{
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, warp);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, warp);
+		}
+	};
+
+	class TxFramebuffer: public Framebuffer
+	{
+	protected:
+		GLuint depth;
+	public:
+		TxFramebuffer()
+		{
+			depth=0;
+		}
+		~TxFramebuffer()
+		{
+			clear();
+		}
+	protected:
+		virtual void clear() final
+		{
+			Framebuffer::clear();
+			if( depth ) glDeleteRenderbuffers(1, &depth); depth=0;
+		}
+		virtual void create() final
+		{
+			/* create FBO */
+			createColorTex(colorTex);
+			createDepthTex(depth);
+			glGenFramebuffers(1, &fbo);
+			glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth, 0);
+			//glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depth, 0);
+			// error check
+			if( glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE )
+				fprintf(stderr, "tx FBO Error %d %d\n", width, height);
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			// Set the targets for the fragment output variables 필요한가?
+			//GLenum drawBuffers[] ={GL_COLOR_ATTACHMENT0};
+			//glDrawBuffers(1, drawBuffers);
+		}
+	protected:
+		inline void createDepthTex(GLuint& id)
+		{
+			glGenTextures(1, &depth);
+			glBindTexture(GL_TEXTURE_2D, depth);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+			glBindTexture(GL_TEXTURE_2D, 0);
+		}
+	};
+
+	class RbFramebuffer: public Framebuffer
+	{
+	protected:
+		GLuint rbo;
+	public:
+		RbFramebuffer()
+		{
+			rbo=0;
+		}
+		~RbFramebuffer()
+		{
+			clear();
+		}
+	protected:
+		virtual void clear()
+		{
+			Framebuffer::clear();
+			if( rbo ) glDeleteRenderbuffers(1, &rbo); rbo=0;
+		}
+		virtual void create()
+		{
+			/* create FBO */
+			createColorTex(colorTex);
+			createRBO(rbo);
+			glGenFramebuffers(1, &fbo);
+			glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
+			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo);
+			// error check
+			if( glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE )
+				fprintf(stderr, "rbo FBO Error %d %d\n", width, height);
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		}
+	protected:
+		inline void createRBO(GLuint& id)
+		{
+			// Create the depth buffer (stencil)
+			// render buffer은 셰이더에서 접근할수없는 텍스쳐, 속도면에서 장점
+			glGenRenderbuffers(1, &id);
+			glBindRenderbuffer(GL_RENDERBUFFER, id);
+			glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
+			glBindRenderbuffer(GL_RENDERBUFFER, 0);
+		}
+	};
+
+	class MsFramebuffer: public RbFramebuffer
+	{
+	private:
+		/* colorTex와 rbo를 multisampliing 모드로 생성 */
+		const int samples = 8;
+		GLuint intermediateFBO, screenTex;
+	public:
+		MsFramebuffer()
+		{
+			intermediateFBO=screenTex=0;
+		}
+		~MsFramebuffer()
+		{
+			clear();
+		}
+	public:
+		virtual void clear() final
+		{
+			RbFramebuffer::clear();
+			if( screenTex ) glDeleteTextures(1, &screenTex); screenTex=0;
+			if( intermediateFBO ) glDeleteFramebuffers(1, &intermediateFBO); intermediateFBO=0;
+		}
+		virtual void create() final
+		{
+			clear();
+			/* multisampled FBO 생성 */
+			createMsColorTex(colorTex);
+			createMsRBO(rbo);
+			glGenFramebuffers(1, &fbo); // multisampledFBO
+			glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, colorTex, 0);
+			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo);
+			// error check
+			if( glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE )
+				fprintf(stderr, "multisampled FBO Error %d %d\n", width, height);
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+			/* for pass imgui image and post processing */
+			createColorTex(screenTex);
+			glGenFramebuffers(1, &intermediateFBO);
+			glBindFramebuffer(GL_FRAMEBUFFER, intermediateFBO);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, screenTex, 0);
+			// error check
+			if( glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE )
+				fprintf(stderr, "intermediate FBO Error %d %d\n", width, height);
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		}
+		virtual void unbind() final
+		{
+			/* msaa framebuffer은 일반 texture을 가진 frame버퍼에 blit 복사 해야함 */
+			glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
+			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, intermediateFBO);
+			glBlitFramebuffer(0, 0, width, height, 0, 0, width, height
+							  , GL_COLOR_BUFFER_BIT, GL_NEAREST);
+			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+		}
+		virtual GLuint getRenderedTex() final
+		{
+			return screenTex;
+		}
+	private:
+		inline void createMsColorTex(GLuint& id)
+		{
+			glGenTextures(1, &id);
+			glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, id);
+			glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGB, width, height, GL_TRUE);
+			setTexParam(GL_NEAREST);
+			glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+		}
+		inline void createMsRBO(GLuint& id)
+		{
+			glGenRenderbuffers(1, &id);
+			glBindRenderbuffer(GL_RENDERBUFFER, id);
+			glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, GL_DEPTH_COMPONENT, width, height);
+			glBindRenderbuffer(GL_RENDERBUFFER, 0);
 		}
 	};
 	// BSS 메모리에 저장되어 0으로 초기화되는거 아닌가??
