@@ -112,7 +112,7 @@ namespace lim
 		}
 		void draw(const Camera& camera, const Light& light)
 		{
-			GLuint loc, pid;
+			GLuint pid;
 			pid = program->use();
 
 			setUniform(pid, "projMat", camera.projMat);
@@ -125,7 +125,7 @@ namespace lim
 			setUniform(pid, "lightInt", light.intensity);
 
 			for( GLuint i=0; i<meshes.size(); i++ )
-				meshes[i]->draw(*program);
+				meshes[i]->draw(pid);
 		}
 		void updateModelMat()
 		{

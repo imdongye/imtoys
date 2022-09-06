@@ -20,6 +20,8 @@ namespace lim
 		glm::vec3 color;
 		float intensity;
 		TxFramebuffer shadowMap;
+		glm::mat4 viewMat;
+		glm::mat4 projMat;
 	public:
 		Light(glm::vec3 _pos ={40, 300, 150}, glm::vec3 _color ={1,1,1}, float _intensity = 1)
 			:position(_pos), color(_color), intensity(_intensity)
@@ -28,9 +30,22 @@ namespace lim
 		}
 		~Light() = default;
 	public:
-		void drawShadowMap()
+		void drawShadowMap(std::vector<Model*> models)
 		{
-			//glBindFramebuffer(shadowMap.)
+			shadowMap.bind();
+			for( Model* model : models )
+			{
+				GLuint pid;
+				pid = model->program->use();
+
+				setUniform(pid, "viewMat", viewMat);
+				setUniform(pid, "projMat", projMat);
+				setUniform(pid, "modelMat", model->modelMat);
+
+				for( Mesh* mesh : model->meshes )
+					mesh->draw(pid);
+			}
+			shadowMap.unbind();
 		}
 
 	};

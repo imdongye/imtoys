@@ -90,20 +90,18 @@ namespace lim
 				VAO=0;
 			}
 		}
-		void draw(const Program& program)
+		void draw(const GLuint pid)
 		{
-			// texture unifrom var name texture_specularN ...
+			// todo: shadowmap그릴때 텍스쳐 필요없음
 			GLuint diffuseNr  = 0;
 			GLuint specularNr = 0;
 			GLuint normalNr   = 0;
 			GLuint ambientNr  = 0;
-			GLuint loc = 0;
 
-			for( GLuint i=0; i<textures.size(); i++ )
+			for( int i=0; i<textures.size(); i++ )
 			{
 				std::string type = textures[i].type;
-				// uniform samper2d nr is start with 1
-				// omit 0th
+				// uniform samper2d nr is start with 0
 				int backNum = 0;
 				if( type=="map_Kd" )        backNum = diffuseNr++;
 				else if( type=="map_Ks" )   backNum = specularNr++;
@@ -111,10 +109,9 @@ namespace lim
 				else if( type=="map_Ka" )   backNum = ambientNr++;
 
 				std::string varName = type + std::to_string(backNum);
-				glActiveTexture(GL_TEXTURE0 + i);
+				glActiveTexture(GL_TEXTURE0 + i); // slot
 				glBindTexture(GL_TEXTURE_2D, textures[i].id);
-				loc = glGetUniformLocation(program.ID, varName.c_str());
-				glUniform1i(loc, i); // to sampler2d
+				setUniform(pid, varName.c_str(), i);// to sampler2d
 			}
 
 			glBindVertexArray(VAO);
