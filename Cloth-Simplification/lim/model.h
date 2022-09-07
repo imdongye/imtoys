@@ -308,7 +308,7 @@ namespace lim
 				{
 					vertex.n = glm::vec3(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z);
 				}
-				// 버텍스당 최대 8개의 uv를 가질수있지만 하나만.
+				// 버텍스당 최대 8개의 uv를 가질수있지만 하나만 사용.
 				if( mesh->mTextureCoords[0] )
 				{
 					vertex.uv = glm::vec2(mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y);

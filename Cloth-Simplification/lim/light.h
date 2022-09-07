@@ -15,39 +15,39 @@ namespace lim
 	{
 	private:
 		const GLuint shadowMapSize = 1024;
+		static Program shadowProg;
 	public:
+		TxFramebuffer shadowMap;
 		glm::vec3 position;
 		glm::vec3 color;
 		float intensity;
-		TxFramebuffer shadowMap;
 		glm::mat4 viewMat;
 		glm::mat4 projMat;
 	public:
 		Light(glm::vec3 _pos ={40, 300, 150}, glm::vec3 _color ={1,1,1}, float _intensity = 1)
-			:position(_pos), color(_color), intensity(_intensity)
+			:position(_pos), color(_color), intensity(_intensity), shadowMap()
 		{
+			if( shadowProg.ID==0 )
+			{
+				shadowProg.attatch("shader/const.vs").attatch("shader/const.fs").link();
+			}
 			shadowMap.resize(shadowMapSize, shadowMapSize);
 		}
 		~Light() = default;
-	public:
-		void drawShadowMap(std::vector<Model*> models)
+
+		void drawShadowMap(std::function<void(GLuint shadowProgID)> drawModelsMeshWithModelMat)
 		{
 			shadowMap.bind();
-			for( Model* model : models )
-			{
-				GLuint pid;
-				pid = model->program->use();
+			GLuint pid = shadowProg.use();
+			setUniform(pid, "viewMat", viewMat);
+			setUniform(pid, "projMat", projMat);
 
-				setUniform(pid, "viewMat", viewMat);
-				setUniform(pid, "projMat", projMat);
-				setUniform(pid, "modelMat", model->modelMat);
+			drawModelsMeshWithModelMat(pid);
 
-				for( Mesh* mesh : model->meshes )
-					mesh->draw(pid);
-			}
 			shadowMap.unbind();
 		}
 
 	};
+	Program Light::shadowProg("shadowMap");
 }
 #endif

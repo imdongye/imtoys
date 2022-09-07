@@ -23,8 +23,9 @@ namespace lim
 	{
 	protected:
 		const glm::vec4 clearColor={0,0,1,1};
-		static Program* toScrProgram;
+		static Program toScrProgram;
 		static GLuint quadVAO;
+	protected:
 		GLuint fbo, colorTex;
 	public:
 		GLuint width=0, height=0;
@@ -34,11 +35,10 @@ namespace lim
 			fbo=colorTex=0;
 			width=height=0;
 
-			if( toScrProgram == 0 )
+			if( toScrProgram.ID==0 )
 			{
-				toScrProgram = new Program("toScrProgram");
-				toScrProgram->attatch("shader/fb_to_scr.vs").attatch("shader/fb_to_scr.fs").link();
-				GLuint loc = glGetUniformLocation(toScrProgram->use(), "screenTex");
+				toScrProgram.attatch("shader/fb_to_scr.vs").attatch("shader/fb_to_scr.fs").link();
+				GLuint loc = glGetUniformLocation(toScrProgram.use(), "screenTex");
 				glUniform1i(loc, 0);
 			}
 			if( quadVAO == 0 )
@@ -145,7 +145,7 @@ namespace lim
 			glClearColor(1, 1, 1, 1);
 			glClear(GL_COLOR_BUFFER_BIT);
 
-			toScrProgram->use();
+			toScrProgram.use();
 			glBindVertexArray(quadVAO);
 			// use the color attachment texture as the texture of the quad plane
 			glBindTexture(GL_TEXTURE_2D, texID);
@@ -162,6 +162,9 @@ namespace lim
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, warp);
 		}
 	};
+	Program Framebuffer::toScrProgram("toScr");
+	GLuint Framebuffer::quadVAO = 0;
+
 
 	class TxFramebuffer: public Framebuffer
 	{
@@ -332,9 +335,6 @@ namespace lim
 			glBindRenderbuffer(GL_RENDERBUFFER, 0);
 		}
 	};
-	// BSS 메모리에 저장되어 0으로 초기화되는거 아닌가??
-	Program* Framebuffer::toScrProgram = 0;
-	GLuint Framebuffer::quadVAO = 0;
 } // ! namespace lim
 
 #endif

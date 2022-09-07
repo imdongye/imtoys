@@ -72,7 +72,15 @@ namespace lim
 		{
 			if( enableShadow )
 			{
-				//light.drawShadowMap(models);
+				light.drawShadowMap([&](GLuint shadowProgID) {
+					for( Model* model : models )
+					{
+						setUniform(shadowProgID, "modelMat", model->modelMat);
+
+						for( Mesh* mesh : model->meshes )
+							mesh->draw();
+					}
+									});
 			}
 
 			glBindFramebuffer(GL_FRAMEBUFFER, fbo);
