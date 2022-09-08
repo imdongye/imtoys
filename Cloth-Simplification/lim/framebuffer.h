@@ -26,11 +26,12 @@ namespace lim
 		static Program toScrProgram;
 		static GLuint quadVAO;
 	protected:
+		bool enableSRGB;
 		GLuint fbo, colorTex;
 	public:
 		GLuint width=0, height=0;
 	public:
-		Framebuffer()
+		Framebuffer(bool _enableSRGB=true): enableSRGB(_enableSRGB)
 		{
 			fbo=colorTex=0;
 			width=height=0;
@@ -97,15 +98,6 @@ namespace lim
 		{
 			textureToBackBuf(getRenderedTex());
 		}
-		void bind()
-		{
-			glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-			glViewport(0, 0, width, height);
-			glEnable(GL_FRAMEBUFFER_SRGB);
-			glEnable(GL_DEPTH_TEST);
-			glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
-			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-		}
 	public:
 		virtual void create()=0;
 		/* 부모 clear을 꼭 호출해줘야함. */
@@ -113,6 +105,18 @@ namespace lim
 		{
 			if( colorTex ) glDeleteTextures(1, &colorTex); colorTex=0;
 			if( fbo ) glDeleteFramebuffers(1, &fbo); fbo=0;
+		}
+		/* msaa할때 오버라이딩함. */
+		virtual void bind()
+		{
+			glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+			glViewport(0, 0, width, height);
+			glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
+			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+
+			if( enableSRGB ) glEnable(GL_FRAMEBUFFER_SRGB);
+			glDisable(GL_DEPTH_TEST);
+			glDisable(GL_MULTISAMPLE);
 		}
 		/* msaa할때 오버라이딩함. */
 		virtual void unbind()
@@ -141,6 +145,7 @@ namespace lim
 			glEnable(GL_FRAMEBUFFER_SRGB);
 			glViewport(0, 0, width, height);
 			glDisable(GL_DEPTH_TEST);
+			glDisable(GL_MULTISAMPLE);
 
 			glClearColor(1, 1, 1, 1);
 			glClear(GL_COLOR_BUFFER_BIT);
@@ -168,10 +173,10 @@ namespace lim
 
 	class TxFramebuffer: public Framebuffer
 	{
-	protected:
+	public:
 		GLuint depth;
 	public:
-		TxFramebuffer()
+		TxFramebuffer(): Framebuffer(false) // now for depth draw
 		{
 			depth=0;
 		}
@@ -179,7 +184,7 @@ namespace lim
 		{
 			clear();
 		}
-	protected:
+	public:
 		virtual void clear() final
 		{
 			Framebuffer::clear();
@@ -202,6 +207,11 @@ namespace lim
 			// Set the targets for the fragment output variables 필요한가?
 			//GLenum drawBuffers[] ={GL_COLOR_ATTACHMENT0};
 			//glDrawBuffers(1, drawBuffers);
+		}
+		virtual void bind() final
+		{
+			Framebuffer::bind();
+			glEnable(GL_DEPTH_TEST);
 		}
 	protected:
 		inline void createDepthTex(GLuint& id)
@@ -245,6 +255,11 @@ namespace lim
 			if( glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE )
 				fprintf(stderr, "rbo FBO Error %d %d\n", width, height);
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		}
+		virtual void bind()
+		{
+			Framebuffer::bind();
+			glEnable(GL_DEPTH_TEST);
 		}
 	protected:
 		inline void createRBO(GLuint& id)
@@ -304,6 +319,12 @@ namespace lim
 			if( glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE )
 				fprintf(stderr, "intermediate FBO Error %d %d\n", width, height);
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		}
+		virtual void bind() final
+		{
+			RbFramebuffer::bind();
+			glEnable(GL_DEPTH_TEST);
+			glEnable(GL_MULTISAMPLE);
 		}
 		virtual void unbind() final
 		{

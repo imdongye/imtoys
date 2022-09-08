@@ -61,27 +61,10 @@ namespace lim
 			model = _model;
 			models.push_back(_model);
 		}
-		void render(Camera* camera)
-		{
-			for( Model* model : models )
-			{
-				model->draw(*camera, light);
-			}
-		}
+		/* framebuffer직접설정해서 렌더링 */
 		void render(GLuint fbo, GLuint width, GLuint height, Camera* camera)
 		{
-			if( enableShadow )
-			{
-				light.drawShadowMap([&](GLuint shadowProgID) {
-					for( Model* model : models )
-					{
-						setUniform(shadowProgID, "modelMat", model->modelMat);
-
-						for( Mesh* mesh : model->meshes )
-							mesh->draw();
-					}
-									});
-			}
+			if( enableShadow ) drawShadowMap();
 
 			glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 			glEnable(GL_FRAMEBUFFER_SRGB);
@@ -90,18 +73,41 @@ namespace lim
 			glClearColor(0, 0, 1, 1);
 			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
-			render(camera);
+			drawModels(camera);
 
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
+		/* viewport로 랜더링 */
 		void render(Viewport* vp)
 		{
 			Framebuffer& fb =  *(vp->framebuffer);
 			if( fb.renderable() == false ) return;
 
+			if( enableShadow ) drawShadowMap();
+
 			fb.bind();
-			render(vp->camera);
+			drawModels(vp->camera);
 			fb.unbind();
+		}
+	private:
+		inline void drawModels(Camera* camera)
+		{
+			for( Model* model : models )
+			{
+				model->draw(*camera, light);
+			}
+		}
+		inline void drawShadowMap()
+		{
+			light.drawShadowMap([&](GLuint shadowProgID) {
+				for( Model* model : models )
+				{
+					setUniform(shadowProgID, "modelMat", model->modelMat);
+
+					for( Mesh* mesh : model->meshes )
+						mesh->draw();
+				}
+								});
 		}
 	};
 }

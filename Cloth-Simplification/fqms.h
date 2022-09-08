@@ -951,6 +951,7 @@ namespace fqms
 		printf("\nsimplify mesh : %s, %d tris, %lfsec\n", mesh->name.c_str(), fqms::triangles.size(), glfwGetTime()-start);
 
 		lim::Mesh* result = new lim::Mesh(mesh->name.c_str());
+		result->textures = mesh->textures;
 		updateMesh(result);
 		return result;
 	}

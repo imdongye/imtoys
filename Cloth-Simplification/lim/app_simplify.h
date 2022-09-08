@@ -46,7 +46,7 @@ namespace lim
 			programs.back()->attatch("shader/textured.vs").attatch("shader/textured.fs").link();
 
 
-			models[0] = new Model("archive/meshes/stanford-bunny.obj", programs[0], true);
+			models[0] = new Model("archive/trex/TrexByJoel3d.obj", programs[0], true);
 			models[1] = nullptr;
 
 			scenes[0] = new Scene(programs[0], light);
@@ -122,7 +122,7 @@ namespace lim
 			ImGui::Begin("Viewing Options");
 			{
 				static bool isSameCamera = false;
-				if( ImGui::Checkbox(": use same camera", &isSameCamera) )
+				if( ImGui::Checkbox("use same camera", &isSameCamera) )
 				{
 					if( isSameCamera )
 						viewports[1]->camera = cameras[0];
@@ -136,17 +136,20 @@ namespace lim
 				std::vector<const char*> comboList;
 				for( Program* prog : programs )
 					comboList.push_back(prog->name.c_str());
-				if( ImGui::Combo(": shader", &prog_idx, comboList.data(), comboList.size()) )
+				if( ImGui::Combo("shader", &prog_idx, comboList.data(), comboList.size()) )
 				{
 					for( Scene* scene : scenes )
 					{
 						scene->model->program = programs[prog_idx];
 					}
 				}
-				ImGui::DragFloat3("light pos", glm::value_ptr(light.position), 0.1f, -300, 300, "%.1f");
-
+				if( ImGui::DragFloat3("light pos", glm::value_ptr(light.position), 0.001f, -2, 2, "%.3f") )
+				{
+					light.updateViewMat();
+				}
 			} ImGui::End();
 
+			ImGui::Image(reinterpret_cast<void*>(light.shadowMap.getRenderedTex()), ImVec2{200, 200}, ImVec2{0, 1}, ImVec2{1, 0});
 
 			ImGui::Begin("Model Status");
 			{
