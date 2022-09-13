@@ -12,8 +12,6 @@
 #ifndef SIMPLYFY_APP_H
 #define SIMPLYFY_APP_H
 
-#include "limclude.h"
-
 namespace lim
 {
 	class SimplifyApp: public AppBase
@@ -43,10 +41,15 @@ namespace lim
 			programs.back()->attatch("shader/posnoruv.vs").attatch("shader/uv.fs").link();
 
 			programs.push_back(new Program("Bump"));
-			programs.back()->attatch("shader/textured.vs").attatch("shader/textured.fs").link();
+			programs.back()->attatch("shader/posnoruv.vs").attatch("shader/bump.fs").link();
 
+			programs.push_back(new Program("Shadowed"));
+			programs.back()->attatch("shader/shadowed.vs").attatch("shader/shadowed.fs").link();
 
-			models[0] = new Model("archive/trex/TrexByJoel3d.obj", programs[0], true);
+			programs.push_back(new Program("Uv View"));
+			programs.back()->attatch("shader/uv_view.vs").attatch("shader/uv_view.fs").link();
+
+			models[0] = new Model("archive/dwarf/Dwarf_2_Low.obj", programs[0], true);
 			models[1] = nullptr;
 
 			scenes[0] = new Scene(programs[0], light);
@@ -82,6 +85,7 @@ namespace lim
 		{
 			processInput();
 
+			//scenes[0]->render(0, scr_width, scr_height, cameras[0]);
 			scenes[0]->render(viewports[0]);
 			scenes[1]->render(viewports[1]);
 
@@ -130,7 +134,7 @@ namespace lim
 						viewports[1]->camera = cameras[1];
 				}
 
-				ImGui::SliderFloat("moveSpeed", &cameraMoveSpeed, 1.0f, 3.0f);
+				ImGui::SliderFloat("move speed", &cameraMoveSpeed, 1.0f, 3.0f);
 
 				static int prog_idx = 0;
 				std::vector<const char*> comboList;
@@ -141,15 +145,24 @@ namespace lim
 					for( Scene* scene : scenes )
 					{
 						scene->model->program = programs[prog_idx];
+						scene->ground->program = programs[prog_idx];
 					}
 				}
-				if( ImGui::DragFloat3("light pos", glm::value_ptr(light.position), 0.001f, -2, 2, "%.3f") )
-				{
-					light.updateViewMat();
-				}
+				const float yawSpd = 360*0.001;
+				if( ImGui::DragFloat("light yaw", &light.yaw, yawSpd, -10, 370, "%.3f") )
+					light.updateMembers();
+				const float pitchSpd = 70*0.001;
+				if( ImGui::DragFloat("light pitch", &light.pitch, pitchSpd, -100, 100, "%.3f") )
+					light.updateMembers();
+
+				ImGui::Text("pos %f %f %F", light.position.x, light.position.y, light.position.z);
 			} ImGui::End();
 
-			ImGui::Image(reinterpret_cast<void*>(light.shadowMap.getRenderedTex()), ImVec2{200, 200}, ImVec2{0, 1}, ImVec2{1, 0});
+			ImGui::SetNextWindowSize(ImVec2{0,0});
+			ImGui::Begin("shadowMap");
+			{
+				ImGui::Image(reinterpret_cast<void*>(light.shadowMap.getRenderedTex()), ImVec2{256, 256}, ImVec2{0, 1}, ImVec2{1, 0});
+			}ImGui::End();
 
 			ImGui::Begin("Model Status");
 			{

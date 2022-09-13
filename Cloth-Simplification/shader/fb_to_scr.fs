@@ -1,3 +1,7 @@
+//
+// gamma collection with glEnable(...SRGB)
+//
+
 #version 330 core
 out vec4 FragColor;
 

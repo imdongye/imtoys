@@ -8,8 +8,6 @@
 #ifndef VIEWPORT_H
 #define VIEWPORT_H
 
-#include "limclude.h"
-
 namespace lim
 {
 	class Viewport

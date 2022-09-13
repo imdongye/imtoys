@@ -6,8 +6,6 @@
 #ifndef MESH_H
 #define MESH_H
 
-#include "limclude.h"
-
 namespace lim
 {
 	namespace n_mesh
@@ -31,7 +29,6 @@ namespace lim
 				memcpy(m_BoneIDs, copy.m_BoneIDs, sizeof(int) * MAX_BONE_INFLUENCE);
 				memcpy(m_Weights, copy.m_Weights, sizeof(float) * MAX_BONE_INFLUENCE);
 				return *this;
-
 			}
 		};
 	}
@@ -44,6 +41,7 @@ namespace lim
 		std::vector<GLuint> indices;
 		std::vector<Texture> textures;
 		GLuint angles; // set size of indices
+		glm::vec3 color; // Kd, diffuse color
 	private:
 		GLuint VAO, VBO, EBO;
 		GLenum drawMode;
@@ -92,14 +90,13 @@ namespace lim
 		}
 		void draw(const GLuint pid=0)
 		{
-			// todo: shadowmap그릴때 텍스쳐 필요없음
-			GLuint diffuseNr  = 0;
-			GLuint specularNr = 0;
-			GLuint normalNr   = 0;
-			GLuint ambientNr  = 0;
-
-			if( pid!=0 )
+			/* shadowMap draw할때 pid=0 으로 해서 setUniform 하지 않음 */
+			if( pid != 0 )
 			{
+				GLuint diffuseNr  = 0;
+				GLuint specularNr = 0;
+				GLuint normalNr   = 0;
+				GLuint ambientNr  = 0;
 				for( int i=0; i<textures.size(); i++ )
 				{
 					std::string type = textures[i].type;
@@ -115,16 +112,18 @@ namespace lim
 					glBindTexture(GL_TEXTURE_2D, textures[i].id);
 					setUniform(pid, varName.c_str(), i);// to sampler2d
 				}
+				glActiveTexture(GL_TEXTURE0);
+				setUniform(pid, "hasTexture", (textures.size()>0)?1:-1);
+				setUniform(pid, "Kd", color);
 			}
 
 			glBindVertexArray(VAO);
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 			glDrawElements(drawMode, static_cast<GLuint>(indices.size()), GL_UNSIGNED_INT, 0);
-
 			glBindVertexArray(0);
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-			glActiveTexture(GL_TEXTURE0);
 		}
+
 		// upload VRAM
 		void setupMesh()
 		{

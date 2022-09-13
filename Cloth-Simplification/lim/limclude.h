@@ -14,7 +14,8 @@
 //	1.폴더구조
 //
 
-#pragma once
+#ifndef LIMCLUDE_H
+#define LIMCLUDE_H
 
 #include <glad/glad.h> 
 #include <glm/glm.hpp>
@@ -23,16 +24,6 @@
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/transform.hpp>
 #include <GLFW/glfw3.h>
-
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-
-#include <imgui/imgui.h>
-#include <imgui/imgui_impl_glfw.h>
-#include <imgui/imgui_impl_opengl3.h>
 
 #include <iostream>
 #include <fstream>
@@ -56,3 +47,5 @@
 #include "application.h"
 #include "../fqms.h"
 #include "app_simplify.h"
+
+#endif 

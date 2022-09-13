@@ -8,7 +8,9 @@
 #ifndef IMGUI_MODULES_H
 #define IMGUI_MODULES_H
 
-#include "limclude.h"
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_glfw.h>
+#include <imgui/imgui_impl_opengl3.h>
 
 namespace lim
 {
@@ -59,9 +61,7 @@ namespace lim
 			io.DisplaySize = ImVec2(scr_width, scr_height);
 
 			ImGui::Render();
-			glDisable(GL_FRAMEBUFFER_SRGB);
 			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
 			// Magic!
 			// Update and Render additional Platform Windows
 			// (Platform functions may change the current OpenGL context, so we save/restore it to make it easier to paste this code elsewhere.

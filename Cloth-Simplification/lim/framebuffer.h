@@ -15,23 +15,20 @@
 #ifndef FRAMEBUFFER_H
 #define FRAMEBUFFER_H
 
-#include "limclude.h"
-
 namespace lim
 {
 	class Framebuffer
 	{
 	protected:
-		const glm::vec4 clearColor={0,0,1,1};
 		static Program toScrProgram;
 		static GLuint quadVAO;
-	protected:
-		bool enableSRGB;
+	public:
 		GLuint fbo, colorTex;
 	public:
+		glm::vec4 clearColor={0,0,1,1};
 		GLuint width=0, height=0;
 	public:
-		Framebuffer(bool _enableSRGB=true): enableSRGB(_enableSRGB)
+		Framebuffer()
 		{
 			fbo=colorTex=0;
 			width=height=0;
@@ -100,32 +97,29 @@ namespace lim
 		}
 	public:
 		virtual void create()=0;
-		/* 부모 clear을 꼭 호출해줘야함. */
+		virtual GLuint getRenderedTex()
+		{
+			return colorTex;
+		}
+		/* 오버라이딩하고 첫줄에 부모 가상함수를 꼭 호출해줘야함. */
 		virtual void clear()
 		{
 			if( colorTex ) glDeleteTextures(1, &colorTex); colorTex=0;
 			if( fbo ) glDeleteFramebuffers(1, &fbo); fbo=0;
 		}
-		/* msaa할때 오버라이딩함. */
 		virtual void bind()
 		{
 			glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 			glViewport(0, 0, width, height);
 			glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
-			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+			glClear(GL_COLOR_BUFFER_BIT);
 
-			if( enableSRGB ) glEnable(GL_FRAMEBUFFER_SRGB);
 			glDisable(GL_DEPTH_TEST);
 			glDisable(GL_MULTISAMPLE);
 		}
-		/* msaa할때 오버라이딩함. */
 		virtual void unbind()
 		{
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		}
-		virtual GLuint getRenderedTex()
-		{
-			return colorTex;
 		}
 	protected:
 		inline void createColorTex(GLuint& id)
@@ -134,16 +128,23 @@ namespace lim
 			// glTexImage2D 텍스쳐크기 변경가능 0, GL_RGBA8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
 			glGenTextures(1, &id);
 			glBindTexture(GL_TEXTURE_2D, id);
+			setTexParam(GL_LINEAR);
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
-			setTexParam(GL_NEAREST);
 			glBindTexture(GL_TEXTURE_2D, 0);
 		}
 	protected:
-		void textureToBackBuf(GLuint texID)
+		static inline void setTexParam(GLuint minFilter = GL_LINEAR, GLuint warp = GL_CLAMP_TO_EDGE)
+		{
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, warp);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, warp);
+		}
+		void textureToBackBuf(GLuint texID, bool toSRGB = false)
 		{
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-			glEnable(GL_FRAMEBUFFER_SRGB);
 			glViewport(0, 0, width, height);
+			if( toSRGB ) glEnable(GL_FRAMEBUFFER_SRGB);
 			glDisable(GL_DEPTH_TEST);
 			glDisable(GL_MULTISAMPLE);
 
@@ -159,13 +160,6 @@ namespace lim
 
 			glBindVertexArray(0);
 		}
-		static inline void setTexParam(GLuint minFilter = GL_LINEAR, GLuint warp = GL_CLAMP_TO_EDGE)
-		{
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, warp);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, warp);
-		}
 	};
 	Program Framebuffer::toScrProgram("toScr");
 	GLuint Framebuffer::quadVAO = 0;
@@ -176,11 +170,11 @@ namespace lim
 	public:
 		GLuint depth;
 	public:
-		TxFramebuffer(): Framebuffer(false) // now for depth draw
+		TxFramebuffer(): Framebuffer()
 		{
 			depth=0;
 		}
-		~TxFramebuffer()
+		virtual ~TxFramebuffer()
 		{
 			clear();
 		}
@@ -192,9 +186,10 @@ namespace lim
 		}
 		virtual void create() final
 		{
-			/* create FBO */
 			createColorTex(colorTex);
 			createDepthTex(depth);
+
+			/* create FBO */
 			glGenFramebuffers(1, &fbo);
 			glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
@@ -212,13 +207,14 @@ namespace lim
 		{
 			Framebuffer::bind();
 			glEnable(GL_DEPTH_TEST);
+			glClear(GL_DEPTH_BUFFER_BIT);
 		}
 	protected:
 		inline void createDepthTex(GLuint& id)
 		{
 			glGenTextures(1, &depth);
 			glBindTexture(GL_TEXTURE_2D, depth);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
 			glBindTexture(GL_TEXTURE_2D, 0);
 		}
 	};
@@ -232,7 +228,7 @@ namespace lim
 		{
 			rbo=0;
 		}
-		~RbFramebuffer()
+		virtual ~RbFramebuffer()
 		{
 			clear();
 		}
@@ -260,6 +256,7 @@ namespace lim
 		{
 			Framebuffer::bind();
 			glEnable(GL_DEPTH_TEST);
+			glClear(GL_DEPTH_BUFFER_BIT);
 		}
 	protected:
 		inline void createRBO(GLuint& id)
@@ -277,24 +274,18 @@ namespace lim
 	{
 	private:
 		/* colorTex와 rbo를 multisampliing 모드로 생성 */
-		const int samples = 8;
+		const int samples = 16;
 		GLuint intermediateFBO, screenTex;
 	public:
 		MsFramebuffer()
 		{
 			intermediateFBO=screenTex=0;
 		}
-		~MsFramebuffer()
+		virtual ~MsFramebuffer()
 		{
 			clear();
 		}
 	public:
-		virtual void clear() final
-		{
-			RbFramebuffer::clear();
-			if( screenTex ) glDeleteTextures(1, &screenTex); screenTex=0;
-			if( intermediateFBO ) glDeleteFramebuffers(1, &intermediateFBO); intermediateFBO=0;
-		}
 		virtual void create() final
 		{
 			clear();
@@ -320,24 +311,32 @@ namespace lim
 				fprintf(stderr, "intermediate FBO Error %d %d\n", width, height);
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
+		virtual GLuint getRenderedTex() final
+		{
+			return screenTex;
+		}
+		virtual void clear() final
+		{
+			RbFramebuffer::clear();
+			if( screenTex ) glDeleteTextures(1, &screenTex); screenTex=0;
+			if( intermediateFBO ) glDeleteFramebuffers(1, &intermediateFBO); intermediateFBO=0;
+		}
 		virtual void bind() final
 		{
 			RbFramebuffer::bind();
-			glEnable(GL_DEPTH_TEST);
-			glEnable(GL_MULTISAMPLE);
 		}
 		virtual void unbind() final
 		{
 			/* msaa framebuffer은 일반 texture을 가진 frame버퍼에 blit 복사 해야함 */
 			glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
 			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, intermediateFBO);
+
 			glBlitFramebuffer(0, 0, width, height, 0, 0, width, height
 							  , GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
 			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-		}
-		virtual GLuint getRenderedTex() final
-		{
-			return screenTex;
+			glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
 	private:
 		inline void createMsColorTex(GLuint& id)
@@ -345,7 +344,7 @@ namespace lim
 			glGenTextures(1, &id);
 			glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, id);
 			glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGB, width, height, GL_TRUE);
-			setTexParam(GL_NEAREST);
+			setTexParam(GL_LINEAR);
 			glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
 		}
 		inline void createMsRBO(GLuint& id)

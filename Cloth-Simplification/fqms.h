@@ -868,8 +868,12 @@ namespace fqms
 
 namespace fqms
 {
+	glm::vec3 backup_color;
+
 	void updateGlobal(lim::Mesh* mesh)
 	{
+		backup_color = mesh->color;
+
 		fqms::vertices.clear();
 		fqms::triangles.clear();
 
@@ -881,16 +885,17 @@ namespace fqms
 			temp.p.z = v.p.z;
 			fqms::vertices.push_back(temp);
 		}
-
 		// make triangles & edge
 		fqms::triangles.resize(mesh->indices.size()/3);
 		int triCount=0;
 		int vertCount=0;
 		for( GLuint idx: mesh->indices )
 		{
-			fqms::triangles[triCount].v[vertCount] = idx;
-			fqms::triangles[triCount].uvs[vertCount] = vec3f(mesh->vertices[idx].uv.x,
-															 mesh->vertices[idx].uv.y, 1);
+			lim::n_mesh::Vertex& overt = mesh->vertices[idx]; // origin
+			fqms::Triangle& ttri = fqms::triangles[triCount];
+			ttri.v[vertCount] = idx;
+			ttri.uvs[vertCount] = vec3f(overt.uv.x, overt.uv.y, 1);
+			ttri.n = vec3f(overt.n.x, overt.n.y, overt.n.z);
 			vertCount++;
 			if( vertCount == 3 )
 			{
@@ -906,6 +911,7 @@ namespace fqms
 	}
 	void updateMesh(lim::Mesh* mesh)
 	{
+		mesh->color = backup_color;
 		mesh->vertices.clear();
 		mesh->indices.clear();
 
@@ -927,6 +933,8 @@ namespace fqms
 			for( int i=0; i<3; i++ )
 			{
 				mesh->indices[idxCount++] = tri.v[i];
+				// 삼각형 노멀을 공유
+				mesh->vertices[tri.v[i]].n = glm::vec3(tri.n.x, tri.n.y, tri.n.z);
 				mesh->vertices[tri.v[i]].uv = glm::vec2(tri.uvs[i].x, tri.uvs[i].y);
 			}
 		}

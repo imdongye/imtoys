@@ -17,7 +17,9 @@
 #ifndef MODEL_H
 #define MODEL_H
 
-#include "limclude.h"
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 
 namespace lim
 {
@@ -120,9 +122,7 @@ namespace lim
 			setUniform(pid, "modelMat", modelMat);
 			setUniform(pid, "cameraPos", camera.position);
 
-			setUniform(pid, "lightPos", light.position);
-			setUniform(pid, "lightColor", light.color);
-			setUniform(pid, "lightInt", light.intensity);
+			light.setUniforms(pid);
 
 			for( GLuint i=0; i<meshes.size(); i++ )
 				meshes[i]->draw(pid);
@@ -348,8 +348,12 @@ namespace lim
 			std::vector<Texture> heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT);
 			textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
 
-			meshes.push_back(new Mesh(vertices, indices, textures
-							 , mesh->mName.C_Str(), angles));
+			Mesh* newMesh = new Mesh(vertices, indices, textures, mesh->mName.C_Str(), angles);
+			aiColor3D color;
+			material->Get(AI_MATKEY_COLOR_DIFFUSE, color);
+			newMesh->color = glm::vec3(color.r, color.g, color.b);
+
+			meshes.push_back(newMesh);
 		}
 		void parseNode(aiNode* node, const aiScene* scene)
 		{

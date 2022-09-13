@@ -20,7 +20,6 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
-#include "limclude.h"
 
 namespace lim
 {
@@ -141,7 +140,7 @@ namespace lim
 		}
 		void rotateCameraYaw(float yaw_off)
 		{
-			yaw   += yaw_off;//todo repeat
+			yaw += yaw_off;//todo repeat
 		}
 		void rotateCameraPitch(float pitch_off)
 		{

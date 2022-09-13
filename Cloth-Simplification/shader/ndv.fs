@@ -6,6 +6,7 @@ in vec3 wNor;
 in vec2 tUv;
 
 uniform vec3 cameraPos;
+uniform float gamma = 2.2;
 
 void main()
 {    
@@ -15,4 +16,5 @@ void main()
 	//vec3 N = wNorm;
 
     FragColor = vec4(dot(N, V)*vec3(1),1);
+	FragColor = pow(FragColor, vec4(1/gamma));
 }

@@ -14,8 +14,6 @@
 #ifndef SCENE_H
 #define SCENE_H
 
-#include "limclude.h"
-
 namespace lim
 {
 	class Scene
@@ -25,9 +23,8 @@ namespace lim
 		Model* model=nullptr; // main model
 		std::vector<Model*> models;
 		Light& light;
-		bool enableShadow;
 	public:
-		Scene(Program* groundProgram, Light& _light): light(_light), enableShadow(true)
+		Scene(Program* groundProgram, Light& _light): light(_light)
 		{
 			ground = new Model([](std::vector<lim::n_mesh::Vertex>& vertices
 							   , std::vector<GLuint>& indices
@@ -43,6 +40,7 @@ namespace lim
 								   indices.insert(indices.end(), {0,1,3});
 								   indices.insert(indices.end(), {1,2,3});
 							   }, groundProgram, "ground");
+			ground->meshes.back()->color = glm::vec3(0.8, 0.8, 0); // yello ground
 			ground->position = glm::vec3(0, 0, 0);
 			ground->updateModelMat();
 			models.push_back(ground);
@@ -64,10 +62,9 @@ namespace lim
 		/* framebuffer직접설정해서 렌더링 */
 		void render(GLuint fbo, GLuint width, GLuint height, Camera* camera)
 		{
-			if( enableShadow ) drawShadowMap();
+			if( light.shadowEnabled ) drawShadowMap();
 
 			glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-			glEnable(GL_FRAMEBUFFER_SRGB);
 			glViewport(0, 0, width, height);
 			glEnable(GL_DEPTH_TEST);
 			glClearColor(0, 0, 1, 1);
@@ -83,7 +80,7 @@ namespace lim
 			Framebuffer& fb =  *(vp->framebuffer);
 			if( fb.renderable() == false ) return;
 
-			if( enableShadow ) drawShadowMap();
+			if( light.shadowEnabled ) drawShadowMap();
 
 			fb.bind();
 			drawModels(vp->camera);
@@ -97,7 +94,7 @@ namespace lim
 				model->draw(*camera, light);
 			}
 		}
-		inline void drawShadowMap()
+		void drawShadowMap()
 		{
 			light.drawShadowMap([&](GLuint shadowProgID) {
 				for( Model* model : models )
@@ -105,7 +102,7 @@ namespace lim
 					setUniform(shadowProgID, "modelMat", model->modelMat);
 
 					for( Mesh* mesh : model->meshes )
-						mesh->draw();
+						mesh->draw(0); // only draw
 				}
 								});
 		}

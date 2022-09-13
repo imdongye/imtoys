@@ -10,9 +10,6 @@
 #ifndef APPLICATION_H
 #define APPLICATION_H
 
-#include "limclude.h"
-
-
 namespace lim
 {
 	class AppBase
@@ -78,7 +75,6 @@ namespace lim
 
 			// assimp에서 v좌표 반전해서 로딩
 			stbi_set_flip_vertically_on_load(true);
-			//glEnable(GL_FRAMEBUFFER_SRGB);// match intensity and Voltage todo
 			// back face removal
 			//glEnable(GL_CULL_FACE);
 			//glFrontFace(GL_CCW);

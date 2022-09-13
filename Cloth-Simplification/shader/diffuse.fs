@@ -10,8 +10,10 @@ uniform sampler2D map_Bump0;
 uniform sampler2D map_Ks0;
 
 uniform vec3 cameraPos;
+uniform float gamma = 2.2;
 
 void main()
 {   
     FragColor = texture(map_Kd0, tUv);
+	FragColor = pow(FragColor, vec4(1/gamma));
 }
