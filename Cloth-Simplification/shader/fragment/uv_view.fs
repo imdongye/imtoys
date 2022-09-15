@@ -1,3 +1,4 @@
+
 #version 410 core
 out vec4 FragColor;
 
@@ -21,13 +22,13 @@ uniform int shininess = 20;
 uniform vec3 Kd = vec3(1,1,0);
 /* texture */
 uniform int hasTexture = -1;
+uniform int isBump = 1;
 uniform float texGamma = 1; // suppose linear space
 uniform sampler2D map_Kd0;
 uniform sampler2D map_Bump0;
-uniform sampler2D map_Ks0;
 /* etc */
 uniform vec3 cameraPos;
-uniform float gamma = 2.2; 
+uniform float gamma = 1; 
 
 mat3 getTBN( vec3 N ) {
 	vec3 Q1 = dFdx(wPos), Q2 = dFdy(wPos);
@@ -43,31 +44,29 @@ void main(void)
 	if( hasTexture>0 )
 	{
 		mat3 TBN = getTBN( N );
-		float Bu = texture(map_Bump0, tUv+vec2(TEX_DELTA,0)).r
-						- texture(map_Bump0, tUv+vec2(-TEX_DELTA,0)).r;
-		float Bv = texture(map_Bump0, tUv+vec2(0,TEX_DELTA)).r
-						- texture(map_Bump0, tUv+vec2(0,-TEX_DELTA)).r;
-		vec3 bumpVec = vec3(-Bu*bumpHeight, -Bv*bumpHeight, 1);
-		N = normalize(TBN*bumpVec);
+		if( isBump>0 )
+		{
+			float Bu = texture(map_Bump0, tUv+vec2(TEX_DELTA,0)).r
+							- texture(map_Bump0, tUv+vec2(-TEX_DELTA,0)).r;
+			float Bv = texture(map_Bump0, tUv+vec2(0,TEX_DELTA)).r
+							- texture(map_Bump0, tUv+vec2(0,-TEX_DELTA)).r;
+			vec3 bumpVec = vec3(-Bu*bumpHeight, -Bv*bumpHeight, 1);
+			N = normalize(TBN*bumpVec);
+		}
+		else
+		{
+			vec3 tsNor = texture(map_Bump0, tUv).rgb;
+			N = normalize(TBN*tsNor);
+		}
+		N = normalize(transpose(TBN)*N);
 	}
-	vec3 L = normalize(lightDir);
-	vec3 V = normalize(cameraPos - wPos);
-	vec3 R = 2*dot(N,L)*N-L;
+	//vec3 L = normalize(lightDir);
+	//vec3 V = normalize(cameraPos - wPos);
 
-	float visibility = 1.0;
-	if( shadowEnabled > 0 )
-	{
-		// ...
-	}
+	//vec4 albelo = (hasTexture>0) ? pow(texture(map_Kd0, tUv),vec4(texGamma)) : vec4(Kd,1);
 
-	vec4 albelo = (hasTexture>0) ? pow(texture(map_Kd0, tUv),vec4(texGamma)) : vec4(Kd,1);
-
-	float lambertian = max(0, dot(N, L));
-	vec3 diffuse = lightInt*lambertian*albelo.rgb;
-	vec3 ambient = ambInt*albelo.rgb;
-	vec3 specular = pow(max(0,dot(R,V)), shininess) * lambertian * vec3(1);
-	vec3 outColor = diffuse+ambient+specular;
-	outColor *= visibility;
+	
+	vec3 outColor = N*0.5+0.5;
 
 	FragColor = vec4(outColor, 1);
 	FragColor = pow(FragColor, vec4(1/gamma));
