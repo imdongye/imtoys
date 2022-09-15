@@ -43,7 +43,7 @@ namespace lim
 		{
 			if( shadowProg.ID==0 )
 			{
-				shadowProg.attatch("shader/pos.vs").attatch("shader/depth.fs").link();
+				shadowProg.attatch("pos.vs").attatch("depth.fs").link();
 			}
 			shadowMap.clearColor = glm::vec4(1);
 			shadowMap.resize(shadowMapSize, shadowMapSize);
