@@ -395,6 +395,10 @@ namespace fqms
 
 	void simplify_mesh(int target_count, double agressiveness=7, bool verbose=false)
 	{
+		int x = 0;
+		std::cout << "version : ";
+		std::cin >> x;
+		std::cout << "version : " << x << std::endl;
 		// init
 		loopi(0, triangles.size())
 		{
@@ -426,7 +430,17 @@ namespace fqms
 			// The following numbers works well for most models.
 			// If it does not, try to adjust the 3 parameters
 			//
-			double threshold = 0.000000001*pow(double(iteration+3), agressiveness);
+
+			double threshold;
+			if(x == 1)
+				threshold = 0.000000001*pow(double(iteration+3), agressiveness);
+			else
+			{
+				// Error 최대값 기준
+				double max = 0;
+				loopi(0, triangles.size()) if (max < triangles[i].err[3]) max = triangles[i].err[3];
+				threshold = (0.01 * iteration) * max;
+			}
 
 			// target number of triangles reached ? Then break
 			if( (verbose) && (iteration%5==0) )
@@ -441,7 +455,7 @@ namespace fqms
 				if( t.err[3]>threshold ) continue;
 				if( t.deleted ) continue;
 				if( t.dirty ) continue;
-
+				
 				loopj(0, 3)if( t.err[j]<threshold )
 				{
 
