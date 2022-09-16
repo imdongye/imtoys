@@ -29,25 +29,25 @@ namespace lim
 		SimplifyApp(): AppBase(1200, 960), cameraMoveSpeed(1.6f), light()
 		{
 			programs.push_back(new Program("Normal Dot View"));
-			programs.back()->attatch("shader/posnoruv.vs").attatch("shader/ndv.fs").link();
+			programs.back()->attatch("pos_nor_uv.vs").attatch("ndv.fs").link();
 
 			programs.push_back(new Program("Normal Dot Light"));
-			programs.back()->attatch("shader/posnoruv.vs").attatch("shader/ndl.fs").link();
+			programs.back()->attatch("pos_nor_uv.vs").attatch("ndl.fs").link();
 
 			programs.push_back(new Program("Diffuse"));
-			programs.back()->attatch("shader/posnoruv.vs").attatch("shader/diffuse.fs").link();
+			programs.back()->attatch("pos_nor_uv.vs").attatch("diffuse.fs").link();
 
 			programs.push_back(new Program("Uv"));
-			programs.back()->attatch("shader/posnoruv.vs").attatch("shader/uv.fs").link();
+			programs.back()->attatch("pos_nor_uv.vs").attatch("uv.fs").link();
 
 			programs.push_back(new Program("Bump"));
-			programs.back()->attatch("shader/posnoruv.vs").attatch("shader/bump.fs").link();
+			programs.back()->attatch("pos_nor_uv.vs").attatch("bump.fs").link();
 
 			programs.push_back(new Program("Shadowed"));
-			programs.back()->attatch("shader/shadowed.vs").attatch("shader/shadowed.fs").link();
+			programs.back()->attatch("shadowed.vs").attatch("shadowed.fs").link();
 
 			programs.push_back(new Program("Uv View"));
-			programs.back()->attatch("shader/uv_view.vs").attatch("shader/uv_view.fs").link();
+			programs.back()->attatch("uv_view.vs").attatch("uv_view.fs").link();
 
 			models[0] = new Model("archive/dwarf/Dwarf_2_Low.obj", programs[0], true);
 			models[1] = nullptr;
@@ -109,8 +109,7 @@ namespace lim
 				static float pct = 0.8f;
 				ImGui::SliderFloat("percent", &pct, 0.0f, 1.0f);
 
-				if( ImGui::Button("Simplify") )
-				{
+				if( ImGui::Button("Simplify") ) {
 					if( models[1] != nullptr ) delete models[1];
 					models[1] = fqms::simplifyModel(scenes[0]->model, pct);
 
@@ -126,8 +125,7 @@ namespace lim
 			ImGui::Begin("Viewing Options");
 			{
 				static bool isSameCamera = false;
-				if( ImGui::Checkbox("use same camera", &isSameCamera) )
-				{
+				if( ImGui::Checkbox("use same camera", &isSameCamera) ) {
 					if( isSameCamera )
 						viewports[1]->camera = cameras[0];
 					else
@@ -140,10 +138,8 @@ namespace lim
 				std::vector<const char*> comboList;
 				for( Program* prog : programs )
 					comboList.push_back(prog->name.c_str());
-				if( ImGui::Combo("shader", &prog_idx, comboList.data(), comboList.size()) )
-				{
-					for( Scene* scene : scenes )
-					{
+				if( ImGui::Combo("shader", &prog_idx, comboList.data(), comboList.size()) ) {
+					for( Scene* scene : scenes ) {
 						scene->model->program = programs[prog_idx];
 						scene->ground->program = programs[prog_idx];
 					}
@@ -205,13 +201,11 @@ namespace lim
 		}
 		void processInput()
 		{
-			for( Viewport* vp : viewports )
-			{
+			for( Viewport* vp : viewports ) {
 				if( vp->focused == false ) continue;
 				Camera& camera = *vp->camera;
 
-				if( glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)==GLFW_PRESS )
-				{
+				if( glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)==GLFW_PRESS ) {
 					float multiple = 1.0f;
 					if( glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS )
 						multiple = 1.3f;
@@ -232,20 +226,16 @@ namespace lim
 		}
 		void key_callback(int key, int scancode, int action, int mode)
 		{
-			for( Viewport* vp : viewports )
-			{
+			for( Viewport* vp : viewports ) {
 				if( vp->focused == false ) continue;
 				Camera& camera = *vp->camera;
 				if( glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)==GLFW_PRESS
-				   && key == GLFW_KEY_Z )
-				{
-					if( action == GLFW_PRESS )
-					{
+				   && key == GLFW_KEY_Z ) {
+					if( action == GLFW_PRESS ) {
 						camera.readyPivot();
 						camera.updatePivotViewMat();
 					}
-					else if( action == GLFW_RELEASE )
-					{
+					else if( action == GLFW_RELEASE ) {
 						camera.readyFree();
 						camera.updateFreeViewMat();
 					}
@@ -256,8 +246,7 @@ namespace lim
 		}
 		void cursor_pos_callback(double xPos, double yPos)
 		{
-			for( Viewport* vp : viewports )
-			{
+			for( Viewport* vp : viewports ) {
 				if( vp->focused == false ) continue;
 				Camera& camera = *vp->camera;
 				const float w = scr_width;
@@ -266,23 +255,18 @@ namespace lim
 				float xoff = xPos - vp->cursor_pos_x;
 				float yoff = vp->cursor_pos_y - yPos; // inverse
 
-				if( glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) )
-				{
-					if( glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS )
-					{
-						if( glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS )
-						{
+				if( glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) ) {
+					if( glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS ) {
+						if( glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS ) {
 							camera.shiftDist(xoff/w*160.f);
 							camera.shiftZoom(yoff/h*160.f);
 						}
-						else
-						{
+						else {
 							camera.rotateCamera(xoff/w*160.f, yoff/h*160.f);
 						}
 						camera.updatePivotViewMat();
 					}
-					else
-					{
+					else {
 						camera.rotateCamera(xoff/w*160.f, yoff/h*160.f);
 						camera.updateFreeViewMat();
 					}
@@ -293,12 +277,10 @@ namespace lim
 		}
 		void mouse_btn_callback(int button, int action, int mods)
 		{
-			for( Viewport* vp : viewports )
-			{
+			for( Viewport* vp : viewports ) {
 				if( vp->hovered == false ) continue;
 				Camera& camera = *vp->camera;
-				if( action == GLFW_PRESS )
-				{
+				if( action == GLFW_PRESS ) {
 					double xpos, ypos;
 					glfwGetCursorPos(window, &xpos, &ypos);
 					vp->cursor_pos_x = xpos;
@@ -308,8 +290,7 @@ namespace lim
 		}
 		void scroll_callback(double xoff, double yoff)
 		{
-			for( Viewport* vp : viewports )
-			{
+			for( Viewport* vp : viewports ) {
 				if( vp->focused == false ) continue;
 				Camera& camera = *vp->camera;
 				camera.shiftZoom(yoff*10.f);
@@ -323,8 +304,7 @@ namespace lim
 		}
 		void drop_callback(int count, const char** paths)
 		{
-			for( int i = 0; i < count; i++ )
-			{
+			for( int i = 0; i < count; i++ ) {
 				Program* usedProg = models[0]->program;
 				delete models[0];
 				models[0] = new Model(paths[i], usedProg, true);

@@ -33,14 +33,12 @@ namespace lim
 			fbo=colorTex=0;
 			width=height=0;
 
-			if( toScrProgram.ID==0 )
-			{
-				toScrProgram.attatch("shader/fb_to_scr.vs").attatch("shader/fb_to_scr.fs").link();
+			if( toScrProgram.ID==0 ) {
+				toScrProgram.attatch("fb_to_scr.vs").attatch("fb_to_scr.fs").link();
 				GLuint loc = glGetUniformLocation(toScrProgram.use(), "screenTex");
 				glUniform1i(loc, 0);
 			}
-			if( quadVAO == 0 )
-			{
+			if( quadVAO == 0 ) {
 				// Array for full-screen quad
 				GLfloat verts[] ={
 					-1.0f, -1.0f, 0.0f, 1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f,
@@ -74,8 +72,7 @@ namespace lim
 		virtual ~Framebuffer()
 		{
 			clear();
-			if( quadVAO!=0 )
-			{
+			if( quadVAO!=0 ) {
 				glDeleteVertexArrays(1, &quadVAO);
 				quadVAO=0;
 			}
