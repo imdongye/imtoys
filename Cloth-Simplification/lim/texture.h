@@ -32,21 +32,18 @@ namespace lim
 		// 0 => comp 있는대로
 		void* buf = stbi_load(cpath, &w, &h, &channels, 4); // todo: 0
 
-		if( !buf )
-		{
-			fprintf(stderr, "texture failed to load at path: %s\n", cpath);
+		if( !buf ) {
+			Logger::get().log("texture failed to load at path: %s\n", cpath);
 			stbi_image_free(buf);
 			return texID;
 		}
-		else
-		{
-			fprintf(stdout, "texture loaded : %s , %dx%d, %d channels\n", cpath, w, h, channels);
+		else {
+			Logger::get().log("texture loaded : %s , %dx%d, %d channels\n", cpath, w, h, channels);
 		}
 
 		// load into vram
 		GLenum format = GL_RGBA;
-		switch( channels )
-		{
+		switch( channels ) {
 		case 1: format = GL_ALPHA; break;
 		case 2: format = 0; break;
 		case 3:

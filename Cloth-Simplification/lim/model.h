@@ -73,10 +73,9 @@ namespace lim
 
 			updateNums();
 			updateBoundary();
-			fprintf(stdout, "model loaded : %s, vertices: %u\n\n", name.c_str(), verticesNum);
+			Logger::get().log("model loaded : %s, vertices: %u\n\n", name.c_str(), verticesNum);
 
-			if( makeNormalized )
-			{
+			if( makeNormalized ) {
 				setUnitScaleAndPivot();
 				updateModelMat();
 			}
@@ -97,7 +96,7 @@ namespace lim
 
 			updateNums();
 			updateBoundary();
-			fprintf(stdout, "gen model mesh : %s, vertices: %u\n\n", name.c_str(), verticesNum);
+			Logger::get().log("gen model mesh : %s, vertices: %u\n\n", name.c_str(), verticesNum);
 		}
 		~Model()
 		{
@@ -105,8 +104,7 @@ namespace lim
 		}
 		void clear()
 		{
-			for( Mesh* mesh : meshes )
-			{
+			for( Mesh* mesh : meshes ) {
 				mesh->clear();
 				delete mesh;
 			}
@@ -151,7 +149,7 @@ namespace lim
 		}
 		void setPivot(glm::vec3 pivot)
 		{
-			std::cout<<"pivot: "<<glm::to_string(pivot)<<std::endl;
+			Logger::get()<<"pivot: "<<glm::to_string(pivot)<<Logger::endl;
 			pivotMat = glm::translate(-pivot);
 		}
 		void exportObj(const char* path)
@@ -165,8 +163,7 @@ namespace lim
 		{
 			verticesNum = 0;
 			trianglesNum = 0;
-			for( Mesh* mesh : meshes )
-			{
+			for( Mesh* mesh : meshes ) {
 				verticesNum += mesh->vertices.size();
 				trianglesNum += mesh->indices.size()/3;
 			}
@@ -178,10 +175,8 @@ namespace lim
 			boundary_max = meshes[0]->vertices[0].p;
 			boundary_min = boundary_max;
 
-			for( Mesh* mesh : meshes )
-			{
-				for( n_mesh::Vertex& v : mesh->vertices )
-				{
+			for( Mesh* mesh : meshes ) {
+				for( n_mesh::Vertex& v : mesh->vertices ) {
 					if( boundary_max.x < v.p.x ) boundary_max.x = v.p.x;
 					else if( boundary_min.x > v.p.x ) boundary_min.x = v.p.x;
 
@@ -192,7 +187,7 @@ namespace lim
 					else if( boundary_min.z > v.p.z ) boundary_min.z = v.p.z;
 				}
 			}
-			std::cout<<"boundary size: "<<glm::to_string(getBoundarySize())<<std::endl;
+			Logger::get()<<"boundary size: "<<glm::to_string(getBoundarySize())<<Logger::endl;
 		}
 		void loadFile(const char* _path)
 		{
@@ -200,25 +195,22 @@ namespace lim
 			std::string path = std::string(_path);
 			std::replace(path.begin(), path.end(), '\\', '/');
 			size_t slashPos = path.find_last_of('/');
-			if( slashPos == std::string::npos )
-			{
+			if( slashPos == std::string::npos ) {
 				name = path;
 				name = name.substr(0, name.find_last_of('.'));
 				directory = "";
 			}
-			else if( slashPos == path.length()-1 )
-			{
+			else if( slashPos == path.length()-1 ) {
 				name = "";
 				directory = path;
 			}
-			else
-			{
+			else {
 				name = path.substr(slashPos+1);
 				name = name.substr(0, name.find_last_of('.'));
 				directory = path.substr(0, path.find_last_of('/'))+"/";
 			}
 
-			fprintf(stdout, "model loading : %s\n", name.c_str());
+			Logger::get().log("model loading : %s\n", name.c_str());
 
 			/* Assimp 설정 */
 			Assimp::Importer loader;
@@ -236,9 +228,8 @@ namespace lim
 			const aiScene* scene = loader.ReadFile(path, pFrags);
 
 			if( !scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE
-			   || !scene->mRootNode )
-			{
-				fprintf(stderr, "[error, assimp]%s\n", loader.GetErrorString());
+			   || !scene->mRootNode ) {
+				Logger::get().log("[error, assimp]%s\n", loader.GetErrorString());
 				return;
 			}
 			// recursive fashion
@@ -247,8 +238,7 @@ namespace lim
 		std::vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type)
 		{
 			std::vector<Texture> textures;
-			for( GLuint i=0; i<mat->GetTextureCount(type); i++ )
-			{
+			for( GLuint i=0; i<mat->GetTextureCount(type); i++ ) {
 				aiString str;
 				/* blend 등 attrib에서 bm값이 안읽힘 */
 				mat->GetTexture(type, i, &str);
@@ -260,25 +250,21 @@ namespace lim
 				// check already loaded
 				// to skip loading same texture 
 				bool skip = false;
-				for( GLuint j=0; j<textures_loaded.size(); j++ )
-				{
-					if( std::strcmp(textures_loaded[j].path.data(), texPath)==0 )
-					{
+				for( GLuint j=0; j<textures_loaded.size(); j++ ) {
+					if( std::strcmp(textures_loaded[j].path.data(), texPath)==0 ) {
 						textures.push_back(textures_loaded[j]);
 						skip = true;
 						break;
 					}
 				}
 				// load texture
-				if( !skip )
-				{
+				if( !skip ) {
 					Texture texture;
 					std::string fullTexPath = directory+std::string(texPath);
 
 					texture.id = loadTextureFromFile(fullTexPath.c_str(), true);
 
-					switch( type )
-					{
+					switch( type ) {
 					case aiTextureType_DIFFUSE: texture.type = "map_Kd"; break;
 					case aiTextureType_SPECULAR: texture.type = "map_Ks"; break;
 					case aiTextureType_AMBIENT: texture.type = "map_Ka"; break;
@@ -301,24 +287,20 @@ namespace lim
 
 			// - per vertex
 			n_mesh::Vertex vertex;
-			for( GLuint i=0; i<mesh->mNumVertices; i++ )
-			{
+			for( GLuint i=0; i<mesh->mNumVertices; i++ ) {
 				vertex.p = glm::vec3(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z);
-				if( mesh->HasNormals() )
-				{
+				if( mesh->HasNormals() ) {
 					vertex.n = glm::vec3(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z);
 				}
 				// 버텍스당 최대 8개의 uv를 가질수있지만 하나만 사용.
-				if( mesh->mTextureCoords[0] )
-				{
+				if( mesh->mTextureCoords[0] ) {
 					vertex.uv = glm::vec2(mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y);
 					// tangent
 					vertex.tangent = glm::vec3(mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z);
 					// bitangent
 					vertex.bitangent = glm::vec3(mesh->mBitangents[i].x, mesh->mBitangents[i].y, mesh->mBitangents[i].z);
 				}
-				else
-				{
+				else {
 					vertex.uv = glm::vec2(0.0f);
 				}
 				vertices.push_back(vertex);
@@ -326,8 +308,7 @@ namespace lim
 
 			// - per triangles
 			angles = mesh->mFaces[0].mNumIndices;
-			for( GLuint i=0; i<mesh->mNumFaces; i++ )
-			{
+			for( GLuint i=0; i<mesh->mNumFaces; i++ ) {
 				aiFace face = mesh->mFaces[i];
 				for( GLuint j=0; j<face.mNumIndices; j++ )
 					indices.push_back(face.mIndices[j]);
@@ -358,14 +339,12 @@ namespace lim
 		void parseNode(aiNode* node, const aiScene* scene)
 		{
 			// in current node
-			for( GLuint i=0; i<node->mNumMeshes; i++ )
-			{
+			for( GLuint i=0; i<node->mNumMeshes; i++ ) {
 				parseMesh(scene->mMeshes[node->mMeshes[i]], scene);
-				fprintf(stdout, "mesh loaded : ");
+				Logger::get().log("mesh loaded : ");
 				(*meshes.back()).print();
 			}
-			for( GLuint i=0; i<node->mNumChildren; i++ )
-			{
+			for( GLuint i=0; i<node->mNumChildren; i++ ) {
 				parseNode(node->mChildren[i], scene);
 			}
 		}

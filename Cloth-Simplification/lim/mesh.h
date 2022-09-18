@@ -20,6 +20,7 @@ namespace lim
 			glm::vec3 tangent, bitangent;
 			int m_BoneIDs[MAX_BONE_INFLUENCE];
 			float m_Weights[MAX_BONE_INFLUENCE];
+			float bendingFactor; // 1 : 많이접힘, 0 : 
 
 			Vertex& operator=(const Vertex& copy)
 			{
@@ -54,8 +55,7 @@ namespace lim
 			: VAO(0), name(_name), angles(_angle)
 		{
 			// todo: apply every face diff draw mode
-			switch( angles )
-			{
+			switch( angles ) {
 			case 3: drawMode = GL_TRIANGLES; break;
 			case 2: drawMode = GL_LINE_STRIP; break;
 			case 4: drawMode = GL_TRIANGLE_FAN; break;
@@ -82,8 +82,7 @@ namespace lim
 			vertices.clear();
 			indices.clear();
 			textures.clear();
-			if( VAO!=0 )
-			{
+			if( VAO!=0 ) {
 				glDeleteVertexArrays(1, &VAO);
 				VAO=0;
 			}
@@ -91,14 +90,12 @@ namespace lim
 		void draw(const GLuint pid=0)
 		{
 			/* shadowMap draw할때 pid=0 으로 해서 setUniform 하지 않음 */
-			if( pid != 0 )
-			{
+			if( pid != 0 ) {
 				GLuint diffuseNr  = 0;
 				GLuint specularNr = 0;
 				GLuint normalNr   = 0;
 				GLuint ambientNr  = 0;
-				for( int i=0; i<textures.size(); i++ )
-				{
+				for( int i=0; i<textures.size(); i++ ) {
 					std::string type = textures[i].type;
 					// uniform samper2d nr is start with 0
 					int backNum = 0;
@@ -174,8 +171,8 @@ namespace lim
 		}
 		void print() const
 		{
-			fprintf(stdout, "%-18s, angles %d, verts %-7lu, tris %-7lu\n"
-					, name.c_str(), angles, vertices.size(), indices.size()/3);
+			Logger::get().log("%-18s, angles %d, verts %-7lu, tris %-7lu\n"
+							  , name.c_str(), angles, vertices.size(), indices.size()/3);
 		}
 	};
 }

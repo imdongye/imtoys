@@ -84,7 +84,7 @@ namespace lim
 			glCompileShader(sid);
 			checkCompileErrors(sid, type);
 			glAttachShader(ID, sid);
-			fprintf(stdout, "[program %s] attch %s success\n", name.c_str(), path.c_str());
+			Logger::get().log("[program %s] attch %s success\n", name.c_str(), path.c_str());
 
 			return *this;
 		}
@@ -94,7 +94,7 @@ namespace lim
 			glUseProgram (ID);
 			checkCompileErrors(ID, "program");
 			clearWithoutID(); // 링크된 후 필요없음
-			fprintf(stdout, "[program %s] linking success\n\n", name.c_str());
+			Logger::get().log("[program %s] linking success\n\n", name.c_str());
 			return *this;
 		}
 		GLuint use() const
@@ -106,7 +106,7 @@ namespace lim
 		template<typename T> Program& bind(std::string const& name, T&& value)
 		{
 			int location = glGetUniformLocation(ID, name.c_str());
-			if( location == -1 ) fprintf(stderr, "missing uniform: %s\n", name.c_str());
+			if( location == -1 ) Logger::get().log("missing uniform: %s\n", name.c_str());
 			else bind(location, std::forward<T>(value));
 			return *this;
 		}
@@ -129,16 +129,16 @@ namespace lim
 				glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
 				if( !success ) {
 					glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-					std::cout << "ERROR::SHADER_COMPILATION_ERROR of type: " << type << "\n" << infoLog
-						<< "\n -- --------------------------------------------------- -- " << std::endl;
+					Logger::get() << "ERROR::SHADER_COMPILATION_ERROR of type: " << type << "\n" << infoLog
+						<< "\n -- --------------------------------------------------- -- " << Logger::endl;
 				}
 			}
 			else {
 				glGetProgramiv(shader, GL_LINK_STATUS, &success);
 				if( !success ) {
 					glGetProgramInfoLog(shader, 1024, NULL, infoLog);
-					std::cout << "ERROR::PROGRAM_LINKING_ERROR of type: " << type << "\n" << infoLog
-						<< "\n -- --------------------------------------------------- -- " << std::endl;
+					Logger::get() << "ERROR::PROGRAM_LINKING_ERROR of type: " << type << "\n" << infoLog
+						<< "\n -- --------------------------------------------------- -- " << Logger::endl;
 				}
 			}
 		}

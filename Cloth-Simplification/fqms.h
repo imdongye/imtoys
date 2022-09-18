@@ -407,13 +407,11 @@ namespace fqms
 		int triangle_count=triangles.size();
 		//int iteration = 0;
 		//loop(iteration,0,100)
-		for( int iteration = 0; iteration < 100; iteration++ )
-		{
+		for( int iteration = 0; iteration < 100; iteration++ ) {
 			if( triangle_count-deleted_triangles<=target_count )break;
 
 			// update mesh once in a while
-			if( iteration%5==0 )
-			{
+			if( iteration%5==0 ) {
 				update_mesh(iteration);
 			}
 
@@ -429,9 +427,8 @@ namespace fqms
 			double threshold = 0.000000001*pow(double(iteration+3), agressiveness);
 
 			// target number of triangles reached ? Then break
-			if( (verbose) && (iteration%5==0) )
-			{
-				printf("iteration %d - triangles %d threshold %g\n", iteration, triangle_count-deleted_triangles, threshold);
+			if( (verbose) && (iteration%5==0) ) {
+				lim::Logger::get().log("iteration %d - triangles %d threshold %g\n", iteration, triangle_count-deleted_triangles, threshold);
 			}
 
 			// remove vertices & mark deleted triangles
@@ -442,8 +439,7 @@ namespace fqms
 				if( t.deleted ) continue;
 				if( t.dirty ) continue;
 
-				loopj(0, 3)if( t.err[j]<threshold )
-				{
+				loopj(0, 3)if( t.err[j]<threshold ) {
 
 					int i0=t.v[j]; Vertex& v0 = vertices[i0];
 					int i1=t.v[(j+1)%3]; Vertex& v1 = vertices[i1];
@@ -480,8 +476,7 @@ namespace fqms
 
 					int tcount=refs.size()-tstart;
 
-					if( tcount<=v0.tcount )
-					{
+					if( tcount<=v0.tcount ) {
 						// save ram
 						if( tcount )memcpy(&refs[v0.tstart], &refs[tstart], tcount*sizeof(Ref));
 					}
@@ -511,8 +506,7 @@ namespace fqms
 		int triangle_count=triangles.size();
 		//int iteration = 0;
 		//loop(iteration,0,100)
-		for( int iteration = 0; iteration < 9999; iteration++ )
-		{
+		for( int iteration = 0; iteration < 9999; iteration++ ) {
 			// update mesh constantly
 			update_mesh(iteration);
 			// clear dirty flag
@@ -524,9 +518,8 @@ namespace fqms
 			// If it does not, try to adjust the 3 parameters
 			//
 			double threshold = DBL_EPSILON; //1.0E-3 EPS;
-			if( verbose )
-			{
-				printf("lossless iteration %d\n", iteration);
+			if( verbose ) {
+				lim::Logger::get().log("lossless iteration %d\n", iteration);
 			}
 
 			// remove vertices & mark deleted triangles
@@ -537,8 +530,7 @@ namespace fqms
 				if( t.deleted ) continue;
 				if( t.dirty ) continue;
 
-				loopj(0, 3)if( t.err[j]<threshold )
-				{
+				loopj(0, 3)if( t.err[j]<threshold ) {
 					int i0=t.v[j]; Vertex& v0 = vertices[i0];
 					int i1=t.v[(j+1)%3]; Vertex& v1 = vertices[i1];
 
@@ -556,8 +548,7 @@ namespace fqms
 					if( flipped(p, i0, i1, v0, v1, deleted0) ) continue;
 					if( flipped(p, i1, i0, v1, v0, deleted1) ) continue;
 
-					if( (t.attr & TEXCOORD) == TEXCOORD )
-					{
+					if( (t.attr & TEXCOORD) == TEXCOORD ) {
 						update_uvs(i0, v0, p, deleted0);
 						update_uvs(i0, v1, p, deleted1);
 					}
@@ -572,8 +563,7 @@ namespace fqms
 
 					int tcount=refs.size()-tstart;
 
-					if( tcount<=v0.tcount )
-					{
+					if( tcount<=v0.tcount ) {
 						// save ram
 						if( tcount )memcpy(&refs[v0.tstart], &refs[tstart], tcount*sizeof(Ref));
 					}
@@ -652,8 +642,7 @@ namespace fqms
 			Ref& r=refs[v.tstart+k];
 			Triangle& t=triangles[r.tid];
 			if( t.deleted )continue;
-			if( deleted[k] )
-			{
+			if( deleted[k] ) {
 				t.deleted=1;
 				deleted_triangles++;
 				continue;
@@ -676,8 +665,7 @@ namespace fqms
 		{
 			int dst=0;
 			loopi(0, triangles.size())
-				if( !triangles[i].deleted )
-				{
+				if( !triangles[i].deleted ) {
 					triangles[dst++]=triangles[i];
 				}
 			triangles.resize(dst);
@@ -724,8 +712,7 @@ namespace fqms
 		// recomputing during the simplification is not required,
 		// but mostly improves the result for closed meshes
 		//
-		if( iteration == 0 )
-		{
+		if( iteration == 0 ) {
 			// Identify boundary : vertices[].border=0,1
 
 			std::vector<int> vcount, vids;
@@ -745,13 +732,11 @@ namespace fqms
 					loopk(0, 3)
 					{
 						int ofs=0, id=t.v[k];
-						while( ofs<vcount.size() )
-						{
+						while( ofs<vcount.size() ) {
 							if( vids[ofs]==id )break;
 							ofs++;
 						}
-						if( ofs==vcount.size() )
-						{
+						if( ofs==vcount.size() ) {
 							vcount.push_back(1);
 							vids.push_back(id);
 						}
@@ -797,8 +782,7 @@ namespace fqms
 			vertices[i].tcount=0;
 		}
 		loopi(0, triangles.size())
-			if( !triangles[i].deleted )
-			{
+			if( !triangles[i].deleted ) {
 				Triangle& t=triangles[i];
 				triangles[dst++]=t;
 				loopj(0, 3)vertices[t.v[j]].tcount=1;
@@ -806,8 +790,7 @@ namespace fqms
 		triangles.resize(dst);
 		dst=0;
 		loopi(0, vertices.size())
-			if( vertices[i].tcount )
-			{
+			if( vertices[i].tcount ) {
 				vertices[i].tstart=dst;
 				vertices[dst].p=vertices[i].p;
 				dst++;
@@ -838,8 +821,7 @@ namespace fqms
 		bool   border = vertices[id_v1].border & vertices[id_v2].border;
 		double error=0;
 		double det = q.det(0, 1, 2, 1, 4, 5, 2, 5, 7);
-		if( det != 0 && !border )
-		{
+		if( det != 0 && !border ) {
 
 			// q_delta is invertible
 			p_result.x = -1/det*(q.det(1, 2, 3, 4, 5, 6, 5, 7, 8));	// vx = A41/det(q_delta)
@@ -848,8 +830,7 @@ namespace fqms
 
 			error = vertex_error(q, p_result.x, p_result.y, p_result.z);
 		}
-		else
-		{
+		else {
 			// det = 0 -> try to find best result
 			vec3f p1=vertices[id_v1].p;
 			vec3f p2=vertices[id_v2].p;
@@ -877,8 +858,7 @@ namespace fqms
 		fqms::vertices.clear();
 		fqms::triangles.clear();
 
-		for( lim::n_mesh::Vertex& v : mesh->vertices )
-		{
+		for( lim::n_mesh::Vertex& v : mesh->vertices ) {
 			fqms::Vertex temp;
 			temp.p.x = v.p.x;
 			temp.p.y = v.p.y;
@@ -889,24 +869,21 @@ namespace fqms
 		fqms::triangles.resize(mesh->indices.size()/3);
 		int triCount=0;
 		int vertCount=0;
-		for( GLuint idx: mesh->indices )
-		{
+		for( GLuint idx: mesh->indices ) {
 			lim::n_mesh::Vertex& overt = mesh->vertices[idx]; // origin
 			fqms::Triangle& ttri = fqms::triangles[triCount];
 			ttri.v[vertCount] = idx;
 			ttri.uvs[vertCount] = vec3f(overt.uv.x, overt.uv.y, 1);
 			ttri.n = vec3f(overt.n.x, overt.n.y, overt.n.z);
 			vertCount++;
-			if( vertCount == 3 )
-			{
+			if( vertCount == 3 ) {
 				vertCount = 0;
 				triCount++;
 			}
 		}
 		if( triCount*3!=mesh->indices.size()
-		   || mesh->indices.size()%3!=0 )
-		{
-			fprintf(stderr, "simplify failed : mesh is not triangle mesh\n");
+		   || mesh->indices.size()%3!=0 ) {
+			lim::Logger::get().log(stderr, "simplify failed : mesh is not triangle mesh\n");
 		}
 	}
 	void updateMesh(lim::Mesh* mesh)
@@ -915,8 +892,7 @@ namespace fqms
 		mesh->vertices.clear();
 		mesh->indices.clear();
 
-		for( fqms::Vertex& v : fqms::vertices )
-		{
+		for( fqms::Vertex& v : fqms::vertices ) {
 			lim::n_mesh::Vertex temp;
 			temp.p.x = v.p.x;
 			temp.p.y = v.p.y;
@@ -928,10 +904,8 @@ namespace fqms
 		mesh->indices.resize(fqms::triangles.size()*3);
 
 		int idxCount=0;
-		for( fqms::Triangle& tri: fqms::triangles )
-		{
-			for( int i=0; i<3; i++ )
-			{
+		for( fqms::Triangle& tri: fqms::triangles ) {
+			for( int i=0; i<3; i++ ) {
 				mesh->indices[idxCount++] = tri.v[i];
 				// 삼각형 노멀을 공유
 				mesh->vertices[tri.v[i]].n = glm::vec3(tri.n.x, tri.n.y, tri.n.z);
@@ -943,20 +917,19 @@ namespace fqms
 
 	lim::Mesh* simplifyMesh(lim::Mesh* mesh, float lived_pct, int agressiveness=7)
 	{
-		if( lived_pct>1||lived_pct<0 )
-		{
-			printf("error : simplify percent range error");
+		if( lived_pct>1||lived_pct<0 ) {
+			lim::Logger::get().log("error : simplify percent range error");
 			return nullptr;
 		}
 		updateGlobal(mesh);
 
-		printf("\nsimplify mesh : %s, %d tris\n", mesh->name.c_str(), fqms::triangles.size());
+		lim::Logger::get().log("\nsimplify mesh : %s, %d tris\n", mesh->name.c_str(), fqms::triangles.size());
 
 		int target_count = (int)(fqms::triangles.size()*lived_pct);
 		double start = glfwGetTime();
 		fqms::simplify_mesh(target_count, 7.0, true);
 
-		printf("\nsimplify mesh : %s, %d tris, %lfsec\n", mesh->name.c_str(), fqms::triangles.size(), glfwGetTime()-start);
+		lim::Logger::get().log("\nsimplify mesh : %s, %d tris, %lfsec\n", mesh->name.c_str(), fqms::triangles.size(), glfwGetTime()-start);
 
 		lim::Mesh* result = new lim::Mesh(mesh->name.c_str());
 		result->textures = mesh->textures;
@@ -966,10 +939,9 @@ namespace fqms
 
 	lim::Model* simplifyModel(lim::Model* model, float lived_pct = 0.8f)
 	{
-		printf("\nsimplify model : %s, %d vertices\n", model->name.c_str(), model->verticesNum);
+		lim::Logger::get().log("\nsimplify model : %s, %d vertices\n", model->name.c_str(), model->verticesNum);
 		std::vector<lim::Mesh*> new_meshes;
-		for( lim::Mesh* mesh : model->meshes )
-		{
+		for( lim::Mesh* mesh : model->meshes ) {
 			lim::Mesh* simp_mesh = simplifyMesh(mesh, lived_pct);
 			if( simp_mesh != nullptr )
 				new_meshes.push_back(simp_mesh);

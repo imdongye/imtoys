@@ -194,7 +194,7 @@ namespace lim
 			//glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depth, 0);
 			// error check
 			if( glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE )
-				fprintf(stderr, "tx FBO Error %d %d\n", width, height);
+				Logger::get().log("tx FBO Error %d %d\n", width, height);
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 			// Set the targets for the fragment output variables 필요한가?
 			//GLenum drawBuffers[] ={GL_COLOR_ATTACHMENT0};
@@ -246,7 +246,7 @@ namespace lim
 			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo);
 			// error check
 			if( glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE )
-				fprintf(stderr, "rbo FBO Error %d %d\n", width, height);
+				Logger::get().log("rbo FBO Error %d %d\n", width, height);
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
 		virtual void bind()
@@ -295,7 +295,7 @@ namespace lim
 			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo);
 			// error check
 			if( glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE )
-				fprintf(stderr, "multisampled FBO Error %d %d\n", width, height);
+				Logger::get().log("multisampled FBO Error %d %d\n", width, height);
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 			/* for pass imgui image and post processing */
@@ -305,7 +305,7 @@ namespace lim
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, screenTex, 0);
 			// error check
 			if( glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE )
-				fprintf(stderr, "intermediate FBO Error %d %d\n", width, height);
+				Logger::get().log("intermediate FBO Error %d %d\n", width, height);
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
 		virtual GLuint getRenderedTex() final

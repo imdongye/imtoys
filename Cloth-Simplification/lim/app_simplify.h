@@ -101,8 +101,11 @@ namespace lim
 
 			ImGui::ShowDemoWindow();
 
-			viewports[0]->renderImGui();
-			viewports[1]->renderImGui();
+			viewports[0]->drawImGui();
+			viewports[1]->drawImGui();
+
+			Logger::get().drawImGui();
+
 
 			ImGui::Begin("Simplify Options");
 			{
@@ -120,7 +123,6 @@ namespace lim
 
 				ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 			} ImGui::End();
-
 
 			ImGui::Begin("Viewing Options");
 			{
@@ -154,11 +156,21 @@ namespace lim
 				ImGui::Text("pos %f %f %F", light.position.x, light.position.y, light.position.z);
 			} ImGui::End();
 
-			ImGui::SetNextWindowSize(ImVec2{0,0});
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
+			ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), [](ImGuiSizeCallbackData* data) {
+				data->DesiredSize.x = LIM_MAX(data->DesiredSize.x, data->DesiredSize.y);
+				data->DesiredSize.y = data->DesiredSize.x;
+			});
 			ImGui::Begin("shadowMap");
 			{
-				ImGui::Image(reinterpret_cast<void*>(light.shadowMap.getRenderedTex()), ImVec2{256, 256}, ImVec2{0, 1}, ImVec2{1, 0});
+				ImVec2 vMin = ImGui::GetWindowContentRegionMin();
+				ImVec2 vMax = ImGui::GetWindowContentRegionMax();
+				glm::vec2 rectSize{vMax.x-vMin.x, vMax.y-vMin.y};
+				//ImGui::Text("%f %f", rectSize.x, rectSize.y);
+				const float minLength = LIM_MIN(rectSize.x, rectSize.y);
+				ImGui::Image(reinterpret_cast<void*>(light.shadowMap.getRenderedTex()), ImVec2{minLength, minLength}, ImVec2{0, 1}, ImVec2{1, 0});
 			}ImGui::End();
+			ImGui::PopStyleVar();
 
 			ImGui::Begin("Model Status");
 			{

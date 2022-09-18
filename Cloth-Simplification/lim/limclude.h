@@ -34,6 +34,10 @@
 #include <functional>
 #include <vector>
 
+#define LIM_MAX(X, Y) ((X)>(Y))?(X):(Y)
+#define LIM_MIN(X, Y) ((X)<(Y))?(X):(Y)
+
+#include "logger.h"
 #include "program.h"
 #include "camera.h"
 #include "texture.h"

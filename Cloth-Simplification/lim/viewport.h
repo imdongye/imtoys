@@ -3,7 +3,7 @@
 //
 //	TODO list:
 //	1. initial framebuffer size setting
-//
+//	2. drag imgui demo 참고해서 다시짜기
 
 #ifndef VIEWPORT_H
 #define VIEWPORT_H
@@ -36,10 +36,9 @@ namespace lim
 		{
 			delete framebuffer;
 		}
-		void renderImGui()
+		void drawImGui()
 		{
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
-
 			ImGui::Begin(("Viewport"+std::to_string(id)).c_str());
 			auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
 			auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
@@ -58,11 +57,9 @@ namespace lim
 
 			x = ImGui::GetMousePos().x;
 			y = ImGui::GetMousePos().y;
-			//printf("%f %f\n", x, y);
 
 			if( framebuffer->width != width
-			   || framebuffer->height != height )
-			{
+			   || framebuffer->height != height ) {
 				framebuffer->resize(width, height);
 				camera->aspect = width/(float)height;
 				camera->updateProjMat();

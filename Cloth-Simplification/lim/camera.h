@@ -95,10 +95,8 @@ namespace lim
 		{
 			float velocity = speed * deltaTime;
 
-			if( mode==MODE::FREE )
-			{
-				switch( direction )
-				{
+			if( mode==MODE::FREE ) {
+				switch( direction ) {
 				case MOVEMENT::FORWARD:   position += front * velocity; break;
 				case MOVEMENT::BACKWARD:  position -= front * velocity; break;
 				case MOVEMENT::LEFT:      position -= right * velocity; break;
@@ -108,10 +106,8 @@ namespace lim
 				}
 				updateFreeViewMat();
 			}
-			else if( mode==MODE::PIVOT )
-			{
-				switch( direction )
-				{
+			else if( mode==MODE::PIVOT ) {
+				switch( direction ) {
 				case MOVEMENT::FORWARD:   shiftDist(-velocity*100); break;
 				case MOVEMENT::BACKWARD:  shiftDist(velocity*100); break;
 				}
@@ -203,9 +199,9 @@ namespace lim
 		}
 		void printCameraState()
 		{
-			printf("PYR  : %f.2, %f.2, %f.2\n", pitch, yaw, roll);
-			printf("POS  : %f.2, %f.2, %f.2\n", position.x, position.y, position.z);
-			printf("DIST : %f\n", distance);
+			Logger::get().log("PYR  : %f.2, %f.2, %f.2\n", pitch, yaw, roll);
+			Logger::get().log("POS  : %f.2, %f.2, %f.2\n", position.x, position.y, position.z);
+			Logger::get().log("DIST : %f\n", distance);
 		}
 	};
 } // namespace lim

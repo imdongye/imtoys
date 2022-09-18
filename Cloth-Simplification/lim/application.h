@@ -22,9 +22,9 @@ namespace lim
 			std::function<void(int button, int action, int mods)> mouse_btn_callback;
 			std::function<void(double xOffset, double yOffset)> scroll_callback;
 			std::function<void(double xPos, double yPos)> cursor_pos_callback;
-			std::function<void(int count, const char** paths)> drop_callback;
+			std::function<void(int count, const char **paths)> drop_callback;
 		};
-		GLFWwindow* window;
+		GLFWwindow *window;
 		WindowData wData;
 		float deltaTime; // sec
 
@@ -52,8 +52,7 @@ namespace lim
 			// glEnable(GL_MULTISAMPLES);
 
 			window = glfwCreateWindow(scr_width, scr_height, "simplification", NULL, NULL);
-			if( window == NULL )
-			{
+			if( window == NULL ) {
 				std::cout << "Failed to create GLFW window" << std::endl;
 				glfwTerminate();
 				std::exit(-1);
@@ -66,8 +65,7 @@ namespace lim
 			// glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 			initGlfwCallback();
 
-			if( !gladLoadGLLoader((GLADloadproc)glfwGetProcAddress) )
-			{
+			if( !gladLoadGLLoader((GLADloadproc)glfwGetProcAddress) ) {
 				std::cout << "Failed to initialize GLAD" << std::endl;
 				std::exit(-1);
 			}
@@ -88,8 +86,7 @@ namespace lim
 		}
 		void run()
 		{
-			while( !glfwWindowShouldClose(window) )
-			{
+			while( !glfwWindowShouldClose(window) ) {
 				float currentFrame = static_cast<float>(glfwGetTime());
 				deltaTime = currentFrame - lastFrame;
 				lastFrame = currentFrame;
@@ -105,64 +102,64 @@ namespace lim
 		{
 			glfwSetWindowUserPointer(window, &wData);
 
-			glfwSetWindowSizeCallback(window, [](GLFWwindow* win, int width, int height) {
-				WindowData& data = *(WindowData*)glfwGetWindowUserPointer(win);
+			glfwSetWindowSizeCallback(window, [](GLFWwindow *win, int width, int height) {
+				WindowData &data = *(WindowData *)glfwGetWindowUserPointer(win);
 				if( data.win_size_callback )
 					data.win_size_callback(width, height);
-									  });
+			});
 
-			glfwSetKeyCallback(window, [](GLFWwindow* win, int key, int scancode, int action, int mods) {
-				WindowData& data = *(WindowData*)glfwGetWindowUserPointer(win);
+			glfwSetKeyCallback(window, [](GLFWwindow *win, int key, int scancode, int action, int mods) {
+				WindowData &data = *(WindowData *)glfwGetWindowUserPointer(win);
 				if( data.key_callback )
 					data.key_callback(key, scancode, action, mods);
-							   });
+			});
 
-			glfwSetMouseButtonCallback(window, [](GLFWwindow* win, int button, int action, int mods) {
-				WindowData& data = *(WindowData*)glfwGetWindowUserPointer(win);
+			glfwSetMouseButtonCallback(window, [](GLFWwindow *win, int button, int action, int mods) {
+				WindowData &data = *(WindowData *)glfwGetWindowUserPointer(win);
 				if( data.mouse_btn_callback )
 					data.mouse_btn_callback(button, action, mods);
-									   });
+			});
 
-			glfwSetScrollCallback(window, [](GLFWwindow* win, double xOffset, double yOffset) {
-				WindowData& data = *(WindowData*)glfwGetWindowUserPointer(win);
+			glfwSetScrollCallback(window, [](GLFWwindow *win, double xOffset, double yOffset) {
+				WindowData &data = *(WindowData *)glfwGetWindowUserPointer(win);
 				if( data.scroll_callback )
 					data.scroll_callback(xOffset, yOffset);
-								  });
+			});
 
-			glfwSetCursorPosCallback(window, [](GLFWwindow* win, double xPos, double yPos) {
-				WindowData& data = *(WindowData*)glfwGetWindowUserPointer(win);
+			glfwSetCursorPosCallback(window, [](GLFWwindow *win, double xPos, double yPos) {
+				WindowData &data = *(WindowData *)glfwGetWindowUserPointer(win);
 				if( data.cursor_pos_callback )
 					data.cursor_pos_callback(xPos, yPos);
-									 });
+			});
 
-			glfwSetDropCallback(window, [](GLFWwindow* win, int count, const char** paths) {
-				WindowData& data = *(WindowData*)glfwGetWindowUserPointer(win);
+			glfwSetDropCallback(window, [](GLFWwindow *win, int count, const char **paths) {
+				WindowData &data = *(WindowData *)glfwGetWindowUserPointer(win);
 				if( data.drop_callback )
 					data.drop_callback(count, paths);
-								});
+			});
 		}
-		static void error_callback(int error, const char* description)
+		static void error_callback(int error, const char *description)
 		{
-			fprintf(stderr, "\nGlfw Error %d: %s\n", error, description);
+			Logger::get().log(stderr, "\nGlfw Error %d: %s\n", error, description);
 		}
 		static void printVersion()
 		{
-			const GLubyte* renderer = glGetString(GL_RENDERER);
-			const GLubyte* vendor = glGetString(GL_VENDOR);
-			const GLubyte* version = glGetString(GL_VERSION);
-			const GLubyte* glslVersion = glGetString(GL_SHADING_LANGUAGE_VERSION);
+			const GLubyte *renderer = glGetString(GL_RENDERER);
+			const GLubyte *vendor = glGetString(GL_VENDOR);
+			const GLubyte *version = glGetString(GL_VERSION);
+			const GLubyte *glslVersion = glGetString(GL_SHADING_LANGUAGE_VERSION);
 
 			GLint major, minor;
 			glGetIntegerv(GL_MAJOR_VERSION, &major);
 			glGetIntegerv(GL_MINOR_VERSION, &minor);
 
-			printf("GL Vendor            : %s\n", vendor);
-			printf("GL Renderer          : %s\n", renderer);
-			printf("GL Version (string)  : %s\n", version);
-			printf("GLSL Version         : %s\n", glslVersion);
+			Logger::get().log("GL Vendor            : %s\n", vendor);
+			Logger::get().log("GL Renderer          : %s\n", renderer);
+			Logger::get().log("GL Version (string)  : %s\n", version);
+			Logger::get().log("GLSL Version         : %s\n", glslVersion);
 			int nrAttributes;
 			glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &nrAttributes);
-			std::cout << "Maximum nr of vertex attributes supported: " << nrAttributes << std::endl << std::endl;
+			Logger::get() << "Maximum nr of vertex attributes supported: " << nrAttributes << Logger::endl << Logger::endl;
 		}
 	};
 
