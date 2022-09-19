@@ -38,8 +38,7 @@ namespace lim
 
 			// When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
 			ImGuiStyle& style = ImGui::GetStyle();
-			if( io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable )
-			{
+			if( io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable ) {
 				style.WindowRounding = 0.0f;
 				style.Colors[ImGuiCol_WindowBg].w = 1.0f;
 			}
@@ -66,8 +65,7 @@ namespace lim
 			// Update and Render additional Platform Windows
 			// (Platform functions may change the current OpenGL context, so we save/restore it to make it easier to paste this code elsewhere.
 			// For this specific demo app we could also call glfwMakeContextCurrent(window) directly)
-			if( io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable )
-			{
+			if( io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable ) {
 				GLFWwindow* backup_current_context = glfwGetCurrentContext();
 				ImGui::UpdatePlatformWindows();
 				ImGui::RenderPlatformWindowsDefault();
@@ -99,7 +97,7 @@ namespace lim
 		// because that window is submitted as part of the part of the NewFrame() call. An easy workaround is that you can create
 		// your own implicit "Debug##2" window after calling DockSpace() and leave it in the window stack for anyone to use.
 			// If you strip some features of, this demo is pretty much equivalent to calling DockSpaceOverViewport()!
-		static inline void ShowExampleAppDockSpace()
+		static inline void ShowExampleAppDockSpace(std::function<void(void)> drawItemInMenuBar)
 		{
 			// In most cases you should be able to just call DockSpaceOverViewport() and ignore all the code below!
 			// In this specific demo, we are not using DockSpaceOverViewport() because:
@@ -121,8 +119,7 @@ namespace lim
 			// We are using the ImGuiWindowFlags_NoDocking flag to make the parent window not dockable into,
 			// because it would be confusing to have two docking targets within each others.
 			ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
-			if( opt_fullscreen )
-			{
+			if( opt_fullscreen ) {
 				const ImGuiViewport* viewport = ImGui::GetMainViewport();
 				ImGui::SetNextWindowPos(viewport->WorkPos);
 				ImGui::SetNextWindowSize(viewport->WorkSize);
@@ -132,8 +129,7 @@ namespace lim
 				window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
 				window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
 			}
-			else
-			{
+			else {
 				dockspace_flags &= ~ImGuiDockNodeFlags_PassthruCentralNode;
 			}
 
@@ -158,16 +154,14 @@ namespace lim
 
 			// Submit the DockSpace
 			ImGuiIO& io = ImGui::GetIO();
-			if( io.ConfigFlags & ImGuiConfigFlags_DockingEnable )
-			{
+			if( io.ConfigFlags & ImGuiConfigFlags_DockingEnable ) {
 				ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
 				ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
 			}
 
-			if( ImGui::BeginMenuBar() )
-			{
-				if( ImGui::BeginMenu("Options") )
-				{
+			if( ImGui::BeginMenuBar() ) {
+				drawItemInMenuBar();
+				if( ImGui::BeginMenu("Options") ) {
 					// Disabling fullscreen would allow the window to be moved to the front of other windows,
 					// which we can't undo at the moment without finer window depth/z control.
 					ImGui::MenuItem("Fullscreen", NULL, &opt_fullscreen);
@@ -190,8 +184,7 @@ namespace lim
 
 			ImGui::End();
 		}
-
-	}
-}
+	} /* namespace imgui */
+} /* namespace lim */
 
 #endif // !IMGUI_MODULES_H

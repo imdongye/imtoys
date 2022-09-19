@@ -939,6 +939,8 @@ namespace fqms
 
 	lim::Model* simplifyModel(lim::Model* model, float lived_pct = 0.8f)
 	{
+
+		double start = glfwGetTime();
 		lim::Logger::get().log("\nsimplify model : %s, %d vertices\n", model->name.c_str(), model->verticesNum);
 		std::vector<lim::Mesh*> new_meshes;
 		for( lim::Mesh* mesh : model->meshes ) {
@@ -946,6 +948,7 @@ namespace fqms
 			if( simp_mesh != nullptr )
 				new_meshes.push_back(simp_mesh);
 		}
+		lim::Logger::get().simpTime = glfwGetTime()-start;
 		lim::Model* result = new lim::Model(*model, new_meshes);
 		return result;
 	}

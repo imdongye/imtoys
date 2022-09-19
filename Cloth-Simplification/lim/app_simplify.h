@@ -5,8 +5,9 @@
 //	TODO list:
 //	1. crtp로 참조 줄이기, 
 //	2. 헤더파일include 중복관리
-//	4. figure out [this](auto&&... args) -> decltype(auto) { return this->fn(std::forward<decltype(args)>(args)...); }
 //	3. dnd 여러개들어왔을때 모델파일만 골라서 입력받게 조건처리
+//	4. figure out [this](auto&&... args) -> decltype(auto) { return this->fn(std::forward<decltype(args)>(args)...); }
+//	5. https://github.com/AndrewBelt/osdialog 로 multi platform open file dialog
 //
 
 #ifndef SIMPLYFY_APP_H
@@ -97,7 +98,22 @@ namespace lim
 		void renderImGui()
 		{
 			imgui_modules::beginImGui();
-			imgui_modules::ShowExampleAppDockSpace();
+
+			imgui_modules::ShowExampleAppDockSpace([]() {
+				if( ImGui::BeginMenu("File") ) {
+
+					if( ImGui::BeginMenu("Open Recent") ) {
+						for( std::string& path : AppPref::get().recentModelPaths ) {
+							if( ImGui::MenuItem(path.c_str()) ) {
+
+							}
+						}
+						ImGui::EndMenu();
+					}
+
+					ImGui::EndMenu();
+				}
+			});
 
 			ImGui::ShowDemoWindow();
 
@@ -109,19 +125,22 @@ namespace lim
 
 			ImGui::Begin("Simplify Options");
 			{
+				ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+
 				static float pct = 0.8f;
 				ImGui::SliderFloat("percent", &pct, 0.0f, 1.0f);
 
 				if( ImGui::Button("Simplify") ) {
 					if( models[1] != nullptr ) delete models[1];
 					models[1] = fqms::simplifyModel(scenes[0]->model, pct);
-
 					scenes[1]->setModel(models[1]);
+
+					AppPref::get().save();
 				}
 				ImGui::SameLine();
 				ImGui::Text("target triangles = %d", static_cast<int>(scenes[0]->model->trianglesNum*pct));
+				ImGui::Text("simplified in %lf sec", Logger::get().simpTime);
 
-				ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 			} ImGui::End();
 
 			ImGui::Begin("Viewing Options");
@@ -317,6 +336,7 @@ namespace lim
 		void drop_callback(int count, const char** paths)
 		{
 			for( int i = 0; i < count; i++ ) {
+				AppPref::get().recentModelPaths.emplace_back(paths[i]);
 				Program* usedProg = models[0]->program;
 				delete models[0];
 				models[0] = new Model(paths[i], usedProg, true);

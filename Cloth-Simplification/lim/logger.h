@@ -21,44 +21,19 @@ namespace lim
 	class Logger
 	{
 	private:
-		Logger()
+		/* 고정 상수식이기에 static으로 data메모리에 있어야함 */
+		static constexpr int BUFFER_SIZE = 256;
+		char buffer[BUFFER_SIZE];
+	public:
+		std::vector<std::string> lines;
+		double simpTime;
+	private:
+		Logger():simpTime(0.0), buffer{0}
 		{
 			lines.push_back("");
 		};
 		Logger(const Logger&)=delete;
 		Logger &operator=(const Logger&)=delete;
-	private:
-		/* 고정 상수식이기에 static으로 data메모리에 있어야함 */
-		static constexpr int BUFFER_SIZE = 256;
-		char buffer[BUFFER_SIZE];
-		void seperate_and_save(const char* buf)
-		{
-			const char *first, *last;
-			const char const *end = strchr(buf, '\0');
-
-			// case1. 그냥 한줄 출력
-			if( !strchr(buf, '\n') ) {
-				lines.back().append(buf);
-				return;
-			}
-
-			first = buf;
-			do {
-				last = strchr(first, '\n');
-				// case2. 개행 없이 끝날때
-				if( !last ) lines.back().append(first);
-				// case3. 마지막 개행
-				else if( first == end ) lines.emplace_back("");
-				// case4. 개행사이 한줄
-				else {
-					lines.back().append(first, last); // last전까지
-					lines.emplace_back("");
-				}
-				first = last+1;
-			} while( last!=NULL && first<end );
-		}
-	public:
-		std::vector<std::string> lines;
 	public:
 		static Logger& get()
 		{
@@ -134,6 +109,37 @@ namespace lim
 		static Logger& endl(Logger& ref)
 		{
 			return ref.log("\n");
+		}
+		static Logger& endll(Logger& ref)
+		{
+			return ref.log("\n\n");
+		}
+	private:
+		void seperate_and_save(const char* buf)
+		{
+			const char *first, *last;
+			const char const *end = strchr(buf, '\0');
+
+			// case1. 그냥 한줄 출력
+			if( !strchr(buf, '\n') ) {
+				lines.back().append(buf);
+				return;
+			}
+
+			first = buf;
+			do {
+				last = strchr(first, '\n');
+				// case2. 개행 없이 끝날때
+				if( !last ) lines.back().append(first);
+				// case3. 마지막 개행
+				else if( first == end ) lines.emplace_back("");
+				// case4. 개행사이 한줄
+				else {
+					lines.back().append(first, last); // last전까지
+					lines.emplace_back("");
+				}
+				first = last+1;
+			} while( last!=NULL && first<end );
 		}
 	};
 }

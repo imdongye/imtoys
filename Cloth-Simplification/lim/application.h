@@ -10,6 +10,8 @@
 #ifndef APPLICATION_H
 #define APPLICATION_H
 
+#include<direct.h>
+
 namespace lim
 {
 	class AppBase
@@ -30,13 +32,20 @@ namespace lim
 
 		GLuint scr_width = 1200;
 		GLuint scr_height = 1000;
+		std::string current_path;
 	protected:
 		virtual void update()=0;
 	private:
 		float lastFrame; // for deltatime
 	public:
-		AppBase(GLuint width, GLuint height): scr_width(width), scr_height(height)
+		/* init */
+		AppBase(GLuint width=1200, GLuint height=1000): scr_width(width), scr_height(height)
 		{
+			char curDir[256];
+			_getcwd(curDir, 1000);
+			current_path={curDir};
+			Logger::get()<<current_path<<Logger::endl;
+
 			glfwSetErrorCallback(error_callback);
 			if( !glfwInit() ) std::exit(-1);
 			glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -79,8 +88,10 @@ namespace lim
 			// wireframe
 			//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);//&GL_POINT
 		}
+		/* destroy */
 		virtual ~AppBase()
 		{
+			AppPref::get().save();
 			glfwDestroyWindow(window);
 			glfwTerminate();
 		}

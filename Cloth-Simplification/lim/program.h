@@ -52,7 +52,7 @@ namespace lim
 			auto [sid, type] = createShaderAuto(path);
 
 			if( sid==0 ) {
-				std::cerr<<"[error] "<<type<<" extension is not supported.";
+				Logger::get()<<"[error] "<<type<<" extension is not supported.";
 				return *this;
 			}
 			// AUTO PATHING
@@ -71,10 +71,10 @@ namespace lim
 				file.close();
 				scode = ss.str();
 			} catch( std::ifstream::failure& e ) {
-				std::cerr<<"[error] fail read : "<<path<<" | what? "<<e.what()<<std::endl;
+				Logger::get()<<"[error] fail read : "<<path<<", what? "<<e.what()<<Logger::endl;
 			}
 			if( scode.length()<1 ) {
-				std::cerr<<"[error]"<<path<<" shader code is not loaded properly"<<std::endl;
+				Logger::get()<<"[error]"<<path<<" shader code is not loaded properly"<<Logger::endl;
 				return *this;
 			}
 

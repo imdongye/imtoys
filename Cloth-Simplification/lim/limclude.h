@@ -38,6 +38,7 @@
 #define LIM_MIN(X, Y) ((X)<(Y))?(X):(Y)
 
 #include "logger.h"
+#include "app_pref.h"
 #include "program.h"
 #include "camera.h"
 #include "texture.h"
