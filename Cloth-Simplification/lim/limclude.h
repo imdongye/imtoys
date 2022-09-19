@@ -11,7 +11,8 @@
 //	model과 light가 서로 의존성이 있는데 선언부와 구현부로 안나누고 header only로 구현할방법이 있나?
 // 
 //	Todo:
-//	1.폴더구조
+//	1. 폴더구조
+//	2. lim_max 등 tools로 헤더 나누기
 //
 
 #ifndef LIMCLUDE_H

@@ -30,7 +30,7 @@ namespace lim
 	private:
 		Logger():simpTime(0.0), buffer{0}
 		{
-			lines.push_back("");
+			lines.emplace_back("");
 		};
 		Logger(const Logger&)=delete;
 		Logger &operator=(const Logger&)=delete;
@@ -52,7 +52,6 @@ namespace lim
 				for( int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++ )
 					ImGui::Text(lines[i].c_str());
 			ImGui::PopStyleVar();
-
 			ImGui::EndChild();
 			ImGui::End();
 		}
@@ -130,9 +129,14 @@ namespace lim
 			do {
 				last = strchr(first, '\n');
 				// case2. 개행 없이 끝날때
-				if( !last ) lines.back().append(first);
+				if( !last ) {
+					lines.back().append(first);
+				}
 				// case3. 마지막 개행
-				else if( first == end ) lines.emplace_back("");
+				else if( first == end ) {
+					lines.emplace_back("");
+					break;
+				}
 				// case4. 개행사이 한줄
 				else {
 					lines.back().append(first, last); // last전까지

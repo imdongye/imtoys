@@ -6,6 +6,9 @@
 // 
 //	usage : 
 //	1. AppPref::get()
+// 
+//	Todo:
+//	1. 파일관련 최적화 https://modoocode.com/306
 //
 
 #ifndef APP_PREF_H
@@ -13,8 +16,8 @@
 
 #include <fstream>
 #include <json/json.h>
-#include <queue>
 #include <vector>
+#include <regex>
 
 namespace lim
 {
@@ -88,12 +91,12 @@ namespace lim
 			if( recentModelPaths.size() > MAX_RECENT_MP_SIZE ) {
 				auto end = recentModelPaths.end();
 				auto begin = end-MAX_RECENT_MP_SIZE;
-				std::vector<std::string> temp(begin, end);
+				recentModelPaths = std::vector<std::string>(begin, end);
 			}
-			else ojson["recentModelPaths"] = recentModelPaths;
+			ojson["recentModelPaths"] = recentModelPaths;
 
 			//*********************
-			Logger::get()<<"write "<<FILE_PATH<<Logger::endl<< ojson.dump(2)<<Logger::endl;
+			Logger::get().log("write %s\n%s\n\n", FILE_PATH, ojson.dump(2).c_str());
 			std::ofstream ofile;
 			try {
 				ofile.open(FILE_PATH);
@@ -102,6 +105,22 @@ namespace lim
 			} catch( std::ifstream::failure& e ) {
 				Logger::get()<<"[error] fail read : "<<FILE_PATH<<", what? "<<e.what();
 			}
+		}
+		void pushPathWithoutDup(std::string_view path)
+		{
+			// 절대경로를 상대경로로
+			std::filesystem::path ap(path.data());
+			std::string rp = std::filesystem::relative(ap, std::filesystem::current_path()).u8string();
+			for( char& c: rp ) {
+				if( c == '\\' ) c = '/';
+			}
+			Logger::get()<<rp<<Logger::endll;
+			//같은거 있으면 지우기
+			auto samePathPos = std::find(recentModelPaths.begin(), recentModelPaths.end(), rp);
+			if( samePathPos!=recentModelPaths.end() )
+				recentModelPaths.erase(samePathPos);
+
+			recentModelPaths.emplace_back(rp);
 		}
 	};
 }

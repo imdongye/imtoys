@@ -10,8 +10,6 @@
 #ifndef APPLICATION_H
 #define APPLICATION_H
 
-#include <filesystem>
-
 namespace lim
 {
 	class AppBase
@@ -32,7 +30,6 @@ namespace lim
 
 		GLuint scr_width = 1200;
 		GLuint scr_height = 1000;
-		std::string current_path;
 	protected:
 		virtual void update()=0;
 	private:
@@ -41,8 +38,7 @@ namespace lim
 		/* init */
 		AppBase(GLuint width=1200, GLuint height=1000): scr_width(width), scr_height(height)
 		{
-			current_path = std::filesystem::current_path().u8string();
-			Logger::get()<<current_path<<Logger::endl;
+			Logger::get()<<"current path is "<<std::filesystem::current_path().u8string()<<Logger::endl;
 
 			glfwSetErrorCallback(error_callback);
 			if( !glfwInit() ) std::exit(-1);

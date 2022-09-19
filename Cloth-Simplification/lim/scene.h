@@ -29,17 +29,17 @@ namespace lim
 			ground = new Model([](std::vector<lim::n_mesh::Vertex>& vertices
 							   , std::vector<GLuint>& indices
 							   , std::vector<Texture>& textures)
-							   {
-								   const float half = 100.0;
-								   vertices.push_back({{-half, 0, half},
-													   {0, 1, 0}});
-								   vertices.push_back({{half, 0, half}, {0, 1, 0}});
-								   vertices.push_back({{half, 0, -half}, {0, 1, 0}});
-								   vertices.push_back({{-half, 0, -half}, {0, 1, 0}});
+			{
+				const float half = 100.0;
+				vertices.push_back({{-half, 0, half},
+									{0, 1, 0}});
+				vertices.push_back({{half, 0, half}, {0, 1, 0}});
+				vertices.push_back({{half, 0, -half}, {0, 1, 0}});
+				vertices.push_back({{-half, 0, -half}, {0, 1, 0}});
 
-								   indices.insert(indices.end(), {0,1,3});
-								   indices.insert(indices.end(), {1,2,3});
-							   }, groundProgram, "ground");
+				indices.insert(indices.end(), {0,1,3});
+				indices.insert(indices.end(), {1,2,3});
+			}, groundProgram, "ground");
 			ground->meshes.back()->color = glm::vec3(0.8, 0.8, 0); // yello ground
 			ground->position = glm::vec3(0, 0, 0);
 			ground->updateModelMat();
@@ -52,8 +52,7 @@ namespace lim
 	public:
 		void setModel(Model* _model)
 		{
-			if( model!=nullptr )
-			{
+			if( model!=nullptr ) {
 				models.erase(std::find(models.begin(), models.end(), model));
 			}
 			model = _model;
@@ -89,22 +88,21 @@ namespace lim
 	private:
 		inline void drawModels(Camera* camera)
 		{
-			for( Model* model : models )
-			{
+			for( Model* model : models ) {
+				if( model==nullptr ) continue;
 				model->draw(*camera, light);
 			}
 		}
 		void drawShadowMap()
 		{
 			light.drawShadowMap([&](GLuint shadowProgID) {
-				for( Model* model : models )
-				{
+				for( Model* model : models ) {
 					setUniform(shadowProgID, "modelMat", model->modelMat);
 
 					for( Mesh* mesh : model->meshes )
 						mesh->draw(0); // only draw
 				}
-								});
+			});
 		}
 	};
 }

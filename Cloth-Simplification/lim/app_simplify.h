@@ -82,6 +82,21 @@ namespace lim
 			imgui_modules::destroyImGui();
 		}
 	private:
+		void loadModel(std::string_view path)
+		{
+			Logger::get().log("loading form %s ...\n", path.data());
+			Program* usedProg = models[0]->program;
+			delete models[0]; models[0]=nullptr;
+			models[0] = new Model(path.data(), usedProg, true);
+			scenes[0]->setModel(models[0]);
+			scenes[1]->setModel(models[0]);
+		}
+		void simplifyModel(float pct)
+		{
+			if( models[1] != nullptr ) delete models[1];
+			models[1] = fqms::simplifyModel(scenes[0]->model, pct);
+			scenes[1]->setModel(models[1]);
+		}
 		virtual void update() final
 		{
 			processInput();
@@ -99,13 +114,15 @@ namespace lim
 		{
 			imgui_modules::beginImGui();
 
-			imgui_modules::ShowExampleAppDockSpace([]() {
+			imgui_modules::ShowExampleAppDockSpace([&]() {
 				if( ImGui::BeginMenu("File") ) {
-
 					if( ImGui::BeginMenu("Open Recent") ) {
-						for( std::string& path : AppPref::get().recentModelPaths ) {
-							if( ImGui::MenuItem(path.c_str()) ) {
-
+						typename std::vector<std::string>::reverse_iterator iter;
+						for( iter = AppPref::get().recentModelPaths.rbegin();
+							iter != AppPref::get().recentModelPaths.rend(); iter++ ) {
+							if( ImGui::MenuItem((*iter).c_str()) ) {
+								loadModel((*iter));
+								break;
 							}
 						}
 						ImGui::EndMenu();
@@ -131,11 +148,7 @@ namespace lim
 				ImGui::SliderFloat("percent", &pct, 0.0f, 1.0f);
 
 				if( ImGui::Button("Simplify") ) {
-					if( models[1] != nullptr ) delete models[1];
-					models[1] = fqms::simplifyModel(scenes[0]->model, pct);
-					scenes[1]->setModel(models[1]);
-
-					AppPref::get().save();
+					simplifyModel(pct);
 				}
 				ImGui::SameLine();
 				ImGui::Text("target triangles = %d", static_cast<int>(scenes[0]->model->trianglesNum*pct));
@@ -191,8 +204,8 @@ namespace lim
 			}ImGui::End();
 			ImGui::PopStyleVar();
 
-			ImGui::Begin("Model Status");
-			{
+
+			if( ImGui::Begin("Model Status")&& scenes[0]->model!=nullptr ) {
 				ImGui::Text("<Original model>");
 				lim::Model& ori = *(scenes[0]->model);
 				ImGui::Text("name : %s", ori.name.c_str());
@@ -336,12 +349,8 @@ namespace lim
 		void drop_callback(int count, const char** paths)
 		{
 			for( int i = 0; i < count; i++ ) {
-				AppPref::get().recentModelPaths.emplace_back(paths[i]);
-				Program* usedProg = models[0]->program;
-				delete models[0];
-				models[0] = new Model(paths[i], usedProg, true);
-				scenes[0]->setModel(models[0]);
-				scenes[1]->setModel(models[0]);
+				loadModel(paths[i]);
+				AppPref::get().pushPathWithoutDup(paths[i]);
 				break;
 			}
 		}
