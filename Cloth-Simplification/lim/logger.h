@@ -60,7 +60,7 @@ namespace lim
 		{
 			va_list ap;
 			va_start(ap, format);
-			vsprintf_s(buffer, format, ap);
+			vsprintf(buffer, format, ap);
 			va_end(ap);
 
 			fprintf(stream, "%s", buffer);
@@ -71,7 +71,7 @@ namespace lim
 		{
 			va_list ap;
 			va_start(ap, format);
-			vsprintf_s(buffer, format, ap);
+			vsprintf(buffer, format, ap);
 			va_end(ap);
 
 			printf("%s", buffer);
