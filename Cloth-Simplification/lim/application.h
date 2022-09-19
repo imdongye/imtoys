@@ -10,7 +10,7 @@
 #ifndef APPLICATION_H
 #define APPLICATION_H
 
-#include<direct.h>
+#include <filesystem>
 
 namespace lim
 {
@@ -41,9 +41,7 @@ namespace lim
 		/* init */
 		AppBase(GLuint width=1200, GLuint height=1000): scr_width(width), scr_height(height)
 		{
-			char curDir[256];
-			_getcwd(curDir, 1000);
-			current_path={curDir};
+			current_path = std::filesystem::current_path().u8string();
 			Logger::get()<<current_path<<Logger::endl;
 
 			glfwSetErrorCallback(error_callback);
