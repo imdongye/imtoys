@@ -4,6 +4,10 @@
         "archive/meshes/spot.obj",
         "archive/meshes/beetle.obj",
         "archive/meshes/WusonOBJ.obj",
-        "archive/meshes/xyzrgb_dragon.obj"
+        "archive/meshes/xyzrgb_dragon.obj",
+        "archive/cloth/bear_school_cloak/scene.gltf",
+        "archive/chicken/scene.gltf",
+        "archive/high_banana/Banana.obj",
+        "archive/trex/TrexByJoel3d.obj"
     ]
 }

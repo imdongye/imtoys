@@ -38,8 +38,6 @@ namespace lim
 		/* init */
 		AppBase(GLuint width=1200, GLuint height=1000): scr_width(width), scr_height(height)
 		{
-			Logger::get()<<"current path is "<<std::filesystem::current_path().u8string()<<Logger::endl;
-
 			glfwSetErrorCallback(error_callback);
 			if( !glfwInit() ) std::exit(-1);
 			glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -81,6 +79,10 @@ namespace lim
 			//glFrontFace(GL_CCW);
 			// wireframe
 			//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);//&GL_POINT
+
+
+			Logger::get()<<"Current path is "<<std::filesystem::current_path().u8string()<<Logger::endl;
+			AppPref::get();
 		}
 		/* destroy */
 		virtual ~AppBase()

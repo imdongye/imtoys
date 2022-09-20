@@ -7,6 +7,8 @@
 // 
 //	TODO list:
 //	1. color error text
+//	2. 하나의 문자열을 가지고 텍스트를 추가하며 라인의 끝 위치를 저장하게
+//	3. json dump출력시 append에서 segfault발생 utf8문제인가?
 //
 
 #ifndef LOGGER_HPP
@@ -27,8 +29,10 @@ namespace lim
 	public:
 		std::vector<std::string> lines;
 		double simpTime;
+		bool autoScroll;
+		bool addTimeStamp;
 	private:
-		Logger():simpTime(0.0), buffer{0}
+		Logger():simpTime(0.0), buffer{0}, autoScroll(true), addTimeStamp(false)
 		{
 			lines.emplace_back("");
 		};
@@ -43,24 +47,39 @@ namespace lim
 		void drawImGui()
 		{
 			ImGui::Begin("Logger");
-			ImGui::BeginChild("Log");
+
+			ImGui::Checkbox("Auto-scroll", &autoScroll);
+			ImGui::SameLine();
+			ImGui::Checkbox("Add-timestamp", &addTimeStamp);
+			ImGui::SameLine();
+			if( ImGui::Button("Clear") ) {
+				lines.clear();
+				lines.push_back(" ");
+			}
+			ImGui::Separator();
+
+			ImGui::BeginChild("Log", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
 			// Multiple calls to Text(), manually coarsely clipped - demonstrate how to use the ImGuiListClipper helper.
 			ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
 			ImGuiListClipper clipper;
-			clipper.Begin(lines.size());
+			clipper.Begin(lines.size()-1);
 			while( clipper.Step() )
 				for( int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++ )
-					ImGui::Text(lines[i].c_str());
+					ImGui::TextUnformatted(lines[i].c_str());
 			ImGui::PopStyleVar();
+
+			if( autoScroll && ImGui::GetScrollY() >= ImGui::GetScrollMaxY() )
+				ImGui::SetScrollHereY(1.0f);
+
 			ImGui::EndChild();
 			ImGui::End();
 		}
 		Logger& log(FILE* stream, const char* format, ...)
 		{
-			va_list ap;
-			va_start(ap, format);
-			vsprintf(buffer, format, ap);
-			va_end(ap);
+			va_list args;
+			va_start(args, format);
+			vsprintf(buffer, format, args);
+			va_end(args);
 
 			fprintf(stream, "%s", buffer);
 			seperate_and_save(buffer);
@@ -118,6 +137,8 @@ namespace lim
 		{
 			const char *first, *last;
 			const char const *end = strchr(buf, '\0');
+			static char timeStamp[32];
+			sprintf(timeStamp, "[%.2f] ", glfwGetTime());
 
 			// case1. 그냥 한줄 출력
 			if( !strchr(buf, '\n') ) {
@@ -131,16 +152,17 @@ namespace lim
 				// case2. 개행 없이 끝날때
 				if( !last ) {
 					lines.back().append(first);
+					break;
 				}
 				// case3. 마지막 개행
 				else if( first == end ) {
-					lines.emplace_back("");
+					lines.push_back((addTimeStamp)?timeStamp:"");
 					break;
 				}
 				// case4. 개행사이 한줄
 				else {
-					lines.back().append(first, last); // last전까지
-					lines.emplace_back("");
+					lines.back()+=std::string(first, last);
+					lines.push_back((addTimeStamp)?timeStamp:"");
 				}
 				first = last+1;
 			} while( last!=NULL && first<end );

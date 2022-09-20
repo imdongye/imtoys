@@ -10,6 +10,7 @@
 //
 //	todo:
 //	1. 부모소멸자 호출안하는 방법이 있나? framebuffer::clear두번호출
+//	2. create 가상함수 재활용
 //
 
 #ifndef FRAMEBUFFER_H
@@ -69,6 +70,11 @@ namespace lim
 				glBindVertexArray(0);
 			}
 		}
+		Framebuffer(GLuint _width, GLuint _height=0):Framebuffer()
+		{
+			resize(_width, _height);
+			create();
+		}
 		virtual ~Framebuffer()
 		{
 			clear();
@@ -83,9 +89,10 @@ namespace lim
 		{
 			return fbo!=0;
 		}
-		void resize(GLuint _width, GLuint _height)
+		void resize(GLuint _width, GLuint _height=0)
 		{
-			width = _width; height = _height;
+			width = _width;
+			height = (_height==0)?_width:_height;
 			create();
 		}
 		void copyToBackBuf()
@@ -93,7 +100,19 @@ namespace lim
 			textureToBackBuf(getRenderedTex());
 		}
 	public:
-		virtual void create()=0;
+		virtual void create()
+		{
+			createColorTex(colorTex);
+
+			/* create FBO */
+			glGenFramebuffers(1, &fbo);
+			glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
+			// error check
+			if( glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE )
+				Logger::get().log("color FBO Error %d %d\n", width, height);
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		}
 		virtual GLuint getRenderedTex()
 		{
 			return colorTex;

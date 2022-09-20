@@ -20,15 +20,27 @@ namespace lim
 	private:
 		float cameraMoveSpeed;
 		Light light;
+
+		int selectedBakeSizeIdx;
+		std::vector<const char*> bakeSizeList;
+		Framebuffer bakedNormalMap;
+		Program bakerProg;
+
 		Camera* cameras[2];
 		Model* models[2];
 		Scene* scenes[2];
 		Viewport* viewports[2];
 		std::vector<Program*> programs;
-
 	public:
 		SimplifyApp(): AppBase(1200, 960), cameraMoveSpeed(1.6f), light()
+			, bakeSizeList({"256", "512", "1024", "2048", "4096", "8192"}), selectedBakeSizeIdx(2)
+			, bakedNormalMap(), bakerProg("Normal Map Baker")
 		{
+			bakedNormalMap.clearColor = glm::vec4(0.5, 0.5, 1, 1);
+			bakedNormalMap.resize(atoi(bakeSizeList[selectedBakeSizeIdx]));
+			bakerProg.attatch("uv_view.vs").attatch("uv_view.fs").link();
+
+
 			programs.push_back(new Program("Normal Dot View"));
 			programs.back()->attatch("pos_nor_uv.vs").attatch("ndv.fs").link();
 
@@ -97,13 +109,21 @@ namespace lim
 			models[1] = fqms::simplifyModel(scenes[0]->model, pct);
 			scenes[1]->setModel(models[1]);
 		}
+		void bakeNormalMap()
+		{
+			GLuint pid = bakerProg.use();
+			bakedNormalMap.bind();
+			for( Mesh* mesh : models[0]->meshes )
+				mesh->draw(pid);
+			bakedNormalMap.unbind();
+		}
 		virtual void update() final
 		{
 			processInput();
 
 			//scenes[0]->render(0, scr_width, scr_height, cameras[0]);
-			scenes[0]->render(viewports[0]);
 			scenes[1]->render(viewports[1]);
+			scenes[0]->render(viewports[0]);
 
 			renderImGui();
 
@@ -127,7 +147,15 @@ namespace lim
 						}
 						ImGui::EndMenu();
 					}
+					if( ImGui::BeginMenu("Export") ) {
+						if( ImGui::MenuItem(".obj") ) {
 
+						}
+						if( ImGui::MenuItem(".fbx") ) {
+
+						}
+						ImGui::EndMenu();
+					}
 					ImGui::EndMenu();
 				}
 			});
@@ -140,8 +168,7 @@ namespace lim
 			Logger::get().drawImGui();
 
 
-			ImGui::Begin("Simplify Options");
-			{
+			if( ImGui::Begin("Simplify Options") ) {
 				ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
 				static float pct = 0.8f;
@@ -153,11 +180,20 @@ namespace lim
 				ImGui::SameLine();
 				ImGui::Text("target triangles = %d", static_cast<int>(scenes[0]->model->trianglesNum*pct));
 				ImGui::Text("simplified in %lf sec", Logger::get().simpTime);
+				ImGui::Separator();
+
+
+				if( ImGui::Combo("texture resolution", &selectedBakeSizeIdx, bakeSizeList.data(), bakeSizeList.size()) ) {
+					bakedNormalMap.resize(atoi(bakeSizeList[selectedBakeSizeIdx]));
+				}
+				if( ImGui::Button("Bake normal map") ) {
+					bakeNormalMap();
+				}
 
 			} ImGui::End();
 
-			ImGui::Begin("Viewing Options");
-			{
+
+			if( ImGui::Begin("Viewing Options") ) {
 				static bool isSameCamera = false;
 				if( ImGui::Checkbox("use same camera", &isSameCamera) ) {
 					if( isSameCamera )
@@ -188,19 +224,32 @@ namespace lim
 				ImGui::Text("pos %f %f %F", light.position.x, light.position.y, light.position.z);
 			} ImGui::End();
 
+
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
 			ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), [](ImGuiSizeCallbackData* data) {
 				data->DesiredSize.x = LIM_MAX(data->DesiredSize.x, data->DesiredSize.y);
 				data->DesiredSize.y = data->DesiredSize.x;
 			});
-			ImGui::Begin("shadowMap");
-			{
+			if( ImGui::Begin("shadowMap") && light.shadowEnabled ) {
 				ImVec2 vMin = ImGui::GetWindowContentRegionMin();
 				ImVec2 vMax = ImGui::GetWindowContentRegionMax();
 				glm::vec2 rectSize{vMax.x-vMin.x, vMax.y-vMin.y};
 				//ImGui::Text("%f %f", rectSize.x, rectSize.y);
 				const float minLength = LIM_MIN(rectSize.x, rectSize.y);
 				ImGui::Image(reinterpret_cast<void*>(light.shadowMap.getRenderedTex()), ImVec2{minLength, minLength}, ImVec2{0, 1}, ImVec2{1, 0});
+			}ImGui::End();
+
+			ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), [](ImGuiSizeCallbackData* data) {
+				data->DesiredSize.x = LIM_MAX(data->DesiredSize.x, data->DesiredSize.y);
+				data->DesiredSize.y = data->DesiredSize.x;
+			});
+			if( ImGui::Begin("Baked Normal Map") && bakedNormalMap.renderable() ) {
+				ImVec2 vMin = ImGui::GetWindowContentRegionMin();
+				ImVec2 vMax = ImGui::GetWindowContentRegionMax();
+				glm::vec2 rectSize{vMax.x-vMin.x, vMax.y-vMin.y};
+				//ImGui::Text("%f %f", rectSize.x, rectSize.y);
+				const float minLength = LIM_MIN(rectSize.x, rectSize.y);
+				ImGui::Image(reinterpret_cast<void*>(bakedNormalMap.getRenderedTex()), ImVec2{minLength, minLength}, ImVec2{0, 1}, ImVec2{1, 0});
 			}ImGui::End();
 			ImGui::PopStyleVar();
 

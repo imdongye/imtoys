@@ -9,6 +9,7 @@
 // 
 //	Todo:
 //	1. 파일관련 최적화 https://modoocode.com/306
+//	2. 소멸자에서 save안됨
 //
 
 #ifndef APP_PREF_H
@@ -71,7 +72,7 @@ namespace lim
 			}
 			Json ijson = Json::parse(text);
 			// dump para is tab size, none is one line
-			Logger::get()<<"read "<<FILE_PATH<<Logger::endl<< ijson.dump(2)<<Logger::endl;
+			//Logger::get()<<"read "<<FILE_PATH<<Logger::endl<< ijson.dump(2) <<Logger::endl;
 
 			recentModelPaths = ijson["recentModelPaths"];
 		}
@@ -96,7 +97,6 @@ namespace lim
 			ojson["recentModelPaths"] = recentModelPaths;
 
 			//*********************
-			Logger::get().log("write %s\n%s\n\n", FILE_PATH, ojson.dump(2).c_str());
 			std::ofstream ofile;
 			try {
 				ofile.open(FILE_PATH);
@@ -105,6 +105,9 @@ namespace lim
 			} catch( std::ifstream::failure& e ) {
 				Logger::get()<<"[error] fail read : "<<FILE_PATH<<", what? "<<e.what();
 			}
+
+			std::string temp = ojson.dump(2);
+			//Logger::get()<<"write "<<FILE_PATH<<Logger::endl<<temp<<Logger::endl;
 		}
 		void pushPathWithoutDup(std::string_view path)
 		{
