@@ -12,6 +12,6 @@ https://github.com/assimp/assimp
 
 https://github.com/ocornut/imgui
 
-https://github.com/nlohmann/jsonWW
+https://github.com/nlohmann/json
 
 https://github.com/sp4cerat/Fast-Quadric-Mesh-Simplification
