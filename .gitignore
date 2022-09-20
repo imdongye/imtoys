@@ -12,4 +12,4 @@ Cloth-Simplification.xcodeproj
 /Cloth-Simplification/fonts
 .DS_Store
 .ini
-.json
+/app_pref.json
