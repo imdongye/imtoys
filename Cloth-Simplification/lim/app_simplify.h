@@ -121,9 +121,9 @@ namespace lim
 		{
 			processInput();
 
-			//scenes[0]->render(0, scr_width, scr_height, cameras[0]);
-			scenes[1]->render(viewports[1]);
+			//scenes[0]->render(0, scr_width, scr_height, cameras[0]); 
 			scenes[0]->render(viewports[0]);
+			scenes[1]->render(viewports[1]);
 
 			renderImGui();
 
@@ -162,8 +162,10 @@ namespace lim
 
 			ImGui::ShowDemoWindow();
 
-			viewports[0]->drawImGui();
+			/* 실행후 겹쳤을때 그리는순서에 따라서 위로오는게 결정됨 */
+			// 중요한게 뒤로 오게 해야함
 			viewports[1]->drawImGui();
+			viewports[0]->drawImGui();
 
 			Logger::get().drawImGui();
 
@@ -224,36 +226,6 @@ namespace lim
 				ImGui::Text("pos %f %f %F", light.position.x, light.position.y, light.position.z);
 			} ImGui::End();
 
-
-			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
-			ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), [](ImGuiSizeCallbackData* data) {
-				data->DesiredSize.x = LIM_MAX(data->DesiredSize.x, data->DesiredSize.y);
-				data->DesiredSize.y = data->DesiredSize.x;
-			});
-			if( ImGui::Begin("shadowMap") && light.shadowEnabled ) {
-				ImVec2 vMin = ImGui::GetWindowContentRegionMin();
-				ImVec2 vMax = ImGui::GetWindowContentRegionMax();
-				glm::vec2 rectSize{vMax.x-vMin.x, vMax.y-vMin.y};
-				//ImGui::Text("%f %f", rectSize.x, rectSize.y);
-				const float minLength = LIM_MIN(rectSize.x, rectSize.y);
-				ImGui::Image(reinterpret_cast<void*>(light.shadowMap.getRenderedTex()), ImVec2{minLength, minLength}, ImVec2{0, 1}, ImVec2{1, 0});
-			}ImGui::End();
-
-			ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), [](ImGuiSizeCallbackData* data) {
-				data->DesiredSize.x = LIM_MAX(data->DesiredSize.x, data->DesiredSize.y);
-				data->DesiredSize.y = data->DesiredSize.x;
-			});
-			if( ImGui::Begin("Baked Normal Map") && bakedNormalMap.renderable() ) {
-				ImVec2 vMin = ImGui::GetWindowContentRegionMin();
-				ImVec2 vMax = ImGui::GetWindowContentRegionMax();
-				glm::vec2 rectSize{vMax.x-vMin.x, vMax.y-vMin.y};
-				//ImGui::Text("%f %f", rectSize.x, rectSize.y);
-				const float minLength = LIM_MIN(rectSize.x, rectSize.y);
-				ImGui::Image(reinterpret_cast<void*>(bakedNormalMap.getRenderedTex()), ImVec2{minLength, minLength}, ImVec2{0, 1}, ImVec2{1, 0});
-			}ImGui::End();
-			ImGui::PopStyleVar();
-
-
 			if( ImGui::Begin("Model Status")&& scenes[0]->model!=nullptr ) {
 				ImGui::Text("<Original model>");
 				lim::Model& ori = *(scenes[0]->model);
@@ -268,6 +240,37 @@ namespace lim
 				ImGui::Text("#verteces : %u", simp.verticesNum);
 				ImGui::Text("#triangles : %u", simp.trianglesNum);
 			} ImGui::End();
+
+			/* show texture */
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
+
+
+			ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), [](ImGuiSizeCallbackData* data) {
+				data->DesiredSize.x = LIM_MAX(data->DesiredSize.x, data->DesiredSize.y);
+				data->DesiredSize.y = data->DesiredSize.x;
+			});
+			if( ImGui::Begin("Baked Normal Map") && bakedNormalMap.renderable() ) {
+				ImVec2 vMin = ImGui::GetWindowContentRegionMin();
+				ImVec2 vMax = ImGui::GetWindowContentRegionMax();
+				glm::vec2 rectSize{vMax.x-vMin.x, vMax.y-vMin.y};
+				//ImGui::Text("%f %f", rectSize.x, rectSize.y);
+				const float minLength = LIM_MIN(rectSize.x, rectSize.y);
+				ImGui::Image(reinterpret_cast<void*>(bakedNormalMap.getRenderedTex()), ImVec2{minLength, minLength}, ImVec2{0, 1}, ImVec2{1, 0});
+			}ImGui::End();
+
+			ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), [](ImGuiSizeCallbackData* data) {
+				data->DesiredSize.x = LIM_MAX(data->DesiredSize.x, data->DesiredSize.y);
+				data->DesiredSize.y = data->DesiredSize.x;
+			});
+			if( ImGui::Begin("shadowMap") && light.shadowEnabled ) {
+				ImVec2 vMin = ImGui::GetWindowContentRegionMin();
+				ImVec2 vMax = ImGui::GetWindowContentRegionMax();
+				glm::vec2 rectSize{vMax.x-vMin.x, vMax.y-vMin.y};
+				//ImGui::Text("%f %f", rectSize.x, rectSize.y);
+				const float minLength = LIM_MIN(rectSize.x, rectSize.y);
+				ImGui::Image(reinterpret_cast<void*>(light.shadowMap.getRenderedTex()), ImVec2{minLength, minLength}, ImVec2{0, 1}, ImVec2{1, 0});
+			}ImGui::End();
+			ImGui::PopStyleVar();
 
 			imgui_modules::endImGui(scr_width, scr_height);
 		}
