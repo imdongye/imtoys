@@ -8,10 +8,18 @@
 //	3. dnd 여러개들어왔을때 모델파일만 골라서 입력받게 조건처리
 //	4. figure out [this](auto&&... args) -> decltype(auto) { return this->fn(std::forward<decltype(args)>(args)...); }
 //	5. https://github.com/AndrewBelt/osdialog 로 multi platform open file dialog
+//	6. baker.h로 분리
 //
 
 #ifndef SIMPLYFY_APP_H
 #define SIMPLYFY_APP_H
+
+
+#if defined(_MSC_VER) && !defined(STBI_MSC_SECURE_CRT)
+#define STBI_MSC_SECURE_CRT
+#endif
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include<stb/stb_image_write.h>
 
 namespace lim
 {
@@ -21,6 +29,7 @@ namespace lim
 		float cameraMoveSpeed;
 		Light light;
 
+		const char* outTexPath = "baked/";
 		int selectedBakeSizeIdx;
 		std::vector<const char*> bakeSizeList;
 		Framebuffer bakedNormalMap;
@@ -109,13 +118,26 @@ namespace lim
 			models[1] = fqms::simplifyModel(scenes[0]->model, pct);
 			scenes[1]->setModel(models[1]);
 		}
+		// From: https://stackoverflow.com/questions/62007672/png-saved-from-opengl-framebuffer-using-stbi-write-png-is-shifted-to-the-right
 		void bakeNormalMap()
 		{
 			GLuint pid = bakerProg.use();
+			GLuint w = bakedNormalMap.width;
+			GLuint h = bakedNormalMap.height;
+			static GLubyte* data = new GLubyte[3*w*h];
+			std::string fullPath(outTexPath);
+			fullPath += models[0]->name+".png";
+
 			bakedNormalMap.bind();
 			for( Mesh* mesh : models[0]->meshes )
 				mesh->draw(pid);
 			bakedNormalMap.unbind();
+
+			glBindFramebuffer(GL_FRAMEBUFFER, bakedNormalMap.fbo);
+			glPixelStorei(GL_PACK_ALIGNMENT, 1);
+			glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, data);
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			Logger::get()<<"done"<<fullPath<<stbi_write_png(fullPath.c_str(), w, h, 3, data, w*3)<<Logger::endll;
 		}
 		virtual void update() final
 		{

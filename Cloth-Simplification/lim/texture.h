@@ -4,13 +4,14 @@
 // 
 //	Todo:
 //	1. 10bit hdr지원
-//	2. bump맵도 linear화 해줘야하나?
+//	2. bumpmap등은 linear space로 읽어서 linear space로 출력함
 //
+
 #ifndef TEXTURE_H
 #define TEXTURE_H
 
 #define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
+#include <stb/stb_image.h>
 
 namespace lim
 {
@@ -78,7 +79,6 @@ namespace lim
 		stbi_image_free(buf);
 		return texID;
 	}
-
 }
 
 #endif

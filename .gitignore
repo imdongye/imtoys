@@ -10,6 +10,7 @@ Cloth-Simplification.entitlements
 Cloth-Simplification.xcodeproj
 /Cloth-Simplification/archive
 /Cloth-Simplification/fonts
+/Cloth-Simplification/baked/*
 .DS_Store
 *.ini
 /Cloth-Simplification/app_pref.json
