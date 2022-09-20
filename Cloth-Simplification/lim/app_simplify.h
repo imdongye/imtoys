@@ -29,7 +29,7 @@ namespace lim
 		float cameraMoveSpeed;
 		Light light;
 
-		const char* outTexPath = "baked/";
+		const char* outTexPath = "result/";
 		int selectedBakeSizeIdx;
 		std::vector<const char*> bakeSizeList;
 		Framebuffer bakedNormalMap;
