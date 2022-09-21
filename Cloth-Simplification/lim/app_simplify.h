@@ -212,6 +212,9 @@ namespace lim
 						}
 						ImGui::EndMenu();
 					}
+					if( ImGui::Button("Clear Recent") ) {
+						AppPref::get().clearData();
+					}
 					ImGui::EndMenu();
 				}
 			});

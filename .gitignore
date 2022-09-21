@@ -15,3 +15,4 @@ Cloth-Simplification.xcodeproj
 .DS_Store
 *.ini
 /Cloth-Simplification/app_pref.json
+/ignored/

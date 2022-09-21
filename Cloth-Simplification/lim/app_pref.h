@@ -122,8 +122,12 @@ namespace lim
 			auto samePathPos = std::find(recentModelPaths.begin(), recentModelPaths.end(), rp);
 			if( samePathPos!=recentModelPaths.end() )
 				recentModelPaths.erase(samePathPos);
-
+			if( rp.size()<1 ) return;
 			recentModelPaths.emplace_back(rp);
+		}
+		void clearData()
+		{
+			recentModelPaths.clear();
 		}
 	};
 }

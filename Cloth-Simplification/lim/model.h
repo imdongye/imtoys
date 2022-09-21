@@ -283,7 +283,7 @@ namespace lim
 			}
 			return textures;
 		}
-		void parseMesh(aiMesh* mesh, const aiScene* scene)
+		Mesh* getParsedMesh(aiMesh* mesh, const aiScene* scene)
 		{
 			std::vector<n_mesh::Vertex> vertices;
 			std::vector<GLuint> indices;
@@ -340,18 +340,19 @@ namespace lim
 			material->Get(AI_MATKEY_COLOR_DIFFUSE, color);
 			newMesh->color = glm::vec3(color.r, color.g, color.b);
 
-			meshes.push_back(newMesh);
+			return newMesh;
 		}
-		void parseNode(aiNode* node, const aiScene* scene)
+		void parseNode(aiNode* node, const aiScene* scene, int depth = 0)
 		{
 			// in current node
 			for( GLuint i=0; i<node->mNumMeshes; i++ ) {
-				parseMesh(scene->mMeshes[node->mMeshes[i]], scene);
-				Logger::get().log("mesh loaded : ");
+				meshes.push_back(getParsedMesh(scene->mMeshes[node->mMeshes[i]], scene));
+				for( int j=0; j<depth; j++ ) Logger::get()<<'\t';
+				Logger::get().log("mesh loaded : %s,", node->mName.C_Str());
 				(*meshes.back()).print();
 			}
 			for( GLuint i=0; i<node->mNumChildren; i++ ) {
-				parseNode(node->mChildren[i], scene);
+				parseNode(node->mChildren[i], scene, depth+1);
 			}
 		}
 	};
