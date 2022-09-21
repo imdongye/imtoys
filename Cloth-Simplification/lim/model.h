@@ -18,6 +18,7 @@
 #define MODEL_H
 
 #include <assimp/Importer.hpp>
+#include <assimp/Exporter.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
@@ -154,9 +155,14 @@ namespace lim
 		}
 		void exportObj(const char* path)
 		{
-			//aiScene* scene = new aiScene();
-			//aiMesh* mesh = new aiMesh();
-			//mesh->mPrimitiveTypes =AI_PRIMITIVE_TYPE 
+			aiScene* scene = new aiScene();
+			aiMesh* mesh = new aiMesh();
+			//mesh->mPrimitiveTypes =AI_PRIMITIVE_TYPE;
+
+			Assimp::Exporter exporter;
+			const aiExportFormatDesc* format = exporter.GetExportFormatDescription(0);
+			aiReturn ret = exporter.Export(scene, format->id, path, scene->mFlags);
+			Logger::get()<<"[error::exporter]"<<exporter.GetErrorString()<<Logger::endl;
 		}
 	private:
 		void updateNums()

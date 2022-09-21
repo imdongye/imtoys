@@ -50,7 +50,6 @@
 
 namespace fqms
 {
-
 	struct vector3
 	{
 		double x, y, z;
@@ -153,12 +152,12 @@ namespace fqms
 			vec3f a = v, b = *this;
 			double dot = v.x * x + v.y * y + v.z * z;
 			double len = a.length() * b.length();
-			if (len == 0)
+			if( len == 0 )
 				len = 0.00001f;
 			double input = dot / len;
-			if (input < -1)
+			if( input < -1 )
 				input = -1;
-			if (input > 1)
+			if( input > 1 )
 				input = 1;
 			return (double)acos(input);
 		}
@@ -168,13 +167,13 @@ namespace fqms
 			vec3f a = v, b = *this;
 			double dot = a.x * b.x + a.y * b.y + a.z * b.z;
 			double len = a.length() * b.length();
-			if (len == 0)
+			if( len == 0 )
 				len = 1;
 
 			vec3f plane;
 			plane.cross(b, w);
 
-			if (plane.x * a.x + plane.y * a.y + plane.z * a.z > 0)
+			if( plane.x * a.x + plane.y * a.y + plane.z * a.z > 0 )
 				return (double)-acos(dot / len);
 
 			return (double)acos(dot / len);
@@ -198,17 +197,17 @@ namespace fqms
 		}
 		inline void clamp(double min, double max)
 		{
-			if (x < min)
+			if( x < min )
 				x = min;
-			if (y < min)
+			if( y < min )
 				y = min;
-			if (z < min)
+			if( z < min )
 				z = min;
-			if (x > max)
+			if( x > max )
 				x = max;
-			if (y > max)
+			if( y > max )
 				y = max;
-			if (z > max)
+			if( z > max )
 				z = max;
 		}
 		inline vec3f rot_z(double a)
@@ -449,18 +448,10 @@ namespace fqms
 	//                 5..8 are good numbers
 	//                 more iterations yield higher quality
 	//
-
 	void simplify_mesh(int target_count, double agressiveness = 7, bool verbose = false)
 	{
-		int x = 0;
-		std::cout << "version : ";
-		std::cin >> x;
-		std::cout << "version : " << x << std::endl;
 		// init
-		loopi(0, triangles.size())
-		{
-			triangles[i].deleted = 0;
-		}
+		loopi(0, triangles.size()) triangles[i].deleted = 0;
 
 		// main iteration loop
 		int deleted_triangles = 0;
@@ -468,14 +459,12 @@ namespace fqms
 		int triangle_count = triangles.size();
 		// int iteration = 0;
 		// loop(iteration,0,100)
-		for (int iteration = 0; iteration < 100; iteration++)
-		{
-			if (triangle_count - deleted_triangles <= target_count)
+		for( int iteration = 0; iteration < 100; iteration++ ) {
+			if( triangle_count - deleted_triangles <= target_count )
 				break;
 
 			// update mesh once in a while
-			if (iteration % 5 == 0)
-			{
+			if( iteration % 5 == 0 ) {
 				update_mesh(iteration);
 			}
 
@@ -489,20 +478,15 @@ namespace fqms
 			// If it does not, try to adjust the 3 parameters
 			//
 
-			double threshold;
-			if (x == 1)
-				threshold = 0.000000001 * pow(double(iteration + 3), agressiveness);
-			else
-			{
-				// Error 최대값 기준
-				double max = 0;
-				loopi(0, triangles.size()) if (max < triangles[i].err[3]) max = triangles[i].err[3];
-				threshold = (0.01 * iteration) * max;
-			}
+			/* 백업 고정 threshold */
+			//double threshold = 0.000000001 * pow(double(iteration + 3), agressiveness);
+			/* Error 최대값 기준 */
+			double max = 0;
+			loopi(0, triangles.size()) if( max < triangles[i].err[3] ) max = triangles[i].err[3];
+			double threshold = (0.01 * iteration) * max;
 
 			// target number of triangles reached ? Then break
-			if ((verbose) && (iteration % 5 == 0))
-			{
+			if( (verbose) && (iteration % 5 == 0) ) {
 				lim::Logger::get().log("iteration %d - triangles %d threshold %g\n", iteration, triangle_count - deleted_triangles, threshold);
 			}
 
@@ -510,43 +494,34 @@ namespace fqms
 			loopi(0, triangles.size())
 			{
 				Triangle &t = triangles[i];
-				if (t.err[3] > threshold)
-					continue;
-				if (t.deleted)
-					continue;
-				if (t.dirty)
-					continue;
+				if( t.err[3] > threshold ) continue;
+				if( t.deleted ) continue;
+				if( t.dirty ) continue;
 
-				loopj(0, 3) if (t.err[j] < threshold)
-				{
-
+				loopj(0, 3) if( t.err[j] < threshold ) {
 					int i0 = t.v[j];
 					Vertex &v0 = vertices[i0];
 					int i1 = t.v[(j + 1) % 3];
 					Vertex &v1 = vertices[i1];
-					// Border check
-					/* 백업 if( v0.border != v1.border )  continue; */
-					if (v0.border || v1.border)
+
+					/* modified */
+					if( v0.border || v1.border )
 						continue;
 
 					// Compute vertex to collapse to
 					vec3f p;
 					calculate_error(i0, i1, p);
+
 					deleted0.resize(v0.tcount); // normals temporarily
 					deleted1.resize(v1.tcount); // normals temporarily
+
 					// don't remove if flipped
-					if (flipped(p, i0, i1, v0, v1, deleted0))
+					if( flipped(p, i0, i1, v0, v1, deleted0) )
+						continue;
+					if( flipped(p, i1, i0, v1, v0, deleted1) )
 						continue;
 
-					if (flipped(p, i1, i0, v1, v0, deleted1))
-						continue;
-
-					/* 백업
-					if( (t.attr & TEXCOORD) == TEXCOORD )
-					{
-						update_uvs(i0, v0, p, deleted0);
-						update_uvs(i0, v1, p, deleted1);
-					}*/
+					/* modified */
 					update_uvs(i0, v0, p, deleted0);
 					update_uvs(i0, v1, p, deleted1);
 
@@ -560,10 +535,9 @@ namespace fqms
 
 					int tcount = refs.size() - tstart;
 
-					if (tcount <= v0.tcount)
-					{
+					if( tcount <= v0.tcount ) {
 						// save ram
-						if (tcount)
+						if( tcount )
 							memcpy(&refs[v0.tstart], &refs[tstart], tcount * sizeof(Ref));
 					}
 					else
@@ -572,15 +546,132 @@ namespace fqms
 
 					v0.tcount = tcount;
 					break;
-				}
+				} //! per edge
 				// done?
-				if (triangle_count - deleted_triangles <= target_count)
+				if( triangle_count - deleted_triangles <= target_count )
 					break;
+			} //! per triangle
+		} //! per iteration
+		compact_mesh(); // clean up mesh
+	} //! simplify_mesh()
+
+
+	//* 테스트할 함수 *//
+	void simplify_mesh_max_threshold(int target_count, bool verbose = false)
+	{
+		// init
+		loopi(0, triangles.size()) triangles[i].deleted = 0;
+
+		// main iteration loop
+		int deleted_triangles = 0;
+		std::vector<int> deleted0, deleted1;
+		int triangle_count = triangles.size();
+		// int iteration = 0;
+		// loop(iteration,0,100)
+		for( int iteration = 0; iteration < 100; iteration++ ) {
+			if( triangle_count - deleted_triangles <= target_count )
+				break;
+
+			// update mesh once in a while
+			if( iteration % 5 == 0 ) {
+				update_mesh(iteration);
 			}
-		}
-		// clean up mesh
-		compact_mesh();
-	} // simplify_mesh()
+
+			// clear dirty flag
+			loopi(0, triangles.size()) triangles[i].dirty = 0;
+
+			//
+			// All triangles with edges below the threshold will be removed
+			//
+			// The following numbers works well for most models.
+			// If it does not, try to adjust the 3 parameters
+			//
+
+			/* 백업 고정 threshold */
+			//double threshold = 0.000000001 * pow(double(iteration + 3), agressiveness);
+			/* Error 최대값 기준 */
+			double max = 0;
+			loopi(0, triangles.size()) if( max < triangles[i].err[3] ) max = triangles[i].err[3];
+			double threshold = (0.01 * iteration) * max;
+
+			// target number of triangles reached ? Then break
+			if( (verbose) && (iteration % 5 == 0) ) {
+				lim::Logger::get().log("iteration %d - triangles %d threshold %g\n", iteration, triangle_count - deleted_triangles, threshold);
+			}
+
+			// remove vertices & mark deleted triangles
+			loopi(0, triangles.size())
+			{
+				Triangle &t = triangles[i];
+				if( t.err[3] > threshold ) continue;
+				if( t.deleted ) continue;
+				if( t.dirty ) continue;
+
+				loopj(0, 3) if( t.err[j] < threshold ) {
+					int i0 = t.v[j];
+					Vertex &v0 = vertices[i0];
+					int i1 = t.v[(j + 1) % 3];
+					Vertex &v1 = vertices[i1];
+
+
+					// Border check
+					/* 백업 if( v0.border != v1.border )  continue; */
+					if( v0.border || v1.border )
+						continue;
+
+
+					// Compute vertex to collapse to
+					vec3f p;
+					calculate_error(i0, i1, p);
+
+					deleted0.resize(v0.tcount); // normals temporarily
+					deleted1.resize(v1.tcount); // normals temporarily
+
+					// don't remove if flipped
+					if( flipped(p, i0, i1, v0, v1, deleted0) )
+						continue;
+					if( flipped(p, i1, i0, v1, v0, deleted1) )
+						continue;
+
+
+					/* 백업
+					if( (t.attr & TEXCOORD) == TEXCOORD ) {
+						update_uvs(i0, v0, p, deleted0);
+						update_uvs(i0, v1, p, deleted1);
+					}*/
+					update_uvs(i0, v0, p, deleted0);
+					update_uvs(i0, v1, p, deleted1);
+
+
+					// not flipped, so remove edge
+					v0.p = p;
+					v0.q = v1.q + v0.q;
+					int tstart = refs.size();
+
+					update_triangles(i0, v0, deleted0, deleted_triangles);
+					update_triangles(i0, v1, deleted1, deleted_triangles);
+
+					int tcount = refs.size() - tstart;
+
+					if( tcount <= v0.tcount ) {
+						// save ram
+						if( tcount )
+							memcpy(&refs[v0.tstart], &refs[tstart], tcount * sizeof(Ref));
+					}
+					else
+						// append
+						v0.tstart = tstart;
+
+					v0.tcount = tcount;
+					break;
+				} //! per edge
+				// done?
+				if( triangle_count - deleted_triangles <= target_count )
+					break;
+			} //! per triangle
+		} //! per iteration
+		compact_mesh(); // clean up mesh
+	} //! simplify_mesh()
 
 	void simplify_mesh_lossless(bool verbose = false)
 	{
@@ -593,8 +684,7 @@ namespace fqms
 		int triangle_count = triangles.size();
 		// int iteration = 0;
 		// loop(iteration,0,100)
-		for (int iteration = 0; iteration < 9999; iteration++)
-		{
+		for( int iteration = 0; iteration < 9999; iteration++ ) {
 			// update mesh constantly
 			update_mesh(iteration);
 			// clear dirty flag
@@ -606,8 +696,7 @@ namespace fqms
 			// If it does not, try to adjust the 3 parameters
 			//
 			double threshold = DBL_EPSILON; // 1.0E-3 EPS;
-			if (verbose)
-			{
+			if( verbose ) {
 				lim::Logger::get().log("lossless iteration %d\n", iteration);
 			}
 
@@ -615,22 +704,18 @@ namespace fqms
 			loopi(0, triangles.size())
 			{
 				Triangle &t = triangles[i];
-				if (t.err[3] > threshold)
-					continue;
-				if (t.deleted)
-					continue;
-				if (t.dirty)
-					continue;
+				if( t.err[3] > threshold ) continue;
+				if( t.deleted ) continue;
+				if( t.dirty ) continue;
 
-				loopj(0, 3) if (t.err[j] < threshold)
-				{
+				loopj(0, 3) if( t.err[j] < threshold ) {
 					int i0 = t.v[j];
 					Vertex &v0 = vertices[i0];
 					int i1 = t.v[(j + 1) % 3];
 					Vertex &v1 = vertices[i1];
 
 					// Border check
-					if (v0.border != v1.border)
+					if( v0.border != v1.border )
 						continue;
 
 					// Compute vertex to collapse to
@@ -641,13 +726,12 @@ namespace fqms
 					deleted1.resize(v1.tcount); // normals temporarily
 
 					// don't remove if flipped
-					if (flipped(p, i0, i1, v0, v1, deleted0))
+					if( flipped(p, i0, i1, v0, v1, deleted0) )
 						continue;
-					if (flipped(p, i1, i0, v1, v0, deleted1))
+					if( flipped(p, i1, i0, v1, v0, deleted1) )
 						continue;
 
-					if ((t.attr & TEXCOORD) == TEXCOORD)
-					{
+					if( (t.attr & TEXCOORD) == TEXCOORD ) {
 						update_uvs(i0, v0, p, deleted0);
 						update_uvs(i0, v1, p, deleted1);
 					}
@@ -662,10 +746,9 @@ namespace fqms
 
 					int tcount = refs.size() - tstart;
 
-					if (tcount <= v0.tcount)
-					{
+					if( tcount <= v0.tcount ) {
 						// save ram
-						if (tcount)
+						if( tcount )
 							memcpy(&refs[v0.tstart], &refs[tstart], tcount * sizeof(Ref));
 					}
 					else
@@ -674,15 +757,14 @@ namespace fqms
 
 					v0.tcount = tcount;
 					break;
-				}
-			}
-			if (deleted_triangles <= 0)
+				} //! per edge
+			} //! per triangle
+			if( deleted_triangles <= 0 )
 				break;
 			deleted_triangles = 0;
-		} // for each iteration
-		// clean up mesh
-		compact_mesh();
-	} // simplify_mesh_lossless()
+		} //! per iteration
+		compact_mesh();// clean up mesh
+	} //! simplify_mesh_lossless()
 
 	// Check if a triangle flips when this edge is removed
 
@@ -692,14 +774,14 @@ namespace fqms
 		loopk(0, v0.tcount)
 		{
 			Triangle &t = triangles[refs[v0.tstart + k].tid];
-			if (t.deleted)
+			if( t.deleted )
 				continue;
 
 			int s = refs[v0.tstart + k].tvertex;
 			int id1 = t.v[(s + 1) % 3];
 			int id2 = t.v[(s + 2) % 3];
 
-			if (id1 == i1 || id2 == i1) // delete ?
+			if( id1 == i1 || id2 == i1 ) // delete ?
 			{
 
 				deleted[k] = 1;
@@ -709,13 +791,13 @@ namespace fqms
 			d1.normalize();
 			vec3f d2 = vertices[id2].p - p;
 			d2.normalize();
-			if (fabs(d1.dot(d2)) > 0.999)
+			if( fabs(d1.dot(d2)) > 0.999 )
 				return true;
 			vec3f n;
 			n.cross(d1, d2);
 			n.normalize();
 			deleted[k] = 0;
-			if (n.dot(t.n) < 0.2)
+			if( n.dot(t.n) < 0.2 )
 				return true;
 		}
 		return false;
@@ -729,9 +811,9 @@ namespace fqms
 		{
 			Ref &r = refs[v.tstart + k];
 			Triangle &t = triangles[r.tid];
-			if (t.deleted)
+			if( t.deleted )
 				continue;
-			if (deleted[k])
+			if( deleted[k] )
 				continue;
 			vec3f p1 = vertices[t.v[0]].p;
 			vec3f p2 = vertices[t.v[1]].p;
@@ -749,10 +831,9 @@ namespace fqms
 		{
 			Ref &r = refs[v.tstart + k];
 			Triangle &t = triangles[r.tid];
-			if (t.deleted)
+			if( t.deleted )
 				continue;
-			if (deleted[k])
-			{
+			if( deleted[k] ) {
 				t.deleted = 1;
 				deleted_triangles++;
 				continue;
@@ -771,11 +852,10 @@ namespace fqms
 
 	void update_mesh(int iteration)
 	{
-		if (iteration > 0) // compact triangles
+		if( iteration > 0 ) // compact triangles
 		{
 			int dst = 0;
-			loopi(0, triangles.size()) if (!triangles[i].deleted)
-			{
+			loopi(0, triangles.size()) if( !triangles[i].deleted ) {
 				triangles[dst++] = triangles[i];
 			}
 			triangles.resize(dst);
@@ -822,15 +902,14 @@ namespace fqms
 		// recomputing during the simplification is not required,
 		// but mostly improves the result for closed meshes
 		//
-		if (iteration == 0)
-		{
+		if( iteration == 0 ) {
 			// Identify boundary : vertices[].border=0,1
 
 			std::vector<int> vcount, vids;
 
 			loopi(0, vertices.size())
 				vertices[i]
-					.border = 0;
+				.border = 0;
 
 			loopi(0, vertices.size())
 			{
@@ -844,14 +923,12 @@ namespace fqms
 					loopk(0, 3)
 					{
 						int ofs = 0, id = t.v[k];
-						while (ofs < vcount.size())
-						{
-							if (vids[ofs] == id)
+						while( ofs < vcount.size() ) {
+							if( vids[ofs] == id )
 								break;
 							ofs++;
 						}
-						if (ofs == vcount.size())
-						{
+						if( ofs == vcount.size() ) {
 							vcount.push_back(1);
 							vids.push_back(id);
 						}
@@ -859,14 +936,14 @@ namespace fqms
 							vcount[ofs]++;
 					}
 				}
-				loopj(0, vcount.size()) if (vcount[j] == 1)
+				loopj(0, vcount.size()) if( vcount[j] == 1 )
 					vertices[vids[j]]
-						.border = 1;
+					.border = 1;
 			}
 			// initialize errors
 			loopi(0, vertices.size())
 				vertices[i]
-					.q = SymetricMatrix(0.0);
+				.q = SymetricMatrix(0.0);
 
 			loopi(0, triangles.size())
 			{
@@ -899,16 +976,14 @@ namespace fqms
 		{
 			vertices[i].tcount = 0;
 		}
-		loopi(0, triangles.size()) if (!triangles[i].deleted)
-		{
+		loopi(0, triangles.size()) if( !triangles[i].deleted ) {
 			Triangle &t = triangles[i];
 			triangles[dst++] = t;
 			loopj(0, 3) vertices[t.v[j]].tcount = 1;
 		}
 		triangles.resize(dst);
 		dst = 0;
-		loopi(0, vertices.size()) if (vertices[i].tcount)
-		{
+		loopi(0, vertices.size()) if( vertices[i].tcount ) {
 			vertices[i].tstart = dst;
 			vertices[dst].p = vertices[i].p;
 			dst++;
@@ -938,8 +1013,7 @@ namespace fqms
 		bool border = vertices[id_v1].border & vertices[id_v2].border;
 		double error = 0;
 		double det = q.det(0, 1, 2, 1, 4, 5, 2, 5, 7);
-		if (det != 0 && !border)
-		{
+		if( det != 0 && !border ) {
 
 			// q_delta is invertible
 			p_result.x = -1 / det * (q.det(1, 2, 3, 4, 5, 6, 5, 7, 8)); // vx = A41/det(q_delta)
@@ -948,8 +1022,7 @@ namespace fqms
 
 			error = vertex_error(q, p_result.x, p_result.y, p_result.z);
 		}
-		else
-		{
+		else {
 			// det = 0 -> try to find best result
 			vec3f p1 = vertices[id_v1].p;
 			vec3f p2 = vertices[id_v2].p;
@@ -958,11 +1031,11 @@ namespace fqms
 			double error2 = vertex_error(q, p2.x, p2.y, p2.z);
 			double error3 = vertex_error(q, p3.x, p3.y, p3.z);
 			error = min(error1, min(error2, error3));
-			if (error1 == error)
+			if( error1 == error )
 				p_result = p1;
-			if (error2 == error)
+			if( error2 == error )
 				p_result = p2;
-			if (error3 == error)
+			if( error3 == error )
 				p_result = p3;
 		}
 		return error;
@@ -971,17 +1044,12 @@ namespace fqms
 
 namespace fqms
 {
-	glm::vec3 backup_color;
-
 	void updateGlobal(lim::Mesh *mesh)
 	{
-		backup_color = mesh->color;
-
 		fqms::vertices.clear();
 		fqms::triangles.clear();
 
-		for (lim::n_mesh::Vertex &v : mesh->vertices)
-		{
+		for( lim::n_mesh::Vertex &v : mesh->vertices ) {
 			fqms::Vertex temp;
 			temp.p.x = v.p.x;
 			temp.p.y = v.p.y;
@@ -992,33 +1060,28 @@ namespace fqms
 		fqms::triangles.resize(mesh->indices.size() / 3);
 		int triCount = 0;
 		int vertCount = 0;
-		for (GLuint idx : mesh->indices)
-		{
+		for( GLuint idx : mesh->indices ) {
 			lim::n_mesh::Vertex &overt = mesh->vertices[idx]; // origin
 			fqms::Triangle &ttri = fqms::triangles[triCount];
 			ttri.v[vertCount] = idx;
 			ttri.uvs[vertCount] = vec3f(overt.uv.x, overt.uv.y, 1);
 			ttri.n = vec3f(overt.n.x, overt.n.y, overt.n.z);
 			vertCount++;
-			if (vertCount == 3)
-			{
+			if( vertCount == 3 ) {
 				vertCount = 0;
 				triCount++;
 			}
 		}
-		if (triCount * 3 != mesh->indices.size() || mesh->indices.size() % 3 != 0)
-		{
+		if( triCount * 3 != mesh->indices.size() || mesh->indices.size() % 3 != 0 ) {
 			lim::Logger::get().log(stderr, "simplify failed : mesh is not triangle mesh\n");
 		}
 	}
-	void updateMesh(lim::Mesh *mesh)
+	void loadFromGlobal(lim::Mesh *mesh)
 	{
-		mesh->color = backup_color;
 		mesh->vertices.clear();
 		mesh->indices.clear();
 
-		for (fqms::Vertex &v : fqms::vertices)
-		{
+		for( fqms::Vertex &v : fqms::vertices ) {
 			lim::n_mesh::Vertex temp;
 			temp.p.x = v.p.x;
 			temp.p.y = v.p.y;
@@ -1030,10 +1093,8 @@ namespace fqms
 		mesh->indices.resize(fqms::triangles.size() * 3);
 
 		int idxCount = 0;
-		for (fqms::Triangle &tri : fqms::triangles)
-		{
-			for (int i = 0; i < 3; i++)
-			{
+		for( fqms::Triangle &tri : fqms::triangles ) {
+			for( int i = 0; i < 3; i++ ) {
 				mesh->indices[idxCount++] = tri.v[i];
 				// 삼각형 노멀을 공유
 				mesh->vertices[tri.v[i]].n = glm::vec3(tri.n.x, tri.n.y, tri.n.z);
@@ -1043,42 +1104,53 @@ namespace fqms
 		mesh->setupMesh();
 	}
 
-	lim::Mesh *simplifyMesh(lim::Mesh *mesh, float lived_pct, int agressiveness = 7)
+	lim::Mesh *simplifyMesh(lim::Mesh *mesh, float lived_pct
+							, int version = 0, int agressiveness=7, bool verbose=true)
 	{
-		if (lived_pct > 1 || lived_pct < 0)
-		{
+		if( lived_pct > 1 || lived_pct < 0 ) {
 			lim::Logger::get().log("error : simplify percent range error");
 			return nullptr;
 		}
 		updateGlobal(mesh);
-
-		lim::Logger::get().log("\nsimplify mesh : %s, %d tris\n", mesh->name.c_str(), fqms::triangles.size());
-
 		int target_count = (int)(fqms::triangles.size() * lived_pct);
-		double start = glfwGetTime();
-		fqms::simplify_mesh(target_count, 7.0, true);
 
-		lim::Logger::get().log("\nsimplify mesh : %s, %d tris, %lfsec\n", mesh->name.c_str(), fqms::triangles.size(), glfwGetTime() - start);
+		switch( version ) {
+		case 0:
+			fqms::simplify_mesh(target_count, agressiveness, verbose);
+			break;
+		case 1:
+			fqms::simplify_mesh_max_threshold(target_count, verbose);
+			break;
+		case 2:
+			fqms::simplify_mesh_lossless(verbose);
+			break;
+		}
 
 		lim::Mesh *result = new lim::Mesh(mesh->name.c_str());
+		result->color = mesh->color;
 		result->textures = mesh->textures;
-		updateMesh(result);
+		loadFromGlobal(result);
 		return result;
 	}
 
-	lim::Model *simplifyModel(lim::Model *model, float lived_pct = 0.8f)
+	// agressiveness : sharpness to increase the threshold.
+	//                 5..8 are good numbers
+	//                 more iterations yield higher quality
+	// version 0 : original (use agressiveness)
+	//		   1 : lossless
+	//		   2 : max_consider_thresold
+	//
+	lim::Model *simplifyModel(const lim::Model *model, float lived_pct = 0.8f
+							  , int version = 0, int agressiveness=7, bool verbose=true)
 	{
-
-		double start = glfwGetTime();
-		lim::Logger::get().log("\nsimplify model : %s, %d vertices\n", model->name.c_str(), model->verticesNum);
 		std::vector<lim::Mesh *> new_meshes;
-		for (lim::Mesh *mesh : model->meshes)
-		{
-			lim::Mesh *simp_mesh = simplifyMesh(mesh, lived_pct);
-			if (simp_mesh != nullptr)
+		for( lim::Mesh *mesh : model->meshes ) {
+
+			lim::Mesh *simp_mesh = simplifyMesh(mesh, lived_pct, version, agressiveness, verbose);
+
+			if( simp_mesh != nullptr )
 				new_meshes.push_back(simp_mesh);
 		}
-		lim::Logger::get().simpTime = glfwGetTime() - start;
 		lim::Model *result = new lim::Model(*model, new_meshes);
 		return result;
 	}

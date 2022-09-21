@@ -29,7 +29,7 @@ namespace lim
 		float cameraMoveSpeed;
 		Light light;
 
-		const char* outTexPath = "result/";
+		const char* exportPath = "result/";
 		int selectedBakeSizeIdx;
 		std::vector<const char*> bakeSizeList;
 		Framebuffer bakedNormalMap;
@@ -105,18 +105,52 @@ namespace lim
 	private:
 		void loadModel(std::string_view path)
 		{
-			Logger::get().log("loading form %s ...\n", path.data());
+			double start = glfwGetTime();
+			Logger::get().log("Loading %s..... . ... ..... .. .... .. . . .. .\n", path.data());
 			Program* usedProg = models[0]->program;
 			delete models[0]; models[0]=nullptr;
 			models[0] = new Model(path.data(), usedProg, true);
 			scenes[0]->setModel(models[0]);
 			scenes[1]->setModel(models[0]);
+			AppPref::get().pushPathWithoutDup(path.data());
+
+			double loadTime = glfwGetTime() - start;
+			Logger::get().log("Done! in %.3f sec.  \n", loadTime);
 		}
-		void simplifyModel(float pct)
+		void simplifyModel(float lived_pct = 0.8f
+						   , int version = 0, int agressiveness=7, bool verbose=true)
 		{
+			double start = glfwGetTime();
+			Logger::get().log("\nSimplifing %s..... . ... ... .. .. . .  .\n", models[0]->name.c_str());
+
 			if( models[1] != nullptr ) delete models[1];
-			models[1] = fqms::simplifyModel(scenes[0]->model, pct);
+
+			models[1] = fqms::simplifyModel(scenes[0]->model, lived_pct, version, agressiveness, verbose);
 			scenes[1]->setModel(models[1]);
+
+			double simpTime = glfwGetTime() - start;
+			Logger::get().simpTime = simpTime;
+			Logger::get().log("Done! %d => %d in %.3f sec.  \n"
+							  , models[0]->verticesNum, models[1]->verticesNum, simpTime);
+		}
+		// 0:obj, 1:fbx, ...
+		void exportModel(int format)
+		{
+			if( models[1] == nullptr ) {
+				Logger::get()<<"need simplification"<<Logger::endl;
+				return;
+			}
+			double start = glfwGetTime();
+			std::string fullPath(exportPath);
+			fullPath += models[1]->name+".png";
+			Logger::get().log("Exporting %s.. .. ...... ...  .... .. . .... . .\n", fullPath);
+			switch( format ) {
+			case 0:
+				models[1]->exportObj(exportPath);
+				break;
+			}
+
+			Logger::get().log("Done! in %.3f sec.  \n", glfwGetTime()-start);
 		}
 		// From: https://stackoverflow.com/questions/62007672/png-saved-from-opengl-framebuffer-using-stbi-write-png-is-shifted-to-the-right
 		void bakeNormalMap()
@@ -125,7 +159,7 @@ namespace lim
 			GLuint w = bakedNormalMap.width;
 			GLuint h = bakedNormalMap.height;
 			static GLubyte* data = new GLubyte[3*w*h];
-			std::string fullPath(outTexPath);
+			std::string fullPath(exportPath);
 			fullPath += models[0]->name+".png";
 
 			bakedNormalMap.bind();
@@ -171,10 +205,10 @@ namespace lim
 					}
 					if( ImGui::BeginMenu("Export") ) {
 						if( ImGui::MenuItem(".obj") ) {
-
+							exportModel(0);
 						}
 						if( ImGui::MenuItem(".fbx") ) {
-
+							exportModel(1);
 						}
 						ImGui::EndMenu();
 					}
@@ -191,22 +225,28 @@ namespace lim
 
 			Logger::get().drawImGui();
 
-
 			if( ImGui::Begin("Simplify Options") ) {
-				ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-
+				// simplification
 				static float pct = 0.8f;
 				ImGui::SliderFloat("percent", &pct, 0.0f, 1.0f);
-
+				static int selectedVersion = 1;
+				const char* versionComboList[3] ={"agressiveness", "max_considered", "lossless"};
+				ImGui::Combo("version", &selectedVersion, versionComboList, 3);
+				static int agressiveness = 7;
+				ImGui::SliderInt("agressiveness", &agressiveness, 5, 8);
+				static bool verbose = true;
+				ImGui::Checkbox("verbose", &verbose);
 				if( ImGui::Button("Simplify") ) {
-					simplifyModel(pct);
+					simplifyModel(pct, selectedVersion, agressiveness, verbose);
 				}
+
 				ImGui::SameLine();
 				ImGui::Text("target triangles = %d", static_cast<int>(scenes[0]->model->trianglesNum*pct));
 				ImGui::Text("simplified in %lf sec", Logger::get().simpTime);
+				ImGui::NewLine();
 				ImGui::Separator();
 
-
+				// baking
 				if( ImGui::Combo("texture resolution", &selectedBakeSizeIdx, bakeSizeList.data(), bakeSizeList.size()) ) {
 					bakedNormalMap.resize(atoi(bakeSizeList[selectedBakeSizeIdx]));
 				}
@@ -424,7 +464,6 @@ namespace lim
 		{
 			for( int i = 0; i < count; i++ ) {
 				loadModel(paths[i]);
-				AppPref::get().pushPathWithoutDup(paths[i]);
 				break;
 			}
 		}

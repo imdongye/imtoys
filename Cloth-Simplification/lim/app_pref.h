@@ -109,7 +109,7 @@ namespace lim
 			std::string temp = ojson.dump(2);
 			//Logger::get()<<"write "<<FILE_PATH<<Logger::endl<<temp<<Logger::endl;
 		}
-		void pushPathWithoutDup(std::string_view path)
+		void pushPathWithoutDup(const std::string_view path)
 		{
 			// 절대경로를 상대경로로
 			std::filesystem::path ap(path.data());

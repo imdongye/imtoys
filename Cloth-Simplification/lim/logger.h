@@ -56,6 +56,9 @@ namespace lim
 				lines.clear();
 				lines.push_back(" ");
 			}
+			ImGui::SameLine();
+			ImGui::Text("        %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+
 			ImGui::Separator();
 
 			ImGui::BeginChild("Log", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
