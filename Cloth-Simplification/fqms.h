@@ -479,11 +479,7 @@ namespace fqms
 			//
 
 			/* 백업 고정 threshold */
-			//double threshold = 0.000000001 * pow(double(iteration + 3), agressiveness);
-			/* Error 최대값 기준 */
-			double max = 0;
-			loopi(0, triangles.size()) if( max < triangles[i].err[3] ) max = triangles[i].err[3];
-			double threshold = (0.01 * iteration) * max;
+			double threshold = 0.000000001 * pow(double(iteration + 3), agressiveness);
 
 			// target number of triangles reached ? Then break
 			if( (verbose) && (iteration % 5 == 0) ) {
