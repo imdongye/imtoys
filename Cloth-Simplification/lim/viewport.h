@@ -13,7 +13,7 @@ namespace lim
 	class Viewport
 	{
 	public:
-		static GLuint id_generator;
+		inline static GLuint id_generator = 0;
 		GLuint id;
 		Camera* camera;
 		Framebuffer* framebuffer;
@@ -72,6 +72,5 @@ namespace lim
 			ImGui::PopStyleVar();
 		}
 	};
-	GLuint Viewport::id_generator = 0;
 } // ! namespace lim
 #endif

@@ -21,8 +21,9 @@ namespace lim
 	class Framebuffer
 	{
 	protected:
-		static Program toScrProgram;
-		static GLuint quadVAO;
+		/* c++17 non-const static data member can initialize in declaration with inline keyword*/
+		inline static Program toScrProgram = Program("toScr");
+		inline static GLuint quadVAO = 0;
 	public:
 		GLuint fbo, colorTex;
 	public:
@@ -33,7 +34,6 @@ namespace lim
 		{
 			fbo=colorTex=0;
 			width=height=0;
-
 			if( toScrProgram.ID==0 ) {
 				toScrProgram.attatch("fb_to_scr.vs").attatch("fb_to_scr.fs").link();
 				GLuint loc = glGetUniformLocation(toScrProgram.use(), "screenTex");
@@ -177,8 +177,6 @@ namespace lim
 			glBindVertexArray(0);
 		}
 	};
-	Program Framebuffer::toScrProgram("toScr");
-	GLuint Framebuffer::quadVAO = 0;
 
 
 	class TxFramebuffer: public Framebuffer

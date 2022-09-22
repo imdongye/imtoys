@@ -7,7 +7,7 @@
 //
 //	TODO list:
 //  1. bind with method ( 일단 gltools의 오버로딩된 bind함수 복붙 )
-//	2. include 기능
+//	2. include 기능 pre processor
 //
 
 #ifndef PROGRAM_H
