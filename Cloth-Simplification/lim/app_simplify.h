@@ -143,7 +143,7 @@ namespace lim
 			double start = glfwGetTime();
 			std::string fullPath(exportPath);
 			fullPath += models[1]->name+".png";
-			Logger::get().log("Exporting %s.. .. ...... ...  .... .. . .... . .\n", fullPath);
+			Logger::get().log("Exporting %s.. .. ...... ...  .... .. . .... . .\n", fullPath.c_str());
 			switch( format ) {
 			case 0:
 				models[1]->exportObj(exportPath);

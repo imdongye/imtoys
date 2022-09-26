@@ -36,9 +36,12 @@ namespace lim
 		// chaining //
 		Program& clear()
 		{
-			if( ID ) glDeleteProgram(ID);
-			ID = 0;
-			clearWithoutID();
+            if( ID ) glDeleteProgram(ID);
+            if( vertID ) glDeleteShader(vertID);
+            if( fragID ) glDeleteShader(fragID);
+            if( geomID ) glDeleteShader(geomID);
+            if( compID ) glDeleteShader(compID);
+            ID = vertID = fragID = geomID = compID = 0;
 			return *this;
 		}
 		Program& operator+=(const char* path)
@@ -93,8 +96,7 @@ namespace lim
 			glLinkProgram(ID);
 			glUseProgram (ID);
 			checkCompileErrors(ID, "program");
-			clearWithoutID(); // 링크된 후 필요없음
-			Logger::get().log("[program %s] linking success\n\n", name.c_str());
+            Logger::get().log("[program %s] linking success\n\n", name.c_str());
 			return *this;
 		}
 		GLuint use() const
@@ -111,15 +113,6 @@ namespace lim
 			return *this;
 		}
 	private:
-		void clearWithoutID()
-		{
-			if( vertID ) glDeleteShader(vertID);
-			if( fragID ) glDeleteShader(fragID);
-			if( geomID ) glDeleteShader(geomID);
-			if( compID ) glDeleteShader(compID);
-			vertID = fragID = geomID = compID = 0;
-
-		}
 		static inline void checkCompileErrors(GLuint shader, std::string type)
 		{
 			GLint success;
@@ -208,7 +201,6 @@ namespace lim
 	{
 		glUniform3fv(glGetUniformLocation(prog, name.c_str()), n, (GLfloat*)v);
 	}
-
 }
 
 #endif

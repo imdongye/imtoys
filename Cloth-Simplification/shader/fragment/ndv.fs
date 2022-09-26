@@ -15,6 +15,6 @@ void main()
     vec3 N = normalize (cross (dFdx(wPos.xyz), dFdy(wPos.xyz)));
 	//vec3 N = wNorm;
 
-    FragColor = vec4(dot(N, V)*vec3(1),1);
+    FragColor = vec4(max(dot(N, V),0)*vec3(1),1);
 	FragColor = pow(FragColor, vec4(1/gamma));
 }
