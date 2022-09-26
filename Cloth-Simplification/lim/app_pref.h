@@ -84,6 +84,10 @@ namespace lim
 			static AppPref app_pref;
 			return app_pref;
 		}
+		void clearData()
+		{
+			recentModelPaths.clear();
+		}
 		void save()
 		{
 			Json ojson;
@@ -124,10 +128,6 @@ namespace lim
 				recentModelPaths.erase(samePathPos);
 			if( rp.size()<1 ) return;
 			recentModelPaths.emplace_back(rp);
-		}
-		void clearData()
-		{
-			recentModelPaths.clear();
 		}
 	};
 }

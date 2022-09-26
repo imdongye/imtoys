@@ -184,7 +184,7 @@ namespace lim
 			renderImGui();
 
 			/* render to screen */
-			//scenes.back()->render(0, scr_width, scr_height, mainCamera);
+			//scenes[0]->render(0, scr_width, scr_height, camera[0]);
 		}
 		void renderImGui()
 		{
@@ -314,7 +314,7 @@ namespace lim
 				data->DesiredSize.x = LIM_MAX(data->DesiredSize.x, data->DesiredSize.y);
 				data->DesiredSize.y = data->DesiredSize.x;
 			});
-			if( ImGui::Begin("Baked Normal Map") && bakedNormalMap.renderable() ) {
+			if( ImGui::Begin("Baked Normal Map") ) {
 				ImVec2 vMin = ImGui::GetWindowContentRegionMin();
 				ImVec2 vMax = ImGui::GetWindowContentRegionMax();
 				glm::vec2 rectSize{vMax.x-vMin.x, vMax.y-vMin.y};
@@ -431,7 +431,6 @@ namespace lim
 						camera.rotateCamera(xoff/w*160.f, yoff/h*160.f);
 						camera.updateFreeViewMat();
 					}
-
 				}
 				vp->cursor_pos_x = xPos; vp->cursor_pos_y = yPos;
 			}
@@ -454,8 +453,13 @@ namespace lim
 			for( Viewport* vp : viewports ) {
 				if( vp->focused == false ) continue;
 				Camera& camera = *vp->camera;
-				camera.shiftZoom(yoff*10.f);
-				camera.updateProjMat();
+
+				camera.rotateCamera(xoff, yoff);
+				camera.updatePivotViewMat();
+				if( 0 ) {
+					camera.shiftZoom(yoff*10.f);
+					camera.updateProjMat();
+				}
 			}
 		}
 		void win_size_callback(int width, int height)

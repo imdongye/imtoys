@@ -77,7 +77,6 @@ namespace lim
 		void render(Viewport* vp)
 		{
 			Framebuffer& fb =  *(vp->framebuffer);
-			if( fb.renderable() == false ) return;
 
 			if( light.shadowEnabled ) drawShadowMap();
 

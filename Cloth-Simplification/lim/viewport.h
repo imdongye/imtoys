@@ -13,6 +13,7 @@ namespace lim
 	class Viewport
 	{
 	public:
+		/* c++17 non-const static data member can initialize in declaration with inline keyword*/
 		inline static GLuint id_generator = 0;
 		GLuint id;
 		Camera* camera;

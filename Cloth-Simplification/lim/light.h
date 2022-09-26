@@ -18,7 +18,8 @@ namespace lim
 	class Light // direction
 	{
 	public:
-		static Program shadowProg;
+		inline static Program shadowProg = Program("shadowMap");
+
 		const GLuint shadowMapSize = 1024;
 		const float shadowZNaer = 3;
 		const float shadowZFar = 6;
@@ -41,8 +42,7 @@ namespace lim
 		Light(float _yaw=58.f, float _pitch=51.f, glm::vec3 _color={1,1,1}, float _intensity = 1)
 			:yaw(_yaw), pitch(_pitch), color(_color), intensity(_intensity), shadowMap(), shadowEnabled(true)
 		{
-			if( shadowProg.ID==0 )
-			{
+			if( shadowProg.ID==0 ) {
 				shadowProg.attatch("pos.vs").attatch("depth.fs").link();
 			}
 			shadowMap.clearColor = glm::vec4(1);
@@ -77,8 +77,7 @@ namespace lim
 			setUniform(pid, "lightDir", direction);
 			setUniform(pid, "lightColor", color);
 			setUniform(pid, "lightInt", intensity);
-			if( shadowEnabled )
-			{
+			if( shadowEnabled ) {
 				setUniform(pid, "shadowEnabled", 1);
 				setUniform(pid, "shadowVP", vpMat);
 				/* slot을 shadowMap은 뒤에서 부터 사용 texture은 앞에서 부터 사용 */
@@ -102,6 +101,5 @@ namespace lim
 			shadowMap.unbind();
 		}
 	};
-	Program Light::shadowProg("shadowMap");
 }
 #endif

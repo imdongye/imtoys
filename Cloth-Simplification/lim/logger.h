@@ -65,7 +65,7 @@ namespace lim
 			// Multiple calls to Text(), manually coarsely clipped - demonstrate how to use the ImGuiListClipper helper.
 			ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
 			ImGuiListClipper clipper;
-			clipper.Begin(lines.size()-1);
+			clipper.Begin(lines.size());
 			while( clipper.Step() )
 				for( int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++ )
 					ImGui::TextUnformatted(lines[i].c_str());
@@ -144,7 +144,7 @@ namespace lim
 			sprintf(timeStamp, "[%.2f] ", glfwGetTime());
 
 			// case1. 그냥 한줄 출력
-			if( !strchr(buf, '\n') ) {
+			if( strchr(buf, '\n')==NULL ) {
 				lines.back().append(buf);
 				return;
 			}
