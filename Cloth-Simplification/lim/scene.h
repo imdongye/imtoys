@@ -26,10 +26,11 @@ namespace lim
 	public:
 		Scene(Program* groundProgram, Light& _light): light(_light)
 		{
-			ground = new Model([](std::vector<lim::n_mesh::Vertex>& vertices
-							   , std::vector<GLuint>& indices
-							   , std::vector<Texture>& textures)
+			Mesh* groundMesh;
 			{
+				std::vector<lim::n_mesh::Vertex> vertices;
+				std::vector<GLuint> indices;
+				std::vector<Texture> textures;
 				const float half = 100.0;
 				vertices.push_back({{-half, 0, half},
 									{0, 1, 0}});
@@ -39,7 +40,10 @@ namespace lim
 
 				indices.insert(indices.end(), {0,1,3});
 				indices.insert(indices.end(), {1,2,3});
-			}, groundProgram, "ground");
+
+				groundMesh = new Mesh(vertices, indices, textures);
+			}
+			ground = new Model(groundMesh, groundProgram, "ground");
 			ground->meshes.back()->color = glm::vec3(0.8, 0.8, 0); // yello ground
 			ground->position = glm::vec3(0, 0, 0);
 			ground->updateModelMat();

@@ -118,9 +118,8 @@ namespace lim
 			// 절대경로를 상대경로로
 			std::filesystem::path ap(path.data());
 			std::string rp = std::filesystem::relative(ap, std::filesystem::current_path()).u8string();
-			for( char& c: rp ) {
-				if( c == '\\' ) c = '/';
-			}
+			std::replace(rp.begin(), rp.end(), '\\', '/');
+
 			Logger::get()<<rp<<Logger::endll;
 			//같은거 있으면 지우기
 			auto samePathPos = std::find(recentModelPaths.begin(), recentModelPaths.end(), rp);

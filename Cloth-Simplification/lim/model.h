@@ -40,17 +40,21 @@ namespace lim
 		glm::vec3 boundary_max;
 		glm::vec3 boundary_min;
 	private:
+		friend class ModelLoader;
+		friend class ModelExporter;
 		std::string directory; // for load texture
 		glm::mat4 pivotMat;
 		// Disable Copying and Assignment
 		Model(Model const&) = delete;
 		Model& operator=(Model const&) = delete;
 	public:
-		Model(Program* _program, const std::string& _name = ""): position(glm::vec3(0)), rotation(glm::quat()), scale(glm::vec3(1))
-			, pivotMat(glm::mat4(1.0f)), verticesNum(0), name(_name), program(_program) // mat4(1) is identity mat
+		Model(Program* _program, const std::string& _name = "")
+			: position(glm::vec3(0)), rotation(glm::quat()), scale(glm::vec3(1)),
+			pivotMat(glm::mat4(1.0f)), verticesNum(0), name(_name), program(_program) // mat4(1) is identity mat
 		{
 			updateModelMat();
 		}
+		// copy with new mesh
 		Model(const Model& model, const std::vector<Mesh*>& _meshes)
 			:Model(model.program, model.name)
 		{
@@ -66,43 +70,21 @@ namespace lim
 			directory = model.directory;
 			pivotMat = model.pivotMat;
 		}
-		// load model
-		Model(const char* path, Program* _program, bool makeNormalized)
-			: Model(_program)
-		{
-			loadFile(path);
-
-			updateNums();
-			updateBoundary();
-			Logger::get().log("model loaded : %s, vertices: %u\n\n", name.c_str(), verticesNum);
-
-			if( makeNormalized ) {
-				setUnitScaleAndPivot();
-				updateModelMat();
-			}
-		}
-		// 왜 외부에서 외부에서 생성한 mesh객체의 unique_ptr을 우측값 참조로 받아 push_back할 수 없는거지
-		Model(std::function<void(std::vector<n_mesh::Vertex>& _vertices
-			  , std::vector<GLuint>& _indices
-			  , std::vector<Texture>& _textures)> genMeshFunc
-			  , Program* _program
-			  , std::string _name ="")
+		// create with only mesh
+		Model(Mesh* _mesh, Program* _program, std::string _name ="")
 			:Model(_program, _name)
 		{
-			std::vector<n_mesh::Vertex> vertices;
-			std::vector<GLuint> indices;
-			std::vector<Texture> textures;
-			genMeshFunc(vertices, indices, textures);
-			meshes.push_back(new Mesh(vertices, indices, textures, _name));
+			meshes.push_back(_mesh);
 
 			updateNums();
 			updateBoundary();
-			Logger::get().log("gen model mesh : %s, vertices: %u\n\n", name.c_str(), verticesNum);
+			Logger::get().log("model(mesh) generaged : %s, vertices: %u\n\n", name.c_str(), verticesNum);
 		}
 		~Model()
 		{
 			clear();
 		}
+	public:
 		void clear()
 		{
 			for( Mesh* mesh : meshes ) {
@@ -153,17 +135,6 @@ namespace lim
 			Logger::get()<<"pivot: "<<glm::to_string(pivot)<<Logger::endl;
 			pivotMat = glm::translate(-pivot);
 		}
-		void exportObj(const char* path)
-		{
-			aiScene* scene = new aiScene();
-			aiMesh* mesh = new aiMesh();
-			//mesh->mPrimitiveTypes =AI_PRIMITIVE_TYPE;
-
-			Assimp::Exporter exporter;
-			const aiExportFormatDesc* format = exporter.GetExportFormatDescription(0);
-			aiReturn ret = exporter.Export(scene, format->id, path, scene->mFlags);
-			Logger::get()<<"[error::exporter]"<<exporter.GetErrorString()<<Logger::endl;
-		}
 	private:
 		void updateNums()
 		{
@@ -195,28 +166,24 @@ namespace lim
 			}
 			Logger::get()<<"boundary size: "<<glm::to_string(getBoundarySize())<<Logger::endl;
 		}
-		void loadFile(const char* _path)
-		{
-			clear();
-			std::string path = std::string(_path);
-			std::replace(path.begin(), path.end(), '\\', '/');
-			size_t slashPos = path.find_last_of('/');
-			if( slashPos == std::string::npos ) {
-				name = path;
-				name = name.substr(0, name.find_last_of('.'));
-				directory = "";
-			}
-			else if( slashPos == path.length()-1 ) {
-				name = "";
-				directory = path;
-			}
-			else {
-				name = path.substr(slashPos+1);
-				name = name.substr(0, name.find_last_of('.'));
-				directory = path.substr(0, path.find_last_of('/'))+"/";
-			}
+	};
 
-			Logger::get().log("model loading : %s\n", name.c_str());
+	class ModelLoader
+	{
+	private:
+		inline static Model* model=nullptr; // temp model
+	public:
+		static Model* loadFile(std::string_view _path, bool makeNormalized = true)
+		{
+			model = new Model(nullptr);
+
+			const std::string path = std::string(_path);
+			const size_t lastSlashPos = (path.find_last_of("/\\")==std::string::npos)?0:path.find_last_of("/\\");
+			const size_t dotPos = path.find_last_of('.');
+			model->name = path.substr(lastSlashPos, dotPos);
+			model->directory = (lastSlashPos==0)?"": path.substr(0, lastSlashPos)+"/";
+
+			Logger::get().log("model loading : %s\n", model->name.c_str());
 
 			/* Assimp 설정 */
 			Assimp::Importer loader;
@@ -236,28 +203,42 @@ namespace lim
 			if( !scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE
 			   || !scene->mRootNode ) {
 				Logger::get().log("[error, assimp]%s\n", loader.GetErrorString());
-				return;
+				return new Model(nullptr);
 			}
 			// recursive fashion
 			parseNode(scene->mRootNode, scene);
+
+
+			model->updateNums();
+			model->updateBoundary();
+			Logger::get().log("model loaded : %s, vertices: %u\n\n", model->name.c_str()
+							  , model->verticesNum);
+
+			if( makeNormalized ) {
+				model->setUnitScaleAndPivot();
+				model->updateModelMat();
+			}
+			return model;
 		}
-		std::vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type)
+	private:
+		static std::vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type)
 		{
+			// store it as texture loaded for entire model, to ensure we won't unnecesery load duplicate textures.
+			std::vector<Texture>& textures_loaded = model->textures_loaded;
 			std::vector<Texture> textures;
 			for( GLuint i=0; i<mat->GetTextureCount(type); i++ ) {
-				aiString str;
+				aiString ai_str;
 				/* blend 등 attrib에서 bm값이 안읽힘 */
-				mat->GetTexture(type, i, &str);
-				std::string strPath(str.C_Str());
-				/* assimp 가 뒤에오는 옵션을 읽지 않음 (ex: eye.png -bm 0.4) */
-				strPath = strPath.substr(0, strPath.find_first_of(' '));
-				const char* texPath = strPath.c_str();
+				mat->GetTexture(type, i, &ai_str);
+				std::string str_path(ai_str.C_Str());
+				/* assimp가 뒤에오는 옵션을 읽지 않음 (ex: eye.png -bm 0.4) */
+				str_path = str_path.substr(0, str_path.find_first_of(' '));
 
 				// check already loaded
 				// to skip loading same texture 
 				bool skip = false;
 				for( GLuint j=0; j<textures_loaded.size(); j++ ) {
-					if( std::strcmp(textures_loaded[j].path.data(), texPath)==0 ) {
+					if( textures_loaded[j].path == str_path ) {
 						textures.push_back(textures_loaded[j]);
 						skip = true;
 						break;
@@ -266,9 +247,9 @@ namespace lim
 				// load texture
 				if( !skip ) {
 					Texture texture;
-					std::string fullTexPath = directory+std::string(texPath);
+					std::string fullTexPath = model->directory+str_path;
 
-					texture.id = loadTextureFromFile(fullTexPath.c_str(), true);
+					texture.id = loadTextureFromFile(fullTexPath, true);
 
 					switch( type ) {
 					case aiTextureType_DIFFUSE: texture.type = "map_Kd"; break;
@@ -276,20 +257,20 @@ namespace lim
 					case aiTextureType_AMBIENT: texture.type = "map_Ka"; break;
 					case aiTextureType_HEIGHT: texture.type = "map_Bump"; break;
 					}
-					texture.path = texPath;
+					texture.path = str_path;
 					textures.push_back(texture);
-					textures_loaded.push_back(texture);  // store it as texture loaded for entire model, to ensure we won't unnecesery load duplicate textures.
+					textures_loaded.push_back(texture);
 				}
 			}
 			return textures;
 		}
-		Mesh* getParsedMesh(aiMesh* mesh, const aiScene* scene)
+		static Mesh* getParsedMesh(aiMesh* mesh, const aiScene* scene)
 		{
 			std::vector<n_mesh::Vertex> vertices;
 			std::vector<GLuint> indices;
 			std::vector<Texture> textures;
 			// now only triangle mesh
-			GLuint angles = 3;
+			const GLuint angles = 3;
 
 			// - per vertex
 			n_mesh::Vertex vertex;
@@ -313,9 +294,11 @@ namespace lim
 			}
 
 			// - per triangles
-			angles = mesh->mFaces[0].mNumIndices;
 			for( GLuint i=0; i<mesh->mNumFaces; i++ ) {
-				aiFace face = mesh->mFaces[i];
+				aiFace& face = mesh->mFaces[i];
+				// if not triangle mesh
+				if( face.mNumIndices != angles )
+					return new Mesh();
 				for( GLuint j=0; j<face.mNumIndices; j++ )
 					indices.push_back(face.mIndices[j]);
 			}
@@ -336,24 +319,39 @@ namespace lim
 			textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
 
 			Mesh* newMesh = new Mesh(vertices, indices, textures, mesh->mName.C_Str(), angles);
-			aiColor3D color;
-			material->Get(AI_MATKEY_COLOR_DIFFUSE, color);
-			newMesh->color = glm::vec3(color.r, color.g, color.b);
-
+			aiColor3D ai_color;
+			material->Get(AI_MATKEY_COLOR_DIFFUSE, ai_color);
+			newMesh->color = glm::vec3(ai_color.r, ai_color.g, ai_color.b);
 			return newMesh;
 		}
-		void parseNode(aiNode* node, const aiScene* scene, int depth = 0)
+		static void parseNode(aiNode* node, const aiScene* scene, int depth = 0)
 		{
 			// in current node
 			for( GLuint i=0; i<node->mNumMeshes; i++ ) {
-				meshes.push_back(getParsedMesh(scene->mMeshes[node->mMeshes[i]], scene));
+				model->meshes.push_back(getParsedMesh(scene->mMeshes[node->mMeshes[i]], scene));
 				for( int j=0; j<depth; j++ ) Logger::get()<<'\t';
 				Logger::get().log("mesh loaded : %s,", node->mName.C_Str());
-				(*meshes.back()).print();
+				(*(model->meshes.back())).print();
 			}
 			for( GLuint i=0; i<node->mNumChildren; i++ ) {
 				parseNode(node->mChildren[i], scene, depth+1);
 			}
+		}
+	};
+
+	class ModelExporter
+	{
+	public:
+		static void exportObj(const char* path)
+		{
+			aiScene* scene = new aiScene();
+			aiMesh* mesh = new aiMesh();
+			//mesh->mPrimitiveTypes =AI_PRIMITIVE_TYPE;
+
+			Assimp::Exporter exporter;
+			const aiExportFormatDesc* format = exporter.GetExportFormatDescription(0);
+			aiReturn ret = exporter.Export(scene, format->id, path, scene->mFlags);
+			Logger::get()<<"[error::exporter]"<<exporter.GetErrorString()<<Logger::endl;
 		}
 	};
 }

@@ -71,7 +71,8 @@ namespace lim
 			programs.push_back(new Program("Uv View"));
 			programs.back()->attatch("uv_view.vs").attatch("uv_view.fs").link();
 
-			models[0] = new Model("archive/dwarf/Dwarf_2_Low.obj", programs[0], true);
+			models[0] = ModelLoader::loadFile("archive/dwarf/Dwarf_2_Low.obj");
+			models[0]->program = programs[0];
 			models[1] = nullptr;
 
 			scenes[0] = new Scene(programs[0], light);
@@ -109,7 +110,8 @@ namespace lim
 			Logger::get().log("Loading %s..... . ... ..... .. .... .. . . .. .\n", path.data());
 			Program* usedProg = models[0]->program;
 			delete models[0]; models[0]=nullptr;
-			models[0] = new Model(path.data(), usedProg, true);
+			models[0] = ModelLoader::loadFile(path.data());
+			models[0]->program = usedProg;
 			scenes[0]->setModel(models[0]);
 			scenes[1]->setModel(models[0]);
 			AppPref::get().pushPathWithoutDup(path.data());
@@ -146,7 +148,7 @@ namespace lim
 			Logger::get().log("Exporting %s.. .. ...... ...  .... .. . .... . .\n", fullPath.c_str());
 			switch( format ) {
 			case 0:
-				models[1]->exportObj(exportPath);
+				//models[1]->exportObj(exportPath);
 				break;
 			}
 

@@ -31,9 +31,9 @@ namespace lim
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, warp);
 	}
 
-	static GLuint loadTextureFromFile(const char* cpath, bool toLinear = true)
+	static GLuint loadTextureFromFile(std::string_view path, bool toLinear = true)
 	{
-		std::string spath = std::string(cpath);
+		const char* cpath = path.data();
 
 		GLuint texID=0;
 		glGenTextures(1, &texID);
