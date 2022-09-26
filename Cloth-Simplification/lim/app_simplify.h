@@ -132,7 +132,7 @@ namespace lim
 
 			double simpTime = glfwGetTime() - start;
 			Logger::get().simpTime = simpTime;
-			Logger::get().log("Done! %d => %d in %.3f sec.  \n"
+			Logger::get().log("Done! %d => %d in %.3f sec. \n\n"
 							  , models[0]->verticesNum, models[1]->verticesNum, simpTime);
 		}
 		// 0:obj, 1:fbx, ...
@@ -144,15 +144,15 @@ namespace lim
 			}
 			double start = glfwGetTime();
 			std::string fullPath(exportPath);
-			fullPath += models[1]->name+".png";
+			fullPath += models[1]->name+".obj";
 			Logger::get().log("Exporting %s.. .. ...... ...  .... .. . .... . .\n", fullPath.c_str());
 			switch( format ) {
 			case 0:
-				//models[1]->exportObj(exportPath);
+				ModelExporter::exportObj(fullPath, models[1]);
 				break;
 			}
 
-			Logger::get().log("Done! in %.3f sec.  \n", glfwGetTime()-start);
+			Logger::get().log("Done! in %.3f sec.  \n\n", glfwGetTime()-start);
 		}
 		// From: https://stackoverflow.com/questions/62007672/png-saved-from-opengl-framebuffer-using-stbi-write-png-is-shifted-to-the-right
 		void bakeNormalMap()

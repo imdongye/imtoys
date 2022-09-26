@@ -48,6 +48,8 @@
 #include "light.h"
 #include "mesh.h"
 #include "model.h"
+#include "model_loader.h"
+#include "model_exporter.h"
 #include "viewport.h"
 #include "scene.h"
 #include "application.h"
