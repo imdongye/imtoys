@@ -22,7 +22,6 @@ namespace lim
 	{
 	public:
 		GLuint fbo, colorTex;
-	public:
 		glm::vec4 clearColor;
 		GLuint width, height;
 	public:
@@ -40,7 +39,6 @@ namespace lim
 			create();
 			resizeHook();
 		}
-	public:
 		/* 오버라이딩하고 첫줄에 부모 가상함수를 꼭 호출해줘야함. */
 		virtual void clear()
 		{
@@ -57,6 +55,17 @@ namespace lim
 			glDisable(GL_DEPTH_TEST);
 			glDisable(GL_MULTISAMPLE);
 		}
+		/* for ms framebuffer */
+		virtual GLuint getRenderedTex()
+		{
+			return colorTex;
+		}
+		virtual void unbind()
+		{
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		}
+		virtual void resizeHook() {}
+	protected:
 		virtual void createTexAndAttach()
 		{
 			// glTexStorage2D 텍스쳐 크기 고정
@@ -69,17 +78,6 @@ namespace lim
 
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
 		}
-
-		/* for ms framebuffer */
-		virtual GLuint getRenderedTex()
-		{
-			return colorTex;
-		}
-		virtual void unbind()
-		{
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		}
-		virtual void resizeHook() {}
 	private:
 		void create()
 		{
@@ -95,7 +93,6 @@ namespace lim
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
 	};
-
 
 	class TxFramebuffer: public Framebuffer
 	{
@@ -132,7 +129,7 @@ namespace lim
 
 	class RbFramebuffer: public Framebuffer
 	{
-	protected:
+	public:
 		GLuint rbo;
 	public:
 		RbFramebuffer(): Framebuffer(), rbo(0) {}
@@ -167,7 +164,7 @@ namespace lim
 
 	class MsFramebuffer: public RbFramebuffer
 	{
-	private:
+	public:
 		/* colorTex와 rbo를 multisampliing 모드로 생성 */
 		const int samples = 8;
 		Framebuffer intermediateFB;
@@ -175,7 +172,6 @@ namespace lim
 		MsFramebuffer(): RbFramebuffer(), intermediateFB() {}
 		virtual ~MsFramebuffer() { clear(); }
 	public:
-
 		virtual void clear() final
 		{
 			RbFramebuffer::clear();
@@ -199,7 +195,6 @@ namespace lim
 			glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
-	protected:
 		virtual GLuint getRenderedTex() final
 		{
 			return intermediateFB.colorTex;
@@ -208,7 +203,8 @@ namespace lim
 		{
 			intermediateFB.resize(width, height);
 		}
-		virtual void createAndAttach()
+	protected:
+		virtual void createTexAndAttach()
 		{
 			/* multisampled FBO setting */
 			glGenTextures(1, &colorTex);
