@@ -50,6 +50,9 @@ namespace lim
 			bakerProg.attatch("uv_view.vs").attatch("uv_view.fs").link();
 
 
+            programs.push_back(new Program("Ground"));
+            programs.back()->attatch("pos.vs").attatch("amiga_ground.fs").link();
+            
 			programs.push_back(new Program("Normal Dot View"));
 			programs.back()->attatch("pos_nor_uv.vs").attatch("ndv.fs").link();
 

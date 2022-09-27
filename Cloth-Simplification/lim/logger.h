@@ -22,7 +22,7 @@ namespace lim
 {
 	std::string fmToStr(const char* format, ...)
 	{
-		static char buffer[256]={0};
+		static char buffer[512]={0};
 		va_list ap;
 		va_start(ap, format);
 		vsprintf(buffer, format, ap);
@@ -34,7 +34,7 @@ namespace lim
 	{
 	private:
 		/* 고정 상수식이기에 static으로 data메모리에 있어야함 */
-		static constexpr int BUFFER_SIZE = 256;
+		static constexpr int BUFFER_SIZE = 512;
 		char buffer[BUFFER_SIZE];
 	public:
 		std::vector<std::string> lines;
@@ -95,7 +95,7 @@ namespace lim
 			va_end(args);
 
 			fprintf(stream, "%s", buffer);
-			seperate_and_save(buffer);
+			seperate_and_save();
 			return *this;
 		}
 		Logger& log(const char* format, ...)
@@ -106,7 +106,7 @@ namespace lim
 			va_end(ap);
 
 			printf("%s", buffer);
-			seperate_and_save(buffer);
+			seperate_and_save();
 			return *this;
 		}
 		Logger& operator<<(const int n)
@@ -146,40 +146,31 @@ namespace lim
 			return ref.log("\n\n");
 		}
 	private:
-		void seperate_and_save(const char* buf)
+		void seperate_and_save()
 		{
-			const char *first, *last;
-			const char const *end = strchr(buf, '\0');
-			static char timeStamp[32];
-			sprintf(timeStamp, "[%.2f] ", glfwGetTime());
+			const char *start, *end;
+			static char line_head[32];
+			if( addTimeStamp )
+				sprintf(line_head, "%3.2f |", glfwGetTime());
+			else
+				line_head[0] = '\0';
 
-			// case1. 그냥 한줄 출력
-			if( strchr(buf, '\n')==NULL ) {
-				lines.back().append(buf);
-				return;
+
+			start = end = buffer;
+			while( *end != '\0' ) {
+				if( *end == '\n' ) {
+					// if start==end then append empty
+					lines.back().append(start, end);
+					lines.emplace_back("");
+
+					start = end+1;
+				}
+				end++;
 			}
-
-			first = buf;
-			do {
-				last = strchr(first, '\n');
-				// case2. 개행 없이 끝날때
-				if( !last ) {
-					lines.back().append(first);
-					break;
-				}
-				// case3. 마지막 개행
-				else if( first == end ) {
-					lines.push_back((addTimeStamp)?timeStamp:"");
-					break;
-				}
-				// case4. 개행사이 한줄
-				else {
-					lines.back()+=std::string(first, last);
-					lines.push_back((addTimeStamp)?timeStamp:"");
-				}
-				first = last+1;
-			} while( last!=NULL && first<end );
+			if( *start !='\n' )
+				lines.back().append(start, end);
 		}
+
 	};
 }
 #endif

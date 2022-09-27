@@ -14,5 +14,8 @@ uniform vec3 cameraPos;
 
 void main()
 {   
-    FragColor = vec4(tUv.x, tUv.y, 1, 1);
+    vec3 outColor = vec3(tUv.x, tUv.y, 1);
+    
+    outColor = pow(outColor, vec3(1/gamma));
+    FragColor = vec4(outColor, 1);
 }

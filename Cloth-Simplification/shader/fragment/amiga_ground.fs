@@ -2,21 +2,18 @@
 out vec4 FragColor;
 
 in vec3 wPos;
-in vec3 wNor;
-in vec2 tUv;
-
-uniform sampler2D map_Kd0;
-uniform sampler2D map_Bump0;
-uniform sampler2D map_Ks0;
 
 uniform vec3 cameraPos;
 uniform float gamma = 2.2;
 
 void main()
-{   
-    vec3 outColor = texture(map_Kd0, tUv).xyz;
+{
+    float d = gl_FragCoord.z;
+    float f = mod(floor(wPos.z) + floor(wPos.x), 2.0);
+    
+    vec3 outColor = mix(vec3(1,1,0),vec3(0,1,0),f);
+    //out_color *= mix(vec3(1,1,1),vec3(0.1,0.1,0.1),t/d);
     
     outColor = pow(outColor, vec3(1/gamma));
     FragColor = vec4(outColor, 1);
-
 }

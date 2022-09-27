@@ -77,7 +77,7 @@ namespace lim
 				Logger::get()<<"[error] fail read : "<<path<<", what? "<<e.what()<<Logger::endl;
 			}
 			if( scode.length()<1 ) {
-				Logger::get()<<"[error]"<<path<<" shader code is not loaded properly"<<Logger::endl;
+				Logger::get()<<"[error] "<<path<<" shader code is not loaded properly"<<Logger::endl;
 				return *this;
 			}
 

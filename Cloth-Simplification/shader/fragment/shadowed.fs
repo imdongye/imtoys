@@ -61,6 +61,6 @@ void main(void)
 	vec3 outColor = diffuse+ambient+specular;
 	outColor *= visibility;
 
-	FragColor = vec4(outColor, 1);
-	FragColor = pow(FragColor, vec4(1/gamma));	FragColor = pow(FragColor, vec4(1/gamma));
+    outColor = pow(outColor, vec3(1/gamma));
+    FragColor = vec4(outColor, 1);
 }
