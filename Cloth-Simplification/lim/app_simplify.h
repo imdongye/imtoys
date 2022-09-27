@@ -135,8 +135,7 @@ namespace lim
 			Logger::get().log("Done! %d => %d in %.3f sec. \n\n"
 							  , models[0]->verticesNum, models[1]->verticesNum, simpTime);
 		}
-		// 0:obj, 1:fbx, ...
-		void exportModel(int format)
+		void exportModel(const char* format_id)
 		{
 			if( models[1] == nullptr ) {
 				Logger::get()<<"need simplification"<<Logger::endl;
@@ -146,11 +145,8 @@ namespace lim
 			std::string fullPath(exportPath);
 			fullPath += models[1]->name+".obj";
 			Logger::get().log("Exporting %s.. .. ...... ...  .... .. . .... . .\n", fullPath.c_str());
-			switch( format ) {
-			case 0:
-				ModelExporter::exportObj(fullPath, models[1]);
-				break;
-			}
+
+			//ModelExporter::export(fullPath, models[1], format_id);
 
 			Logger::get().log("Done! in %.3f sec.  \n\n", glfwGetTime()-start);
 		}
@@ -203,19 +199,22 @@ namespace lim
 								break;
 							}
 						}
+						if( ImGui::MenuItem("Clear Recent") ) {
+							AppPref::get().clearData();
+						}
 						ImGui::EndMenu();
 					}
 					if( ImGui::BeginMenu("Export") ) {
-						if( ImGui::MenuItem(".obj") ) {
-							exportModel(0);
-						}
-						if( ImGui::MenuItem(".fbx") ) {
-							exportModel(1);
+						for( int i=0; i<ModelExporter::nr_formats; i++ ) {
+							const aiExportFormatDesc* format = ModelExporter::getFormatInfo(i);
+							if( ImGui::MenuItem(format->id) ) {
+								exportModel(format->id);
+							}
+							if( ImGui::IsItemHovered() ) {
+								ImGui::SetTooltip(fmToStr("%s\n%s.%s", format->description, models[0]->name.c_str(), format->fileExtension).c_str());
+							}
 						}
 						ImGui::EndMenu();
-					}
-					if( ImGui::Button("Clear Recent") ) {
-						AppPref::get().clearData();
 					}
 					ImGui::EndMenu();
 				}

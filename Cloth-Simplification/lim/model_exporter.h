@@ -17,23 +17,18 @@ namespace lim
 	class ModelExporter
 	{
 	public:
-		static void exportObj(std::string_view path, Model* model)
+		inline static Assimp::Exporter exporter;
+		inline static GLuint nr_formats = exporter.GetExportFormatCount();
+	public:
+		static void exportModel(std::string_view path, Model* model, const char* format_id)
 		{
 			aiScene* scene = makeScene(model);
-
-			Assimp::Exporter exporter;
-			const GLuint nr_e = exporter.GetExportFormatCount();
-			const char* f_id=0;
-			for( int i=0; i<nr_e; i++ ) {
-				const aiExportFormatDesc* format = exporter.GetExportFormatDescription(i);
-				Logger::get().log("%s\n%s\n", format->description, format->fileExtension);
-				if( strcmp(format->fileExtension, "obj")==0 ) {
-					f_id = format->id;
-					//break;
-				}
-			}
-			aiReturn ret = exporter.Export(scene, f_id, path.data(), scene->mFlags);
+			aiReturn ret = exporter.Export(scene, format_id, path.data(), scene->mFlags);
 			Logger::get()<<"[error::exporter]"<<exporter.GetErrorString()<<Logger::endl;
+		}
+		static const aiExportFormatDesc* getFormatInfo(size_t n)
+		{
+			return exporter.GetExportFormatDescription(n);
 		}
 	private:
 		static aiScene* makeScene(Model* model)
@@ -92,7 +87,6 @@ namespace lim
 						face.mIndices[k] = mesh->indices[base+k];
 				}
 			}
-
 			return scene;
 		}
 	};

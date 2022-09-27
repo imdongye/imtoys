@@ -20,6 +20,16 @@
 
 namespace lim
 {
+	std::string fmToStr(const char* format, ...)
+	{
+		static char buffer[256]={0};
+		va_list ap;
+		va_start(ap, format);
+		vsprintf(buffer, format, ap);
+		va_end(ap);
+		return std::string(buffer);
+	}
+
 	class Logger
 	{
 	private:
