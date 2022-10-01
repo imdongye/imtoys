@@ -151,17 +151,16 @@ namespace lim
 			const char *start, *end;
 			static char line_head[32];
 			if( addTimeStamp )
-				sprintf(line_head, "%3.2f |", glfwGetTime());
+				sprintf(line_head, "%3.2f | ", glfwGetTime());
 			else
 				line_head[0] = '\0';
-
 
 			start = end = buffer;
 			while( *end != '\0' ) {
 				if( *end == '\n' ) {
 					// if start==end then append empty
 					lines.back().append(start, end);
-					lines.emplace_back("");
+					lines.emplace_back(line_head);
 
 					start = end+1;
 				}

@@ -24,6 +24,7 @@ namespace lim
 		GLuint fbo, colorTex;
 		glm::vec4 clearColor;
 		GLuint width, height;
+		float aspect;
 	public:
 		Framebuffer(): clearColor({0,0,1,1}), fbo(0), colorTex(0)
 		{
@@ -36,6 +37,7 @@ namespace lim
 			clear(); // call child clear func
 			width = _width;
 			height = (_height==0)?_width:_height;
+			aspect = width/(float)height;
 			create();
 			resizeHook();
 		}

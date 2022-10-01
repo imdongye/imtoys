@@ -143,7 +143,6 @@ namespace lim
 			pitch += pitch_off;
 			pitch = glm::clamp(pitch, -89.f, 89.f);
 		}
-
 		void shiftDist(float offset)
 		{
 			distance *= pow(1.01, offset);
@@ -160,10 +159,6 @@ namespace lim
 			pitch = glm::degrees(asin(front.y));
 			//yaw = glm::degrees(acos(-front.z/cos(glm::radians(pitch))));
 			yaw = glm::degrees(asin(front.x/cos(glm::radians(pitch))));
-		}
-		void updateVPMat()
-		{
-			vpMat = viewMat*projMat;
 		}
 		void updatePivotViewMat()
 		{
@@ -202,6 +197,11 @@ namespace lim
 			Logger::get().log("PYR  : %f.2, %f.2, %f.2\n", pitch, yaw, roll);
 			Logger::get().log("POS  : %f.2, %f.2, %f.2\n", position.x, position.y, position.z);
 			Logger::get().log("DIST : %f\n", distance);
+		}
+	private:
+		void updateVPMat()
+		{
+			vpMat = viewMat*projMat;
 		}
 	};
 } // namespace lim

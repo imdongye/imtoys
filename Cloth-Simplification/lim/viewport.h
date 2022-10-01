@@ -4,6 +4,7 @@
 //	TODO list:
 //	1. initial framebuffer size setting
 //	2. drag imgui demo 참고해서 다시짜기
+//
 
 #ifndef VIEWPORT_H
 #define VIEWPORT_H
@@ -16,18 +17,16 @@ namespace lim
 		/* c++17 non-const static data member can initialize in declaration with inline keyword*/
 		inline static GLuint id_generator = 0;
 		GLuint id;
-		Camera* camera;
 		Framebuffer* framebuffer;
 		bool hovered, focused;
 		glm::vec2 boundary_max, boundary_min;
 		GLuint width, height;
 		float cursor_pos_x, cursor_pos_y;
+		const std::string name;
 	public:
-		Viewport(Camera* cmr)
-			: boundary_max(0), boundary_min(0)
+		Viewport()
+			: boundary_max(0), boundary_min(0), id(id_generator++), name("Viewport"+std::to_string(id))
 		{
-			id = id_generator++;
-			camera = cmr;
 			framebuffer = new MsFramebuffer();
 			hovered = focused = false;
 			width = height = 0;
@@ -40,7 +39,7 @@ namespace lim
 		void drawImGui()
 		{
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
-			ImGui::Begin(("Viewport"+std::to_string(id)).c_str());
+			ImGui::Begin(name.c_str());
 			auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
 			auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
 			auto viewportOffset = ImGui::GetWindowPos();
@@ -62,8 +61,6 @@ namespace lim
 			if( framebuffer->width != width
 			   || framebuffer->height != height ) {
 				framebuffer->resize(width, height);
-				camera->aspect = width/(float)height;
-				camera->updateProjMat();
 			}
 
 			GLuint texID = framebuffer->getRenderedTex();

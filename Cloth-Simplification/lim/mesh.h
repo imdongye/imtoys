@@ -89,7 +89,7 @@ namespace lim
 		}
 		void draw(const GLuint pid=0)
 		{
-			/* shadowMap draw할때 pid=0 으로 해서 setUniform 하지 않음 */
+			/* shadowMap draw할때 pid=0 으로 해서 텍스쳐 uniform 안함 */
 			if( pid != 0 ) {
 				GLuint diffuseNr  = 0;
 				GLuint specularNr = 0;

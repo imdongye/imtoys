@@ -9,6 +9,7 @@
 //	2. init destroy 생성자소멸자 사용
 //  3. 여러 program 적용
 //	4. shared pointer 사용
+//	5. 여러 라이트
 //
 
 #ifndef SCENE_H
@@ -18,49 +19,67 @@ namespace lim
 {
 	class Scene
 	{
-	public:
-		Model* ground=nullptr;
+	private:
+		inline static GLuint sceneCounter=0;
+		inline static Program* groundProgram=nullptr;
+		inline static Model* ground=nullptr;
+	private:
 		Model* model=nullptr; // main model
 		std::vector<Model*> models;
 		Light& light;
 	public:
-		Scene(Program* groundProgram, Light& _light): light(_light)
+		Scene(Light& _light): light(_light)
 		{
-			Mesh* groundMesh;
-			{
-				std::vector<lim::n_mesh::Vertex> vertices;
-				std::vector<GLuint> indices;
-				std::vector<Texture> textures;
-				const float half = 100.0;
-				vertices.push_back({{-half, 0, half},
-									{0, 1, 0}});
-				vertices.push_back({{half, 0, half}, {0, 1, 0}});
-				vertices.push_back({{half, 0, -half}, {0, 1, 0}});
-				vertices.push_back({{-half, 0, -half}, {0, 1, 0}});
+			if( sceneCounter==0 ) {
+				groundProgram = new Program("Ground");
+				groundProgram->attatch("pos.vs").attatch("amiga_ground.fs").link();
 
-				indices.insert(indices.end(), {0,1,3});
-				indices.insert(indices.end(), {1,2,3});
+				Mesh* groundMesh;
+				{
+					std::vector<lim::n_mesh::Vertex> vertices;
+					std::vector<GLuint> indices;
+					std::vector<Texture> textures;
+					const float half = 100.0;
+					vertices.push_back({{-half, 0, half},
+										{0, 1, 0}});
+					vertices.push_back({{half, 0, half}, {0, 1, 0}});
+					vertices.push_back({{half, 0, -half}, {0, 1, 0}});
+					vertices.push_back({{-half, 0, -half}, {0, 1, 0}});
 
-				groundMesh = new Mesh(vertices, indices, textures);
+					indices.insert(indices.end(), {0,1,3});
+					indices.insert(indices.end(), {1,2,3});
+
+					groundMesh = new Mesh(vertices, indices, textures);
+					groundMesh->color = glm::vec3(0.8, 0.8, 0); // yello ground
+				}
+				ground = new Model(groundMesh, groundProgram, "ground");
+
+				ground->position = glm::vec3(0, 0, 0);
+				ground->updateModelMat();
 			}
-			ground = new Model(groundMesh, groundProgram, "ground");
-			ground->meshes.back()->color = glm::vec3(0.8, 0.8, 0); // yello ground
-			ground->position = glm::vec3(0, 0, 0);
-			ground->updateModelMat();
+
 			models.push_back(ground);
+
+			sceneCounter++;
 		}
 		virtual ~Scene()
 		{
-			delete ground;
+			sceneCounter--;
+
+			if( sceneCounter==0 ) {
+				delete groundProgram;
+				delete ground;
+			}
 		}
 	public:
 		void setModel(Model* _model)
 		{
-			if( model!=nullptr ) {
+			if( model!=nullptr )
 				models.erase(std::find(models.begin(), models.end(), model));
-			}
 			model = _model;
-			models.push_back(_model);
+
+			if( model!=nullptr )
+				models.push_back(_model);
 		}
 		/* framebuffer직접설정해서 렌더링 */
 		void render(GLuint fbo, GLuint width, GLuint height, Camera* camera)
@@ -73,20 +92,23 @@ namespace lim
 			glClearColor(0, 0, 1, 1);
 			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
+			camera->aspect = width/(float)height;
+			camera->updateProjMat();
+
 			drawModels(camera);
 
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
-		/* viewport로 랜더링 */
-		void render(Viewport* vp)
+		void render(Framebuffer* framebuffer, Camera* camera)
 		{
-			Framebuffer& fb =  *(vp->framebuffer);
-
 			if( light.shadowEnabled ) drawShadowMap();
 
-			fb.bind();
-			drawModels(vp->camera);
-			fb.unbind();
+			camera->aspect = framebuffer->aspect;
+			camera->updateProjMat();
+
+			framebuffer->bind();
+			drawModels(camera);
+			framebuffer->unbind();
 		}
 	private:
 		inline void drawModels(Camera* camera)
@@ -98,6 +120,7 @@ namespace lim
 		}
 		void drawShadowMap()
 		{
+			// todo
 			light.drawShadowMap([&](GLuint shadowProgID) {
 				for( Model* model : models ) {
 					setUniform(shadowProgID, "modelMat", model->modelMat);

@@ -76,6 +76,7 @@ namespace lim
 
 			recentModelPaths = ijson["recentModelPaths"];
 		}
+		/* detete copy & copy asignment singleton obj */
 		AppPref(const AppPref&)=delete;
 		AppPref &operator=(const AppPref&)=delete;
 	public:

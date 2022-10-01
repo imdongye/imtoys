@@ -34,6 +34,7 @@
 #include <memory>
 #include <functional>
 #include <vector>
+#include <tuple>
 
 #define LIM_MAX(X, Y) ((X)>(Y))?(X):(Y)
 #define LIM_MIN(X, Y) ((X)<(Y))?(X):(Y)
@@ -52,6 +53,7 @@
 #include "model_exporter.h"
 #include "viewport.h"
 #include "scene.h"
+#include "viewport_pack.h"
 #include "application.h"
 #include "../fqms.h"
 #include "app_simplify.h"

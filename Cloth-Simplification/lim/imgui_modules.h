@@ -151,11 +151,6 @@ namespace lim
 
 			if( ImGui::BeginMenuBar() ) {
 				drawItemInMenuBar();
-				if( ImGui::BeginMenu("Options") ) {
-					ImGui::Separator();
-					ImGui::Separator();
-					ImGui::EndMenu();
-				}
 				ImGui::EndMenuBar();
 			}
 

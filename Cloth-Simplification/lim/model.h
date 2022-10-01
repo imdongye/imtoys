@@ -84,15 +84,15 @@ namespace lim
 		void clear()
 		{
 			for( Mesh* mesh : meshes ) {
-				mesh->clear();
 				delete mesh;
 			}
 			meshes.clear();
 		}
 		void draw(const Camera& camera, const Light& light)
 		{
-			GLuint pid;
-			pid = program->use();
+			if( program==nullptr )
+				Logger::get()<<"[error] model has not progam"<<Logger::endl;
+			GLuint pid = program->use();
 
 			setUniform(pid, "projMat", camera.projMat);
 			setUniform(pid, "viewMat", camera.viewMat);

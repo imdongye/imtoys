@@ -26,33 +26,29 @@ namespace lim
 	class SimplifyApp: public AppBase
 	{
 	private:
-		float cameraMoveSpeed;
-		Light light;
+		bool isSameCamera = false;
+		float cameraMoveSpeed=1.6;
+		Light light = Light();
+
+		int fromViewportIdx=0;
+		int toViewportIdx=1;
+		ViewportPackage vpPackage;
+
+		int selectedProgIdx=0;
+		std::vector<Program*> programs;
 
 		const char* exportPath = "result/";
-		int selectedBakeSizeIdx;
-		std::vector<const char*> bakeSizeList;
-		Framebuffer bakedNormalMap;
-		Program bakerProg;
-
-		Camera* cameras[2];
-		Model* models[2];
-		Scene* scenes[2];
-		Viewport* viewports[2];
-		std::vector<Program*> programs;
+		int selectedBakeSizeIdx=2;
+		std::vector<const char*> bakeSizeList={"256", "512", "1024", "2048", "4096", "8192"};
+		Framebuffer bakedNormalMap=Framebuffer();
+		Program bakerProg=Program("Normal Map Baker");
 	public:
-		SimplifyApp(): AppBase(1200, 960), cameraMoveSpeed(1.6f), light()
-			, bakeSizeList({"256", "512", "1024", "2048", "4096", "8192"}), selectedBakeSizeIdx(2)
-			, bakedNormalMap(), bakerProg("Normal Map Baker")
+		SimplifyApp(): AppBase(1200, 960)
 		{
 			bakedNormalMap.clearColor = glm::vec4(0.5, 0.5, 1, 1);
 			bakedNormalMap.resize(atoi(bakeSizeList[selectedBakeSizeIdx]));
 			bakerProg.attatch("uv_view.vs").attatch("uv_view.fs").link();
 
-
-            programs.push_back(new Program("Ground"));
-            programs.back()->attatch("pos.vs").attatch("amiga_ground.fs").link();
-            
 			programs.push_back(new Program("Normal Dot View"));
 			programs.back()->attatch("pos_nor_uv.vs").attatch("ndv.fs").link();
 
@@ -74,97 +70,110 @@ namespace lim
 			programs.push_back(new Program("Uv View"));
 			programs.back()->attatch("uv_view.vs").attatch("uv_view.fs").link();
 
-			models[0] = ModelLoader::loadFile("archive/dwarf/Dwarf_2_Low.obj");
-			models[0]->program = programs[0];
-			models[1] = nullptr;
 
-			scenes[0] = new Scene(programs[0], light);
-			scenes[0]->setModel(models[0]);
+			Model* model = ModelLoader::loadFile("archive/dwarf/Dwarf_2_Low.obj");
+			model->program = programs[selectedProgIdx];
+			addViewport(model);
 
-			scenes[1] = new Scene(programs[0], light);
-			scenes[1]->setModel(models[0]);
-
-			cameras[0] = new Camera(glm::vec3(0.0f, 1.0f, 3.0f), glm::vec3(0, 0, -1), scr_width/(float)scr_height);
-			cameras[1] = new Camera(glm::vec3(0.0f, 1.0f, 3.0f), glm::vec3(0, 0, -1), scr_width/(float)scr_height);
-
-			Viewport* originalView = new Viewport(cameras[0]);
-			viewports[0] = originalView;
-
-			Viewport* simplifiedView = new Viewport(cameras[1]);
-			viewports[1] = simplifiedView;
+			addViewport();
 
 			init_callback();
 			imgui_modules::initImGui(window);
 		}
 		~SimplifyApp()
 		{
-			for( Camera* camera : cameras ) delete camera;
-			for( Model* model : models ) delete model;
-			for( Scene* scene : scenes ) delete scene;
-			for( Viewport* viewport : viewports ) delete viewport;
-			for( Program* program : programs ) delete program;
-
+			vpPackage.clear();
+			for( Program* program : programs ) {
+				program->clear();
+			}
 			imgui_modules::destroyImGui();
 		}
 	private:
-		void loadModel(std::string_view path)
+		void addViewport(Model* model=nullptr)
 		{
+			Scene* scene = new Scene(light);
+			scene->setModel(model);
+			Camera* camera = new Camera(glm::vec3(0.0f, 1.0f, 3.0f), glm::vec3(0, 0, -1), 1);
+			Viewport* viewport = new Viewport();
+
+			vpPackage.push_back({viewport, scene, model, camera});
+		}
+		void loadModel(std::string_view path, int vpIdx)
+		{
+			Viewport* viewport; Scene* scene; Model* model;
+
+			std::tie(viewport, scene, model, std::ignore) = vpPackage[vpIdx].getTuple();
+
+			if( model!=nullptr ) {
+				delete model;
+				model = nullptr;
+			}
+
 			double start = glfwGetTime();
 			Logger::get().log("Loading %s..... . ... ..... .. .... .. . . .. .\n", path.data());
-			Program* usedProg = models[0]->program;
-			delete models[0]; models[0]=nullptr;
-			models[0] = ModelLoader::loadFile(path.data());
-			models[0]->program = usedProg;
-			scenes[0]->setModel(models[0]);
-			scenes[1]->setModel(models[0]);
-			AppPref::get().pushPathWithoutDup(path.data());
+			try {
+				model = ModelLoader::loadFile(path.data());
+			} catch( const char* error_str ) {
+				Logger::get()<<error_str<<Logger::endl;
+			}
+			model->program = programs[selectedProgIdx];
 
-			double loadTime = glfwGetTime() - start;
-			Logger::get().log("Done! in %.3f sec.  \n", loadTime);
+			vpPackage.changeModel(vpIdx, model);
+			Logger::get().log("Done! in %.3f sec.  \n", glfwGetTime() - start);
+
+			AppPref::get().pushPathWithoutDup(path.data());
 		}
 		void simplifyModel(float lived_pct = 0.8f
 						   , int version = 0, int agressiveness=7, bool verbose=true)
 		{
+			Model* fromModel= vpPackage.models[fromViewportIdx];
+			Model* toModel= vpPackage.models[toViewportIdx];
+
 			double start = glfwGetTime();
-			Logger::get().log("\nSimplifing %s..... . ... ... .. .. . .  .\n", models[0]->name.c_str());
+			Logger::get().log("\nSimplifing %s..... . ... ... .. .. . .  .\n", fromModel->name.c_str());
 
-			if( models[1] != nullptr ) delete models[1];
+			if( toModel != nullptr ) delete toModel;
 
-			models[1] = fqms::simplifyModel(scenes[0]->model, lived_pct, version, agressiveness, verbose);
-			scenes[1]->setModel(models[1]);
+			toModel = fqms::simplifyModel(fromModel, lived_pct, version, agressiveness, verbose);
+			vpPackage.changeModel(toViewportIdx, toModel);
 
 			double simpTime = glfwGetTime() - start;
 			Logger::get().simpTime = simpTime;
 			Logger::get().log("Done! %d => %d in %.3f sec. \n\n"
-							  , models[0]->verticesNum, models[1]->verticesNum, simpTime);
+							  , fromModel->verticesNum, toModel->verticesNum, simpTime);
 		}
 		void exportModel(const char* format_id)
 		{
-			if( models[1] == nullptr ) {
+			Model *toModel = vpPackage.models[toViewportIdx];
+
+			if( toModel == nullptr ) {
 				Logger::get()<<"need simplification"<<Logger::endl;
 				return;
 			}
+
 			double start = glfwGetTime();
 			std::string fullPath(exportPath);
-			fullPath += models[1]->name+".obj";
+			fullPath += toModel->name+".obj";
 			Logger::get().log("Exporting %s.. .. ...... ...  .... .. . .... . .\n", fullPath.c_str());
 
-			//ModelExporter::export(fullPath, models[1], format_id);
+			ModelExporter::exportModel(fullPath, toModel, format_id);
 
 			Logger::get().log("Done! in %.3f sec.  \n\n", glfwGetTime()-start);
 		}
 		// From: https://stackoverflow.com/questions/62007672/png-saved-from-opengl-framebuffer-using-stbi-write-png-is-shifted-to-the-right
 		void bakeNormalMap()
 		{
+			Model *toModel = vpPackage.models[toViewportIdx];
+
 			GLuint pid = bakerProg.use();
 			GLuint w = bakedNormalMap.width;
 			GLuint h = bakedNormalMap.height;
 			static GLubyte* data = new GLubyte[3*w*h];
 			std::string fullPath(exportPath);
-			fullPath += models[0]->name+".png";
+			fullPath += toModel->name+".png";
 
 			bakedNormalMap.bind();
-			for( Mesh* mesh : models[0]->meshes )
+			for( Mesh* mesh : toModel->meshes )
 				mesh->draw(pid);
 			bakedNormalMap.unbind();
 
@@ -174,13 +183,18 @@ namespace lim
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 			Logger::get()<<"done"<<fullPath<<stbi_write_png(fullPath.c_str(), w, h, 3, data, w*3)<<Logger::endll;
 		}
+	private:
 		virtual void update() final
 		{
 			processInput();
 
 			//scenes[0]->render(0, scr_width, scr_height, cameras[0]); 
-			scenes[0]->render(viewports[0]);
-			scenes[1]->render(viewports[1]);
+
+			Camera* firstCam = vpPackage.cameras[toViewportIdx];
+
+			for( auto& vpp : vpPackage ) {
+				vpp.scene->render(vpp.viewport->framebuffer, (isSameCamera)?firstCam:vpp.camera);
+			}
 
 			renderImGui();
 
@@ -189,35 +203,56 @@ namespace lim
 		}
 		void renderImGui()
 		{
+			const Model* fromModel = vpPackage[fromViewportIdx].model;
+			const Model* toModel = vpPackage[toViewportIdx].model;
+
 			imgui_modules::beginImGui();
 
 			imgui_modules::ShowExampleAppDockSpace([&]() {
 				if( ImGui::BeginMenu("File") ) {
 					if( ImGui::BeginMenu("Open Recent") ) {
-						typename std::vector<std::string>::reverse_iterator iter;
-						for( iter = AppPref::get().recentModelPaths.rbegin();
-							iter != AppPref::get().recentModelPaths.rend(); iter++ ) {
-							if( ImGui::MenuItem((*iter).c_str()) ) {
-								loadModel((*iter));
-								break;
+						for( Viewport* vp : vpPackage.viewports ) {
+							if( ImGui::BeginMenu(("Viewport"+std::to_string(vp->id)).c_str()) ) {
+								typename std::vector<std::string>::reverse_iterator iter;
+								for( iter = AppPref::get().recentModelPaths.rbegin();
+									iter != AppPref::get().recentModelPaths.rend(); iter++ ) {
+									if( ImGui::MenuItem((*iter).c_str()) ) {
+										loadModel((*iter), vp->id);
+										break;
+									}
+								}
+								if( ImGui::MenuItem("Clear Recent") ) {
+									AppPref::get().clearData();
+								}
+								ImGui::EndMenu();
 							}
-						}
-						if( ImGui::MenuItem("Clear Recent") ) {
-							AppPref::get().clearData();
 						}
 						ImGui::EndMenu();
 					}
-					if( ImGui::BeginMenu("Export") ) {
-						for( int i=0; i<ModelExporter::nr_formats; i++ ) {
-							const aiExportFormatDesc* format = ModelExporter::getFormatInfo(i);
-							if( ImGui::MenuItem(format->id) ) {
-								exportModel(format->id);
-							}
-							if( ImGui::IsItemHovered() ) {
-								ImGui::SetTooltip(fmToStr("%s\n%s.%s", format->description, models[0]->name.c_str(), format->fileExtension).c_str());
+					if( toModel!=nullptr&&ImGui::BeginMenu("Export") ) {
+						for( Viewport* vp : vpPackage.viewports ) {
+							if( ImGui::BeginMenu(("Viewport"+std::to_string(vp->id)).c_str()) ) {
+
+								for( int i=0; i<ModelExporter::nr_formats; i++ ) {
+									const aiExportFormatDesc* format = ModelExporter::getFormatInfo(i);
+									if( ImGui::MenuItem(format->id) ) {
+										exportModel(format->id);
+									}
+									if( ImGui::IsItemHovered() ) {
+										const char* modelName = toModel->name.c_str();
+										ImGui::SetTooltip(fmToStr("%s\n%s.%s", format->description, modelName, format->fileExtension).c_str());
+									}
+								}
+								ImGui::EndMenu();
 							}
 						}
 						ImGui::EndMenu();
+					}
+					ImGui::EndMenu();
+				}
+				if( ImGui::BeginMenu("View") ) {
+					if( ImGui::MenuItem("add viewport") ) {
+						addViewport();
 					}
 					ImGui::EndMenu();
 				}
@@ -227,12 +262,35 @@ namespace lim
 
 			/* 실행후 겹쳤을때 그리는순서에 따라서 위로오는게 결정됨 */
 			// 중요한게 뒤로 오게 해야함
-			viewports[1]->drawImGui();
-			viewports[0]->drawImGui();
+
+			for( int i=vpPackage.size-1; i>=0; i-- ) {
+				vpPackage.viewports[i]->drawImGui();
+			}
 
 			Logger::get().drawImGui();
 
 			if( ImGui::Begin("Simplify Options") ) {
+				ImGui::Text("From viewport:");
+				for( auto& vpp : vpPackage ) {
+					int id = vpp.viewport->id;
+					if( vpp.model==nullptr ) continue;
+					ImGui::SameLine();
+					if( ImGui::RadioButton((std::to_string(id)+"##1").c_str(), &fromViewportIdx, id)
+					   && fromViewportIdx == toViewportIdx ) {
+						toViewportIdx++;
+						toViewportIdx%=vpPackage.size;
+					}
+				}
+
+				ImGui::Text("to viewport:");
+				for( Viewport* vp : vpPackage.viewports ) {
+					if( vp->id == fromViewportIdx ) continue;
+					ImGui::SameLine();
+					if( ImGui::RadioButton((std::to_string(vp->id)+"##2").c_str(), &toViewportIdx, vp->id) ) {
+						Logger::get()<<vp->id;
+					}
+				}
+
 				// simplification
 				static float pct = 0.8f;
 				ImGui::SliderFloat("percent", &pct, 0.0f, 1.0f);
@@ -248,7 +306,7 @@ namespace lim
 				}
 
 				ImGui::SameLine();
-				ImGui::Text("target triangles = %d", static_cast<int>(scenes[0]->model->trianglesNum*pct));
+				ImGui::Text("target triangles = %d", static_cast<int>(fromModel->trianglesNum*pct));
 				ImGui::Text("simplified in %lf sec", Logger::get().simpTime);
 				ImGui::NewLine();
 				ImGui::Separator();
@@ -265,24 +323,17 @@ namespace lim
 
 
 			if( ImGui::Begin("Viewing Options") ) {
-				static bool isSameCamera = false;
-				if( ImGui::Checkbox("use same camera", &isSameCamera) ) {
-					if( isSameCamera )
-						viewports[1]->camera = cameras[0];
-					else
-						viewports[1]->camera = cameras[1];
-				}
+				ImGui::Checkbox("use same camera", &isSameCamera);
 
 				ImGui::SliderFloat("move speed", &cameraMoveSpeed, 1.0f, 3.0f);
 
-				static int prog_idx = 0;
 				std::vector<const char*> comboList;
 				for( Program* prog : programs )
 					comboList.push_back(prog->name.c_str());
-				if( ImGui::Combo("shader", &prog_idx, comboList.data(), comboList.size()) ) {
-					for( Scene* scene : scenes ) {
-						scene->model->program = programs[prog_idx];
-						scene->ground->program = programs[prog_idx];
+				if( ImGui::Combo("shader", &selectedProgIdx, comboList.data(), comboList.size()) ) {
+					for( auto& vpp : vpPackage ) {
+						if( vpp.model == nullptr ) continue;
+						vpp.model->program = programs[selectedProgIdx];
 					}
 				}
 				const float yawSpd = 360*0.001;
@@ -295,19 +346,120 @@ namespace lim
 				ImGui::Text("pos %f %f %F", light.position.x, light.position.y, light.position.z);
 			} ImGui::End();
 
-			if( ImGui::Begin("Model Status")&& scenes[0]->model!=nullptr ) {
-				ImGui::Text("<Original model>");
-				lim::Model& ori = *(scenes[0]->model);
-				ImGui::Text("name : %s", ori.name.c_str());
-				ImGui::Text("#verteces : %u", ori.verticesNum);
-				ImGui::Text("#triangles : %u", ori.trianglesNum);
-				ImGui::Text("#meshes : %lu", ori.meshes.size());
-				ImGui::Text("#textures : %lu", ori.textures_loaded.size());
-				lim::Model& simp = *(scenes[1]->model);
-				ImGui::NewLine();
-				ImGui::Text("<Simplified model>");
-				ImGui::Text("#verteces : %u", simp.verticesNum);
-				ImGui::Text("#triangles : %u", simp.trianglesNum);
+
+			if( ImGui::Begin("Model Status") ) {
+
+
+
+				static ImGuiTableFlags flags =  ImGuiTableFlags_ContextMenuInBody |ImGuiTableFlags_ScrollX| ImGuiTableFlags_ScrollY
+					| ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Reorderable;
+
+				if( ImGui::BeginTable("attributes table", vpPackage.viewports.size()+1, flags, {0,ImGui::GetTextLineHeightWithSpacing()*8}) ) {
+					ImGui::TableSetupScrollFreeze(1, 1);
+					ImGui::TableSetupColumn("attributes", ImGuiTableColumnFlags_NoHide);
+					for( Viewport* vp : vpPackage.viewports ) {
+						ImGui::TableSetupColumn(vp->name.c_str());
+					}
+					ImGui::TableHeadersRow();
+
+
+					int column = 0;
+					ImGui::TableNextRow();
+					if( ImGui::TableSetColumnIndex(column++) )
+						ImGui::Text("name");
+					for( Model* md : vpPackage.models ) {
+						if( ImGui::TableSetColumnIndex(column++) ) {
+							if( md==nullptr ) ImGui::Text("");
+							else ImGui::Text("%s", md->name.c_str());
+						}
+					}
+					column = 0;
+					ImGui::TableNextRow();
+					if( ImGui::TableSetColumnIndex(column++) )
+						ImGui::Text("#verticies");
+					for( Model* md : vpPackage.models ) {
+						if( ImGui::TableSetColumnIndex(column++) ) {
+							if( md==nullptr )  ImGui::Text("");
+							else ImGui::Text("%d", md->verticesNum);
+						}
+					}
+					column = 0;
+					ImGui::TableNextRow();
+					if( ImGui::TableSetColumnIndex(column++) )
+						ImGui::Text("#triangles");
+					for( Model* md : vpPackage.models ) {
+						if( ImGui::TableSetColumnIndex(column++) ) {
+							if( md==nullptr ) ImGui::Text("");
+							else ImGui::Text("%d", md->trianglesNum);
+						}
+					}
+					column = 0;
+					ImGui::TableNextRow();
+					if( ImGui::TableSetColumnIndex(column++) )
+						ImGui::Text("boundary_x");
+					for( Model* md : vpPackage.models ) {
+						if( ImGui::TableSetColumnIndex(column++) ) {
+							if( md==nullptr ) ImGui::Text("");
+							else ImGui::Text("%f", md->getBoundarySize().x);
+						}
+					}
+					column = 0;
+					ImGui::TableNextRow();
+					if( ImGui::TableSetColumnIndex(column++) )
+						ImGui::Text("boundary_y");
+					for( Model* md : vpPackage.models ) {
+						if( ImGui::TableSetColumnIndex(column++) ) {
+							if( md==nullptr ) ImGui::Text("");
+							else ImGui::Text("%f", md->getBoundarySize().y);
+						}
+					}
+
+					column = 0;
+					ImGui::TableNextRow();
+					if( ImGui::TableSetColumnIndex(column++) )
+						ImGui::Text("#meshes");
+					for( Model* md : vpPackage.models ) {
+						if( ImGui::TableSetColumnIndex(column++) ) {
+							if( md==nullptr ) ImGui::Text("");
+							else ImGui::Text("%d", md->meshes.size());
+						}
+					}
+					column = 0;
+					ImGui::TableNextRow();
+					if( ImGui::TableSetColumnIndex(column++) )
+						ImGui::Text("#textures");
+					for( Model* md : vpPackage.models ) {
+						if( ImGui::TableSetColumnIndex(column++) ) {
+							if( md==nullptr ) ImGui::Text("");
+							else ImGui::Text("%d", md->textures_loaded.size());
+						}
+					}
+
+
+
+					ImGui::EndTable();
+				}
+
+				/*
+				if( models[0]!=nullptr ) {
+					ImGui::Text("<Original model>");
+					lim::Model& ori = *models[0];
+					ImGui::Text("name : %s", ori.name.c_str());
+					ImGui::Text("#verteces : %u", ori.verticesNum);
+					ImGui::Text("#triangles : %u", ori.trianglesNum);
+					ImGui::Text("#meshes : %lu", ori.meshes.size());
+					ImGui::Text("#textures : %lu", ori.textures_loaded.size());
+				}
+				if( models[1]!=nullptr ) {
+					lim::Model& simp = *models[1];
+					ImGui::NewLine();
+					ImGui::Text("<Simplified model>");
+					ImGui::Text("#verteces : %u", simp.verticesNum);
+					ImGui::Text("#triangles : %u", simp.trianglesNum);
+				}
+				*/
+				//ImGui::Text("focustd %d, hover %d", viewports[0]->focused, viewports[0]->hovered);
+				//ImGui::Text("focustd %d, hover %d", viewports[1]->focused, viewports[1]->hovered);
 			} ImGui::End();
 
 			/* show texture */
@@ -366,9 +518,10 @@ namespace lim
 		}
 		void processInput()
 		{
-			for( Viewport* vp : viewports ) {
-				if( vp->focused == false ) continue;
-				Camera& camera = *vp->camera;
+			for( auto& vppack : vpPackage ) {
+				Viewport& vp = *(vppack.viewport);
+				if( vp.focused == false ) continue;
+				Camera& camera = *(vppack.camera);
 
 				if( glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)==GLFW_PRESS ) {
 					float multiple = 1.0f;
@@ -391,9 +544,11 @@ namespace lim
 		}
 		void key_callback(int key, int scancode, int action, int mode)
 		{
-			for( Viewport* vp : viewports ) {
-				if( vp->focused == false ) continue;
-				Camera& camera = *vp->camera;
+			for( auto& vppack : vpPackage ) {
+				Viewport& vp = *(vppack.viewport);
+				if( vp.focused == false ) continue;
+				Camera& camera = *(vppack.camera);
+
 				if( glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)==GLFW_PRESS
 				   && key == GLFW_KEY_Z ) {
 					if( action == GLFW_PRESS ) {
@@ -411,14 +566,16 @@ namespace lim
 		}
 		void cursor_pos_callback(double xPos, double yPos)
 		{
-			for( Viewport* vp : viewports ) {
-				if( vp->focused == false ) continue;
-				Camera& camera = *vp->camera;
+			for( auto& vppack : vpPackage ) {
+				Viewport& vp = *(vppack.viewport);
+				if( vp.focused == false ) continue;
+				Camera& camera = *(vppack.camera);
+
 				const float w = scr_width;
 				const float h = scr_height;
 
-				float xoff = xPos - vp->cursor_pos_x;
-				float yoff = vp->cursor_pos_y - yPos; // inverse
+				float xoff = xPos - vp.cursor_pos_x;
+				float yoff = vp.cursor_pos_y - yPos; // inverse
 
 				if( glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) ) {
 					if( glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS ) {
@@ -436,27 +593,30 @@ namespace lim
 						camera.updateFreeViewMat();
 					}
 				}
-				vp->cursor_pos_x = xPos; vp->cursor_pos_y = yPos;
+				vp.cursor_pos_x = xPos; vp.cursor_pos_y = yPos;
 			}
 		}
 		void mouse_btn_callback(int button, int action, int mods)
 		{
-			for( Viewport* vp : viewports ) {
-				if( vp->hovered == false ) continue;
-				Camera& camera = *vp->camera;
+			for( auto& vppack : vpPackage ) {
+				Viewport& vp = *(vppack.viewport);
+				if( vp.focused == false ) continue;
+				Camera& camera = *(vppack.camera);
+
 				if( action == GLFW_PRESS ) {
 					double xpos, ypos;
 					glfwGetCursorPos(window, &xpos, &ypos);
-					vp->cursor_pos_x = xpos;
-					vp->cursor_pos_y = ypos;
+					vp.cursor_pos_x = xpos;
+					vp.cursor_pos_y = ypos;
 				}
 			}
 		}
 		void scroll_callback(double xoff, double yoff)
 		{
-			for( Viewport* vp : viewports ) {
-				if( vp->focused == false ) continue;
-				Camera& camera = *vp->camera;
+			for( auto& vppack : vpPackage ) {
+				Viewport& vp = *(vppack.viewport);
+				if( vp.focused == false ) continue;
+				Camera& camera = *(vppack.camera);
 
 				camera.rotateCamera(xoff, yoff);
 				camera.updatePivotViewMat();
@@ -474,7 +634,18 @@ namespace lim
 		void drop_callback(int count, const char** paths)
 		{
 			for( int i = 0; i < count; i++ ) {
-				loadModel(paths[i]);
+				int hoveredIdx=0;
+				for( Viewport* vp : vpPackage.viewports ) {
+					if( vp->hovered==true )
+						break;
+					hoveredIdx++;
+				}
+				if( hoveredIdx>=vpPackage.size ) {
+					Logger::get()<<"[error] you must drop to viewport"<<Logger::endl;
+					return;
+				}
+
+				loadModel(paths[i], hoveredIdx);
 				break;
 			}
 		}

@@ -49,8 +49,7 @@ namespace lim
 
 			if( !scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE
 			   || !scene->mRootNode ) {
-				Logger::get().log("[error, assimp]%s\n", loader.GetErrorString());
-				return new Model(nullptr);
+				throw loader.GetErrorString();
 			}
 			// recursive fashion
 			parseNode(scene->mRootNode, scene);
