@@ -17,20 +17,18 @@ namespace lim
 		/* c++17 non-const static data member can initialize in declaration with inline keyword*/
 		inline static GLuint id_generator = 0;
 		GLuint id;
-		Framebuffer* framebuffer;
-		bool hovered, focused;
-		glm::vec2 boundary_max, boundary_min;
-		GLuint width, height;
-		float cursor_pos_x, cursor_pos_y;
 		const std::string name;
+		Framebuffer* framebuffer;
+		bool hovered, focused, dragging;
+		GLuint width, height;
+		glm::ivec2 mousePos;
 	public:
 		Viewport()
-			: boundary_max(0), boundary_min(0), id(id_generator++), name("Viewport"+std::to_string(id))
+			: id(id_generator++), name("Viewport"+std::to_string(id))
 		{
 			framebuffer = new MsFramebuffer();
 			hovered = focused = false;
 			width = height = 0;
-			cursor_pos_x = cursor_pos_x = 0;
 		}
 		virtual ~Viewport()
 		{
@@ -43,20 +41,23 @@ namespace lim
 			auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
 			auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
 			auto viewportOffset = ImGui::GetWindowPos();
-			boundary_min ={viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y};
-			boundary_max ={viewportMaxRegion.x + viewportOffset.x, viewportMaxRegion.y + viewportOffset.y};
 
 			focused = ImGui::IsWindowFocused();
 			hovered = ImGui::IsWindowHovered();
+			dragging = focused&&ImGui::IsMouseDown(0);
+
+			if( dragging ) {
+				glm::ivec2 winPos, vpPos;
+				winPos = imgui_modules::imToIvec(ImGui::GetWindowPos());
+				vpPos = imgui_modules::imToIvec(ImGui::GetWindowContentRegionMin());
+				mousePos = imgui_modules::imToIvec(ImGui::GetMousePos());
+				mousePos = mousePos - winPos - vpPos;
+				//ImGui::Text("%f %f", mousePos.x, mousePos.y);
+			}
 
 			auto viewportPanelSize = ImGui::GetContentRegionAvail();
 			width = viewportPanelSize.x;
 			height = viewportPanelSize.y;
-
-			float x, y;
-
-			x = ImGui::GetMousePos().x;
-			y = ImGui::GetMousePos().y;
 
 			if( framebuffer->width != width
 			   || framebuffer->height != height ) {

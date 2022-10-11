@@ -16,6 +16,8 @@ namespace lim
 {
 	namespace imgui_modules
 	{
+		const inline glm::ivec2 imToIvec(ImVec2 v) { return {v.x, v.y}; }
+
 		static inline void initImGui(GLFWwindow* window)
 		{
 			IMGUI_CHECKVERSION();

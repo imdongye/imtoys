@@ -18,7 +18,8 @@
 #ifndef LIMCLUDE_H
 #define LIMCLUDE_H
 
-#include <glad/glad.h> 
+#include <glad/glad.h>
+#define GLM_SWIZZLE
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/quaternion.hpp>

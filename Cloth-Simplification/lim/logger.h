@@ -49,9 +49,16 @@ namespace lim
 		Logger(const Logger&)=delete;
 		Logger &operator=(const Logger&)=delete;
 	public:
-		static Logger& get()
+		/*  */
+		static Logger& get(int mode=0)
 		{
 			static Logger logger;
+			if( mode==1 ) {
+				static const char *__color_start = "[0;31;40m";
+				static const char *__color_end = "[0m";
+				printf("%s%s%s", __color_start, "[error]", __color_end);
+			}
+
 			return logger;
 		}
 		void drawImGui()

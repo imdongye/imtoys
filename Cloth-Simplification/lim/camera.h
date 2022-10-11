@@ -11,6 +11,8 @@
 //  좌클릭+alt+ctrl+drag => center pivot fovy, dist 조정
 //  스크롤 => fovy 조정
 // 
+//	distance = -1 ...
+// 
 //
 //  TODO list :
 //  1. roll
@@ -40,50 +42,45 @@ namespace lim
 			UP,
 			DOWN
 		};
-		enum class MODE
-		{
-			FREE,
-			PIVOT
-		};
 	public:
-		MODE mode;
 		// camera options
-		float aspect;
-		float zNear;
-		float zFar;
+		float aspect=1;
+		float zNear=0.1;
+		float zFar=100;
 		// editable
 		glm::vec3 position;
 		float yaw; // degrees
 		float pitch;
-		float roll;
-		float fovy; // feild of view y axis dir
+		float roll=0;
+		float fovy = 55; // feild of view y axis dir
+		// for pivot view mode
 		float distance;
+		glm::vec3 pivot;
 		// result of inside update
 		glm::vec3 front;
 		glm::vec3 up;
 		glm::vec3 right;
 		glm::mat4 viewMat;
 		glm::mat4 projMat;
-		glm::mat4 vpMat;
+		//glm::mat4 vpMat;
 	public:
 		Camera() {}
-		Camera(glm::vec3 _position, glm::vec3 _front, float _aspect)
-			: fovy(60), roll(0), zNear(0.1), zFar(100.f), mode(MODE::FREE)
+		Camera(glm::vec3 _position, glm::vec3 _front, float _aspect=1, glm::vec3 _pivot=glm::vec3(0))
+			: pivot(_pivot)
 		{
+			distance = -1;
 
 			position = _position;
 			front = normalize(_front);
 			updateRotateFromFront();
 
 			aspect = _aspect;
-			distance = position.length();
 			updateFreeViewMat();
 			updateProjMat();
 		}
-		Camera(float _distance, float _yaw, float _pitch, float _aspect)
-			: fovy(60), roll(0), zNear(0.1), zFar(100.f), mode(MODE::PIVOT)
+		Camera(float _distance, float _yaw, float _pitch, glm::vec3 _pivot, float _aspect=1)
+			:pivot(_pivot)
 		{
-
 			distance = _distance;
 			yaw = _yaw;
 			pitch = _pitch;
@@ -95,53 +92,25 @@ namespace lim
 		{
 			float velocity = speed * deltaTime;
 
-			if( mode==MODE::FREE ) {
-				switch( direction ) {
-				case MOVEMENT::FORWARD:   position += front * velocity; break;
-				case MOVEMENT::BACKWARD:  position -= front * velocity; break;
-				case MOVEMENT::LEFT:      position -= right * velocity; break;
-				case MOVEMENT::RIGHT:     position += right * velocity; break;
-				case MOVEMENT::UP:        position += glm::vec3(0, 1, 0) * velocity; break;
-				case MOVEMENT::DOWN:      position -= glm::vec3(0, 1, 0) * velocity; break;
-				}
-				updateFreeViewMat();
+			switch( direction ) {
+			case MOVEMENT::FORWARD:   position += front * velocity; break;
+			case MOVEMENT::BACKWARD:  position -= front * velocity; break;
+			case MOVEMENT::LEFT:      position -= right * velocity; break;
+			case MOVEMENT::RIGHT:     position += right * velocity; break;
+			case MOVEMENT::UP:        position += glm::vec3(0, 1, 0) * velocity; break;
+			case MOVEMENT::DOWN:      position -= glm::vec3(0, 1, 0) * velocity; break;
 			}
-			else if( mode==MODE::PIVOT ) {
-				switch( direction ) {
-				case MOVEMENT::FORWARD:   shiftDist(-velocity*100); break;
-				case MOVEMENT::BACKWARD:  shiftDist(velocity*100); break;
-				}
-				updatePivotViewMat();
-			}
-		}
-		void readyPivot()
-		{
-			mode = MODE::PIVOT;
-			distance = glm::length(position);
-			front = glm::normalize(-position);
-			// front => yaw pitch
-			updateRotateFromFront();
-		}
-		void readyFree()
-		{
-			mode = MODE::FREE;
-			front = glm::normalize(-position);
-			updateRotateFromFront();
-			printCameraState();
 		}
 		void rotateCamera(float xoff, float yoff)
 		{
-			rotateCameraYaw(xoff);
-			rotateCameraPitch(yoff);
+			yaw += xoff;
+			pitch = glm::clamp(pitch+yoff, -89.f, 89.f);
 		}
-		void rotateCameraYaw(float yaw_off)
+		void shiftPos(float xoff, float yoff)
 		{
-			yaw += yaw_off;//todo repeat
-		}
-		void rotateCameraPitch(float pitch_off)
-		{
-			pitch += pitch_off;
-			pitch = glm::clamp(pitch, -89.f, 89.f);
+			glm::vec3 shift = up*yoff+right*xoff;
+			pivot += shift;
+			position += shift;
 		}
 		void shiftDist(float offset)
 		{
@@ -154,24 +123,31 @@ namespace lim
 			fovy = glm::clamp(fovy, MIN_FOVY, MAX_FOVY);
 		}
 	public:
-		void updateRotateFromFront()
-		{
-			pitch = glm::degrees(asin(front.y));
-			//yaw = glm::degrees(acos(-front.z/cos(glm::radians(pitch))));
-			yaw = glm::degrees(asin(front.x/cos(glm::radians(pitch))));
-		}
 		void updatePivotViewMat()
 		{
+			static glm::vec3 dir;
+			if( distance<0 ) {
+				dir = pivot-position;
+				distance = glm::length(dir);
+				// front => yaw pitch
+				updateRotateFromFront();
+			}
+
 			// -yaw to match obj ro
 			position = glm::vec3(glm::rotate(glm::radians(-yaw), glm::vec3(0, 1, 0))
 								 * glm::rotate(glm::radians(pitch), glm::vec3(1, 0, 0))
-								 * glm::vec4(0, 0, distance, 1));
-			printCameraState();
-			front = normalize(-position);
-			viewMat = glm::lookAt(position, glm::vec3(0), glm::vec3(0, 1, 0));
+								 * glm::vec4(0, 0, distance, 1)) + pivot;
+			position.y = glm::max(position.y, 0.0f);
+			viewMat = glm::lookAt(position, pivot, glm::vec3(0, 1, 0));
+
+			dir = pivot-position;
+			front = glm::normalize(dir);
+			right = glm::normalize(glm::cross(front, glm::vec3(0, 1, 0)));
+			up    = glm::normalize(glm::cross(right, front));
 		}
 		void updateFreeViewMat()
 		{
+			if( distance>0 ) distance = -1;
 			// roll-pitch-yaw
 			// fixed(world) basis => pre multiplication
 			// https://answers.opencv.org/question/161369/retrieve-yaw-pitch-roll-from-rvec/
@@ -192,16 +168,22 @@ namespace lim
 		{
 			projMat = glm::perspective(glm::radians(fovy), aspect, zNear, zFar);
 		}
+	private:
+		void updateRotateFromFront()
+		{
+			pitch = glm::degrees(asin(front.y));
+			//yaw = glm::degrees(acos(-front.z/cos(glm::radians(pitch))));
+			yaw = glm::degrees(asin(front.x/cos(glm::radians(pitch))));
+		}
+		void updateVPMat()
+		{
+			//vpMat = viewMat*projMat;
+		}
 		void printCameraState()
 		{
 			Logger::get().log("PYR  : %f.2, %f.2, %f.2\n", pitch, yaw, roll);
 			Logger::get().log("POS  : %f.2, %f.2, %f.2\n", position.x, position.y, position.z);
 			Logger::get().log("DIST : %f\n", distance);
-		}
-	private:
-		void updateVPMat()
-		{
-			vpMat = viewMat*projMat;
 		}
 	};
 } // namespace lim

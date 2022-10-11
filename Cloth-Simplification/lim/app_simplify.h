@@ -26,6 +26,11 @@ namespace lim
 	class SimplifyApp: public AppBase
 	{
 	private:
+		enum class VIEWING_MODE : unsigned int
+		{
+			PIVOT, FREE, SCROLL
+		};
+		VIEWING_MODE viewingMode=VIEWING_MODE::PIVOT;
 		bool isSameCamera = false;
 		float cameraMoveSpeed=1.6;
 		Light light = Light();
@@ -43,7 +48,7 @@ namespace lim
 		Framebuffer bakedNormalMap=Framebuffer();
 		Program bakerProg=Program("Normal Map Baker");
 	public:
-		SimplifyApp(): AppBase(1200, 960)
+		SimplifyApp(): AppBase(1280, 720)
 		{
 			bakedNormalMap.clearColor = glm::vec4(0.5, 0.5, 1, 1);
 			bakedNormalMap.resize(atoi(bakeSizeList[selectedBakeSizeIdx]));
@@ -70,12 +75,9 @@ namespace lim
 			programs.push_back(new Program("Uv View"));
 			programs.back()->attatch("uv_view.vs").attatch("uv_view.fs").link();
 
-
-			Model* model = ModelLoader::loadFile("archive/dwarf/Dwarf_2_Low.obj");
-			model->program = programs[selectedProgIdx];
-			addViewport(model);
-
-			addViewport();
+			addEmptyViewport();
+			loadModel("archive/dwarf/Dwarf_2_Low.obj", 0);
+			addEmptyViewport();
 
 			init_callback();
 			imgui_modules::initImGui(window);
@@ -89,38 +91,33 @@ namespace lim
 			imgui_modules::destroyImGui();
 		}
 	private:
-		void addViewport(Model* model=nullptr)
+		void addEmptyViewport()
 		{
-			Scene* scene = new Scene(light);
-			scene->setModel(model);
-			Camera* camera = new Camera(glm::vec3(0.0f, 1.0f, 3.0f), glm::vec3(0, 0, -1), 1);
 			Viewport* viewport = new Viewport();
-
-			vpPackage.push_back({viewport, scene, model, camera});
+			Scene* scene = new Scene(light);
+			Camera* camera = new Camera(glm::vec3(0.0f, 1.0f, 3.0f), glm::vec3(0, 0, -1), 1);
+			vpPackage.push_back(viewport, scene, nullptr, camera);
 		}
 		void loadModel(std::string_view path, int vpIdx)
 		{
-			Viewport* viewport; Scene* scene; Model* model;
-
-			std::tie(viewport, scene, model, std::ignore) = vpPackage[vpIdx].getTuple();
-
-			if( model!=nullptr ) {
-				delete model;
-				model = nullptr;
+			Model* temp = vpPackage.models[vpIdx];
+			if( temp!=nullptr ) {
+				delete temp;
 			}
 
 			double start = glfwGetTime();
-			Logger::get().log("Loading %s..... . ... ..... .. .... .. . . .. .\n", path.data());
+			Logger::get(1).log("Loading %s..... . ... ..... .. .... .. . . .. .\n", path.data());
 			try {
-				model = ModelLoader::loadFile(path.data());
+				temp = ModelLoader::loadFile(path.data());
+				temp->program = programs[selectedProgIdx];
 			} catch( const char* error_str ) {
 				Logger::get()<<error_str<<Logger::endl;
 			}
-			model->program = programs[selectedProgIdx];
+			vpPackage.scenes[vpIdx]->setModel(temp);
+			vpPackage.models[vpIdx] = temp;
+			vpPackage.cameras[vpIdx]->pivot = temp->position;
 
-			vpPackage.changeModel(vpIdx, model);
 			Logger::get().log("Done! in %.3f sec.  \n", glfwGetTime() - start);
-
 			AppPref::get().pushPathWithoutDup(path.data());
 		}
 		void simplifyModel(float lived_pct = 0.8f
@@ -135,7 +132,8 @@ namespace lim
 			if( toModel != nullptr ) delete toModel;
 
 			toModel = fqms::simplifyModel(fromModel, lived_pct, version, agressiveness, verbose);
-			vpPackage.changeModel(toViewportIdx, toModel);
+			vpPackage.models[toViewportIdx] = toModel;
+			vpPackage.scenes[toViewportIdx]->setModel(toModel);
 
 			double simpTime = glfwGetTime() - start;
 			Logger::get().simpTime = simpTime;
@@ -190,10 +188,19 @@ namespace lim
 
 			//scenes[0]->render(0, scr_width, scr_height, cameras[0]); 
 
-			Camera* firstCam = vpPackage.cameras[toViewportIdx];
-
-			for( auto& vpp : vpPackage ) {
-				vpp.scene->render(vpp.viewport->framebuffer, (isSameCamera)?firstCam:vpp.camera);
+			if( isSameCamera ) {
+				Camera* firstCam = vpPackage.cameras[toViewportIdx];
+				for( int i=0; i<vpPackage.size; i++ ) {
+					Framebuffer* fb = vpPackage.viewports[i]->framebuffer;
+					vpPackage.scenes[i]->render(fb, firstCam);
+				}
+			}
+			else {
+				for( int i=0; i<vpPackage.size; i++ ) {
+					Framebuffer* fb = vpPackage.viewports[i]->framebuffer;
+					Camera* cm = vpPackage.cameras[i];
+					vpPackage.scenes[i]->render(fb, cm);
+				}
 			}
 
 			renderImGui();
@@ -203,8 +210,8 @@ namespace lim
 		}
 		void renderImGui()
 		{
-			const Model* fromModel = vpPackage[fromViewportIdx].model;
-			const Model* toModel = vpPackage[toViewportIdx].model;
+			const Model* fromModel = vpPackage.models[fromViewportIdx];
+			const Model* toModel = vpPackage.models[toViewportIdx];
 
 			imgui_modules::beginImGui();
 
@@ -252,7 +259,7 @@ namespace lim
 				}
 				if( ImGui::BeginMenu("View") ) {
 					if( ImGui::MenuItem("add viewport") ) {
-						addViewport();
+						addEmptyViewport();
 					}
 					ImGui::EndMenu();
 				}
@@ -271,9 +278,9 @@ namespace lim
 
 			if( ImGui::Begin("Simplify Options") ) {
 				ImGui::Text("From viewport:");
-				for( auto& vpp : vpPackage ) {
-					int id = vpp.viewport->id;
-					if( vpp.model==nullptr ) continue;
+				for( int i=0; i<vpPackage.size; i++ ) {
+					int id = vpPackage.viewports[i]->id;
+					if( vpPackage.models[i]==nullptr ) continue;
 					ImGui::SameLine();
 					if( ImGui::RadioButton((std::to_string(id)+"##1").c_str(), &fromViewportIdx, id)
 					   && fromViewportIdx == toViewportIdx ) {
@@ -323,17 +330,28 @@ namespace lim
 
 
 			if( ImGui::Begin("Viewing Options") ) {
+				static int focusedCameraIdx=0;
+				static const char* vmode_strs[] ={"pivot","free","scroll"};
+				static int tempVmode = static_cast<int>(viewingMode);
+				if( ImGui::Combo("mode", &tempVmode, vmode_strs, sizeof(vmode_strs)/sizeof(char*)) ) {
+					viewingMode = static_cast<VIEWING_MODE>(tempVmode);
+				}
 				ImGui::Checkbox("use same camera", &isSameCamera);
-
-				ImGui::SliderFloat("move speed", &cameraMoveSpeed, 1.0f, 3.0f);
+				ImGui::SliderFloat("move speed", &cameraMoveSpeed, 0.2f, 3.0f);
+				for( int i=0; i<vpPackage.size; i++ ) { // for test
+					if( vpPackage.viewports[i]->focused && focusedCameraIdx!=i) {
+						focusedCameraIdx = i;
+					}
+				}
+				ImGui::Text("camera fov: %f", vpPackage.cameras[focusedCameraIdx]->fovy);
 
 				std::vector<const char*> comboList;
 				for( Program* prog : programs )
 					comboList.push_back(prog->name.c_str());
 				if( ImGui::Combo("shader", &selectedProgIdx, comboList.data(), comboList.size()) ) {
-					for( auto& vpp : vpPackage ) {
-						if( vpp.model == nullptr ) continue;
-						vpp.model->program = programs[selectedProgIdx];
+					for( auto& md : vpPackage.models ) {
+						if( md == nullptr ) continue;
+						md->program = programs[selectedProgIdx];
 					}
 				}
 				const float yawSpd = 360*0.001;
@@ -348,9 +366,6 @@ namespace lim
 
 
 			if( ImGui::Begin("Model Status") ) {
-
-
-
 				static ImGuiTableFlags flags =  ImGuiTableFlags_ContextMenuInBody |ImGuiTableFlags_ScrollX| ImGuiTableFlags_ScrollY
 					| ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Reorderable;
 
@@ -434,32 +449,8 @@ namespace lim
 							else ImGui::Text("%d", md->textures_loaded.size());
 						}
 					}
-
-
-
 					ImGui::EndTable();
 				}
-
-				/*
-				if( models[0]!=nullptr ) {
-					ImGui::Text("<Original model>");
-					lim::Model& ori = *models[0];
-					ImGui::Text("name : %s", ori.name.c_str());
-					ImGui::Text("#verteces : %u", ori.verticesNum);
-					ImGui::Text("#triangles : %u", ori.trianglesNum);
-					ImGui::Text("#meshes : %lu", ori.meshes.size());
-					ImGui::Text("#textures : %lu", ori.textures_loaded.size());
-				}
-				if( models[1]!=nullptr ) {
-					lim::Model& simp = *models[1];
-					ImGui::NewLine();
-					ImGui::Text("<Simplified model>");
-					ImGui::Text("#verteces : %u", simp.verticesNum);
-					ImGui::Text("#triangles : %u", simp.trianglesNum);
-				}
-				*/
-				//ImGui::Text("focustd %d, hover %d", viewports[0]->focused, viewports[0]->hovered);
-				//ImGui::Text("focustd %d, hover %d", viewports[1]->focused, viewports[1]->hovered);
 			} ImGui::End();
 
 			/* show texture */
@@ -518,12 +509,12 @@ namespace lim
 		}
 		void processInput()
 		{
-			for( auto& vppack : vpPackage ) {
-				Viewport& vp = *(vppack.viewport);
-				if( vp.focused == false ) continue;
-				Camera& camera = *(vppack.camera);
-
-				if( glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)==GLFW_PRESS ) {
+			for( int i=0; i<vpPackage.size; i++ ) {
+				Viewport& vp = *(vpPackage.viewports[i]);
+				if( vp.dragging == false ) continue;
+				Camera& camera = *(vpPackage.cameras[i]);
+				switch( viewingMode ) {
+				case VIEWING_MODE::FREE:
 					float multiple = 1.0f;
 					if( glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS )
 						multiple = 1.3f;
@@ -539,91 +530,84 @@ namespace lim
 						camera.move(Camera::MOVEMENT::UP, deltaTime, cameraMoveSpeed*multiple);
 					if( glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS )
 						camera.move(Camera::MOVEMENT::DOWN, deltaTime, cameraMoveSpeed*multiple);
+					camera.updateFreeViewMat();
+					break;
 				}
+				break;
 			}
 		}
 		void key_callback(int key, int scancode, int action, int mode)
 		{
-			for( auto& vppack : vpPackage ) {
-				Viewport& vp = *(vppack.viewport);
-				if( vp.focused == false ) continue;
-				Camera& camera = *(vppack.camera);
-
-				if( glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)==GLFW_PRESS
-				   && key == GLFW_KEY_Z ) {
-					if( action == GLFW_PRESS ) {
-						camera.readyPivot();
-						camera.updatePivotViewMat();
-					}
-					else if( action == GLFW_RELEASE ) {
-						camera.readyFree();
-						camera.updateFreeViewMat();
-					}
-				}
+			if( key==GLFW_KEY_TAB && action==GLFW_PRESS ) {
+				//viewingMode++;
 			}
-			if( key == GLFW_KEY_ESCAPE && action == GLFW_PRESS )
+			if( key == GLFW_KEY_ESCAPE && action == GLFW_PRESS ) {
 				glfwSetWindowShouldClose(window, GL_TRUE);
+			}
 		}
 		void cursor_pos_callback(double xPos, double yPos)
 		{
-			for( auto& vppack : vpPackage ) {
-				Viewport& vp = *(vppack.viewport);
-				if( vp.focused == false ) continue;
-				Camera& camera = *(vppack.camera);
+			static const double pivotRotSpd = 0.3;
+			static const double pivotShiftSpd = -0.01;
+			static const double freeRotSpd = 0.3;
+			static double xOld, yOld;
+			static double xOff, yOff;
+			xOff = xPos-xOld;
+			yOff = yOld-yPos;
 
-				const float w = scr_width;
-				const float h = scr_height;
+			for( int i=0; i<vpPackage.size; i++ ) {
+				Viewport& vp = *(vpPackage.viewports[i]);
+				if( vp.dragging == false ) continue;
+				Camera& camera = *(vpPackage.cameras[i]);
 
-				float xoff = xPos - vp.cursor_pos_x;
-				float yoff = vp.cursor_pos_y - yPos; // inverse
-
-				if( glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) ) {
-					if( glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS ) {
-						if( glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS ) {
-							camera.shiftDist(xoff/w*160.f);
-							camera.shiftZoom(yoff/h*160.f);
-						}
-						else {
-							camera.rotateCamera(xoff/w*160.f, yoff/h*160.f);
-						}
+				switch( viewingMode ) {
+				case VIEWING_MODE::PIVOT:
+					if( glfwGetKey(window, GLFW_KEY_LEFT_SHIFT)==GLFW_PRESS ) {
+						camera.shiftPos(xOff*pivotShiftSpd, yOff*pivotShiftSpd);
 						camera.updatePivotViewMat();
 					}
 					else {
-						camera.rotateCamera(xoff/w*160.f, yoff/h*160.f);
-						camera.updateFreeViewMat();
+						camera.rotateCamera(xOff*pivotRotSpd, yOff*pivotRotSpd);
+						camera.updatePivotViewMat();
 					}
+					break;
+				case VIEWING_MODE::FREE:
+					camera.rotateCamera(xOff*freeRotSpd, yOff*freeRotSpd);
+					camera.updateFreeViewMat();
+					break;
+				case VIEWING_MODE::SCROLL:
+					break;
 				}
-				vp.cursor_pos_x = xPos; vp.cursor_pos_y = yPos;
+				break;
 			}
+			xOld = xPos; yOld = yPos;
 		}
 		void mouse_btn_callback(int button, int action, int mods)
 		{
-			for( auto& vppack : vpPackage ) {
-				Viewport& vp = *(vppack.viewport);
-				if( vp.focused == false ) continue;
-				Camera& camera = *(vppack.camera);
-
-				if( action == GLFW_PRESS ) {
-					double xpos, ypos;
-					glfwGetCursorPos(window, &xpos, &ypos);
-					vp.cursor_pos_x = xpos;
-					vp.cursor_pos_y = ypos;
-				}
-			}
 		}
 		void scroll_callback(double xoff, double yoff)
 		{
-			for( auto& vppack : vpPackage ) {
-				Viewport& vp = *(vppack.viewport);
-				if( vp.focused == false ) continue;
-				Camera& camera = *(vppack.camera);
+			static const double rotateSpd = 1.7;
+			for( int i=0; i<vpPackage.size; i++ ) {
+				Viewport& vp = *(vpPackage.viewports[i]);
+				if( !vp.hovered ) continue;
+				Camera& camera = *(vpPackage.cameras[i]);
 
-				camera.rotateCamera(xoff, yoff);
-				camera.updatePivotViewMat();
-				if( 0 ) {
-					camera.shiftZoom(yoff*10.f);
+				switch( viewingMode ) {
+				case VIEWING_MODE::PIVOT:
+					camera.shiftDist(yoff*3.f);
+					camera.updatePivotViewMat();
+					break;
+				case VIEWING_MODE::FREE:
+					camera.shiftZoom(yoff*5.f);
 					camera.updateProjMat();
+					break;
+				case VIEWING_MODE::SCROLL:
+					camera.rotateCamera(xoff*rotateSpd, yoff*rotateSpd);
+					camera.updatePivotViewMat();
+					break;
 				}
+				break;
 			}
 		}
 		void win_size_callback(int width, int height)
