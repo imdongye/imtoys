@@ -51,10 +51,21 @@ namespace lim
 			   || !scene->mRootNode ) {
 				throw loader.GetErrorString();
 			}
+			/* backup for export */
+			GLuint nr_mat = scene->mNumMaterials;
+			model->aiNumMats = nr_mat;
+			model->aiMats = (void**)(new aiMaterial*[nr_mat]);
+
+			for( int i=0; i<nr_mat; i++ ) {
+				model->aiMats[i] = new aiMaterial();
+				aiMaterial::CopyPropertyList((aiMaterial*)(model->aiMats[i]), scene->mMaterials[i]);
+			}
+
+
+
 			// recursive fashion
 			parseNode(scene->mRootNode, scene);
-
-
+			
 			model->updateNums();
 			model->updateBoundary();
 			Logger::get().log("model loaded : %s, vertices: %u\n\n", model->name.c_str()
@@ -149,7 +160,6 @@ namespace lim
 				for( GLuint j=0; j<face.mNumIndices; j++ )
 					indices.push_back(face.mIndices[j]);
 			}
-
 			// - materials. per texture type
 			aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 			// 1. diffuse maps
@@ -165,10 +175,11 @@ namespace lim
 			std::vector<Texture> heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT);
 			textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
 
-			Mesh* newMesh = new Mesh(vertices, indices, textures, mesh->mName.C_Str(), angles);
+			Mesh* newMesh = new Mesh(vertices, indices, textures, mesh->mName.C_Str());
 			aiColor3D ai_color;
 			material->Get(AI_MATKEY_COLOR_DIFFUSE, ai_color);
 			newMesh->color = glm::vec3(ai_color.r, ai_color.g, ai_color.b);
+			newMesh->aiMatIdx = mesh->mMaterialIndex;
 			return newMesh;
 		}
 		static void parseNode(aiNode* node, const aiScene* scene, int depth = 0)

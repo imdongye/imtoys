@@ -44,7 +44,7 @@ namespace lim
 
 			focused = ImGui::IsWindowFocused();
 			hovered = ImGui::IsWindowHovered();
-			dragging = focused&&ImGui::IsMouseDown(0);
+			dragging = focused && ImGui::IsMouseDown(0);
 
 			if( dragging ) {
 				glm::ivec2 winPos, vpPos;
@@ -52,6 +52,7 @@ namespace lim
 				vpPos = imgui_modules::imToIvec(ImGui::GetWindowContentRegionMin());
 				mousePos = imgui_modules::imToIvec(ImGui::GetMousePos());
 				mousePos = mousePos - winPos - vpPos;
+				ImGui::SetMouseCursor(7);
 				//ImGui::Text("%f %f", mousePos.x, mousePos.y);
 			}
 

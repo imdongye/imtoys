@@ -1122,9 +1122,8 @@ namespace fqms
 			break;
 		}
 
-		lim::Mesh *result = new lim::Mesh(mesh->name.c_str());
-		result->color = mesh->color;
-		result->textures = mesh->textures;
+		lim::Mesh *result = new lim::Mesh(mesh);
+		
 		loadFromGlobal(result);
 		return result;
 	}

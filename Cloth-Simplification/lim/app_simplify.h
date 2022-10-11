@@ -67,7 +67,10 @@ namespace lim
 			programs.back()->attatch("pos_nor_uv.vs").attatch("uv.fs").link();
 
 			programs.push_back(new Program("Bump"));
-			programs.back()->attatch("pos_nor_uv.vs").attatch("bump.fs").link();
+			programs.back()->attatch("pos_nor_uv.vs").attatch("bump_map.fs").link();
+
+			programs.push_back(new Program("Normal"));
+			programs.back()->attatch("pos_nor_uv.vs").attatch("normal_map.fs").link();
 
 			programs.push_back(new Program("Shadowed"));
 			programs.back()->attatch("shadowed.vs").attatch("shadowed.fs").link();
@@ -120,6 +123,22 @@ namespace lim
 			Logger::get().log("Done! in %.3f sec.  \n", glfwGetTime() - start);
 			AppPref::get().pushPathWithoutDup(path.data());
 		}
+		void exportModel(size_t pIndex, int vpIdx)
+		{
+			Model *toModel = vpPackage.models[vpIdx];
+
+			if( toModel == nullptr ) {
+				Logger::get()<<"error : export"<<Logger::endl;
+				return;
+			}
+
+			double start = glfwGetTime();
+			Logger::get().log("Exporting %s.. .. ...... ...  .... .. . .... . .\n", toModel->name.c_str());
+
+			ModelExporter::exportModel(exportPath, toModel, pIndex);
+
+			Logger::get().log("Done! in %.3f sec.  \n\n", glfwGetTime()-start);
+		}
 		void simplifyModel(float lived_pct = 0.8f
 						   , int version = 0, int agressiveness=7, bool verbose=true)
 		{
@@ -132,54 +151,54 @@ namespace lim
 			if( toModel != nullptr ) delete toModel;
 
 			toModel = fqms::simplifyModel(fromModel, lived_pct, version, agressiveness, verbose);
+			int pct = 100.0*toModel->verticesNum/fromModel->verticesNum;
+			toModel->name+=fmToStr("_%d_pct", pct);
 			vpPackage.models[toViewportIdx] = toModel;
 			vpPackage.scenes[toViewportIdx]->setModel(toModel);
+			vpPackage.cameras[toViewportIdx]->pivot = toModel->position;
 
 			double simpTime = glfwGetTime() - start;
 			Logger::get().simpTime = simpTime;
 			Logger::get().log("Done! %d => %d in %.3f sec. \n\n"
 							  , fromModel->verticesNum, toModel->verticesNum, simpTime);
 		}
-		void exportModel(const char* format_id)
-		{
-			Model *toModel = vpPackage.models[toViewportIdx];
-
-			if( toModel == nullptr ) {
-				Logger::get()<<"need simplification"<<Logger::endl;
-				return;
-			}
-
-			double start = glfwGetTime();
-			std::string fullPath(exportPath);
-			fullPath += toModel->name+".obj";
-			Logger::get().log("Exporting %s.. .. ...... ...  .... .. . .... . .\n", fullPath.c_str());
-
-			ModelExporter::exportModel(fullPath, toModel, format_id);
-
-			Logger::get().log("Done! in %.3f sec.  \n\n", glfwGetTime()-start);
-		}
 		// From: https://stackoverflow.com/questions/62007672/png-saved-from-opengl-framebuffer-using-stbi-write-png-is-shifted-to-the-right
 		void bakeNormalMap()
 		{
-			Model *toModel = vpPackage.models[toViewportIdx];
-
+			Model *oriMod = vpPackage.models[fromViewportIdx];
+			Model *toMod = vpPackage.models[toViewportIdx];
+			std::map<std::string, std::vector<Mesh*>> mergeByNormalMap;
 			GLuint pid = bakerProg.use();
 			GLuint w = bakedNormalMap.width;
 			GLuint h = bakedNormalMap.height;
 			static GLubyte* data = new GLubyte[3*w*h];
-			std::string fullPath(exportPath);
-			fullPath += toModel->name+".png";
 
-			bakedNormalMap.bind();
-			for( Mesh* mesh : toModel->meshes )
-				mesh->draw(pid);
-			bakedNormalMap.unbind();
+			for( Mesh* mesh : oriMod->meshes ) {
+				for( Texture& tex : mesh->textures ) {
+					if( tex.type == "map_Bump" ) {
+						mergeByNormalMap[tex.path].push_back(mesh);
+					}
+				}
+			}
+			for( auto&[filepath, meshes] : mergeByNormalMap ) {
+				std::string fullPath(exportPath);
+				fullPath += oriMod->name+"/"+ filepath;
+				Logger::get()<<fullPath<<Logger::endl;
+				bakedNormalMap.bind();
+				for( Mesh* mesh : meshes ) {
+					mesh->draw(pid);
+				}
+				bakedNormalMap.unbind();
 
-			glBindFramebuffer(GL_FRAMEBUFFER, bakedNormalMap.fbo);
-			glPixelStorei(GL_PACK_ALIGNMENT, 1);
-			glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, data);
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-			Logger::get()<<"done"<<fullPath<<stbi_write_png(fullPath.c_str(), w, h, 3, data, w*3)<<Logger::endll;
+				glBindFramebuffer(GL_FRAMEBUFFER, bakedNormalMap.fbo);
+				glPixelStorei(GL_PACK_ALIGNMENT, 1);
+				glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, data);
+				glBindFramebuffer(GL_FRAMEBUFFER, 0);
+				// 덮어쓴다.
+				stbi_write_png(fullPath.c_str(), w, h, 3, data, w*3);
+			}
+
+			Logger::get()<<"done"<<Logger::endll;
 		}
 	private:
 		virtual void update() final
@@ -189,7 +208,7 @@ namespace lim
 			//scenes[0]->render(0, scr_width, scr_height, cameras[0]); 
 
 			if( isSameCamera ) {
-				Camera* firstCam = vpPackage.cameras[toViewportIdx];
+				Camera* firstCam = vpPackage.cameras[0];
 				for( int i=0; i<vpPackage.size; i++ ) {
 					Framebuffer* fb = vpPackage.viewports[i]->framebuffer;
 					vpPackage.scenes[i]->render(fb, firstCam);
@@ -236,18 +255,19 @@ namespace lim
 						}
 						ImGui::EndMenu();
 					}
-					if( toModel!=nullptr&&ImGui::BeginMenu("Export") ) {
-						for( Viewport* vp : vpPackage.viewports ) {
+					if( ImGui::BeginMenu("Export") ) {
+						for( int i=0; i<vpPackage.size; i++ ) {
+							Model* md = vpPackage.models[i];
+							if( md==nullptr ) continue;
+							Viewport* vp = vpPackage.viewports[i];
 							if( ImGui::BeginMenu(("Viewport"+std::to_string(vp->id)).c_str()) ) {
-
-								for( int i=0; i<ModelExporter::nr_formats; i++ ) {
-									const aiExportFormatDesc* format = ModelExporter::getFormatInfo(i);
+								for( size_t pIndex=0; pIndex<ModelExporter::nr_formats; pIndex++ ) {
+									const aiExportFormatDesc* format = ModelExporter::getFormatInfo(pIndex);
 									if( ImGui::MenuItem(format->id) ) {
-										exportModel(format->id);
+										exportModel(pIndex, i);
 									}
 									if( ImGui::IsItemHovered() ) {
-										const char* modelName = toModel->name.c_str();
-										ImGui::SetTooltip(fmToStr("%s\n%s.%s", format->description, modelName, format->fileExtension).c_str());
+										ImGui::SetTooltip(fmToStr("%s\n%s.%s", format->description, md->name.c_str(), format->fileExtension).c_str());
 									}
 								}
 								ImGui::EndMenu();
@@ -299,8 +319,8 @@ namespace lim
 				}
 
 				// simplification
-				static float pct = 0.8f;
-				ImGui::SliderFloat("percent", &pct, 0.0f, 1.0f);
+				static  int pct = 80;
+				ImGui::SliderInt("percent", &pct, 1, 100);
 				static int selectedVersion = 1;
 				const char* versionComboList[3] ={"agressiveness", "max_considered", "lossless"};
 				ImGui::Combo("version", &selectedVersion, versionComboList, 3);
@@ -309,14 +329,13 @@ namespace lim
 				static bool verbose = true;
 				ImGui::Checkbox("verbose", &verbose);
 				if( ImGui::Button("Simplify") ) {
-					simplifyModel(pct, selectedVersion, agressiveness, verbose);
+					simplifyModel((float)pct/100.f, selectedVersion, agressiveness, verbose);
 				}
 
 				ImGui::SameLine();
 				ImGui::Text("target triangles = %d", static_cast<int>(fromModel->trianglesNum*pct));
 				ImGui::Text("simplified in %lf sec", Logger::get().simpTime);
 				ImGui::NewLine();
-				ImGui::Separator();
 
 				// baking
 				if( ImGui::Combo("texture resolution", &selectedBakeSizeIdx, bakeSizeList.data(), bakeSizeList.size()) ) {
@@ -330,6 +349,7 @@ namespace lim
 
 
 			if( ImGui::Begin("Viewing Options") ) {
+				ImGui::Text("<camera>");
 				static int focusedCameraIdx=0;
 				static const char* vmode_strs[] ={"pivot","free","scroll"};
 				static int tempVmode = static_cast<int>(viewingMode);
@@ -344,16 +364,48 @@ namespace lim
 					}
 				}
 				ImGui::Text("camera fov: %f", vpPackage.cameras[focusedCameraIdx]->fovy);
-
-				std::vector<const char*> comboList;
-				for( Program* prog : programs )
-					comboList.push_back(prog->name.c_str());
-				if( ImGui::Combo("shader", &selectedProgIdx, comboList.data(), comboList.size()) ) {
-					for( auto& md : vpPackage.models ) {
-						if( md == nullptr ) continue;
-						md->program = programs[selectedProgIdx];
+				ImGui::Dummy(ImVec2(0.0f, 8.0f));
+				ImGui::Separator();
+				ImGui::Dummy(ImVec2(0.0f, 3.0f));
+				ImGui::Text("<shader>");
+				static int shaderTargetIdx=0;
+				std::vector<const char*> stargetList;
+				stargetList.push_back("All");
+				for( Viewport* vp : vpPackage.viewports )
+					stargetList.push_back(vp->name.c_str());
+				if( ImGui::Combo("target", &shaderTargetIdx, stargetList.data(), stargetList.size()) ) {
+					if( shaderTargetIdx==0 ) {
+						for( auto& sc : vpPackage.scenes ) {
+							sc->ground->program = programs[selectedProgIdx];
+							if( sc->model == nullptr ) continue;
+							sc->model->program = programs[selectedProgIdx];
+						}
+					}
+					else {
+						Model* md = vpPackage.models[shaderTargetIdx-1];
+						if( md != nullptr ) md->program = programs[selectedProgIdx];
 					}
 				}
+				std::vector<const char*> shaderList;
+				for( Program* prog : programs )
+					shaderList.push_back(prog->name.c_str());
+				if( ImGui::Combo("type", &selectedProgIdx, shaderList.data(), shaderList.size()) ) {
+					if( shaderTargetIdx==0 ) {
+						for( auto& sc : vpPackage.scenes ) {
+							sc->ground->program = programs[selectedProgIdx];
+							if( sc->model == nullptr ) continue;
+							sc->model->program = programs[selectedProgIdx];
+						}
+					}
+					else {
+						Model* md = vpPackage.models[shaderTargetIdx-1];
+						if( md != nullptr ) md->program = programs[selectedProgIdx];
+					}
+				}
+				ImGui::Dummy(ImVec2(0.0f, 8.0f));
+				ImGui::Separator();
+				ImGui::Dummy(ImVec2(0.0f, 3.0f));
+				ImGui::Text("<light>");
 				const float yawSpd = 360*0.001;
 				if( ImGui::DragFloat("light yaw", &light.yaw, yawSpd, -10, 370, "%.3f") )
 					light.updateMembers();
@@ -369,7 +421,7 @@ namespace lim
 				static ImGuiTableFlags flags =  ImGuiTableFlags_ContextMenuInBody |ImGuiTableFlags_ScrollX| ImGuiTableFlags_ScrollY
 					| ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Reorderable;
 
-				if( ImGui::BeginTable("attributes table", vpPackage.viewports.size()+1, flags, {0,ImGui::GetTextLineHeightWithSpacing()*8}) ) {
+				if( ImGui::BeginTable("attributes table", vpPackage.viewports.size()+1, flags, {0,ImGui::GetTextLineHeightWithSpacing()*9}) ) {
 					ImGui::TableSetupScrollFreeze(1, 1);
 					ImGui::TableSetupColumn("attributes", ImGuiTableColumnFlags_NoHide);
 					for( Viewport* vp : vpPackage.viewports ) {
@@ -548,7 +600,7 @@ namespace lim
 		void cursor_pos_callback(double xPos, double yPos)
 		{
 			static const double pivotRotSpd = 0.3;
-			static const double pivotShiftSpd = -0.01;
+			static const double pivotShiftSpd = -0.003;
 			static const double freeRotSpd = 0.3;
 			static double xOld, yOld;
 			static double xOff, yOff;
@@ -558,7 +610,7 @@ namespace lim
 			for( int i=0; i<vpPackage.size; i++ ) {
 				Viewport& vp = *(vpPackage.viewports[i]);
 				if( vp.dragging == false ) continue;
-				Camera& camera = *(vpPackage.cameras[i]);
+				Camera& camera = *(vpPackage.cameras[(isSameCamera)?0:i]);
 
 				switch( viewingMode ) {
 				case VIEWING_MODE::PIVOT:
@@ -591,7 +643,7 @@ namespace lim
 			for( int i=0; i<vpPackage.size; i++ ) {
 				Viewport& vp = *(vpPackage.viewports[i]);
 				if( !vp.hovered ) continue;
-				Camera& camera = *(vpPackage.cameras[i]);
+				Camera& camera = *(vpPackage.cameras[(isSameCamera)?0:i]);
 
 				switch( viewingMode ) {
 				case VIEWING_MODE::PIVOT:

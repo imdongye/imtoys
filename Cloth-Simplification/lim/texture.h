@@ -18,7 +18,7 @@ namespace lim
 	struct Texture
 	{
 		GLuint id;
-		std::string type;
+		std::string type; // map_Kd map_Ks map_Ka map_Bump
 		std::string path; // relative path+filename or only filename
 	};
 

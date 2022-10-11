@@ -22,9 +22,9 @@ namespace lim
 	private:
 		inline static GLuint sceneCounter=0;
 		inline static Program* groundProgram=nullptr;
-		inline static Model* ground=nullptr;
-	private:
+	public:
 		Model* model=nullptr; // main model
+		Model* ground=nullptr;
 		std::vector<Model*> models;
 		Light& light;
 	public:
@@ -33,30 +33,28 @@ namespace lim
 			if( sceneCounter==0 ) {
 				groundProgram = new Program("Ground");
 				groundProgram->attatch("pos.vs").attatch("amiga_ground.fs").link();
-
-				Mesh* groundMesh;
-				{
-					std::vector<lim::n_mesh::Vertex> vertices;
-					std::vector<GLuint> indices;
-					std::vector<Texture> textures;
-					const float half = 100.0;
-					vertices.push_back({{-half, 0, half},
-										{0, 1, 0}});
-					vertices.push_back({{half, 0, half}, {0, 1, 0}});
-					vertices.push_back({{half, 0, -half}, {0, 1, 0}});
-					vertices.push_back({{-half, 0, -half}, {0, 1, 0}});
-
-					indices.insert(indices.end(), {0,1,3});
-					indices.insert(indices.end(), {1,2,3});
-
-					groundMesh = new Mesh(vertices, indices, textures);
-					groundMesh->color = glm::vec3(0.8, 0.8, 0); // yello ground
-				}
-				ground = new Model(groundMesh, groundProgram, "ground");
-
-				ground->position = glm::vec3(0, 0, 0);
-				ground->updateModelMat();
 			}
+			Mesh* groundMesh;
+			{
+				std::vector<lim::n_mesh::Vertex> vertices;
+				std::vector<GLuint> indices;
+				std::vector<Texture> textures;
+				const float half = 100.0;
+				vertices.push_back({{-half, 0, half},
+									{0, 1, 0}});
+				vertices.push_back({{half, 0, half}, {0, 1, 0}});
+				vertices.push_back({{half, 0, -half}, {0, 1, 0}});
+				vertices.push_back({{-half, 0, -half}, {0, 1, 0}});
+
+				indices.insert(indices.end(), {0,1,3});
+				indices.insert(indices.end(), {1,2,3});
+
+				groundMesh = new Mesh(vertices, indices, textures);
+				groundMesh->color = glm::vec3(0.8, 0.8, 0); // yello ground
+			}
+			ground = new Model(groundMesh, groundProgram, "ground");
+			ground->position = glm::vec3(0, 0, 0);
+			ground->updateModelMat();
 
 			models.push_back(ground);
 
@@ -77,7 +75,7 @@ namespace lim
 			if( model!=nullptr )
 				models.erase(std::find(models.begin(), models.end(), model));
 			model = _model;
-
+			ground->program = model->program;
 			if( model!=nullptr )
 				models.push_back(_model);
 		}

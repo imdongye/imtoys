@@ -20,15 +20,37 @@ namespace lim
 		inline static Assimp::Exporter exporter;
 		inline static GLuint nr_formats = exporter.GetExportFormatCount();
 	public:
-		static void exportModel(std::string_view path, Model* model, const char* format_id)
+		static void exportModel(std::string_view path, Model* model, size_t pIndex)
 		{
+			namespace fs = std::filesystem;
+			/* create path */
+			const aiExportFormatDesc* format = ModelExporter::getFormatInfo(pIndex);
+			std::string notcreated(path);
+			notcreated += model->name+"/";
+			fs::path created_path(notcreated);
+			if( !std::filesystem::is_directory(created_path) )
+				fs::create_directories(created_path);
+			notcreated += fmToStr("%s.%s",  model->name.c_str(), format->fileExtension);
+			
+			/* export model */
 			aiScene* scene = makeScene(model);
-			aiReturn ret = exporter.Export(scene, format_id, path.data(), scene->mFlags);
-			Logger::get()<<"[error::exporter]"<<exporter.GetErrorString()<<Logger::endl;
+			aiReturn ret = exporter.Export(scene, format->id, notcreated.data(), scene->mFlags);
+			const char* error = exporter.GetErrorString();
+			if(strlen(error)>0) Logger::get()<<"[error::exporter] "<<error <<Logger::endl;
+
+			/* ctrl cv texture */
+			
+			fs::path textureBasePath(model->directory);
+			for( Texture& tex : model->textures_loaded ) {
+				fs::path fromTexPath(model->directory+tex.path);
+				fs::path toTexPath(created_path.string()+tex.path);
+				fs::copy(fromTexPath, toTexPath, fs::copy_options::skip_existing);
+				Logger::get().log("%s %s\n", fromTexPath.string().c_str(), toTexPath.string().c_str());
+			}
 		}
-		static const aiExportFormatDesc* getFormatInfo(size_t n)
+		static const aiExportFormatDesc* getFormatInfo(size_t pIndex)
 		{
-			return exporter.GetExportFormatDescription(n);
+			return exporter.GetExportFormatDescription(pIndex);
 		}
 	private:
 		static aiScene* makeScene(Model* model)
@@ -38,9 +60,14 @@ namespace lim
 			aiNode* node = new aiNode();
 
 			// only one marerial
-			scene->mMaterials = new aiMaterial*[1] { nullptr, };
-			scene->mNumMaterials = 1;
-			scene->mMaterials[0] = new aiMaterial();
+			const GLuint nr_mat = model->aiNumMats;
+			scene->mNumMaterials = nr_mat;
+			scene->mMaterials = new aiMaterial*[nr_mat];
+			for( int i=0; i<nr_mat; i++ ) {
+				scene->mMaterials[i] = new aiMaterial();
+				aiMaterial* mat;
+				aiMaterial::CopyPropertyList(scene->mMaterials[i], (aiMaterial*)(model->aiMats[i]));
+			}
 
 			scene->mMeshes = new aiMesh*[nr_meshes] { nullptr, };
 			scene->mNumMeshes = nr_meshes;
@@ -60,6 +87,7 @@ namespace lim
 				ai_mesh->mNormals = new aiVector3D[nr_verts];
 				ai_mesh->mNumUVComponents[0] = nr_verts;
 				ai_mesh->mTextureCoords[0] = new aiVector3D[nr_verts];
+				ai_mesh->mMaterialIndex = mesh->aiMatIdx;
 
 				for( int j=0; j<nr_verts; j++ ) {
 					const auto& v = mesh->vertices[j];

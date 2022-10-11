@@ -30,16 +30,20 @@ namespace lim
 		std::vector<Texture> textures_loaded; // for prevent dup texture loading
 		std::vector<Mesh*> meshes;
 		Program* program;
+
 		GLuint verticesNum;
 		GLuint trianglesNum;
 		glm::vec3 boundary_max;
 		glm::vec3 boundary_min;
 	private:
+		std::string directory; // for load texture
+		glm::mat4 pivotMat;
 		// From : https://www.ostack.cn/qa/?qa=834163/
 		friend class ModelLoader;
 		friend class ModelExporter;
-		std::string directory; // for load texture
-		glm::mat4 pivotMat;
+		GLuint aiNumMats;
+		void** aiMats;
+	private:
 		// Disable Copying and Assignment
 		Model(Model const&) = delete;
 		Model& operator=(Model const&) = delete;
@@ -58,13 +62,15 @@ namespace lim
 			updateNums();
 			updateBoundary();
 
-			textures_loaded = model.textures_loaded;
 			position = model.position;
-			scale = model.scale;
 			rotation = model.rotation;
+			scale = model.scale;
 			modelMat = model.modelMat;
+			textures_loaded = model.textures_loaded; // deepcopy
 			directory = model.directory;
 			pivotMat = model.pivotMat;
+			aiNumMats = model.aiNumMats;
+			aiMats = model.aiMats; // shared memory
 		}
 		// create with only mesh
 		Model(Mesh* _mesh, Program* _program, std::string _name ="")
@@ -83,6 +89,9 @@ namespace lim
 	public:
 		void clear()
 		{
+			for( Texture& tex : textures_loaded ) {
+				glDeleteTextures(0, &(tex.id));
+			}
 			for( Mesh* mesh : meshes ) {
 				delete mesh;
 			}

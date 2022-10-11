@@ -2,6 +2,8 @@
 //  2022-07-20 / im dong ye
 //  edit learnopengl code
 //
+//	todo :
+//	1. bumpmap normalmap확인
 
 #ifndef MESH_H
 #define MESH_H
@@ -41,18 +43,22 @@ namespace lim
 		std::vector<n_mesh::Vertex> vertices;
 		std::vector<GLuint> indices;
 		std::vector<Texture> textures;
-		GLuint angles; // set size of indices
+		GLuint angles=3; // set size of indices
 		glm::vec3 color; // Kd, diffuse color
+		int hasTexture = 1;
 	private:
 		GLuint VAO, VBO, EBO;
 		GLenum drawMode;
+		friend class ModelLoader;
+		friend class ModelExporter;
+		unsigned int aiMatIdx;
 	private:
 		// disable copying
 		Mesh(Mesh const&) = delete;
 		Mesh& operator=(Mesh const&) = delete;
 	public:
-		Mesh(const std::string& _name="", const GLuint& _angle=3)
-			: VAO(0), name(_name), angles(_angle)
+		Mesh(const std::string_view _name="")
+			: VAO(0), name(_name)
 		{
 			// todo: apply every face diff draw mode
 			switch( angles ) {
@@ -64,13 +70,22 @@ namespace lim
 		Mesh(const std::vector<n_mesh::Vertex>& _vertices
 			 , const std::vector<GLuint>& _indices
 			 , const std::vector<Texture>& _textures
-			 , const std::string& _name="", const GLuint& _angle=3)
-			: Mesh(_name, _angle)
+			 , const std::string_view _name="")
+			: Mesh(_name)
 		{
 			vertices = _vertices; // todo: fix deep copy
 			indices = _indices;
 			textures = _textures;
+			hasTexture = (textures.size()>0)?1:0;
 			setupMesh();
+		}
+		// copy without mesh data
+		Mesh(const Mesh* mesh)
+		{
+			drawMode = mesh->drawMode;
+			color = mesh->color;
+			textures = mesh->textures;
+			aiMatIdx = mesh->aiMatIdx;
 		}
 		~Mesh()
 		{
@@ -110,7 +125,7 @@ namespace lim
 					setUniform(pid, varName.c_str(), i);// to sampler2d
 				}
 				glActiveTexture(GL_TEXTURE0);
-				setUniform(pid, "hasTexture", (textures.size()>0)?1:-1);
+				setUniform(pid, "hasTexture", hasTexture);
 				setUniform(pid, "Kd", color);
 			}
 
