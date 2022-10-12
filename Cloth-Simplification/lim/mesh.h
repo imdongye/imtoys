@@ -42,7 +42,7 @@ namespace lim
 		std::string name;
 		std::vector<n_mesh::Vertex> vertices;
 		std::vector<GLuint> indices;
-		std::vector<Texture> textures;
+		std::vector<Texture*> textures;
 		GLuint angles=3; // set size of indices
 		glm::vec3 color; // Kd, diffuse color
 		int hasTexture = 1;
@@ -69,7 +69,7 @@ namespace lim
 		}
 		Mesh(const std::vector<n_mesh::Vertex>& _vertices
 			 , const std::vector<GLuint>& _indices
-			 , const std::vector<Texture>& _textures
+			 , const std::vector<Texture*>& _textures
 			 , const std::string_view _name="")
 			: Mesh(_name)
 		{
@@ -111,7 +111,7 @@ namespace lim
 				GLuint normalNr   = 0;
 				GLuint ambientNr  = 0;
 				for( int i=0; i<textures.size(); i++ ) {
-					std::string type = textures[i].type;
+					std::string type = textures[i]->type;
 					// uniform samper2d nr is start with 0
 					int backNum = 0;
 					if( type=="map_Kd" )        backNum = diffuseNr++;
@@ -121,7 +121,7 @@ namespace lim
 
 					std::string varName = type + std::to_string(backNum);
 					glActiveTexture(GL_TEXTURE0 + i); // slot
-					glBindTexture(GL_TEXTURE_2D, textures[i].id);
+					glBindTexture(GL_TEXTURE_2D, textures[i]->id);
 					setUniform(pid, varName.c_str(), i);// to sampler2d
 				}
 				glActiveTexture(GL_TEXTURE0);
@@ -186,8 +186,7 @@ namespace lim
 		}
 		void print() const
 		{
-			Logger::get().log("%-18s, angles %d, verts %-7lu, tris %-7lu\n"
-							  , name.c_str(), angles, vertices.size(), indices.size()/3);
+			Logger::get().log("%s, verts %d, tris %d\n", name.c_str(), vertices.size(), indices.size()/3);
 		}
 	};
 }

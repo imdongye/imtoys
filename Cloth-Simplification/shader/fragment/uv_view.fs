@@ -40,6 +40,7 @@ mat3 getTBN( vec3 N ) {
 
 void main(void)
 {
+	vec3 tbn_N = vec3(0);
 	vec3 N = normalize(wNor);
 	if( hasTexture>0 )
 	{
@@ -58,16 +59,10 @@ void main(void)
 			vec3 tsNor = texture(map_Bump0, tUv).rgb;
 			N = normalize(TBN*tsNor);
 		}
-		N = normalize(transpose(TBN)*N);
+		tbn_N = normalize(transpose(TBN)*N);
 	}
-	//vec3 L = normalize(lightDir);
-	//vec3 V = normalize(cameraPos - wPos);
-
-	//vec4 albelo = (hasTexture>0) ? pow(texture(map_Kd0, tUv),vec4(texGamma)) : vec4(Kd,1);
-
 	
-	vec3 outColor = N*0.5+0.5;
+	vec3 outColor = tbn_N*0.5+0.5;
 
 	FragColor = vec4(outColor, 1);
-	FragColor = pow(FragColor, vec4(1/gamma));
 }

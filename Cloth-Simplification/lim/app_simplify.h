@@ -72,6 +72,9 @@ namespace lim
 			programs.push_back(new Program("Normal"));
 			programs.back()->attatch("pos_nor_uv.vs").attatch("normal_map.fs").link();
 
+			programs.push_back(new Program("Bump Checker"));
+			programs.back()->attatch("uv_view.vs").attatch("bump_map_view.fs").link();
+
 			programs.push_back(new Program("Shadowed"));
 			programs.back()->attatch("shadowed.vs").attatch("shadowed.fs").link();
 
@@ -165,6 +168,7 @@ namespace lim
 		// From: https://stackoverflow.com/questions/62007672/png-saved-from-opengl-framebuffer-using-stbi-write-png-is-shifted-to-the-right
 		void bakeNormalMap()
 		{
+			namespace fs = std::filesystem;
 			Model *oriMod = vpPackage.models[fromViewportIdx];
 			Model *toMod = vpPackage.models[toViewportIdx];
 			std::map<std::string, std::vector<Mesh*>> mergeByNormalMap;
@@ -174,16 +178,22 @@ namespace lim
 			static GLubyte* data = new GLubyte[3*w*h];
 
 			for( Mesh* mesh : oriMod->meshes ) {
-				for( Texture& tex : mesh->textures ) {
-					if( tex.type == "map_Bump" ) {
-						mergeByNormalMap[tex.path].push_back(mesh);
+				for( Texture* tex : mesh->textures ) {
+					if( tex->type == "map_Bump" ) {
+						mergeByNormalMap[tex->path].push_back(mesh);
 					}
 				}
 			}
 			for( auto&[filepath, meshes] : mergeByNormalMap ) {
 				std::string fullPath(exportPath);
-				fullPath += oriMod->name+"/"+ filepath;
-				Logger::get()<<fullPath<<Logger::endl;
+				// simp된 targetviewport가 있으면 그쪽 폴더로 생성함.
+				fullPath += (toMod!=nullptr)?toMod->name:oriMod->name;
+				// 폴더없으면생성
+				fs::path created_path(fullPath);
+				if( !std::filesystem::is_directory(fullPath) )
+					fs::create_directories(fullPath);
+				fullPath += "/"+ filepath;
+
 				bakedNormalMap.bind();
 				for( Mesh* mesh : meshes ) {
 					mesh->draw(pid);
@@ -195,10 +205,15 @@ namespace lim
 				glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, data);
 				glBindFramebuffer(GL_FRAMEBUFFER, 0);
 				// 덮어쓴다.
+				stbi_flip_vertically_on_write(true);
 				stbi_write_png(fullPath.c_str(), w, h, 3, data, w*3);
-			}
 
-			Logger::get()<<"done"<<Logger::endll;
+				Logger::get()<<"baked in "<<fullPath.c_str()<<Logger::endll;
+				if( toMod!=nullptr ) {
+					toMod->reloadNormalMap(fullPath);
+					Logger::get()<<"reload normal map"<<Logger::endll;
+				}
+			}
 		}
 	private:
 		virtual void update() final
@@ -382,6 +397,7 @@ namespace lim
 						}
 					}
 					else {
+						vpPackage.scenes[shaderTargetIdx-1]->ground->program = programs[selectedProgIdx];
 						Model* md = vpPackage.models[shaderTargetIdx-1];
 						if( md != nullptr ) md->program = programs[selectedProgIdx];
 					}
@@ -398,6 +414,7 @@ namespace lim
 						}
 					}
 					else {
+						vpPackage.scenes[shaderTargetIdx-1]->ground->program = programs[selectedProgIdx];
 						Model* md = vpPackage.models[shaderTargetIdx-1];
 						if( md != nullptr ) md->program = programs[selectedProgIdx];
 					}
@@ -413,7 +430,8 @@ namespace lim
 				if( ImGui::DragFloat("light pitch", &light.pitch, pitchSpd, -100, 100, "%.3f") )
 					light.updateMembers();
 
-				ImGui::Text("pos %f %f %F", light.position.x, light.position.y, light.position.z);
+				ImGui::Text("pos %f %f %f", light.position.x, light.position.y, light.position.z);
+				ImGui::Text("%d %d", vpPackage.viewports[0]->hovered, vpPackage.viewports[1]->hovered);
 			} ImGui::End();
 
 

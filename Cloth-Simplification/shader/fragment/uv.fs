@@ -11,6 +11,7 @@ uniform sampler2D map_Bump0;
 uniform sampler2D map_Ks0;
 
 uniform vec3 cameraPos;
+uniform float gamma = 2.2;
 
 void main()
 {   

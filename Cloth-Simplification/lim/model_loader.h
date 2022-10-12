@@ -51,6 +51,7 @@ namespace lim
 			   || !scene->mRootNode ) {
 				throw loader.GetErrorString();
 			}
+
 			/* backup for export */
 			GLuint nr_mat = scene->mNumMaterials;
 			model->aiNumMats = nr_mat;
@@ -60,10 +61,9 @@ namespace lim
 				model->aiMats[i] = new aiMaterial();
 				aiMaterial::CopyPropertyList((aiMaterial*)(model->aiMats[i]), scene->mMaterials[i]);
 			}
+			//aimat->AddProperty()
 
-
-
-			// recursive fashion
+			/* load Mesh */
 			parseNode(scene->mRootNode, scene);
 			
 			model->updateNums();
@@ -79,11 +79,10 @@ namespace lim
 			return model;
 		}
 	private:
-		static std::vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type)
+		static std::vector<Texture*> loadMaterialTextures(aiMaterial* mat, aiTextureType type)
 		{
 			// store it as texture loaded for entire model, to ensure we won't unnecesery load duplicate textures.
-			std::vector<Texture>& textures_loaded = model->textures_loaded;
-			std::vector<Texture> textures;
+			std::vector<Texture*> textures;
 			for( GLuint i=0; i<mat->GetTextureCount(type); i++ ) {
 				aiString ai_str;
 				/* blend 등 attrib에서 bm값이 안읽힘 */
@@ -95,29 +94,32 @@ namespace lim
 				// check already loaded
 				// to skip loading same texture 
 				bool skip = false;
-				for( GLuint j=0; j<textures_loaded.size(); j++ ) {
-					if( textures_loaded[j].path == str_path ) {
-						textures.push_back(textures_loaded[j]);
+				for( GLuint j=0; j<model->textures_loaded.size(); j++ ) {
+					if( model->textures_loaded[j]->path == str_path ) {
+						Texture* p_tex = model->textures_loaded[j];
+						textures.push_back(p_tex);
 						skip = true;
 						break;
 					}
 				}
 				// load texture
 				if( !skip ) {
-					Texture texture;
+					Texture* texture=new Texture;
 					std::string fullTexPath = model->directory+str_path;
 
-					texture.id = loadTextureFromFile(fullTexPath, true);
-
+					// kd일때만 linear space변환
+					texture->id = loadTextureFromFile(fullTexPath, (type==aiTextureType_DIFFUSE));
 					switch( type ) {
-					case aiTextureType_DIFFUSE: texture.type = "map_Kd"; break;
-					case aiTextureType_SPECULAR: texture.type = "map_Ks"; break;
-					case aiTextureType_AMBIENT: texture.type = "map_Ka"; break;
-					case aiTextureType_HEIGHT: texture.type = "map_Bump"; break;
+					case aiTextureType_DIFFUSE: texture->type = "map_Kd"; break;
+					case aiTextureType_SPECULAR: texture->type = "map_Ks"; break;
+					case aiTextureType_AMBIENT: texture->type = "map_Normal"; break;
+					case aiTextureType_HEIGHT: texture->type = "map_Bump"; break; // map_bump, bump
 					}
-					texture.path = str_path;
-					textures.push_back(texture);
-					textures_loaded.push_back(texture);
+					Logger::get()<<"┗"<<texture->type<<Logger::endl;
+					texture->path = str_path;
+					model->textures_loaded.push_back(texture);
+					Texture* p_tex = model->textures_loaded[model->textures_loaded.size()-1];
+					textures.push_back(p_tex);
 				}
 			}
 			return textures;
@@ -126,7 +128,7 @@ namespace lim
 		{
 			std::vector<n_mesh::Vertex> vertices;
 			std::vector<GLuint> indices;
-			std::vector<Texture> textures;
+			std::vector<Texture*> textures;
 			// now only triangle mesh
 			const GLuint angles = 3;
 
@@ -163,16 +165,16 @@ namespace lim
 			// - materials. per texture type
 			aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 			// 1. diffuse maps
-			std::vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE);
+			std::vector<Texture*> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE);
 			textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
 			// 2. specular maps
-			std::vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR);
+			std::vector<Texture*> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR);
 			textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
 			// 3. normal maps
-			std::vector<Texture> normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT);
+			std::vector<Texture*> normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT);
 			textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
 			// 4. ambient maps
-			std::vector<Texture> heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT);
+			std::vector<Texture*> heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT);
 			textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
 
 			Mesh* newMesh = new Mesh(vertices, indices, textures, mesh->mName.C_Str());
@@ -187,7 +189,7 @@ namespace lim
 			// in current node
 			for( GLuint i=0; i<node->mNumMeshes; i++ ) {
 				model->meshes.push_back(getParsedMesh(scene->mMeshes[node->mMeshes[i]], scene));
-				for( int j=0; j<depth; j++ ) Logger::get()<<'\t';
+				for( int j=0; j<depth; j++ ) Logger::get()<<" ";
 				Logger::get().log("mesh loaded : %s,", node->mName.C_Str());
 				(*(model->meshes.back())).print();
 			}

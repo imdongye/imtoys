@@ -27,9 +27,10 @@ namespace lim
 		glm::vec3 scale;
 		glm::mat4 modelMat;
 		std::string name;
-		std::vector<Texture> textures_loaded; // for prevent dup texture loading
+		std::vector<Texture*> textures_loaded; // for prevent dup texture loading
 		std::vector<Mesh*> meshes;
 		Program* program;
+		float bumpHeight=100;
 
 		GLuint verticesNum;
 		GLuint trianglesNum;
@@ -89,8 +90,8 @@ namespace lim
 	public:
 		void clear()
 		{
-			for( Texture& tex : textures_loaded ) {
-				glDeleteTextures(0, &(tex.id));
+			for( Texture* tex : textures_loaded ) {
+				glDeleteTextures(0, &(tex->id));
 			}
 			for( Mesh* mesh : meshes ) {
 				delete mesh;
@@ -107,6 +108,7 @@ namespace lim
 			setUniform(pid, "viewMat", camera.viewMat);
 			setUniform(pid, "modelMat", modelMat);
 			setUniform(pid, "cameraPos", camera.position);
+			setUniform(pid, "bumpHeight", bumpHeight);
 
 			light.setUniforms(pid);
 
@@ -139,6 +141,15 @@ namespace lim
 		{
 			Logger::get()<<"pivot: "<<glm::to_string(pivot)<<Logger::endl;
 			pivotMat = glm::translate(-pivot);
+		}
+		void reloadNormalMap(std::string_view fullpath)
+		{
+			for( Texture* tex : textures_loaded ) {
+				if( tex->type == "map_Bump" ) {
+					glDeleteTextures(0, &tex->id);
+					tex->id = loadTextureFromFile(fullpath, false);
+				}
+			}
 		}
 	private:
 		void updateNums()

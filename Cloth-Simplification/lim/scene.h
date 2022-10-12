@@ -38,7 +38,7 @@ namespace lim
 			{
 				std::vector<lim::n_mesh::Vertex> vertices;
 				std::vector<GLuint> indices;
-				std::vector<Texture> textures;
+				std::vector<Texture*> textures;
 				const float half = 100.0;
 				vertices.push_back({{-half, 0, half},
 									{0, 1, 0}});

@@ -41,9 +41,9 @@ namespace lim
 			/* ctrl cv texture */
 			
 			fs::path textureBasePath(model->directory);
-			for( Texture& tex : model->textures_loaded ) {
-				fs::path fromTexPath(model->directory+tex.path);
-				fs::path toTexPath(created_path.string()+tex.path);
+			for( Texture* tex : model->textures_loaded ) {
+				fs::path fromTexPath(model->directory+tex->path);
+				fs::path toTexPath(created_path.string()+tex->path);
 				fs::copy(fromTexPath, toTexPath, fs::copy_options::skip_existing);
 				Logger::get().log("%s %s\n", fromTexPath.string().c_str(), toTexPath.string().c_str());
 			}
