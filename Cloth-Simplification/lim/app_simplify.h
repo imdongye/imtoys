@@ -156,6 +156,7 @@ namespace lim
 			toModel = fqms::simplifyModel(fromModel, lived_pct, version, agressiveness, verbose);
 			int pct = 100.0*toModel->verticesNum/fromModel->verticesNum;
 			toModel->name+=fmToStr("_%d_pct", pct);
+
 			vpPackage.models[toViewportIdx] = toModel;
 			vpPackage.scenes[toViewportIdx]->setModel(toModel);
 			vpPackage.cameras[toViewportIdx]->pivot = toModel->position;
@@ -171,6 +172,7 @@ namespace lim
 			namespace fs = std::filesystem;
 			Model *oriMod = vpPackage.models[fromViewportIdx];
 			Model *toMod = vpPackage.models[toViewportIdx];
+
 			std::map<std::string, std::vector<Mesh*>> mergeByNormalMap;
 			GLuint pid = bakerProg.use();
 			GLuint w = bakedNormalMap.width;
@@ -178,9 +180,10 @@ namespace lim
 			static GLubyte* data = new GLubyte[3*w*h];
 
 			for( Mesh* mesh : oriMod->meshes ) {
-				for( Texture* tex : mesh->textures ) {
-					if( tex->type == "map_Bump" ) {
-						mergeByNormalMap[tex->path].push_back(mesh);
+				for( GLuint texIdx : mesh->texIdxs ) {
+					Texture& tex = oriMod->textures_loaded[texIdx];
+					if( tex.type == "map_Bump" ) {
+						mergeByNormalMap[tex.path].push_back(mesh);
 					}
 				}
 			}
@@ -196,7 +199,7 @@ namespace lim
 
 				bakedNormalMap.bind();
 				for( Mesh* mesh : meshes ) {
-					mesh->draw(pid);
+					mesh->draw(pid, oriMod->textures_loaded);
 				}
 				bakedNormalMap.unbind();
 
