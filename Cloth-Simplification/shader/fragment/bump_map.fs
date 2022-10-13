@@ -11,8 +11,6 @@
 out vec4 FragColor;
 
 const float PI = 3.1415926;
-const float TEX_DELTA = 0.00001;
-const float bumpHeight = 100;
 
 in vec3 wPos;
 in vec3 wNor;
@@ -37,6 +35,8 @@ uniform sampler2D map_Ks0;
 /* etc */
 uniform vec3 cameraPos;
 uniform float gamma = 2.2; 
+uniform float texDelta = 0.00001;
+uniform float bumpHeight = 100;
 
 mat3 getTBN( vec3 N ) {
 	vec3 Q1 = dFdx(wPos), Q2 = dFdy(wPos);
@@ -48,18 +48,19 @@ mat3 getTBN( vec3 N ) {
 
 void main(void)
 {
-	vec3 N = normalize(wNor);
-	vec3 buv;
+	vec3 N, tNor;
+	N = normalize(wNor);
 	if( hasTexture>0 )
 	{
 		mat3 TBN = getTBN( N );
-		float Bu = texture(map_Bump0, tUv+vec2(TEX_DELTA,0)).r
-						- texture(map_Bump0, tUv+vec2(-TEX_DELTA,0)).r;
-		float Bv = texture(map_Bump0, tUv+vec2(0,TEX_DELTA)).r
-						- texture(map_Bump0, tUv+vec2(0,-TEX_DELTA)).r;
-		buv = vec3(-Bu*bumpHeight, -Bv*bumpHeight, 1);
-		N = normalize(TBN*buv);
+		float Bu = texture(map_Bump0, tUv+vec2(texDelta,0)).r
+						- texture(map_Bump0, tUv+vec2(-texDelta,0)).r;
+		float Bv = texture(map_Bump0, tUv+vec2(0,texDelta)).r
+						- texture(map_Bump0, tUv+vec2(0,-texDelta)).r;
+		tNor = vec3(-Bu*bumpHeight, -Bv*bumpHeight, 1);
+		N = normalize(TBN*tNor);
 	}
+
 	vec3 L = normalize(lightDir);
 	vec3 V = normalize(cameraPos - wPos);
 	vec3 R = 2*dot(N,L)*N-L;
@@ -78,7 +79,6 @@ void main(void)
 	vec3 specular = pow(max(0,dot(R,V)), shininess) * lambertian * vec3(1);
 	vec3 outColor = diffuse+ambient+specular;
 	outColor *= visibility;
-	//outColor = buv;
 
     outColor = pow(outColor, vec3(1/gamma));
     FragColor = vec4(outColor, 1);

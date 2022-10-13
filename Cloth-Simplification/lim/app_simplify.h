@@ -26,11 +26,12 @@ namespace lim
 	class SimplifyApp: public AppBase
 	{
 	private:
-		enum class VIEWING_MODE : unsigned int
+		// ++로 순회하려고 enum class안씀
+		enum VIEWING_MODE
 		{
-			PIVOT, FREE, SCROLL
+			VM_PIVOT, VM_FREE, VM_SCROLL
 		};
-		VIEWING_MODE viewingMode=VIEWING_MODE::PIVOT;
+		int viewingMode=VM_PIVOT;
 		bool isSameCamera = false;
 		float cameraMoveSpeed=1.6;
 		Light light = Light();
@@ -72,8 +73,8 @@ namespace lim
 			programs.push_back(new Program("Normal"));
 			programs.back()->attatch("pos_nor_uv.vs").attatch("normal_map.fs").link();
 
-			programs.push_back(new Program("Bump Checker"));
-			programs.back()->attatch("uv_view.vs").attatch("bump_map_view.fs").link();
+			programs.push_back(new Program("Auto Normal"));
+			programs.back()->attatch("pos_nor_uv.vs").attatch("auto_normal.fs").link();
 
 			programs.push_back(new Program("Shadowed"));
 			programs.back()->attatch("shadowed.vs").attatch("shadowed.fs").link();
@@ -122,7 +123,7 @@ namespace lim
 			vpPackage.scenes[vpIdx]->setModel(temp);
 			vpPackage.models[vpIdx] = temp;
 			vpPackage.cameras[vpIdx]->pivot = temp->position;
-
+			vpPackage.cameras[vpIdx]->updatePivotViewMat();
 			Logger::get().log("Done! in %.3f sec.  \n", glfwGetTime() - start);
 			AppPref::get().pushPathWithoutDup(path.data());
 		}
@@ -254,7 +255,7 @@ namespace lim
 
 			imgui_modules::ShowExampleAppDockSpace([&]() {
 				if( ImGui::BeginMenu("File") ) {
-					if( ImGui::BeginMenu("Open Recent") ) {
+					if( ImGui::BeginMenu("Import Recent") ) {
 						for( Viewport* vp : vpPackage.viewports ) {
 							if( ImGui::BeginMenu(("Viewport"+std::to_string(vp->id)).c_str()) ) {
 								typename std::vector<std::string>::reverse_iterator iter;
@@ -370,10 +371,7 @@ namespace lim
 				ImGui::Text("<camera>");
 				static int focusedCameraIdx=0;
 				static const char* vmode_strs[] ={"pivot","free","scroll"};
-				static int tempVmode = static_cast<int>(viewingMode);
-				if( ImGui::Combo("mode", &tempVmode, vmode_strs, sizeof(vmode_strs)/sizeof(char*)) ) {
-					viewingMode = static_cast<VIEWING_MODE>(tempVmode);
-				}
+				ImGui::Combo("mode", &viewingMode, vmode_strs, sizeof(vmode_strs)/sizeof(char*));
 				ImGui::Checkbox("use same camera", &isSameCamera);
 				ImGui::SliderFloat("move speed", &cameraMoveSpeed, 0.2f, 3.0f);
 				for( int i=0; i<vpPackage.size; i++ ) { // for test
@@ -385,6 +383,8 @@ namespace lim
 				ImGui::Dummy(ImVec2(0.0f, 8.0f));
 				ImGui::Separator();
 				ImGui::Dummy(ImVec2(0.0f, 3.0f));
+
+
 				ImGui::Text("<shader>");
 				static int shaderTargetIdx=0;
 				std::vector<const char*> stargetList;
@@ -425,6 +425,8 @@ namespace lim
 				ImGui::Dummy(ImVec2(0.0f, 8.0f));
 				ImGui::Separator();
 				ImGui::Dummy(ImVec2(0.0f, 3.0f));
+
+
 				ImGui::Text("<light>");
 				const float yawSpd = 360*0.001;
 				if( ImGui::DragFloat("light yaw", &light.yaw, yawSpd, -10, 370, "%.3f") )
@@ -432,9 +434,22 @@ namespace lim
 				const float pitchSpd = 70*0.001;
 				if( ImGui::DragFloat("light pitch", &light.pitch, pitchSpd, -100, 100, "%.3f") )
 					light.updateMembers();
-
 				ImGui::Text("pos %f %f %f", light.position.x, light.position.y, light.position.z);
-				ImGui::Text("%d %d", vpPackage.viewports[0]->hovered, vpPackage.viewports[1]->hovered);
+				
+				static float bumpHeight = 100;
+				if( ImGui::SliderFloat("bumpHeight", &bumpHeight, 0.0, 300.0) ) {
+					for( auto& md : vpPackage.models ) {
+						if( md==nullptr ) continue;
+						md->bumpHeight = bumpHeight;
+					}
+				}
+				static float texDelta = 0.00001;
+				if( ImGui::SliderFloat("texDelta", &texDelta, 0.000001, 0.0001, "%f") ) {
+					for( auto& md : vpPackage.models ) {
+						if( md==nullptr ) continue;
+						md->texDelta = texDelta;
+					}
+				}
 			} ImGui::End();
 
 
@@ -587,7 +602,7 @@ namespace lim
 				if( vp.dragging == false ) continue;
 				Camera& camera = *(vpPackage.cameras[i]);
 				switch( viewingMode ) {
-				case VIEWING_MODE::FREE:
+				case VM_FREE:
 					float multiple = 1.0f;
 					if( glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS )
 						multiple = 1.3f;
@@ -612,7 +627,7 @@ namespace lim
 		void key_callback(int key, int scancode, int action, int mode)
 		{
 			if( key==GLFW_KEY_TAB && action==GLFW_PRESS ) {
-				//viewingMode++;
+				viewingMode = (viewingMode+1)%3;
 			}
 			if( key == GLFW_KEY_ESCAPE && action == GLFW_PRESS ) {
 				glfwSetWindowShouldClose(window, GL_TRUE);
@@ -622,7 +637,7 @@ namespace lim
 		{
 			static const double pivotRotSpd = 0.3;
 			static const double pivotShiftSpd = -0.003;
-			static const double freeRotSpd = 0.3;
+			static const double freeRotSpd = 0.2;
 			static double xOld, yOld;
 			static double xOff, yOff;
 			xOff = xPos-xOld;
@@ -634,8 +649,9 @@ namespace lim
 				Camera& camera = *(vpPackage.cameras[(isSameCamera)?0:i]);
 
 				switch( viewingMode ) {
-				case VIEWING_MODE::PIVOT:
-					if( glfwGetKey(window, GLFW_KEY_LEFT_SHIFT)==GLFW_PRESS ) {
+				case VM_PIVOT:
+					if( glfwGetKey(window, GLFW_KEY_LEFT_SHIFT)==GLFW_PRESS
+					   || glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE)==GLFW_PRESS ) {
 						camera.shiftPos(xOff*pivotShiftSpd, yOff*pivotShiftSpd);
 						camera.updatePivotViewMat();
 					}
@@ -644,11 +660,11 @@ namespace lim
 						camera.updatePivotViewMat();
 					}
 					break;
-				case VIEWING_MODE::FREE:
+				case VM_FREE:
 					camera.rotateCamera(xOff*freeRotSpd, yOff*freeRotSpd);
 					camera.updateFreeViewMat();
 					break;
-				case VIEWING_MODE::SCROLL:
+				case VM_SCROLL:
 					break;
 				}
 				break;
@@ -658,26 +674,38 @@ namespace lim
 		void mouse_btn_callback(int button, int action, int mods)
 		{
 		}
-		void scroll_callback(double xoff, double yoff)
+		void scroll_callback(double xOff, double yOff)
 		{
-			static const double rotateSpd = 1.7;
+			static const double rotateSpd = 4.5;
+			static const double pivotShiftSpd = -0.09;
+
 			for( int i=0; i<vpPackage.size; i++ ) {
 				Viewport& vp = *(vpPackage.viewports[i]);
 				if( !vp.hovered ) continue;
 				Camera& camera = *(vpPackage.cameras[(isSameCamera)?0:i]);
 
 				switch( viewingMode ) {
-				case VIEWING_MODE::PIVOT:
-					camera.shiftDist(yoff*3.f);
+				case VM_PIVOT:
+					camera.shiftDist(yOff*3.f);
 					camera.updatePivotViewMat();
 					break;
-				case VIEWING_MODE::FREE:
-					camera.shiftZoom(yoff*5.f);
+				case VM_FREE:
+					camera.shiftZoom(yOff*5.f);
 					camera.updateProjMat();
 					break;
-				case VIEWING_MODE::SCROLL:
-					camera.rotateCamera(xoff*rotateSpd, yoff*rotateSpd);
-					camera.updatePivotViewMat();
+				case VM_SCROLL:
+					if( glfwGetKey(window, GLFW_KEY_LEFT_SHIFT)==GLFW_PRESS ) {
+						camera.shiftPos(xOff*pivotShiftSpd, yOff*-pivotShiftSpd);
+						camera.updatePivotViewMat();
+					}
+					else if( glfwGetKey(window, GLFW_KEY_LEFT_ALT)==GLFW_PRESS ) {
+						camera.shiftDist(yOff*3.f);
+						camera.updatePivotViewMat();
+					}
+					else {
+						camera.rotateCamera(xOff*rotateSpd, yOff*-rotateSpd);
+						camera.updatePivotViewMat();
+					}
 					break;
 				}
 				break;

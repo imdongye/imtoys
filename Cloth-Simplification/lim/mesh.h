@@ -93,7 +93,6 @@ namespace lim
 		}
 		void clear()
 		{
-			// vector은 heap 에서 언제 사라지지?
 			vertices.clear();
 			indices.clear();
 			texIdxs.clear();

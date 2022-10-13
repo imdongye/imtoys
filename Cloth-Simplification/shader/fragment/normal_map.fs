@@ -11,8 +11,6 @@
 out vec4 FragColor;
 
 const float PI = 3.1415926;
-const float TEX_DELTA = 0.00001;
-uniform float bumpHeight = 100;
 
 in vec3 wPos;
 in vec3 wNor;
@@ -36,7 +34,8 @@ uniform sampler2D map_Bump0;
 uniform sampler2D map_Ks0;
 /* etc */
 uniform vec3 cameraPos;
-uniform float gamma = 2.2; 
+uniform float gamma = 2.2;
+uniform float bumpHeight = 100;
 
 mat3 getTBN( vec3 N ) {
 	vec3 Q1 = dFdx(wPos), Q2 = dFdy(wPos);
@@ -48,15 +47,16 @@ mat3 getTBN( vec3 N ) {
 
 void main(void)
 {
-	vec3 N = normalize(wNor);
-	vec3 buv, b_tex;
+	vec3 N, tNor;
+	N = normalize(wNor);
 	if( hasTexture>0 )
 	{
 		mat3 TBN = getTBN( N );
-		b_tex = texture(map_Bump0, tUv).xyz;
-		buv = b_tex*2-vec3(1);
-		N = normalize(TBN*buv);
+		tNor = texture(map_Bump0, tUv).xyz;
+		tNor = tNor*2-vec3(1);
+		N = normalize(TBN*tNor);
 	}
+
 	vec3 L = normalize(lightDir);
 	vec3 V = normalize(cameraPos - wPos);
 	vec3 R = 2*dot(N,L)*N-L;

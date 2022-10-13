@@ -72,7 +72,7 @@ namespace lim
 			}
 			Json ijson = Json::parse(text);
 			// dump para is tab size, none is one line
-			Logger::get()<<"read "<<FILE_PATH<<Logger::endl<< ijson.dump(2) <<Logger::endl;
+			//Logger::get()<<"read "<<FILE_PATH<<Logger::endl<< ijson.dump(2) <<Logger::endl;
 
 			recentModelPaths = ijson["recentModelPaths"];
 		}
@@ -111,8 +111,8 @@ namespace lim
 				Logger::get()<<"[error] fail read : "<<FILE_PATH<<", what? "<<e.what();
 			}
 
-			std::string temp = ojson.dump(2);
-			Logger::get()<<"write "<<FILE_PATH<<Logger::endl<<temp<<Logger::endl;
+			//std::string temp = ojson.dump(2);
+			//Logger::get()<<"write "<<FILE_PATH<<Logger::endl<<temp<<Logger::endl;
 		}
 		void pushPathWithoutDup(const std::string_view path)
 		{

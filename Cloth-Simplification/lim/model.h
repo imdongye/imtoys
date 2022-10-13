@@ -31,6 +31,7 @@ namespace lim
 		std::vector<Mesh*> meshes;
 		Program* program;
 		float bumpHeight=100;
+		float texDelta = 0.00001;
 
 		GLuint verticesNum;
 		GLuint trianglesNum;
@@ -109,6 +110,7 @@ namespace lim
 			setUniform(pid, "modelMat", modelMat);
 			setUniform(pid, "cameraPos", camera.position);
 			setUniform(pid, "bumpHeight", bumpHeight);
+			setUniform(pid, "texDelta", texDelta);
 
 			light.setUniforms(pid);
 
