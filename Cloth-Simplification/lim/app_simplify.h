@@ -37,6 +37,8 @@ namespace lim
 
 		int fromViewportIdx=0;
 		int toViewportIdx=1;
+        // dnd할때 마우스위치로 vp선택안됨
+        int lastSelectedVPIdx=0;
 		ViewportPackage vpPackage;
 
 		int selectedProgIdx=0;
@@ -657,7 +659,15 @@ namespace lim
 		}
 		void mouse_btn_callback(int button, int action, int mods)
 		{
-		}
+            if(vpPackage.viewports[lastSelectedVPIdx]->focused==false)
+            {
+                for(int i=0;i<vpPackage.size;i++)
+                {
+                    if(vpPackage.viewports[i]->focused)
+                        lastSelectedVPIdx=i;
+                }
+            }
+        }
 		void scroll_callback(double xoff, double yoff)
 		{
 			static const double rotateSpd = 1.7;
@@ -690,7 +700,8 @@ namespace lim
 		}
 		void drop_callback(int count, const char** paths)
 		{
-			for( int i = 0; i < count; i++ ) {
+            loadModel(paths[0], lastSelectedVPIdx);
+			/*for( int i = 0; i < count; i++ ) {
 				int hoveredIdx=0;
 				for( Viewport* vp : vpPackage.viewports ) {
 					if( vp->hovered==true )
@@ -704,7 +715,7 @@ namespace lim
 
 				loadModel(paths[i], hoveredIdx);
 				break;
-			}
+			}*/
 		}
 	};
 
