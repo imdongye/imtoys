@@ -18,8 +18,8 @@ namespace lim
 	class Program
 	{
 	public:
-		std::string name;
-		GLuint ID;
+		std::string name="unnamed";
+		GLuint ID=0;
 	private:
 		GLuint vertID;
 		GLuint fragID;
@@ -30,7 +30,7 @@ namespace lim
 		Program(const Program&) = delete;
 		Program& operator=(const Program&) = delete;
 	public:
-		Program(const char* _name = "unnamed"): ID(0), name(_name) {}
+		Program(const char* _name = "unnamed"): name(_name) {}
 		~Program() { clear(); }
 	public:
 		// chaining //

@@ -17,12 +17,10 @@
 #if defined(_MSC_VER) && !defined(STBI_MSC_SECURE_CRT)
 #define STBI_MSC_SECURE_CRT
 #endif
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include <stb/stb_image_write.h>
 
 namespace lim
 {
-	class SimplifyApp : public AppBase
+	class SimplifyApp: public AppBase
 	{
 	private:
 		// ++로 순회하려고 enum class안씀
@@ -49,18 +47,9 @@ namespace lim
 		ViewportPackage vpPackage;
 
 		const char *exportPath = "result/";
-		int selectedBakeSizeIdx = 2;
-		std::vector<const char *> bakeSizeList = {"256", "512", "1024", "2048", "4096", "8192"};
-		Framebuffer bakedNormalMap = Framebuffer();
-		Program bakerProg = Program("Normal Map Baker");
-
 	public:
-		SimplifyApp() : AppBase(1280, 720)
+		SimplifyApp(): AppBase(1280, 720)
 		{
-			bakedNormalMap.clearColor = glm::vec4(0.5, 0.5, 1, 1);
-			bakedNormalMap.resize(atoi(bakeSizeList[selectedBakeSizeIdx]));
-			bakerProg.attatch("uv_view.vs").attatch("uv_view.fs").link();
-
 			programs.push_back(new Program("Normal Dot View"));
 			programs.back()->attatch("pos_nor_uv.vs").attatch("ndv.fs").link();
 
@@ -98,8 +87,7 @@ namespace lim
 		~SimplifyApp()
 		{
 			vpPackage.clear();
-			for (Program *program : programs)
-			{
+			for( Program *program : programs ) {
 				program->clear();
 			}
 			imgui_modules::destroyImGui();
@@ -116,8 +104,7 @@ namespace lim
 		void loadModel(std::string_view path, int vpIdx)
 		{
 			Model *temp = vpPackage.models[vpIdx];
-			if (temp != nullptr)
-			{
+			if( temp != nullptr ) {
 				delete temp;
 			}
 
@@ -138,8 +125,7 @@ namespace lim
 		{
 			Model *toModel = vpPackage.models[vpIdx];
 
-			if (toModel == nullptr)
-			{
+			if( toModel == nullptr ) {
 				Logger::get() << "error : export" << Logger::endl;
 				return;
 			}
@@ -159,7 +145,7 @@ namespace lim
 			double start = glfwGetTime();
 			Logger::get().log("\nSimplifing %s..... . ... ... .. .. . .  .\n", fromModel->name.c_str());
 
-			if (toModel != nullptr)
+			if( toModel != nullptr )
 				delete toModel;
 
 			toModel = fqms::simplifyModel(fromModel, lived_pct, version, agressiveness, verbose);
@@ -177,60 +163,7 @@ namespace lim
 		// From: https://stackoverflow.com/questions/62007672/png-saved-from-opengl-framebuffer-using-stbi-write-png-is-shifted-to-the-right
 		void bakeNormalMap()
 		{
-			namespace fs = std::filesystem;
-			Model *oriMod = vpPackage.models[fromVpIdx];
-			Model *toMod = vpPackage.models[toVpIdx];
-
-			std::map<std::string, std::vector<Mesh *>> mergeByNormalMap;
-			GLuint pid = bakerProg.use();
-			GLuint w = bakedNormalMap.width;
-			GLuint h = bakedNormalMap.height;
-			static GLubyte *data = new GLubyte[3 * w * h];
-
-			for (Mesh *mesh : oriMod->meshes)
-			{
-				for (GLuint texIdx : mesh->texIdxs)
-				{
-					Texture &tex = oriMod->textures_loaded[texIdx];
-					if (tex.type == "map_Bump")
-					{
-						mergeByNormalMap[tex.path].push_back(mesh);
-					}
-				}
-			}
-			for (auto &[filepath, meshes] : mergeByNormalMap)
-			{
-				std::string fullPath(exportPath);
-				// simp된 targetviewport가 있으면 그쪽 폴더로 생성함.
-				fullPath += (toMod != nullptr) ? toMod->name : oriMod->name;
-				// 폴더없으면생성
-				fs::path created_path(fullPath);
-				if (!std::filesystem::is_directory(fullPath))
-					fs::create_directories(fullPath);
-				fullPath += "/" + filepath;
-
-				bakedNormalMap.bind();
-				for (Mesh *mesh : meshes)
-				{
-					mesh->draw(pid, oriMod->textures_loaded);
-				}
-				bakedNormalMap.unbind();
-
-				glBindFramebuffer(GL_FRAMEBUFFER, bakedNormalMap.fbo);
-				glPixelStorei(GL_PACK_ALIGNMENT, 1);
-				glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, data);
-				glBindFramebuffer(GL_FRAMEBUFFER, 0);
-				// 덮어쓴다.
-				stbi_flip_vertically_on_write(true);
-				stbi_write_png(fullPath.c_str(), w, h, 3, data, w * 3);
-
-				Logger::get() << "baked in " << fullPath.c_str() << Logger::endll;
-				if (toMod != nullptr)
-				{
-					toMod->reloadNormalMap(fullPath);
-					Logger::get() << "reload normal map" << Logger::endll;
-				}
-			}
+			MapBaker::bakeNormalMap(exportPath, vpPackage.models[fromVpIdx], vpPackage.models[toVpIdx]);
 		}
 
 	private:
@@ -240,19 +173,15 @@ namespace lim
 
 			// scenes[0]->render(0, scr_width, scr_height, cameras[0]);
 
-			if (isSameCamera)
-			{
+			if( isSameCamera ) {
 				Camera *firstCam = vpPackage.cameras[0];
-				for (int i = 0; i < vpPackage.size; i++)
-				{
+				for( int i = 0; i < vpPackage.size; i++ ) {
 					Framebuffer *fb = vpPackage.viewports[i]->framebuffer;
 					vpPackage.scenes[i]->render(fb, firstCam);
 				}
 			}
-			else
-			{
-				for (int i = 0; i < vpPackage.size; i++)
-				{
+			else {
+				for( int i = 0; i < vpPackage.size; i++ ) {
 					Framebuffer *fb = vpPackage.viewports[i]->framebuffer;
 					Camera *cm = vpPackage.cameras[i];
 					vpPackage.scenes[i]->render(fb, cm);
@@ -272,7 +201,7 @@ namespace lim
 			imgui_modules::beginImGui();
 
 			imgui_modules::ShowExampleAppDockSpace([&]()
-												   {
+			{
 				if( ImGui::BeginMenu("File") ) {
 					if( ImGui::BeginMenu("Import Recent") ) {
 						for( Viewport* vp : vpPackage.viewports ) {
@@ -327,37 +256,31 @@ namespace lim
 			/* 실행후 겹쳤을때 그리는순서에 따라서 위로오는게 결정됨 */
 			// 중요한게 뒤로 오게 해야함
 
-			for (int i = vpPackage.size - 1; i >= 0; i--)
-			{
+			for( int i = vpPackage.size - 1; i >= 0; i-- ) {
 				vpPackage.viewports[i]->drawImGui();
 			}
 
 			Logger::get().drawImGui();
 
-			if (ImGui::Begin("Simplify Options"))
-			{
+			if( ImGui::Begin("Simplify Options") ) {
 				ImGui::Text("From viewport:");
-				for (int i = 0; i < vpPackage.size; i++)
-				{
+				for( int i = 0; i < vpPackage.size; i++ ) {
 					int id = vpPackage.viewports[i]->id;
-					if (vpPackage.models[i] == nullptr)
+					if( vpPackage.models[i] == nullptr )
 						continue;
 					ImGui::SameLine();
-					if (ImGui::RadioButton((std::to_string(id) + "##1").c_str(), &fromVpIdx, id) && fromVpIdx == toVpIdx)
-					{
+					if( ImGui::RadioButton((std::to_string(id) + "##1").c_str(), &fromVpIdx, id) && fromVpIdx == toVpIdx ) {
 						toVpIdx++;
 						toVpIdx %= vpPackage.size;
 					}
 				}
 
 				ImGui::Text("to viewport:");
-				for (Viewport *vp : vpPackage.viewports)
-				{
-					if (vp->id == fromVpIdx)
+				for( Viewport *vp : vpPackage.viewports ) {
+					if( vp->id == fromVpIdx )
 						continue;
 					ImGui::SameLine();
-					if (ImGui::RadioButton((std::to_string(vp->id) + "##2").c_str(), &toVpIdx, vp->id))
-					{
+					if( ImGui::RadioButton((std::to_string(vp->id) + "##2").c_str(), &toVpIdx, vp->id) ) {
 						Logger::get() << vp->id;
 					}
 				}
@@ -366,14 +289,13 @@ namespace lim
 				static int pct = 80;
 				ImGui::SliderInt("percent", &pct, 1, 100);
 				static int selectedVersion = 1;
-				const char *versionComboList[3] = {"agressiveness", "max_considered", "lossless"};
+				const char *versionComboList[3] ={"agressiveness", "max_considered", "lossless"};
 				ImGui::Combo("version", &selectedVersion, versionComboList, 3);
 				static int agressiveness = 7;
 				ImGui::SliderInt("agressiveness", &agressiveness, 5, 8);
 				static bool verbose = true;
 				ImGui::Checkbox("verbose", &verbose);
-				if (ImGui::Button("Simplify")||simplifyTrigger)
-				{
+				if( ImGui::Button("Simplify")||simplifyTrigger ) {
 					simplifyTrigger = false;
 					simplifyModel((float)pct / 100.f, selectedVersion, agressiveness, verbose);
 				}
@@ -382,32 +304,26 @@ namespace lim
 				ImGui::Text("target triangles = %d", static_cast<int>(fromModel->trianglesNum * pct));
 				ImGui::Text("simplified in %lf sec", Logger::get().simpTime);
 				ImGui::NewLine();
-
+				
 				// baking
-				if (ImGui::Combo("texture resolution", &selectedBakeSizeIdx, bakeSizeList.data(), bakeSizeList.size()))
-				{
-					bakedNormalMap.resize(atoi(bakeSizeList[selectedBakeSizeIdx]));
+				if( ImGui::Combo("texture resolution", &MapBaker::selectedTexSizeIdx, MapBaker::texSizeStrs, MapBaker::nrTexSize) ) {
 				}
-				if (ImGui::Button("Bake normal map")||bakeTrigger)
-				{
+				if( ImGui::Button("Bake normal map")||bakeTrigger ) {
 					bakeTrigger=false;
 					bakeNormalMap();
 				}
 			}
 			ImGui::End();
 
-			if (ImGui::Begin("Viewing Options"))
-			{
+			if( ImGui::Begin("Viewing Options") ) {
 				ImGui::Text("<camera>");
 				static int focusedCameraIdx = 0;
-				static const char *vmode_strs[] = {"pivot", "free", "scroll"};
+				static const char *vmode_strs[] ={"pivot", "free", "scroll"};
 				ImGui::Combo("mode", &viewingMode, vmode_strs, sizeof(vmode_strs) / sizeof(char *));
 				ImGui::Checkbox("use same camera", &isSameCamera);
 				ImGui::SliderFloat("move speed", &cameraMoveSpeed, 0.2f, 3.0f);
-				for (int i = 0; i < vpPackage.size; i++)
-				{ // for test
-					if (vpPackage.viewports[i]->focused && focusedCameraIdx != i)
-					{
+				for( int i = 0; i < vpPackage.size; i++ ) { // for test
+					if( vpPackage.viewports[i]->focused && focusedCameraIdx != i ) {
 						focusedCameraIdx = i;
 					}
 				}
@@ -420,48 +336,40 @@ namespace lim
 				static int shaderTargetIdx = 0;
 				std::vector<const char *> stargetList;
 				stargetList.push_back("All");
-				for (Viewport *vp : vpPackage.viewports)
+				for( Viewport *vp : vpPackage.viewports )
 					stargetList.push_back(vp->name.c_str());
-				if (ImGui::Combo("target", &shaderTargetIdx, stargetList.data(), stargetList.size()))
-				{
-					if (shaderTargetIdx == 0)
-					{
-						for (auto &sc : vpPackage.scenes)
-						{
+				if( ImGui::Combo("target", &shaderTargetIdx, stargetList.data(), stargetList.size()) ) {
+					if( shaderTargetIdx == 0 ) {
+						for( auto &sc : vpPackage.scenes ) {
 							sc->ground->program = programs[selectedProgIdx];
-							if (sc->model == nullptr)
+							if( sc->model == nullptr )
 								continue;
 							sc->model->program = programs[selectedProgIdx];
 						}
 					}
-					else
-					{
+					else {
 						vpPackage.scenes[shaderTargetIdx - 1]->ground->program = programs[selectedProgIdx];
 						Model *md = vpPackage.models[shaderTargetIdx - 1];
-						if (md != nullptr)
+						if( md != nullptr )
 							md->program = programs[selectedProgIdx];
 					}
 				}
 				std::vector<const char *> shaderList;
-				for (Program *prog : programs)
+				for( Program *prog : programs )
 					shaderList.push_back(prog->name.c_str());
-				if (ImGui::Combo("type", &selectedProgIdx, shaderList.data(), shaderList.size()))
-				{
-					if (shaderTargetIdx == 0)
-					{
-						for (auto &sc : vpPackage.scenes)
-						{
+				if( ImGui::Combo("type", &selectedProgIdx, shaderList.data(), shaderList.size()) ) {
+					if( shaderTargetIdx == 0 ) {
+						for( auto &sc : vpPackage.scenes ) {
 							sc->ground->program = programs[selectedProgIdx];
-							if (sc->model == nullptr)
+							if( sc->model == nullptr )
 								continue;
 							sc->model->program = programs[selectedProgIdx];
 						}
 					}
-					else
-					{
+					else {
 						vpPackage.scenes[shaderTargetIdx - 1]->ground->program = programs[selectedProgIdx];
 						Model *md = vpPackage.models[shaderTargetIdx - 1];
-						if (md != nullptr)
+						if( md != nullptr )
 							md->program = programs[selectedProgIdx];
 					}
 				}
@@ -471,29 +379,25 @@ namespace lim
 
 				ImGui::Text("<light>");
 				const float yawSpd = 360 * 0.001;
-				if (ImGui::DragFloat("light yaw", &light.yaw, yawSpd, -10, 370, "%.3f"))
+				if( ImGui::DragFloat("light yaw", &light.yaw, yawSpd, -10, 370, "%.3f") )
 					light.updateMembers();
 				const float pitchSpd = 70 * 0.001;
-				if (ImGui::DragFloat("light pitch", &light.pitch, pitchSpd, -100, 100, "%.3f"))
+				if( ImGui::DragFloat("light pitch", &light.pitch, pitchSpd, -100, 100, "%.3f") )
 					light.updateMembers();
 				ImGui::Text("pos %f %f %f", light.position.x, light.position.y, light.position.z);
 
 				static float bumpHeight = 100;
-				if (ImGui::SliderFloat("bumpHeight", &bumpHeight, 0.0, 300.0))
-				{
-					for (auto &md : vpPackage.models)
-					{
-						if (md == nullptr)
+				if( ImGui::SliderFloat("bumpHeight", &bumpHeight, 0.0, 300.0) ) {
+					for( auto &md : vpPackage.models ) {
+						if( md == nullptr )
 							continue;
 						md->bumpHeight = bumpHeight;
 					}
 				}
 				static float texDelta = 0.00001;
-				if (ImGui::SliderFloat("texDelta", &texDelta, 0.000001, 0.0001, "%f"))
-				{
-					for (auto &md : vpPackage.models)
-					{
-						if (md == nullptr)
+				if( ImGui::SliderFloat("texDelta", &texDelta, 0.000001, 0.0001, "%f") ) {
+					for( auto &md : vpPackage.models ) {
+						if( md == nullptr )
 							continue;
 						md->texDelta = texDelta;
 					}
@@ -501,29 +405,24 @@ namespace lim
 			}
 			ImGui::End();
 
-			if (ImGui::Begin("Model Status"))
-			{
+			if( ImGui::Begin("Model Status") ) {
 				static ImGuiTableFlags flags = ImGuiTableFlags_ContextMenuInBody | ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Reorderable;
 
-				if (ImGui::BeginTable("attributes table", vpPackage.viewports.size() + 1, flags, {0, ImGui::GetTextLineHeightWithSpacing() * 9}))
-				{
+				if( ImGui::BeginTable("attributes table", vpPackage.viewports.size() + 1, flags, {0, ImGui::GetTextLineHeightWithSpacing() * 9}) ) {
 					ImGui::TableSetupScrollFreeze(1, 1);
 					ImGui::TableSetupColumn("attributes", ImGuiTableColumnFlags_NoHide);
-					for (Viewport *vp : vpPackage.viewports)
-					{
+					for( Viewport *vp : vpPackage.viewports ) {
 						ImGui::TableSetupColumn(vp->name.c_str());
 					}
 					ImGui::TableHeadersRow();
 
 					int column = 0;
 					ImGui::TableNextRow();
-					if (ImGui::TableSetColumnIndex(column++))
+					if( ImGui::TableSetColumnIndex(column++) )
 						ImGui::Text("name");
-					for (Model *md : vpPackage.models)
-					{
-						if (ImGui::TableSetColumnIndex(column++))
-						{
-							if (md == nullptr)
+					for( Model *md : vpPackage.models ) {
+						if( ImGui::TableSetColumnIndex(column++) ) {
+							if( md == nullptr )
 								ImGui::Text("");
 							else
 								ImGui::Text("%s", md->name.c_str());
@@ -531,13 +430,11 @@ namespace lim
 					}
 					column = 0;
 					ImGui::TableNextRow();
-					if (ImGui::TableSetColumnIndex(column++))
+					if( ImGui::TableSetColumnIndex(column++) )
 						ImGui::Text("#verticies");
-					for (Model *md : vpPackage.models)
-					{
-						if (ImGui::TableSetColumnIndex(column++))
-						{
-							if (md == nullptr)
+					for( Model *md : vpPackage.models ) {
+						if( ImGui::TableSetColumnIndex(column++) ) {
+							if( md == nullptr )
 								ImGui::Text("");
 							else
 								ImGui::Text("%d", md->verticesNum);
@@ -545,13 +442,11 @@ namespace lim
 					}
 					column = 0;
 					ImGui::TableNextRow();
-					if (ImGui::TableSetColumnIndex(column++))
+					if( ImGui::TableSetColumnIndex(column++) )
 						ImGui::Text("#triangles");
-					for (Model *md : vpPackage.models)
-					{
-						if (ImGui::TableSetColumnIndex(column++))
-						{
-							if (md == nullptr)
+					for( Model *md : vpPackage.models ) {
+						if( ImGui::TableSetColumnIndex(column++) ) {
+							if( md == nullptr )
 								ImGui::Text("");
 							else
 								ImGui::Text("%d", md->trianglesNum);
@@ -559,13 +454,11 @@ namespace lim
 					}
 					column = 0;
 					ImGui::TableNextRow();
-					if (ImGui::TableSetColumnIndex(column++))
+					if( ImGui::TableSetColumnIndex(column++) )
 						ImGui::Text("boundary_x");
-					for (Model *md : vpPackage.models)
-					{
-						if (ImGui::TableSetColumnIndex(column++))
-						{
-							if (md == nullptr)
+					for( Model *md : vpPackage.models ) {
+						if( ImGui::TableSetColumnIndex(column++) ) {
+							if( md == nullptr )
 								ImGui::Text("");
 							else
 								ImGui::Text("%f", md->getBoundarySize().x);
@@ -573,13 +466,11 @@ namespace lim
 					}
 					column = 0;
 					ImGui::TableNextRow();
-					if (ImGui::TableSetColumnIndex(column++))
+					if( ImGui::TableSetColumnIndex(column++) )
 						ImGui::Text("boundary_y");
-					for (Model *md : vpPackage.models)
-					{
-						if (ImGui::TableSetColumnIndex(column++))
-						{
-							if (md == nullptr)
+					for( Model *md : vpPackage.models ) {
+						if( ImGui::TableSetColumnIndex(column++) ) {
+							if( md == nullptr )
 								ImGui::Text("");
 							else
 								ImGui::Text("%f", md->getBoundarySize().y);
@@ -588,13 +479,11 @@ namespace lim
 
 					column = 0;
 					ImGui::TableNextRow();
-					if (ImGui::TableSetColumnIndex(column++))
+					if( ImGui::TableSetColumnIndex(column++) )
 						ImGui::Text("#meshes");
-					for (Model *md : vpPackage.models)
-					{
-						if (ImGui::TableSetColumnIndex(column++))
-						{
-							if (md == nullptr)
+					for( Model *md : vpPackage.models ) {
+						if( ImGui::TableSetColumnIndex(column++) ) {
+							if( md == nullptr )
 								ImGui::Text("");
 							else
 								ImGui::Text("%d", md->meshes.size());
@@ -602,13 +491,11 @@ namespace lim
 					}
 					column = 0;
 					ImGui::TableNextRow();
-					if (ImGui::TableSetColumnIndex(column++))
+					if( ImGui::TableSetColumnIndex(column++) )
 						ImGui::Text("#textures");
-					for (Model *md : vpPackage.models)
-					{
-						if (ImGui::TableSetColumnIndex(column++))
-						{
-							if (md == nullptr)
+					for( Model *md : vpPackage.models ) {
+						if( ImGui::TableSetColumnIndex(column++) ) {
+							if( md == nullptr )
 								ImGui::Text("");
 							else
 								ImGui::Text("%d", md->textures_loaded.size());
@@ -622,27 +509,29 @@ namespace lim
 			/* show texture */
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
 
-			ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), [](ImGuiSizeCallbackData *data)
-												{
+			ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), [](ImGuiSizeCallbackData *data) {
 				data->DesiredSize.x = LIM_MAX(data->DesiredSize.x, data->DesiredSize.y);
 				data->DesiredSize.y = data->DesiredSize.x; });
-			if (ImGui::Begin("Baked Normal Map"))
-			{
-				ImVec2 vMin = ImGui::GetWindowContentRegionMin();
-				ImVec2 vMax = ImGui::GetWindowContentRegionMax();
-				glm::vec2 rectSize{vMax.x - vMin.x, vMax.y - vMin.y};
-				// ImGui::Text("%f %f", rectSize.x, rectSize.y);
-				const float minLength = LIM_MIN(rectSize.x, rectSize.y);
-				ImGui::Image(reinterpret_cast<void *>(bakedNormalMap.getRenderedTex()), ImVec2{minLength, minLength}, ImVec2{0, 1}, ImVec2{1, 0});
-			}
-			ImGui::End();
 
-			ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), [](ImGuiSizeCallbackData *data)
-												{
+			// todo
+			if( MapBaker::bakedNormalMapPointer!=nullptr ) {
+				if( ImGui::Begin("Baked Normal Map") ) {
+					ImVec2 vMin = ImGui::GetWindowContentRegionMin();
+					ImVec2 vMax = ImGui::GetWindowContentRegionMax();
+					glm::vec2 rectSize{vMax.x - vMin.x, vMax.y - vMin.y};
+					// ImGui::Text("%f %f", rectSize.x, rectSize.y);
+					const float minLength = LIM_MIN(rectSize.x, rectSize.y);
+					GLuint rtId = MapBaker::bakedNormalMapPointer->getRenderedTex();
+					ImGui::Image(reinterpret_cast<void *>(rtId), ImVec2{minLength, minLength}, ImVec2{0, 1}, ImVec2{1, 0});
+				}
+				ImGui::End();
+			}
+
+			ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), [](ImGuiSizeCallbackData *data) {
 				data->DesiredSize.x = LIM_MAX(data->DesiredSize.x, data->DesiredSize.y);
 				data->DesiredSize.y = data->DesiredSize.x; });
-			if (ImGui::Begin("shadowMap") && light.shadowEnabled)
-			{
+
+			if( ImGui::Begin("shadowMap") && light.shadowEnabled ) {
 				ImVec2 vMin = ImGui::GetWindowContentRegionMin();
 				ImVec2 vMax = ImGui::GetWindowContentRegionMax();
 				glm::vec2 rectSize{vMax.x - vMin.x, vMax.y - vMin.y};
@@ -678,29 +567,27 @@ namespace lim
 		}
 		void processInput()
 		{
-			for (int i = 0; i < vpPackage.size; i++)
-			{
+			for( int i = 0; i < vpPackage.size; i++ ) {
 				Viewport &vp = *(vpPackage.viewports[i]);
-				if (vp.dragging == false)
+				if( vp.dragging == false )
 					continue;
 				Camera &camera = *(vpPackage.cameras[(isSameCamera) ? 0 : i]);
-				switch (viewingMode)
-				{
+				switch( viewingMode ) {
 				case VM_FREE:
 					float multiple = 1.0f;
-					if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+					if( glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS )
 						multiple = 1.3f;
-					if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+					if( glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS )
 						camera.move(Camera::MOVEMENT::FORWARD, deltaTime, cameraMoveSpeed * multiple);
-					if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+					if( glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS )
 						camera.move(Camera::MOVEMENT::BACKWARD, deltaTime, cameraMoveSpeed * multiple);
-					if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+					if( glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS )
 						camera.move(Camera::MOVEMENT::LEFT, deltaTime, cameraMoveSpeed * multiple);
-					if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+					if( glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS )
 						camera.move(Camera::MOVEMENT::RIGHT, deltaTime, cameraMoveSpeed * multiple);
-					if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+					if( glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS )
 						camera.move(Camera::MOVEMENT::UP, deltaTime, cameraMoveSpeed * multiple);
-					if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+					if( glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS )
 						camera.move(Camera::MOVEMENT::DOWN, deltaTime, cameraMoveSpeed * multiple);
 					camera.updateFreeViewMat();
 					break;
@@ -710,8 +597,7 @@ namespace lim
 		}
 		void key_callback(int key, int scancode, int action, int mods)
 		{
-			if(key == GLFW_KEY_TAB && action == GLFW_PRESS)
-			{
+			if( key == GLFW_KEY_TAB && action == GLFW_PRESS ) {
 				viewingMode = (viewingMode + 1) % 3;
 			}
 			if( (GLFW_MOD_CONTROL == mods) && (GLFW_KEY_S == key) ) {
@@ -721,8 +607,7 @@ namespace lim
 			if( (GLFW_MOD_CONTROL == mods) && (GLFW_KEY_E == key) ) {
 				exportModel(3, lastFocusedVpIdx);
 			}
-			if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-			{
+			if( key == GLFW_KEY_ESCAPE && action == GLFW_PRESS ) {
 				glfwSetWindowShouldClose(window, GL_TRUE);
 			}
 		}
@@ -736,23 +621,19 @@ namespace lim
 			xOff = xPos - xOld;
 			yOff = yOld - yPos;
 
-			for (int i = 0; i < vpPackage.size; i++)
-			{
+			for( int i = 0; i < vpPackage.size; i++ ) {
 				Viewport &vp = *(vpPackage.viewports[i]);
-				if (vp.dragging == false)
+				if( vp.dragging == false )
 					continue;
 				Camera &camera = *(vpPackage.cameras[(isSameCamera) ? 0 : i]);
 
-				switch (viewingMode)
-				{
+				switch( viewingMode ) {
 				case VM_PIVOT:
-					if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS || glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS)
-					{
+					if( glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS || glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS ) {
 						camera.shiftPos(xOff * pivotShiftSpd, yOff * pivotShiftSpd);
 						camera.updatePivotViewMat();
 					}
-					else
-					{
+					else {
 						camera.rotateCamera(xOff * pivotRotSpd, yOff * pivotRotSpd);
 						camera.updatePivotViewMat();
 					}
@@ -771,11 +652,9 @@ namespace lim
 		}
 		void mouse_btn_callback(int button, int action, int mods)
 		{
-			if(vpPackage.viewports[lastFocusedVpIdx]->hovered == false)
-			{
-				for (int i = 0; i < vpPackage.size; i++)
-				{
-					if (vpPackage.viewports[i]->hovered )
+			if( vpPackage.viewports[lastFocusedVpIdx]->hovered == false ) {
+				for( int i = 0; i < vpPackage.size; i++ ) {
+					if( vpPackage.viewports[i]->hovered )
 						lastFocusedVpIdx = i;
 				}
 			}
@@ -785,15 +664,13 @@ namespace lim
 			static const double rotateSpd = 4.5;
 			static const double pivotShiftSpd = -0.09;
 
-			for (int i = 0; i < vpPackage.size; i++)
-			{
+			for( int i = 0; i < vpPackage.size; i++ ) {
 				Viewport &vp = *(vpPackage.viewports[i]);
-				if (!vp.hovered)
+				if( !vp.hovered )
 					continue;
 				Camera &camera = *(vpPackage.cameras[(isSameCamera) ? 0 : i]);
 
-				switch (viewingMode)
-				{
+				switch( viewingMode ) {
 				case VM_PIVOT:
 					camera.shiftDist(yOff * 3.f);
 					camera.updatePivotViewMat();
@@ -803,18 +680,15 @@ namespace lim
 					camera.updateProjMat();
 					break;
 				case VM_SCROLL:
-					if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-					{
+					if( glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ) {
 						camera.shiftPos(xOff * pivotShiftSpd, yOff * -pivotShiftSpd);
 						camera.updatePivotViewMat();
 					}
-					else if (glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS)
-					{
+					else if( glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS ) {
 						camera.shiftDist(yOff * 3.f);
 						camera.updatePivotViewMat();
 					}
-					else
-					{
+					else {
 						camera.rotateCamera(xOff * rotateSpd, yOff * -rotateSpd);
 						camera.updatePivotViewMat();
 					}
