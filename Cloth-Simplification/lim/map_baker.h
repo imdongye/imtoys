@@ -1,8 +1,12 @@
 //
-//  2022-09-27 / im dong ye
+//  2022-10-16 / im dong ye
 // 
 //	edit from : https://github.com/assimp/assimp/issues/203
 //
+//	target model의 normal을 저장하고 원본 모델의 world space normal을 계산한뒤
+//	target normal으로 tbn을 계산해서 tangent space로 바꾼다.
+//
+
 
 #ifndef MAP_BAKER_H
 #define MAP_BAKER_H
@@ -27,40 +31,57 @@ namespace lim
 		inline static int texSizes[]={256, 512, 1024, 2048, 4096, 8192};
 		inline static const char* texSizeStrs[]={"256", "512", "1024", "2048", "4096", "8192"};
 
+		inline static Framebuffer* targetNormalMapPointer=nullptr;
 		inline static Framebuffer* bakedNormalMapPointer=nullptr;
 	private:
 		inline static Program bakerProg = Program("Normal Map Baker");
+		inline static Program targetNormalProg = Program("Tangent Space Copier");
 	public:
 		static void bakeNormalMap(std::string_view exportPath, Model *original, Model* target=nullptr)
 		{
 			namespace fs = std::filesystem;
 			if( bakerProg.ID==0 ) {
-				bakerProg.attatch("uv_view.vs").attatch("uv_view.fs").link();
+				bakerProg.attatch("uv_view.vs").attatch("bake_normal.fs").link();
+				targetNormalProg.attatch("uv_view.vs").attatch("map_wnor.fs").link();
 			}
 			if( bakedNormalMapPointer==nullptr ) {
-				bakedNormalMapPointer=new Framebuffer();
+				bakedNormalMapPointer=bakedNormalMapPointer=new Framebuffer();
 				bakedNormalMapPointer->clearColor = glm::vec4(0.5, 0.5, 1, 1);
+
+				targetNormalMapPointer=new Framebuffer();
+				targetNormalMapPointer->clearColor = glm::vec4(0.5, 0.5, 1, 1);
 			}
 			Framebuffer& bakedNormalMap = *bakedNormalMapPointer;
+			Framebuffer& targetNormalMap = *targetNormalMapPointer;
 			if( bakedNormalMap.width!= texSizes[selectedTexSizeIdx] ) {
-				bakedNormalMap.clearColor = glm::vec4(0.5, 0.5, 1, 1);
 				bakedNormalMap.resize(texSizes[selectedTexSizeIdx]);
+
+				targetNormalMap.resize(texSizes[selectedTexSizeIdx]);
 			}
 
 			std::map<std::string, std::vector<Mesh *>> mergeByNormalMap;
-			GLuint pid = bakerProg.use();
+			for( int i=0; i<original->meshes.size(); i++ ) {
+				Mesh* oriMesh = original->meshes[i];
+				bool hasBumpMap = false;
+				for( GLuint texIdx : oriMesh->texIdxs ) {
+					Texture &tex = original->textures_loaded[texIdx];
+					if( tex.type == "map_Bump" ) {
+						mergeByNormalMap[tex.path].push_back(oriMesh);
+						hasBumpMap = true;
+						break;
+					}
+				}
+				if( hasBumpMap==false ) {
+					if( target!=nullptr ) {
+						target->meshes[i]->texIdxs.push_back(target->textures_loaded.size());
+					}
+					mergeByNormalMap["new_bump.png"].push_back(oriMesh);
+				}
+			}
+
 			GLuint w = bakedNormalMap.width;
 			GLuint h = bakedNormalMap.height;
 			static GLubyte *data = new GLubyte[3 * w * h];
-
-			for( Mesh *mesh : original->meshes ) {
-				for( GLuint texIdx : mesh->texIdxs ) {
-					Texture &tex = original->textures_loaded[texIdx];
-					if( tex.type == "map_Bump" ) {
-						mergeByNormalMap[tex.path].push_back(mesh);
-					}
-				}
-			}
 			for( auto &[filepath, meshes] : mergeByNormalMap ) {
 				std::string fullPath(exportPath);
 				// simp된 targetviewport가 있으면 그쪽 폴더로 생성함.
@@ -71,12 +92,32 @@ namespace lim
 					fs::create_directories(fullPath);
 				fullPath += "/" + filepath;
 
+				/* target의 normal 가져오기 */
+				if( target!=nullptr ) {
+					GLuint pid = targetNormalProg.use();
+					targetNormalMap.bind();
+					for( Mesh *mesh : target->meshes ) {
+						mesh->draw(0); // not bind textures
+					}
+					targetNormalMap.unbind();
+				}
+
+				/* 맵 베이킹 */
+				GLuint pid = bakerProg.use();
 				bakedNormalMap.bind();
+				// target normal 마지막 슬롯으로 넘기기
+				if( target!=nullptr ) {
+					glActiveTexture(GL_TEXTURE31);
+					glBindTexture(GL_TEXTURE_2D, targetNormalMap.colorTex);
+					setUniform(pid, "map_TargetNormal", 31);// to sampler2d
+					glActiveTexture(GL_TEXTURE0);
+				}
 				for( Mesh *mesh : original->meshes ) {
 					mesh->draw(pid, original->textures_loaded);
 				}
 				bakedNormalMap.unbind();
 
+				/* png로 저장 */
 				glBindFramebuffer(GL_FRAMEBUFFER, bakedNormalMap.fbo);
 				glPixelStorei(GL_PACK_ALIGNMENT, 1);
 				glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, data);
@@ -84,8 +125,9 @@ namespace lim
 				// 덮어쓴다.
 				stbi_flip_vertically_on_write(true);
 				stbi_write_png(fullPath.c_str(), w, h, 3, data, w * 3);
-
 				Logger::get() << "baked in " << fullPath.c_str() << Logger::endll;
+
+				/* 새로운 노멀맵으로 로딩 */
 				if( target != nullptr ) {
 					target->reloadNormalMap(fullPath);
 					Logger::get() << "reload normal map" << Logger::endll;

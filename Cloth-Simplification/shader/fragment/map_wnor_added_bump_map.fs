@@ -72,24 +72,7 @@ void main(void)
 		}
 		N = normalize(TBN*tNor);
 	}
-	vec3 L = normalize(lightDir);
-	vec3 V = normalize(cameraPos - wPos);
-	vec3 R = 2*dot(N,L)*N-L;
-
-	float visibility = 1.0;
-	if( shadowEnabled > 0 )
-	{
-		// ...
-	}
-
-	vec4 albelo = (hasTexture>0) ? pow(texture(map_Kd0, tUv),vec4(texGamma)) : vec4(Kd,1);
-
-	float lambertian = max(0, dot(N, L));
-	vec3 diffuse = lightInt*lambertian*albelo.rgb;
-	vec3 ambient = ambInt*albelo.rgb;
-	vec3 specular = pow(max(0,dot(R,V)), shininess) * lambertian * vec3(1);
-	vec3 outColor = diffuse+ambient+specular;
-	outColor = N*2-1;
+	vec3 outColor = N*0.5+0.5;
 
     outColor = pow(outColor, vec3(1/gamma));
     FragColor = vec4(outColor, 1);

@@ -56,26 +56,23 @@ namespace lim
 			programs.push_back(new Program("Normal Dot Light"));
 			programs.back()->attatch("pos_nor_uv.vs").attatch("ndl.fs").link();
 
-			programs.push_back(new Program("Diffuse"));
-			programs.back()->attatch("pos_nor_uv.vs").attatch("diffuse.fs").link();
+			programs.push_back(new Program("Map View, bump"));
+			programs.back()->attatch("uv_view.vs").attatch("map_view.fs").link();
 
-			programs.push_back(new Program("Uv"));
-			programs.back()->attatch("pos_nor_uv.vs").attatch("uv.fs").link();
+			programs.push_back(new Program("Map View, my normal"));
+			programs.back()->attatch("uv_view.vs").attatch("map_wnor.fs").link();
 
-			programs.push_back(new Program("Bump"));
-			programs.back()->attatch("pos_nor_uv.vs").attatch("bump_map.fs").link();
-
-			programs.push_back(new Program("Normal"));
-			programs.back()->attatch("pos_nor_uv.vs").attatch("normal_map.fs").link();
+			programs.push_back(new Program("Map View, my normal + map_bump"));
+			programs.back()->attatch("uv_view.vs").attatch("map_wnor_added_bump_map.fs").link();
 
 			programs.push_back(new Program("Auto Normal"));
 			programs.back()->attatch("pos_nor_uv.vs").attatch("auto_normal.fs").link();
 
+			programs.push_back(new Program("Uv"));
+			programs.back()->attatch("pos_nor_uv.vs").attatch("uv.fs").link();
+
 			programs.push_back(new Program("Shadowed"));
 			programs.back()->attatch("shadowed.vs").attatch("shadowed.fs").link();
-
-			programs.push_back(new Program("Uv View"));
-			programs.back()->attatch("uv_view.vs").attatch("uv_view.fs").link();
 
 			addEmptyViewport();
 			loadModel("archive/dwarf/Dwarf_2_Low.obj", 0);
@@ -97,7 +94,7 @@ namespace lim
 		void addEmptyViewport()
 		{
 			Viewport *viewport = new Viewport();
-			Scene *scene = new Scene(light);
+			Scene *scene = new Scene(light, false);
 			Camera *camera = new Camera(glm::vec3(0.0f, 1.0f, 3.0f), glm::vec3(0, 0, -1), 1);
 			vpPackage.push_back(viewport, scene, nullptr, camera);
 		}

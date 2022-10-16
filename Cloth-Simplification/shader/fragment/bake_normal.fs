@@ -26,6 +26,7 @@ uniform int isBump = 1;
 uniform float texGamma = 1; // suppose linear space
 uniform sampler2D map_Kd0;
 uniform sampler2D map_Bump0;
+uniform sampler2D map_TargetNormal;
 /* etc */
 uniform vec3 cameraPos;
 uniform float gamma = 1; 
@@ -40,13 +41,11 @@ mat3 getTBN( vec3 N ) {
 
 void main(void)
 {
-	vec3 tbn_N = vec3(0);
+	vec3 tbnN=vec3(0);
 	vec3 N = normalize(wNor);
-	if( hasTexture>0 )
-	{
-		mat3 TBN = getTBN( N );
-		if( isBump>0 )
-		{
+	mat3 TBN = getTBN( N );
+	if( hasTexture>0 ) {
+		if( isBump>0 ) {
 			float Bu = texture(map_Bump0, tUv+vec2(TEX_DELTA,0)).r
 							- texture(map_Bump0, tUv+vec2(-TEX_DELTA,0)).r;
 			float Bv = texture(map_Bump0, tUv+vec2(0,TEX_DELTA)).r
@@ -54,15 +53,17 @@ void main(void)
 			vec3 bumpVec = vec3(-Bu*bumpHeight, -Bv*bumpHeight, 1);
 			N = normalize(TBN*bumpVec);
 		}
-		else
-		{
+		else {
 			vec3 tsNor = texture(map_Bump0, tUv).rgb;
 			N = normalize(TBN*tsNor);
 		}
-		tbn_N = normalize(transpose(TBN)*N);
 	}
-	
-	vec3 outColor = tbn_N*0.5+0.5;
+	vec3 targetN = texture(map_TargetNormal, tUv).rgb;
+	targetN = 2*targetN-1;
+	mat3 targetTBN = getTBN( normalize(targetN) );
+	tbnN = normalize(transpose(targetTBN)*N);
+
+	vec3 outColor = tbnN*0.5+0.5;
 
 	FragColor = vec4(outColor, 1);
 }
