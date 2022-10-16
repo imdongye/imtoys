@@ -37,14 +37,16 @@ namespace lim
 		float cameraMoveSpeed = 1.6;
 		Light light = Light();
 
-		int fromViewportIdx = 0;
-		int toViewportIdx = 1;
-		// dnd할때 마우스위치로 vp선택안됨
-		int lastSelectedVPIdx = 0;
-		ViewportPackage vpPackage;
-
 		int selectedProgIdx = 0;
 		std::vector<Program *> programs;
+
+
+		int lastFocusedVpIdx = 0;
+		bool simplifyTrigger = false;
+		bool bakeTrigger = false;
+		int fromVpIdx = 0;
+		int toVpIdx = 1;
+		ViewportPackage vpPackage;
 
 		const char *exportPath = "result/";
 		int selectedBakeSizeIdx = 2;
@@ -121,15 +123,10 @@ namespace lim
 
 			double start = glfwGetTime();
 			Logger::get(1).log("Loading %s..... . ... ..... .. .... .. . . .. .\n", path.data());
-			try
-			{
-				temp = ModelLoader::loadFile(path.data());
-				temp->program = programs[selectedProgIdx];
-			}
-			catch (const char *error_str)
-			{
-				Logger::get() << error_str << Logger::endl;
-			}
+
+			temp = ModelLoader::loadFile(path.data());
+			temp->program = programs[selectedProgIdx];
+
 			vpPackage.scenes[vpIdx]->setModel(temp);
 			vpPackage.models[vpIdx] = temp;
 			vpPackage.cameras[vpIdx]->pivot = temp->position;
@@ -156,8 +153,8 @@ namespace lim
 		}
 		void simplifyModel(float lived_pct = 0.8f, int version = 0, int agressiveness = 7, bool verbose = true)
 		{
-			Model *fromModel = vpPackage.models[fromViewportIdx];
-			Model *toModel = vpPackage.models[toViewportIdx];
+			Model *fromModel = vpPackage.models[fromVpIdx];
+			Model *toModel = vpPackage.models[toVpIdx];
 
 			double start = glfwGetTime();
 			Logger::get().log("\nSimplifing %s..... . ... ... .. .. . .  .\n", fromModel->name.c_str());
@@ -169,9 +166,9 @@ namespace lim
 			int pct = 100.0 * toModel->verticesNum / fromModel->verticesNum;
 			toModel->name += fmToStr("_%d_pct", pct);
 
-			vpPackage.models[toViewportIdx] = toModel;
-			vpPackage.scenes[toViewportIdx]->setModel(toModel);
-			vpPackage.cameras[toViewportIdx]->pivot = toModel->position;
+			vpPackage.models[toVpIdx] = toModel;
+			vpPackage.scenes[toVpIdx]->setModel(toModel);
+			vpPackage.cameras[toVpIdx]->pivot = toModel->position;
 
 			double simpTime = glfwGetTime() - start;
 			Logger::get().simpTime = simpTime;
@@ -181,8 +178,8 @@ namespace lim
 		void bakeNormalMap()
 		{
 			namespace fs = std::filesystem;
-			Model *oriMod = vpPackage.models[fromViewportIdx];
-			Model *toMod = vpPackage.models[toViewportIdx];
+			Model *oriMod = vpPackage.models[fromVpIdx];
+			Model *toMod = vpPackage.models[toVpIdx];
 
 			std::map<std::string, std::vector<Mesh *>> mergeByNormalMap;
 			GLuint pid = bakerProg.use();
@@ -269,8 +266,8 @@ namespace lim
 		}
 		void renderImGui()
 		{
-			const Model *fromModel = vpPackage.models[fromViewportIdx];
-			const Model *toModel = vpPackage.models[toViewportIdx];
+			const Model *fromModel = vpPackage.models[fromVpIdx];
+			const Model *toModel = vpPackage.models[toVpIdx];
 
 			imgui_modules::beginImGui();
 
@@ -346,20 +343,20 @@ namespace lim
 					if (vpPackage.models[i] == nullptr)
 						continue;
 					ImGui::SameLine();
-					if (ImGui::RadioButton((std::to_string(id) + "##1").c_str(), &fromViewportIdx, id) && fromViewportIdx == toViewportIdx)
+					if (ImGui::RadioButton((std::to_string(id) + "##1").c_str(), &fromVpIdx, id) && fromVpIdx == toVpIdx)
 					{
-						toViewportIdx++;
-						toViewportIdx %= vpPackage.size;
+						toVpIdx++;
+						toVpIdx %= vpPackage.size;
 					}
 				}
 
 				ImGui::Text("to viewport:");
 				for (Viewport *vp : vpPackage.viewports)
 				{
-					if (vp->id == fromViewportIdx)
+					if (vp->id == fromVpIdx)
 						continue;
 					ImGui::SameLine();
-					if (ImGui::RadioButton((std::to_string(vp->id) + "##2").c_str(), &toViewportIdx, vp->id))
+					if (ImGui::RadioButton((std::to_string(vp->id) + "##2").c_str(), &toVpIdx, vp->id))
 					{
 						Logger::get() << vp->id;
 					}
@@ -375,8 +372,9 @@ namespace lim
 				ImGui::SliderInt("agressiveness", &agressiveness, 5, 8);
 				static bool verbose = true;
 				ImGui::Checkbox("verbose", &verbose);
-				if (ImGui::Button("Simplify"))
+				if (ImGui::Button("Simplify")||simplifyTrigger)
 				{
+					simplifyTrigger = false;
 					simplifyModel((float)pct / 100.f, selectedVersion, agressiveness, verbose);
 				}
 
@@ -390,8 +388,9 @@ namespace lim
 				{
 					bakedNormalMap.resize(atoi(bakeSizeList[selectedBakeSizeIdx]));
 				}
-				if (ImGui::Button("Bake normal map"))
+				if (ImGui::Button("Bake normal map")||bakeTrigger)
 				{
+					bakeTrigger=false;
 					bakeNormalMap();
 				}
 			}
@@ -684,7 +683,7 @@ namespace lim
 				Viewport &vp = *(vpPackage.viewports[i]);
 				if (vp.dragging == false)
 					continue;
-				Camera &camera = *(vpPackage.cameras[i]);
+				Camera &camera = *(vpPackage.cameras[(isSameCamera) ? 0 : i]);
 				switch (viewingMode)
 				{
 				case VM_FREE:
@@ -709,13 +708,20 @@ namespace lim
 				break;
 			}
 		}
-		void key_callback(int key, int scancode, int action, int mode)
+		void key_callback(int key, int scancode, int action, int mods)
 		{
-			if (key == GLFW_KEY_TAB && action == GLFW_PRESS)
+			if(key == GLFW_KEY_TAB && action == GLFW_PRESS)
 			{
 				viewingMode = (viewingMode + 1) % 3;
 			}
-			if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+			if( (GLFW_MOD_CONTROL == mods) && (GLFW_KEY_S == key) ) {
+				simplifyTrigger = true;
+				bakeTrigger = true;
+			}
+			if( (GLFW_MOD_CONTROL == mods) && (GLFW_KEY_E == key) ) {
+				exportModel(3, lastFocusedVpIdx);
+			}
+			if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 			{
 				glfwSetWindowShouldClose(window, GL_TRUE);
 			}
@@ -765,16 +771,16 @@ namespace lim
 		}
 		void mouse_btn_callback(int button, int action, int mods)
 		{
-			if (vpPackage.viewports[lastSelectedVPIdx]->focused == false)
+			if(vpPackage.viewports[lastFocusedVpIdx]->hovered == false)
 			{
 				for (int i = 0; i < vpPackage.size; i++)
 				{
-					if (vpPackage.viewports[i]->focused)
-						lastSelectedVPIdx = i;
+					if (vpPackage.viewports[i]->hovered )
+						lastFocusedVpIdx = i;
 				}
 			}
 		}
-		void scroll_callback(double xoff, double yoff)
+		void scroll_callback(double xOff, double yOff)
 		{
 			static const double rotateSpd = 4.5;
 			static const double pivotShiftSpd = -0.09;
@@ -824,22 +830,24 @@ namespace lim
 		}
 		void drop_callback(int count, const char **paths)
 		{
-			loadModel(paths[0], lastSelectedVPIdx);
-			/*for( int i = 0; i < count; i++ ) {
-				int hoveredIdx=0;
-				for( Viewport* vp : vpPackage.viewports ) {
-					if( vp->hovered==true )
-						break;
-					hoveredIdx++;
-				}
-				if( hoveredIdx>=vpPackage.size ) {
-					Logger::get()<<"[error] you must drop to viewport"<<Logger::endl;
-					return;
-				}
+			int selectedVpIdx = -1;
+			double xPos, yPos;
+			int winX, winY, gX, gY;
+			glfwGetCursorPos(window, &xPos, &yPos);
+			glfwGetWindowPos(window, &winX, &winY);
 
-				loadModel(paths[i], hoveredIdx);
-				break;
-			}*/
+			gX = winX+xPos; gY = winY+yPos;
+			for( int i=0; i<vpPackage.size; i++ ) {
+				if( vpPackage.viewports[i]->isMouseHovered(gX, gY) ) {
+					selectedVpIdx = i;
+				}
+			}
+			if( selectedVpIdx>=0 ) {
+				loadModel(paths[0], selectedVpIdx);
+			}
+			else {
+				Logger::get()<<"[error] you must drop to viewport"<<Logger::endl;
+			}
 		}
 	};
 

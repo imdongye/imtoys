@@ -66,6 +66,7 @@ void main(void)
 		}
 		/* normal map */
 		else {
+			
 			tNor = texture(map_Bump0, tUv).xyz;
 			tNor = tNor*2-vec3(1);
 			N = normalize(TBN*tNor);

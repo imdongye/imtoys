@@ -48,19 +48,30 @@ mat3 getTBN( vec3 N ) {
 
 void main(void)
 {
-	vec3 N, tNor;
+	vec3 N;
 	N = normalize(wNor);
 	if( hasTexture>0 )
 	{
+		vec3 tNor, leftUp;
 		mat3 TBN = getTBN( N );
-		float Bu = texture(map_Bump0, tUv+vec2(texDelta,0)).r
+		leftUp = texelFetch(map_Bump0, ivec2(0), 0).xyz;
+		/* bump map */
+		if(leftUp.y==leftUp.z) {
+			float Bu = texture(map_Bump0, tUv+vec2(texDelta,0)).r
 						- texture(map_Bump0, tUv+vec2(-texDelta,0)).r;
-		float Bv = texture(map_Bump0, tUv+vec2(0,texDelta)).r
+			float Bv = texture(map_Bump0, tUv+vec2(0,texDelta)).r
 						- texture(map_Bump0, tUv+vec2(0,-texDelta)).r;
-		tNor = vec3(-Bu*bumpHeight, -Bv*bumpHeight, 1);
+			tNor = vec3(-Bu*bumpHeight, -Bv*bumpHeight, 1);
+			N = normalize(TBN*tNor);
+		}
+		/* normal map */
+		else {
+			tNor = texture(map_Bump0, tUv).xyz;
+			tNor = tNor*2-vec3(1);
+			N = normalize(TBN*tNor);
+		}
 		N = normalize(TBN*tNor);
 	}
-
 	vec3 L = normalize(lightDir);
 	vec3 V = normalize(cameraPos - wPos);
 	vec3 R = 2*dot(N,L)*N-L;
@@ -78,7 +89,7 @@ void main(void)
 	vec3 ambient = ambInt*albelo.rgb;
 	vec3 specular = pow(max(0,dot(R,V)), shininess) * lambertian * vec3(1);
 	vec3 outColor = diffuse+ambient+specular;
-	outColor *= visibility;
+	outColor = N*2-1;
 
     outColor = pow(outColor, vec3(1/gamma));
     FragColor = vec4(outColor, 1);

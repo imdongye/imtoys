@@ -105,11 +105,12 @@ namespace lim
 		{
 			/* shadowMap draw할때 pid=0 으로 해서 텍스쳐 uniform 안함 */
 			if( pid != 0 ) {
+				int slotCounter=0;
 				GLuint diffuseNr  = 0;
 				GLuint specularNr = 0;
 				GLuint normalNr   = 0;
 				GLuint ambientNr  = 0;
-				for( int i=0; i<texIdxs.size(); i++ ) {
+				for( GLuint i : texIdxs ) {
 					std::string type = textures_loaded[i].type;
 					// uniform samper2d nr is start with 0
 					int backNum = 0;
@@ -119,9 +120,9 @@ namespace lim
 					else if( type=="map_Ka" )   backNum = ambientNr++;
 
 					std::string varName = type + std::to_string(backNum);
-					glActiveTexture(GL_TEXTURE0 + i); // slot
+					glActiveTexture(GL_TEXTURE0 + slotCounter); // slot
 					glBindTexture(GL_TEXTURE_2D, textures_loaded[i].id);
-					setUniform(pid, varName.c_str(), i);// to sampler2d
+					setUniform(pid, varName.c_str(), slotCounter++);// to sampler2d
 				}
 				glActiveTexture(GL_TEXTURE0);
 				setUniform(pid, "hasTexture", hasTexture);
