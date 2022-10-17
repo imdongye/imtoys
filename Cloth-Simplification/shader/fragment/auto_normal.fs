@@ -27,7 +27,7 @@ uniform float ambInt = 0.1;
 uniform int shininess = 20;
 uniform vec3 Kd = vec3(1,1,0);
 /* texture */
-uniform int hasTexture = -1;
+uniform int texCount = 0;
 uniform float texGamma = 1; // suppose linear space
 uniform sampler2D map_Kd0;
 uniform sampler2D map_Bump0;
@@ -50,7 +50,7 @@ void main(void)
 {
 	vec3 N;
 	N = normalize(wNor);
-	if( hasTexture>0 )
+	if( texCount>0 )
 	{
 		vec3 tNor, leftUp;
 		mat3 TBN = getTBN( N );
@@ -82,7 +82,7 @@ void main(void)
 		// ...
 	}
 
-	vec4 albelo = (hasTexture>0) ? pow(texture(map_Kd0, tUv),vec4(texGamma)) : vec4(Kd,1);
+	vec4 albelo = (texCount>1) ? pow(texture(map_Kd0, tUv),vec4(texGamma)) : vec4(Kd,1);
 
 	float lambertian = max(0, dot(N, L));
 	vec3 diffuse = lightInt*lambertian*albelo.rgb;

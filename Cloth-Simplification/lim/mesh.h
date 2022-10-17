@@ -125,7 +125,7 @@ namespace lim
 					setUniform(pid, varName.c_str(), slotCounter++);// to sampler2d
 				}
 				glActiveTexture(GL_TEXTURE0);
-				setUniform(pid, "hasTexture", hasTexture);
+				setUniform(pid, "texCount", (int)texIdxs.size());
 				setUniform(pid, "Kd", color);
 			}
 

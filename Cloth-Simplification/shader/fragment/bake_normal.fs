@@ -15,7 +15,6 @@ uniform int shadowEnabled = -1;
 uniform vec3 lightDir = vec3(1,0,0);
 uniform vec3 lightColor = vec3(1);
 uniform float lightInt = 0.8;
-
 /* matarial */
 uniform float ambInt = 0.1;
 uniform int shininess = 20;
@@ -35,16 +34,21 @@ mat3 getTBN( vec3 N ) {
 	vec3 Q1 = dFdx(wPos), Q2 = dFdy(wPos);
 	vec2 st1 = dFdx(tUv), st2 = dFdy(tUv);
 	float D = st1.s*st2.t - st2.x*st1.t;
-	return mat3(normalize((Q1*st2.t - Q2*st1.t)*D),
-				normalize((-Q1*st2.s + Q2*st1.s)*D), N);
+	vec3 T = normalize((Q1*st2.t - Q2*st1.t)*D);
+	vec3 B = normalize((-Q1*st2.s + Q2*st1.s)*D);
+	// gram schmidt
+	T = normalize(T -dot(T,N)*N);
+	B = cross(N, T);
+	return mat3(T, B, N);
 }
 
 void main(void)
 {
-	vec3 tbnN=vec3(0);
-	vec3 N = normalize(wNor);
-	mat3 TBN = getTBN( N );
-	if( hasTexture>0 ) {
+	vec3 targetN, targetSpaceN, N;
+	mat3 targetTBN, TBN;
+	N = normalize( wNor );
+	TBN = getTBN( N );
+	if( false ){//hasTexture>0 ) {
 		if( isBump>0 ) {
 			float Bu = texture(map_Bump0, tUv+vec2(TEX_DELTA,0)).r
 							- texture(map_Bump0, tUv+vec2(-TEX_DELTA,0)).r;
@@ -58,12 +62,12 @@ void main(void)
 			N = normalize(TBN*tsNor);
 		}
 	}
-	vec3 targetN = texture(map_TargetNormal, tUv).rgb;
-	targetN = 2*targetN-1;
-	mat3 targetTBN = getTBN( normalize(targetN) );
-	tbnN = normalize(transpose(targetTBN)*N);
+	targetN = texture(map_TargetNormal, tUv).rgb;
+	targetN = normalize(2*targetN-1);
+	targetTBN = getTBN( targetN );
 
-	vec3 outColor = tbnN*0.5+0.5;
+	targetSpaceN = transpose(targetTBN)*N;
 
+	vec3 outColor = targetSpaceN*0.5+0.5;
 	FragColor = vec4(outColor, 1);
 }
