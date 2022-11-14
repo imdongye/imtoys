@@ -18,7 +18,7 @@ namespace lim
 	private:
 		std::vector<Program*> programs;
 		std::vector<Texture*> imgs;
-
+		std::vector<lim::Viewport*> viewports;
 	public:
 		HdrApp(): AppBase(1280, 720, "imhdr")
 		{
@@ -33,6 +33,7 @@ namespace lim
 			programs.back()->attatch("pos_nor_uv.vs").attatch("fb_to_scr.fs").link();
 
 			imgs.push_back(new Texture("images/memorial.jpg"));
+			viewports.push_back(new Viewport());
 
 			initCallback();
 			imgui_modules::initImGui(window);
@@ -65,6 +66,10 @@ namespace lim
 			imgui_modules::beginImGui();
 
 			ImGui::ShowDemoWindow();
+
+			for( int i = viewports.size()-1; i >= 0; i-- ) {
+				viewports[i]->drawImGui();
+			}
 
 			imgui_modules::endImGui(scr_width, scr_height);
 		}

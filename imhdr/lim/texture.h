@@ -59,6 +59,10 @@ namespace lim
 
 			stbi_image_free(data);
 		}
+		~Texture()
+		{
+			clear();
+		}
 		void printInfo()
 		{
 			printf("texID:%d, %dx%d, nr_ch:%d, bit:%d, fm:%s\n", texID, width, height, nr_channels, bit_per_channel, format);
@@ -70,6 +74,18 @@ namespace lim
 				texID=0;
 			}
 		}
+		void bind(GLuint activeSlot, const std::string_view shaderUniformName) const
+		{
+			glActiveTexture(GL_TEXTURE0 + activeSlot);
+			glBindTexture(GL_TEXTURE_2D, texID);
+			if( shaderUniformName.length()>0 ) {
+				GLint pid;
+				glGetIntegerv(GL_CURRENT_PROGRAM, &pid);
+				GLint loc = glGetUniformLocation(pid, shaderUniformName.data());
+				glUniform1i(loc, activeSlot);
+			}
+		}
+
 	private:
 		void initOpenGL(void* data)
 		{
@@ -92,12 +108,13 @@ namespace lim
 			* glStorate2D는 데이터복사는 따로해줘야되고 Image2D와 다르게 크기나 포맷 변경안됨
 			*/
 			//glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, src_format, src_chanel_type, data);
-			glTexStorage2D(GL_TEXTURE_2D, 1, internal_format, width, height);
+			glTexStorage2D(GL_TEXTURE_2D, 1, internal_format, width, height); // 4.2
 			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, src_format, src_chanel_type, data);
 			glGenerateMipmap(GL_TEXTURE_2D);
 			glBindTexture(GL_TEXTURE_2D, 0);
 		}
 	};
+
 
 	/* c++17 global data member can initialize in declaration with inline keyword */
 	inline static Program toScrProgram = Program("toScr");
@@ -157,6 +174,24 @@ namespace lim
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		glBindVertexArray(0);
+	}
+
+
+	inline glm::vec3 sample(void* buf, int w, int h, int x, int y, int n, int isHdr=0)
+	{
+		if( isHdr ) {
+			float* data = (float*)buf;
+			return glm::vec3(data[(x+y*w)*n], data[(x+y*w)*n+1], data[(x+y*w)*n+2]);
+		} else {
+			unsigned char* data = (unsigned char*)buf;
+			return glm::vec3(data[(x+y*w)*n], data[(x+y*w)*n+1], data[(x+y*w)*n+2]);
+		}
+	}
+	bool isNormal(const glm::vec3 v)
+	{
+		glm::vec3 n = (v-glm::vec3(127))/127.f;
+		float l = length(n);
+		return l>0.9 && l<1.1;
 	}
 }
 

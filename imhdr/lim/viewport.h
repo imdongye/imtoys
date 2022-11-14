@@ -9,6 +9,8 @@
 #ifndef VIEWPORT_H
 #define VIEWPORT_H
 
+//#include "limclude.h"
+
 namespace lim
 {
 	class Viewport
@@ -20,7 +22,7 @@ namespace lim
 		const std::string name;
 		Framebuffer* framebuffer;
 		bool hovered, focused, dragging;
-		GLuint width, height;
+		GLuint width=0, height=0;
 		glm::ivec2 mousePos;
 	private:
 		glm::ivec2 boundMin, boundMax, winPos;
@@ -29,8 +31,6 @@ namespace lim
 			: id(id_generator++), name("Viewport"+std::to_string(id))
 		{
 			framebuffer = new MsFramebuffer();
-			hovered = focused = false;
-			width = height = 0;
 		}
 		virtual ~Viewport()
 		{
@@ -41,7 +41,6 @@ namespace lim
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
 			ImGui::Begin(name.c_str());
 
-			
 			focused = ImGui::IsWindowFocused();
 			hovered = ImGui::IsWindowHovered();
 			dragging = focused && (ImGui::IsMouseDown(0)||ImGui::IsMouseDown(2));
@@ -51,10 +50,7 @@ namespace lim
 			boundMax = imgui_modules::imToIvec(ImGui::GetWindowContentRegionMax());
 			mousePos = imgui_modules::imToIvec(ImGui::GetMousePos());
 			mousePos = mousePos - winPos - boundMin;
-			if( dragging ) {
-				ImGui::SetMouseCursor(7);
-				//ImGui::Text("%d %d", mousePos.x, mousePos.y);
-			}
+			if( dragging ) ImGui::SetMouseCursor(7);
 
 			auto viewportPanelSize = ImGui::GetContentRegionAvail();
 			width = viewportPanelSize.x;

@@ -58,8 +58,9 @@
 #include "app_pref.h"
 #include "program.h"
 #include "texture.h"
-#include "framebuffer.h"
 #include "tex_renderer.h"
+#include "framebuffer.h"
+#include "viewport.h"
 #include "application.h"
 #include "app_hdr.h"
 
