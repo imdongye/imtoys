@@ -24,13 +24,16 @@ namespace lim
 		bool hovered, focused, dragging;
 		GLuint width=0, height=0;
 		glm::ivec2 mousePos;
+		bool fixed_aspect;
+		float aspect;
 	private:
 		glm::ivec2 boundMin, boundMax, winPos;
 	public:
-		Viewport()
-			: id(id_generator++), name("Viewport"+std::to_string(id))
+		Viewport(Framebuffer* createdFB, GLuint _width=256, GLuint _height=256, bool fixedAspect=false)
+			: id(id_generator++), name("Viewport"+std::to_string(id)), width(_width), height(_height)
+			, fixed_aspect(fixedAspect), aspect(width/(float)height)
 		{
-			framebuffer = new MsFramebuffer();
+			framebuffer = createdFB;
 		}
 		virtual ~Viewport()
 		{
@@ -38,7 +41,13 @@ namespace lim
 		}
 		void drawImGui()
 		{
+			ImGui::SetNextWindowSize({(float)width, (float)height}, ImGuiCond_Once);
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
+
+			ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), [](ImGuiSizeCallbackData *data) {
+				data->DesiredSize.x;
+				data->DesiredSize.y = data->DesiredSize.x/(*(float*)data->UserData); }, (void*)&aspect);
+
 			ImGui::Begin(name.c_str());
 
 			focused = ImGui::IsWindowFocused();
@@ -55,6 +64,9 @@ namespace lim
 			auto viewportPanelSize = ImGui::GetContentRegionAvail();
 			width = viewportPanelSize.x;
 			height = viewportPanelSize.y;
+
+			width = LIM_MIN(width, height);
+			height = width/aspect;
 
 			if( framebuffer->width != width
 			   || framebuffer->height != height ) {

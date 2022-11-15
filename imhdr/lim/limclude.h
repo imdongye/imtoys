@@ -53,13 +53,14 @@
 #define LIM_MAX(X, Y) ((X)>(Y))?(X):(Y)
 #define LIM_MIN(X, Y) ((X)<(Y))?(X):(Y)
 
+#include "asset_lib.h"
 #include "imgui_modules.h"
 #include "logger.h"
 #include "app_pref.h"
 #include "program.h"
+#include "framebuffer.h"
 #include "texture.h"
 #include "tex_renderer.h"
-#include "framebuffer.h"
 #include "viewport.h"
 #include "application.h"
 #include "app_hdr.h"

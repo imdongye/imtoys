@@ -117,65 +117,89 @@ namespace lim
 
 
 	/* c++17 global data member can initialize in declaration with inline keyword */
-	inline static Program toScrProgram = Program("toScr");
+	inline static Program toQuadProg = Program("toQuad");
 	inline static GLuint quadVAO = 0;
-	static void textureToBackBuf(GLuint texID, GLsizei width, GLsizei height, bool toSRGB = false)
+	static void __initQuadVAO()
 	{
-		if( toScrProgram.ID==0 ) {
-			toScrProgram.attatch("fb_to_scr.vs").attatch("fb_to_scr.fs").link();
-			GLuint loc = glGetUniformLocation(toScrProgram.use(), "screenTex");
-			glUniform1i(loc, 0);
-		}
 		if( quadVAO == 0 ) {
 			// Array for full-screen quad
 			GLfloat verts[] ={
 				-1.0f, -1.0f, 0.0f, 1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f,
 				-1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f, -1.0f, 1.0f, 0.0f
 			};
-			GLfloat tc[] ={
-				0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,
-				0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f
-			};
 
 			// Set up the buffers
-			unsigned int handle[2];
-			glGenBuffers(2, handle);
-			glBindBuffer(GL_ARRAY_BUFFER, handle[0]);
-			glBufferData(GL_ARRAY_BUFFER, 6 * 3 * sizeof(float), verts, GL_STATIC_DRAW);
-			glBindBuffer(GL_ARRAY_BUFFER, handle[1]);
-			glBufferData(GL_ARRAY_BUFFER, 6 * 2 * sizeof(float), tc, GL_STATIC_DRAW);
+			GLuint vbo;
+			glGenBuffers(1, &vbo);
+			glBindBuffer(GL_ARRAY_BUFFER, vbo);
+			glBufferData(GL_ARRAY_BUFFER, 6 * 3 * sizeof(GLfloat), verts, GL_STATIC_DRAW);
 
 			// Set up the vertex array object
 			glGenVertexArrays(1, &quadVAO);
 			glBindVertexArray(quadVAO);
-			glBindBuffer(GL_ARRAY_BUFFER, handle[0]);
+			glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
 			glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 			glEnableVertexAttribArray(0);  // Vertex position
-			glBindBuffer(GL_ARRAY_BUFFER, handle[1]);
-			glVertexAttribPointer((GLuint)1, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
-			glEnableVertexAttribArray(1);  // Texture coordinates
+
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
 			glBindVertexArray(0);
 		}
+	}
+	static void __initToQuadProg()
+	{
+		if( toQuadProg.ID==0 ) {
+			toQuadProg.attatch("tex_to_quad.vs").attatch("tex_to_quad.fs").link();
+			GLuint loc = glGetUniformLocation(toQuadProg.use(), "tex");
+			glUniform1i(loc, 0);
+		}
+	}
+	static void textureToFBO(GLuint texID, GLsizei width, GLsizei height, GLuint fbo=0, float gamma=2.2f)
+	{
+		__initQuadVAO();
+		__initToQuadProg();
 
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		glViewport(0, 0, width, height);
-		if( toSRGB ) glEnable(GL_FRAMEBUFFER_SRGB);
 		glDisable(GL_DEPTH_TEST);
 		glDisable(GL_MULTISAMPLE);
+		glDisable(GL_FRAMEBUFFER_SRGB);
 
 		glClearColor(1, 1, 1, 1);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		toScrProgram.use();
-		glBindVertexArray(quadVAO);
-		// use the color attachment texture as the texture of the quad plane
+		toQuadProg.use();
+		GLuint loc = glGetUniformLocation(toQuadProg.ID, "gamma");
+		glUniform1f(loc, gamma);
+
 		glBindTexture(GL_TEXTURE_2D, texID);
 		glActiveTexture(GL_TEXTURE0);
+
+		glBindVertexArray(quadVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		glBindVertexArray(0);
 	}
+	static void textureToFramebuffer(GLuint texID, Framebuffer const *fb, float gamma=2.2f)
+	{
+		__initQuadVAO();
+		__initToQuadProg();
 
+		fb->bind();
+
+		toQuadProg.use();
+		GLuint loc = glGetUniformLocation(toQuadProg.ID, "gamma");
+		glUniform1f(loc, gamma);
+
+		glBindTexture(GL_TEXTURE_2D, texID);
+		glActiveTexture(GL_TEXTURE0);
+
+		glBindVertexArray(quadVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		glBindVertexArray(0);
+
+		fb->unbind();
+	}
 
 	inline glm::vec3 sample(void* buf, int w, int h, int x, int y, int n, int isHdr=0)
 	{

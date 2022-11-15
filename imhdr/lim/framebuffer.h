@@ -21,12 +21,13 @@ namespace lim
 	class Framebuffer
 	{
 	public:
-		GLuint fbo, colorTex;
-		glm::vec4 clearColor;
+		GLuint fbo, color_tex;
+		glm::vec4 clear_color;
 		GLuint width, height;
 		float aspect;
 	public:
-		Framebuffer(): clearColor({0,0,1,1}), fbo(0), colorTex(0)
+		Framebuffer(glm::vec4 clearColor = {0.2f, 0.3f, 0.3f, 1.0f})
+			: clear_color(clearColor), fbo(0), color_tex(0)
 		{
 			resize(32, 32);
 		}
@@ -44,14 +45,14 @@ namespace lim
 		/* 오버라이딩하고 첫줄에 부모 가상함수를 꼭 호출해줘야함. */
 		virtual void clear()
 		{
-			if( colorTex ) { glDeleteTextures(1, &colorTex); colorTex=0; }
+			if( color_tex ) { glDeleteTextures(1, &color_tex); color_tex=0; }
 			if( fbo ) { glDeleteFramebuffers(1, &fbo); fbo=0; }
 		}
-		virtual void bind()
+		virtual void bind() const
 		{
 			glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 			glViewport(0, 0, width, height);
-			glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
+			glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
 			glClear(GL_COLOR_BUFFER_BIT);
 
 			glDisable(GL_DEPTH_TEST);
@@ -60,9 +61,9 @@ namespace lim
 		/* for ms framebuffer */
 		virtual GLuint getRenderedTex()
 		{
-			return colorTex;
+			return color_tex;
 		}
-		virtual void unbind()
+		virtual void unbind() const
 		{
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
@@ -72,8 +73,8 @@ namespace lim
 		{
 			// glTexStorage2D 텍스쳐 크기 고정
 			// glTexImage2D 텍스쳐크기 변경가능 0, GL_RGBA8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
-			glGenTextures(1, &colorTex);
-			glBindTexture(GL_TEXTURE_2D, colorTex);
+			glGenTextures(1, &color_tex);
+			glBindTexture(GL_TEXTURE_2D, color_tex);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -81,7 +82,7 @@ namespace lim
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
 			glBindTexture(GL_TEXTURE_2D, 0);
 
-			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, color_tex, 0);
 		}
 	private:
 		void create()
@@ -172,15 +173,15 @@ namespace lim
 	public:
 		/* colorTex와 rbo를 multisampliing 모드로 생성 */
 		const int samples = 8;
-		Framebuffer intermediateFB;
+		Framebuffer intermediate_FB;
 	public:
-		MsFramebuffer(): RbFramebuffer(), intermediateFB() {}
+		MsFramebuffer(): RbFramebuffer(), intermediate_FB() {}
 		virtual ~MsFramebuffer() { clear(); }
 	public:
 		virtual void clear() final
 		{
 			RbFramebuffer::clear();
-			intermediateFB.clear();
+			intermediate_FB.clear();
 		}
 		virtual void bind() final
 		{
@@ -191,7 +192,7 @@ namespace lim
 		{
 			/* msaa framebuffer은 일반 texture을 가진 frame버퍼에 blit 복사 해야함 */
 			glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
-			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, intermediateFB.fbo);
+			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, intermediate_FB.fbo);
 
 			glBlitFramebuffer(0, 0, width, height, 0, 0, width, height
 							  , GL_COLOR_BUFFER_BIT, GL_NEAREST);
@@ -202,18 +203,18 @@ namespace lim
 		}
 		virtual GLuint getRenderedTex() final
 		{
-			return intermediateFB.colorTex;
+			return intermediate_FB.color_tex;
 		}
 		virtual void resizeHook()
 		{
-			intermediateFB.resize(width, height);
+			intermediate_FB.resize(width, height);
 		}
 	protected:
 		virtual void createTexAndAttach()
 		{
 			/* multisampled FBO setting */
-			glGenTextures(1, &colorTex);
-			glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, colorTex);
+			glGenTextures(1, &color_tex);
+			glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, color_tex);
 			glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGB, width, height, GL_TRUE);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -221,7 +222,7 @@ namespace lim
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 			glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
 
-			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, colorTex, 0);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, color_tex, 0);
 
 
 			glGenRenderbuffers(1, &rbo);
