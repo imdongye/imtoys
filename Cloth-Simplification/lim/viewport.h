@@ -22,6 +22,8 @@ namespace lim
 		bool hovered, focused, dragging;
 		GLuint width, height;
 		glm::ivec2 mousePos;
+	private:
+		glm::ivec2 boundMin, boundMax, winPos;
 	public:
 		Viewport()
 			: id(id_generator++), name("Viewport"+std::to_string(id))
@@ -38,22 +40,20 @@ namespace lim
 		{
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
 			ImGui::Begin(name.c_str());
-			auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
-			auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
-			auto viewportOffset = ImGui::GetWindowPos();
 
+			
 			focused = ImGui::IsWindowFocused();
 			hovered = ImGui::IsWindowHovered();
-			dragging = focused && ImGui::IsMouseDown(0);
+			dragging = focused && (ImGui::IsMouseDown(0)||ImGui::IsMouseDown(2));
 
+			winPos = imgui_modules::imToIvec(ImGui::GetWindowPos());
+			boundMin = imgui_modules::imToIvec(ImGui::GetWindowContentRegionMin());
+			boundMax = imgui_modules::imToIvec(ImGui::GetWindowContentRegionMax());
+			mousePos = imgui_modules::imToIvec(ImGui::GetMousePos());
+			mousePos = mousePos - winPos - boundMin;
 			if( dragging ) {
-				glm::ivec2 winPos, vpPos;
-				winPos = imgui_modules::imToIvec(ImGui::GetWindowPos());
-				vpPos = imgui_modules::imToIvec(ImGui::GetWindowContentRegionMin());
-				mousePos = imgui_modules::imToIvec(ImGui::GetMousePos());
-				mousePos = mousePos - winPos - vpPos;
 				ImGui::SetMouseCursor(7);
-				//ImGui::Text("%f %f", mousePos.x, mousePos.y);
+				//ImGui::Text("%d %d", mousePos.x, mousePos.y);
 			}
 
 			auto viewportPanelSize = ImGui::GetContentRegionAvail();
@@ -70,6 +70,18 @@ namespace lim
 				ImGui::Image(reinterpret_cast<void*>(texID), ImVec2{(float)width, (float)height}, ImVec2{0, 1}, ImVec2{1, 0});
 			ImGui::End();
 			ImGui::PopStyleVar();
+		}
+		bool isMouseHovered(int xPos, int yPos)
+		{
+			xPos-=winPos.x;
+			yPos-=winPos.y;
+			Logger::get()<<name;
+			Logger::get().log("%d %d\n", xPos, yPos);
+			Logger::get().log("%d %d\n", boundMin.x, boundMin.y);
+			Logger::get().log("%d %d\n", boundMax.x, boundMax.y);
+			bool ret= (xPos>boundMin.x)&&(xPos<boundMax.x)&&(yPos>boundMin.y)&&(yPos<boundMax.y);
+			Logger::get().log("%d\n\n", ret);
+			return ret;
 		}
 	};
 } // ! namespace lim

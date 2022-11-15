@@ -52,6 +52,7 @@
 #include "model.h"
 #include "model_loader.h"
 #include "model_exporter.h"
+#include "map_baker.h"
 #include "viewport.h"
 #include "scene.h"
 #include "viewport_pack.h"

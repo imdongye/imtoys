@@ -11,7 +11,6 @@
 out vec4 FragColor;
 
 const float PI = 3.1415926;
-const float TEX_DELTA = 0.00001;
 
 in vec3 wPos;
 in vec3 wNor;
@@ -27,9 +26,8 @@ uniform float lightInt = 0.8;
 uniform float ambInt = 0.1;
 uniform int shininess = 20;
 uniform vec3 Kd = vec3(1,1,0);
-uniform float bumpHeight = 100;
 /* texture */
-uniform int hasTexture = -1;
+uniform int texCount = 0;
 uniform float texGamma = 1; // suppose linear space
 uniform sampler2D map_Kd0;
 uniform sampler2D map_Bump0;
@@ -37,6 +35,8 @@ uniform sampler2D map_Ks0;
 /* etc */
 uniform vec3 cameraPos;
 uniform float gamma = 2.2; 
+uniform float texDelta = 0.00001;
+uniform float bumpHeight = 100;
 
 mat3 getTBN( vec3 N ) {
 	vec3 Q1 = dFdx(wPos), Q2 = dFdy(wPos);
@@ -48,25 +48,28 @@ mat3 getTBN( vec3 N ) {
 
 void main(void)
 {
-	vec3 N = normalize(wNor);
-	vec3 tNor;
-	if( hasTexture>0 )
+	vec3 N;
+	N = normalize(wNor);
+	if( texCount>0 )
 	{
-		vec3 leftUp = texelFetch(map_Bump0, ivec2(0), 0).xyz;
+		vec3 tNor, leftUp;
+		mat3 TBN = getTBN( N );
+		leftUp = texelFetch(map_Bump0, ivec2(0), 0).xyz;
 		/* bump map */
 		if(leftUp.y==leftUp.z) {
-			float Bu = texture(map_Bump0, tUv+vec2(TEX_DELTA,0)).r
-						- texture(map_Bump0, tUv+vec2(-TEX_DELTA,0)).r;
-			float Bv = texture(map_Bump0, tUv+vec2(0,TEX_DELTA)).r
-						- texture(map_Bump0, tUv+vec2(0,-TEX_DELTA)).r;
+			float Bu = texture(map_Bump0, tUv+vec2(texDelta,0)).r
+						- texture(map_Bump0, tUv+vec2(-texDelta,0)).r;
+			float Bv = texture(map_Bump0, tUv+vec2(0,texDelta)).r
+						- texture(map_Bump0, tUv+vec2(0,-texDelta)).r;
 			tNor = vec3(-Bu*bumpHeight, -Bv*bumpHeight, 1);
+			N = normalize(TBN*tNor);
 		}
 		/* normal map */
 		else {
-			vec3 b_tex = texture(map_Bump0, tUv).xyz;
-			tNor = b_tex*2-vec3(1);
+			tNor = texture(map_Bump0, tUv).xyz;
+			tNor = tNor*2-vec3(1);
+			N = normalize(TBN*tNor);
 		}
-		mat3 TBN = getTBN( N );
 		N = normalize(TBN*tNor);
 	}
 	vec3 L = normalize(lightDir);
@@ -79,7 +82,7 @@ void main(void)
 		// ...
 	}
 
-	vec4 albelo = (hasTexture>0) ? pow(texture(map_Kd0, tUv),vec4(texGamma)) : vec4(Kd,1);
+	vec4 albelo = (texCount>1) ? pow(texture(map_Kd0, tUv),vec4(texGamma)) : vec4(Kd,1);
 
 	float lambertian = max(0, dot(N, L));
 	vec3 diffuse = lightInt*lambertian*albelo.rgb;
@@ -87,8 +90,6 @@ void main(void)
 	vec3 specular = pow(max(0,dot(R,V)), shininess) * lambertian * vec3(1);
 	vec3 outColor = diffuse+ambient+specular;
 	outColor *= visibility;
-	//outColor = tNor;
-	outColor = texture(map_Bump0, tUv).xyz;
 
     outColor = pow(outColor, vec3(1/gamma));
     FragColor = vec4(outColor, 1);

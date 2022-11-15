@@ -128,6 +128,10 @@ namespace lim
 		{
 			return log("%f", f);
 		}
+		Logger& operator<<(const double f)
+		{
+			return log("%lf", f);
+		}
 		Logger& operator<<(const char c)
 		{
 			return log("%c", c);
@@ -167,7 +171,7 @@ namespace lim
 				if( *end == '\n' ) {
 					// if start==end then append empty
 					lines.back().append(start, end);
-					lines.emplace_back(line_head);
+					lines.push_back(line_head);
 
 					start = end+1;
 				}

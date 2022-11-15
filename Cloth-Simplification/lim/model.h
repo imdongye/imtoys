@@ -31,6 +31,7 @@ namespace lim
 		std::vector<Mesh*> meshes;
 		Program* program;
 		float bumpHeight=100;
+		float texDelta = 0.00001;
 
 		GLuint verticesNum;
 		GLuint trianglesNum;
@@ -109,6 +110,7 @@ namespace lim
 			setUniform(pid, "modelMat", modelMat);
 			setUniform(pid, "cameraPos", camera.position);
 			setUniform(pid, "bumpHeight", bumpHeight);
+			setUniform(pid, "texDelta", texDelta);
 
 			light.setUniforms(pid);
 
@@ -144,11 +146,22 @@ namespace lim
 		}
 		void reloadNormalMap(std::string_view fullpath)
 		{
+			bool hasBumpMap = false;
 			for( Texture& tex : textures_loaded ) {
 				if( tex.type == "map_Bump" ) {
 					glDeleteTextures(0, &tex.id);
 					tex.id = loadTextureFromFile(fullpath, false);
+					hasBumpMap = true;
+					break;
 				}
+			}
+			if( hasBumpMap==false ) {
+				Texture newTex;
+				std::string fpth(fullpath);
+				newTex.id = loadTextureFromFile(fullpath, false);
+				newTex.path = fpth.substr(fpth.find_last_of('/')+1);
+				newTex.type = "map_Bump";
+				textures_loaded.push_back(newTex);
 			}
 		}
 	private:

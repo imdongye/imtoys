@@ -28,7 +28,7 @@ namespace lim
 		std::vector<Model*> models;
 		Light& light;
 	public:
-		Scene(Light& _light): light(_light)
+		Scene(Light& _light, bool addGround=true): light(_light)
 		{
 			if( sceneCounter==0 ) {
 				groundProgram = new Program("Ground");
@@ -55,8 +55,8 @@ namespace lim
 			ground = new Model(groundMesh, groundProgram, "ground");
 			ground->position = glm::vec3(0, 0, 0);
 			ground->updateModelMat();
-
-			models.push_back(ground);
+			if( addGround )
+				models.push_back(ground);
 
 			sceneCounter++;
 		}

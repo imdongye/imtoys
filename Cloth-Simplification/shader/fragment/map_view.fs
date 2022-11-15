@@ -14,9 +14,10 @@ uniform float gamma = 2.2;
 
 void main()
 {   
-    vec3 outColor = texture(map_Kd0, tUv).xyz;
+    vec3 outColor = texture(map_Bump0, tUv).xyz;
+    //vec3 outColor = texture(map_Kd0, tUv).xyz;
+    //vec3 outColor = texture(map_Kd0, tUv).xyz;
     
     outColor = pow(outColor, vec3(1/gamma));
     FragColor = vec4(outColor, 1);
-
 }
