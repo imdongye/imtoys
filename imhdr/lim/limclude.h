@@ -52,14 +52,15 @@
 
 #define LIM_MAX(X, Y) ((X)>(Y))?(X):(Y)
 #define LIM_MIN(X, Y) ((X)<(Y))?(X):(Y)
+#define COMP_IMVEC2(X, Y) ((X).x==(Y).x)&&((X).y==(Y).y)
 
 #include "imgui_modules.h"
 #include "logger.h"
 #include "app_pref.h"
 #include "program.h"
+#include "framebuffer.h"
 #include "texture.h"
 #include "tex_renderer.h"
-#include "framebuffer.h"
 #include "viewport.h"
 #include "application.h"
 #include "app_hdr.h"

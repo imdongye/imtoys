@@ -18,33 +18,23 @@ namespace lim
 	private:
 		std::vector<Program*> programs;
 		std::vector<Texture*> imgs;
-		std::vector<lim::Viewport*> viewports;
+		std::vector<Viewport*> viewports;
 	public:
 		HdrApp(): AppBase(1280, 720, "imhdr")
 		{
-			Logger::get().log("       __      __      __\n");
-			Logger::get().log("      /_/_ _  / /  ___/ /___\n");
-			Logger::get().log("     / /  ' \/ _ \/ _  / __/\n");
-			Logger::get().log("    /_/_/_/_/_//_/____/_/\n");;
-
 			stbi_set_flip_vertically_on_load(true);
 
 			programs.push_back(new Program("Normal Dot View"));
-			programs.back()->attatch("pos_nor_uv.vs").attatch("fb_to_scr.fs").link();
+			programs.back()->attatch("tex_to_quad.vs").attatch("tex_to_quad.fs").link();
 
-			imgs.push_back(new Texture("images/memorial.jpg"));
-			viewports.push_back(new Viewport());
+			imgs.push_back(new Texture("images/memorial.jpg", GL_SRGB8));
+			viewports.push_back(new Viewport(new Framebuffer(), imgs.back()->width, imgs.back()->height, true));
 
 			initCallback();
 			imgui_modules::initImGui(window);
 		}
 		~HdrApp()
 		{
-			for( int i=0; i<programs.size(); i++ ) {
-				delete programs[i];
-			}
-
-
 			imgui_modules::destroyImGui();
 		}
 
@@ -57,7 +47,10 @@ namespace lim
 			glClear(GL_COLOR_BUFFER_BIT);
 
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-			textureToBackBuf(imgs.back()->texID, imgs.back()->width, imgs.back()->height);
+			
+			//textureToFBO(imgs.back()->texID, 500, 500);
+			//textureToFBO(imgs.back()->texID, imgs.back()->width, imgs.back()->height, viewports.back()->framebuffer->fbo);
+			textureToFramebuffer(imgs.back()->texID, viewports.back()->framebuffer);
 
 			renderImGui();
 		}

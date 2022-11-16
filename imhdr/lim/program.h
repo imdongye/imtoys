@@ -13,6 +13,8 @@
 #ifndef PROGRAM_H
 #define PROGRAM_H
 
+#include "limclude.h"
+
 namespace lim
 {
 	class Program
