@@ -177,8 +177,9 @@ namespace lim
 
 		glBindVertexArray(quadVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
-
 		glBindVertexArray(0);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 	static void textureToFramebuffer(GLuint texID, Framebuffer const *fb, float gamma=2.2f)
 	{

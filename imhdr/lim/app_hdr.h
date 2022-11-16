@@ -49,6 +49,7 @@ namespace lim
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 			
 			//textureToFBO(imgs.back()->texID, 500, 500);
+			//textureToFBO(imgs.back()->texID, imgs.back()->width, imgs.back()->height, viewports.back()->framebuffer->fbo);
 			textureToFramebuffer(imgs.back()->texID, viewports.back()->framebuffer);
 
 			renderImGui();

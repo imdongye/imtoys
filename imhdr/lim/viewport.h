@@ -27,13 +27,15 @@ namespace lim
 		bool fixed_aspect;
 		float aspect;
 	private:
+		const GLuint titlebar_height = 20;
 		glm::ivec2 boundMin, boundMax, winPos;
 	public:
 		Viewport(Framebuffer* createdFB, GLuint _width=256, GLuint _height=256, bool fixedAspect=false)
 			: id(id_generator++), name("Viewport"+std::to_string(id)), width(_width), height(_height)
-			, fixed_aspect(fixedAspect), aspect(width/(float)height)
+			, fixed_aspect(fixedAspect), aspect(width/(float)(height+titlebar_height))
 		{
 			framebuffer = createdFB;
+			framebuffer->resize(width, height);
 		}
 		virtual ~Viewport()
 		{
@@ -41,14 +43,29 @@ namespace lim
 		}
 		void drawImGui()
 		{
-			ImGui::SetNextWindowSize({(float)width, (float)height}, ImGuiCond_Once);
+			ImGui::SetNextWindowSize({(float)width, (float)height+titlebar_height}, ImGuiCond_Once);
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
 
 			ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), [](ImGuiSizeCallbackData *data) {
-				data->DesiredSize.x;
-				data->DesiredSize.y = data->DesiredSize.x/(*(float*)data->UserData); }, (void*)&aspect);
+				Viewport *vp = (Viewport*)(data->UserData);
+
+				if( vp->fixed_aspect ) {
+
+					float aspectedWidth = vp->aspect*data->DesiredSize.y;
+					float aspectedHeight = data->DesiredSize.x/vp->aspect;
+
+					if( data->DesiredSize.x <= aspectedWidth )
+						data->DesiredSize.x = aspectedWidth;
+					else
+						data->DesiredSize.y = aspectedHeight;
+				}
+				vp->width = data->DesiredSize.x;
+				vp->height = data->DesiredSize.y - vp->titlebar_height;
+			}, (void*)this);
 
 			ImGui::Begin(name.c_str());
+			ImGui::SetScrollX(0);
+			ImGui::SetScrollY(0);
 
 			focused = ImGui::IsWindowFocused();
 			hovered = ImGui::IsWindowHovered();
@@ -59,19 +76,13 @@ namespace lim
 			boundMax = imgui_modules::imToIvec(ImGui::GetWindowContentRegionMax());
 			mousePos = imgui_modules::imToIvec(ImGui::GetMousePos());
 			mousePos = mousePos - winPos - boundMin;
-			if( dragging ) ImGui::SetMouseCursor(7);
 
 			auto viewportPanelSize = ImGui::GetContentRegionAvail();
 			width = viewportPanelSize.x;
 			height = viewportPanelSize.y;
 
-			width = LIM_MIN(width, height);
-			height = width/aspect;
-
-			if( framebuffer->width != width
-			   || framebuffer->height != height ) {
-				framebuffer->resize(width, height);
-			}
+			if( dragging ) ImGui::SetMouseCursor(7);
+			else framebuffer->resize(width, height);
 
 			GLuint texID = framebuffer->getRenderedTex();
 			if( texID!=0 )

@@ -29,17 +29,26 @@ namespace lim
 		Framebuffer(glm::vec4 clearColor = {0.2f, 0.3f, 0.3f, 1.0f})
 			: clear_color(clearColor), fbo(0), color_tex(0)
 		{
+			create();
 			resize(32, 32);
 		}
 		virtual ~Framebuffer() { clear(); }
 	public:
 		void resize(GLuint _width, GLuint _height=0)
 		{
-			clear(); // call child clear func
+			if( _height==0 )
+				_height = _width;
+			if( width==_width && height==_height )
+				return;
 			width = _width;
-			height = (_height==0)?_width:_height;
+			height = _height;
 			aspect = width/(float)height;
-			create();
+
+			//createTexAndAttach();
+			glBindTexture(GL_TEXTURE_2D, color_tex);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+			glBindTexture(GL_TEXTURE_2D, 0);
+
 			resizeHook();
 		}
 		/* 오버라이딩하고 첫줄에 부모 가상함수를 꼭 호출해줘야함. */
@@ -52,11 +61,12 @@ namespace lim
 		{
 			glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 			glViewport(0, 0, width, height);
-			glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
-			glClear(GL_COLOR_BUFFER_BIT);
-
 			glDisable(GL_DEPTH_TEST);
 			glDisable(GL_MULTISAMPLE);
+			glDisable(GL_FRAMEBUFFER_SRGB);
+
+			glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
+			glClear(GL_COLOR_BUFFER_BIT);
 		}
 		/* for ms framebuffer */
 		virtual GLuint getRenderedTex()
@@ -71,22 +81,27 @@ namespace lim
 	protected:
 		virtual void createTexAndAttach()
 		{
+			if( color_tex ) { glDeleteTextures(1, &color_tex); color_tex=0; }
 			// glTexStorage2D 텍스쳐 크기 고정
-			// glTexImage2D 텍스쳐크기 변경가능 0, GL_RGBA8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+			// glTexImage2D 텍스쳐크기 변경가능
 			glGenTextures(1, &color_tex);
 			glBindTexture(GL_TEXTURE_2D, color_tex);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
 			glBindTexture(GL_TEXTURE_2D, 0);
 
+
+			glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, color_tex, 0);
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 		}
 	private:
 		void create()
 		{
+			if( fbo ) { glDeleteFramebuffers(1, &fbo); fbo=0; }
 			/* create FBO */
 			glGenFramebuffers(1, &fbo);
 			glBindFramebuffer(GL_FRAMEBUFFER, fbo);
