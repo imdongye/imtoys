@@ -153,7 +153,9 @@ namespace lim
 				return std::make_tuple(geomID, "geometry");
 			}
 			else if( ext=="comp"||ext=="cs" ) {
+#ifndef __APPLE__
 				compID = glCreateShader(GL_COMPUTE_SHADER);
+#endif
 				return std::make_tuple(compID, "compute");
 			}
 

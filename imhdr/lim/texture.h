@@ -107,9 +107,9 @@ namespace lim
 			* glCreateTexture은 bind 바로됨, gl4.5부터 사용가능
 			* glStorate2D는 데이터복사는 따로해줘야되고 Image2D와 다르게 크기나 포맷 변경안됨
 			*/
-			//glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, src_format, src_chanel_type, data);
-			glTexStorage2D(GL_TEXTURE_2D, 1, internal_format, width, height); // 4.2
-			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, src_format, src_chanel_type, data);
+			glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, src_format, src_chanel_type, data);
+			//glTexStorage2D(GL_TEXTURE_2D, 1, internal_format, width, height); // 4.2
+			//glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, src_format, src_chanel_type, data);
 			glGenerateMipmap(GL_TEXTURE_2D);
 			glBindTexture(GL_TEXTURE_2D, 0);
 		}

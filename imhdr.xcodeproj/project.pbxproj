@@ -1,0 +1,346 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 55;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		F7556BFC29238E3800BF5BD3 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F7556BFB29238E3800BF5BD3 /* main.cpp */; };
+		F7556C0329238E7F00BF5BD3 /* libglfw.3.3.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = F7556C0229238E7F00BF5BD3 /* libglfw.3.3.dylib */; };
+		F7556C0529238EDB00BF5BD3 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F7556C0429238EDB00BF5BD3 /* OpenGL.framework */; };
+		F7556C0729238F5700BF5BD3 /* glad.c in Sources */ = {isa = PBXBuildFile; fileRef = F7556C0629238F5700BF5BD3 /* glad.c */; };
+		F7556C0F29238F7800BF5BD3 /* imgui_impl_glfw.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F7556C0829238F7800BF5BD3 /* imgui_impl_glfw.cpp */; };
+		F7556C1029238F7800BF5BD3 /* imgui_tables.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F7556C0929238F7800BF5BD3 /* imgui_tables.cpp */; };
+		F7556C1129238F7800BF5BD3 /* imgui.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F7556C0A29238F7800BF5BD3 /* imgui.cpp */; };
+		F7556C1229238F7800BF5BD3 /* imgui_impl_opengl3.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F7556C0B29238F7800BF5BD3 /* imgui_impl_opengl3.cpp */; };
+		F7556C1329238F7800BF5BD3 /* imgui_draw.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F7556C0C29238F7800BF5BD3 /* imgui_draw.cpp */; };
+		F7556C1429238F7800BF5BD3 /* imgui_demo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F7556C0D29238F7800BF5BD3 /* imgui_demo.cpp */; };
+		F7556C1529238F7800BF5BD3 /* imgui_widgets.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F7556C0E29238F7800BF5BD3 /* imgui_widgets.cpp */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		F7556BF629238E3800BF5BD3 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		F7556BF829238E3800BF5BD3 /* imhdr */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = imhdr; sourceTree = BUILT_PRODUCTS_DIR; };
+		F7556BFB29238E3800BF5BD3 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		F7556C0229238E7F00BF5BD3 /* libglfw.3.3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libglfw.3.3.dylib; path = ../../../../../usr/local/Cellar/glfw/3.3.8/lib/libglfw.3.3.dylib; sourceTree = "<group>"; };
+		F7556C0429238EDB00BF5BD3 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = ../../../../../System/Library/Frameworks/OpenGL.framework; sourceTree = "<group>"; };
+		F7556C0629238F5700BF5BD3 /* glad.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = glad.c; path = include/glad/glad.c; sourceTree = "<group>"; };
+		F7556C0829238F7800BF5BD3 /* imgui_impl_glfw.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = imgui_impl_glfw.cpp; path = include/imgui/imgui_impl_glfw.cpp; sourceTree = "<group>"; };
+		F7556C0929238F7800BF5BD3 /* imgui_tables.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = imgui_tables.cpp; path = include/imgui/imgui_tables.cpp; sourceTree = "<group>"; };
+		F7556C0A29238F7800BF5BD3 /* imgui.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = imgui.cpp; path = include/imgui/imgui.cpp; sourceTree = "<group>"; };
+		F7556C0B29238F7800BF5BD3 /* imgui_impl_opengl3.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = imgui_impl_opengl3.cpp; path = include/imgui/imgui_impl_opengl3.cpp; sourceTree = "<group>"; };
+		F7556C0C29238F7800BF5BD3 /* imgui_draw.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = imgui_draw.cpp; path = include/imgui/imgui_draw.cpp; sourceTree = "<group>"; };
+		F7556C0D29238F7800BF5BD3 /* imgui_demo.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = imgui_demo.cpp; path = include/imgui/imgui_demo.cpp; sourceTree = "<group>"; };
+		F7556C0E29238F7800BF5BD3 /* imgui_widgets.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = imgui_widgets.cpp; path = include/imgui/imgui_widgets.cpp; sourceTree = "<group>"; };
+		F7556C33292393A700BF5BD3 /* imhdr.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = imhdr.entitlements; sourceTree = "<group>"; };
+		F7556C342923941D00BF5BD3 /* lim */ = {isa = PBXFileReference; lastKnownFileType = folder; path = lim; sourceTree = "<group>"; };
+		F7556C352923941D00BF5BD3 /* shader */ = {isa = PBXFileReference; lastKnownFileType = folder; path = shader; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		F7556BF529238E3800BF5BD3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F7556C0329238E7F00BF5BD3 /* libglfw.3.3.dylib in Frameworks */,
+				F7556C0529238EDB00BF5BD3 /* OpenGL.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		F7556BEF29238E3800BF5BD3 = {
+			isa = PBXGroup;
+			children = (
+				F7556C0D29238F7800BF5BD3 /* imgui_demo.cpp */,
+				F7556C0C29238F7800BF5BD3 /* imgui_draw.cpp */,
+				F7556C0829238F7800BF5BD3 /* imgui_impl_glfw.cpp */,
+				F7556C0B29238F7800BF5BD3 /* imgui_impl_opengl3.cpp */,
+				F7556C0929238F7800BF5BD3 /* imgui_tables.cpp */,
+				F7556C0E29238F7800BF5BD3 /* imgui_widgets.cpp */,
+				F7556C0A29238F7800BF5BD3 /* imgui.cpp */,
+				F7556C0629238F5700BF5BD3 /* glad.c */,
+				F7556C0429238EDB00BF5BD3 /* OpenGL.framework */,
+				F7556C0229238E7F00BF5BD3 /* libglfw.3.3.dylib */,
+				F7556BFA29238E3800BF5BD3 /* imhdr */,
+				F7556BF929238E3800BF5BD3 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		F7556BF929238E3800BF5BD3 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				F7556BF829238E3800BF5BD3 /* imhdr */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		F7556BFA29238E3800BF5BD3 /* imhdr */ = {
+			isa = PBXGroup;
+			children = (
+				F7556C342923941D00BF5BD3 /* lim */,
+				F7556C352923941D00BF5BD3 /* shader */,
+				F7556C33292393A700BF5BD3 /* imhdr.entitlements */,
+				F7556BFB29238E3800BF5BD3 /* main.cpp */,
+			);
+			path = imhdr;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		F7556BF729238E3800BF5BD3 /* imhdr */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F7556BFF29238E3800BF5BD3 /* Build configuration list for PBXNativeTarget "imhdr" */;
+			buildPhases = (
+				F7556BF429238E3800BF5BD3 /* Sources */,
+				F7556BF529238E3800BF5BD3 /* Frameworks */,
+				F7556BF629238E3800BF5BD3 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = imhdr;
+			productName = imhdr;
+			productReference = F7556BF829238E3800BF5BD3 /* imhdr */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		F7556BF029238E3800BF5BD3 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastUpgradeCheck = 1340;
+				TargetAttributes = {
+					F7556BF729238E3800BF5BD3 = {
+						CreatedOnToolsVersion = 13.4.1;
+					};
+				};
+			};
+			buildConfigurationList = F7556BF329238E3800BF5BD3 /* Build configuration list for PBXProject "imhdr" */;
+			compatibilityVersion = "Xcode 13.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = F7556BEF29238E3800BF5BD3;
+			productRefGroup = F7556BF929238E3800BF5BD3 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				F7556BF729238E3800BF5BD3 /* imhdr */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		F7556BF429238E3800BF5BD3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F7556C0F29238F7800BF5BD3 /* imgui_impl_glfw.cpp in Sources */,
+				F7556C1029238F7800BF5BD3 /* imgui_tables.cpp in Sources */,
+				F7556C1129238F7800BF5BD3 /* imgui.cpp in Sources */,
+				F7556C1229238F7800BF5BD3 /* imgui_impl_opengl3.cpp in Sources */,
+				F7556C1329238F7800BF5BD3 /* imgui_draw.cpp in Sources */,
+				F7556C1429238F7800BF5BD3 /* imgui_demo.cpp in Sources */,
+				F7556C1529238F7800BF5BD3 /* imgui_widgets.cpp in Sources */,
+				F7556C0729238F5700BF5BD3 /* glad.c in Sources */,
+				F7556BFC29238E3800BF5BD3 /* main.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		F7556BFD29238E3800BF5BD3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					/usr/local/include,
+					include,
+				);
+				MACOSX_DEPLOYMENT_TARGET = 12.3;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		F7556BFE29238E3800BF5BD3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					/usr/local/include,
+					include,
+				);
+				MACOSX_DEPLOYMENT_TARGET = 12.3;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		F7556C0029238E3800BF5BD3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = imhdr/imhdr.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 94K89T8M2J;
+				ENABLE_HARDENED_RUNTIME = YES;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					/usr/local/Cellar/glfw/3.3.8/lib,
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		F7556C0129238E3800BF5BD3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = imhdr/imhdr.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 94K89T8M2J;
+				ENABLE_HARDENED_RUNTIME = YES;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					/usr/local/Cellar/glfw/3.3.8/lib,
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		F7556BF329238E3800BF5BD3 /* Build configuration list for PBXProject "imhdr" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F7556BFD29238E3800BF5BD3 /* Debug */,
+				F7556BFE29238E3800BF5BD3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F7556BFF29238E3800BF5BD3 /* Build configuration list for PBXNativeTarget "imhdr" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F7556C0029238E3800BF5BD3 /* Debug */,
+				F7556C0129238E3800BF5BD3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = F7556BF029238E3800BF5BD3 /* Project object */;
+}

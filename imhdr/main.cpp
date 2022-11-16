@@ -15,7 +15,8 @@
 // rid unused variables warnings
 int main(int, char**)
 {
-	lim::HdrApp app;
+    printf("start");
+    lim::HdrApp app;
 	app.run();
 
 	return 0;

@@ -16,7 +16,7 @@
 #define APP_PREF_H
 
 #include <fstream>
-#include <json/json.h>
+#include <nlohmann/json.h>
 #include <vector>
 #include <regex>
 
