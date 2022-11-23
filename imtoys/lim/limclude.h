@@ -64,5 +64,6 @@
 #include "viewport.h"
 #include "application.h"
 #include "app_hdr.h"
+#include "app_snell.h"
 
 #endif 

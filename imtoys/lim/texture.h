@@ -65,7 +65,7 @@ namespace lim
 		}
 		void printInfo()
 		{
-			printf("texID:%d, %dx%d, nr_ch:%d, bit:%d, fm:%s\n", texID, width, height, nr_channels, bit_per_channel, format);
+			printf("texID:%d, %dx%d, nr_ch:%d, bit:%d, fm:%s, aspect:%f\n", texID, width, height, nr_channels, bit_per_channel, format, width/(float)height);
 		}
 		void clear()
 		{

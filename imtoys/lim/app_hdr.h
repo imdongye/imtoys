@@ -11,7 +11,7 @@
 
 namespace lim
 {
-	class HdrApp: public AppBase
+	class AppHdr: public AppBase
 	{
 	private:
 		const char const *exportPath = "result/";
@@ -20,26 +20,25 @@ namespace lim
 		std::vector<Texture*> imgs;
 		std::vector<Viewport*> viewports;
 	public:
-		HdrApp(): AppBase(1280, 720, "imhdr")
+		AppHdr(): AppBase(1280, 720, "imhdr")
 		{
 			stbi_set_flip_vertically_on_load(true);
+			initCallback();
+			imgui_modules::initImGui(window);
 
 			programs.push_back(new Program("Normal Dot View"));
 			programs.back()->attatch("tex_to_quad.vs").attatch("tex_to_quad.fs").link();
 
 			imgs.push_back(new Texture("images/memorial.jpg", GL_SRGB8));
 			viewports.push_back(new Viewport(new Framebuffer(), imgs.back()->width, imgs.back()->height, true));
-
-			initCallback();
-			imgui_modules::initImGui(window);
 		}
-		~HdrApp()
+		~AppHdr()
 		{
 			imgui_modules::destroyImGui();
 		}
 
 	private:
-		virtual void update() final
+		virtual void update() override final
 		{
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 			glViewport(0, 0, scr_width, scr_height);
@@ -58,36 +57,25 @@ namespace lim
 		{
 			imgui_modules::beginImGui();
 
+			imgui_modules::ShowExampleAppDockSpace([](){});
+
 			ImGui::ShowDemoWindow();
 
 			for( int i = viewports.size()-1; i >= 0; i-- ) {
 				viewports[i]->drawImGui();
 			}
 
+			ImGui::Begin("state");
+			ImGui::Text("%d %d", viewports.back()->mousePos.x, viewports.back()->mousePos.y);
+			ImGui::End();
+
 			imgui_modules::endImGui(scr_width, scr_height);
 		}
 
 	private:
-		void initCallback()
-		{
-			w_data.key_callbacks.push_back([this](int key, int scancode, int action, int mods)
-			{ return this->keyCallback(key, scancode, action, mods); });
-
-			w_data.mouse_btn_callbacks.push_back([this](int button, int action, int mods)
-			{ return this->mouseBtnCallback(button, action, mods); });
-
-			w_data.scroll_callbacks.push_back([this](double xOff, double yOff)
-			{ return this->scrollCallback(xOff, yOff); });
-
-			w_data.cursor_pos_callbacks.push_back([this](double xPos, double yPos)
-			{ return this->cursorPosCallback(xPos, yPos); });
-
-			w_data.dnd_callbacks.push_back([this](int count, const char **path)
-			{ return this->dndCallback(count, path); });
-		}
 		void keyCallback(int key, int scancode, int action, int mods)
 		{
-
+			std::cout<<ImGui::GetFrameHeight();
 		}
 		void cursorPosCallback(double xPos, double yPos)
 		{
@@ -101,7 +89,6 @@ namespace lim
 		}
 		void mouseBtnCallback(int button, int action, int mods)
 		{
-			
 		}
 		void scrollCallback(double xOff, double yOff)
 		{
@@ -110,6 +97,20 @@ namespace lim
 		void dndCallback(int count, const char **paths)
 		{
 			
+		}
+		void initCallback()
+		{
+			/* lambda is better then std::bind */
+			w_data.key_callbacks.push_back([this](int key, int scancode, int action, int mods)
+			{ return this->keyCallback(key, scancode, action, mods); });
+			w_data.mouse_btn_callbacks.push_back([this](int button, int action, int mods)
+			{ return this->mouseBtnCallback(button, action, mods); });
+			w_data.scroll_callbacks.push_back([this](double xOff, double yOff)
+			{ return this->scrollCallback(xOff, yOff); });
+			w_data.cursor_pos_callbacks.push_back([this](double xPos, double yPos)
+			{ return this->cursorPosCallback(xPos, yPos); });
+			w_data.dnd_callbacks.push_back([this](int count, const char **path)
+			{ return this->dndCallback(count, path); });
 		}
 	};
 }
