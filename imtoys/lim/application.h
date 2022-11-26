@@ -1,6 +1,9 @@
 //
 //  for test simplification and normal map baking.
 //	2022-08-26 / im dong ye
+// 
+//	callback을 window data에 직접 추가할수도있고 가상함수는 기본으로 등록되어있어서 오버라이딩하기만 하면됨.
+//	상속한 앱에서 등록하는 코드가 없어서 깔끔함. 하지만 가상함수테이블에서 포인팅되는과정이 성능에 문제될수있다.
 //
 //	TODO list:
 //	1. crtp로 참조 줄이기, 
@@ -15,7 +18,7 @@ namespace lim
 {
 	class AppBase
 	{
-	protected:
+	public:
 		GLFWwindow *window;
 		struct WindowData // for avoid member func pointer 
 		{
@@ -34,13 +37,20 @@ namespace lim
 		int scr_height;
 	protected:
 		virtual void update()=0;
-
+		virtual void renderImGui()=0;
+		virtual void keyCallback(int key, int scancode, int action, int mods) {};
+		virtual void cursorPosCallback(double xPos, double yPos) {};
+		virtual void mouseBtnCallback(int button, int action, int mods) {};
+		virtual void scrollCallback(double xOff, double yOff) {};
+		virtual void dndCallback(int count, const char **paths) {};
 	public:
 		/* init */
 		AppBase(int _scr_width=1280, int _scr_height=720, const char* title="nonamed")
 			:scr_width(_scr_width), scr_height(_scr_height)
 		{
-			glfwSetErrorCallback(error_callback);
+			glfwSetErrorCallback([](int error, const char *description) {
+				Logger::get(1).log(stderr, "\nGlfw Error %d: %s\n", error, description);
+			});
 			if( !glfwInit() ) std::exit(-1);
 			glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 			glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1); // mac support 4.1
@@ -73,11 +83,15 @@ namespace lim
 
 			Logger::get()<<"Current path is "<<std::filesystem::current_path().u8string()<<Logger::endl;
 			AppPref::get();
-			Logger::get()<<Logger::endl;
+
+
+			imgui_modules::initImGui(window);
 		}
 		/* destroy */
 		virtual ~AppBase()
 		{
+			imgui_modules::destroyImGui();
+
 			AppPref::get().save();
 			glfwDestroyWindow(window);
 			glfwTerminate();
@@ -86,28 +100,50 @@ namespace lim
 		{
 			static double lastTime;
 
-			while( !glfwWindowShouldClose(window) ) {
-				float currentFrame = static_cast<float>(glfwGetTime());
-				delta_time = currentFrame - lastTime;
-				lastTime = currentFrame;
+			float currentFrame = static_cast<float>(glfwGetTime());
+			delta_time = currentFrame - lastTime;
+			lastTime = currentFrame;
 
-				update();
+			update();
 
-				glfwPollEvents();
-				glfwSwapBuffers(window);
-			}
+			imgui_modules::beginImGui();
+			renderImGui();
+
+			imgui_modules::draw_appselector();
+
+			imgui_modules::endImGui(scr_width, scr_height);
+
+			glfwPollEvents();
+			glfwSwapBuffers(window);
 		}
 	private:
-		void initGlfwCallbacks()
+		void registerCallbacks()
 		{
 			glfwSetWindowUserPointer(window, &w_data);
 
-			w_data.framebuffer_size_callbacks.push_back([&](int width, int height) {
+			/* lambda is better then std::bind */
+			w_data.key_callbacks.push_back([this](int key, int scancode, int action, int mods) {
+				keyCallback(key, scancode, action, mods); });
+			w_data.mouse_btn_callbacks.push_back([this](int button, int action, int mods){
+				mouseBtnCallback(button, action, mods); });
+			w_data.scroll_callbacks.push_back([this](double xOff, double yOff) {
+				scrollCallback(xOff, yOff); });
+			w_data.cursor_pos_callbacks.push_back([this](double xPos, double yPos) { 
+				cursorPosCallback(xPos, yPos); });
+			w_data.dnd_callbacks.push_back([this](int count, const char **path) { 
+				dndCallback(count, path); });
+
+			w_data.framebuffer_size_callbacks.push_back([this](int width, int height) {
 				scr_width=width; scr_height=height;
 			});
+		}
+		void initGlfwCallbacks()
+		{
+			registerCallbacks();
+
 			glfwSetWindowSizeCallback(window, [](GLFWwindow *win, int width, int height) {
 				WindowData &data = *(WindowData*)glfwGetWindowUserPointer(win);
-				for(auto cb : data.win_size_callbacks ) (width, height);
+				for(auto cb : data.win_size_callbacks ) if(cb) cb(width, height);
 				printf("win %d %d\n", width, height);
 			});
 			glfwSetFramebufferSizeCallback(window, [](GLFWwindow *win, int width, int height) {
@@ -134,10 +170,6 @@ namespace lim
 				WindowData &data = *(WindowData*)glfwGetWindowUserPointer(win);
 				for( auto cb : data.dnd_callbacks ) cb(count, paths);
 			});
-		}
-		static void error_callback(int error, const char *description)
-		{
-			Logger::get().log(stderr, "\nGlfw Error %d: %s\n", error, description);
 		}
 		void printVersion()
 		{

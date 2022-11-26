@@ -13,9 +13,12 @@ namespace lim
 {
 	class AppHdr: public AppBase
 	{
+	public: 
+		inline static constexpr const char *APP_NAME = "imhdr";
+		inline static constexpr const char *APP_DISC = "color aware image viewer";
 	private:
 		const char const *exportPath = "result/";
-	private:
+
 		std::vector<Program*> programs;
 		std::vector<Texture*> imgs;
 		std::vector<Viewport*> viewports;
@@ -23,8 +26,6 @@ namespace lim
 		AppHdr(): AppBase(1280, 720, "imhdr")
 		{
 			stbi_set_flip_vertically_on_load(true);
-			initCallback();
-			imgui_modules::initImGui(window);
 
 			programs.push_back(new Program("Normal Dot View"));
 			programs.back()->attatch("tex_to_quad.vs").attatch("tex_to_quad.fs").link();
@@ -34,11 +35,10 @@ namespace lim
 		}
 		~AppHdr()
 		{
-			imgui_modules::destroyImGui();
 		}
 
 	private:
-		virtual void update() override final
+		virtual void update() final
 		{
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 			glViewport(0, 0, scr_width, scr_height);
@@ -50,13 +50,9 @@ namespace lim
 			//textureToFBO(imgs.back()->texID, 500, 500);
 			//textureToFBO(imgs.back()->texID, imgs.back()->width, imgs.back()->height, viewports.back()->framebuffer->fbo);
 			textureToFramebuffer(imgs.back()->texID, viewports.back()->framebuffer);
-
-			renderImGui();
 		}
-		void renderImGui()
+		virtual void renderImGui() final
 		{
-			imgui_modules::beginImGui();
-
 			imgui_modules::ShowExampleAppDockSpace([](){});
 
 			ImGui::ShowDemoWindow();
@@ -68,16 +64,14 @@ namespace lim
 			ImGui::Begin("state");
 			ImGui::Text("%d %d", viewports.back()->mousePos.x, viewports.back()->mousePos.y);
 			ImGui::End();
-
-			imgui_modules::endImGui(scr_width, scr_height);
 		}
 
 	private:
-		void keyCallback(int key, int scancode, int action, int mods)
+		virtual void keyCallback(int key, int scancode, int action, int mods) final
 		{
-			std::cout<<ImGui::GetFrameHeight();
+			//std::cout<<ImGui::GetFrameHeight();
 		}
-		void cursorPosCallback(double xPos, double yPos)
+		virtual void cursorPosCallback(double xPos, double yPos) final
 		{
 			static double xOld, yOld, xOff, yOff=0;
 			xOff = xPos - xOld;
@@ -87,30 +81,9 @@ namespace lim
 			xOld = xPos;
 			yOld = yPos;
 		}
-		void mouseBtnCallback(int button, int action, int mods)
+		virtual void mouseBtnCallback(int btn, int action, int mods) final
 		{
-		}
-		void scrollCallback(double xOff, double yOff)
-		{
-			
-		}
-		void dndCallback(int count, const char **paths)
-		{
-			
-		}
-		void initCallback()
-		{
-			/* lambda is better then std::bind */
-			w_data.key_callbacks.push_back([this](int key, int scancode, int action, int mods)
-			{ return this->keyCallback(key, scancode, action, mods); });
-			w_data.mouse_btn_callbacks.push_back([this](int button, int action, int mods)
-			{ return this->mouseBtnCallback(button, action, mods); });
-			w_data.scroll_callbacks.push_back([this](double xOff, double yOff)
-			{ return this->scrollCallback(xOff, yOff); });
-			w_data.cursor_pos_callbacks.push_back([this](double xPos, double yPos)
-			{ return this->cursorPosCallback(xPos, yPos); });
-			w_data.dnd_callbacks.push_back([this](int count, const char **path)
-			{ return this->dndCallback(count, path); });
+			printf("a");
 		}
 	};
 }

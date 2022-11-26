@@ -12,12 +12,53 @@
 
 #include "lim/limclude.h"
 
+
+lim::AppBase *app;
+
+int selectedAppIdx=1;
+std::vector<std::function<lim::AppBase*()>> app_constructors;
+std::vector<const char*> app_names;
+std::vector<const char*> app_discripts;
+
+template<class App>
+void pushAppData()
+{
+	app_names.push_back(App::APP_NAME);
+	app_discripts.push_back(App::APP_DISC);
+	app_constructors.push_back([]() { return new App(); });
+}
+
+void drawAppSellector()
+{
+	ImGui::Begin("AppSelector");
+	for( int i=0; i<app_names.size(); i++ ) {
+		if( ImGui::Button(app_names[i]) ) {
+			selectedAppIdx=i;
+		}
+	}
+	ImGui::End();
+}
+
 // rid unused variables warnings
 int main(int, char**)
 {
-	lim::AppBase *app = new lim::AppSnell();
+	lim::imgui_modules::draw_appselector = drawAppSellector;
 
-	app->run();
+	pushAppData<lim::AppHdr>();
+	pushAppData<lim::AppSnell>();
+
+	app = app_constructors[selectedAppIdx]();
+	int tempAppIdx;
+	while( !glfwWindowShouldClose(app->window) ) {
+		tempAppIdx = selectedAppIdx;
+
+		app->run();
+
+		if( tempAppIdx != selectedAppIdx ) {
+			delete app;
+			app = app_constructors[selectedAppIdx]();
+		}
+	}
 
 	delete app;
 

@@ -16,6 +16,8 @@ namespace lim
 {
 	namespace imgui_modules
 	{
+		std::function<void()> draw_appselector;
+
 		const inline glm::ivec2 imToIvec(ImVec2 v) { return {v.x, v.y}; }
 
 		static inline void initImGui(GLFWwindow* window)
@@ -148,7 +150,7 @@ namespace lim
 			ImGuiIO& io = ImGui::GetIO();
 			if( io.ConfigFlags & ImGuiConfigFlags_DockingEnable ) {
 				ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
-				//ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
+				ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
 				//ImGui::DockSpaceOverViewport(0, dockspace_flags);
 			}
 

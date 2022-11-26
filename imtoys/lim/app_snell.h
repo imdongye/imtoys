@@ -13,24 +13,23 @@ namespace lim
 {
 	class AppSnell: public AppBase
 	{
+	public:
+		inline static constexpr const char *APP_NAME = "snell'row tester";
+		inline static constexpr const char *APP_DISC = "drag cursor to test";
 	private:
 		const char const *exportPath = "result/";
-	private:
 	public:
 		AppSnell(): AppBase(1280, 720, "snell's row test")
 		{
 			stbi_set_flip_vertically_on_load(true);
-			initCallback();
-			imgui_modules::initImGui(window);
-
 		}
 		~AppSnell()
 		{
-			imgui_modules::destroyImGui();
+
 		}
 
 	private:
-		virtual void update() override final
+		virtual void update() final
 		{
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 			glViewport(0, 0, scr_width, scr_height);
@@ -39,61 +38,31 @@ namespace lim
 
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-			renderImGui();
 		}
-		void renderImGui()
+		virtual void renderImGui() final
 		{
-			imgui_modules::beginImGui();
-
 			imgui_modules::ShowExampleAppDockSpace([]() {});
 
 			ImGui::ShowDemoWindow();
 
 			ImGui::Begin("state");
+			//ImGui::PushItemWidth()
 			ImGui::End();
-
-			imgui_modules::endImGui(scr_width, scr_height);
 		}
 
 	private:
-		void keyCallback(int key, int scancode, int action, int mods)
+		virtual void keyCallback(int key, int scancode, int action, int mods) final
 		{
 			std::cout<<ImGui::GetFrameHeight();
 		}
-		void cursorPosCallback(double xPos, double yPos)
+		virtual void cursorPosCallback(double xPos, double yPos) final
 		{
 			static double xOld, yOld, xOff, yOff=0;
 			xOff = xPos - xOld;
 			yOff = yOld - yPos;
 
-
 			xOld = xPos;
 			yOld = yPos;
-		}
-		void mouseBtnCallback(int button, int action, int mods)
-		{
-		}
-		void scrollCallback(double xOff, double yOff)
-		{
-
-		}
-		void dndCallback(int count, const char **paths)
-		{
-
-		}
-		void initCallback()
-		{
-			/* lambda is better then std::bind */
-			w_data.key_callbacks.push_back([this](int key, int scancode, int action, int mods)
-			{ return this->keyCallback(key, scancode, action, mods); });
-			w_data.mouse_btn_callbacks.push_back([this](int button, int action, int mods)
-			{ return this->mouseBtnCallback(button, action, mods); });
-			w_data.scroll_callbacks.push_back([this](double xOff, double yOff)
-			{ return this->scrollCallback(xOff, yOff); });
-			w_data.cursor_pos_callbacks.push_back([this](double xPos, double yPos)
-			{ return this->cursorPosCallback(xPos, yPos); });
-			w_data.dnd_callbacks.push_back([this](int count, const char **path)
-			{ return this->dndCallback(count, path); });
 		}
 	};
 }
