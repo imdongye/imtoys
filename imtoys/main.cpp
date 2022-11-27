@@ -28,15 +28,20 @@ void pushAppData()
 	app_constructors.push_back([]() { return new App(); });
 }
 
-void drawAppSellector()
+bool drawAppSellector()
 {
+	bool appSelected = false;
+
 	ImGui::Begin("AppSelector");
 	for( int i=0; i<app_names.size(); i++ ) {
 		if( ImGui::Button(app_names[i]) ) {
 			selectedAppIdx=i;
+			appSelected = true;
 		}
 	}
 	ImGui::End();
+
+	return  appSelected;
 }
 
 // rid unused variables warnings
@@ -47,20 +52,14 @@ int main(int, char**)
 	pushAppData<lim::AppHdr>();
 	pushAppData<lim::AppSnell>();
 
-	app = app_constructors[selectedAppIdx]();
-	int tempAppIdx;
-	while( !glfwWindowShouldClose(app->window) ) {
-		tempAppIdx = selectedAppIdx;
+	while( selectedAppIdx>=0 ) {
+		app = app_constructors[selectedAppIdx]();
+		selectedAppIdx = -1;
 
 		app->run();
 
-		if( tempAppIdx != selectedAppIdx ) {
-			delete app;
-			app = app_constructors[selectedAppIdx]();
-		}
+		delete app;
 	}
-
-	delete app;
 
 	return 0;
 }

@@ -98,23 +98,26 @@ namespace lim
 		}
 		void run()
 		{
-			static double lastTime;
+			double lastTime=0.0;
+			bool appSelected = false;
 
-			float currentFrame = static_cast<float>(glfwGetTime());
-			delta_time = currentFrame - lastTime;
-			lastTime = currentFrame;
+			while( !(glfwWindowShouldClose(window) || appSelected) ) {
+				float currentFrame = static_cast<float>(glfwGetTime());
+				delta_time = currentFrame - lastTime;
+				lastTime = currentFrame;
 
-			update();
+				update();
 
-			imgui_modules::beginImGui();
-			renderImGui();
+				imgui_modules::beginImGui();
+				renderImGui();
 
-			imgui_modules::draw_appselector();
+				appSelected = imgui_modules::draw_appselector();
 
-			imgui_modules::endImGui(scr_width, scr_height);
+				imgui_modules::endImGui(scr_width, scr_height);
 
-			glfwPollEvents();
-			glfwSwapBuffers(window);
+				glfwPollEvents();
+				glfwSwapBuffers(window);
+			}
 		}
 	private:
 		void registerCallbacks()

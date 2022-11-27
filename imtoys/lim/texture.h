@@ -61,6 +61,7 @@ namespace lim
 		}
 		~Texture()
 		{
+			printf("texture clear\n");
 			clear();
 		}
 		void printInfo()
@@ -150,8 +151,6 @@ namespace lim
 	{
 		if( toQuadProg.ID==0 ) {
 			toQuadProg.attatch("tex_to_quad.vs").attatch("tex_to_quad.fs").link();
-			GLuint loc = glGetUniformLocation(toQuadProg.use(), "tex");
-			glUniform1i(loc, 0);
 		}
 	}
 	static void textureToFBO(GLuint texID, GLsizei width, GLsizei height, GLuint fbo=0, float gamma=2.2f)
@@ -169,8 +168,10 @@ namespace lim
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		toQuadProg.use();
-		GLuint loc = glGetUniformLocation(toQuadProg.ID, "gamma");
-		glUniform1f(loc, gamma);
+
+		setUniform(toQuadProg.ID, "tex", 0);
+
+		setUniform(toQuadProg.ID, "gamma", gamma);
 
 		glBindTexture(GL_TEXTURE_2D, texID);
 		glActiveTexture(GL_TEXTURE0);
@@ -183,23 +184,7 @@ namespace lim
 	}
 	static void textureToFramebuffer(GLuint texID, Framebuffer const *fb, float gamma=2.2f)
 	{
-		__initQuadVAO();
-		__initToQuadProg();
-
-		fb->bind();
-
-		toQuadProg.use();
-		GLuint loc = glGetUniformLocation(toQuadProg.ID, "gamma");
-		glUniform1f(loc, gamma);
-
-		glBindTexture(GL_TEXTURE_2D, texID);
-		glActiveTexture(GL_TEXTURE0);
-
-		glBindVertexArray(quadVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
-		glBindVertexArray(0);
-
-		fb->unbind();
+		textureToFBO(texID, fb->fbo, fb->width, fb->height, gamma);
 	}
 
 	inline glm::vec3 sample(void* buf, int w, int h, int x, int y, int n, int isHdr=0)

@@ -28,13 +28,16 @@ namespace lim
 			stbi_set_flip_vertically_on_load(true);
 
 			programs.push_back(new Program("Normal Dot View"));
-			programs.back()->attatch("tex_to_quad.vs").attatch("tex_to_quad.fs").link();
+			//programs.back()->attatch("tex_to_quad.vs").attatch("tex_to_quad.fs").link();
 
 			imgs.push_back(new Texture("images/memorial.jpg", GL_SRGB8));
 			viewports.push_back(new Viewport(new Framebuffer(), imgs.back()->width, imgs.back()->height, true));
 		}
 		~AppHdr()
 		{
+			for( auto pg : programs ) delete pg;
+			for( auto img : imgs ) delete img;
+			for( auto vp : viewports ) delete vp;
 		}
 
 	private:

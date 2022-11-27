@@ -16,7 +16,7 @@ namespace lim
 {
 	namespace imgui_modules
 	{
-		std::function<void()> draw_appselector;
+		std::function<bool()> draw_appselector;
 
 		const inline glm::ivec2 imToIvec(ImVec2 v) { return {v.x, v.y}; }
 
