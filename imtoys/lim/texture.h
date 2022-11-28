@@ -15,9 +15,10 @@ namespace lim
 	struct Texture
 	{
 	public:
-		GLuint texID=0;
+		GLuint tex_id=0;
 		int width=0, height=0;
 		int nr_channels=0;
+		std::string tag;
 		std::string path;
 		const char* format;
 		// 내부 저장 포맷, sRGB면 감마 변환
@@ -66,19 +67,19 @@ namespace lim
 		}
 		void printInfo()
 		{
-			printf("texID:%d, %dx%d, nr_ch:%d, bit:%d, fm:%s, aspect:%f\n", texID, width, height, nr_channels, bit_per_channel, format, width/(float)height);
+			printf("texID:%d, %dx%d, nr_ch:%d, bit:%d, fm:%s, aspect:%f\n", tex_id, width, height, nr_channels, bit_per_channel, format, width/(float)height);
 		}
 		void clear()
 		{
-			if( texID ) {
-				glDeleteTextures(1, &texID);
-				texID=0;
+			if( tex_id ) {
+				glDeleteTextures(1, &tex_id);
+				tex_id=0;
 			}
 		}
 		void bind(GLuint activeSlot, const std::string_view shaderUniformName) const
 		{
 			glActiveTexture(GL_TEXTURE0 + activeSlot);
-			glBindTexture(GL_TEXTURE_2D, texID);
+			glBindTexture(GL_TEXTURE_2D, tex_id);
 			if( shaderUniformName.length()>0 ) {
 				GLint pid;
 				glGetIntegerv(GL_CURRENT_PROGRAM, &pid);
@@ -92,10 +93,10 @@ namespace lim
 		{
 			if( !data ) return;
 
-			if( texID>0 ) clear();
+			if( tex_id>0 ) clear();
 
-			glGenTextures(1, &texID);
-			glBindTexture(GL_TEXTURE_2D, texID);
+			glGenTextures(1, &tex_id);
+			glBindTexture(GL_TEXTURE_2D, tex_id);
 
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 			// GL_LINEAR_MIPMAP_LINEAR : 두개의 side mipmap에서 보간에 보간한다.
@@ -104,10 +105,11 @@ namespace lim
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 			//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 8);
 
-			/*glTexture... 은 texID로 지정, gl4.5부터 사용가능
+			/*glTexture... 은 tex_id로 지정, gl4.5부터 사용가능
 			* glCreateTexture은 bind 바로됨, gl4.5부터 사용가능
-			* glStorate2D는 데이터복사는 따로해줘야되고 Image2D와 다르게 크기나 포맷 변경안됨
+			* glStorate2D는 데이터복사는 따로해줘야되고 Image2D와 다르게 크기나 포맷 변경안됨 
 			*/
+
 			glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, src_format, src_chanel_type, data);
 			//glTexStorage2D(GL_TEXTURE_2D, 1, internal_format, width, height); // 4.2
 			//glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, src_format, src_chanel_type, data);
@@ -149,11 +151,11 @@ namespace lim
 	}
 	static void __initToQuadProg()
 	{
-		if( toQuadProg.ID==0 ) {
+		if( toQuadProg.pid==0 ) {
 			toQuadProg.attatch("tex_to_quad.vs").attatch("tex_to_quad.fs").link();
 		}
 	}
-	static void textureToFBO(GLuint texID, GLsizei width, GLsizei height, GLuint fbo=0, float gamma=2.2f)
+	static void textureToFBO(GLuint tex_id, GLsizei width, GLsizei height, GLuint fbo=0, float gamma=2.2f)
 	{
 		__initQuadVAO();
 		__initToQuadProg();
@@ -169,11 +171,11 @@ namespace lim
 
 		toQuadProg.use();
 
-		setUniform(toQuadProg.ID, "tex", 0);
+		setUniform(toQuadProg.pid, "tex", 0);
 
-		setUniform(toQuadProg.ID, "gamma", gamma);
+		setUniform(toQuadProg.pid, "gamma", gamma);
 
-		glBindTexture(GL_TEXTURE_2D, texID);
+		glBindTexture(GL_TEXTURE_2D, tex_id);
 		glActiveTexture(GL_TEXTURE0);
 
 		glBindVertexArray(quadVAO);

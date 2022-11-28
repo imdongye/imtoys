@@ -23,14 +23,14 @@ namespace lim
 		std::vector<Texture*> imgs;
 		std::vector<Viewport*> viewports;
 	public:
-		AppHdr(): AppBase(1280, 720, "imhdr")
+		AppHdr(): AppBase(1280, 720, APP_NAME)
 		{
 			stbi_set_flip_vertically_on_load(true);
 
 			programs.push_back(new Program("Normal Dot View"));
 			//programs.back()->attatch("tex_to_quad.vs").attatch("tex_to_quad.fs").link();
 
-			imgs.push_back(new Texture("images/memorial.jpg", GL_SRGB8));
+			imgs.push_back(new Texture("imhdr/images/memorial.jpg", GL_SRGB8));
 			viewports.push_back(new Viewport(new Framebuffer(), imgs.back()->width, imgs.back()->height, true));
 		}
 		~AppHdr()
@@ -39,7 +39,6 @@ namespace lim
 			for( auto img : imgs ) delete img;
 			for( auto vp : viewports ) delete vp;
 		}
-
 	private:
 		virtual void update() final
 		{
@@ -52,7 +51,7 @@ namespace lim
 			
 			//textureToFBO(imgs.back()->texID, 500, 500);
 			//textureToFBO(imgs.back()->texID, imgs.back()->width, imgs.back()->height, viewports.back()->framebuffer->fbo);
-			textureToFramebuffer(imgs.back()->texID, viewports.back()->framebuffer);
+			textureToFramebuffer(imgs.back()->tex_id, viewports.back()->framebuffer);
 		}
 		virtual void renderImGui() final
 		{

@@ -15,7 +15,7 @@
 
 lim::AppBase *app;
 
-int selectedAppIdx=1;
+int selectedAppIdx=2;
 std::vector<std::function<lim::AppBase*()>> app_constructors;
 std::vector<const char*> app_names;
 std::vector<const char*> app_discripts;
@@ -51,6 +51,7 @@ int main(int, char**)
 
 	pushAppData<lim::AppHdr>();
 	pushAppData<lim::AppSnell>();
+	pushAppData<lim::AppPbr>();
 
 	while( selectedAppIdx>=0 ) {
 		app = app_constructors[selectedAppIdx]();

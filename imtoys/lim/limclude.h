@@ -6,20 +6,30 @@
 //	헤더파일에서 include로 연결짓는게 의존성관리가 복잡해서 만들었음.
 //	cocos2d, winapi 에서 사용했던 stdafx.h 와 비슷하게 만들었음
 //	vs 설정에서 미리 컴파일된헤더로 설정할수있다는데 이경우에도 필요한지 모르겠음
-//	에초에 이렇게 구조를 만든게 성능면에서 괜찮은건지 모르겠음
 // 
-//	namespace : snake case
-//	멤버 변수 : snake case
-//	지역 변수, param : camel case
-//	함수/멤버 함수 : camel case
-//	class/struct 이름 : pascal case
-//	초기화용 param이 대문자가 없을때 : '_'+camel case
+//	circular dependency(include) 는 최대한 피하되 어쩔수없다면 구현부를 ipp파일로 나눠서
+//	꼬인헤더가 모두 선언된 시점에 구현부를 include한다.
+//	EX) booster(asio)라이브러리의 hpp와 impl/*.ipp
 // 
+//	[ 이름 규칙 ]
+//	namespace : snake_case
+//	class/struct 이름 : PascalCase
+//	멤버 상수 : UPPER_SNAKE_CASE
+//	멤버 변수 : snake_case
+//	함수/멤버 함수 : camelCase
+//	지역 변수, 파라미터 : camelCase
+//	ps. 초기화용 param이 대문자가 없어서 구별 안될때 : _camelCase
+// 
+//	<C# 표준 위배 이유>
+//	멤버함수에 파스칼 안쓰는 이유 : man.Dig() , 갑자기 대문자 나오는게 못생김
+//	맴버변수에 '_'나 'm'를 붙여서 안쓰는 이유 : man->_age , ->_ 너무 못생김
+//  
 //	
 // 
 //	Todo:
 //	1. 폴더구조
 //	2. lim_max 등 tools로 헤더 나누기
+//  3. 어느정도 완성되면 확장자 hpp로
 //
 
 #ifndef LIMCLUDE_H
@@ -62,8 +72,19 @@
 #include "texture.h"
 #include "tex_renderer.h"
 #include "viewport.h"
+
+#include "model_view/camera.h"
+#include "model_view/light.h"
+#include "model_view/mesh.h"
+#include "model_view/model.h"
+#include "model_view/model_loader.h"
+#include "model_view/model_exporter.h"
+#include "model_view/scene.h"
+
+
 #include "application.h"
-#include "app_hdr.h"
-#include "app_snell.h"
+#include "../imhdr/app_hdr.h"
+#include "../imsnells/app_snell.h"
+#include "../impbr/app_pbr.h"
 
 #endif 

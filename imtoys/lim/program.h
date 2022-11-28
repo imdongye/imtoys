@@ -21,38 +21,44 @@ namespace lim
 	{
 	public:
 		std::string name="unnamed";
-		GLuint ID=0;
+		std::string home_dir;
+		GLuint pid=0;
 	private:
-		GLuint vertID;
-		GLuint fragID;
-		GLuint geomID;
-		GLuint compID;
+		GLuint vert_id;
+		GLuint frag_id;
+		GLuint geom_id;
+		GLuint comp_id;
 	private:
 		// Disable Copying and Assignment
 		Program(const Program&) = delete;
 		Program& operator=(const Program&) = delete;
 	public:
-		Program(const char* _name = "unnamed"): name(_name) {}
+		Program(const char* _name = "unnamed"): name(_name), home_dir("commons") {}
 		~Program() { clear(); }
 	public:
 		// chaining //
 		Program& clear()
 		{
-            if( ID ) glDeleteProgram(ID);
-            if( vertID ) glDeleteShader(vertID);
-            if( fragID ) glDeleteShader(fragID);
-            if( geomID ) glDeleteShader(geomID);
-            if( compID ) glDeleteShader(compID);
-            ID = vertID = fragID = geomID = compID = 0;
+            if( pid ) glDeleteProgram(pid);
+            if( vert_id ) glDeleteShader(vert_id);
+            if( frag_id ) glDeleteShader(frag_id);
+            if( geom_id ) glDeleteShader(geom_id);
+            if( comp_id ) glDeleteShader(comp_id);
+			pid = vert_id = frag_id = geom_id = comp_id = 0;
 			return *this;
 		}
 		Program& operator+=(const char* path)
 		{
 			return attatch(path);
 		}
+		Program& setHomeDir(std::string_view dir)
+		{
+			home_dir = dir;
+			return *this;
+		}
 		Program& attatch(std::string path)
 		{
-			if( ID==0 ) ID = glCreateProgram();
+			if( pid==0 ) pid = glCreateProgram();
 
 			auto [sid, type] = createShaderAuto(path);
 
@@ -60,11 +66,13 @@ namespace lim
 				Logger::get()<<"[error] "<<type<<" extension is not supported.";
 				return *this;
 			}
+
 			// AUTO PATHING
-			if( strchr(path.c_str(), '/')==NULL || !strchr(path.c_str(), '\\')==NULL ) {
+			if( strchr(path.c_str(), '/')==NULL && strchr(path.c_str(), '\\')==NULL ) {
 				// todo: 임시 객체 줄이기 최적화
-				path = "shader/"+std::string{type}+"/"+path;
+				path = home_dir+"/shader/"+std::string{type}+"/"+path;
 			}
+
 			// load text
 			std::string scode;
 			std::ifstream file;
@@ -88,28 +96,28 @@ namespace lim
 			glShaderSource(sid, 1, &ccode, nullptr);
 			glCompileShader(sid);
 			checkCompileErrors(sid, type);
-			glAttachShader(ID, sid);
+			glAttachShader(pid, sid);
 			Logger::get().log("[program %s] attch %s success\n", name.c_str(), path.c_str());
 
 			return *this;
 		}
 		Program& link()
 		{
-			glLinkProgram(ID);
-			glUseProgram (ID);
-			checkCompileErrors(ID, "program");
+			glLinkProgram(pid);
+			glUseProgram (pid);
+			checkCompileErrors(pid, "program");
             Logger::get().log("[program %s] linking success\n\n", name.c_str());
 			return *this;
 		}
 		GLuint use() const
 		{
-			glUseProgram(ID);
-			return ID;
+			glUseProgram(pid);
+			return pid;
 		}
 		// todo: bind
 		template<typename T> Program& bind(std::string const& name, T&& value)
 		{
-			int location = glGetUniformLocation(ID, name.c_str());
+			int location = glGetUniformLocation(pid, name.c_str());
 			if( location == -1 ) Logger::get().log("missing uniform: %s\n", name.c_str());
 			else bind(location, std::forward<T>(value));
 			return *this;
@@ -143,22 +151,22 @@ namespace lim
 			int index = filename.rfind(".");
 			std::string_view ext = filename.substr(index + 1);
 			if( ext=="vert"||ext=="vs" ) {
-				vertID = glCreateShader(GL_VERTEX_SHADER);
-				return std::make_tuple(vertID, "vertex");
+				vert_id = glCreateShader(GL_VERTEX_SHADER);
+				return std::make_tuple(vert_id, "vertex");
 			}
 			else if( ext=="frag"||ext=="fs" ) {
-				fragID = glCreateShader(GL_FRAGMENT_SHADER);
-				return std::make_tuple(fragID, "fragment");
+				frag_id = glCreateShader(GL_FRAGMENT_SHADER);
+				return std::make_tuple(frag_id, "fragment");
 			}
 			else if( ext=="geom"||ext=="gs" ) {
-				geomID = glCreateShader(GL_GEOMETRY_SHADER);
-				return std::make_tuple(geomID, "geometry");
+				geom_id = glCreateShader(GL_GEOMETRY_SHADER);
+				return std::make_tuple(geom_id, "geometry");
 			}
 			else if( ext=="comp"||ext=="cs" ) {
 #ifndef __APPLE__
-				compID = glCreateShader(GL_COMPUTE_SHADER);
+				comp_id = glCreateShader(GL_COMPUTE_SHADER);
 #endif
-				return std::make_tuple(compID, "compute");
+				return std::make_tuple(comp_id, "compute");
 			}
 
 			return std::make_tuple(0, "none");

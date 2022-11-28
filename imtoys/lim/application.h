@@ -124,6 +124,10 @@ namespace lim
 		{
 			glfwSetWindowUserPointer(window, &w_data);
 
+			w_data.framebuffer_size_callbacks.push_back([this](int width, int height) {
+				scr_width=width; scr_height=height;
+			});
+
 			/* lambda is better then std::bind */
 			w_data.key_callbacks.push_back([this](int key, int scancode, int action, int mods) {
 				keyCallback(key, scancode, action, mods); });
@@ -135,10 +139,6 @@ namespace lim
 				cursorPosCallback(xPos, yPos); });
 			w_data.dnd_callbacks.push_back([this](int count, const char **path) { 
 				dndCallback(count, path); });
-
-			w_data.framebuffer_size_callbacks.push_back([this](int width, int height) {
-				scr_width=width; scr_height=height;
-			});
 		}
 		void initGlfwCallbacks()
 		{
@@ -147,7 +147,6 @@ namespace lim
 			glfwSetWindowSizeCallback(window, [](GLFWwindow *win, int width, int height) {
 				WindowData &data = *(WindowData*)glfwGetWindowUserPointer(win);
 				for(auto cb : data.win_size_callbacks ) if(cb) cb(width, height);
-				printf("win %d %d\n", width, height);
 			});
 			glfwSetFramebufferSizeCallback(window, [](GLFWwindow *win, int width, int height) {
 				WindowData &data = *(WindowData*)glfwGetWindowUserPointer(win);

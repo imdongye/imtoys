@@ -17,9 +17,10 @@ namespace lim
 		inline static constexpr const char *APP_NAME = "snell'row tester";
 		inline static constexpr const char *APP_DISC = "drag cursor to test";
 	private:
-		const char const *exportPath = "result/";
+
+
 	public:
-		AppSnell(): AppBase(1280, 720, "snell's row test")
+		AppSnell(): AppBase(1280, 720, APP_NAME)
 		{
 			stbi_set_flip_vertically_on_load(true);
 		}
@@ -27,7 +28,6 @@ namespace lim
 		{
 
 		}
-
 	private:
 		virtual void update() final
 		{

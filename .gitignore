@@ -9,7 +9,7 @@
 /*.xcodeproj
 /Build
 
-*/images/
+*images/
 
 ._*
 *vcxproj*
