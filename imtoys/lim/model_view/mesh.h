@@ -101,7 +101,7 @@ namespace lim
 				VAO=0;
 			}
 		}
-		void draw(const GLuint pid=0, const std::vector<Texture>& textures_loaded=std::vector<Texture>())
+		void draw(const GLuint pid=0, const std::vector<Texture*>& textures_loaded=std::vector<Texture*>())
 		{
 			/* shadowMap draw할때 pid=0 으로 해서 텍스쳐 uniform 안함 */
 			if( pid != 0 ) {
@@ -111,7 +111,7 @@ namespace lim
 				GLuint normalNr   = 0;
 				GLuint ambientNr  = 0;
 				for( GLuint i : texIdxs ) {
-					std::string type = textures_loaded[i].tag;
+					std::string type = textures_loaded[i]->tag;
 					// uniform samper2d nr is start with 0
 					int backNum = 0;
 					if( type=="map_Kd" )        backNum = diffuseNr++;
@@ -121,7 +121,7 @@ namespace lim
 
 					std::string varName = type + std::to_string(backNum);
 					glActiveTexture(GL_TEXTURE0 + slotCounter); // slot
-					glBindTexture(GL_TEXTURE_2D, textures_loaded[i].tex_id);
+					glBindTexture(GL_TEXTURE_2D, textures_loaded[i]->tex_id);
 					setUniform(pid, varName.c_str(), slotCounter++);// to sampler2d
 				}
 				glActiveTexture(GL_TEXTURE0);

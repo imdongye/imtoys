@@ -29,7 +29,7 @@ namespace lim
 		glm::vec3 scale;
 		glm::mat4 model_mat;
 		std::string name;
-		std::vector<Texture> textures_loaded; // for prevent dup texture loading
+		std::vector<Texture*> textures_loaded; // for prevent dup texture loading
 		std::vector<Mesh*> meshes;
 		Program* program;
 		float bumpHeight=100;
@@ -93,9 +93,10 @@ namespace lim
 	public:
 		void clear()
 		{
-			for( Texture& tex : textures_loaded ) {
-				tex.clear();
+			for( Texture* tex : textures_loaded ) {
+				delete tex;
 			}
+			textures_loaded.clear();
 			for( Mesh* mesh : meshes ) {
 				delete mesh;
 			}

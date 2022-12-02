@@ -19,3 +19,7 @@ app_pref.json
 *xcodeproj*
 *entitlements
 .DS_Store
+
+*etc/
+*todo/
+*archive/

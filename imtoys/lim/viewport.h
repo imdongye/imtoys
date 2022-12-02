@@ -26,14 +26,14 @@ namespace lim
 		glm::ivec2 mousePos;
 		bool fixed_aspect;
 		const float aspect;
-		int frame_height; // title bar height
 	public:
 		Viewport(Framebuffer* createdFB, GLuint _width=256, GLuint _height=256, bool fixedAspect=false)
 			: id(id_generator++), name("Viewport"+std::to_string(id)), width(_width), height(_height)
 			, fixed_aspect(fixedAspect), aspect(width/(float)height)
 		{
 			framebuffer = createdFB;
-			framebuffer->resize(width, height);
+			framebuffer->setSize(width, height);
+			hovered = focused = dragging = false;
 		}
 		virtual ~Viewport()
 		{
@@ -42,29 +42,25 @@ namespace lim
 		void drawImGui()
 		{
 			static bool viewportOpen=true;
-			frame_height = ImGui::GetFrameHeight();
-			ImGui::SetNextWindowSize({(float)width, (float)height+frame_height}, ImGuiCond_Once);
+			ImGui::SetNextWindowSize({(float)width, (float)height+ImGui::GetFrameHeight()}, ImGuiCond_Once);
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
 
 			ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), [](ImGuiSizeCallbackData *data) {
 				Viewport& vp = *(Viewport*)(data->UserData);
 
 				if( vp.fixed_aspect ) {
-
-					float aspectedWidth = vp.aspect * (data->DesiredSize.y - vp.frame_height);
-					float aspectedHeight = data->DesiredSize.x / vp.aspect + vp.frame_height;
+					float frameHeight = ImGui::GetFrameHeight();
+					float aspectedWidth = vp.aspect * (data->DesiredSize.y - frameHeight);
+					float aspectedHeight = data->DesiredSize.x / vp.aspect + frameHeight;
 
 					if( data->DesiredSize.x <= aspectedWidth )
 						data->DesiredSize.x = aspectedWidth;
 					else
 						data->DesiredSize.y = aspectedHeight;
 				}
-				vp.width = data->DesiredSize.x;
-				vp.height = data->DesiredSize.y - vp.frame_height;
 			}, (void*)this);
-			ImGui::Begin(name.c_str(), &viewportOpen, ImGuiWindowFlags_DockNodeHost);
-			ImGui::SetScrollX(0);
-			ImGui::SetScrollY(0);
+			
+			ImGui::Begin(name.c_str());//, &viewportOpen, ImGuiWindowFlags_DockNodeHost);
 
 			focused = ImGui::IsWindowFocused();
 			hovered = ImGui::IsWindowHovered();
@@ -73,10 +69,13 @@ namespace lim
 			static glm::ivec2 winPos;
 			winPos = imgui_modules::imToIvec(ImGui::GetWindowPos());
 			mousePos = imgui_modules::imToIvec(ImGui::GetMousePos());
-			mousePos = mousePos - winPos - glm::ivec2(0, frame_height);
-
+			mousePos = mousePos - winPos - glm::ivec2(0, ImGui::GetFrameHeight());
 			if( dragging ) ImGui::SetMouseCursor(7);
-			else framebuffer->resize(width, height);
+
+			auto contentSize = ImGui::GetContentRegionAvail();
+			width = contentSize.x;
+			height = contentSize.y;
+			framebuffer->setSize(width, height);
 
 			GLuint texID = framebuffer->getRenderedTex();
 			if( texID!=0 )

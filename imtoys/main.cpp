@@ -5,43 +5,44 @@
 //  Product->schema->edit-schema->run->option->custom-working-dir
 //
 
-/* for vsprintf_s */
-#if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)
-#define _CRT_SECURE_NO_WARNINGS
-#endif
-
 #include "lim/limclude.h"
+
+#include "imhdr/app_hdr.h"
+#include "imsnells/app_snell.h"
+#include "impbr/app_pbr.h"
+#include "imsimplification/app_simplification.h"
 
 
 lim::AppBase *app;
 
-int selectedAppIdx=2;
-std::vector<std::function<lim::AppBase*()>> app_constructors;
-std::vector<const char*> app_names;
-std::vector<const char*> app_discripts;
+bool appSelected=true;
+int selectedAppIdx=3;
+std::vector<std::function<lim::AppBase*()>> appConstructors;
+std::vector<const char*> appNames;
+std::vector<const char*> appDicripts;
 
 template<class App>
 void pushAppData()
 {
-	app_names.push_back(App::APP_NAME);
-	app_discripts.push_back(App::APP_DISC);
-	app_constructors.push_back([]() { return new App(); });
+	appNames.push_back(App::APP_NAME);
+	appDicripts.push_back(App::APP_DISC);
+	appConstructors.push_back([]() { return new App(); });
 }
 
-bool drawAppSellector()
+void drawAppSellector()
 {
-	bool appSelected = false;
+	static std::string selectorName = lim::fmToStr("AppSelector%d", selectedAppIdx);
 
-	ImGui::Begin("AppSelector");
-	for( int i=0; i<app_names.size(); i++ ) {
-		if( ImGui::Button(app_names[i]) ) {
+	ImGui::Begin(selectorName.c_str());
+	for( int i=0; i<appNames.size(); i++ ) {
+		if( ImGui::Button(appNames[i]) ) {
+			appSelected=true;
 			selectedAppIdx=i;
-			appSelected = true;
+			selectorName = lim::fmToStr("AppSelector%d", selectedAppIdx);
+			glfwSetWindowShouldClose(app->window, true);
 		}
 	}
 	ImGui::End();
-
-	return  appSelected;
 }
 
 // rid unused variables warnings
@@ -52,10 +53,11 @@ int main(int, char**)
 	pushAppData<lim::AppHdr>();
 	pushAppData<lim::AppSnell>();
 	pushAppData<lim::AppPbr>();
+	pushAppData<lim::AppSimplification>();
 
-	while( selectedAppIdx>=0 ) {
-		app = app_constructors[selectedAppIdx]();
-		selectedAppIdx = -1;
+	while( appSelected ) {
+		appSelected = false;
+		app = appConstructors[selectedAppIdx]();
 
 		app->run();
 

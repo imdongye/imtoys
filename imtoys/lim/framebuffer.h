@@ -26,188 +26,244 @@ namespace lim
 		GLuint width, height;
 		float aspect;
 	public:
-		Framebuffer(glm::vec4 clearColor = {0.2f, 0.3f, 0.3f, 1.0f})
-			: clear_color(clearColor), fbo(0), color_tex(0)
+		Framebuffer(): clear_color({0.2f, 0.3f, 0.3f, 1.0f})
 		{
-			create();
-			resize(32, 32);
+			fbo = color_tex = 0;
+			aspect= width = height = 0;
 		}
-		virtual ~Framebuffer() { clear(); }
-	public:
-		void resize(GLuint _width, GLuint _height=0)
+		virtual ~Framebuffer() 
 		{
-			if( _height==0 )
-				_height = _width;
-			if( width==_width && height==_height )
-				return;
-			width = _width;
-			height = _height;
-			aspect = width/(float)height;
-
-			//createTexAndAttach();
-			glBindTexture(GL_TEXTURE_2D, color_tex);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
-			glBindTexture(GL_TEXTURE_2D, 0);
-
-			resizeHook();
+			if( fbo>0 ) { glDeleteFramebuffers(1, &fbo); fbo=0; }
+			if( color_tex>0 ) { glDeleteTextures(1, &color_tex); color_tex=0; }
 		}
-		/* 오버라이딩하고 첫줄에 부모 가상함수를 꼭 호출해줘야함. */
-		virtual void clear()
-		{
-			if( color_tex ) { glDeleteTextures(1, &color_tex); color_tex=0; }
-			if( fbo ) { glDeleteFramebuffers(1, &fbo); fbo=0; }
-		}
-		virtual void bind() const
-		{
-			glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-			glViewport(0, 0, width, height);
-			glDisable(GL_DEPTH_TEST);
-			glDisable(GL_MULTISAMPLE);
-			glDisable(GL_FRAMEBUFFER_SRGB);
-
-			glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
-			glClear(GL_COLOR_BUFFER_BIT);
-		}
-		/* for ms framebuffer */
-		virtual GLuint getRenderedTex()
-		{
-			return color_tex;
-		}
-		virtual void unbind() const
-		{
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		}
-		virtual void resizeHook() {}
 	protected:
-		virtual void createTexAndAttach()
+		void genGlFboColor()
 		{
-			if( color_tex ) { glDeleteTextures(1, &color_tex); color_tex=0; }
-			// glTexStorage2D 텍스쳐 크기 고정
-			// glTexImage2D 텍스쳐크기 변경가능
+			if( fbo>0 ) { glDeleteFramebuffers(1, &fbo); fbo=0; }
+			glGenFramebuffers(1, &fbo);
+
+			if( color_tex>0 ) { glDeleteTextures(1, &color_tex); color_tex=0; }
 			glGenTextures(1, &color_tex);
 			glBindTexture(GL_TEXTURE_2D, color_tex);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
 			glBindTexture(GL_TEXTURE_2D, 0);
+		}
+		virtual void initGL()
+		{
+			Framebuffer::genGlFboColor();
 
-
+			/* bind fbo */
 			glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, color_tex, 0);
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+			std::vector<GLenum> drawBuffers ={GL_COLOR_ATTACHMENT0};
+			glDrawBuffers(1, drawBuffers.data());
+
+			GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+			if( status !=GL_FRAMEBUFFER_COMPLETE ) std::cerr<<"Framebuffer is not completed!! ("<<status<<")"<<std::endl;
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
-	private:
-		void create()
+	public:
+		bool setSize(GLuint _width, GLuint _height=0)
 		{
-			if( fbo ) { glDeleteFramebuffers(1, &fbo); fbo=0; }
-			/* create FBO */
-			glGenFramebuffers(1, &fbo);
+			if( _height==0 ) _height = _width;
+			if( width==_width && height==_height )
+				return false;
+			width = _width; height = _height;
+			aspect = width/(float)height;
+
+			initGL();
+			return true;
+		}
+		virtual void bind() const
+		{
 			glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+			glViewport(0, 0, width, height);
+			glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
+			glClear(GL_COLOR_BUFFER_BIT);
 
-			createTexAndAttach();
-
-			// error check
-			if( glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE )
-				Logger::get().log("color FBO Error %d %d\n", width, height);
+			glDisable(GL_DEPTH_TEST|GL_MULTISAMPLE);
+		}
+		virtual void unbind() const
+		{
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		}
+		/* ms framebuffer return intermidiate */
+		virtual GLuint getRenderedTex() const
+		{
+			return color_tex;
 		}
 	};
 
-	class TxFramebuffer: public Framebuffer
+	class TexFramebuffer: public Framebuffer
 	{
 	public:
-		GLuint depth;
+		GLuint depth_tex;
 	public:
-		TxFramebuffer(): Framebuffer(), depth(0) {}
-		virtual ~TxFramebuffer() { clear(); }
-	public:
-		virtual void clear() final
+		TexFramebuffer(): Framebuffer()
 		{
-			Framebuffer::clear();
-			if( depth ) { glDeleteRenderbuffers(1, &depth); depth=0; }
+			depth_tex = 0;
 		}
-		virtual void bind() final
+		virtual ~TexFramebuffer() override
 		{
-			Framebuffer::bind();
-			glEnable(GL_DEPTH_TEST);
-			glClear(GL_DEPTH_BUFFER_BIT);
+			if( depth_tex>0 ) { glDeleteTextures(1, &depth_tex); depth_tex = 0; }
 		}
 	protected:
-		virtual void createTexAndAttach()
+		void genGLDepthTex()
 		{
-			Framebuffer::createTexAndAttach();
-
-			glGenTextures(1, &depth);
-			glBindTexture(GL_TEXTURE_2D, depth);
+			if( depth_tex>0 ) { glDeleteTextures(1, &depth_tex); depth_tex = 0; }
+			glGenTextures(1, &depth_tex);
+			glBindTexture(GL_TEXTURE_2D, depth_tex);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
 			glBindTexture(GL_TEXTURE_2D, 0);
-
-			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth, 0);
 		}
-	};
-
-	class RbFramebuffer: public Framebuffer
-	{
-	public:
-		GLuint rbo;
-	public:
-		RbFramebuffer(): Framebuffer(), rbo(0) {}
-		virtual ~RbFramebuffer() { clear(); }
-	public:
-		virtual void clear()
+		virtual void initGL() override
 		{
-			Framebuffer::clear();
-			if( rbo ) { glDeleteRenderbuffers(1, &rbo); rbo=0; }
+			Framebuffer::genGlFboColor();
+			TexFramebuffer::genGLDepthTex();
+
+			/* bind fbo */
+			glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, color_tex, 0);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_tex, 0);
+
+			std::vector<GLenum> drawBuffers ={GL_COLOR_ATTACHMENT0};
+			glDrawBuffers(1, drawBuffers.data());
+
+			GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+			if( status !=GL_FRAMEBUFFER_COMPLETE ) std::cerr<<"TexFramebuffer is not completed!! ("<<status<<")"<<std::endl;
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
-		virtual void bind()
+	public:
+		virtual void bind() const override
 		{
 			Framebuffer::bind();
 			glEnable(GL_DEPTH_TEST);
 			glClear(GL_DEPTH_BUFFER_BIT);
 		}
-	protected:
-		virtual void createTexAndAttach()
-		{
-			Framebuffer::createTexAndAttach();
+	};
 
-			// Create the depth buffer (stencil)
-			// render buffer은 셰이더에서 접근할수없는 텍스쳐, 속도면에서 장점
-			glGenRenderbuffers(1, &rbo);
-			glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+	class RboFramebuffer: public Framebuffer
+	{
+	public:
+		GLuint depth_rbo;
+	public:
+		RboFramebuffer(): Framebuffer()
+		{
+			depth_rbo = 0;
+		}
+		virtual ~RboFramebuffer()
+		{
+			if( depth_rbo>0 ) { glDeleteRenderbuffers(1, &depth_rbo); depth_rbo=0; }
+		}
+	protected:
+		void genGLDepthRbo()
+		{
+			if( depth_rbo>0 ) { glDeleteRenderbuffers(1, &depth_rbo); depth_rbo=0; }
+			glGenRenderbuffers(1, &depth_rbo);
+			glBindRenderbuffer(GL_RENDERBUFFER, depth_rbo);
 			glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
 			glBindRenderbuffer(GL_RENDERBUFFER, 0);
+			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rbo);
+		}
+		virtual void initGL() override
+		{
+			Framebuffer::genGlFboColor();
+			RboFramebuffer::genGLDepthRbo();
 
-			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo);
+			/* bind fbo */
+			glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, color_tex, 0);
+			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rbo);
+
+			std::vector<GLenum> drawBuffers ={GL_COLOR_ATTACHMENT0};
+			glDrawBuffers(1, drawBuffers.data());
+
+			GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+			if( status !=GL_FRAMEBUFFER_COMPLETE ) std::cerr<<"RboFramebuffer is not completed!! ("<<status<<")"<<std::endl;
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		}
+	public:
+		virtual void bind() const override
+		{
+			Framebuffer::bind();
+			glEnable(GL_DEPTH_TEST);
+			glClear(GL_DEPTH_BUFFER_BIT);
 		}
 	};
 
-	class MsFramebuffer: public RbFramebuffer
+	class MsFramebuffer: public RboFramebuffer
 	{
 	public:
 		/* colorTex와 rbo를 multisampliing 모드로 생성 */
 		const int samples = 8;
-		Framebuffer intermediate_FB;
+		Framebuffer intermediate_fb;
 	public:
-		MsFramebuffer(): RbFramebuffer(), intermediate_FB() {}
-		virtual ~MsFramebuffer() { clear(); }
+		MsFramebuffer(): RboFramebuffer(), intermediate_fb()
+		{
+		}
+		virtual ~MsFramebuffer() override
+		{
+		}
+	protected:
+		void genGLFboMs()
+		{
+			if( fbo>0 ) { glDeleteFramebuffers(1, &fbo); fbo=0; }
+			glGenFramebuffers(1, &fbo);
+
+			if( color_tex>0 ) { glDeleteTextures(1, &color_tex); color_tex=0; }
+			glGenTextures(1, &color_tex);
+			glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, color_tex);
+			glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGB, width, height, GL_TRUE);
+			glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+
+			if( depth_rbo>0 ) { glDeleteRenderbuffers(1, &depth_rbo); depth_rbo=0; }
+			glGenRenderbuffers(1, &depth_rbo);
+			glBindRenderbuffer(GL_RENDERBUFFER, depth_rbo);
+			glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, GL_DEPTH_COMPONENT, width, height);
+			glBindRenderbuffer(GL_RENDERBUFFER, 0);
+		}
+		virtual void initGL() override
+		{
+			intermediate_fb.setSize(width, height);
+
+			MsFramebuffer::genGLFboMs();
+
+			glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, color_tex, 0);
+			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rbo);
+
+			std::vector<GLenum> drawBuffers ={GL_COLOR_ATTACHMENT0};
+			glDrawBuffers(1, drawBuffers.data());
+
+			GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+			if( status !=GL_FRAMEBUFFER_COMPLETE ) std::cerr<<"MsFramebuffer is not completed!! ("<<status<<")"<<std::endl;
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		}
 	public:
-		virtual void clear() final
+		virtual void bind() const override
 		{
-			RbFramebuffer::clear();
-			intermediate_FB.clear();
+			Framebuffer::bind();
+			glEnable(GL_DEPTH_TEST|GL_MULTISAMPLE);
+			glClear(GL_DEPTH_BUFFER_BIT);
 		}
-		virtual void bind() final
-		{
-			RbFramebuffer::bind();
-			glEnable(GL_MULTISAMPLE);
-		}
-		virtual void unbind() final
+		virtual void unbind() const override
 		{
 			/* msaa framebuffer은 일반 texture을 가진 frame버퍼에 blit 복사 해야함 */
 			glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
-			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, intermediate_FB.fbo);
+			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, intermediate_fb.fbo);
 
 			glBlitFramebuffer(0, 0, width, height, 0, 0, width, height
 							  , GL_COLOR_BUFFER_BIT, GL_NEAREST);
@@ -216,38 +272,11 @@ namespace lim
 			glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
-		virtual GLuint getRenderedTex() final
+		virtual GLuint getRenderedTex() const override
 		{
-			return intermediate_FB.color_tex;
-		}
-		virtual void resizeHook()
-		{
-			intermediate_FB.resize(width, height);
-		}
-	protected:
-		virtual void createTexAndAttach()
-		{
-			/* multisampled FBO setting */
-			glGenTextures(1, &color_tex);
-			glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, color_tex);
-			glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGB, width, height, GL_TRUE);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-			glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
-
-			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, color_tex, 0);
-
-
-			glGenRenderbuffers(1, &rbo);
-			glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-			glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, GL_DEPTH_COMPONENT, width, height);
-			glBindRenderbuffer(GL_RENDERBUFFER, 0);
-
-			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo);
+			return intermediate_fb.color_tex;
 		}
 	};
-} // ! namespace lim
+}
 
 #endif

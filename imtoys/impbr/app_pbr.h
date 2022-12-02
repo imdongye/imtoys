@@ -1,9 +1,10 @@
 //
 //  for test pbr
+//	edit learnopengl code 
 //	2022-11-28 / im dong ye
 //
 //	TODO list:
-//
+//	1. render sphere isVertexArray가 무거운지 확인, vbo, gpu 버퍼가 언제 clear되는지 질문
 //
 
 #ifndef APP_PBR_H
@@ -14,7 +15,7 @@ namespace lim
 	class AppPbr: public AppBase
 	{
 	public:
-		inline static constexpr const char *APP_NAME = "pbr assignment";
+		inline static constexpr const char *APP_NAME = "impbr";
 		inline static constexpr const char *APP_DISC = "ggx beckman";
 	private:
 		Camera* camera;
@@ -28,22 +29,18 @@ namespace lim
 		glm::vec3 light_position = glm::vec3(-10.0f, 10.0f, 10.0f);
 		glm::vec3 light_color = glm::vec3(300.0f, 300.0f, 300.0f);
 
-		unsigned int sphere_vao = 0;
-		unsigned int index_count = 0;
-
 		bool is_dragging = false;
-		double xold, yold;
-
 	public:
 		AppPbr(): AppBase(1280, 720, APP_NAME)
 		{
 			stbi_set_flip_vertically_on_load(true);
+
 			camera = new Camera( glm::vec3(0, 0, 3), scr_width/(float)scr_height );
 			camera->fovy = 45.f;
 			camera->updateProjMat();
 
 			prog = new Program("pbr");
-			prog->setHomeDir("impbr").attatch("1.1.pbr.vs").attatch("1.1.pbr.fs").link();
+			prog->setHomeDir(APP_NAME).attatch("1.1.pbr.vs").attatch("1.1.pbr.fs").link();
 
 			GLuint pid = prog->use();
 			setUniform(pid, "albedo", glm::vec3(0.5, 0, 0));
@@ -118,15 +115,16 @@ namespace lim
 			//ImGui::End();
 		}
 	private:
-
-		// renders (and builds at first invocation) a sphere
-		// -------------------------------------------------
+		
 		void renderSphere()
 		{
-			if( sphere_vao == 0 ) {
-				glGenVertexArrays(1, &sphere_vao);
+			static unsigned int sphereVAO = 0;
+			static unsigned int indexCount = 0;
 
+			if( glIsVertexArray(sphereVAO)==GL_FALSE ) {
 				unsigned int vbo, ebo;
+
+				glGenVertexArrays(1, &sphereVAO);
 				glGenBuffers(1, &vbo);
 				glGenBuffers(1, &ebo);
 
@@ -168,7 +166,7 @@ namespace lim
 					}
 					oddRow = !oddRow;
 				}
-				index_count = indices.size();
+				indexCount = indices.size();
 
 				std::vector<float> data;
 				for( unsigned int i = 0; i < positions.size(); ++i ) {
@@ -185,7 +183,7 @@ namespace lim
 						data.push_back(normals[i].z);
 					}
 				}
-				glBindVertexArray(sphere_vao);
+				glBindVertexArray(sphereVAO);
 				glBindBuffer(GL_ARRAY_BUFFER, vbo);
 				glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(float), &data[0], GL_STATIC_DRAW);
 				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
@@ -199,8 +197,9 @@ namespace lim
 				glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, stride, (void*)(5 * sizeof(float)));
 			}
 
-			glBindVertexArray(sphere_vao);
-			glDrawElements(GL_TRIANGLE_STRIP, index_count, GL_UNSIGNED_INT, 0);
+			glEnable(GL_DEPTH_TEST);
+			glBindVertexArray(sphereVAO);
+			glDrawElements(GL_TRIANGLE_STRIP, indexCount, GL_UNSIGNED_INT, 0);
 		}
 
 		void processInput(GLFWwindow *window)
@@ -235,22 +234,21 @@ namespace lim
 		}
 		virtual void keyCallback(int key, int scancode, int action, int mods) final
 		{
-			std::cout<<ImGui::GetFrameHeight();
 		}
 		virtual void mouseBtnCallback(int button, int action, int mods) final
 		{
 			is_dragging = action ==GLFW_PRESS;
-			if( is_dragging )
-				xold=-1;
 		}
 		virtual void cursorPosCallback(double xpos, double ypos) final
 		{
 			static const float rotateSpeed = 0.05f;
 			static float xoff, yoff;
+			static double xold, yold;
+			static bool temp_dragging;
 
 			if( !is_dragging ) return;
 
-			if( xold<0 ) {
+			if( temp_dragging != is_dragging ) {
 				xold = xpos;
 				yold = ypos;
 			}
@@ -263,6 +261,7 @@ namespace lim
 
 			camera->rotateCamera(xoff * rotateSpeed, yoff * rotateSpeed);
 			camera->updateFreeViewMat();
+			temp_dragging = is_dragging;
 		}
 	};
 }

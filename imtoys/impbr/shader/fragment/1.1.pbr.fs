@@ -70,6 +70,7 @@ void main()
 
     // reflectance equation
     vec3 Lo = vec3(0.0);
+	{
         // calculate per-light radiance
         vec3 L = normalize(lightPosition - WorldPos);
         vec3 H = normalize(V + L);
@@ -102,7 +103,7 @@ void main()
 
         // add to outgoing radiance Lo
         Lo += (kD * albedo / PI + specular) * radiance * NdotL;  // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
-    
+    }
     // ambient lighting (note that the next IBL tutorial will replace 
     // this ambient lighting with environment lighting).
     vec3 ambient = vec3(0.03) * albedo * ao;

@@ -25,6 +25,9 @@ namespace lim
 		GLint internal_format; 
 		GLenum src_format, src_chanel_type;
 		int bit_per_channel;
+	private:
+		Texture(const Texture&) = delete;
+		Texture& operator=(const Texture&) = delete;
 	public:
 		// GL_RGB8, GL_SRGB8
 		Texture(const std::string_view _path, GLint internalFormat=GL_RGB32F)
@@ -69,12 +72,10 @@ namespace lim
 		{
 			printf("texID:%d, %dx%d, nr_ch:%d, bit:%d, fm:%s, aspect:%f\n", tex_id, width, height, nr_channels, bit_per_channel, format, width/(float)height);
 		}
-		void clear()
+		void reload(const std::string_view _path, GLint internalFormat=GL_RGB32F)
 		{
-			if( tex_id ) {
-				glDeleteTextures(1, &tex_id);
-				tex_id=0;
-			}
+			clear();
+			Texture(_path, internalFormat);
 		}
 		void bind(GLuint activeSlot, const std::string_view shaderUniformName) const
 		{
@@ -87,8 +88,14 @@ namespace lim
 				glUniform1i(loc, activeSlot);
 			}
 		}
-
 	private:
+		void clear()
+		{
+			if( glIsTexture(tex_id) ) {
+				glDeleteTextures(1, &tex_id);
+				tex_id=0;
+			}
+		}
 		void initOpenGL(void* data)
 		{
 			if( !data ) return;
@@ -118,13 +125,12 @@ namespace lim
 		}
 	};
 
-
-	/* c++17 global data member can initialize in declaration with inline keyword */
-	inline static Program toQuadProg = Program("toQuad");
-	inline static GLuint quadVAO = 0;
-	static void __initQuadVAO()
+	static void textureToFBO(GLuint tex_id, GLsizei width, GLsizei height, GLuint fbo=0, float gamma=2.2f)
 	{
-		if( quadVAO == 0 ) {
+		static Program toQuadProg = Program("toQuad");
+		static GLuint quadVAO = 0;
+
+		if( glIsVertexArray(quadVAO)==GL_TRUE ) {
 			// Array for full-screen quad
 			GLfloat verts[] ={
 				-1.0f, -1.0f, 0.0f, 1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f,
@@ -148,17 +154,9 @@ namespace lim
 			glBindBuffer(GL_ARRAY_BUFFER, 0);
 			glBindVertexArray(0);
 		}
-	}
-	static void __initToQuadProg()
-	{
-		if( toQuadProg.pid==0 ) {
+		if( glIsProgram(toQuadProg.pid)==GL_TRUE ) {
 			toQuadProg.attatch("tex_to_quad.vs").attatch("tex_to_quad.fs").link();
 		}
-	}
-	static void textureToFBO(GLuint tex_id, GLsizei width, GLsizei height, GLuint fbo=0, float gamma=2.2f)
-	{
-		__initQuadVAO();
-		__initToQuadProg();
 
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		glViewport(0, 0, width, height);

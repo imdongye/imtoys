@@ -55,6 +55,7 @@ namespace lim
 			glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 			glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1); // mac support 4.1
 			glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+			//glfwWindowHint(GLFW_SAMPLES, 4);
 		#ifdef __APPLE__
 			glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 		#endif
@@ -81,7 +82,7 @@ namespace lim
 
 			printVersion();
 
-			Logger::get()<<"Current path is "<<std::filesystem::current_path().u8string()<<Logger::endl;
+			Logger::get()<<"Current path is "<<std::filesystem::current_path().u8string()<<Logger::endl<<Logger::endl;
 			AppPref::get();
 
 
@@ -99,9 +100,8 @@ namespace lim
 		void run()
 		{
 			double lastTime=0.0;
-			bool appSelected = false;
 
-			while( !(glfwWindowShouldClose(window) || appSelected) ) {
+			while( !glfwWindowShouldClose(window) ) {
 				float currentFrame = static_cast<float>(glfwGetTime());
 				delta_time = currentFrame - lastTime;
 				lastTime = currentFrame;
@@ -111,7 +111,7 @@ namespace lim
 				imgui_modules::beginImGui();
 				renderImGui();
 
-				appSelected = imgui_modules::draw_appselector();
+				imgui_modules::draw_appselector();
 
 				imgui_modules::endImGui(scr_width, scr_height);
 

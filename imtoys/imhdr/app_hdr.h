@@ -9,6 +9,9 @@
 #ifndef APP_HDR_H
 #define APP_HDR_H
 
+
+#include <libraw/libraw.h>
+
 namespace lim
 {
 	class AppHdr: public AppBase
@@ -23,7 +26,7 @@ namespace lim
 		std::vector<Texture*> imgs;
 		std::vector<Viewport*> viewports;
 	public:
-		AppHdr(): AppBase(1280, 720, APP_NAME)
+		AppHdr(): AppBase(1920, 1080, APP_NAME)
 		{
 			stbi_set_flip_vertically_on_load(true);
 

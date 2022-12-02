@@ -83,7 +83,7 @@ namespace lim
 		static std::vector<GLuint> loadMaterialTextures(aiMaterial* mat, aiTextureType type)
 		{
 			// store it as texture loaded for entire model, to ensure we won't unnecesery load duplicate textures.
-			std::vector<Texture>& textures_loaded = model->textures_loaded;
+			std::vector<Texture*>& textures_loaded = model->textures_loaded;
 			std::vector<GLuint> texIdxs;
 			for( GLuint i=0; i<mat->GetTextureCount(type); i++ ) {
 				aiString ai_str;
@@ -97,7 +97,7 @@ namespace lim
 				// to skip loading same texture 
 				bool skip = false;
 				for( GLuint j=0; j< textures_loaded.size(); j++ ) {
-					if( textures_loaded[j].path == str_path ) {
+					if( textures_loaded[j]->path == str_path ) {
 						texIdxs.push_back(j);
 						skip = true;
 						break;
@@ -107,16 +107,16 @@ namespace lim
 				if( !skip ) {
 					std::string fullTexPath = model->directory+str_path;
 					// kd일때만 linear space변환
-					Texture texture = Texture(fullTexPath, (type==aiTextureType_DIFFUSE)?GL_SRGB8:GL_RGB8);
+					Texture *texture = new Texture(fullTexPath, (type==aiTextureType_DIFFUSE)?GL_SRGB8:GL_RGB8);
 
 					switch( type ) {
-					case aiTextureType_DIFFUSE: texture.tag = "map_Kd"; break;
-					case aiTextureType_SPECULAR: texture.tag = "map_Ks"; break;
-					case aiTextureType_AMBIENT: texture.tag = "map_Normal"; break;
-					case aiTextureType_HEIGHT: texture.tag = "map_Bump"; break; // map_bump, bump
+					case aiTextureType_DIFFUSE: texture->tag = "map_Kd"; break;
+					case aiTextureType_SPECULAR: texture->tag = "map_Ks"; break;
+					case aiTextureType_AMBIENT: texture->tag = "map_Normal"; break;
+					case aiTextureType_HEIGHT: texture->tag = "map_Bump"; break; // map_bump, bump
 					}
-					Logger::get()<<"┗"<<texture.tag<<Logger::endl;
-					texture.path = str_path;
+					Logger::get()<<"┗"<<texture->tag<<Logger::endl;
+					texture->path = str_path; // Todo
 					textures_loaded.push_back(texture);
 					texIdxs.push_back(textures_loaded.size()-1);
 				}
@@ -183,17 +183,17 @@ namespace lim
 			newMesh->aiMatIdx = mesh->mMaterialIndex;
 			return newMesh;
 		}
-		static void parseNode(aiNode* node, const aiScene* scene, int depth = 0)
+		static void parseNode(aiNode* node, const aiScene* scene, int depth_tex = 0)
 		{
 			// in current node
 			for( GLuint i=0; i<node->mNumMeshes; i++ ) {
 				model->meshes.push_back(getParsedMesh(scene->mMeshes[node->mMeshes[i]], scene));
-				for( int j=0; j<depth; j++ ) Logger::get()<<" ";
+				for( int j=0; j<depth_tex; j++ ) Logger::get()<<" ";
 				Logger::get().log("mesh loaded : %s,", node->mName.C_Str());
 				(*(model->meshes.back())).print();
 			}
 			for( GLuint i=0; i<node->mNumChildren; i++ ) {
-				parseNode(node->mChildren[i], scene, depth+1);
+				parseNode(node->mChildren[i], scene, depth_tex+1);
 			}
 		}
 	};

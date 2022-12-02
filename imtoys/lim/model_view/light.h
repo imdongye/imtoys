@@ -34,7 +34,7 @@ namespace lim
 	public: // update result
 		glm::vec3 position;
 		glm::vec3 direction;
-		TxFramebuffer shadowMap;
+		TexFramebuffer shadowMap;
 		glm::mat4 viewMat;
 		glm::mat4 projMat;
 		glm::mat4 vpMat;
@@ -46,7 +46,7 @@ namespace lim
 				shadowProg.attatch("pos.vs").attatch("depth.fs").link();
 			}
 			shadowMap.clear_color = glm::vec4(1);
-			shadowMap.resize(shadowMapSize, shadowMapSize);
+			shadowMap.setSize(shadowMapSize, shadowMapSize);
 
 			/* fov 1.0은 60도 정도 2에서 1~-1사이의 중앙모델만 그린다고 가정하면 far을 엄청 멀리까지 안잡아도되고
 			   depth의 4바이트 깊이를 많이 사용할수있다. */

@@ -24,7 +24,15 @@
 //	멤버함수에 파스칼 안쓰는 이유 : man.Dig() , 갑자기 대문자 나오는게 못생김
 //	맴버변수에 '_'나 'm'를 붙여서 안쓰는 이유 : man->_age , ->_ 너무 못생김
 //  
-//	
+//	<헤더 온리 단점>
+//	멤버함수 구현에 필요한 함수를 감추지 못함. 구현부 cpp에선 글로벌 함수로 막 써도됨 
+//	circular dependency(include)가 없는게 좋긴 하지만 필요한경우 살짝 복잡해짐
+//	<헤더 온리 장점>
+//	선언부 수정시 한번에 가능
+//	구현에 필요한 멤버변수 같은파일에서 확인가능
+//	cpp마다 생성되는 obj파일이 하나라 프로그램 크기가 작을것이다?
+// 
+//	member initialization list는 객체에 대해서만 쓴다. 길어지면 가독성 안좋음
 // 
 //	Todo:
 //	1. 폴더구조
@@ -34,6 +42,11 @@
 
 #ifndef LIMCLUDE_H
 #define LIMCLUDE_H
+
+/* for vsprintf_s */
+#if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)
+#define _CRT_SECURE_NO_WARNINGS
+#endif
 
 #include <iostream>
 #include <fstream>
@@ -58,6 +71,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
 /* PNG, TGA, BMP */
+#define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb/stb_image_write.h>
 
 #define LIM_MAX(X, Y) ((X)>(Y))?(X):(Y)
@@ -81,10 +95,6 @@
 #include "model_view/model_exporter.h"
 #include "model_view/scene.h"
 
-
 #include "application.h"
-#include "../imhdr/app_hdr.h"
-#include "../imsnells/app_snell.h"
-#include "../impbr/app_pbr.h"
 
 #endif 
