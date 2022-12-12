@@ -29,7 +29,8 @@ namespace lim
 		glm::vec3 scale;
 		glm::mat4 model_mat;
 		std::string name;
-		std::vector<Texture*> textures_loaded; // for prevent dup texture loading
+		// for prevent dup texture loading
+		std::vector<std::shared_ptr<Texture>> textures_loaded;
 		std::vector<Mesh*> meshes;
 		Program* program;
 		float bumpHeight=100;
@@ -40,7 +41,8 @@ namespace lim
 		glm::vec3 boundary_max;
 		glm::vec3 boundary_min;
 	private:
-		std::string directory; // for load texture
+		// for texture loading
+		std::string data_dir;
 		glm::mat4 pivot_mat;
 		// From : https://www.ostack.cn/qa/?qa=834163/
 		friend class ModelLoader;
@@ -53,9 +55,9 @@ namespace lim
 		Model& operator=(Model const&) = delete;
 	public:
 		Model(Program* _program=nullptr, const std::string& _name = "")
-			: position(glm::vec3(0)), rotation(glm::quat()), scale(glm::vec3(1)),
-			pivot_mat(glm::mat4(1.0f)), nr_vertices(0), name(_name), program(_program) // mat4(1) is identity mat
-		{
+			: position(glm::vec3(0)), rotation(glm::quat()), scale(glm::vec3(1))
+			, pivot_mat(glm::mat4(1.0f)), nr_vertices(0), name(_name), program(_program)
+		{   //mat4(1) is identity mat
 			updateModelMat();
 		}
 		// copy with new mesh
@@ -71,7 +73,7 @@ namespace lim
 			scale = model.scale;
 			model_mat = model.model_mat;
 			textures_loaded = model.textures_loaded; // deepcopy
-			directory = model.directory;
+			data_dir = model.data_dir;
 			pivot_mat = model.pivot_mat;
 			ai_nr_mats = model.ai_nr_mats;
 			ai_mats = model.ai_mats; // shared memory
@@ -93,9 +95,6 @@ namespace lim
 	public:
 		void clear()
 		{
-			for( Texture* tex : textures_loaded ) {
-				delete tex;
-			}
 			textures_loaded.clear();
 			for( Mesh* mesh : meshes ) {
 				delete mesh;
@@ -118,7 +117,7 @@ namespace lim
 			light.setUniforms(pid);
 
 			for( GLuint i=0; i<meshes.size(); i++ )
-				meshes[i]->draw(pid, textures_loaded);
+				meshes[i]->draw(pid);
 		}
 		void updateModelMat()
 		{
@@ -146,7 +145,8 @@ namespace lim
 		{
 			Logger::get()<<"pivot: "<<glm::to_string(pivot)<<Logger::endl;
 			pivot_mat = glm::translate(-pivot);
-		}/*
+		}
+		/*
 		void reloadNormalMap(std::string_view fullpath)
 		{
 			bool hasBumpMap = false;

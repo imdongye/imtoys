@@ -20,30 +20,31 @@ namespace lim
 		inline static Assimp::Exporter exporter;
 		inline static GLuint nr_formats = exporter.GetExportFormatCount();
 	public:
-		static void exportModel(std::string_view path, Model* model, size_t pIndex)
+		static void exportModel(std::string_view exportDir, Model* model, size_t pIndex)
 		{
 			namespace fs = std::filesystem;
-			/* create path */
 			const aiExportFormatDesc* format = ModelExporter::getFormatInfo(pIndex);
-			std::string notcreated(path);
-			notcreated += model->name+"/";
-			fs::path created_path(notcreated);
-			if( !std::filesystem::is_directory(created_path) )
-				fs::create_directories(created_path);
-			notcreated += fmToStr("%s.%s",  model->name.c_str(), format->fileExtension);
+
+			/* create path */
+			std::string newModelDir(exportDir);
+			newModelDir += model->name+"/";
+			fs::path createdPath(newModelDir);
+			if( !std::filesystem::is_directory(createdPath) )
+				fs::create_directories(createdPath);
+			std::string newModelPath = newModelDir + fmToStr("%s.%s",  model->name.c_str(), format->fileExtension);
 			
 			/* export model */
 			aiScene* scene = makeScene(model);
-			aiReturn ret = exporter.Export(scene, format->id, notcreated.data(), scene->mFlags);
+			aiReturn ret = exporter.Export(scene, format->id, newModelPath.data(), scene->mFlags);
 			const char* error = exporter.GetErrorString();
 			if(strlen(error)>0) Logger::get()<<"[error::exporter] "<<error <<Logger::endl;
 
 			/* ctrl cv texture */
-			
-			fs::path textureBasePath(model->directory);
-			for( Texture* tex : model->textures_loaded ) {
-				fs::path fromTexPath(model->directory+tex->path);
-				fs::path toTexPath(created_path.string()+tex->path);
+			for( std::shared_ptr<Texture> tex : model->textures_loaded ) {
+				std::string newTexPath = newModelDir + std::string(tex->internal_model_path);
+
+				fs::path fromTexPath( tex->path );
+				fs::path toTexPath( newTexPath );
 				fs::copy(fromTexPath, toTexPath, fs::copy_options::skip_existing);
 				Logger::get().log("%s %s\n", fromTexPath.string().c_str(), toTexPath.string().c_str());
 			}
@@ -53,7 +54,7 @@ namespace lim
 			return exporter.GetExportFormatDescription(pIndex);
 		}
 	private:
-		static aiScene* makeScene(Model* model)
+		inline static aiScene* makeScene(Model* model)
 		{
 			const GLuint nr_meshes = model->meshes.size();
 			aiScene* scene = new aiScene();

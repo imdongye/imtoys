@@ -8,9 +8,13 @@
 //	MSAA frame buffer
 //	from : https://learnopengl.com/Advanced-OpenGL/Anti-Aliasing
 //
+//	생성자에서 가상함수 쓰지말것. 생성되지않은 클래스의 함수를 호출하게됨.
+//	glTexImage는 텍스쳐 크기를 동적으로 바꿀수있다고 명세되어있지만 문제가 있다고함.
+//	=> 그냥 del후 gen해서 다시 bind 해주자.
+// 
 //	todo:
-//	1. 부모소멸자 호출안하는 방법이 있나? framebuffer::clear두번호출
-//	2. create 가상함수 재활용
+//	1. 생성
+//	2. bind등 매 frame에 실행되는 민감한함수들 v table에 참조로 성능안좋아질거같은데 최적화 필요함.
 //
 
 #ifndef FRAMEBUFFER_H
@@ -222,10 +226,6 @@ namespace lim
 			if( color_tex>0 ) { glDeleteTextures(1, &color_tex); color_tex=0; }
 			glGenTextures(1, &color_tex);
 			glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, color_tex);
-			glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 			glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGB, width, height, GL_TRUE);
 			glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
 

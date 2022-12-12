@@ -1,6 +1,12 @@
 //
 //  2022-09-27 / im dong ye
 //  edit learnopengl code
+// 
+//	Assimp는 namespace도 없고 자료형의 이름이 camelCase이므로
+//	Assimp에 한해서 지역변수 이름을 snake_case로 작성한다.
+// 
+//  Todo:
+//  1. model path texture path 그냥 하나로 합치기
 //
 
 
@@ -21,14 +27,15 @@ namespace lim
 	public:
 		static Model* loadFile(std::string_view _path, bool makeNormalized = true)
 		{
+			std::string path(_path);
+
 			model = new Model(nullptr);
 
-			const std::string path = std::string(_path);
 			// 찾지 못하면 std::string:npos == -1
 			const size_t lastSlashPos = path.find_last_of("/\\");
 			const size_t dotPos = path.find_last_of('.');
 			model->name = path.substr(lastSlashPos+1, dotPos-lastSlashPos-1);
-			model->directory = (lastSlashPos==0)?"": path.substr(0, lastSlashPos)+"/";
+			model->data_dir = (lastSlashPos==0) ? "" : path.substr(0, lastSlashPos)+"/";
 
 			Logger::get().log("model loading : %s\n", model->name.c_str());
 
@@ -47,8 +54,7 @@ namespace lim
 			// aiProcess_OptimizeMeshes : mesh를 합쳐서 draw call을 줄인다. batching?
 			const aiScene* scene = loader.ReadFile(path, pFrags);
 
-			if( !scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE
-			   || !scene->mRootNode ) {
+			if( !scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode ) {
 				Logger::get()<<loader.GetErrorString();
 				return nullptr;
 			}
@@ -80,54 +86,58 @@ namespace lim
 			return model;
 		}
 	private:
-		static std::vector<GLuint> loadMaterialTextures(aiMaterial* mat, aiTextureType type)
+		static std::vector<std::shared_ptr<Texture>> loadMaterialTextures(aiMaterial* ai_mat, aiTextureType ai_type)
 		{
 			// store it as texture loaded for entire model, to ensure we won't unnecesery load duplicate textures.
-			std::vector<Texture*>& textures_loaded = model->textures_loaded;
-			std::vector<GLuint> texIdxs;
-			for( GLuint i=0; i<mat->GetTextureCount(type); i++ ) {
-				aiString ai_str;
+			std::vector<std::shared_ptr<Texture>>& textures_loaded = model->textures_loaded;
+			std::vector<std::shared_ptr<Texture>> meshTextures;
+
+			for( GLuint i=0; i<ai_mat->GetTextureCount(ai_type); i++ ) {
+				aiString ai_path;
 				/* blend 등 attrib에서 bm값이 안읽힘 */
-				mat->GetTexture(type, i, &ai_str);
-				std::string str_path(ai_str.C_Str());
-				/* assimp가 뒤에오는 옵션을 읽지 않음 (ex: eye.png -bm 0.4) */
-				str_path = str_path.substr(0, str_path.find_first_of(' '));
+				ai_mat->GetTexture(ai_type, i, &ai_path);
+				std::string texPath(ai_path.C_Str());
+				// assimp가 뒤에오는 옵션을 읽지 않음 (ex: eye.png -bm 0.4)
+				// 그래서 아래와 같이 필터링한다.
+				texPath = texPath.substr(0, texPath.find_first_of(' '));
 
 				// check already loaded
 				// to skip loading same texture 
 				bool skip = false;
 				for( GLuint j=0; j< textures_loaded.size(); j++ ) {
-					if( textures_loaded[j]->path == str_path ) {
-						texIdxs.push_back(j);
+					if( texPath.compare(textures_loaded[j]->internal_model_path) ) {
+						meshTextures.push_back(textures_loaded[j]);
 						skip = true;
 						break;
 					}
 				}
+				
 				// load texture
 				if( !skip ) {
-					std::string fullTexPath = model->directory+str_path;
+					std::string fullTexPath = model->data_dir+texPath;
 					// kd일때만 linear space변환
-					Texture *texture = new Texture(fullTexPath, (type==aiTextureType_DIFFUSE)?GL_SRGB8:GL_RGB8);
+					auto texture = std::make_shared<Texture>(fullTexPath, (ai_type==aiTextureType_DIFFUSE)?GL_SRGB8:GL_RGB8);
+					texture->internal_model_path = texture->path.c_str()+model->data_dir.size();
+					Logger::get().log("%s\n", texture->internal_model_path);
 
-					switch( type ) {
+					switch( ai_type ) {
 					case aiTextureType_DIFFUSE: texture->tag = "map_Kd"; break;
 					case aiTextureType_SPECULAR: texture->tag = "map_Ks"; break;
 					case aiTextureType_AMBIENT: texture->tag = "map_Normal"; break;
 					case aiTextureType_HEIGHT: texture->tag = "map_Bump"; break; // map_bump, bump
 					}
 					Logger::get()<<"┗"<<texture->tag<<Logger::endl;
-					texture->path = str_path; // Todo
 					textures_loaded.push_back(texture);
-					texIdxs.push_back(textures_loaded.size()-1);
+					meshTextures.push_back(textures_loaded.back());
 				}
 			}
-			return texIdxs;
+			return meshTextures;
 		}
 		static Mesh* getParsedMesh(aiMesh* mesh, const aiScene* scene)
 		{
 			std::vector<n_mesh::Vertex> vertices;
 			std::vector<GLuint> indices;
-			std::vector<GLuint> texIdxs;
+			std::vector<std::shared_ptr<Texture>> textures;
 			// now only triangle mesh
 			const GLuint angles = 3;
 
@@ -164,19 +174,19 @@ namespace lim
 			// - materials. per texture type
 			aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 			// 1. diffuse maps
-			std::vector<GLuint> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE);
-			texIdxs.insert(texIdxs.end(), diffuseMaps.begin(), diffuseMaps.end());
+			auto diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE);
+			textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
 			// 2. specular maps
-			std::vector<GLuint> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR);
-			texIdxs.insert(texIdxs.end(), specularMaps.begin(), specularMaps.end());
+			auto specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR);
+			textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
 			// 3. normal maps
-			std::vector<GLuint> normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT);
-			texIdxs.insert(texIdxs.end(), normalMaps.begin(), normalMaps.end());
+			auto normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT);
+			textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
 			// 4. ambient maps
-			std::vector<GLuint> heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT);
-			texIdxs.insert(texIdxs.end(), heightMaps.begin(), heightMaps.end());
+			auto heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT);
+			textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
 
-			Mesh* newMesh = new Mesh(vertices, indices, texIdxs, mesh->mName.C_Str());
+			Mesh* newMesh = new Mesh(vertices, indices, textures, mesh->mName.C_Str());
 			aiColor3D ai_color;
 			material->Get(AI_MATKEY_COLOR_DIFFUSE, ai_color);
 			newMesh->color = glm::vec3(ai_color.r, ai_color.g, ai_color.b);

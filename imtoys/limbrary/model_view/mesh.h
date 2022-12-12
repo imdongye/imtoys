@@ -42,7 +42,7 @@ namespace lim
 		std::string name;
 		std::vector<n_mesh::Vertex> vertices;
 		std::vector<GLuint> indices;
-		std::vector<GLuint> texIdxs;
+		std::vector<std::shared_ptr<Texture>> textures;
 		GLuint angles=3; // set size of indices
 		glm::vec3 color; // Kd, diffuse color
 		int hasTexture = 1;
@@ -69,14 +69,14 @@ namespace lim
 		}
 		Mesh(const std::vector<n_mesh::Vertex>& _vertices
 			 , const std::vector<GLuint>& _indices
-			 , const std::vector<GLuint>& _texIdxs
+			 , const std::vector<std::shared_ptr<Texture>> _textures
 			 , const std::string_view _name="")
 			: Mesh(_name)
 		{
 			vertices = _vertices; // todo: fix deep copy
 			indices = _indices;
-			texIdxs = _texIdxs;
-			hasTexture = (_texIdxs.size()>0)?1:0;
+			textures = _textures;
+			hasTexture = (textures.size()>0)?1:0;
 			setupMesh();
 		}
 		// copy without mesh data
@@ -84,7 +84,7 @@ namespace lim
 		{
 			drawMode = mesh->drawMode;
 			color = mesh->color;
-			texIdxs = mesh->texIdxs;
+			textures = mesh->textures;
 			aiMatIdx = mesh->aiMatIdx;
 		}
 		~Mesh()
@@ -95,13 +95,13 @@ namespace lim
 		{
 			vertices.clear();
 			indices.clear();
-			texIdxs.clear();
+			textures.clear();
 			if( VAO!=0 ) {
 				glDeleteVertexArrays(1, &VAO);
 				VAO=0;
 			}
 		}
-		void draw(const GLuint pid=0, const std::vector<Texture*>& textures_loaded=std::vector<Texture*>())
+		void draw(const GLuint pid=0)
 		{
 			/* shadowMap draw할때 pid=0 으로 해서 텍스쳐 uniform 안함 */
 			if( pid != 0 ) {
@@ -110,8 +110,8 @@ namespace lim
 				GLuint specularNr = 0;
 				GLuint normalNr   = 0;
 				GLuint ambientNr  = 0;
-				for( GLuint i : texIdxs ) {
-					std::string type = textures_loaded[i]->tag;
+				for( std::shared_ptr<Texture> tex : textures ) {
+					std::string& type = tex->tag;
 					// uniform samper2d nr is start with 0
 					int backNum = 0;
 					if( type=="map_Kd" )        backNum = diffuseNr++;
@@ -121,11 +121,11 @@ namespace lim
 
 					std::string varName = type + std::to_string(backNum);
 					glActiveTexture(GL_TEXTURE0 + slotCounter); // slot
-					glBindTexture(GL_TEXTURE_2D, textures_loaded[i]->tex_id);
+					glBindTexture(GL_TEXTURE_2D, tex->tex_id);
 					setUniform(pid, varName.c_str(), slotCounter++);// to sampler2d
 				}
 				glActiveTexture(GL_TEXTURE0);
-				setUniform(pid, "texCount", (int)texIdxs.size());
+				setUniform(pid, "texCount", (int)textures.size());
 				setUniform(pid, "Kd", color);
 			}
 

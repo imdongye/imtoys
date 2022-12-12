@@ -50,11 +50,12 @@ namespace lim
 		int toVpIdx = 1;
 		ViewportPackage vpPackage;
 
-		const char *exportPath = "result/";
+		const char *exportPath = "imsimplification/result/";
 	public:
 		AppSimplification(): AppBase(1920, 1080, APP_NAME)
 		{
 			stbi_set_flip_vertically_on_load(true);
+			Viewport::id_generator=0;
 
 			programs.push_back(new Program("Normal Dot View", APP_DIR));
 			programs.back()->attatch("pos_nor_uv.vs").attatch("ndv.fs").link();
@@ -95,6 +96,7 @@ namespace lim
 		void addEmptyViewport()
 		{
 			Viewport *viewport = new Viewport(new MsFramebuffer);
+			viewport->framebuffer->clear_color = {0,0,1,1};
 			Scene *scene = new Scene(light, false);
 			Camera *camera = new Camera(glm::vec3(0.0f, 1.0f, 3.0f));
 			vpPackage.push_back(viewport, scene, nullptr, camera);
@@ -159,7 +161,10 @@ namespace lim
 		// From: https://stackoverflow.com/questions/62007672/png-saved-from-opengl-framebuffer-using-stbi-write-png-is-shifted-to-the-right
 		void bakeNormalMap()
 		{
-			MapBaker::bakeNormalMap(exportPath, vpPackage.models[fromVpIdx], vpPackage.models[toVpIdx]);
+			if( vpPackage.models[fromVpIdx]!=nullptr && vpPackage.models[toVpIdx]!=nullptr )
+				MapBaker::bakeNormalMap(exportPath, vpPackage.models[fromVpIdx], vpPackage.models[toVpIdx]);
+			else
+				Logger::get(1).log("You Must to simplify before baking\n");
 		}
 
 	private:

@@ -20,6 +20,8 @@ namespace lim
 		int nr_channels=0;
 		std::string tag;
 		std::string path;
+		// for simp mesh export
+		const char* internal_model_path = nullptr;
 		const char* format;
 		// 내부 저장 포맷, sRGB면 감마 변환
 		GLint internal_format; 
@@ -29,18 +31,26 @@ namespace lim
 		Texture(const Texture&) = delete;
 		Texture& operator=(const Texture&) = delete;
 	public:
-		// GL_RGB8, GL_SRGB8
-		Texture(const std::string_view _path, GLint internalFormat=GL_RGB32F)
-			: path(_path), internal_format(internalFormat)
+		Texture()
+		{
+		}
+		/* load texture */
+		Texture(const std::string_view _path, GLint internalFormat=GL_RGB32F) // GL_RGB8, GL_SRGB8
+			: path(_path), internal_format(internalFormat), format(path.c_str()+path.rfind('.')+1)
 		{
 			void* data;
-			format = path.c_str()+path.rfind('.')+1;
 
 			if( stbi_is_hdr(path.c_str()) ) {
 				data=stbi_loadf(path.c_str(), &width, &height, &nr_channels, 0);
-				src_chanel_type = ( stbi_is_16_bit(path.c_str()) ) ? GL_HALF_FLOAT : GL_FLOAT;
-				bit_per_channel = (stbi_is_16_bit(path.c_str())) ? 16 : 32;
-			} else {
+				if( stbi_is_16_bit(path.c_str()) ) {
+					src_chanel_type = GL_HALF_FLOAT;
+					bit_per_channel = 16;
+				} else {
+					src_chanel_type = GL_FLOAT;
+					bit_per_channel = 32;
+				}
+			} 
+			else {
 				data=stbi_load(path.c_str(), &width, &height, &nr_channels, 0);
 				src_chanel_type = GL_UNSIGNED_BYTE;
 				bit_per_channel = 8;
@@ -52,13 +62,35 @@ namespace lim
 
 			src_format = GL_RGBA;
 			switch( nr_channels ) {
-			case 1: src_format = GL_R8; break;
+			case 1: src_format = GL_RED; break;
 			case 2: src_format = GL_RG; break;
 			case 3: src_format = GL_RGB; break;
 			case 4: src_format = GL_RGBA; break;
 			}
 
-			initOpenGL(data);
+			
+			glGenTextures(1, &tex_id);
+			glBindTexture(GL_TEXTURE_2D, tex_id);
+
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			// GL_LINEAR_MIPMAP_LINEAR : 두개의 side mipmap에서 보간에 보간한다.
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 8);
+
+			/*glTexture... 은 tex_id로 지정, gl4.5부터 사용가능
+			* glCreateTexture은 bind 바로됨, gl4.5부터 사용가능
+			* glStorate2D는 데이터복사는 따로해줘야되고 Image2D와 다르게 크기나 포맷 변경안됨
+			*/
+
+			glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, src_format, src_chanel_type, data);
+			//glTexStorage2D(GL_TEXTURE_2D, 1, internal_format, width, height); // 4.2
+			//glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, src_format, src_chanel_type, data);
+			glGenerateMipmap(GL_TEXTURE_2D);
+			glBindTexture(GL_TEXTURE_2D, 0);
+
+
 			printInfo();
 
 			stbi_image_free(data);
@@ -71,6 +103,10 @@ namespace lim
 		void printInfo()
 		{
 			printf("texID:%d, %dx%d, nr_ch:%d, bit:%d, fm:%s, aspect:%f\n", tex_id, width, height, nr_channels, bit_per_channel, format, width/(float)height);
+		}
+		std::shared_ptr<Texture> clone()
+		{
+			return std::make_shared<Texture>(path, internal_format);
 		}
 		void reload(const std::string_view _path, GLint internalFormat=GL_RGB32F)
 		{
@@ -88,6 +124,12 @@ namespace lim
 				glUniform1i(loc, activeSlot);
 			}
 		}
+		std::string getDirectory()
+		{
+		}
+		std::string setDirectory()
+		{
+		}
 	private:
 		void clear()
 		{
@@ -95,33 +137,6 @@ namespace lim
 				glDeleteTextures(1, &tex_id);
 				tex_id=0;
 			}
-		}
-		void initOpenGL(void* data)
-		{
-			if( !data ) return;
-
-			if( tex_id>0 ) clear();
-
-			glGenTextures(1, &tex_id);
-			glBindTexture(GL_TEXTURE_2D, tex_id);
-
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			// GL_LINEAR_MIPMAP_LINEAR : 두개의 side mipmap에서 보간에 보간한다.
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-			//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 8);
-
-			/*glTexture... 은 tex_id로 지정, gl4.5부터 사용가능
-			* glCreateTexture은 bind 바로됨, gl4.5부터 사용가능
-			* glStorate2D는 데이터복사는 따로해줘야되고 Image2D와 다르게 크기나 포맷 변경안됨 
-			*/
-
-			glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, src_format, src_chanel_type, data);
-			//glTexStorage2D(GL_TEXTURE_2D, 1, internal_format, width, height); // 4.2
-			//glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, src_format, src_chanel_type, data);
-			glGenerateMipmap(GL_TEXTURE_2D);
-			glBindTexture(GL_TEXTURE_2D, 0);
 		}
 	};
 

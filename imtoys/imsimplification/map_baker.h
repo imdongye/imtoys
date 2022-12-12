@@ -5,6 +5,8 @@
 //
 //	target model의 normal을 저장하고 원본 모델의 world space normal을 계산한뒤
 //	target normal으로 tbn을 계산해서 tangent space로 바꾼다.
+// 
+//	주의 bump_map이 아닌 texture은 원본과 공유한다.
 //
 
 
@@ -21,89 +23,114 @@ namespace lim
 		inline static int texSizes[]={256, 512, 1024, 2048, 4096, 8192};
 		inline static const char* texSizeStrs[]={"256", "512", "1024", "2048", "4096", "8192"};
 
+		// target의 노멀을 저장해둘 framebuffer
 		inline static Framebuffer* targetNormalMapPointer=nullptr;
+		// target의 노멀을 사용해 baking할 framebuffer
 		inline static Framebuffer* bakedNormalMapPointer=nullptr;
 	private:
-		inline static Program bakerProg = Program("Normal Map Baker");
 		inline static Program targetNormalProg = Program("Tangent Space Copier");
+		inline static Program bakerProg = Program("Normal Map Baker");
 	public:
-		static void bakeNormalMap(std::string_view exportPath, Model *original, Model* target=nullptr)
+		static void bakeNormalMap(std::string_view exportPath, Model *original, Model* target)
 		{
 			namespace fs = std::filesystem;
-			if( glIsProgram( bakerProg.pid ) ) {
-				bakerProg.attatch("uv_view.vs").attatch("bake_normal.fs").link();
-				targetNormalProg.attatch("uv_view.vs").attatch("map_wnor.fs").link();
-			}
-			if( bakedNormalMapPointer==nullptr ) { // Todo
-				bakedNormalMapPointer=bakedNormalMapPointer=new Framebuffer();
-				bakedNormalMapPointer->clear_color = glm::vec4(0.5, 0.5, 1, 1);
-
+			if( bakedNormalMapPointer==nullptr ) {
 				targetNormalMapPointer=new Framebuffer();
 				targetNormalMapPointer->clear_color = glm::vec4(0.5, 0.5, 1, 1);
+				targetNormalMapPointer->setSize(texSizes[selectedTexSizeIdx]);
+
+				bakedNormalMapPointer=bakedNormalMapPointer=new Framebuffer();
+				bakedNormalMapPointer->clear_color = glm::vec4(0.5, 0.5, 1, 1);
+				bakedNormalMapPointer->setSize(texSizes[selectedTexSizeIdx]);
 			}
 			Framebuffer& bakedNormalMap = *bakedNormalMapPointer;
 			Framebuffer& targetNormalMap = *targetNormalMapPointer;
-			if( bakedNormalMap.width!= texSizes[selectedTexSizeIdx] ) {
-				bakedNormalMap.setSize(texSizes[selectedTexSizeIdx]);
 
-				targetNormalMap.setSize(texSizes[selectedTexSizeIdx]);
+			if( glIsProgram(bakerProg.pid) ) {
+				bakerProg.attatch("uv_view.vs").attatch("bake_normal.fs").link();
+				targetNormalProg.attatch("uv_view.vs").attatch("map_wnor.fs").link();
 			}
 
-			std::map<std::string, std::vector<Mesh *>> mergeByNormalMap;
-			for( int i=0; i<original->meshes.size(); i++ ) {
-				Mesh* oriMesh = original->meshes[i];
+			/* 노멀맵을 따로 분리해준다. */ 
+			std::map<std::shared_ptr<Texture>, std::shared_ptr<Texture>> oldAndNew;
+			for( std::shared_ptr<Texture> tex : target->textures_loaded ) {
+				if( tex->tag == "map_Bump" ) {
+					auto newTex = tex->clone();
+					oldAndNew[tex] = newTex;
+					tex = newTex;
+				}
+			}
+			int nrNewBump = 0;
+			for( int i=0; i<target->meshes.size(); i++ ) {
 				bool hasBumpMap = false;
-				for( GLuint texIdx : oriMesh->texIdxs ) {
-					Texture &tex = *original->textures_loaded[texIdx];
-					if( tex.tag == "map_Bump" ) {
-						mergeByNormalMap[tex.path].push_back(oriMesh);
+				Mesh* targetMesh = target->meshes[i];
+				for( std::shared_ptr<Texture> tex : targetMesh->textures ) {
+					if( tex->tag == "map_Bump" ) {
+						tex = oldAndNew[tex];
 						hasBumpMap = true;
 						break;
 					}
 				}
-				if( hasBumpMap==false ) {
-					if( target!=nullptr ) {
-						target->meshes[i]->texIdxs.push_back(target->textures_loaded.size());
-					}
-					mergeByNormalMap["new_bump.png"].push_back(oriMesh);
+				/* 노멀맵이 없었다면 Target에 메쉬마다 다르게 생성 */
+				// Todo : 같이 그릴수있는 노멀맵을 하나로 합쳐야한다. Tex coord를 공유하는 mesh들
+				if( !hasBumpMap ) {
+					std::string newBumpPath = "new_bump"+std::to_string(nrNewBump)+".png";
+					target->textures_loaded.push_back(std::make_shared<Texture>());
+					target->textures_loaded.back()->path = newBumpPath;
+					target->textures_loaded.back()->tag = "map_Bump";
+
+					target->meshes[i]->textures.push_back(target->textures_loaded.back());
 				}
 			}
 
+			/* 같은 노멀맵인 Mesh를 찾는다 */
+			std::map<std::string, std::vector<Mesh *>> mergeByNormalMap;
+			for( int i=0; i<original->meshes.size(); i++ ) {
+				Mesh* oriMesh = original->meshes[i];
+				bool hasBumpMap = false;
+				for( std::shared_ptr<Texture> tex : oriMesh->textures ) {
+					if( tex->tag == "map_Bump" ) {
+						mergeByNormalMap[tex->path].push_back(oriMesh);
+						hasBumpMap = true;
+						break;
+					}
+				}
+			}
+
+			/* 원본의 모든 노멀맵에 대해 Baking */
 			GLuint w = bakedNormalMap.width;
 			GLuint h = bakedNormalMap.height;
 			static GLubyte *data = new GLubyte[3 * w * h];
 			for( auto &[filepath, meshes] : mergeByNormalMap ) {
 				std::string fullPath(exportPath);
-				// simp된 targetviewport가 있으면 그쪽 폴더로 생성함.
-				fullPath += (target != nullptr) ? target->name : original->name;
+				fullPath += target->name;
 				// 폴더없으면생성
 				fs::path created_path(fullPath);
 				if( !std::filesystem::is_directory(fullPath) )
 					fs::create_directories(fullPath);
 				fullPath += "/" + filepath;
 
-				/* target의 normal 가져오기 */
-				if( target!=nullptr ) {
-					GLuint pid = targetNormalProg.use();
-					targetNormalMap.bind();
-					for( Mesh *mesh : target->meshes ) {
-						mesh->draw(0); // not bind textures
-					}
-					targetNormalMap.unbind();
+				// target의 world normal 가져오기
+				GLuint pid = targetNormalProg.use();
+				targetNormalMap.bind();
+				for( Mesh *mesh : target->meshes ) {
+					mesh->draw(0); // not bind textures
 				}
+				targetNormalMap.unbind();
 
-				/* 맵 베이킹 */
-				GLuint pid = bakerProg.use();
+				// 맵 베이킹 시작
+				pid = bakerProg.use();
 				bakedNormalMap.bind();
+
 				// target normal 마지막 슬롯으로 넘기기
-				if( target!=nullptr ) {
-					glActiveTexture(GL_TEXTURE31);
-					glBindTexture(GL_TEXTURE_2D, targetNormalMap.color_tex);
-					setUniform(pid, "map_TargetNormal", 31);// to sampler2d
-					glActiveTexture(GL_TEXTURE0);
-				}
+				glActiveTexture(GL_TEXTURE31);
+				glBindTexture(GL_TEXTURE_2D, targetNormalMap.color_tex);
+				setUniform(pid, "map_TargetNormal", 31);// to sampler2d
+				glActiveTexture(GL_TEXTURE0);
+
+				// 원본의 노멀과 bumpmap, Target의 노멀으로 그린다.
 				for( Mesh *mesh : original->meshes ) {
-					mesh->draw(pid, original->textures_loaded);
+					mesh->draw(pid);
 				}
 				bakedNormalMap.unbind();
 
@@ -116,31 +143,22 @@ namespace lim
 				stbi_flip_vertically_on_write(true);
 				stbi_write_png(fullPath.c_str(), w, h, 3, data, w * 3);
 				Logger::get() << "baked in " << fullPath.c_str() << Logger::endll;
+			}
 
-				/* 새로운 노멀맵으로 로딩 */
-				if( target != nullptr ) {
-					bool hasBumpMap = false;
-					for( Texture* tex : target->textures_loaded ) {
-						if( tex->tag == "map_Bump" ) {
-							tex->reload(fullPath, GL_RGB8);
-							hasBumpMap = true;
-							break;
-						}
-					}
-					if( hasBumpMap==false ) {
-						Texture* newTex = new Texture(fullPath, GL_RGB8);\
-						newTex->path = fullPath.substr(fullPath.find_last_of('/')+1);
-						newTex->tag = "map_Bump";
-						target->textures_loaded.push_back(newTex);
-						// Todo:
-					}
-					Logger::get() << "reload normal map" << Logger::endll;
+			/* 새로운 노멀맵으로 로딩 */
+			std::string modelPath(exportPath);
+			modelPath += target->name;
+
+			for( std::shared_ptr<Texture> tex : target->textures_loaded ) {
+				if( tex->tag == "map_Bump" ) {
+					tex->reload(modelPath + "/" + tex->path, GL_RGB8);
 				}
 			}
 
+			Logger::get() << "reload normal map" << Logger::endll;
 		}
-	};
 
+	};
 }
 
 #endif
