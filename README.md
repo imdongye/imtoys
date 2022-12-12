@@ -1,6 +1,6 @@
 ## 개요
 
-Etendable framework for model viewer and texture viewer?
+Extendable framework for model viewer and texture viewer?
 
 ## 의존성
 
