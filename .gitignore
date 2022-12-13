@@ -9,8 +9,6 @@
 /*.xcodeproj
 /Build
 
-*images/
-
 ._*
 *vcxproj*
 *.ini
@@ -24,3 +22,4 @@ app_pref.json
 *todo/
 *archive/
 *result/
+*images/

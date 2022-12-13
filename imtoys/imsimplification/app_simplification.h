@@ -82,7 +82,7 @@ namespace lim
 			programs.back()->attatch("shadowed.vs").attatch("shadowed.fs").link();
 
 			addEmptyViewport();
-			loadModel("imsimplification/archive/dwarf/Dwarf_2_Low.obj", 0);
+			loadModel("common/archive/dwarf/Dwarf_2_Low.obj", 0);
 			addEmptyViewport();
 		}
 		~AppSimplification()
