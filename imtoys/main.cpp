@@ -5,7 +5,7 @@
 //  Product->schema->edit-schema->run->option->custom-working-dir
 //
 
-#include "lim/limclude.h"
+#include "limbrary/limclude.h"
 
 #include "imhdr/app_hdr.h"
 #include "imsnells/app_snell.h"

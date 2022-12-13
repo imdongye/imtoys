@@ -1,12 +1,10 @@
 ## 개요
 
-Extendable framework for model viewer and texture viewer?
+Extendable framework for model and texture viewer with imgui
 
 ## 의존성
 
-c++17, glfw3.3, glad(gl4.1, core profile), stb, assimp5.2.4, imgui1.88, nlohmann/json, fqms
-
-libraw
+c++17, glfw3.3, glad(gl4.1, core profile), stb, assimp5.2.4, imgui1.88, nlohmann/json, fqms, libraw
 
 https://github.com/nothings/stb
 

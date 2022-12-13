@@ -8,6 +8,9 @@
 // 
 //	주의 bump_map이 아닌 texture은 원본과 공유한다.
 //
+//	Todo:
+//	노멀맵이 없는경우 diffuse맵등으로 구분하여 새로운 노멀맵에 그려주고
+//	assimp scene의 texture을 조작해서 연결한뒤 export해야함.
 
 
 #ifndef MAP_BAKER_H
@@ -51,7 +54,7 @@ namespace lim
 				targetNormalProg.attatch("uv_view.vs").attatch("map_wnor.fs").link();
 			}
 
-			/* 노멀맵을 따로 분리해준다. */ 
+			/* 노멀맵이 공유되지 않게 새로 clone한다. */ 
 			std::map<std::shared_ptr<Texture>, std::shared_ptr<Texture>> oldAndNew;
 			for( std::shared_ptr<Texture> tex : target->textures_loaded ) {
 				if( tex->tag == "map_Bump" ) {
@@ -60,7 +63,8 @@ namespace lim
 					tex = newTex;
 				}
 			}
-			int nrNewBump = 0;
+			
+			/* mesh에도 새로 만든 노멀맵을 연결해준다. */
 			for( int i=0; i<target->meshes.size(); i++ ) {
 				bool hasBumpMap = false;
 				Mesh* targetMesh = target->meshes[i];
@@ -74,47 +78,50 @@ namespace lim
 				/* 노멀맵이 없었다면 Target에 메쉬마다 다르게 생성 */
 				// Todo : 같이 그릴수있는 노멀맵을 하나로 합쳐야한다. Tex coord를 공유하는 mesh들
 				if( !hasBumpMap ) {
+					/*
 					std::string newBumpPath = "new_bump"+std::to_string(nrNewBump)+".png";
 					target->textures_loaded.push_back(std::make_shared<Texture>());
 					target->textures_loaded.back()->path = newBumpPath;
 					target->textures_loaded.back()->tag = "map_Bump";
-
 					target->meshes[i]->textures.push_back(target->textures_loaded.back());
+					*/
+					Logger::get(1).log("No bump map in mesh: %s\n", targetMesh->name.c_str());
+
 				}
 			}
 
 			/* 같은 노멀맵인 Mesh를 찾는다 */
-			std::map<std::string, std::vector<Mesh *>> mergeByNormalMap;
+			std::map<const char*, std::vector< std::pair<Mesh*, Mesh*> >> mergeByNormalMap;
 			for( int i=0; i<original->meshes.size(); i++ ) {
 				Mesh* oriMesh = original->meshes[i];
+				Mesh* targetMesh = target->meshes[i];
 				bool hasBumpMap = false;
 				for( std::shared_ptr<Texture> tex : oriMesh->textures ) {
 					if( tex->tag == "map_Bump" ) {
-						mergeByNormalMap[tex->path].push_back(oriMesh);
+						mergeByNormalMap[tex->internal_model_path].push_back( std::make_pair(oriMesh, targetMesh) );
 						hasBumpMap = true;
 						break;
 					}
 				}
 			}
 
+			/* Simplified 모델 경로 생성 */
+			std::string modelDir(exportPath);
+			modelDir += target->name + "/";
+			fs::path created_path(modelDir);
+			if( !std::filesystem::is_directory(modelDir) )
+				fs::create_directories(modelDir);
+
 			/* 원본의 모든 노멀맵에 대해 Baking */
 			GLuint w = bakedNormalMap.width;
 			GLuint h = bakedNormalMap.height;
 			static GLubyte *data = new GLubyte[3 * w * h];
-			for( auto &[filepath, meshes] : mergeByNormalMap ) {
-				std::string fullPath(exportPath);
-				fullPath += target->name;
-				// 폴더없으면생성
-				fs::path created_path(fullPath);
-				if( !std::filesystem::is_directory(fullPath) )
-					fs::create_directories(fullPath);
-				fullPath += "/" + filepath;
-
+			for( auto& [internalModelPath, meshes] : mergeByNormalMap ) {
 				// target의 world normal 가져오기
 				GLuint pid = targetNormalProg.use();
 				targetNormalMap.bind();
-				for( Mesh *mesh : target->meshes ) {
-					mesh->draw(0); // not bind textures
+				for( auto& [oriMesh, targetMesh] : meshes ) {
+					targetMesh->draw(0); // not bind textures
 				}
 				targetNormalMap.unbind();
 
@@ -129,8 +136,8 @@ namespace lim
 				glActiveTexture(GL_TEXTURE0);
 
 				// 원본의 노멀과 bumpmap, Target의 노멀으로 그린다.
-				for( Mesh *mesh : original->meshes ) {
-					mesh->draw(pid);
+				for( auto& [oriMesh, targetMesh] : meshes ) {
+					oriMesh->draw(pid);
 				}
 				bakedNormalMap.unbind();
 
@@ -141,17 +148,15 @@ namespace lim
 				glBindFramebuffer(GL_FRAMEBUFFER, 0);
 				// 덮어쓴다.
 				stbi_flip_vertically_on_write(true);
-				stbi_write_png(fullPath.c_str(), w, h, 3, data, w * 3);
-				Logger::get() << "baked in " << fullPath.c_str() << Logger::endll;
+				std::string texPath = modelDir+std::string(internalModelPath);
+				stbi_write_png(texPath.c_str(), w, h, 3, data, w * 3);
+				Logger::get() << "baked in " << texPath.c_str() << Logger::endll;
 			}
 
 			/* 새로운 노멀맵으로 로딩 */
-			std::string modelPath(exportPath);
-			modelPath += target->name;
-
 			for( std::shared_ptr<Texture> tex : target->textures_loaded ) {
 				if( tex->tag == "map_Bump" ) {
-					tex->reload(modelPath + "/" + tex->path, GL_RGB8);
+					tex->reload(modelDir + tex->internal_model_path, GL_RGB8);
 				}
 			}
 

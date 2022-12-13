@@ -5,6 +5,7 @@
 //	1. ARB 확장이 뭐지 어셈블리?
 //  2. GL_TEXTURE_MAX_ANISOTROPY_EXT
 //
+
 #ifndef TEXTURE_H
 #define TEXTURE_H
 
@@ -31,9 +32,6 @@ namespace lim
 		Texture(const Texture&) = delete;
 		Texture& operator=(const Texture&) = delete;
 	public:
-		Texture()
-		{
-		}
 		/* load texture */
 		Texture(const std::string_view _path, GLint internalFormat=GL_RGB32F) // GL_RGB8, GL_SRGB8
 			: path(_path), internal_format(internalFormat), format(path.c_str()+path.rfind('.')+1)

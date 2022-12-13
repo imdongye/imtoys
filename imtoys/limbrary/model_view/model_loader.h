@@ -100,12 +100,13 @@ namespace lim
 				// assimp가 뒤에오는 옵션을 읽지 않음 (ex: eye.png -bm 0.4)
 				// 그래서 아래와 같이 필터링한다.
 				texPath = texPath.substr(0, texPath.find_first_of(' '));
+				texPath = model->data_dir + texPath;
 
 				// check already loaded
 				// to skip loading same texture 
 				bool skip = false;
 				for( GLuint j=0; j< textures_loaded.size(); j++ ) {
-					if( texPath.compare(textures_loaded[j]->internal_model_path) ) {
+					if( texPath.compare(textures_loaded[j]->path)==0 ) {
 						meshTextures.push_back(textures_loaded[j]);
 						skip = true;
 						break;
@@ -114,9 +115,8 @@ namespace lim
 				
 				// load texture
 				if( !skip ) {
-					std::string fullTexPath = model->data_dir+texPath;
 					// kd일때만 linear space변환
-					auto texture = std::make_shared<Texture>(fullTexPath, (ai_type==aiTextureType_DIFFUSE)?GL_SRGB8:GL_RGB8);
+					auto texture = std::make_shared<Texture>(texPath, (ai_type==aiTextureType_DIFFUSE)?GL_SRGB8:GL_RGB8);
 					texture->internal_model_path = texture->path.c_str()+model->data_dir.size();
 					Logger::get().log("%s\n", texture->internal_model_path);
 
