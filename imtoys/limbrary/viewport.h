@@ -1,3 +1,4 @@
+
 //
 //	2022-08-24 / im dong ye
 //
@@ -25,7 +26,7 @@ namespace lim
 		GLuint width=0, height=0;
 		glm::ivec2 mousePos;
 		bool fixed_aspect;
-		const float aspect;
+        float aspect;
 	public:
 		Viewport(Framebuffer* createdFB, GLuint _width=256, GLuint _height=256, bool fixedAspect=false)
 			: id(id_generator++), name("Viewport"+std::to_string(id)), width(_width), height(_height)
@@ -39,9 +40,8 @@ namespace lim
 		{
 			delete framebuffer;
 		}
-		void drawImGui()
+		void drawImGui() // and resize framebuffer
 		{
-			static bool viewportOpen=true;
 			ImGui::SetNextWindowSize({(float)width, (float)height+ImGui::GetFrameHeight()}, ImGuiCond_Once);
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
 
@@ -75,6 +75,7 @@ namespace lim
 			auto contentSize = ImGui::GetContentRegionAvail();
 			width = contentSize.x;
 			height = contentSize.y;
+            aspect = contentSize.x/contentSize.y;
 			framebuffer->setSize(width, height);
 
 			GLuint texID = framebuffer->getRenderedTex();

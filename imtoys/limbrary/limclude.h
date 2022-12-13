@@ -15,7 +15,7 @@
 //	namespace : snake_case
 //	class/struct 이름 : PascalCase
 //	멤버 상수 : UPPER_SNAKE_CASE
-//	멤버 변수 : snake_case
+//	멤버 변수, 전역 변수 : snake_case
 //	함수/멤버 함수 : camelCase
 //	지역 변수, 파라미터 : camelCase
 //	ps. 초기화용 param이 대문자가 없어서 구별 안될때 : _camelCase

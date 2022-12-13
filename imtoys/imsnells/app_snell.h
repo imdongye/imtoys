@@ -14,7 +14,8 @@ namespace lim
 	class AppSnell: public AppBase
 	{
 	public:
-		inline static constexpr const char *APP_NAME = "snell'row tester";
+        inline static constexpr const char *APP_DIR = "imsnells/";
+        inline static constexpr const char *APP_NAME = "snell'row tester";
 		inline static constexpr const char *APP_DISC = "drag cursor to test";
 	private:
 

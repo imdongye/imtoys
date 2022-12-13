@@ -17,7 +17,8 @@ namespace lim
 	class AppHdr: public AppBase
 	{
 	public: 
-		inline static constexpr const char *APP_NAME = "imhdr";
+		inline static constexpr const char *APP_DIR = "imhdr/";
+        inline static constexpr const char *APP_NAME = "imhdr";
 		inline static constexpr const char *APP_DISC = "color aware image viewer";
 	private:
 		const char const *exportPath = "result/";
@@ -30,10 +31,10 @@ namespace lim
 		{
 			stbi_set_flip_vertically_on_load(true);
 
-			programs.push_back(new Program("Normal Dot View"));
+			//programs.push_back(new Program("Normal Dot View"));
 			//programs.back()->attatch("tex_to_quad.vs").attatch("tex_to_quad.fs").link();
 
-			imgs.push_back(new Texture("imhdr/images/memorial.jpg", GL_SRGB8));
+			imgs.push_back(new Texture("common/images/memorial.jpg", GL_SRGB8));
 			viewports.push_back(new Viewport(new Framebuffer(), imgs.back()->width, imgs.back()->height, true));
 		}
 		~AppHdr()

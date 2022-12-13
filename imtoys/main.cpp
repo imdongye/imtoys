@@ -7,16 +7,18 @@
 
 #include "limbrary/limclude.h"
 
-#include "imhdr/app_hdr.h"
-#include "imsnells/app_snell.h"
-#include "impbr/app_pbr.h"
-#include "imsimplification/app_simplification.h"
 
+//#include "imsimplification/app_simplification.h"
+//#include "imhdr/app_hdr.h"
+//#include "imsnells/app_snell.h"
+#include "impbr/app_pbr.h"
 
 lim::AppBase *app;
 
+
+int selectedAppIdx=0;
+
 bool appSelected=true;
-int selectedAppIdx=3;
 std::vector<std::function<lim::AppBase*()>> appConstructors;
 std::vector<const char*> appNames;
 std::vector<const char*> appDicripts;
@@ -48,12 +50,13 @@ void drawAppSellector()
 // rid unused variables warnings
 int main(int, char**)
 {
-	lim::imgui_modules::draw_appselector = drawAppSellector;
-
-	pushAppData<lim::AppHdr>();
-	pushAppData<lim::AppSnell>();
+    
+	//lim::imgui_modules::draw_appselector = drawAppSellector;
+    //pushAppData<lim::AppSimplification>();
+    //pushAppData<lim::AppHdr>();
+	//pushAppData<lim::AppSnell>();
+    
 	pushAppData<lim::AppPbr>();
-	pushAppData<lim::AppSimplification>();
 
 	while( appSelected ) {
 		appSelected = false;

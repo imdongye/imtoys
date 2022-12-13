@@ -7,7 +7,7 @@
 */x64/
 /*.sln
 /*.xcodeproj
-/Build
+/Build/
 
 ._*
 *vcxproj*
@@ -18,7 +18,7 @@ app_pref.json
 *entitlements
 .DS_Store
 
-*etc/
+*private/
 *todo/
 *archive/
 *result/

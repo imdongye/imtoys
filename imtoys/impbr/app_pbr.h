@@ -15,11 +15,13 @@ namespace lim
 	class AppPbr: public AppBase
 	{
 	public:
+        inline static constexpr const char *APP_DIR = "impbr/";
 		inline static constexpr const char *APP_NAME = "impbr";
 		inline static constexpr const char *APP_DISC = "ggx beckman";
 	private:
-		Camera* camera;
-		Program* prog;
+		Camera *camera;
+		Program *prog;
+        Viewport *viewport;
 
 		int nr_rows    = 3;
 		int nr_columns = 3;
@@ -29,7 +31,7 @@ namespace lim
 		glm::vec3 light_position = glm::vec3(-10.0f, 10.0f, 10.0f);
 		glm::vec3 light_color = glm::vec3(300.0f, 300.0f, 300.0f);
 
-		bool is_dragging = false;
+		bool start_dragging = false;
 	public:
 		AppPbr(): AppBase(1280, 720, APP_NAME)
 		{
@@ -39,16 +41,17 @@ namespace lim
 			camera->fovy = 45.f;
 			camera->updateProjMat();
 
-			prog = new Program("pbr");
-			prog->setHomeDir(APP_NAME).attatch("1.1.pbr.vs").attatch("1.1.pbr.fs").link();
-
+			prog = new Program("pbr", APP_DIR);
+			prog->attatch("1.1.pbr.vs").attatch("1.1.pbr.fs").link();
+            
+            viewport = new Viewport(new MsFramebuffer());
+            viewport->framebuffer->clear_color = {0.1f, 0.1f, 0.1f, 1.0f};
+            
+            
+            /* initialize static shader uniforms before rendering */
 			GLuint pid = prog->use();
 			setUniform(pid, "albedo", glm::vec3(0.5, 0, 0));
-			setUniform(pid, "ao", 1.0f);
-			
-
-			/* initialize static shader uniforms before rendering */
-			setUniform(pid, "projection", camera->proj_mat);
+            setUniform(pid, "ao", 1.0f);
 		}
 		~AppPbr()
 		{
@@ -56,18 +59,19 @@ namespace lim
 	private:
 		virtual void update() final
 		{
-			// input
-			// -----
-			processInput(window);
+            processInput(window);
 
-			// render
-			// ------
-			glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+                        
+			/* render to fbo in viewport */
+            viewport->framebuffer->bind();
+            
+            camera->aspect = viewport->framebuffer->aspect;
+            camera->updateProjMat();
+            
 			GLuint pid = prog->use();
 			setUniform(pid, "view", camera->view_mat);
 			setUniform(pid, "camPos", camera->position);
+            setUniform(pid, "projection", camera->proj_mat);
 
 			// render rows*column number of spheres with varying metallic/roughness values scaled by rows and columns respectively
 			glm::mat4 model = glm::mat4(1.0f);
@@ -103,16 +107,25 @@ namespace lim
 			model = glm::scale(model, glm::vec3(0.5f));
 			setUniform(pid, "model", model);
 			renderSphere();
+            
+            viewport->framebuffer->unbind();
+            
+            // clear backbuffer
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		}
 		virtual void renderImGui() final
 		{
-			//imgui_modules::ShowExampleAppDockSpace([]() {});
+			imgui_modules::ShowExampleAppDockSpace([]() {});
 
 			//ImGui::ShowDemoWindow();
+            
+            viewport->drawImGui();
 
-			//ImGui::Begin("state");
-			//ImGui::PushItemWidth()
-			//ImGui::End();
+			ImGui::Begin("state");
+            ImGui::Text((viewport->dragging)?"dragging":"not dragging");
+            ImGui::End();
 		}
 	private:
 		
@@ -166,7 +179,7 @@ namespace lim
 					}
 					oddRow = !oddRow;
 				}
-				indexCount = indices.size();
+				indexCount = (int)indices.size();
 
 				std::vector<float> data;
 				for( unsigned int i = 0; i < positions.size(); ++i ) {
@@ -237,21 +250,20 @@ namespace lim
 		}
 		virtual void mouseBtnCallback(int button, int action, int mods) final
 		{
-			is_dragging = action ==GLFW_PRESS;
+			start_dragging = action==GLFW_PRESS;
 		}
 		virtual void cursorPosCallback(double xpos, double ypos) final
 		{
 			static const float rotateSpeed = 0.05f;
 			static float xoff, yoff;
 			static double xold, yold;
-			static bool temp_dragging;
-
-			if( !is_dragging ) return;
-
-			if( temp_dragging != is_dragging ) {
+			
+			if( start_dragging ) {
 				xold = xpos;
 				yold = ypos;
+                start_dragging = false;
 			}
+            if(!viewport->dragging)return;
 
 			xoff = xpos - xold;
 			yoff = yold - ypos;
@@ -261,8 +273,7 @@ namespace lim
 
 			camera->rotateCamera(xoff * rotateSpeed, yoff * rotateSpeed);
 			camera->updateFreeViewMat();
-			temp_dragging = is_dragging;
-		}
+        }
 	};
 }
 

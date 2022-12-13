@@ -16,9 +16,9 @@ namespace lim
 {
 	namespace imgui_modules
 	{
-		std::function<void()> draw_appselector;
+        inline static std::function<void()> draw_appselector = [](){};
 
-		const inline glm::ivec2 imToIvec(ImVec2 v) { return {v.x, v.y}; }
+		inline const glm::ivec2 imToIvec(ImVec2 v) { return {v.x, v.y}; }
 
 		static inline void initImGui(GLFWwindow* window)
 		{
@@ -31,6 +31,7 @@ namespace lim
 			io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
 			//io.ConfigViewportsNoAutoMerge = true;
 			//io.ConfigViewportsNoTaskBarIcon = true;
+            io.ConfigWindowsMoveFromTitleBarOnly = true;
 
 			//float fontSize = 18.0f;// *2.0f;
 			//io.Fonts->AddFontFromFileTTF("fonts/SpoqaHanSansNeo/SpoqaHanSansNeo-Bold.ttf", fontSize);
