@@ -70,7 +70,7 @@ namespace lim
 			// AUTO PATHING
 			if( strchr(path.c_str(), '/')==NULL && strchr(path.c_str(), '\\')==NULL ) {
 				// todo: 임시 객체 줄이기 최적화
-				path = home_dir+"/shader/"+std::string{type}+"/"+path;
+				path = home_dir+"shader/"+std::string{type}+"/"+path;
 			}
 
 			// load text

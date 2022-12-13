@@ -31,28 +31,15 @@ namespace lim
 		// target의 노멀을 사용해 baking할 framebuffer
 		inline static Framebuffer* bakedNormalMapPointer=nullptr;
 	private:
-		inline static Program targetNormalProg = Program("Tangent Space Copier");
-		inline static Program bakerProg = Program("Normal Map Baker");
+		inline static Program* normalDrawProg=nullptr;
+		inline static Program* bakerProg=nullptr;
 	public:
 		static void bakeNormalMap(std::string_view exportPath, Model *original, Model* target)
 		{
 			namespace fs = std::filesystem;
-			if( bakedNormalMapPointer==nullptr ) {
-				targetNormalMapPointer=new Framebuffer();
-				targetNormalMapPointer->clear_color = glm::vec4(0.5, 0.5, 1, 1);
-				targetNormalMapPointer->setSize(texSizes[selectedTexSizeIdx]);
-
-				bakedNormalMapPointer=bakedNormalMapPointer=new Framebuffer();
-				bakedNormalMapPointer->clear_color = glm::vec4(0.5, 0.5, 1, 1);
-				bakedNormalMapPointer->setSize(texSizes[selectedTexSizeIdx]);
-			}
+			MapBaker::enable();
 			Framebuffer& bakedNormalMap = *bakedNormalMapPointer;
 			Framebuffer& targetNormalMap = *targetNormalMapPointer;
-
-			if( glIsProgram(bakerProg.pid) ) {
-				bakerProg.attatch("uv_view.vs").attatch("bake_normal.fs").link();
-				targetNormalProg.attatch("uv_view.vs").attatch("map_wnor.fs").link();
-			}
 
 			/* 노멀맵이 공유되지 않게 새로 clone한다. */ 
 			std::map<std::shared_ptr<Texture>, std::shared_ptr<Texture>> oldAndNew;
@@ -118,15 +105,15 @@ namespace lim
 			static GLubyte *data = new GLubyte[3 * w * h];
 			for( auto& [internalModelPath, meshes] : mergeByNormalMap ) {
 				// target의 world normal 가져오기
-				GLuint pid = targetNormalProg.use();
+				GLuint pid = normalDrawProg->use();
 				targetNormalMap.bind();
 				for( auto& [oriMesh, targetMesh] : meshes ) {
 					targetMesh->draw(0); // not bind textures
 				}
 				targetNormalMap.unbind();
 
-				// 맵 베이킹 시작
-				pid = bakerProg.use();
+				/* 맵 베이킹 시작 */
+				pid = bakerProg->use();
 				bakedNormalMap.bind();
 
 				// target normal 마지막 슬롯으로 넘기기
@@ -162,7 +149,32 @@ namespace lim
 
 			Logger::get() << "reload normal map" << Logger::endll;
 		}
+		static void enable()
+		{
+			if( bakedNormalMapPointer==nullptr ) {
+				targetNormalMapPointer=new Framebuffer();
+				targetNormalMapPointer->clear_color = glm::vec4(0.5, 0.5, 1, 1);
+				targetNormalMapPointer->setSize(texSizes[selectedTexSizeIdx]);
 
+				bakedNormalMapPointer=new Framebuffer();
+				bakedNormalMapPointer->clear_color = glm::vec4(0.5, 0.5, 1, 1);
+				bakedNormalMapPointer->setSize(texSizes[selectedTexSizeIdx]);
+			}
+			if( bakerProg==nullptr ) {
+				normalDrawProg = new Program("normal to tex coord", "imsimplification/");
+				normalDrawProg->attatch("uv_view.vs").attatch("map_wnor.fs").link();
+
+				bakerProg = new Program("normal map baker", "imsimplification/");
+				bakerProg->attatch("uv_view.vs").attatch("bake_normal.fs").link();
+			}
+		}
+		static void disable()
+		{
+			delete targetNormalMapPointer; targetNormalMapPointer=nullptr;
+			delete bakedNormalMapPointer;  bakedNormalMapPointer=nullptr;
+			delete normalDrawProg;         normalDrawProg=nullptr;
+			delete bakerProg;              bakerProg=nullptr;
+		}
 	};
 }
 

@@ -23,7 +23,7 @@ namespace lim
 	class AppSimplification: public AppBase
 	{
 	public:
-		inline static constexpr const char *APP_DIR = "imsimplification";
+		inline static constexpr const char *APP_DIR = "imsimplification/";
 		inline static constexpr const char *APP_NAME = "Cloth-Simplificator";
 		inline static constexpr const char *APP_DISC = "simplify and bake normal map";
 	private:

@@ -77,14 +77,8 @@ namespace lim
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 			//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 8);
 
-			/*glTexture... 은 tex_id로 지정, gl4.5부터 사용가능
-			* glCreateTexture은 bind 바로됨, gl4.5부터 사용가능
-			* glStorate2D는 데이터복사는 따로해줘야되고 Image2D와 다르게 크기나 포맷 변경안됨
-			*/
 
 			glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, src_format, src_chanel_type, data);
-			//glTexStorage2D(GL_TEXTURE_2D, 1, internal_format, width, height); // 4.2
-			//glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, src_format, src_chanel_type, data);
 			glGenerateMipmap(GL_TEXTURE_2D);
 			glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -121,12 +115,6 @@ namespace lim
 				GLint loc = glGetUniformLocation(pid, shaderUniformName.data());
 				glUniform1i(loc, activeSlot);
 			}
-		}
-		std::string getDirectory()
-		{
-		}
-		std::string setDirectory()
-		{
 		}
 	private:
 		void clear()
