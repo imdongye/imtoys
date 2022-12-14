@@ -22,22 +22,34 @@ namespace lim
 		Camera *camera;
 		Program *prog;
         Viewport *viewport;
+		Model *model;
 
-		int nr_rows    = 3;
-		int nr_columns = 3;
+		int nr_rows    = 4;
+		int nr_cols = 4;
 		float spacing = 2.5;
 
 		/* lights */
+		bool movedLight = false;
 		glm::vec3 light_position = glm::vec3(-10.0f, 10.0f, 10.0f);
 		glm::vec3 light_color = glm::vec3(300.0f, 300.0f, 300.0f);
 
+		glm::vec3 albedo = glm::vec3(0.5, 0.f, 0.f);
 		bool start_dragging = false;
+		std::vector<glm::vec3> metal_colors;
+		float roughness = 0.5f;
+		float metallic = 0.0f;
+
 	public:
-		AppPbr(): AppBase(1280, 720, APP_NAME)
+		AppPbr(): AppBase(1680, 1120, APP_NAME)
 		{
 			stbi_set_flip_vertically_on_load(true);
 
-			camera = new Camera( glm::vec3(0, 0, 3), scr_width/(float)scr_height );
+			metal_colors.push_back( {1.000, 0.782, 0.344} ); // Gold
+			metal_colors.push_back( {0.664, 0.824, 0.850} ); // Zinc
+			metal_colors.push_back( {0.972, 0.960, 0.915} ); // Silver
+			metal_colors.push_back( {0.955, 0.638, 0.583} ); // Corper
+
+			camera = new Camera( glm::vec3(0, 0, 12), scr_width/(float)scr_height );
 			camera->fovy = 45.f;
 			camera->updateProjMat();
 
@@ -46,67 +58,105 @@ namespace lim
             
             viewport = new Viewport(new MsFramebuffer());
             viewport->framebuffer->clear_color = {0.1f, 0.1f, 0.1f, 1.0f};
+
+			model = ModelLoader::loadFile("common/archive/meshes/happy.obj", true);
+			model->position = glm::vec3(15, 0, 0);
+			model->scale = glm::vec3(50);
+			model->updateModelMat();
+
             
             
             /* initialize static shader uniforms before rendering */
 			GLuint pid = prog->use();
-			setUniform(pid, "albedo", glm::vec3(0.5, 0, 0));
             setUniform(pid, "ao", 1.0f);
 		}
 		~AppPbr()
 		{
+			delete camera;
+			delete prog;
+			delete viewport;
+			delete model;
 		}
 	private:
 		virtual void update() final
 		{
             processInput(window);
-
                         
 			/* render to fbo in viewport */
             viewport->framebuffer->bind();
+
+			GLuint pid = prog->use();
             
             camera->aspect = viewport->framebuffer->aspect;
             camera->updateProjMat();
-            
-			GLuint pid = prog->use();
 			setUniform(pid, "view", camera->view_mat);
 			setUniform(pid, "camPos", camera->position);
             setUniform(pid, "projection", camera->proj_mat);
 
-			// render rows*column number of spheres with varying metallic/roughness values scaled by rows and columns respectively
-			glm::mat4 model = glm::mat4(1.0f);
+			/* draw light */
+			glm::vec3 newPos = light_position + glm::vec3(sin(glfwGetTime() * 2.0) * 5.0, 0.0, 0.0);
+			if(!movedLight) newPos = light_position;
+			setUniform(pid, "lightPosition", newPos);
+			setUniform(pid, "lightColor", light_color);
+
+			glm::mat4 modelMat = glm::mat4(1.0f);
+			modelMat = glm::translate(modelMat, newPos);
+			modelMat = glm::scale(modelMat, glm::vec3(0.5f));
+			setUniform(pid, "model", modelMat);
+			renderSphere();
+
+			/* draw spheres */
+			glm::vec2 pivot = {(nr_cols-1)*spacing*0.5f, (nr_rows-1)*spacing*0.5f};
+
 			for( int row = 0; row < nr_rows; ++row ) {
-				setUniform(pid, "metallic", row/(float)nr_rows);
+				//setUniform(pid, "metallic", row/(float)nr_rows);
+				setUniform(pid, "isGGX", (row%2==0));
 
-				for( int col = 0; col < nr_columns; ++col ) {
-					// we clamp the roughness to 0.05 - 1.0 as perfectly smooth surfaces (roughness of 0.0) tend to look a bit off
-					// on direct lighting.
-					setUniform(pid, "roughness", glm::clamp((float)col / (float)nr_columns, 0.05f, 1.0f));
+				for( int col = 0; col < nr_cols; ++col ) {
+					if( row<2 ) {
+						setUniform(pid, "albedo", albedo);
+						setUniform(pid, "metallic", 0.f);
+					}
+					else {
+						setUniform(pid, "albedo", metal_colors[col]);
+						setUniform(pid, "metallic", 1.f);
+					}
 
-					model = glm::mat4(1.0f);
-					model = glm::translate(model, glm::vec3(
-						(col - (nr_columns / 2)) * spacing,
-						(row - (nr_rows / 2)) * spacing,
-						0.0f
-					));
-					setUniform(pid, "model", model);
+					// under 0.05 to error
+					setUniform(pid, "roughness", glm::clamp( col/(float)nr_cols, 0.05f, 1.0f));
+
+					modelMat = glm::mat4(1.0f);
+					modelMat = glm::translate(modelMat, glm::vec3( col*spacing-pivot.x, pivot.y-row*spacing, 0.0f ));
+					setUniform(pid, "model", modelMat);
+
 					renderSphere();
 				}
 			}
 
-			// render light source (simply re-render sphere at light positions)
-			// this looks a bit off as we use the same shader, but it'll make their positions obvious and 
-			// keeps the codeprint small.
-			glm::vec3 newPos = light_position + glm::vec3(sin(glfwGetTime() * 5.0) * 5.0, 0.0, 0.0);
-			newPos = light_position;
-			setUniform(pid, "lightPosition", newPos);
-			setUniform(pid, "lightColor", light_color);
-
-			model = glm::mat4(1.0f);
-			model = glm::translate(model, newPos);
-			model = glm::scale(model, glm::vec3(0.5f));
-			setUniform(pid, "model", model);
+			/* draw test shpere */
+			setUniform(pid, "albedo", metal_colors[0]);
+			setUniform(pid, "metallic", metallic);
+			setUniform(pid, "roughness", roughness);
+			setUniform(pid, "isGGX", true);
+			modelMat = glm::mat4(1.0f);
+			modelMat = glm::translate(modelMat, glm::vec3(spacing*3, spacing, 0));
+			modelMat *= glm::scale(glm::vec3(2.f));
+			setUniform(pid, "model", modelMat);
 			renderSphere();
+
+			setUniform(pid, "isGGX", false);
+			modelMat = glm::mat4(1.0f);
+			modelMat = glm::translate(modelMat, glm::vec3(spacing*3, -spacing, 0));
+			modelMat *= glm::scale(glm::vec3(2.f));
+			setUniform(pid, "model", modelMat);
+			renderSphere();
+
+
+			setUniform(pid, "isGGX", true);
+			setUniform(pid, "model", model->model_mat);
+			for( Mesh* mesh: model->meshes ) {
+				mesh->draw();
+			}
             
             viewport->framebuffer->unbind();
             
@@ -119,16 +169,20 @@ namespace lim
 		{
 			imgui_modules::ShowExampleAppDockSpace([]() {});
 
-			//ImGui::ShowDemoWindow();
+			ImGui::ShowDemoWindow();
             
+			// draw framebuffer on viewport gui
             viewport->drawImGui();
 
 			ImGui::Begin("state");
             ImGui::Text((viewport->dragging)?"dragging":"not dragging");
+			ImGui::Checkbox("moved light:", &movedLight);
+			ImGui::ColorPicker3("albedo", (float*)&albedo);
+			ImGui::SliderFloat("roughness", &roughness, 0.f, 1.f);
+			ImGui::SliderFloat("metallic", &metallic, 0.f, 1.f);
             ImGui::End();
 		}
 	private:
-		
 		void renderSphere()
 		{
 			static unsigned int sphereVAO = 0;
@@ -205,22 +259,20 @@ namespace lim
 				glEnableVertexAttribArray(0);
 				glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
 				glEnableVertexAttribArray(1);
-				glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride, (void*)(3 * sizeof(float)));
+				glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (void*)(5 * sizeof(float)));
 				glEnableVertexAttribArray(2);
-				glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, stride, (void*)(5 * sizeof(float)));
+				glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride, (void*)(3 * sizeof(float)));
 			}
 
 			glEnable(GL_DEPTH_TEST);
 			glBindVertexArray(sphereVAO);
 			glDrawElements(GL_TRIANGLE_STRIP, indexCount, GL_UNSIGNED_INT, 0);
 		}
-
 		void processInput(GLFWwindow *window)
 		{
-			static const double cameraMoveSpeed = 1.6;
+			static const double cameraMoveSpeed = 3.9;
 			if( glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS )
 				glfwSetWindowShouldClose(window, true);
-
 
 			if( glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS )
 				camera->move(Camera::MOVEMENT::FORWARD, delta_time, cameraMoveSpeed);
@@ -236,12 +288,14 @@ namespace lim
 				camera->move(Camera::MOVEMENT::DOWN, delta_time, cameraMoveSpeed);
 			camera->updateFreeViewMat();
 		}
+		/* glfw callback */
 		virtual void framebufferSizeCallback(double width, double height) final
 		{
 			glViewport(0, 0, width, height);
 		}
 		virtual void scrollCallback(double xoff, double yoff) final
 		{
+			if( !viewport->focused ) return;
 			camera->shiftZoom(yoff*5.f);
 			camera->updateProjMat();
 		}
@@ -254,16 +308,17 @@ namespace lim
 		}
 		virtual void cursorPosCallback(double xpos, double ypos) final
 		{
-			static const float rotateSpeed = 0.05f;
+			static const float rotateSpeed = 0.08f;
 			static float xoff, yoff;
 			static double xold, yold;
 			
+			if( !viewport->dragging )return;
+
 			if( start_dragging ) {
 				xold = xpos;
 				yold = ypos;
                 start_dragging = false;
 			}
-            if(!viewport->dragging)return;
 
 			xoff = xpos - xold;
 			yoff = yold - ypos;
