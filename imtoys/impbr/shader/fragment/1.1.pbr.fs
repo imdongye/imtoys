@@ -202,7 +202,7 @@ void main()
 	// Debug
 	//color = vec3(NDF);
 	//color = vec3(GSF);
-	//color = FF;
+	color = vec3(N);
 
 
     color = color / (color + vec3(1.0)); // HDR tonemapping

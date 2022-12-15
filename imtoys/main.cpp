@@ -51,11 +51,10 @@ void drawAppSellector()
 int main(int, char**)
 {
     
-	//lim::imgui_modules::draw_appselector = drawAppSellector;
+	lim::imgui_modules::draw_appselector = drawAppSellector;
     //pushAppData<lim::AppSimplification>();
     //pushAppData<lim::AppHdr>();
 	//pushAppData<lim::AppSnell>();
-    
 	pushAppData<lim::AppPbr>();
 
 	while( appSelected ) {

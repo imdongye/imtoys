@@ -97,7 +97,7 @@ namespace lim
 		{
 			Viewport *viewport = new Viewport(new MsFramebuffer);
 			viewport->framebuffer->clear_color = {0,0,1,1};
-			Scene *scene = new Scene(light, false);
+			Scene *scene = new Scene(light, true);
 			Camera *camera = new Camera(glm::vec3(0.0f, 1.0f, 3.0f));
 			vpPackage.push_back(viewport, scene, nullptr, camera);
 		}
@@ -339,6 +339,7 @@ namespace lim
 							if( sc->model == nullptr )
 								continue;
 							sc->model->program = programs[selectedProgIdx];
+                            sc->ground->program = programs[selectedProgIdx];
 						}
 					}
 					else {

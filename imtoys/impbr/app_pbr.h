@@ -114,16 +114,18 @@ namespace lim
 
 				for( int col = 0; col < nr_cols; ++col ) {
 					if( row<2 ) {
+                        // under 0.05 to error
+                        setUniform(pid, "roughness", glm::clamp( col/(float)nr_cols, 0.05f, 1.0f));
 						setUniform(pid, "albedo", albedo);
 						setUniform(pid, "metallic", 0.f);
 					}
 					else {
+                        // under 0.05 to error
+                        setUniform(pid, "roughness", glm::clamp( 1/(float)nr_cols, 0.05f, 1.0f));
 						setUniform(pid, "albedo", metal_colors[col]);
 						setUniform(pid, "metallic", 1.f);
 					}
 
-					// under 0.05 to error
-					setUniform(pid, "roughness", glm::clamp( col/(float)nr_cols, 0.05f, 1.0f));
 
 					modelMat = glm::mat4(1.0f);
 					modelMat = glm::translate(modelMat, glm::vec3( col*spacing-pivot.x, pivot.y-row*spacing, 0.0f ));
@@ -240,28 +242,28 @@ namespace lim
 					data.push_back(positions[i].x);
 					data.push_back(positions[i].y);
 					data.push_back(positions[i].z);
-					if( uv.size() > 0 ) {
-						data.push_back(uv[i].x);
-						data.push_back(uv[i].y);
-					}
 					if( normals.size() > 0 ) {
 						data.push_back(normals[i].x);
 						data.push_back(normals[i].y);
 						data.push_back(normals[i].z);
 					}
+                    if( uv.size() > 0 ) {
+                        data.push_back(uv[i].x);
+                        data.push_back(uv[i].y);
+                    }
 				}
 				glBindVertexArray(sphereVAO);
 				glBindBuffer(GL_ARRAY_BUFFER, vbo);
 				glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(float), &data[0], GL_STATIC_DRAW);
 				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 				glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
-				float stride = (3 + 2 + 3) * sizeof(float);
+				float stride = (3 + 3 + 2) * sizeof(float);
 				glEnableVertexAttribArray(0);
 				glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
 				glEnableVertexAttribArray(1);
-				glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (void*)(5 * sizeof(float)));
+				glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (void*)(3 * sizeof(float)));
 				glEnableVertexAttribArray(2);
-				glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride, (void*)(3 * sizeof(float)));
+				glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride, (void*)(5 * sizeof(float)));
 			}
 
 			glEnable(GL_DEPTH_TEST);
