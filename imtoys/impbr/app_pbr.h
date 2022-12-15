@@ -36,8 +36,9 @@ namespace lim
 		glm::vec3 albedo = glm::vec3(0.5, 0.f, 0.f);
 		bool start_dragging = false;
 		std::vector<glm::vec3> metal_colors;
-		float roughness = 0.5f;
-		float metallic = 0.0f;
+		float roughness = 0.3f;
+		float metallic = 1.0f;
+		float beckmannGamma = 1.265f;
 
 	public:
 		AppPbr(): AppBase(1680, 1120, APP_NAME)
@@ -86,6 +87,7 @@ namespace lim
             viewport->framebuffer->bind();
 
 			GLuint pid = prog->use();
+			setUniform(pid, "beckmannGamma", beckmannGamma);
             
             camera->aspect = viewport->framebuffer->aspect;
             camera->updateProjMat();
@@ -182,6 +184,7 @@ namespace lim
 			ImGui::ColorPicker3("albedo", (float*)&albedo);
 			ImGui::SliderFloat("roughness", &roughness, 0.f, 1.f);
 			ImGui::SliderFloat("metallic", &metallic, 0.f, 1.f);
+			ImGui::SliderFloat("beckmannGamma", &beckmannGamma, 0.7f, 2.f);
             ImGui::End();
 		}
 	private:

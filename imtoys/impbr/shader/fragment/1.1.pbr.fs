@@ -12,6 +12,7 @@ uniform float metallic;
 uniform float roughness;
 uniform bool isGGX = true;
 uniform vec3 emissivity = vec3(0);
+uniform float beckmannGamma = 1.3;
 
 // lights
 uniform vec3 lightPosition;
@@ -93,6 +94,24 @@ float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
     return ggx1 * ggx2;
 }
 // ----------------------------------------------------------------------------
+// from: http://graphicrants.blogspot.com/2013/08/specular-brdf-reference.html
+float GeometryBeckmann(vec3 N, vec3 X, float roughness) 
+{
+	// AlphaB
+	float a = roughness*roughness;
+	float NDX = max(dot(N, X),0.0);
+	float nom = NDX;
+	float denom = a*sqrt(1.0-NDX*NDX);
+	float c = nom/denom;
+	if( c<1.6 ) {
+		nom = 3.535*c + 2.181*c*c;
+		denom = 1.0 + 2.276*c + 2.577*c*c;
+		return nom/denom;
+	}
+	return 1;
+}
+// ----------------------------------------------------------------------------
+// 슬라이드 람다식 L이 들어갈때 결과 이상함..
 // S = V or L 
 // => masking or shadowing
 float LamdaBeckmann(vec3 N , vec3 S, float roughness)
@@ -109,7 +128,7 @@ float LamdaBeckmann(vec3 N , vec3 S, float roughness)
 	if(a<1.6) {
 		float nom = 1.0 - 1.259*a + 0.396*a*a;
 		float denom = 3.535*a + 2.181*a*a;
-		return nom/denom;
+		return nom/max(denom, 0.00001);
 	}
 	return 0;
 }
@@ -120,31 +139,14 @@ float G1Beckmann(vec3 H, vec3 V, float lambda)
 
 	return max(VDH, 0.0)/denom;
 }
-// 동작안함.
-// from: http://graphicrants.blogspot.com/2013/08/specular-brdf-reference.html
-float GeometryBeckmann(vec3 N, vec3 X, float roughness) 
-{
-	// AlphaB
-	float a = roughness*roughness;
-	float NDX = dot(N, X);
-	float nom = NDX;
-	float denom = a*sqrt(1.0-NDX*NDX);
-	float c = nom/denom;
-	if( c<1.6 ) {
-		nom = 3.535*c+2.18*c*c;
-		denom = 1.0+2.276*c+2.577*c*c;
-		return nom/denom;
-	}
-	return 1;
-}
 // shading 이상함.
-float G2Beckmann(vec3 N, vec3 V, vec3 L, float roughness) 
+float GeometrySmithBeckmann(vec3 N, vec3 V, vec3 L, float roughness) 
 {
 	vec3  H = normalize(V+L);
 	float masking = G1Beckmann(H, V, LamdaBeckmann(N, V, roughness));
 	float shadowing = G1Beckmann(H, V, LamdaBeckmann(N, L, roughness));
-	//masking = GeometryBeckmann(H, V, roughness);
-	//shadowing = GeometryBeckmann(H, L, roughness);
+	masking = GeometryBeckmann(N, V, roughness);
+	shadowing = GeometryBeckmann(N, L, roughness);
 	return masking*shadowing;
 }
 // ----------------------------------------------------------------------------
@@ -166,6 +168,12 @@ void main()
     vec3 radiance = lightColor * attenuation;
 	float NDV = dot(N,V);
 	float NDL = dot(N,L); // lambertian
+	float rough = roughness;
+
+	if(!isGGX) {
+		// Beckmann도 비슷하게 보이게
+		rough = pow(rough, 1/beckmannGamma);
+	}
 
 
     // metallic하면 F0를 albedo로 사용함.
@@ -182,9 +190,9 @@ void main()
     Kd *= 1.0 - metallic;	    
 
     /* Cook-Torrance BRDF */
-    float NDF = (isGGX) ? DistributionGGX(N, H, roughness) : BeckmannNDF(N, H, roughness);
+    float NDF = (isGGX) ? DistributionGGX(N, H, rough) : BeckmannNDF(N, H, rough);
 	// beckmann shadowing term 망가짐.
-    float GSF = (isGGX) ? GeometrySmith(N, V, L, roughness) : G2Beckmann(N, V, L, roughness);      
+    float GSF = (isGGX) ? GeometrySmith(N, V, L, rough) : GeometrySmithBeckmann(N, V, L, rough);      
     vec3  FF  = FresnelSchlick(clamp(dot(H, V), 0.0, 1.0), F0);
     vec3  DGF   = NDF * GSF * FF; 
     float denom = 4 * max(NDV,0.0) * max(NDL,0.0);
@@ -202,8 +210,9 @@ void main()
 	// Debug
 	//color = vec3(NDF);
 	//color = vec3(GSF);
-	color = vec3(N);
-
+	//color = vec3(N);
+	//color = vec3(NDL);
+	//color = vec3(FF);
 
     color = color / (color + vec3(1.0)); // HDR tonemapping
     color = pow(color, vec3(1.0/2.2)); // gamma correct
