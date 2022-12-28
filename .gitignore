@@ -14,6 +14,10 @@
 *.ini
 app_pref.json
 
+!imgui.ini
+!/include/imgui/imgui_demo.cpp
+
+
 *xcodeproj*
 *entitlements
 .DS_Store

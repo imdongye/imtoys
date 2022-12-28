@@ -18,8 +18,8 @@ namespace lim
 	{
 	public: 
 		inline static constexpr const char *APP_DIR = "imhdr/";
-        inline static constexpr const char *APP_NAME = "imhdr";
-		inline static constexpr const char *APP_DISC = "color aware image viewer";
+        inline static constexpr const char *APP_NAME = "color aware image viewer";
+		inline static constexpr const char *APP_DISC = "loader/display";
 	private:
 		const char const *exportPath = "result/";
 
@@ -35,7 +35,7 @@ namespace lim
 			//programs.back()->attatch("tex_to_quad.vs").attatch("tex_to_quad.fs").link();
 
 			imgs.push_back(new Texture("common/images/memorial.jpg", GL_SRGB8));
-			viewports.push_back(new Viewport(new Framebuffer(), imgs.back()->width, imgs.back()->height, true));
+			viewports.push_back(new Viewport(new Framebuffer(), imgs.back()->width, imgs.back()->height, Viewport::WM_FIXED_RATIO));
 		}
 		~AppHdr()
 		{
@@ -60,14 +60,13 @@ namespace lim
 		virtual void renderImGui() final
 		{
 			imgui_modules::ShowExampleAppDockSpace([](){});
-
 			ImGui::ShowDemoWindow();
 
 			for( int i = viewports.size()-1; i >= 0; i-- ) {
 				viewports[i]->drawImGui();
 			}
 
-			ImGui::Begin("state");
+			ImGui::Begin("state##imhdr");
 			ImGui::Text("%d %d", viewports.back()->mousePos.x, viewports.back()->mousePos.y);
 			ImGui::End();
 		}

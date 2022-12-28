@@ -55,7 +55,6 @@ namespace lim
 		AppSimplification(): AppBase(1920, 1080, APP_NAME)
 		{
 			stbi_set_flip_vertically_on_load(true);
-			Viewport::id_generator=0;
 
 			programs.push_back(new Program("Normal Dot View", APP_DIR));
 			programs.back()->attatch("pos_nor_uv.vs").attatch("ndv.fs").link();
@@ -256,7 +255,7 @@ namespace lim
 
 			Logger::get().drawImGui();
 
-			if( ImGui::Begin("Simplify Options") ) {
+			if( ImGui::Begin("Simplify Options##simp") ) {
 				ImGui::Text("From viewport:");
 				for( int i = 0; i < vpPackage.size; i++ ) {
 					int id = vpPackage.viewports[i]->id;
@@ -309,7 +308,7 @@ namespace lim
 			}
 			ImGui::End();
 
-			if( ImGui::Begin("Viewing Options") ) {
+			if( ImGui::Begin("Viewing Options##simp") ) {
 				ImGui::Text("<camera>");
 				static int focusedCameraIdx = 0;
 				static const char *vmode_strs[] ={"pivot", "free", "scroll"};
@@ -400,7 +399,7 @@ namespace lim
 			}
 			ImGui::End();
 
-			if( ImGui::Begin("Model Status") ) {
+			if( ImGui::Begin("Model Status##simp") ) {
 				static ImGuiTableFlags flags = ImGuiTableFlags_ContextMenuInBody | ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Reorderable;
 
 				if( ImGui::BeginTable("attributes table", vpPackage.viewports.size() + 1, flags, {0, ImGui::GetTextLineHeightWithSpacing() * 9}) ) {
@@ -510,7 +509,7 @@ namespace lim
 
 			// todo
 			if( MapBaker::bakedNormalMapPointer!=nullptr ) {
-				if( ImGui::Begin("Baked Normal Map") ) {
+				if( ImGui::Begin("Baked Normal Map##simp") ) {
 					ImVec2 vMin = ImGui::GetWindowContentRegionMin();
 					ImVec2 vMax = ImGui::GetWindowContentRegionMax();
 					glm::vec2 rectSize{vMax.x - vMin.x, vMax.y - vMin.y};
@@ -526,7 +525,7 @@ namespace lim
 				data->DesiredSize.x = LIM_MAX(data->DesiredSize.x, data->DesiredSize.y);
 				data->DesiredSize.y = data->DesiredSize.x; });
 
-			if( ImGui::Begin("shadowMap") && light.shadowEnabled ) {
+			if( ImGui::Begin("shadowMap##simp") && light.shadowEnabled ) {
 				ImVec2 vMin = ImGui::GetWindowContentRegionMin();
 				ImVec2 vMax = ImGui::GetWindowContentRegionMax();
 				glm::vec2 rectSize{vMax.x - vMin.x, vMax.y - vMin.y};

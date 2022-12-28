@@ -178,7 +178,7 @@ namespace lim
 			// draw framebuffer on viewport gui
             viewport->drawImGui();
 
-			ImGui::Begin("state");
+			ImGui::Begin("state##impbr");
             ImGui::Text((viewport->dragging)?"dragging":"not dragging");
 			ImGui::Checkbox("moved light:", &movedLight);
 			ImGui::ColorPicker3("albedo", (float*)&albedo);

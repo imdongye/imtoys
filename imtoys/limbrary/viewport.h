@@ -5,7 +5,12 @@
 //	TODO list:
 //	1. initial framebuffer size setting
 //	2. drag imgui demo 참고해서 다시짜기
-//
+//  3. https://github.com/ocornut/imgui/issues/3152
+//		https://github.com/ocornut/imgui/issues/3492
+//		https://jamssoft.tistory.com/234
+//		https://github.com/ocornut/imgui/blob/master/docs/FAQ.md
+//		https://github.com/ocornut/imgui/issues/270
+//		로 앱별 tag부여해서 ini 윈도우 설정 겹치지 않게
 
 #ifndef VIEWPORT_H
 #define VIEWPORT_H
@@ -17,6 +22,13 @@ namespace lim
 	class Viewport
 	{
 	public:
+		enum WindowMode
+		{
+			WM_FREE,
+			WM_FIXED_RATIO,
+			WM_FIXED_SIZE,
+		};
+	public:
 		/* c++17 non-const static data member can initialize in declaration with inline keyword*/
 		inline static GLuint id_generator = 0;
 		GLuint id;
@@ -25,12 +37,12 @@ namespace lim
 		bool hovered, focused, dragging;
 		GLuint width=0, height=0;
 		glm::ivec2 mousePos;
-		bool fixed_aspect;
+		WindowMode window_mode;
         float aspect;
 	public:
-		Viewport(Framebuffer* createdFB, GLuint _width=256, GLuint _height=256, bool fixedAspect=false)
-			: id(id_generator++), name("Viewport"+std::to_string(id)), width(_width), height(_height)
-			, fixed_aspect(fixedAspect), aspect(width/(float)height)
+		Viewport(Framebuffer* createdFB, GLuint _width=256, GLuint _height=256, WindowMode wm=WM_FREE)
+			: id(id_generator++), name("Viewport"+std::to_string(id)+"##vp"+std::to_string(AppPref::get().selectedAppIdx))
+			, width(_width), height(_height), window_mode(wm), aspect(width/(float)height), mousePos(0)
 		{
 			framebuffer = createdFB;
 			framebuffer->setSize(width, height);
@@ -42,13 +54,14 @@ namespace lim
 		}
 		void drawImGui() // and resize framebuffer
 		{
-			ImGui::SetNextWindowSize({(float)width, (float)height+ImGui::GetFrameHeight()}, ImGuiCond_Once);
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
+			ImGui::SetNextWindowSize({(float)width, (float)height+ImGui::GetFrameHeight()}, (window_mode==WM_FIXED_SIZE)?ImGuiCond_Always:ImGuiCond_Once);
 
-			ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), [](ImGuiSizeCallbackData *data) {
-				Viewport& vp = *(Viewport*)(data->UserData);
+			if( window_mode==WM_FIXED_RATIO ) {
+				static bool viewportOpen = true;
+				ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), [](ImGuiSizeCallbackData *data) {
+					Viewport& vp = *(Viewport*)(data->UserData);
 
-				if( vp.fixed_aspect ) {
 					float frameHeight = ImGui::GetFrameHeight();
 					float aspectedWidth = vp.aspect * (data->DesiredSize.y - frameHeight);
 					float aspectedHeight = data->DesiredSize.x / vp.aspect + frameHeight;
@@ -57,10 +70,14 @@ namespace lim
 						data->DesiredSize.x = aspectedWidth;
 					else
 						data->DesiredSize.y = aspectedHeight;
-				}
-			}, (void*)this);
+				}, (void*)this);
+				ImGuiWindowFlags f = ImGuiWindowFlags_NoDocking;
+				ImGui::Begin(name.c_str(), &viewportOpen, f);
+			} else {
+				ImGui::Begin(name.c_str());
+			}
 			
-			ImGui::Begin(name.c_str());//, &viewportOpen, ImGuiWindowFlags_DockNodeHost);
+			
 
 			focused = ImGui::IsWindowFocused();
 			hovered = ImGui::IsWindowHovered();

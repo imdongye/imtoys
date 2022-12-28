@@ -62,6 +62,8 @@ namespace lim
 		//****** property ******//
 		const int MAX_RECENT_MP_SIZE = 10;
 		std::vector<std::string> recentModelPaths;
+		int selectedAppIdx = 0;
+		std::string selectedAppName = "none";
 	private:
 		AppPref()
 		{

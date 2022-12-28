@@ -83,10 +83,14 @@ namespace lim
 			printVersion();
 
 			Logger::get()<<"Current path is "<<std::filesystem::current_path().u8string()<<Logger::endl<<Logger::endl;
-			AppPref::get();
-
 
 			imgui_modules::initImGui(window);
+
+			AppPref::get();
+
+			// common setting
+			Viewport::id_generator=0;
+			Logger::get().windowName = "Logger##log"+std::to_string(AppPref::get().selectedAppIdx);
 		}
 		/* destroy */
 		virtual ~AppBase()
@@ -109,6 +113,7 @@ namespace lim
 				update();
 
 				imgui_modules::beginImGui();
+
 				renderImGui();
 
 				imgui_modules::draw_appselector();

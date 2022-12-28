@@ -86,8 +86,8 @@
 #define LIM_MIN(X, Y) ((X)<(Y))?(X):(Y)
 #define COMP_IMVEC2(X, Y) ((X).x==(Y).x)&&((X).y==(Y).y)
 
-#include "imgui_modules.h"
 #include "logger.h"
+#include "imgui_modules.h"
 #include "app_pref.h"
 #include "program.h"
 #include "framebuffer.h"

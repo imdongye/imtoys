@@ -37,12 +37,13 @@ namespace lim
 		static constexpr int BUFFER_SIZE = 512;
 		char buffer[BUFFER_SIZE];
 	public:
+		std::string windowName;
 		std::vector<std::string> lines;
 		double simpTime;
 		bool autoScroll;
 		bool addTimeStamp;
 	private:
-		Logger():simpTime(0.0), buffer{0}, autoScroll(true), addTimeStamp(false)
+		Logger():windowName("Logger##log0"),simpTime(0.0), buffer{0}, autoScroll(true), addTimeStamp(false)
 		{
 			lines.emplace_back("");
 		};
@@ -63,7 +64,7 @@ namespace lim
 		}
 		void drawImGui()
 		{
-			ImGui::Begin("Logger");
+			ImGui::Begin(windowName.c_str());
 
 			ImGui::Checkbox("Auto-scroll", &autoScroll);
 			ImGui::SameLine();
