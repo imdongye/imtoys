@@ -1,5 +1,6 @@
 //
 //  2022-11-14 / im dong ye
+//	edit HDRView by pf Hyun Joon Shin
 //
 //	Todo:
 //	1. ARB 확장이 뭐지 어셈블리?
@@ -9,11 +10,14 @@
 #ifndef TEXTURE_H
 #define TEXTURE_H
 
-#include "limclude.h"
+#include "ICC.h"
+
+#define NOMINMAX
+#include <libraw/libraw.h>
 
 namespace lim
 {
-	struct Texture
+	class Texture
 	{
 	public:
 		GLuint tex_id=0;
@@ -24,6 +28,7 @@ namespace lim
 		// for simp mesh export
 		const char* internal_model_path = nullptr;
 		const char* format;
+		const char* name;
 		// 내부 저장 포맷, sRGB면 감마 변환
 		GLint internal_format; 
 		GLenum src_format, src_chanel_type;
@@ -35,9 +40,10 @@ namespace lim
 		/* load texture */
 		Texture(const std::string_view _path, GLint internalFormat=GL_RGB32F) // GL_RGB8, GL_SRGB8
 			: path(_path), internal_format(internalFormat), format(path.c_str()+path.rfind('.')+1)
+			, name(path.c_str()+path.rfind('\\')+path.rfind('/')+2)
 		{
-			void* data;
-
+			void *data;
+			// hdr loading
 			if( stbi_is_hdr(path.c_str()) ) {
 				data=stbi_loadf(path.c_str(), &width, &height, &nr_channels, 0);
 				if( stbi_is_16_bit(path.c_str()) ) {
@@ -47,7 +53,8 @@ namespace lim
 					src_chanel_type = GL_FLOAT;
 					bit_per_channel = 32;
 				}
-			} 
+			}
+			// ldr loading
 			else {
 				data=stbi_load(path.c_str(), &width, &height, &nr_channels, 0);
 				src_chanel_type = GL_UNSIGNED_BYTE;
@@ -60,41 +67,33 @@ namespace lim
 
 			src_format = GL_RGBA;
 			switch( nr_channels ) {
-			case 1: src_format = GL_RED; break;
-			case 2: src_format = GL_RG; break;
-			case 3: src_format = GL_RGB; break;
-			case 4: src_format = GL_RGBA; break;
+				case 1: src_format = GL_RED; break;
+				case 2: src_format = GL_RG; break;
+				case 3: src_format = GL_RGB; break;
+				case 4: src_format = GL_RGBA; break;
 			}
 
-			
 			glGenTextures(1, &tex_id);
 			glBindTexture(GL_TEXTURE_2D, tex_id);
 
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			// GL_LINEAR_MIPMAP_LINEAR : 두개의 side mipmap에서 보간에 보간한다.
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 			//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 8);
 
-
 			glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, src_format, src_chanel_type, data);
+			stbi_image_free(data);
 			glGenerateMipmap(GL_TEXTURE_2D);
+
 			glBindTexture(GL_TEXTURE_2D, 0);
 
-
-			printInfo();
-
-			stbi_image_free(data);
+			printf("%s loaded : texID:%d, %dx%d, nrCh:%d, bit:%d, fm:%s, aspect:%.3f\n", path.c_str(), tex_id, width, height, nr_channels, bit_per_channel, format, width/(float)height);
 		}
 		~Texture()
 		{
 			printf("texture clear\n");
 			clear();
-		}
-		void printInfo()
-		{
-			printf("texID:%d, %dx%d, nr_ch:%d, bit:%d, fm:%s, aspect:%f\n", tex_id, width, height, nr_channels, bit_per_channel, format, width/(float)height);
 		}
 		std::shared_ptr<Texture> clone()
 		{
@@ -126,83 +125,80 @@ namespace lim
 		}
 	};
 
-	static void textureToFBO(GLuint tex_id, GLsizei width, GLsizei height, GLuint fbo=0, float gamma=2.2f)
+	class ColorAwareImage: public Texture
 	{
-		static Program toQuadProg = Program("toQuad");
-		static GLuint quadVAO = 0;
+	public:
+		ICC::ColorProfile profile;
+		glm::vec3 gamma;
+		glm::mat3 rgbToPCS;
+	public:
+		ColorAwareImage(const std::string_view _path): Texture(_path, GL_RGB32F)
+		{
+			/* read meta data */
+			LibRaw raw;
+			raw.open_file(path.c_str());
+			raw.unpack();
+			Logger::get() << "< Meta data >" << Logger::endl;
+			Logger::get() << "ISO : " << raw.imgdata.other.iso_speed << Logger::endl;
+			Logger::get() << "Exposure Time : " << raw.imgdata.other.shutter << Logger::endl;
+			Logger::get() << "Aperture : " << raw.imgdata.other.aperture << Logger::endl;
+			Logger::get() << "Focal Lenth : " << raw.imgdata.other.focal_len << Logger::endl;
+			Logger::get() << "Black Level : " << raw.imgdata.color.black << Logger::endl;
+			Logger::get() << "Max Value : " << raw.imgdata.color.maximum << Logger::endl;
+			Logger::get() << "RAW bit: " << raw.imgdata.color.raw_bps << Logger::endl;
 
-		if( glIsVertexArray(quadVAO)==GL_TRUE ) {
-			// Array for full-screen quad
-			GLfloat verts[] ={
-				-1.0f, -1.0f, 0.0f, 1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f,
-				-1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f, -1.0f, 1.0f, 0.0f
-			};
+			if( (strcmp(format, "jpg")==0||strcmp(format, "jpeg")==0) ) { // is JPEG
+				profile.initWithJPEG(path, true);
+				gamma = profile.gamma;
+				//rgbToPCS = 
+			}
+			else { // default : srgb
+				gamma = glm::vec3(2.4);
+				// D65
+				rgbToPCS = glm::mat3({0.4124565, 0.3575761, 0.1804375},
+									 {0.2126729, 0.7151522, 0.0721750},
+									 {0.0193339, 0.1191920, 0.9503041});
+				rgbToPCS = glm::transpose(rgbToPCS);
+			}
+		}
+		void toFramebuffer(const Framebuffer& fb)
+		{
+			fb.bind();
 
-			// Set up the buffers
-			GLuint vbo;
-			glGenBuffers(1, &vbo);
-			glBindBuffer(GL_ARRAY_BUFFER, vbo);
-			glBufferData(GL_ARRAY_BUFFER, 6 * 3 * sizeof(GLfloat), verts, GL_STATIC_DRAW);
+			Program& colorAwareProg = *AssetLib::get().toQuadProg;
+			colorAwareProg.use();
 
-			// Set up the vertex array object
-			glGenVertexArrays(1, &quadVAO);
-			glBindVertexArray(quadVAO);
-			glBindBuffer(GL_ARRAY_BUFFER, vbo);
+			glBindTexture(GL_TEXTURE_2D, tex_id);
+			glActiveTexture(GL_TEXTURE0);
 
-			glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-			glEnableVertexAttribArray(0);  // Vertex position
+			setUniform(colorAwareProg.pid, "tex", 0);
+			//setUniform()
 
-			glBindBuffer(GL_ARRAY_BUFFER, 0);
+			glBindVertexArray(AssetLib::get().quadVAO);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
 			glBindVertexArray(0);
+
+			fb.unbind();
 		}
-		if( glIsProgram(toQuadProg.pid)==GL_TRUE ) {
-			toQuadProg.attatch("tex_to_quad.vs").attatch("tex_to_quad.fs").link();
-		}
+	};
 
-		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-		glViewport(0, 0, width, height);
-		glDisable(GL_DEPTH_TEST);
-		glDisable(GL_MULTISAMPLE);
-		glDisable(GL_FRAMEBUFFER_SRGB);
+	static void texIDToFramebuffer(GLuint texID, const Framebuffer& fb, float gamma=2.2f)
+	{
+		fb.bind();
 
-		glClearColor(1, 1, 1, 1);
-		glClear(GL_COLOR_BUFFER_BIT);
-
+		Program& toQuadProg = *AssetLib::get().toQuadProg;
 		toQuadProg.use();
 
+		glBindTexture(GL_TEXTURE_2D, texID);
+		glActiveTexture(GL_TEXTURE0);
+		
 		setUniform(toQuadProg.pid, "tex", 0);
 
-		setUniform(toQuadProg.pid, "gamma", gamma);
-
-		glBindTexture(GL_TEXTURE_2D, tex_id);
-		glActiveTexture(GL_TEXTURE0);
-
-		glBindVertexArray(quadVAO);
+		glBindVertexArray(AssetLib::get().quadVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		glBindVertexArray(0);
 
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	}
-	static void textureToFramebuffer(GLuint texID, Framebuffer const *fb, float gamma=2.2f)
-	{
-		textureToFBO(texID, fb->fbo, fb->width, fb->height, gamma);
-	}
-
-	inline glm::vec3 sample(void* buf, int w, int h, int x, int y, int n, int isHdr=0)
-	{
-		if( isHdr ) {
-			float* data = (float*)buf;
-			return glm::vec3(data[(x+y*w)*n], data[(x+y*w)*n+1], data[(x+y*w)*n+2]);
-		} else {
-			unsigned char* data = (unsigned char*)buf;
-			return glm::vec3(data[(x+y*w)*n], data[(x+y*w)*n+1], data[(x+y*w)*n+2]);
-		}
-	}
-	bool isNormal(const glm::vec3 v)
-	{
-		glm::vec3 n = (v-glm::vec3(127))/127.f;
-		float l = length(n);
-		return l>0.9 && l<1.1;
+		fb.unbind();
 	}
 }
 

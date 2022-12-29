@@ -35,14 +35,15 @@ namespace lim
 		const std::string name;
 		Framebuffer* framebuffer;
 		bool hovered, focused, dragging;
-		GLuint width=0, height=0;
-		glm::ivec2 mousePos;
+		GLuint width, height;
+		glm::ivec2 mouse_pos;
 		WindowMode window_mode;
+		bool window_opened;
         float aspect;
 	public:
 		Viewport(Framebuffer* createdFB, GLuint _width=256, GLuint _height=256, WindowMode wm=WM_FREE)
 			: id(id_generator++), name("Viewport"+std::to_string(id)+"##vp"+std::to_string(AppPref::get().selectedAppIdx))
-			, width(_width), height(_height), window_mode(wm), aspect(width/(float)height), mousePos(0)
+			, width(_width), height(_height), window_mode(wm), aspect(width/(float)height), mouse_pos(0), window_opened(true)
 		{
 			framebuffer = createdFB;
 			framebuffer->setSize(width, height);
@@ -57,8 +58,8 @@ namespace lim
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
 			ImGui::SetNextWindowSize({(float)width, (float)height+ImGui::GetFrameHeight()}, (window_mode==WM_FIXED_SIZE)?ImGuiCond_Always:ImGuiCond_Once);
 
+			ImGuiWindowFlags vpWinFlag = ImGuiWindowFlags_NoCollapse;
 			if( window_mode==WM_FIXED_RATIO ) {
-				static bool viewportOpen = true;
 				ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), [](ImGuiSizeCallbackData *data) {
 					Viewport& vp = *(Viewport*)(data->UserData);
 
@@ -71,12 +72,12 @@ namespace lim
 					else
 						data->DesiredSize.y = aspectedHeight;
 				}, (void*)this);
-				ImGuiWindowFlags f = ImGuiWindowFlags_NoDocking;
-				ImGui::Begin(name.c_str(), &viewportOpen, f);
-			} else {
-				ImGui::Begin(name.c_str());
+				vpWinFlag |= ImGuiWindowFlags_NoDocking;
 			}
-			
+			else if( window_mode==WM_FIXED_SIZE ) {
+				vpWinFlag |= ImGuiWindowFlags_NoResize;
+			}
+			ImGui::Begin(name.c_str(), &window_opened, vpWinFlag);
 			
 
 			focused = ImGui::IsWindowFocused();
@@ -85,14 +86,14 @@ namespace lim
 
 			static glm::ivec2 winPos;
 			winPos = imgui_modules::imToIvec(ImGui::GetWindowPos());
-			mousePos = imgui_modules::imToIvec(ImGui::GetMousePos());
-			mousePos = mousePos - winPos - glm::ivec2(0, ImGui::GetFrameHeight());
+			mouse_pos = imgui_modules::imToIvec(ImGui::GetMousePos());
+			mouse_pos = mouse_pos - winPos - glm::ivec2(0, ImGui::GetFrameHeight());
 			if( dragging ) ImGui::SetMouseCursor(7);
 
 			auto contentSize = ImGui::GetContentRegionAvail();
 			width = contentSize.x;
 			height = contentSize.y;
-            aspect = contentSize.x/contentSize.y;
+            if( window_mode==WM_FREE ) aspect = contentSize.x/contentSize.y;
 			framebuffer->setSize(width, height);
 
 			GLuint texID = framebuffer->getRenderedTex();

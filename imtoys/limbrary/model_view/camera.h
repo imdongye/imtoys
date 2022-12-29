@@ -134,7 +134,7 @@ namespace lim
 			position = glm::vec3(glm::rotate(glm::radians(-yaw), glm::vec3(0, 1, 0))
 								 * glm::rotate(glm::radians(pitch), glm::vec3(1, 0, 0))
 								 * glm::vec4(0, 0, distance, 1)) + pivot;
-			position.y = glm::max(position.y, 0.0f);
+			position.y = std::max(position.y, 0.0f);
 			view_mat = glm::lookAt(position, pivot, glm::vec3(0, 1, 0));
 
 			dir = pivot-position;

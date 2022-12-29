@@ -65,6 +65,7 @@
 #include <functional>
 #include <vector>
 #include <tuple>
+#include <memory>
 
 #include <glad/glad.h>
 #define GLM_SWIZZLE // for var.zyx
@@ -87,6 +88,7 @@
 #define COMP_IMVEC2(X, Y) ((X).x==(Y).x)&&((X).y==(Y).y)
 
 #include "logger.h"
+#include "asset_lib.h"
 #include "imgui_modules.h"
 #include "app_pref.h"
 #include "program.h"
@@ -102,6 +104,8 @@
 #include "model_view/model_loader.h"
 #include "model_view/model_exporter.h"
 #include "model_view/scene.h"
+
+#include "asset_lib.inl"
 
 #include "application.h"
 

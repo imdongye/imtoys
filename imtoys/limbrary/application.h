@@ -88,9 +88,12 @@ namespace lim
 
 			AppPref::get();
 
+			glViewport(0, 0, scr_width, scr_height);
+
 			// common setting
 			Viewport::id_generator=0;
 			Logger::get().windowName = "Logger##log"+std::to_string(AppPref::get().selectedAppIdx);
+			AssetLib::get();
 		}
 		/* destroy */
 		virtual ~AppBase()

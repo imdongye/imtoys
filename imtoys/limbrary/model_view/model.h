@@ -132,7 +132,7 @@ namespace lim
 			setPivot(boundary_min + bSize*0.5f);
 
 			const float unit_length = 2.f;
-			float max_axis_length = glm::max(bSize.x, glm::max(bSize.y, bSize.z));
+			float max_axis_length = std::max(bSize.x, std::max(bSize.y, bSize.z));
 			scale = glm::vec3(unit_length/max_axis_length);
 
 			position = glm::vec3(0, scale.y*bSize.y*0.5f, 0);
