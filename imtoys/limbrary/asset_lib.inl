@@ -40,7 +40,7 @@ lim::AssetLib::AssetLib()
 	toQuadProg->attatch("tex_to_quad.vs").attatch("tex_to_quad.fs").link();
 
 	colorAwareDisplayProg = new Program("color aware display program");
-	colorAwareDisplayProg->attatch("tex_to_quad.vs").attatch("rgb_to_pcs_to_display.fs");
+	colorAwareDisplayProg->attatch("tex_to_quad.vs").attatch("rgb_to_pcs_to_display.fs").link();
 }
 lim::AssetLib::~AssetLib()
 {

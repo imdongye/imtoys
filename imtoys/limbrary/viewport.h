@@ -32,7 +32,7 @@ namespace lim
 		/* c++17 non-const static data member can initialize in declaration with inline keyword*/
 		inline static GLuint id_generator = 0;
 		GLuint id;
-		const std::string name;
+		std::string name;
 		Framebuffer* framebuffer;
 		bool hovered, focused, dragging;
 		GLuint width, height;

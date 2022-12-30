@@ -129,10 +129,12 @@ namespace lim
 	{
 	public:
 		ICC::ColorProfile profile;
-		glm::vec3 gamma;
-		glm::mat3 rgbToPCS;
+		glm::mat3 RGB2PCS;
+		glm::mat3 PCS2RGB;
+		glm::mat3 chromatic_adaptation;
+		std::string tag;
 	public:
-		ColorAwareImage(const std::string_view _path): Texture(_path, GL_RGB32F)
+		ColorAwareImage(const std::string_view _path): Texture(_path, GL_RGB32F), tag("none")
 		{
 			/* read meta data */
 			LibRaw raw;
@@ -146,33 +148,52 @@ namespace lim
 			Logger::get() << "Black Level : " << raw.imgdata.color.black << Logger::endl;
 			Logger::get() << "Max Value : " << raw.imgdata.color.maximum << Logger::endl;
 			Logger::get() << "RAW bit: " << raw.imgdata.color.raw_bps << Logger::endl;
+			
 
 			if( (strcmp(format, "jpg")==0||strcmp(format, "jpeg")==0) ) { // is JPEG
 				profile.initWithJPEG(path, true);
-				gamma = profile.gamma;
-				//rgbToPCS = 
 			}
 			else { // default : srgb
-				gamma = glm::vec3(2.4);
-				// D65
-				rgbToPCS = glm::mat3({0.4124565, 0.3575761, 0.1804375},
-									 {0.2126729, 0.7151522, 0.0721750},
-									 {0.0193339, 0.1191920, 0.9503041});
-				rgbToPCS = glm::transpose(rgbToPCS);
+				profile.name = "sRGB";
+				profile.whtPt = ICC::xyYToXYZ({0.31271f, 0.32902f,1.0f});
+				profile.r ={0.436066, 0.222488, 0.013916}; //{ 0.4124565, 0.2126729, 0.0193339 };
+				profile.g ={0.385147, 0.716873, 0.097076}; //{ 0.3575761, 0.7151522, 0.1191920 };
+				profile.b ={0.143066, 0.060608, 0.714096}; //{ 0.1804375, 0.0721750, 0.9503041 };
+				profile.gamma = glm::vec3(2.4);
 			}
+			RGB2PCS = profile.getRGB2XYZ();
+			PCS2RGB = profile.getXYZ2RGB();
+			chromatic_adaptation = profile.chromaticAdaptationTo(ICC::WHTPT_D65);
 		}
-		void toFramebuffer(const Framebuffer& fb)
+		void toFramebuffer(const Framebuffer& fb, const glm::vec3 outputGamma = glm::vec3(2.2f))
 		{
 			fb.bind();
 
-			Program& colorAwareProg = *AssetLib::get().toQuadProg;
+			Program& colorAwareProg = *AssetLib::get().colorAwareDisplayProg;
 			colorAwareProg.use();
 
 			glBindTexture(GL_TEXTURE_2D, tex_id);
 			glActiveTexture(GL_TEXTURE0);
 
-			setUniform(colorAwareProg.pid, "tex", 0);
-			//setUniform()
+			GLuint pid = colorAwareProg.pid;
+			setUniform(pid, "tex", 0);
+			setUniform(pid, "nrChannels", nr_channels);
+			if( tag=="original" ) {
+				setUniform(pid, "inputGamma", glm::vec3(1));
+				setUniform(pid, "outputGamma", glm::vec3(1));
+
+				setUniform(pid, "RGB2PCS", glm::mat3(1));
+				setUniform(pid, "chromaticAdaptation", glm::mat3(1));
+				setUniform(pid, "PCS2RGB", glm::mat3(1));
+			}
+			else {
+				setUniform(pid, "inputGamma", profile.gamma);
+				setUniform(pid, "outputGamma", outputGamma);
+
+				setUniform(pid, "RGB2PCS", RGB2PCS);
+				setUniform(pid, "chromaticAdaptation", chromatic_adaptation);
+				setUniform(pid, "PCS2RGB", PCS2RGB);
+			}
 
 			glBindVertexArray(AssetLib::get().quadVAO);
 			glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -193,6 +214,7 @@ namespace lim
 		glActiveTexture(GL_TEXTURE0);
 		
 		setUniform(toQuadProg.pid, "tex", 0);
+		setUniform(toQuadProg.pid, "gamma", gamma);
 
 		glBindVertexArray(AssetLib::get().quadVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);

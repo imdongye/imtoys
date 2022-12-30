@@ -45,7 +45,13 @@ namespace lim
 		void addImage(std::string_view path)
 		{
 			imgs.push_back(new ColorAwareImage(path));
-			viewports.push_back(new Viewport(new Framebuffer(), imgs.back()->width, imgs.back()->height, Viewport::WM_FIXED_SIZE));
+			viewports.push_back(new Viewport(new Framebuffer(), imgs.back()->width, imgs.back()->height, Viewport::WM_FIXED_RATIO));
+			viewports.back()->name = std::string(imgs.back()->name)+std::string(" - color awared##vp")+std::to_string(AppPref::get().selectedAppIdx);
+
+			imgs.push_back(new ColorAwareImage(path));
+			imgs.back()->tag = "original";
+			viewports.push_back(new Viewport(new Framebuffer(), imgs.back()->width, imgs.back()->height, Viewport::WM_FIXED_RATIO));
+			viewports.back()->name = std::string(imgs.back()->name)+std::string(" - direct view##vp")+std::to_string(AppPref::get().selectedAppIdx+100);
 		}
 	private:
 		virtual void update() final
@@ -57,7 +63,8 @@ namespace lim
 					viewports.erase(viewports.begin()+i);
 					i--;  continue;
 				}
-				imgs[i]->toFramebuffer(*viewports[i]->framebuffer);
+				imgs[i]->toFramebuffer(*viewports[i]->framebuffer, glm::vec3(2.4f));
+				//texIDToFramebuffer(imgs[i]->tex_id, *viewports[i]->framebuffer, 1.f);
 			}
 		}
 		virtual void renderImGui() final

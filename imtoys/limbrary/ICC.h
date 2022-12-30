@@ -10,6 +10,29 @@
 
 namespace ICC
 {
+	const glm::vec2 WHTPT_D50	={0.34567f, 0.35850f};
+	const glm::vec2 WHTPT_D55	={0.33242f, 0.34743f};
+	const glm::vec2 WHTPT_D60	={0.32168f, 0.33767f};
+	const glm::vec2 WHTPT_DCI	={0.31400f, 0.35100f};
+	const glm::vec2 WHTPT_D65	={0.31271f, 0.32902f};
+	const glm::vec2 WHTPT_A		={0.44757f, 0.40745f};
+	const glm::vec2 WHTPT_B		={0.34842f, 0.35161f};
+	const glm::vec2 WHTPT_C		={0.31006f, 0.31616f};
+	const glm::vec2 WHTPT_D75	={0.29902f, 0.31485f};
+	const glm::vec2 WHTPT_E		={0.33333f, 0.33333f};
+	const glm::vec2 WHTPT_F1	={0.31310f, 0.33727f};
+	const glm::vec2 WHTPT_F2	={0.37208f, 0.37529f};
+	const glm::vec2 WHTPT_F3	={0.40910f, 0.39430f};
+	const glm::vec2 WHTPT_F4	={0.44018f, 0.40329f};
+	const glm::vec2 WHTPT_F5	={0.31379f, 0.34531f};
+	const glm::vec2 WHTPT_F6	={0.37790f, 0.38835f};
+	const glm::vec2 WHTPT_F7	={0.31292f, 0.32933f};
+	const glm::vec2 WHTPT_F8	={0.34588f, 0.35875f};
+	const glm::vec2 WHTPT_F9	={0.37417f, 0.37281f};
+	const glm::vec2 WHTPT_F10	={0.34609f, 0.35986f};
+	const glm::vec2 WHTPT_F11	={0.38052f, 0.37713f};
+	const glm::vec2 WHTPT_F12	={0.43695f, 0.40441f};
+
 	const glm::vec2 sRGB_R_xy         ={0.6400f,0.3300f};
 	const glm::vec2 sRGB_G_xy         ={0.3000f,0.6000f};
 	const glm::vec2 sRGB_B_xy         ={0.1500f,0.0600f};
@@ -26,8 +49,19 @@ namespace ICC
 	const glm::vec2 ProPhoto_G_xy     ={0.159597f,0.840403f};
 	const glm::vec2 ProPhoto_B_xy     ={0.036598f,0.000105f};
 
-	inline glm::vec3 XYZToxyY(float X, float Y, float Z) { return glm::vec3(X/(X+Y+Z), Y/(X+Y+Z), Y); }
+	inline glm::vec3 XYZToxyY(float X, float Y, float Z) 
+	{ 
+		return glm::vec3(X/(X+Y+Z), Y/(X+Y+Z), Y); 
+	}
 	inline glm::vec3 XYZToxyY(const glm::vec3& v) { return XYZToxyY(v.x, v.y, v.z); }
+
+	// From: http://www.brucelindbloom.com/index.html?Eqn_xyY_to_XYZ.html
+	inline glm::vec3 xyYToXYZ(float x, float y, float Y) 
+	{ 
+		//return glm::vec3(x/y, 1, (1-x-y)/y)*Y;
+		return glm::vec3(x*Y/y, Y, (1-x-y)*Y/y);
+	}
+	inline glm::vec3 xyYToXYZ(const glm::vec3& v) { return xyYToXYZ(v.x, v.y, v.z); }
 }
 
 
@@ -324,7 +358,7 @@ namespace ICC
 			}
 			{ // get icc size and copy data
 				uint8_t C1=fgetc(file), C2=fgetc(file);
-				iccSize = C1<<8|C2;
+				iccSize = C1<<8|C2;// little endian
 				printf("iccSize :  %d\n", iccSize);
 
 				char temp[100];
@@ -376,15 +410,24 @@ namespace ICC
 					}
 					if( tagSig.compare("rXYZ") ) {
 						r = getXYZ(data);
-						if( verbose ) print_("r<xyY>: %C\n", XYZToxyY(r));
+						if( verbose ) {
+							print_("r<xyY>: %C\n", XYZToxyY(r));
+							print_("r<XYZ>: %C\n", r);
+						}
 					}
 					if( tagSig.compare("gXYZ") ) {
 						g = getXYZ(data);
-						if( verbose ) print_("g<xyY>: %C\n", g);
+						if( verbose ) {
+							print_("g<xyY>: %C\n", g);
+							print_("g<XYZ>: %C\n", g);
+						}
 					}
 					if( tagSig.compare("bXYZ") ) {
 						b = getXYZ(data);
-						if( verbose ) print_("b<xyY>: %C\n", XYZToxyY(b));
+						if( verbose ) {
+							print_("b<xyY>: %C\n", XYZToxyY(b));
+							print_("b<XYZ>: %C\n", b);
+						}
 					}
 				}
 				whtPt = header.illuminantXYZ; 
@@ -432,6 +475,40 @@ namespace ICC
 			printf("Done parce profile\n\n");
 			delete iccData;
 			fclose(file);
+		}
+		// From: http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
+		glm::mat3 getRGB2XYZ()
+		{
+			glm::vec3 S = glm::inverse(glm::mat3(r, g, b)) * whtPt;
+			glm::mat4 M = glm::mat3(r*S[0], g*S[1], b*S[2]);
+			return M;
+		}
+		glm::mat3 getXYZ2RGB()
+		{
+			// display rgb XYZ
+			glm::vec3 dr = xyYToXYZ( glm::vec3(sRGB_R_xy, 0.2126) );
+			glm::vec3 dg = xyYToXYZ( glm::vec3(sRGB_G_xy, 0.7152) );
+			glm::vec3 db = xyYToXYZ( glm::vec3(sRGB_B_xy, 0.0722) );
+
+			glm::vec3 S = glm::inverse(glm::mat3(r, g, b)) * whtPt;
+			glm::mat4 M = glm::mat3(r*S[0], g*S[1], b*S[2]);
+			return glm::inverse(M);
+		}
+		// Von Kries transform
+		glm::mat3 chromaticAdaptationTo(const glm::vec2& destWP)
+		{
+			glm::mat3 mat(1);
+			glm::vec3 lms1, lms2, div;
+			// todo: real lms transform
+			lms1 = whtPt;
+			lms2 = xyYToXYZ(glm::vec3(destWP, 1.f));
+			div = lms2/lms1;
+
+			mat[0] *= div.x;
+			mat[1] *= div.y;
+			mat[2] *= div.z;
+
+			return mat;
 		}
 	};
 }
