@@ -1,23 +1,31 @@
 //
-//  SCMS.h
-//  JGLTest
-//
-//  Created by Hyun Joon Shin on 2022/07/25.
+//	2023-01-02 / im dong ye
+//	
+//	
+//	reference:
+//		SCMS.h
+//		JGLTest
+//		Created by Hyun Joon Shin on 2022/07/25.
 //
 
-#ifndef ICC_H
-#define ICC_H
+
+#ifndef COLOR_AWARED_IMAGE_H
+#define COLOR_AWARED_IMAGE_H
+
+//#include <libraw/libraw.h>
 
 namespace ICC
 {
+	// White point chromaticity
+	// From: https://en.wikipedia.org/wiki/Template:Color_temperature_white_points
+	const glm::vec2 WHTPT_A		={0.44757f, 0.40745f};
+	const glm::vec2 WHTPT_B		={0.34842f, 0.35161f};
+	const glm::vec2 WHTPT_C		={0.31006f, 0.31616f};
 	const glm::vec2 WHTPT_D50	={0.34567f, 0.35850f};
 	const glm::vec2 WHTPT_D55	={0.33242f, 0.34743f};
 	const glm::vec2 WHTPT_D60	={0.32168f, 0.33767f};
 	const glm::vec2 WHTPT_DCI	={0.31400f, 0.35100f};
 	const glm::vec2 WHTPT_D65	={0.31271f, 0.32902f};
-	const glm::vec2 WHTPT_A		={0.44757f, 0.40745f};
-	const glm::vec2 WHTPT_B		={0.34842f, 0.35161f};
-	const glm::vec2 WHTPT_C		={0.31006f, 0.31616f};
 	const glm::vec2 WHTPT_D75	={0.29902f, 0.31485f};
 	const glm::vec2 WHTPT_E		={0.33333f, 0.33333f};
 	const glm::vec2 WHTPT_F1	={0.31310f, 0.33727f};
@@ -33,37 +41,42 @@ namespace ICC
 	const glm::vec2 WHTPT_F11	={0.38052f, 0.37713f};
 	const glm::vec2 WHTPT_F12	={0.43695f, 0.40441f};
 
+	// Primary chromaticity
+	// From: https://en.wikipedia.org/wiki/SRGB
 	const glm::vec2 sRGB_R_xy         ={0.6400f,0.3300f};
 	const glm::vec2 sRGB_G_xy         ={0.3000f,0.6000f};
 	const glm::vec2 sRGB_B_xy         ={0.1500f,0.0600f};
 
-	const glm::vec2 DisplayP3_R_xy    ={0.680f, 0.320f};
-	const glm::vec2 DisplayP3_G_xy    ={0.265f, 0.690f};
-	const glm::vec2 DisplayP3_B_xy    ={0.150f, 0.060f};
-
+	// From: https://en.wikipedia.org/wiki/DCI-P3
+	// also same Display P3 apple
+	const glm::vec2 DCI_P3_R_xy    ={0.680f, 0.320f};
+	const glm::vec2 DCI_P3_G_xy    ={0.265f, 0.690f};
+	const glm::vec2 DCI_P3_B_xy    ={0.150f, 0.060f};
+	
+	// From: https://en.wikipedia.org/wiki/Adobe_RGB_color_space
 	const glm::vec2 AdobeRGB_R_xy     ={0.6400f,0.3300f};
 	const glm::vec2 AdobeRGB_G_xy     ={0.2100f,0.7100f};
 	const glm::vec2 AdobeRGB_B_xy     ={0.1500f,0.0600f};
 
+	// From: https://en.wikipedia.org/wiki/ProPhoto_RGB_color_space
 	const glm::vec2 ProPhoto_R_xy     ={0.734699f,0.265301f};
 	const glm::vec2 ProPhoto_G_xy     ={0.159597f,0.840403f};
 	const glm::vec2 ProPhoto_B_xy     ={0.036598f,0.000105f};
 
-	inline glm::vec3 XYZToxyY(float X, float Y, float Z) 
-	{ 
-		return glm::vec3(X/(X+Y+Z), Y/(X+Y+Z), Y); 
+	inline glm::vec3 XYZToxyY(float X, float Y, float Z)
+	{
+		return glm::vec3(X/(X+Y+Z), Y/(X+Y+Z), Y);
 	}
 	inline glm::vec3 XYZToxyY(const glm::vec3& v) { return XYZToxyY(v.x, v.y, v.z); }
 
 	// From: http://www.brucelindbloom.com/index.html?Eqn_xyY_to_XYZ.html
-	inline glm::vec3 xyYToXYZ(float x, float y, float Y) 
-	{ 
+	inline glm::vec3 xyYToXYZ(float x, float y, float Y)
+	{
 		//return glm::vec3(x/y, 1, (1-x-y)/y)*Y;
 		return glm::vec3(x*Y/y, Y, (1-x-y)*Y/y);
 	}
 	inline glm::vec3 xyYToXYZ(const glm::vec3& v) { return xyYToXYZ(v.x, v.y, v.z); }
 }
-
 
 
 namespace ICC
@@ -301,7 +314,7 @@ namespace ICC
 	};
 	struct ColorProfile
 	{
-	public: 
+	public:
 		glm::vec3 whtPt, r, g, b;
 		glm::vec3 gamma;
 		glm::vec3 blkPt;
@@ -332,7 +345,7 @@ namespace ICC
 			return gamma;
 		}
 	public:
-		void initWithJPEG(std::string_view path, bool verbose=false)
+		bool initWithJPEG(std::string_view path, bool verbose=false)
 		{
 			printf("< Read profile in JPEG >\n");
 			FILE *file = fopen(path.data(), "rb");
@@ -353,7 +366,7 @@ namespace ICC
 				else {
 					printf("error not finded 0xFFE2\n\n");
 					fclose(file);
-					return;
+					return false;
 				}
 			}
 			{ // get icc size and copy data
@@ -430,13 +443,13 @@ namespace ICC
 						}
 					}
 				}
-				whtPt = header.illuminantXYZ; 
+				whtPt = header.illuminantXYZ;
 			}
 			{ // init profile name
 				glm::vec2 xyR = XYZToxyY(r).xy();
 				glm::vec2 xyG = XYZToxyY(g).xy();
 				glm::vec2 xyB = XYZToxyY(b).xy();
-				
+
 				float min;
 				float error = 0;
 				error += glm::length(sRGB_R_xy-xyR);
@@ -446,9 +459,9 @@ namespace ICC
 				name = "sRGB";
 
 				error = 0;
-				error += glm::length(DisplayP3_R_xy-xyR);
-				error += glm::length(DisplayP3_G_xy-xyG);
-				error += glm::length(DisplayP3_B_xy-xyB);
+				error += glm::length(DCI_P3_R_xy-xyR);
+				error += glm::length(DCI_P3_G_xy-xyG);
+				error += glm::length(DCI_P3_B_xy-xyB);
 				if( error<min ) {
 					min=error;
 					name = "DisplayP3";
@@ -475,42 +488,165 @@ namespace ICC
 			printf("Done parce profile\n\n");
 			delete iccData;
 			fclose(file);
+			return true;
 		}
 		// From: http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
 		glm::mat3 getRGB2XYZ()
 		{
 			glm::vec3 S = glm::inverse(glm::mat3(r, g, b)) * whtPt;
-			glm::mat4 M = glm::mat3(r*S[0], g*S[1], b*S[2]);
+			// 여기서 rgb가 white point가 맞춰져있어서 S는 1이 나올것이다.
+			glm::mat3 M = glm::mat3(r*S.r, g*S.g, b*S.b);
 			return M;
 		}
-		glm::mat3 getXYZ2RGB()
+		glm::mat3 getXYZ2RGB(glm::vec2 dr_xy, glm::vec2 dg_xy, glm::vec2 db_xy, glm::vec2 dWhtPt_xy) // display primary xy(chromaticity)
 		{
 			// display rgb XYZ
-			glm::vec3 dr = xyYToXYZ( glm::vec3(sRGB_R_xy, 0.2126) );
-			glm::vec3 dg = xyYToXYZ( glm::vec3(sRGB_G_xy, 0.7152) );
-			glm::vec3 db = xyYToXYZ( glm::vec3(sRGB_B_xy, 0.0722) );
+			glm::vec3 dr = xyYToXYZ(glm::vec3(dr_xy, 1.0f));
+			glm::vec3 dg = xyYToXYZ(glm::vec3(dg_xy, 1.0f));
+			glm::vec3 db = xyYToXYZ(glm::vec3(db_xy, 1.0f));
+			glm::vec3 dWP = xyYToXYZ(glm::vec3(dWhtPt_xy, 1.0f));
 
-			glm::vec3 S = glm::inverse(glm::mat3(r, g, b)) * whtPt;
-			glm::mat4 M = glm::mat3(r*S[0], g*S[1], b*S[2]);
+			glm::vec3 S = glm::inverse(glm::mat3(dr, dg, db)) * dWP;
+
+			glm::vec3 WW = glm::mat3(dr, dg, db)*glm::vec3(1);
+			//S = dWP/WW;
+
+			glm::mat3 M = glm::mat3(dr*S.r, dg*S.g, db*S.b);
+			/*
+			glm::mat3 MM ={{3.2404542, -0.9692660, 0.0556434},
+						   {-1.5371385, 1.8760108, -0.2040259},
+						   {-0.4985314, 0.0415560, 1.0572252}};
+			return MM;*/
 			return glm::inverse(M);
 		}
-		// Von Kries transform
-		glm::mat3 chromaticAdaptationTo(const glm::vec2& destWP)
+		// From: http://www.brucelindbloom.com/index.html?Eqn_ChromAdapt.html
+		// 0. scaling     1. VonKries      2.Bradford
+		glm::mat3 chromaticAdaptationTo(const glm::vec2& destWP_xy, int method = 1)
 		{
-			glm::mat3 mat(1);
-			glm::vec3 lms1, lms2, div;
-			// todo: real lms transform
-			lms1 = whtPt;
-			lms2 = xyYToXYZ(glm::vec3(destWP, 1.f));
-			div = lms2/lms1;
+			glm::mat3 ret(1);
+			glm::vec3 srcWP, destWP;
 
-			mat[0] *= div.x;
-			mat[1] *= div.y;
-			mat[2] *= div.z;
+			glm::mat3 forward, inverse;
 
-			return mat;
+			const glm::mat3 XYZ_Scaling_forward = glm::mat3(1);
+			const glm::mat3 XYZ_Scaling_inverse = glm::mat3(1);
+			// From : https://en.wikipedia.org/wiki/LMS_color_space
+			// Hunt and RLAB color appearance model
+			const glm::mat3 VonKries_forward ={{0.4002, -0.2263, 0.0},{0.7076, 1.1653, 0.0}, {-0.0808, 0.0457, 0.9182}};
+			const glm::mat3 VonKries_inverse ={{1.8599, 0.3612, 0.0}, {-1.1294, 0.6388, 0.0}, {0.2199, 0.0000, 1.0891}};
+			// Bradford's spectrally sharpened mat
+			const glm::mat3 Bradford_forward = {{0.8951, -0.7502, 0.0389}, {0.2664, 1.7135, -0.0685}, {-0.1614, 0.0367, 1.0296}};
+			const glm::mat3 Bradford_inverse = {{0.9870, 0.4323, -0.0085}, {-0.1471, 0.5184, 0.0400}, {0.1600, 0.0493, 0.9695}};
+
+			switch( method ) {
+				case 0:
+					forward = XYZ_Scaling_forward;
+					inverse = XYZ_Scaling_inverse;
+					break;
+				case 1:
+					forward = VonKries_forward;
+					inverse = VonKries_inverse;
+					break;
+				case 2:
+					forward = Bradford_forward;
+					inverse = Bradford_inverse;
+					break;
+			}
+
+			srcWP = whtPt;
+			srcWP = forward * srcWP;
+
+			destWP = xyYToXYZ({destWP_xy.x, destWP_xy.y, 1.f});
+			destWP = forward * destWP;
+
+			ret[0][0] *= destWP.r/srcWP.r;
+			ret[1][1] *= destWP.g/srcWP.g;
+			ret[2][2] *= destWP.b/srcWP.b;
+
+			ret = inverse*ret*forward;
+
+			return ret;
 		}
 	};
 }
 
-#endif /* ICC_H */
+namespace lim
+{
+	class ColorAwareImage: public Texture
+	{
+	public:
+		ICC::ColorProfile profile;
+		glm::mat3 RGB2PCS;
+		glm::mat3 PCS2RGB;
+		glm::mat3 chromatic_adaptation;
+		glm::vec3 output_gamma;
+	public:
+		ColorAwareImage(const std::string_view _path, glm::vec3 outputGamma = glm::vec3(2.4))
+			: Texture(_path, GL_RGB32F), output_gamma(outputGamma)
+		{
+			/* read meta data Exif
+			LibRaw raw;
+			raw.open_file(path.c_str());
+			raw.unpack();
+			Logger::get() << "< Meta data >" << Logger::endl;
+			Logger::get() << "ISO : " << raw.imgdata.other.iso_speed << Logger::endl;
+			Logger::get() << "Exposure Time : " << raw.imgdata.other.shutter << Logger::endl;
+			Logger::get() << "Aperture : " << raw.imgdata.other.aperture << Logger::endl;
+			Logger::get() << "Focal Lenth : " << raw.imgdata.other.focal_len << Logger::endl;
+			Logger::get() << "Black Level : " << raw.imgdata.color.black << Logger::endl;
+			Logger::get() << "Max Value : " << raw.imgdata.color.maximum << Logger::endl;
+			Logger::get() << "RAW bit: " << raw.imgdata.color.raw_bps << Logger::endl;
+			*/
+
+			// is JPEG
+			if( (strcmp(format, "jpg")==0||strcmp(format, "jpeg")==0) && profile.initWithJPEG(path, true) ) {
+	
+			} 
+			// todo png
+			else { // default : srgb
+				profile.name = "sRGB";
+				profile.whtPt = ICC::xyYToXYZ({0.31271f, 0.32902f,1.0f});
+				profile.r ={0.436066, 0.222488, 0.013916}; //{ 0.4124565, 0.2126729, 0.0193339 };
+				profile.g ={0.385147, 0.716873, 0.097076}; //{ 0.3575761, 0.7151522, 0.1191920 };
+				profile.b ={0.143066, 0.060608, 0.714096}; //{ 0.1804375, 0.0721750, 0.9503041 };
+				profile.gamma = glm::vec3(2.4);
+			}
+
+			RGB2PCS = profile.getRGB2XYZ();
+			chromatic_adaptation = profile.chromaticAdaptationTo(ICC::WHTPT_D65, 2);
+			PCS2RGB = profile.getXYZ2RGB(ICC::sRGB_R_xy, ICC::sRGB_G_xy, ICC::sRGB_B_xy, ICC::WHTPT_D65);
+		}
+		void toFramebuffer(const Framebuffer& fb)
+		{
+			fb.bind();
+
+			static Program *colorAwareDisplayProg = nullptr;
+			if( colorAwareDisplayProg==nullptr ) {
+				colorAwareDisplayProg = new Program("color aware display program");
+				colorAwareDisplayProg->attatch("tex_to_quad.vs").attatch("rgb_to_pcs_to_display.fs").link();
+			}
+
+			GLuint pid = colorAwareDisplayProg->use();
+
+			glBindTexture(GL_TEXTURE_2D, tex_id);
+			glActiveTexture(GL_TEXTURE0);
+
+			setUniform(pid, "tex", 0);
+			setUniform(pid, "nrChannels", nr_channels);
+			
+			setUniform(pid, "inputGamma", profile.gamma);
+			setUniform(pid, "outputGamma", output_gamma);
+
+			setUniform(pid, "RGB2PCS", RGB2PCS);
+			setUniform(pid, "chromaticAdaptation", chromatic_adaptation);
+			setUniform(pid, "PCS2RGB", PCS2RGB);
+
+			glBindVertexArray(AssetLib::get().quad_vao);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+			glBindVertexArray(0);
+
+			fb.unbind();
+		}
+	};
+}
+#endif

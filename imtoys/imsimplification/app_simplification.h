@@ -504,7 +504,7 @@ namespace lim
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
 
 			ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), [](ImGuiSizeCallbackData *data) {
-				data->DesiredSize.x = LIM_MAX(data->DesiredSize.x, data->DesiredSize.y);
+				data->DesiredSize.x = glm::max(data->DesiredSize.x, data->DesiredSize.y);
 				data->DesiredSize.y = data->DesiredSize.x; });
 
 			// todo
@@ -514,7 +514,7 @@ namespace lim
 					ImVec2 vMax = ImGui::GetWindowContentRegionMax();
 					glm::vec2 rectSize{vMax.x - vMin.x, vMax.y - vMin.y};
 					// ImGui::Text("%f %f", rectSize.x, rectSize.y);
-					const float minLength = LIM_MIN(rectSize.x, rectSize.y);
+					const float minLength = glm::min(rectSize.x, rectSize.y);
 					GLuint rtId = MapBaker::bakedNormalMapPointer->getRenderedTex();
 					ImGui::Image(reinterpret_cast<void *>(rtId), ImVec2{minLength, minLength}, ImVec2{0, 1}, ImVec2{1, 0});
 				}
@@ -522,7 +522,7 @@ namespace lim
 			}
 
 			ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), [](ImGuiSizeCallbackData *data) {
-				data->DesiredSize.x = LIM_MAX(data->DesiredSize.x, data->DesiredSize.y);
+				data->DesiredSize.x = glm::max(data->DesiredSize.x, data->DesiredSize.y);
 				data->DesiredSize.y = data->DesiredSize.x; });
 
 			if( ImGui::Begin("shadowMap##simp") && light.shadowEnabled ) {
@@ -530,7 +530,7 @@ namespace lim
 				ImVec2 vMax = ImGui::GetWindowContentRegionMax();
 				glm::vec2 rectSize{vMax.x - vMin.x, vMax.y - vMin.y};
 				// ImGui::Text("%f %f", rectSize.x, rectSize.y);
-				const float minLength = LIM_MIN(rectSize.x, rectSize.y);
+				const float minLength = glm::min(rectSize.x, rectSize.y);
 				ImGui::Image(reinterpret_cast<void *>(light.shadowMap.getRenderedTex()), ImVec2{minLength, minLength}, ImVec2{0, 1}, ImVec2{1, 0});
 			}
 			ImGui::End();

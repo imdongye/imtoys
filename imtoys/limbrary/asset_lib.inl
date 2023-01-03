@@ -22,8 +22,8 @@ lim::AssetLib::AssetLib()
 	glBufferData(GL_ARRAY_BUFFER, 6 * 3*sizeof(GLfloat), verts, GL_STATIC_DRAW);
 
 	// Set up the vertex array object
-	glGenVertexArrays(1, &quadVAO);
-	glBindVertexArray(quadVAO);
+	glGenVertexArrays(1, &quad_vao);
+	glBindVertexArray(quad_vao);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
@@ -35,17 +35,13 @@ lim::AssetLib::AssetLib()
 	Logger::get()<<"load quad vao to vram\n";
 
 
-
-	toQuadProg = new Program("toQuad");
-	toQuadProg->attatch("tex_to_quad.vs").attatch("tex_to_quad.fs").link();
-
-	colorAwareDisplayProg = new Program("color aware display program");
-	colorAwareDisplayProg->attatch("tex_to_quad.vs").attatch("rgb_to_pcs_to_display.fs").link();
+	to_quad_prog = new Program("toQuad");
+	to_quad_prog->attatch("tex_to_quad.vs").attatch("tex_to_quad.fs").link();
 }
 lim::AssetLib::~AssetLib()
 {
-	//glUnbind
-	delete toQuadProg;
+	glDeleteVertexArrays(1, &quad_vao); quad_vao=0;
+	delete to_quad_prog;
 }
 
 #endif

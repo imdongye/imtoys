@@ -12,7 +12,7 @@
 #define APP_HDR_H
 
 
-#include <libraw/libraw.h>
+#include "color_awared_image.h"
 
 namespace lim
 {
@@ -29,11 +29,11 @@ namespace lim
 		std::vector<ColorAwareImage*> imgs;
 		std::vector<Viewport*> viewports;
 	public:
-		AppHdr(): AppBase(950, 620, APP_NAME)
+		AppHdr(): AppBase(1950, 620, APP_NAME)
 		{
 			stbi_set_flip_vertically_on_load(true);
 
-			//addImage("common/images/memorial.jpg");
+			addImage("imhdr/images/italy-P3.jpg");
 		}
 		~AppHdr()
 		{
@@ -44,14 +44,22 @@ namespace lim
 	private:
 		void addImage(std::string_view path)
 		{
+			// color awared viewer
 			imgs.push_back(new ColorAwareImage(path));
+			imgs.back()->chromatic_adaptation = imgs.back()->profile.chromaticAdaptationTo(ICC::WHTPT_D65, 1);
 			viewports.push_back(new Viewport(new Framebuffer(), imgs.back()->width, imgs.back()->height, Viewport::WM_FIXED_RATIO));
-			viewports.back()->name = std::string(imgs.back()->name)+std::string(" - color awared##vp")+std::to_string(AppPref::get().selectedAppIdx);
+			viewports.back()->name = std::string(imgs.back()->name)+std::string(" - color awared");
 
+			// direct viewer
 			imgs.push_back(new ColorAwareImage(path));
-			imgs.back()->tag = "original";
+			imgs.back()->profile.gamma = glm::vec3(1);
+			imgs.back()->output_gamma = glm::vec3(1);
+			imgs.back()->RGB2PCS = glm::mat3(1);
+			imgs.back()->PCS2RGB = glm::mat3(1);
+			imgs.back()->chromatic_adaptation = glm::mat3(1);
+
 			viewports.push_back(new Viewport(new Framebuffer(), imgs.back()->width, imgs.back()->height, Viewport::WM_FIXED_RATIO));
-			viewports.back()->name = std::string(imgs.back()->name)+std::string(" - direct view##vp")+std::to_string(AppPref::get().selectedAppIdx+100);
+			viewports.back()->name = std::string(imgs.back()->name)+std::string(" - direct view");
 		}
 	private:
 		virtual void update() final
@@ -63,7 +71,7 @@ namespace lim
 					viewports.erase(viewports.begin()+i);
 					i--;  continue;
 				}
-				imgs[i]->toFramebuffer(*viewports[i]->framebuffer, glm::vec3(2.4f));
+				imgs[i]->toFramebuffer(*viewports[i]->framebuffer);
 				//texIDToFramebuffer(imgs[i]->tex_id, *viewports[i]->framebuffer, 1.f);
 			}
 		}

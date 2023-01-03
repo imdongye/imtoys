@@ -12,9 +12,8 @@ namespace lim
 	{
 	public:
 		//****** property ******//
-		Program* toQuadProg;
-		Program* colorAwareDisplayProg;
-		GLuint quadVAO = 0;
+		Program* to_quad_prog;
+		GLuint quad_vao = 0;
 	private:
 		AssetLib();
 		~AssetLib();

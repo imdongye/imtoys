@@ -44,7 +44,7 @@
 // 
 //	Todo:
 //	1. 폴더구조
-//	2. lim_max 등 tools로 헤더 나누기
+//	2. glm::max 등 tools로 헤더 나누기
 //  3. 어느정도 완성되면 확장자 hpp로
 //
 
@@ -55,6 +55,9 @@
 #if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)
 #define _CRT_SECURE_NO_WARNINGS
 #endif
+
+// for min max dup define error when include windows.h
+#define NOMINMAX
 
 #include <iostream>
 #include <fstream>
@@ -83,8 +86,6 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb/stb_image_write.h>
 
-#define LIM_MAX(X, Y) ((X)>(Y))?(X):(Y)
-#define LIM_MIN(X, Y) ((X)<(Y))?(X):(Y)
 #define COMP_IMVEC2(X, Y) ((X).x==(Y).x)&&((X).y==(Y).y)
 
 #include "logger.h"
@@ -94,7 +95,6 @@
 #include "program.h"
 #include "framebuffer.h"
 #include "texture.h"
-#include "tex_renderer.h"
 #include "viewport.h"
 
 #include "model_view/camera.h"
