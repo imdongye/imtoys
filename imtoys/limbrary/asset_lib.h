@@ -15,6 +15,7 @@ namespace lim
 		Program* to_quad_prog;
 		GLuint quad_vao = 0;
 	private:
+		inline static AssetLib* instance = nullptr;
 		AssetLib();
 		~AssetLib();
 		/* detete copy & copy asignment singleton obj */
@@ -23,8 +24,15 @@ namespace lim
 	public:
 		static AssetLib& get()
 		{
-			static AssetLib assetLib;
-			return assetLib;
+			if( !instance ) {
+				instance = new AssetLib();
+			}
+			return *instance;
+		}
+		static void reload()
+		{
+			if( !instance )delete instance;
+			instance = new AssetLib();
 		}
 	};
 }

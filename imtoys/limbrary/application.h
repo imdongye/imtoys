@@ -93,7 +93,7 @@ namespace lim
 			// common setting
 			Viewport::id_generator=0;
 			Logger::get().windowName = "Logger##log"+std::to_string(AppPref::get().selectedAppIdx);
-			AssetLib::get();
+			AssetLib::reload();
 		}
 		/* destroy */
 		virtual ~AppBase()

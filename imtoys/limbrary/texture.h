@@ -85,7 +85,7 @@ namespace lim
 
 			printf("%s loaded : texID:%d, %dx%d, nrCh:%d, bit:%d, fm:%s, aspect:%.3f\n", path.c_str(), tex_id, width, height, nr_channels, bit_per_channel, format, width/(float)height);
 		}
-		~Texture()
+		virtual ~Texture()
 		{
 			printf("texture clear\n");
 			clear();

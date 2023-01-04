@@ -11,6 +11,7 @@
 #include "imhdr/app_hdr.h"
 #include "imsimplification/app_simplification.h"
 #include "impbr/app_pbr.h"
+#include "imtests/app_astar.h"
 //#include "imsnells/app_snell.h"
 
 lim::AppBase *app;
@@ -39,7 +40,7 @@ void drawAppSellector()
 		if( ImGui::Button(appNames[i]) ) {
 			appSelected=true;
 			lim::AppPref::get().selectedAppIdx=i;
-			selectorName = "AppSelector##app"+std::to_string(lim::AppPref::get().selectedAppIdx);
+			selectorName = "AppSelector##app"+std::string(appNames[i]);
 			demo_window_name = selectorName.c_str();
 			glfwSetWindowShouldClose(app->window, true);
 		}
@@ -53,6 +54,7 @@ int main(int, char**)
 	std::string demoWindowName;
 	lim::imgui_modules::draw_appselector = drawAppSellector;
     pushAppData<lim::AppHdr>();
+	pushAppData<lim::AppAstar>();
     pushAppData<lim::AppSimplification>();
 	pushAppData<lim::AppPbr>();
 	//pushAppData<lim::AppSnell>();
@@ -63,7 +65,7 @@ int main(int, char**)
 		int appIdx = lim::AppPref::get().selectedAppIdx;
 		app = appConstructors[appIdx]();
 		lim::AppPref::get().selectedAppName = appNames[appIdx];
-		demoWindowName = "Dear ImGui Demo##demo"+std::to_string(appIdx);
+		demoWindowName = "Dear ImGui Demo##demo"+std::string(appNames[appIdx]);
 		demo_window_name = demoWindowName.c_str();
 
 		app->run();

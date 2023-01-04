@@ -40,8 +40,8 @@ lim::AssetLib::AssetLib()
 }
 lim::AssetLib::~AssetLib()
 {
-	glDeleteVertexArrays(1, &quad_vao); quad_vao=0;
 	delete to_quad_prog;
+	glDeleteVertexArrays(1, &quad_vao); quad_vao=0;
 }
 
 #endif

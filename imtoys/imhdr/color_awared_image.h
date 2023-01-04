@@ -575,6 +575,8 @@ namespace lim
 	class ColorAwareImage: public Texture
 	{
 	public:
+		inline static GLuint refCount = 0;
+		inline static Program *colorAwareDisplayProg = nullptr;
 		ICC::ColorProfile profile;
 		glm::mat3 RGB2PCS;
 		glm::mat3 PCS2RGB;
@@ -584,6 +586,10 @@ namespace lim
 		ColorAwareImage(const std::string_view _path, glm::vec3 outputGamma = glm::vec3(2.4))
 			: Texture(_path, GL_RGB32F), output_gamma(outputGamma)
 		{
+			if( refCount++==0 ) {
+				colorAwareDisplayProg = new Program("color aware display program");
+				colorAwareDisplayProg->attatch("tex_to_quad.vs").attatch("rgb_to_pcs_to_display.fs").link();
+			}
 			/* read meta data Exif
 			LibRaw raw;
 			raw.open_file(path.c_str());
@@ -616,15 +622,15 @@ namespace lim
 			chromatic_adaptation = profile.chromaticAdaptationTo(ICC::WHTPT_D65, 2);
 			PCS2RGB = profile.getXYZ2RGB(ICC::sRGB_R_xy, ICC::sRGB_G_xy, ICC::sRGB_B_xy, ICC::WHTPT_D65);
 		}
+		virtual ~ColorAwareImage()
+		{
+			if( --refCount==0 ) {
+				delete colorAwareDisplayProg;
+			}
+		}
 		void toFramebuffer(const Framebuffer& fb)
 		{
 			fb.bind();
-
-			static Program *colorAwareDisplayProg = nullptr;
-			if( colorAwareDisplayProg==nullptr ) {
-				colorAwareDisplayProg = new Program("color aware display program");
-				colorAwareDisplayProg->attatch("tex_to_quad.vs").attatch("rgb_to_pcs_to_display.fs").link();
-			}
 
 			GLuint pid = colorAwareDisplayProg->use();
 

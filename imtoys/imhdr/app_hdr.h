@@ -11,7 +11,6 @@
 #ifndef APP_HDR_H
 #define APP_HDR_H
 
-
 #include "color_awared_image.h"
 
 namespace lim
