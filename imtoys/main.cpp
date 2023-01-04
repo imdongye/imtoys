@@ -53,8 +53,8 @@ int main(int, char**)
 {
 	std::string demoWindowName;
 	lim::imgui_modules::draw_appselector = drawAppSellector;
-    pushAppData<lim::AppHdr>();
 	pushAppData<lim::AppAstar>();
+    pushAppData<lim::AppHdr>();
     pushAppData<lim::AppSimplification>();
 	pushAppData<lim::AppPbr>();
 	//pushAppData<lim::AppSnell>();
