@@ -521,7 +521,7 @@ namespace ICC
 		}
 		// From: http://www.brucelindbloom.com/index.html?Eqn_ChromAdapt.html
 		// 0. scaling     1. VonKries      2.Bradford
-		glm::mat3 chromaticAdaptationTo(const glm::vec2& destWP_xy, int method = 1)
+		glm::mat3 chromaticAdaptationTo(const glm::vec2& destWP_xy, int method = 2)
 		{
 			glm::mat3 ret(1);
 			glm::vec3 srcWP, destWP;
@@ -619,7 +619,7 @@ namespace lim
 			}
 
 			RGB2PCS = profile.getRGB2XYZ();
-			chromatic_adaptation = profile.chromaticAdaptationTo(ICC::WHTPT_D65, 2);
+			chromatic_adaptation = profile.chromaticAdaptationTo(ICC::WHTPT_D65);
 			PCS2RGB = profile.getXYZ2RGB(ICC::sRGB_R_xy, ICC::sRGB_G_xy, ICC::sRGB_B_xy, ICC::WHTPT_D65);
 		}
 		virtual ~ColorAwareImage()

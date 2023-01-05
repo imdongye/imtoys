@@ -27,6 +27,10 @@ namespace lim
 			{
 				return (x==p.x)&&(y==p.y);
 			}
+			bool operator !=  (const Pos& p) const
+			{
+				return (x!=p.x)||(y!=p.y);
+			}
 			Pos operator + (const Pos& p) const
 			{
 				return {x+p.x, y+p.y};
@@ -103,32 +107,66 @@ namespace lim
 		}
 		void clearMap()
 		{
+			int nrStart=0;
+			int nrEnd=0;
 			for( int i=0; i<height; i++ ) for( int j=0; j<width; j++ ) {
-				auto& ns= map[i][j].state;
-				if( ns==NS_CLOSE||ns==NS_OPEN||ns==NS_PATH )
-					map[i][j].state = NS_ROAD;
+				switch( map[i][j].state ) {
+					case NS_OPEN:
+					case NS_CLOSE:
+					case NS_PATH:
+						map[i][j].state = NS_ROAD;
+						break;
+					case NS_START:
+						nrStart++;
+						break;
+					case NS_END:
+						nrEnd++;
+						break;
+					case NS_WALL:
+					case NS_ROAD:
+						break;
+				}
+			}
+			if( nrStart!=1||nrEnd!=1 ) {
+				printf("error there one more param");
 			}
 		}
 		bool setMapPos(int x, int y, NodeState ns) // // 0:space, 1:wall, 2:start, 3:dest
 		{
-			printf("%d %d : %d\n", x, y, ns);
 			if( x<0||y<0||x>=width||y>=height ) return false;
 
-			Pos considerPos ={-1,-1};
+			bool needUpdatePath = false;
+			Pos oldStartPos, oldEndPos;
+			NodeState prevNs = map[y][x].state;
 
-			map[y][x].state = ns;
+			if( prevNs==NS_START ) {
+				start_pos ={-1,-1};
+			}
+			if( prevNs==NS_END ) {
+				end_pos ={-1,-1};
+			}
+
 			if( ns==NS_START ) {
-				considerPos = start_pos;
-				start_pos ={x,y};
-				if( end_pos.x>=0 )updatePath();
+				oldStartPos = start_pos;
+				start_pos ={x, y};
+				if( oldStartPos != start_pos && oldStartPos.x>=0 ) {
+					map[oldStartPos.y][oldStartPos.x].state = NS_ROAD;
+				}
+				needUpdatePath = end_pos.x>0;
 			}
-			else if( ns==NS_END) {
-				considerPos = end_pos;
-				end_pos ={x,y};
-				if(start_pos.x>=0)updatePath();
+			else if( ns==NS_END ) {
+				oldEndPos = end_pos;
+				end_pos ={x, y};
+				if( oldEndPos != end_pos && oldEndPos.x>=0 ) {
+					map[oldEndPos.y][oldEndPos.x].state = NS_ROAD;
+				}
+				needUpdatePath = end_pos.x>0;
 			}
-			if( considerPos.x>=0 ) {
-				map[considerPos.y][considerPos.x].state = NS_ROAD;
+			
+			map[y][x].state = ns;
+
+			if( needUpdatePath ) {
+				updatePath();
 			}
 			return true;
 		}
@@ -187,6 +225,8 @@ namespace lim
 						continue;
 					}
 					if( nextNode.state==NS_END ) {
+						nextNode.gCost = 0;
+						nextNode.hCost = 0;
 						nextNode.prev = cur;
 						open.push(&nextNode);
 						break;

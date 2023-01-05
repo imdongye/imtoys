@@ -121,7 +121,12 @@ namespace lim
 			if( ImGui::Button("find") ) {
 				path_finder.updatePath();
 			}
-			ImGui::SameLine(); ImGui::Text("path length: %d", path_finder.path.size());
+			ImGui::SameLine();
+			if( path_finder.path.size() > 0)
+				ImGui::Text("path length: %d", path_finder.path.size());
+			else
+				ImGui::Text("path not found");
+
 			if( ImGui::SliderInt("width", &width, 10, 30)||ImGui::SliderInt("height", &height, 10, 30) ) {
 				path_finder.resizeMap(width, height);
 			}

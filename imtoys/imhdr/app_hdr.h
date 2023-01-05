@@ -43,10 +43,14 @@ namespace lim
 	private:
 		void addImage(std::string_view path)
 		{
+			const int maxWidth = 800;
+			int vpWidth, vpHeight;
 			// color awared viewer
 			imgs.push_back(new ColorAwareImage(path));
-			imgs.back()->chromatic_adaptation = imgs.back()->profile.chromaticAdaptationTo(ICC::WHTPT_D65, 1);
-			viewports.push_back(new Viewport(new Framebuffer(), imgs.back()->width, imgs.back()->height, Viewport::WM_FIXED_RATIO));
+			vpWidth = glm::min(maxWidth, imgs.back()->width);
+			vpHeight = (vpWidth==maxWidth)?maxWidth/imgs.back()->aspect_ratio : imgs.back()->height;
+
+			viewports.push_back(new Viewport(new Framebuffer(), vpWidth, vpHeight, Viewport::WM_FIXED_RATIO));
 			viewports.back()->name = std::string(imgs.back()->name)+std::string(" - color awared");
 
 			// direct viewer
@@ -57,7 +61,7 @@ namespace lim
 			imgs.back()->PCS2RGB = glm::mat3(1);
 			imgs.back()->chromatic_adaptation = glm::mat3(1);
 
-			viewports.push_back(new Viewport(new Framebuffer(), imgs.back()->width, imgs.back()->height, Viewport::WM_FIXED_RATIO));
+			viewports.push_back(new Viewport(new Framebuffer(), vpWidth, vpHeight, Viewport::WM_FIXED_RATIO));
 			viewports.back()->name = std::string(imgs.back()->name)+std::string(" - direct view");
 		}
 	private:
@@ -77,7 +81,7 @@ namespace lim
 		virtual void renderImGui() final
 		{
 			imgui_modules::ShowExampleAppDockSpace([](){});
-			ImGui::ShowDemoWindow();
+			//ImGui::ShowDemoWindow();
 
 			for( int i = viewports.size()-1; i>=0; i-- ) {
 				viewports[i]->drawImGui();

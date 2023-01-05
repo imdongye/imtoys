@@ -17,6 +17,7 @@ namespace lim
 	public:
 		GLuint tex_id=0;
 		int width=0, height=0;
+		float aspect_ratio;
 		int nr_channels=0;
 		std::string tag;
 		std::string path;
@@ -59,6 +60,7 @@ namespace lim
 				Logger::get(1).log("texture failed to load at path: %s\n", path.c_str());
 				return;
 			}
+			aspect_ratio = width/(float)height;
 
 			src_format = GL_RGBA;
 			switch( nr_channels ) {
