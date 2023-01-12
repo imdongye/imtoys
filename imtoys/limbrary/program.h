@@ -69,7 +69,6 @@ namespace lim
 				Logger::get()<<"[error] "<<type<<" extension is not supported.";
 				return *this;
 			}
-
 			// AUTO PATHING
 			if( strchr(path.c_str(), '/')==NULL && strchr(path.c_str(), '\\')==NULL ) {
 				// todo: 임시 객체 줄이기 최적화
@@ -98,7 +97,10 @@ namespace lim
 			const GLchar* ccode = scode.c_str();
 			glShaderSource(sid, 1, &ccode, nullptr);
 			glCompileShader(sid);
-			checkCompileErrors(sid, type);
+			if( !checkCompileErrors(sid, path) ) {
+				sid = 0;
+				return *this;
+			}
 			glAttachShader(pid, sid);
 			Logger::get().log("[program %s] attch %s success\n", name.c_str(), path.c_str());
 
@@ -108,12 +110,18 @@ namespace lim
 		{
 			glLinkProgram(pid);
 			glUseProgram (pid);
-			checkCompileErrors(pid, "program");
+			if( !checkLinkingErrors(pid) ) {
+				pid = 0;
+				return *this;
+			}
             Logger::get().log("[program %s] linking success\n\n", name.c_str());
 			return *this;
 		}
 		GLuint use() const
 		{
+			if( pid==0 ) {
+				Logger::get()<<"[error] program is not linked"<<Logger::endll;
+			}
 			glUseProgram(pid);
 			return pid;
 		}
@@ -126,27 +134,33 @@ namespace lim
 			return *this;
 		}
 	private:
-		static inline void checkCompileErrors(GLuint shader, std::string type)
+		static inline bool checkCompileErrors(GLuint shader, std::string_view path)
 		{
 			GLint success;
 			GLchar infoLog[1024];
 
-			if( type != "program" ) {
-				glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-				if( !success ) {
-					glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-					Logger::get() << "ERROR::SHADER_COMPILATION_ERROR of type: " << type << "\n" << infoLog
-						<< "\n -- --------------------------------------------------- -- " << Logger::endl;
-				}
+			glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+			if( !success ) {
+				glGetShaderInfoLog(shader, 1024, NULL, infoLog);
+				Logger::get()<<"[error] shader compile error in "<< path.data() <<"\n"<<infoLog
+					<< "\n -- --------------------------------------------------- -- " << Logger::endl;
+				return false;
 			}
-			else {
-				glGetProgramiv(shader, GL_LINK_STATUS, &success);
-				if( !success ) {
-					glGetProgramInfoLog(shader, 1024, NULL, infoLog);
-					Logger::get() << "ERROR::PROGRAM_LINKING_ERROR of type: " << type << "\n" << infoLog
-						<< "\n -- --------------------------------------------------- -- " << Logger::endl;
-				}
+			return true;
+		}
+		static inline bool checkLinkingErrors(GLuint shader)
+		{
+			GLint success;
+			GLchar infoLog[1024];
+
+			glGetProgramiv(shader, GL_LINK_STATUS, &success);
+			if( !success ) {
+				glGetProgramInfoLog(shader, 1024, NULL, infoLog);
+				Logger::get()<<"[error] shader linking error\n"<<infoLog
+					<< "\n -- --------------------------------------------------- -- " << Logger::endl;
+				return false;
 			}
+			return true;
 		}
 		// string_view는 char* char[]을 받아도 string으로 임시객체를 만들지 않고 포인터를 사용함
 		std::tuple<int, const char*> createShaderAuto(const std::string_view filename)
