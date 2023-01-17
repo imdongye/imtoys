@@ -43,6 +43,7 @@ namespace lim
 
 			sphere = MeshGenerator::genSphere(8, 5);
 			//sphere = MeshGenerator::genQuad();
+			sphere = MeshGenerator::genCylinder();
 
 			models.push_back( ModelLoader::loadFile("common/archive/meshes/stanford-bunny.obj", true) );
 			models.back()->position = glm::vec3(5, 0, 0);
