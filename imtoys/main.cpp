@@ -8,6 +8,7 @@
 #include "limbrary/limclude.h"
 
 
+#include "imnpr/app_hatching.h"
 #include "imhdr/app_hdr.h"
 #include "imsimplification/app_simplification.h"
 #include "impbr/app_pbr.h"
@@ -33,15 +34,19 @@ void pushAppData()
 
 void drawAppSellector()
 {
-	static std::string selectorName = "AppSelector##app"+std::to_string(lim::AppPref::get().selectedAppIdx);
+	static std::string selectorName = "AppSelector##app"+std::string(appNames[lim::AppPref::get().selectedAppIdx]);
 
 	ImGui::Begin(selectorName.c_str());
 	for( int i=0; i<appNames.size(); i++ ) {
+		// when button pushed
 		if( ImGui::Button(appNames[i]) ) {
 			appSelected=true;
 			lim::AppPref::get().selectedAppIdx=i;
-			selectorName = "AppSelector##app"+std::string(appNames[i]);
-			demo_window_name = selectorName.c_str();
+			lim::AppPref::get().selectedAppName = appNames[i];
+
+			selectorName = "AppSelector##app"; 
+			selectorName += std::string(appNames[i]);
+
 			glfwSetWindowShouldClose(app->window, true);
 		}
 	}
@@ -51,22 +56,27 @@ void drawAppSellector()
 // rid unused variables warnings
 int main(int, char**)
 {
-	std::string demoWindowName;
 	lim::imgui_modules::draw_appselector = drawAppSellector;
+
+	pushAppData<lim::AppHatching>();
+	pushAppData<lim::AppPbr>();
 	pushAppData<lim::AppAstar>();
     pushAppData<lim::AppHdr>();
     pushAppData<lim::AppSimplification>();
-	pushAppData<lim::AppPbr>();
 	//pushAppData<lim::AppSnell>();
 
+	lim::AppPref::get().selectedAppIdx=0;
+	lim::AppPref::get().selectedAppName = appNames[0];
 
 	while( appSelected ) {
 		appSelected = false;
 		int appIdx = lim::AppPref::get().selectedAppIdx;
-		app = appConstructors[appIdx]();
-		lim::AppPref::get().selectedAppName = appNames[appIdx];
-		demoWindowName = "Dear ImGui Demo##demo"+std::string(appNames[appIdx]);
+
+		std::string demoWindowName = "Dear ImGui Demo##demo";
+		demoWindowName += std::string(appNames[appIdx]);
 		demo_window_name = demoWindowName.c_str();
+
+		app = appConstructors[appIdx]();
 
 		app->run();
 

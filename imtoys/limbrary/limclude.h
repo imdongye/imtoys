@@ -88,6 +88,13 @@
 
 #define COMP_IMVEC2(X, Y) ((X).x==(Y).x)&&((X).y==(Y).y)
 
+namespace lim
+{
+	constexpr float H_PI = 1.57079632679f;
+	constexpr float PI =   3.14159265359f;
+	constexpr float D_PI = 6.28318530718f;
+}
+
 #include "logger.h"
 #include "asset_lib.h"
 #include "imgui_modules.h"
@@ -100,6 +107,7 @@
 #include "model_view/camera.h"
 #include "model_view/light.h"
 #include "model_view/mesh.h"
+#include "model_view/mesh_generator.h"
 #include "model_view/model.h"
 #include "model_view/model_loader.h"
 #include "model_view/model_exporter.h"

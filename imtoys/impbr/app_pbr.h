@@ -22,6 +22,7 @@ namespace lim
 		Camera *camera;
 		Program *prog;
         Viewport *viewport;
+		Mesh *sphere;
 		Model *model;
 
 		int nr_rows    = 4;
@@ -44,6 +45,9 @@ namespace lim
 		AppPbr(): AppBase(1680, 1120, APP_NAME)
 		{
 			stbi_set_flip_vertically_on_load(true);
+			glEnable(GL_CULL_FACE);
+			glCullFace(GL_BACK);
+			glFrontFace(GL_CCW);
 
 			metal_colors.push_back( {1.000, 0.782, 0.344} ); // Gold
 			metal_colors.push_back( {0.664, 0.824, 0.850} ); // Zinc
@@ -65,8 +69,9 @@ namespace lim
 			model->scale = glm::vec3(50);
 			model->updateModelMat();
 
-            
-            
+			sphere = MeshGenerator::genSphere(8, 4);
+			//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
             /* initialize static shader uniforms before rendering */
 			GLuint pid = prog->use();
             setUniform(pid, "ao", 1.0f);
@@ -95,17 +100,18 @@ namespace lim
 			setUniform(pid, "camPos", camera->position);
             setUniform(pid, "projection", camera->proj_mat);
 
-			/* draw light */
-			glm::vec3 newPos = light_position + glm::vec3(sin(glfwGetTime() * 2.0) * 5.0, 0.0, 0.0);
-			if(!movedLight) newPos = light_position;
-			setUniform(pid, "lightPosition", newPos);
+			glm::vec3 lightPos = light_position + glm::vec3(sin(glfwGetTime() * 2.0) * 5.0, 0.0, 0.0);
+			if(!movedLight) lightPos = light_position;
+			setUniform(pid, "lightPosition", lightPos);
 			setUniform(pid, "lightColor", light_color);
 
-			glm::mat4 modelMat = glm::mat4(1.0f);
-			modelMat = glm::translate(modelMat, newPos);
+			glm::mat4 modelMat;
+
+			/* draw light */
+			modelMat = glm::translate(glm::mat4(1), lightPos);
 			modelMat = glm::scale(modelMat, glm::vec3(0.5f));
 			setUniform(pid, "model", modelMat);
-			renderSphere();
+			sphere->draw();
 
 			/* draw spheres */
 			glm::vec2 pivot = {(nr_cols-1)*spacing*0.5f, (nr_rows-1)*spacing*0.5f};
@@ -122,40 +128,36 @@ namespace lim
 						setUniform(pid, "metallic", 0.f);
 					}
 					else {
-                        // under 0.05 to error
                         setUniform(pid, "roughness", glm::clamp( 1/(float)nr_cols, 0.05f, 1.0f));
 						setUniform(pid, "albedo", metal_colors[col]);
 						setUniform(pid, "metallic", 1.f);
 					}
 
-
-					modelMat = glm::mat4(1.0f);
-					modelMat = glm::translate(modelMat, glm::vec3( col*spacing-pivot.x, pivot.y-row*spacing, 0.0f ));
+					modelMat = glm::translate(glm::mat4(1.0f), glm::vec3( col*spacing-pivot.x, pivot.y-row*spacing, 0.0f ));
 					setUniform(pid, "model", modelMat);
 
-					renderSphere();
+					sphere->draw();
 				}
 			}
 
-			/* draw test shpere */
 			setUniform(pid, "albedo", metal_colors[0]);
 			setUniform(pid, "metallic", metallic);
 			setUniform(pid, "roughness", roughness);
+
+			/* draw two test shpere */
 			setUniform(pid, "isGGX", true);
-			modelMat = glm::mat4(1.0f);
-			modelMat = glm::translate(modelMat, glm::vec3(spacing*3, spacing, 0));
+			modelMat = glm::translate(glm::mat4(1), glm::vec3(spacing*3, spacing, 0));
 			modelMat *= glm::scale(glm::vec3(2.f));
 			setUniform(pid, "model", modelMat);
-			renderSphere();
+			sphere->draw();
 
 			setUniform(pid, "isGGX", false);
-			modelMat = glm::mat4(1.0f);
-			modelMat = glm::translate(modelMat, glm::vec3(spacing*3, -spacing, 0));
+			modelMat = glm::translate(glm::mat4(1), glm::vec3(spacing*3, -spacing, 0));
 			modelMat *= glm::scale(glm::vec3(2.f));
 			setUniform(pid, "model", modelMat);
-			renderSphere();
+			sphere->draw();
 
-
+			/* draw models */
 			setUniform(pid, "isGGX", true);
 			setUniform(pid, "model", model->model_mat);
 			for( Mesh* mesh: model->meshes ) {
@@ -166,6 +168,7 @@ namespace lim
             
             // clear backbuffer
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			glViewport(0, 0, scr_width, scr_height);
             glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		}
@@ -188,94 +191,9 @@ namespace lim
             ImGui::End();
 		}
 	private:
-		void renderSphere()
-		{
-			static unsigned int sphereVAO = 0;
-			static unsigned int indexCount = 0;
-
-			if( glIsVertexArray(sphereVAO)==GL_FALSE ) {
-				unsigned int vbo, ebo;
-
-				glGenVertexArrays(1, &sphereVAO);
-				glGenBuffers(1, &vbo);
-				glGenBuffers(1, &ebo);
-
-				std::vector<glm::vec3> positions;
-				std::vector<glm::vec2> uv;
-				std::vector<glm::vec3> normals;
-				std::vector<unsigned int> indices;
-
-				const unsigned int X_SEGMENTS = 64;
-				const unsigned int Y_SEGMENTS = 64;
-				const float PI = 3.14159265359;
-				for( unsigned int y = 0; y <= Y_SEGMENTS; ++y ) {
-					for( unsigned int x = 0; x <= X_SEGMENTS; ++x ) {
-						float xSegment = (float)x / (float)X_SEGMENTS;
-						float ySegment = (float)y / (float)Y_SEGMENTS;
-						float xPos = std::cos(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
-						float yPos = std::cos(ySegment * PI);
-						float zPos = std::sin(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
-
-						positions.push_back(glm::vec3(xPos, yPos, zPos));
-						uv.push_back(glm::vec2(xSegment, ySegment));
-						normals.push_back(glm::vec3(xPos, yPos, zPos));
-					}
-				}
-
-				bool oddRow = false;
-				for( unsigned int y = 0; y < Y_SEGMENTS; ++y ) {
-					if( !oddRow ) // even rows: y == 0, y == 2; and so on
-					{
-						for( unsigned int x = 0; x <= X_SEGMENTS; ++x ) {
-							indices.push_back(y       * (X_SEGMENTS + 1) + x);
-							indices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
-						}
-					} else {
-						for( int x = X_SEGMENTS; x >= 0; --x ) {
-							indices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
-							indices.push_back(y       * (X_SEGMENTS + 1) + x);
-						}
-					}
-					oddRow = !oddRow;
-				}
-				indexCount = (int)indices.size();
-
-				std::vector<float> data;
-				for( unsigned int i = 0; i < positions.size(); ++i ) {
-					data.push_back(positions[i].x);
-					data.push_back(positions[i].y);
-					data.push_back(positions[i].z);
-					if( normals.size() > 0 ) {
-						data.push_back(normals[i].x);
-						data.push_back(normals[i].y);
-						data.push_back(normals[i].z);
-					}
-                    if( uv.size() > 0 ) {
-                        data.push_back(uv[i].x);
-                        data.push_back(uv[i].y);
-                    }
-				}
-				glBindVertexArray(sphereVAO);
-				glBindBuffer(GL_ARRAY_BUFFER, vbo);
-				glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(float), &data[0], GL_STATIC_DRAW);
-				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-				glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
-				float stride = (3 + 3 + 2) * sizeof(float);
-				glEnableVertexAttribArray(0);
-				glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
-				glEnableVertexAttribArray(1);
-				glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (void*)(3 * sizeof(float)));
-				glEnableVertexAttribArray(2);
-				glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride, (void*)(5 * sizeof(float)));
-			}
-
-			glEnable(GL_DEPTH_TEST);
-			glBindVertexArray(sphereVAO);
-			glDrawElements(GL_TRIANGLE_STRIP, indexCount, GL_UNSIGNED_INT, 0);
-		}
 		void processInput(GLFWwindow *window)
 		{
-			static const double cameraMoveSpeed = 3.9;
+			static const double cameraMoveSpeed = 4.2;
 			if( glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS )
 				glfwSetWindowShouldClose(window, true);
 
@@ -303,9 +221,6 @@ namespace lim
 			if( !viewport->focused ) return;
 			camera->shiftZoom(yoff*5.f);
 			camera->updateProjMat();
-		}
-		virtual void keyCallback(int key, int scancode, int action, int mods) final
-		{
 		}
 		virtual void mouseBtnCallback(int button, int action, int mods) final
 		{

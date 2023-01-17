@@ -90,7 +90,8 @@ namespace lim
 			glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
 			glClear(GL_COLOR_BUFFER_BIT);
 
-			glDisable(GL_DEPTH_TEST|GL_MULTISAMPLE);
+			glDisable(GL_DEPTH_TEST);
+			glDisable(GL_MULTISAMPLE);
 		}
 		virtual void unbind() const
 		{
@@ -256,7 +257,8 @@ namespace lim
 		virtual void bind() const override
 		{
 			Framebuffer::bind();
-			glEnable(GL_DEPTH_TEST|GL_MULTISAMPLE);
+			glEnable(GL_DEPTH_TEST);
+			glEnable(GL_MULTISAMPLE);
 			glClear(GL_DEPTH_BUFFER_BIT);
 		}
 		virtual void unbind() const override

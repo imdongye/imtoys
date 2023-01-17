@@ -95,7 +95,8 @@ namespace fqms
 			break;
 		}
 
-		lim::Mesh *result = new lim::Mesh(mesh);
+		lim::Mesh *result = new lim::Mesh();
+		result->replicateExtraData(*mesh);
 
 		loadFromGlobal(result);
 		return result;

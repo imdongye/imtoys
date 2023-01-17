@@ -10,7 +10,7 @@
 lim::AssetLib::AssetLib()
 {
 	// Array for full-screen quad
-	GLfloat verts[] ={
+	GLfloat vertices[] ={
 		-1.0f,1.0f,0.0f,  1.0f,1.0f,0.0f,  1.0f,-1.0f,0.0f, // top right
 		-1.0f,1.0f,0.0f,  1.0f,-1.0f,0.0f, -1.0f,-1.0f,0.0f, // bottom left
 	};
@@ -19,7 +19,7 @@ lim::AssetLib::AssetLib()
 	GLuint vbo;
 	glGenBuffers(1, &vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, 6 * 3*sizeof(GLfloat), verts, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, 6 * 3*sizeof(GLfloat), vertices, GL_STATIC_DRAW);
 
 	// Set up the vertex array object
 	glGenVertexArrays(1, &quad_vao);

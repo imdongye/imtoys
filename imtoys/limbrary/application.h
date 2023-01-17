@@ -86,14 +86,15 @@ namespace lim
 
 			imgui_modules::initImGui(window);
 
-			AppPref::get();
 
 			glViewport(0, 0, scr_width, scr_height);
 
-			// common setting
+			// need for restart app
+			AppPref::get();
 			Viewport::id_generator=0;
 			Logger::get().windowName = "Logger##log"+std::to_string(AppPref::get().selectedAppIdx);
 			AssetLib::reload();
+			Scene::sceneCounter=0;
 		}
 		/* destroy */
 		virtual ~AppBase()

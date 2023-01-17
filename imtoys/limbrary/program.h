@@ -70,7 +70,7 @@ namespace lim
 				return *this;
 			}
 			// AUTO PATHING
-			if( strchr(path.c_str(), '/')==NULL && strchr(path.c_str(), '\\')==NULL ) {
+			if( path.find('/')==std::string::npos && path.find('\\')==std::string::npos ) {
 				// todo: 임시 객체 줄이기 최적화
 				path = home_dir+"shader/"+std::string{type}+"/"+path;
 			}
@@ -142,8 +142,7 @@ namespace lim
 			glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
 			if( !success ) {
 				glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-				Logger::get()<<"[error] shader compile error in "<< path.data() <<"\n"<<infoLog
-					<< "\n -- --------------------------------------------------- -- " << Logger::endl;
+				Logger::get()<<"[error] shader compile error in "<< path.data()<<"\n"<<infoLog << Logger::endl;
 				return false;
 			}
 			return true;
@@ -156,8 +155,7 @@ namespace lim
 			glGetProgramiv(shader, GL_LINK_STATUS, &success);
 			if( !success ) {
 				glGetProgramInfoLog(shader, 1024, NULL, infoLog);
-				Logger::get()<<"[error] shader linking error\n"<<infoLog
-					<< "\n -- --------------------------------------------------- -- " << Logger::endl;
+				Logger::get()<<"[error] shader linking error\n"<<infoLog<<Logger::endl;
 				return false;
 			}
 			return true;

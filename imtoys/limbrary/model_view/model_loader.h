@@ -167,7 +167,7 @@ namespace lim
 				aiFace& face = mesh->mFaces[i];
 				// if not triangle mesh
 				if( face.mNumIndices != angles )
-					return new Mesh();
+					return nullptr;
 				for( GLuint j=0; j<face.mNumIndices; j++ )
 					indices.push_back(face.mIndices[j]);
 			}

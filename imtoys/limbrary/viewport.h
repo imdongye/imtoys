@@ -42,7 +42,7 @@ namespace lim
         float aspect;
 	public:
 		Viewport(Framebuffer* createdFB, GLuint _width=256, GLuint _height=256, WindowMode wm=WM_FREE)
-			: id(id_generator++), name("Viewport"+std::to_string(id)+"##vp"+std::to_string(AppPref::get().selectedAppIdx))
+			: id(id_generator++), name("Viewport"+std::to_string(id)+"##vp"+AppPref::get().selectedAppName)
 			, width(_width), height(_height), window_mode(wm), aspect(width/(float)height), mouse_pos(0), window_opened(true)
 		{
 			framebuffer = createdFB;

@@ -1,8 +1,9 @@
 #version 330 core
-out vec4 FragColor;
 in vec2 TexCoords;
 in vec3 WorldPos;
 in vec3 Normal;
+
+layout(location=0) out vec4 FragColor;
 
 // material parameters
 uniform float ao;
@@ -158,7 +159,8 @@ vec3 FresnelSchlick(float cosTheta, vec3 F0)
 
 
 void main()
-{		
+{	
+	vec3 faceN = normalize(cross(dFdx(WorldPos), dFdy(WorldPos)));
     vec3 N = normalize(Normal);
     vec3 V = normalize(camPos - WorldPos);
 	vec3 L = normalize(lightPosition - WorldPos);
@@ -210,7 +212,10 @@ void main()
 	// Debug
 	//color = vec3(NDF);
 	//color = vec3(GSF);
-	//color = vec3(N);
+	//color = vec3(Normal);
+	//color = vec3(gl_FragCoord.w);
+	//color = vec3(TexCoords.y);
+	//color = faceN;
 	//color = vec3(NDL);
 	//color = vec3(FF);
 

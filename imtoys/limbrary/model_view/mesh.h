@@ -18,7 +18,7 @@ namespace lim
 		struct Vertex
 		{
 			glm::vec3 p, n;
-			glm::vec2 uv;
+			glm::vec2 uv; // texture coordinate
 			glm::vec3 tangent, bitangent;
 			int m_BoneIDs[MAX_BONE_INFLUENCE];
 			float m_Weights[MAX_BONE_INFLUENCE];
@@ -46,46 +46,35 @@ namespace lim
 		GLuint angles=3; // set size of indices
 		glm::vec3 color; // Kd, diffuse color
 		int hasTexture = 1;
+		GLenum drawMode;
 	private:
 		GLuint VAO, VBO, EBO;
-		GLenum drawMode;
+		unsigned int aiMatIdx;
+
 		friend class ModelLoader;
 		friend class ModelExporter;
-		unsigned int aiMatIdx;
+		friend class MeshGenerator;
 	private:
 		// disable copying
 		Mesh(Mesh const&) = delete;
 		Mesh& operator=(Mesh const&) = delete;
 	public:
-		Mesh(const std::string_view _name="")
-			: VAO(0), name(_name)
+		Mesh()
 		{
-			// todo: apply every face diff draw mode
-			switch( angles ) {
-			case 3: drawMode = GL_TRIANGLES; break;
-			case 2: drawMode = GL_LINE_STRIP; break;
-			case 4: drawMode = GL_TRIANGLE_FAN; break;
-			}
 		}
+		// shared vertex triangle mesh
 		Mesh(const std::vector<n_mesh::Vertex>& _vertices
 			 , const std::vector<GLuint>& _indices
-			 , const std::vector<std::shared_ptr<Texture>> _textures
+			 , const std::vector<std::shared_ptr<Texture>>& _textures
 			 , const std::string_view _name="")
-			: Mesh(_name)
+			: name(_name)
 		{
+			drawMode = GL_TRIANGLES;
 			vertices = _vertices; // todo: fix deep copy
 			indices = _indices;
 			textures = _textures;
 			hasTexture = (textures.size()>0)?1:0;
 			setupMesh();
-		}
-		// copy without mesh data
-		Mesh(const Mesh* mesh)
-		{
-			drawMode = mesh->drawMode;
-			color = mesh->color;
-			textures = mesh->textures;
-			aiMatIdx = mesh->aiMatIdx;
 		}
 		~Mesh()
 		{
@@ -132,8 +121,8 @@ namespace lim
 			glBindVertexArray(VAO);
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 			glDrawElements(drawMode, static_cast<GLuint>(indices.size()), GL_UNSIGNED_INT, 0);
-			glBindVertexArray(0);
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+			glBindVertexArray(0);
 		}
 
 		// upload VRAM
@@ -142,6 +131,7 @@ namespace lim
 			const size_t SIZE_OF_VERTEX = sizeof(n_mesh::Vertex);
 			if( VAO!=0 )
 				glDeleteVertexArrays(1, &VAO);
+
 			glGenVertexArrays(1, &VAO);
 			glGenBuffers(1, &VBO);
 			glGenBuffers(1, &EBO);
@@ -180,13 +170,20 @@ namespace lim
 
 			glBindVertexArray(0);
 
-			// 이게 왜 가능한거지
+			// 이게 왜 가능한거지 IN WINDOWS
 			//glDeleteBuffers(1, &VBO);
 			//glDeleteBuffers(1, &EBO);
 		}
 		void print() const
 		{
 			Logger::get().log("%s, verts %d, tris %d\n", name.c_str(), vertices.size(), indices.size()/3);
+		}
+		void replicateExtraData(const Mesh& target)
+		{
+			drawMode = target.drawMode;
+			color = target.color;
+			textures = target.textures;
+			aiMatIdx = target.aiMatIdx;
 		}
 	};
 }
