@@ -5,6 +5,7 @@
 //	Todo:
 //	1. ARB 확장이 뭐지 어셈블리?
 //  2. GL_TEXTURE_MAX_ANISOTROPY_EXT
+//	3. texture loading 분리
 //
 
 #ifndef TEXTURE_H
@@ -32,9 +33,12 @@ namespace lim
 	private:
 		Texture(const Texture&) = delete;
 		Texture& operator=(const Texture&) = delete;
+	protected:
+		Texture(){}
 	public:
 		/* load texture */
-		Texture(const std::string_view _path, GLint internalFormat=GL_RGB32F) // GL_RGB8, GL_SRGB8
+		// internalFormat : GL_RGB32F(default), GL_RGB8, GL_SRGB8
+		Texture(const std::string_view _path, GLint internalFormat=GL_RGB32F)
 			: path(_path), internal_format(internalFormat), format(path.c_str()+path.rfind('.')+1)
 			, name(path.c_str()+path.rfind('\\')+path.rfind('/')+2)
 		{
@@ -62,12 +66,12 @@ namespace lim
 			}
 			aspect_ratio = width/(float)height;
 
-			src_format = GL_RGBA;
 			switch( nr_channels ) {
 				case 1: src_format = GL_RED; break;
 				case 2: src_format = GL_RG; break;
 				case 3: src_format = GL_RGB; break;
 				case 4: src_format = GL_RGBA; break;
+				default: Logger::get().log("[error] texter channels is over 4\n");
 			}
 
 			glGenTextures(1, &tex_id);
@@ -111,6 +115,21 @@ namespace lim
 				GLint loc = glGetUniformLocation(pid, shaderUniformName.data());
 				glUniform1i(loc, activeSlot);
 			}
+		}
+		void setMinMag(GLint magParam, GLint minParam)
+		{
+			glBindTexture(GL_TEXTURE_2D, tex_id);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+			glBindTexture(GL_TEXTURE_2D, 0);
+		}
+		// GL_CLAMP_TO_EDGE , GL_REPEAT , GL_REPEAT_MIRROR
+		void setWrap(GLint param=GL_CLAMP_TO_EDGE)
+		{
+			glBindTexture(GL_TEXTURE_2D, tex_id);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, param);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, param);
+			glBindTexture(GL_TEXTURE_2D, 0);
 		}
 	private:
 		void clear()

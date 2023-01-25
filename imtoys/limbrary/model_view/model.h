@@ -24,14 +24,15 @@ namespace lim
 	class Model
 	{
 	public:
+		std::string name;
 		glm::vec3 position;
 		glm::quat rotation;
 		glm::vec3 scale;
-		glm::mat4 model_mat;
-		std::string name;
-		// for prevent dup texture loading
+		glm::mat4 model_mat; // = trans*rot*scale*pivot
+		// shared_ptr for managing omit dup texture loading
 		std::vector<std::shared_ptr<Texture>> textures_loaded;
 		std::vector<Mesh*> meshes;
+
 		Program* program;
 		float bumpHeight=100;
 		float texDelta = 0.00001;
@@ -41,28 +42,31 @@ namespace lim
 		glm::vec3 boundary_max;
 		glm::vec3 boundary_min;
 	private:
+		// define when model loading
+		glm::mat4 pivot_mat; 
 		// for texture loading
 		std::string data_dir;
-		glm::mat4 pivot_mat;
-		// From : https://www.ostack.cn/qa/?qa=834163/
-		friend class ModelLoader;
-		friend class ModelExporter;
+		// for model exporting
 		GLuint ai_nr_mats;
 		void** ai_mats;
+		// From: https://www.ostack.cn/qa/?qa=834163/
+		friend class ModelLoader;
+		friend class ModelExporter;
 	private:
 		// Disable Copying and Assignment
 		Model(Model const&) = delete;
 		Model& operator=(Model const&) = delete;
 	public:
-		Model(Program* _program=nullptr, const std::string& _name = "")
+		Model(const std::string_view _name = "", Program* _program=nullptr)
 			: position(glm::vec3(0)), rotation(glm::quat()), scale(glm::vec3(1))
-			, pivot_mat(glm::mat4(1.0f)), nr_vertices(0), name(_name), program(_program)
+			, pivot_mat(glm::mat4(1.0f)), nr_vertices(0)
+			, name(_name), program(_program)
 		{   //mat4(1) is identity mat
 			updateModelMat();
 		}
 		// copy with new mesh
 		Model(const Model& model, const std::vector<Mesh*>& _meshes)
-			:Model(model.program, model.name)
+			:Model(model.name, model.program)
 		{
 			meshes = _meshes;
 			updateNums();
@@ -79,11 +83,10 @@ namespace lim
 			ai_mats = model.ai_mats; // shared memory
 		}
 		// create with only mesh
-		Model(Mesh* _mesh, Program* _program, std::string _name ="")
-			:Model(_program, _name)
+		Model(Mesh* _mesh, std::string_view _name ="none", Program* _program=nullptr)
+			:Model(_name, _program)
 		{
 			meshes.push_back(_mesh);
-
 			updateNums();
 			updateBoundary();
 			Logger::get().log("model(mesh) generaged : %s, vertices: %u\n\n", name.c_str(), nr_vertices);
@@ -101,6 +104,18 @@ namespace lim
 			}
 			meshes.clear();
 		}
+		void draw(const GLuint pid)
+		{
+			if( pid==0 )
+				Logger::get()<<"[error] model draw pid param is zero"<<Logger::endl;
+
+			setUniform(pid, "modelMat", model_mat);
+			setUniform(pid, "bumpHeight", bumpHeight);
+			setUniform(pid, "texDelta", texDelta);
+
+			for( GLuint i=0; i<meshes.size(); i++ )
+				meshes[i]->draw(pid);
+		}
 		void draw(const Camera& camera, const Light& light)
 		{
 			if( program==nullptr )
@@ -114,7 +129,7 @@ namespace lim
 			setUniform(pid, "bumpHeight", bumpHeight);
 			setUniform(pid, "texDelta", texDelta);
 
-			light.setUniforms(pid);
+			light.setUniforms(*program);
 
 			for( GLuint i=0; i<meshes.size(); i++ )
 				meshes[i]->draw(pid);
@@ -146,27 +161,6 @@ namespace lim
 			Logger::get()<<"pivot: "<<glm::to_string(pivot)<<Logger::endl;
 			pivot_mat = glm::translate(-pivot);
 		}
-		/*
-		void reloadNormalMap(std::string_view fullpath)
-		{
-			bool hasBumpMap = false;
-			for( Texture& tex : textures_loaded ) {
-				if( tex.type == "map_Bump" ) {
-					glDeleteTextures(0, &tex.id);
-					tex.id = loadTextureFromFile(fullpath, false);
-					hasBumpMap = true;
-					break;
-				}
-			}
-			if( hasBumpMap==false ) {
-				Texture newTex;
-				std::string fpth(fullpath);
-				newTex.id = loadTextureFromFile(fullpath, false);
-				newTex.path = fpth.substr(fpth.find_last_of('/')+1);
-				newTex.type = "map_Bump";
-				textures_loaded.push_back(newTex);
-			}
-		}*/
 	private:
 		void updateNums()
 		{

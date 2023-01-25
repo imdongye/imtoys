@@ -9,29 +9,38 @@
 #ifndef APP_HACHING_H
 #define APP_HACHING_H
 
+#include "art_map.h"
+
 namespace lim
 {
 	class AppHatching: public AppBase
 	{
 	public:
-		inline static constexpr const char *APP_DIR = "imnpr/";
+		inline static constexpr const char *APP_DIR =  "imnpr/";
 		inline static constexpr const char *APP_NAME = "real-time hatching";
 		inline static constexpr const char *APP_DISC = "aplicate real-time hatching paper";
 	private:
+		static constexpr GLint nr_tones = 6;
+		glm::vec2 uv_scale = {1.f, 1.f};
+		int fixed_art_map_idx=-1;
+		bool is6way = true;
+
 		bool start_dragging = false;
 		Camera *camera;
 		Program *program;
 		Viewport *viewport;
 		std::vector<Model*> models;
-		Mesh *sphere;
 		Light *light;
+		Model *light_model;
+		std::vector<ArtMap*> tam;
+		Texture* debugging_tex;
 
 	public:
-		AppHatching(): AppBase(1280, 720, APP_NAME)
+		AppHatching(): AppBase(1080, 1080, APP_NAME)
 		{
 			stbi_set_flip_vertically_on_load(true);
 
-			camera = new Camera(glm::vec3(0, 0, 12), scr_width/(float)scr_height);
+			camera = new Camera(glm::vec3(0, 0, 8), scr_width/(float)scr_height);
 			camera->fovy = 45.f;
 			camera->updateProjMat();
 
@@ -41,14 +50,60 @@ namespace lim
 			viewport = new Viewport(new MsFramebuffer());
 			viewport->framebuffer->clear_color ={0.1f, 0.1f, 0.1f, 1.0f};
 
-			sphere = MeshGenerator::genSphere(8, 5);
-			//sphere = MeshGenerator::genQuad();
-			sphere = MeshGenerator::genCylinder();
+			const float backLength = 5;
+			const float inter = 2.5;
+			const float bias = -inter*3.f;
+			/* gen models */
+			models.push_back(new Model(MeshGenerator::genCapsule(50, 25), "capsule"));
+			models.back()->position = glm::vec3(0, 0, 0);
+			models.back()->updateModelMat();
+
+			models.push_back(new Model(MeshGenerator::genDonut(50, 25), "donut"));
+			models.back()->position = glm::vec3(-5, 0, 0);
+			models.back()->updateModelMat();
+
+			models.push_back(new Model(MeshGenerator::genSphere(50, 25), "sphere"));
+			models.back()->position = glm::vec3(-10, 0, 0);
+			models.back()->updateModelMat();
+
+			models.push_back(new Model(MeshGenerator::genQuad(), "quad"));
+			models.back()->position = glm::vec3(backLength, 0, bias+models.size()*inter);
+			models.back()->updateModelMat();
+
+			models.push_back(new Model(MeshGenerator::genCube(), "cube"));
+			models.back()->position = glm::vec3(backLength, 0, bias+models.size()*inter);
+			models.back()->updateModelMat();
+
+			models.push_back(ModelLoader::loadFile("common/archive/dwarf/Dwarf_2_Low.obj", true));
+			models.back()->position = glm::vec3(backLength, 0, bias+models.size()*inter);
+			models.back()->updateModelMat();
+
+			models.push_back(new Model(MeshGenerator::genCylinder(8), "cylinder"));
+			models.back()->position = glm::vec3(backLength, 0, bias+models.size()*inter);
+			models.back()->updateModelMat();
 
 			models.push_back( ModelLoader::loadFile("common/archive/meshes/stanford-bunny.obj", true) );
-			models.back()->position = glm::vec3(5, 0, 0);
-			models.back()->scale = glm::vec3(50);
+			models.back()->position = glm::vec3(backLength, 0, bias+models.size()*inter);
 			models.back()->updateModelMat();
+
+			
+
+			light = new Light();
+			light->distance = 10.f;
+			light_model = new Model(MeshGenerator::genSphere(8, 4), "sphere");
+			light_model->position = light->position;
+			light_model->scale = glm::vec3(0.3f);
+			light_model->updateModelMat();
+
+			const std::string basename = "imnpr/TAM/default.bmp";
+			for( int tone=0; tone<nr_tones; tone++ ) {
+				std::string filename = basename;
+				filename.insert(filename.rfind('.'), 1, '0'+tone);
+				tam.push_back(new ArtMap(filename, 0));
+			}
+
+			debugging_tex = new Texture("common/images/uv_grid.jpg", GL_SRGB8);
+			debugging_tex->setWrap(GL_REPEAT);
 		}
 		~AppHatching()
 		{
@@ -58,7 +113,11 @@ namespace lim
 			for( Model* m : models ) {
 				delete m;
 			}
-			delete sphere;
+			delete light;
+			delete light_model;
+			for( ArtMap* t : tam ) {
+				delete t;
+			}
 		}
 	private:
 		virtual void update() final
@@ -68,23 +127,41 @@ namespace lim
 			/* render to fbo in viewport */
 			viewport->framebuffer->bind();
 
-			GLuint pid = program->use();
+			Program& prog = *program;
+			prog.use();
 
 			camera->aspect = viewport->framebuffer->aspect;
 			camera->updateProjMat();
-			setUniform(pid, "view", camera->view_mat);
-			setUniform(pid, "camPos", camera->position);
-			setUniform(pid, "projection", camera->proj_mat);
+			prog.setUniform("viewMat", camera->view_mat);
+			prog.setUniform("projMat", camera->proj_mat);
+			prog.setUniform("cameraPos", camera->position);
 
-			glm::mat4 modelMat;
+			light->setUniforms(prog);
 
-			modelMat = glm::translate(glm::mat4(1.f), glm::vec3(0.f));
-			modelMat = glm::scale(modelMat, glm::vec3(1.f));
-			setUniform(pid, "model", modelMat);
-			sphere->draw();
+			prog.setUniform("uvScale", uv_scale);
+			prog.setUniform("fixedArtMapIdx", fixed_art_map_idx);
+			prog.setUniform("is6way", is6way);
+
+
+			/* texture binding */
+			for( GLint lv=0; lv<nr_tones; lv++ ) {
+				ArtMap& am = *tam[lv];
+
+				glActiveTexture(GL_TEXTURE0 + lv);
+				glBindTexture(GL_TEXTURE_2D, am.tex_id);
+			}
+			int tam[6] = {5,4,3,2,1,0};
+			prog.setUniform("tam", tam, nr_tones);
+
+			glActiveTexture(GL_TEXTURE31);
+			glBindTexture(GL_TEXTURE_2D, debugging_tex->tex_id);
+			prog.setUniform("uvgridTex", 31);
+
+			prog.setUniform("modelMat", light_model->model_mat);
+			light_model->meshes.back()->draw();
 
 			for( Model* m : models ) {
-				setUniform(pid, "model", m->model_mat);
+				prog.setUniform("modelMat", m->model_mat);
 				m->meshes.back()->draw();
 			}
 
@@ -99,9 +176,38 @@ namespace lim
 		virtual void renderImGui() final
 		{
 			imgui_modules::ShowExampleAppDockSpace([]() {});
-
-
 			viewport->drawImGui();
+
+			/* controller */
+			ImGui::Begin("controller##hatching");
+			
+			ImGui::SliderFloat("uv scale x", &uv_scale.x, 0.1f, 20.f, "%.3f");
+			ImGui::SliderFloat("uv scale y", &uv_scale.y, 0.1f, 20.f, "%.3f");
+
+			ImGui::Checkbox("is 6-way blending", &is6way);
+
+			ImGui::Text("<light>");
+			const float yawSpd = 360 * 0.001;
+			const float pitchSpd = 80 * 0.001;
+			const float distSpd = 94 * 0.001;
+			bool isDraging = ImGui::SliderFloat("yaw", &light->yaw, 0, 360, "%.3f");
+			isDraging |= ImGui::SliderFloat("pitch", &light->pitch, 10, 90, "%.3f");
+			isDraging |= ImGui::SliderFloat("distance", &light->distance, 6, 100, "%.3f");
+			if( isDraging ) {
+				light->updateMembers();
+				light_model->position = light->position;
+				light_model->updateModelMat();
+			}
+			ImGui::Text("pos %f %f %f", light->position.x, light->position.y, light->position.z);
+
+			ImGui::SliderInt("use fixed art map", &fixed_art_map_idx, -1, nr_tones-1);
+			
+			ImGui::End();
+
+			/* state view */
+			ImGui::Begin("state##hatching");
+			ImGui::Text("fovy: %f", camera->fovy);
+			ImGui::End();
 		}
 
 	private:

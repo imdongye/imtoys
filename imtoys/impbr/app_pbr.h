@@ -69,7 +69,7 @@ namespace lim
 			model->scale = glm::vec3(50);
 			model->updateModelMat();
 
-			sphere = MeshGenerator::genSphere(8, 4);
+			sphere = MeshGenerator::genSphere(50, 25);
 			//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
             /* initialize static shader uniforms before rendering */

@@ -108,7 +108,7 @@ namespace lim
 			}
 
 			double start = glfwGetTime();
-			temp = ModelLoader::loadFile(path.data());
+			temp = ModelLoader::loadFile(path.data(), true);
 			temp->program = programs[selectedProgIdx];
 
 			vpPackage.scenes[vpIdx]->setModel(temp);

@@ -16,6 +16,7 @@ app_pref.json
 
 !imgui.ini
 !/include/i cmgui/imgui_demo.cpp
+imtoys/imnpr/TAM/
 
 
 *xcodeproj*

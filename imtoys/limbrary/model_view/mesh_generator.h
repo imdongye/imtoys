@@ -33,15 +33,15 @@ namespace lim
 	public:
 		static Mesh* genQuad()
 		{
-			const float half = 0.5f;
+			const float half = 1.0f;
 			const glm::vec3 front ={0,0,1};
 
 			clearBuf();
 
-			vertices.push_back({{-half,  half, 0}, front, {0,0}});
-			vertices.push_back({{ half,  half, 0}, front, {1,0}});
-			vertices.push_back({{-half, -half, 0}, front, {0,1}});
-			vertices.push_back({{ half, -half, 0}, front, {1,1}});
+			vertices.push_back({{-half,  half, 0}, front, {0,1}});
+			vertices.push_back({{ half,  half, 0}, front, {1,1}});
+			vertices.push_back({{-half, -half, 0}, front, {0,0}});
+			vertices.push_back({{ half, -half, 0}, front, {1,0}});
 
 			indices.insert(indices.end(), {0,3,1});
 			indices.insert(indices.end(), {0,2,3});
@@ -50,7 +50,7 @@ namespace lim
 		}
 		static Mesh* genCube()
 		{
-			const float half = 0.5f;
+			const float half = 1.0f;
 			const glm::vec3 nors[6] ={
 				{0,1,0},{0,0,1},{1,0,0},
 				{-1,0,0},{0,0,-1},{0,-1,0}
@@ -67,13 +67,13 @@ namespace lim
 				glm::vec3 t = tans[i];
 				glm::vec3 b = cross(n, t);
 
-				vertices.push_back({  t*half +b*half +n*half,  n, {1,0}});
+				vertices.push_back({  t*half +b*half +n*half,  n, {1,1}});
 									 						  
-				vertices.push_back({ -t*half +b*half +n*half,  n, {0,0}});
+				vertices.push_back({ -t*half +b*half +n*half,  n, {0,1}});
 									 						  
-				vertices.push_back({ -t*half -b*half +n*half,  n, {0,1}});
+				vertices.push_back({ -t*half -b*half +n*half,  n, {0,0}});
 									 						  
-				vertices.push_back({  t*half -b*half +n*half,  n, {1,1}});
+				vertices.push_back({  t*half -b*half +n*half,  n, {1,0}});
 			}
 			for( unsigned int i=0; i<6; i++ ) {
 				indices.insert(indices.end(), {0+i*4, 1+i*4, 2+i*4});
@@ -85,42 +85,42 @@ namespace lim
 
 		// From: http://www.songho.ca/opengl/gl_sphere.html
 		// texture coord가 다른 같은 위치의 vertex가 많음
-		static Mesh* genSphere(int nr_slices=50, int nr_stacks=25)
+		static Mesh* genSphere(int nrSlices=50, int nrStacks=25)
 		{
 			const float radius = 1.f;
 			clearBuf();
 
 			// phi : angle form xy-plane [-pi/2, pi/2]
 			// theta : y-axis angle [0, 2pi]
-			for( int stack=0; stack<=nr_stacks; stack++ ) {
-				float phi = H_PI - PI * stack/(float)nr_stacks;
+			for( int stack=0; stack<=nrStacks; stack++ ) {
+				float phi = H_PI - PI * stack/(float)nrStacks;
 				float y = sinf(phi);
 				float rcos = radius*cosf(phi);
-				for( int slice=0; slice<=nr_slices; slice++ ) {
-					float theta = D_PI * slice/(float)nr_slices;
+				for( int slice=0; slice<=nrSlices; slice++ ) {
+					float theta = D_PI * slice/(float)nrSlices;
 					float x = rcos * cosf(theta);
 					float z = -rcos * sinf(theta);
 					glm::vec3 pos ={x, y, z};
 					glm::vec3 norm = glm::normalize(pos);
-					glm::vec2 uv ={slice/(float)nr_slices, stack/(float)nr_stacks};
+					glm::vec2 uv ={2.f*slice/(float)nrSlices, 1.f-stack/(float)nrStacks};
 					vertices.push_back({pos, norm, uv});
 				}
 			}
 
-			const int nr_cols = nr_slices+1;
+			const int nr_cols = nrSlices+1;
 
-			for( int yy=0; yy<nr_stacks; yy++ ) {
-				int cur_row = nr_cols*yy;
-				int next_row = nr_cols*(yy+1);
-				for( int xx=0; xx<nr_slices; xx++ ) {
-					int cur_col = xx;
-					int next_col = xx+1;
-					if( yy<nr_stacks ) { // up tri
+			for( int stack=0; stack<nrStacks; stack++ ) {
+				int cur_row = nr_cols*stack;
+				int next_row = nr_cols*(stack+1);
+				for( int slice=0; slice<nrSlices; slice++ ) {
+					int cur_col = slice;
+					int next_col = slice+1;
+					if( stack<nrStacks ) { // up tri
 						indices.push_back(cur_row  + cur_col);
 						indices.push_back(next_row + cur_col);
 						indices.push_back(next_row + next_col);
 					}
-					if( yy>0 ) { // inv tri
+					if( stack>0 ) { // inv tri
 						indices.push_back(cur_row  + cur_col);
 						indices.push_back(next_row + next_col);
 						indices.push_back(cur_row + next_col);
@@ -131,37 +131,143 @@ namespace lim
 			return new Mesh(vertices, indices, textures);
 		}
 
-		static Mesh* genCylinder(int nr_slices=50)
+		static Mesh* genCylinder(int nrSlices=50)
 		{
 			const float radius = 1.f;
-			const float half = 1.f;
+			const float half = 1.f; // height
 
 			clearBuf();
 
-			vertices.push_back({ {0, half, 0}, {0,1,0}, {0,0} });
-			vertices.push_back({ {0,-half, 0}, {0,-1,0}, {0,0} });
+			vertices.push_back({ {0, half, 0}, {0,1,0}, {.5f,.5f} });
+			vertices.push_back({ {0,-half, 0}, {0,-1,0}, {.5f,.5f} });
 
-			for( int slice=0; slice<=nr_slices; slice++ ) {
-				float theta = D_PI * slice/(float)nr_slices;
+			for( int slice=0; slice<=nrSlices; slice++ ) {
+				float theta = D_PI * slice/(float)nrSlices;
 				float x = radius * cosf(theta);
 				float z = -radius * sinf(theta);
-				glm::vec3 pos, sideNor;
-				sideNor = glm::normalize(glm::vec3(x, 0, z));
+				glm::vec3 pos;
+				glm::vec3 sideNor = glm::normalize(glm::vec3(x, 0, z));
+				float sideU = 2.f*slice/(float)nrSlices;
+				glm::vec2 circleUv = {x,-z};
+				circleUv = .5f*(circleUv+glm::vec2(1));
+
 
 				pos ={x, half,z};
-				vertices.push_back({pos, {0,1,0}, {x,z} });
-				vertices.push_back({pos, sideNor, {slice/(float)nr_slices,0} });
+				vertices.push_back({pos, {0,1,0},  circleUv});
+				vertices.push_back({pos, sideNor, {sideU,1}});
 
 				pos ={x,-half,z};
-				vertices.push_back({pos, sideNor, {slice/(float)nr_slices,0}});
-				vertices.push_back({pos, {0,-1,0}, {x,z}});
+				vertices.push_back({pos, sideNor, {sideU,0}});
+				vertices.push_back({pos, {0,-1,0}, circleUv});
 			}
-			const unsigned int nr_cols = 4;
-			for( unsigned int slice=0; slice<nr_slices; slice++ ) {
-				indices.insert(indices.end(), {0, 2+nr_cols*slice, 2+nr_cols*(slice+1)});
-				indices.insert(indices.end(), {3+nr_cols*slice, 4+nr_cols*slice, 4+nr_cols*(slice+1)}); // up
-				indices.insert(indices.end(), {3+nr_cols*slice, 4+nr_cols*(slice+1), 3+nr_cols*(slice+1)}); // inv
-				indices.insert(indices.end(), {1, 5+nr_cols*slice, 5+nr_cols*(slice+1)});
+			const unsigned int nrCols = 4;
+			for( unsigned int slice=0; slice<nrSlices; slice++ ) {
+				indices.insert(indices.end(), {0, 2+nrCols*slice, 2+nrCols*(slice+1)});
+				indices.insert(indices.end(), {3+nrCols*slice, 4+nrCols*slice, 4+nrCols*(slice+1)}); // up
+				indices.insert(indices.end(), {3+nrCols*slice, 4+nrCols*(slice+1), 3+nrCols*(slice+1)}); // inv
+				indices.insert(indices.end(), {1, 5+nrCols*slice, 5+nrCols*(slice+1)});
+			}
+
+			return new Mesh(vertices, indices, textures);
+		}
+
+		static Mesh* genCapsule(int nrSlices=50, int nrStacks=25)
+		{
+			const float radius = 1.f;
+			const float halfSylinder = 1.f; // height
+			const int halfStacks = nrStacks/2;
+			nrStacks = halfStacks*2;
+
+			clearBuf();
+			
+			// phi : angle form xy-plane [-pi/2, pi/2]
+			// theta : y-axis angle [0, 2pi]
+			for( int stack=0; stack<=nrStacks; stack++ ) {
+				float phi = H_PI - PI * stack/(float)nrStacks;
+				float y = sinf(phi);
+				float rcos = radius*cosf(phi);
+				for( int slice=0; slice<=nrSlices; slice++ ) {
+					float theta = D_PI * slice/(float)nrSlices;
+					float x = rcos * cosf(theta);
+					float z = -rcos * sinf(theta);
+					glm::vec3 pos ={x,y,z};
+					glm::vec3 norm = glm::normalize(pos);
+					glm::vec2 uv ={2.f*slice/(float)nrSlices, 1.f-stack/(float)nrStacks};
+					if( stack<halfStacks ) {
+						pos.y += halfSylinder;
+						uv.y += 0.5f;
+					}
+					else {
+						pos.y -= halfSylinder;
+						uv.y -= 0.5f;
+					}
+					vertices.push_back({pos, norm, uv});
+				}
+			}
+
+			const int nrCols = nrSlices+1;
+
+			for( int stack=0; stack<nrStacks; stack++ ) {
+				int cur_row = nrCols*stack;
+				int next_row = nrCols*(stack+1);
+				for( int slice=0; slice<nrSlices; slice++ ) {
+					int cur_col = slice;
+					int next_col = slice+1;
+					if( stack<nrStacks ) { // up tri
+						indices.push_back(cur_row  + cur_col);
+						indices.push_back(next_row + cur_col);
+						indices.push_back(next_row + next_col);
+					}
+					if( stack>0 ) { // inv tri
+						indices.push_back(cur_row  + cur_col);
+						indices.push_back(next_row + next_col);
+						indices.push_back(cur_row + next_col);
+					}
+				}
+			}
+
+			return new Mesh(vertices, indices, textures);
+		}
+		static Mesh* genDonut(int nrSlices=50, int nrRingVerts=10)
+		{
+			const float ringRad = 1.f;
+			const float donutRad = 1.5f;
+
+			clearBuf();
+
+			// calculus : shell method
+			for( int slice=0; slice<=nrSlices; slice++ ) {
+				float donutTheta = -D_PI * slice/(float)nrSlices;
+				for( int rv=0; rv<=nrRingVerts; rv++ ) {
+					float ringTheta = PI + D_PI * rv/(float)nrRingVerts;
+					float y =  ringRad*sinf(ringTheta);
+					float relativeX = donutRad + ringRad*cosf(ringTheta);
+					float x = relativeX * cosf(donutTheta);
+					float z = relativeX * sin(donutTheta);
+
+					glm::vec3 pos ={x,y,z};
+					glm::vec3 norm = glm::normalize(pos);
+					glm::vec2 uv ={2.f*slice/(float)nrSlices, rv/(float)nrRingVerts};
+
+					vertices.push_back({pos, norm, uv});
+				}
+			}
+			int nrRealRingVerts = nrRingVerts+1;
+			for( int slice=0; slice<nrSlices; slice++ ) {
+				int curRing = nrRealRingVerts*slice;
+				int nextRing = curRing+nrRealRingVerts;
+				for( int rv=0; rv<nrRingVerts; rv++ ) {
+					int curVert = rv;
+					int nextVert = rv+1;
+					// up tri
+					indices.push_back(curRing  + curVert);
+					indices.push_back(nextRing + curVert);
+					indices.push_back(nextRing + nextVert);
+					// inv tri
+					indices.push_back(curRing  + curVert);
+					indices.push_back(nextRing + nextVert);
+					indices.push_back(curRing  + nextVert);
+				}
 			}
 
 			return new Mesh(vertices, indices, textures);

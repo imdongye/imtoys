@@ -198,9 +198,11 @@ namespace lim
 			Logger::get().log("GL Renderer          : %s\n", renderer);
 			Logger::get().log("GL Version (string)  : %s\n", version);
 			Logger::get().log("GLSL Version         : %s\n", glslVersion);
-			int nrAttributes;
+			int nrAttributes, nrTextureUnits;
 			glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &nrAttributes);
 			Logger::get().log("Maximum nr of vertex attributes supported: %d\n", nrAttributes);
+			glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &nrTextureUnits);
+			Logger::get().log("Maximum nr of texture slots supported: %d\n", nrTextureUnits);
 		}
 	};
 }

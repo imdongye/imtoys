@@ -25,11 +25,11 @@ namespace lim
 	private:
 		inline static Model* model=nullptr; // temp model
 	public:
-		static Model* loadFile(std::string_view _path, bool makeNormalized = true)
+		static Model* loadFile(std::string_view _path, bool makeNormalized = false)
 		{
 			std::string path(_path);
 
-			model = new Model(nullptr);
+			model = new Model();
 
 			// 찾지 못하면 std::string:npos == -1
 			const size_t lastSlashPos = path.find_last_of("/\\");
