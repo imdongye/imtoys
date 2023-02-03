@@ -2,6 +2,8 @@
 //	for generate mesh of general shape
 //  2023-01-17 / im dong ye
 //  
+//	uv : upper left
+//	st : down left
 //
 //	todo :
 //	1. bumpmap normalmap확인
@@ -102,8 +104,8 @@ namespace lim
 					float z = -rcos * sinf(theta);
 					glm::vec3 pos ={x, y, z};
 					glm::vec3 norm = glm::normalize(pos);
-					glm::vec2 uv ={2.f*slice/(float)nrSlices, 1.f-stack/(float)nrStacks};
-					vertices.push_back({pos, norm, uv});
+					glm::vec2 tc ={2.f*slice/(float)nrSlices, 1.f-stack/(float)nrStacks};
+					vertices.push_back({pos, norm, tc});
 				}
 			}
 
@@ -127,6 +129,30 @@ namespace lim
 					}
 				}
 			}
+
+			return new Mesh(vertices, indices, textures);
+		}
+
+		static Mesh* genIcoSphere(int subdivision=0)
+		{
+			const float sStep = 1.f/11.f;
+			const float tStep = 1.f/3.f;
+			const float radius = 1.f;
+			clearBuf();
+			for( int i=0; i<5; i++ ) {
+				vertices.push_back({{0,radius,0}, {0,1,0}, {sStep*(1+2*i),tStep*3}});
+				vertices.push_back({{0,-radius,0}, {0,-1,0}, {sStep*(3+2*i),0}});
+			}
+
+			const float hRad = radius/2.f;
+			glm::vec3 pos, norm;
+			for( int i=0; i<6; i++ ) {
+				//float t
+				//pos ={}
+				//vertices.push_back({{tx,radius,t}, {0,1,0}, {sStep*(1+2*i),tStep*3}});
+				//vertices.push_back({{0,-radius,0}, {0,-1,0}, {sStep*(3+2*i),0}});
+			}
+			
 
 			return new Mesh(vertices, indices, textures);
 		}
@@ -192,16 +218,16 @@ namespace lim
 					float z = -rcos * sinf(theta);
 					glm::vec3 pos ={x,y,z};
 					glm::vec3 norm = glm::normalize(pos);
-					glm::vec2 uv ={2.f*slice/(float)nrSlices, 1.f-stack/(float)nrStacks};
+					glm::vec2 tc ={2.f*slice/(float)nrSlices, 1.f-stack/(float)nrStacks};
 					if( stack<halfStacks ) {
 						pos.y += halfSylinder;
-						uv.y += 0.5f;
+						tc.y += 0.5f;
 					}
 					else {
 						pos.y -= halfSylinder;
-						uv.y -= 0.5f;
+						tc.y -= 0.5f;
 					}
-					vertices.push_back({pos, norm, uv});
+					vertices.push_back({pos, norm, tc});
 				}
 			}
 
@@ -247,9 +273,9 @@ namespace lim
 
 					glm::vec3 pos ={x,y,z};
 					glm::vec3 norm = glm::normalize(pos);
-					glm::vec2 uv ={2.f*slice/(float)nrSlices, rv/(float)nrRingVerts};
+					glm::vec2 tc ={2.f*slice/(float)nrSlices, rv/(float)nrRingVerts};
 
-					vertices.push_back({pos, norm, uv});
+					vertices.push_back({pos, norm, tc});
 				}
 			}
 			int nrRealRingVerts = nrRingVerts+1;

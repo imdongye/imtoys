@@ -50,43 +50,33 @@ namespace lim
 			viewport = new Viewport(new MsFramebuffer());
 			viewport->framebuffer->clear_color ={0.1f, 0.1f, 0.1f, 1.0f};
 
-			const float backLength = 5;
-			const float inter = 2.5;
-			const float bias = -inter*3.f;
 			/* gen models */
-			models.push_back(new Model(MeshGenerator::genCapsule(50, 25), "capsule"));
-			models.back()->position = glm::vec3(0, 0, 0);
-			models.back()->updateModelMat();
-
 			models.push_back(new Model(MeshGenerator::genDonut(50, 25), "donut"));
-			models.back()->position = glm::vec3(-5, 0, 0);
-			models.back()->updateModelMat();
+
+			models.push_back(new Model(MeshGenerator::genCapsule(50, 25), "capsule"));
 
 			models.push_back(new Model(MeshGenerator::genSphere(50, 25), "sphere"));
-			models.back()->position = glm::vec3(-10, 0, 0);
-			models.back()->updateModelMat();
 
 			models.push_back(new Model(MeshGenerator::genQuad(), "quad"));
-			models.back()->position = glm::vec3(backLength, 0, bias+models.size()*inter);
-			models.back()->updateModelMat();
 
 			models.push_back(new Model(MeshGenerator::genCube(), "cube"));
-			models.back()->position = glm::vec3(backLength, 0, bias+models.size()*inter);
-			models.back()->updateModelMat();
+
+			models.push_back(new Model(MeshGenerator::genCylinder(20), "cylinder"));
 
 			models.push_back(ModelLoader::loadFile("common/archive/dwarf/Dwarf_2_Low.obj", true));
-			models.back()->position = glm::vec3(backLength, 0, bias+models.size()*inter);
-			models.back()->updateModelMat();
-
-			models.push_back(new Model(MeshGenerator::genCylinder(8), "cylinder"));
-			models.back()->position = glm::vec3(backLength, 0, bias+models.size()*inter);
-			models.back()->updateModelMat();
 
 			models.push_back( ModelLoader::loadFile("common/archive/meshes/stanford-bunny.obj", true) );
-			models.back()->position = glm::vec3(backLength, 0, bias+models.size()*inter);
-			models.back()->updateModelMat();
 
-			
+			const float interModels = 2.5f;
+			const float biasModels = -interModels*models.size()/2.f;
+
+			models[0]->position ={biasModels-interModels, 0, 0};
+			models[0]->updateModelMat();
+
+			for( int i = 1; i<models.size(); i++ ) {
+				models[i]->position ={biasModels+interModels*i, 0, 0};
+				models[i]->updateModelMat();
+			}
 
 			light = new Light();
 			light->distance = 10.f;
