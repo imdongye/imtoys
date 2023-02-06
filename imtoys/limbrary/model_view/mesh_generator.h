@@ -95,7 +95,7 @@ namespace lim
 			// phi : angle form xy-plane [-pi/2, pi/2]
 			// theta : y-axis angle [0, 2pi]
 			for( int stack=0; stack<=nrStacks; stack++ ) {
-				float phi = H_PI - PI * stack/(float)nrStacks;
+				float phi = H_PI - F_PI * stack/(float)nrStacks;
 				float y = sinf(phi);
 				float rcos = radius*cosf(phi);
 				for( int slice=0; slice<=nrSlices; slice++ ) {
@@ -104,8 +104,8 @@ namespace lim
 					float z = -rcos * sinf(theta);
 					glm::vec3 pos ={x, y, z};
 					glm::vec3 norm = glm::normalize(pos);
-					glm::vec2 tc ={2.f*slice/(float)nrSlices, 1.f-stack/(float)nrStacks};
-					vertices.push_back({pos, norm, tc});
+					glm::vec2 uv ={2.f*slice/(float)nrSlices, 1.f-stack/(float)nrStacks};
+					vertices.push_back({pos, norm, uv});
 				}
 			}
 
@@ -135,24 +135,63 @@ namespace lim
 
 		static Mesh* genIcoSphere(int subdivision=0)
 		{
-			const float sStep = 1.f/11.f;
-			const float tStep = 1.f/3.f;
+			const float uStep = 1.f/11.f;
+			const float vStep = 1.f/3.f;
 			const float radius = 1.f;
 			clearBuf();
+            
 			for( int i=0; i<5; i++ ) {
-				vertices.push_back({{0,radius,0}, {0,1,0}, {sStep*(1+2*i),tStep*3}});
-				vertices.push_back({{0,-radius,0}, {0,-1,0}, {sStep*(3+2*i),0}});
+				vertices.push_back({ {0, radius,0}, {0, 1,0}, {uStep*(1+2*i), 1} });
+				vertices.push_back({ {0,-radius,0}, {0,-1,0}, {uStep*(3+2*i), 0} });
 			}
-
-			const float hRad = radius/2.f;
-			glm::vec3 pos, norm;
+            
+            glm::vec3 pos, norm;  glm::vec2 uv;
+            const float aStep = D_PI/5.f; // angle step
+            const float halfH = radius*0.5f; // half height
+            const float base = halfH*sqrtf(3); // bottom length 밑변
+            
+            float topA = 0; // top angle
+            float botA = aStep*0.5f;
+            
 			for( int i=0; i<6; i++ ) {
-				//float t
-				//pos ={}
-				//vertices.push_back({{tx,radius,t}, {0,1,0}, {sStep*(1+2*i),tStep*3}});
-				//vertices.push_back({{0,-radius,0}, {0,-1,0}, {sStep*(3+2*i),0}});
+                pos = { base*cosf(topA), halfH, base*sinf(topA) };
+                norm = glm::normalize(pos);
+                uv =  { uStep*(2*i), 1 };
+                vertices.push_back({pos, norm, uv});
+                topA += aStep;
+                
+                pos = { base*cosf(botA), halfH, base*sinf(botA) };
+                norm = glm::normalize(pos);
+                uv =  { uStep*(1+2*i), 0 };
+                vertices.push_back({pos, norm, uv});
+                botA += aStep;
 			}
-			
+            
+            indices = {
+                0, 10, 12,
+                2, 12, 14,
+                4, 14, 16,
+                6, 16, 18,
+                8, 18, 20,
+                
+                10, 11, 12,
+                12, 13, 14,
+                14, 15, 16,
+                16, 17, 18,
+                18, 19, 20,
+                
+                13, 12, 11,
+                15, 14, 13,
+                17, 16, 15,
+                19, 18, 17,
+                21, 20, 29,
+                
+                1, 13, 11,
+                3, 15, 13,
+                5, 17, 15,
+                7, 19, 17,
+                9, 21, 19,
+            };
 
 			return new Mesh(vertices, indices, textures);
 		}
@@ -209,7 +248,7 @@ namespace lim
 			// phi : angle form xy-plane [-pi/2, pi/2]
 			// theta : y-axis angle [0, 2pi]
 			for( int stack=0; stack<=nrStacks; stack++ ) {
-				float phi = H_PI - PI * stack/(float)nrStacks;
+				float phi = H_PI - F_PI * stack/(float)nrStacks;
 				float y = sinf(phi);
 				float rcos = radius*cosf(phi);
 				for( int slice=0; slice<=nrSlices; slice++ ) {
@@ -218,16 +257,16 @@ namespace lim
 					float z = -rcos * sinf(theta);
 					glm::vec3 pos ={x,y,z};
 					glm::vec3 norm = glm::normalize(pos);
-					glm::vec2 tc ={2.f*slice/(float)nrSlices, 1.f-stack/(float)nrStacks};
+					glm::vec2 uv ={2.f*slice/(float)nrSlices, 1.f-stack/(float)nrStacks};
 					if( stack<halfStacks ) {
 						pos.y += halfSylinder;
-						tc.y += 0.5f;
+						uv.y += 0.5f;
 					}
 					else {
 						pos.y -= halfSylinder;
-						tc.y -= 0.5f;
+						uv.y -= 0.5f;
 					}
-					vertices.push_back({pos, norm, tc});
+					vertices.push_back({pos, norm, uv});
 				}
 			}
 
@@ -265,7 +304,7 @@ namespace lim
 			for( int slice=0; slice<=nrSlices; slice++ ) {
 				float donutTheta = -D_PI * slice/(float)nrSlices;
 				for( int rv=0; rv<=nrRingVerts; rv++ ) {
-					float ringTheta = PI + D_PI * rv/(float)nrRingVerts;
+					float ringTheta = F_PI + D_PI * rv/(float)nrRingVerts;
 					float y =  ringRad*sinf(ringTheta);
 					float relativeX = donutRad + ringRad*cosf(ringTheta);
 					float x = relativeX * cosf(donutTheta);
@@ -273,9 +312,9 @@ namespace lim
 
 					glm::vec3 pos ={x,y,z};
 					glm::vec3 norm = glm::normalize(pos);
-					glm::vec2 tc ={2.f*slice/(float)nrSlices, rv/(float)nrRingVerts};
+					glm::vec2 uv ={2.f*slice/(float)nrSlices, rv/(float)nrRingVerts};
 
-					vertices.push_back({pos, norm, tc});
+					vertices.push_back({pos, norm, uv});
 				}
 			}
 			int nrRealRingVerts = nrRingVerts+1;

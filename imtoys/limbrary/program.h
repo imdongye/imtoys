@@ -144,7 +144,7 @@ namespace lim
 			if( !success ) {
 				glGetShaderInfoLog(shader, 1024, NULL, infoLog);
 				Logger::get()<<"[error] shader compile error in "<< path.data()<<"\n"<<infoLog << Logger::endl;
-				std::abort();
+				//std::abort();
 				return false;
 			}
 			return true;

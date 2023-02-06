@@ -6,11 +6,9 @@ in vec2 mUv;
 
 layout(location=0) out vec4 FragColor;
 
-const int TONAL_BUF_SIZE = 12;
-
 uniform vec2 uvScale = vec2(1.f);
 uniform int nrTones = 6;
-uniform sampler2D tam[TONAL_BUF_SIZE];
+uniform sampler2D tam[6];
 uniform sampler2D uvgridTex;
 uniform int fixedArtMapIdx = -1;
 uniform bool is6way = true;
@@ -30,7 +28,7 @@ void main() {
 
 	if(is6way) {
 		int nrRange = nrTones;
-		float coefs[TONAL_BUF_SIZE] = float[TONAL_BUF_SIZE](0.f);
+		float coefs[6] = float[6](0,0,0,0,0,0);
 		int left = min( int(floor( nrRange*lambertian)), nrRange );
 
 		float coef = float(nrRange)*lambertian - float(left);
