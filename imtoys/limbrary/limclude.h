@@ -92,7 +92,7 @@
 namespace lim
 {
 	constexpr float H_PI = 1.57079632679f; // half
-	constexpr float F_PI =   3.14159265359f; // math.h
+	constexpr float F_PI =   3.14159265359f; // float
 	constexpr float D_PI = 6.28318530718f; // double
 }
 

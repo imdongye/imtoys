@@ -20,6 +20,7 @@ uniform float lightInt;
 uniform vec3 cameraPos;
 
 void main() {
+	vec3 FaceN = normalize(cross(dFdx(wPos), dFdy(wPos)));
 	vec3 N = normalize(wNor);
 	vec3 L = normalize(lightPos-wPos);
 	float lambertian = max(0,dot(N,L));
@@ -74,6 +75,8 @@ void main() {
 	//outColor = vec3(lambertian);
 	//outColor = vec3(mUv, 1);
 	outColor = texture(uvgridTex, scaledUv).rgb;
+	outColor = vec3(max(0, dot(FaceN, L)));
+	//outColor = vec3(mUv, 1.0);
 
 	FragColor = vec4(outColor,1);
 }

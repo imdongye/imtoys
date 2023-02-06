@@ -38,6 +38,9 @@ namespace lim
 	public:
 		AppHatching(): AppBase(1080, 1080, APP_NAME)
 		{
+			//glEnable(GL_CULL_FACE);
+			//glCullFace(GL_FRONT);
+
 			stbi_set_flip_vertically_on_load(true);
 
 			camera = new Camera(glm::vec3(0, 0, 8), scr_width/(float)scr_height);
@@ -57,6 +60,9 @@ namespace lim
 
 			models.push_back(new Model(MeshGenerator::genSphere(50, 25), "sphere"));
 
+			models.push_back(new Model(MeshGenerator::genIcoSphere(0), "ico sphere"));
+			models.push_back(new Model(MeshGenerator::genIcoSphere(3), "ico sphere2"));
+
 			models.push_back(new Model(MeshGenerator::genQuad(), "quad"));
 
 			models.push_back(new Model(MeshGenerator::genCube(), "cube"));
@@ -67,7 +73,7 @@ namespace lim
 
 			models.push_back( ModelLoader::loadFile("common/archive/meshes/stanford-bunny.obj", true) );
 
-			const float interModels = 2.5f;
+			const float interModels = 3.5f;
 			const float biasModels = -interModels*models.size()/2.f;
 
 			models[0]->position ={biasModels-interModels, 0, 0};
@@ -161,7 +167,6 @@ namespace lim
 			glViewport(0, 0, scr_width, scr_height);
 			glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT);
-
 		}
 		virtual void renderImGui() final
 		{

@@ -132,13 +132,25 @@ namespace lim
 
 			return new Mesh(vertices, indices, textures);
 		}
-
+	private:
+		static n_mesh::Vertex genHalfVertex(const n_mesh::Vertex& v1
+											, const n_mesh::Vertex& v2, float radius)
+		{
+			glm::vec3 pos = (v1.p+v2.p)*0.5f;
+			glm::vec3 norm = glm::normalize(pos);
+			pos = norm*radius;
+			glm::vec2 uv = (v1.uv+v2.uv)*0.5f;
+			return {pos, norm, uv};
+		}
+	public:
 		static Mesh* genIcoSphere(int subdivision=0)
 		{
 			const float uStep = 1.f/11.f;
 			const float vStep = 1.f/3.f;
 			const float radius = 1.f;
 			clearBuf();
+
+			vertices.reserve(22);
             
 			for( int i=0; i<5; i++ ) {
 				vertices.push_back({ {0, radius,0}, {0, 1,0}, {uStep*(1+2*i), 1} });
@@ -154,15 +166,15 @@ namespace lim
             float botA = aStep*0.5f;
             
 			for( int i=0; i<6; i++ ) {
-                pos = { base*cosf(topA), halfH, base*sinf(topA) };
+                pos = { base*cosf(topA), halfH, -base*sinf(topA) };
                 norm = glm::normalize(pos);
-                uv =  { uStep*(2*i), 1 };
+                uv =  { uStep*(2*i), 2*vStep };
                 vertices.push_back({pos, norm, uv});
                 topA += aStep;
                 
-                pos = { base*cosf(botA), halfH, base*sinf(botA) };
+                pos = { base*cosf(botA), -halfH, -base*sinf(botA) };
                 norm = glm::normalize(pos);
-                uv =  { uStep*(1+2*i), 0 };
+                uv =  { uStep*(1+2*i), vStep };
                 vertices.push_back({pos, norm, uv});
                 botA += aStep;
 			}
@@ -184,7 +196,7 @@ namespace lim
                 15, 14, 13,
                 17, 16, 15,
                 19, 18, 17,
-                21, 20, 29,
+                21, 20, 19,
                 
                 1, 13, 11,
                 3, 15, 13,
@@ -192,6 +204,38 @@ namespace lim
                 7, 19, 17,
                 9, 21, 19,
             };
+
+			for( int i=0; i<subdivision; i++ ) {
+				const std::vector<GLuint> tmpIndices = indices;
+				indices.clear();
+				for( int j=0; j<tmpIndices.size(); j+=3 ) {
+					const auto& v1 = vertices[tmpIndices[j]];
+					const auto& v2 = vertices[tmpIndices[j+1]];
+					const auto& v3 = vertices[tmpIndices[j+2]];
+					const GLuint newIdx = vertices.size();
+
+					vertices.push_back(genHalfVertex(v1, v2, radius));
+					vertices.push_back(genHalfVertex(v2, v3, radius));
+					vertices.push_back(genHalfVertex(v3, v1, radius));
+
+					
+					indices.push_back(tmpIndices[j+0]);
+					indices.push_back(newIdx+0);
+					indices.push_back(newIdx+2);
+
+					indices.push_back(tmpIndices[j+1]);
+					indices.push_back(newIdx+1);
+					indices.push_back(newIdx+0);
+
+					indices.push_back(tmpIndices[j+2]);
+					indices.push_back(newIdx+2);
+					indices.push_back(newIdx+1);
+
+					indices.push_back(newIdx+0);
+					indices.push_back(newIdx+1);
+					indices.push_back(newIdx+2);
+				}
+			}
 
 			return new Mesh(vertices, indices, textures);
 		}
