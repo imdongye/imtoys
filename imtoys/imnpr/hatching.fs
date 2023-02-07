@@ -72,10 +72,10 @@ void main() {
 	//outColor = texture(tam[left], scaledUv).rgb;
 	//outColor = vec3(left/float(nrTones));
 	//outColor = vec3(coef);
-	//outColor = vec3(lambertian);
+	outColor = vec3(lambertian);
 	//outColor = vec3(mUv, 1);
 	outColor = texture(uvgridTex, scaledUv).rgb;
-	outColor = vec3(max(0, dot(FaceN, L)));
+	//outColor = vec3(max(0, dot(FaceN, L)));
 	//outColor = vec3(mUv, 1.0);
 
 	FragColor = vec4(outColor,1);

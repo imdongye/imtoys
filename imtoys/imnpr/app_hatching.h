@@ -38,9 +38,9 @@ namespace lim
 	public:
 		AppHatching(): AppBase(1080, 1080, APP_NAME)
 		{
-			//glEnable(GL_CULL_FACE);
+			glEnable(GL_CULL_FACE);
 			//glCullFace(GL_FRONT);
-
+			//glPolygonMode(GL_FRONT, GL_LINE);
 			stbi_set_flip_vertically_on_load(true);
 
 			camera = new Camera(glm::vec3(0, 0, 8), scr_width/(float)scr_height);
@@ -61,7 +61,12 @@ namespace lim
 			models.push_back(new Model(MeshGenerator::genSphere(50, 25), "sphere"));
 
 			models.push_back(new Model(MeshGenerator::genIcoSphere(0), "ico sphere"));
+			//models.back()->meshes.back()->drawMode = GL_LINES;
 			models.push_back(new Model(MeshGenerator::genIcoSphere(3), "ico sphere2"));
+			models.push_back(new Model(MeshGenerator::genCubeSphere(2), "cube sphere2"));
+			models.push_back(new Model(MeshGenerator::genCubeSphere(5), "cube sphere2"));
+			models.push_back(new Model(MeshGenerator::genCubeSphere2(5), "cube sphere2"));
+			//models.back()->meshes.back()->drawMode = GL_LINE_LOOP;
 
 			models.push_back(new Model(MeshGenerator::genQuad(), "quad"));
 

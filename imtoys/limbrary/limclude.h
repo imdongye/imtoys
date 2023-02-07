@@ -91,8 +91,9 @@
 
 namespace lim
 {
+	constexpr float Q_PI = 0.78539816339f; // quarter
 	constexpr float H_PI = 1.57079632679f; // half
-	constexpr float F_PI =   3.14159265359f; // float
+	constexpr float F_PI = 3.14159265359f; // float
 	constexpr float D_PI = 6.28318530718f; // double
 }
 

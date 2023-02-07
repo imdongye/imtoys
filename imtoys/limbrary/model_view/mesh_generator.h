@@ -87,7 +87,7 @@ namespace lim
 
 		// From: http://www.songho.ca/opengl/gl_sphere.html
 		// texture coord가 다른 같은 위치의 vertex가 많음
-		static Mesh* genSphere(int nrSlices=50, int nrStacks=25)
+		static Mesh* genSphere(const int nrSlices=50, const int nrStacks=25)
 		{
 			const float radius = 1.f;
 			clearBuf();
@@ -143,7 +143,8 @@ namespace lim
 			return {pos, norm, uv};
 		}
 	public:
-		static Mesh* genIcoSphere(int subdivision=0)
+		// icosahedron, 20면체
+		static Mesh* genIcoSphere(const int subdivision=0)
 		{
 			const float uStep = 1.f/11.f;
 			const float vStep = 1.f/3.f;
@@ -239,8 +240,121 @@ namespace lim
 
 			return new Mesh(vertices, indices, textures);
 		}
+		
+		static Mesh* genCubeSphere(const int nrSlices=1)
+		{
+			const float radius = 1.f;
 
-		static Mesh* genCylinder(int nrSlices=50)
+			const glm::vec3 nors[6] ={
+				{0,1,0},{0,0,1},{1,0,0},
+				{-1,0,0},{0,0,-1},{0,-1,0}
+			};
+			const glm::vec3 tans[6] ={
+				{1,0,0},{1,0,0},{0,0,-1},
+				{0,0,1},{-1,0,0},{-1,0,0}
+			};
+
+			clearBuf();
+
+			for( int side=0; side<6; side++ ) {
+				glm::vec3 n = nors[side];
+				glm::vec3 t = tans[side];
+				glm::vec3 b = cross(n, t);
+
+				GLuint offset = vertices.size();
+
+				float sliceLength = 2.f/nrSlices;
+
+				for( int y=0; y<=nrSlices; y++ ) {
+					for( int x=0; x<=nrSlices; x++ ) {
+						float dx = (float)x/nrSlices*2.f-1.f;
+						float dy = (float)y/nrSlices*2.f-1.f;
+						glm::vec3 pos = n + t*dx + b*dy;
+						glm::vec3 nor = glm::normalize(pos);
+						pos = nor*radius;
+						glm::vec2 uv ={dx*0.5f+0.5f, dy*0.5f+0.5f};
+						vertices.push_back({pos, nor, uv});
+					}
+				}
+				const int nrCols = nrSlices+1;
+				for( int y=0; y<nrSlices; y++ ) {
+					const GLuint curRow = offset+y*nrCols;
+					const GLuint nextRow = offset+(y+1)*nrCols;
+					for( int x=0; x<nrSlices; x++ ) {
+
+						indices.push_back(nextRow+x);
+						indices.push_back(curRow+x);
+						indices.push_back(curRow+x+1);
+
+						indices.push_back(nextRow+x);
+						indices.push_back(curRow+x+1);
+						indices.push_back(nextRow+x+1);
+					}
+				}
+			}
+			return new Mesh(vertices, indices, textures);
+		}
+		// smooth
+		static Mesh* genCubeSphere2(const int nrSlices=1)
+		{
+			const float radius = 1.f;
+
+			const glm::vec3 nors[6] ={
+				{0,1,0},{0,0,1},{1,0,0},
+				{-1,0,0},{0,0,-1},{0,-1,0}
+			};
+			const glm::vec3 tans[6] ={
+				{1,0,0},{1,0,0},{0,0,-1},
+				{0,0,1},{-1,0,0},{-1,0,0}
+			};
+
+			/* genUnitCubeSpherePositiveXFace */
+			std::vector<glm::vec3> facePoints;
+
+			for( int y=0; y<=nrSlices; y++ ) { // z-axis angle
+				float phi = H_PI*(float)y/nrSlices-Q_PI;
+				glm::vec3 n1 ={-sinf(phi), cos(phi), 0};
+				for( int x=0; x<=nrSlices; x++ ) { // y-axis angle
+					float theta = H_PI*(float)x/nrSlices-Q_PI;
+					glm::vec3 n2 ={sinf(theta), 0, cos(theta)};
+					facePoints.push_back(glm::normalize(glm::cross(n1, n2)));
+				}
+			}
+
+			clearBuf();
+
+			for( int side=0; side<6; side++ ) {
+				const int nrCols = nrSlices+1;
+				const int offset = vertices.size();
+				const glm::mat3 rotMat = glm::mat3(nors[side],
+												   tans[side],
+												   cross(nors[side], tans[side]));
+
+				for( int y=0; y<=nrSlices; y++ ) for( int x=0; x<=nrSlices; x++ ) {
+					glm::vec3 pos = rotMat*facePoints[nrCols*y+x];
+					glm::vec2 uv ={x/(float)nrSlices, y/(float)nrSlices};
+					vertices.push_back({radius*pos, pos, uv});
+				}
+
+				for( int y=0; y<nrSlices; y++ ) {
+					const GLuint curRow = offset+y*nrCols;
+					const GLuint upRow = offset+(y+1)*nrCols;
+					for( int x=0; x<nrSlices; x++ ) {
+
+						indices.push_back(upRow+x);
+						indices.push_back(curRow+x);
+						indices.push_back(curRow+x+1);
+
+						indices.push_back(upRow+x);
+						indices.push_back(curRow+x+1);
+						indices.push_back(upRow+x+1);
+					}
+				}
+			}
+
+			return new Mesh(vertices, indices, textures);
+		}
+		static Mesh* genCylinder(const int nrSlices=50)
 		{
 			const float radius = 1.f;
 			const float half = 1.f; // height
