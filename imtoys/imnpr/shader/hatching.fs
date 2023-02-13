@@ -27,6 +27,7 @@ void main() {
 	vec2 scaledUv = uvScale * (mUv-vec2(.5f)) + vec2(.5f);
 	vec3 outColor = vec3(0);
 
+	// in paper
 	if(is6way) {
 		int nrRange = nrTones;
 		float coefs[6] = float[6](0,0,0,0,0,0);
@@ -42,28 +43,20 @@ void main() {
 			outColor += coefs[i] * negate;
 		}
 		outColor = vec3(1)-outColor;
-
-		// for debuging
-		//outColor = vec3(test);
-		//outColor = vec3(left/float(nrTones));
-		//outColor = vec3(coefs[3]);
 	}
+	// my way
 	else {
 		int nrRange = nrTones-1;
 		int left = min(int(floor( nrRange*lambertian )), nrRange-1);
 		float coef = float(nrRange)*lambertian - float(left);
 
 		outColor =  mix(texture(tam[left], scaledUv), texture(tam[left+1], scaledUv), coef).rgb;
-
-		// for debuging
-		//outColor = vec3(coef);
 	}
 
 	if(fixedArtMapIdx>=0) {
 		outColor = texture(tam[fixedArtMapIdx], scaledUv).rgb;
 		
-		outColor = vec3(1)-outColor;
-		outColor *= 1.f-lambertian;
+		outColor = (1.f-lambertian)*(vec3(1)-outColor);
 		outColor = vec3(1)-outColor;
 	}
 
@@ -72,11 +65,6 @@ void main() {
 	//outColor = texture(tam[left], scaledUv).rgb;
 	//outColor = vec3(left/float(nrTones));
 	//outColor = vec3(coef);
-	outColor = vec3(lambertian);
-	//outColor = vec3(mUv, 1);
-	outColor = texture(uvgridTex, scaledUv).rgb;
-	//outColor = vec3(max(0, dot(FaceN, L)));
-	//outColor = vec3(mUv, 1.0);
 
 	FragColor = vec4(outColor,1);
 }

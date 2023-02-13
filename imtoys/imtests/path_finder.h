@@ -135,7 +135,6 @@ namespace lim
 		{
 			if( x<0||y<0||x>=width||y>=height ) return false;
 
-			bool needUpdatePath = false;
 			Pos oldStartPos, oldEndPos;
 			NodeState prevNs = map[y][x].state;
 
@@ -152,7 +151,6 @@ namespace lim
 				if( oldStartPos != start_pos && oldStartPos.x>=0 ) {
 					map[oldStartPos.y][oldStartPos.x].state = NS_ROAD;
 				}
-				needUpdatePath = end_pos.x>0;
 			}
 			else if( ns==NS_END ) {
 				oldEndPos = end_pos;
@@ -160,12 +158,11 @@ namespace lim
 				if( oldEndPos != end_pos && oldEndPos.x>=0 ) {
 					map[oldEndPos.y][oldEndPos.x].state = NS_ROAD;
 				}
-				needUpdatePath = end_pos.x>0;
 			}
 			
 			map[y][x].state = ns;
 
-			if( needUpdatePath ) {
+			if( start_pos!=end_pos && start_pos.x>0 && end_pos.x>0 ) {
 				updatePath();
 			}
 			return true;

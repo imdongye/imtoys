@@ -50,6 +50,36 @@ namespace lim
 
 			return new Mesh(vertices, indices, textures);
 		}
+		static Mesh* genPlane(int nrSlice=5)
+		{
+			const float length = 2.0f;
+			const float start  = -length/2.f;
+			const float step   = length/nrSlice;
+			const glm::vec3 up = {0,1,0};
+
+			clearBuf();
+
+			const float div = nrSlice+1;
+			for( int i=0; i<=nrSlice; i++ ) for( int j=0; j<=nrSlice; j++ ) {
+				vertices.push_back({ {start+step*j,0, start+step*i}, up, {(j)/div,(div-i)/div} });
+			}
+
+			const int nrCols = nrSlice+1;
+			for( int i=0; i<nrSlice; i++ ) for( int j=0; j<nrSlice; j++ ) {
+				// 0-1
+				// |\|
+				// 2-3
+				const int ori = i*nrCols+j;
+				indices.push_back(ori+0);
+				indices.push_back(ori+0+nrCols);
+				indices.push_back(ori+1+nrCols);
+
+				indices.push_back(ori+0);
+				indices.push_back(ori+1+nrCols);
+				indices.push_back(ori+1);
+			}
+			return new Mesh(vertices, indices, textures);
+		}
 		static Mesh* genCube()
 		{
 			const float half = 1.0f;

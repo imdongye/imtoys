@@ -1,31 +1,35 @@
 //
-//  for test hdr image.
+//  framework template
 //	2022-11-14 / im dong ye
 //
 //	TODO list:
-//
+//	1. define var
+//	2. class name
+//  3. dir, name, disc
 //
 
-#ifndef APP_SNELL_H
-#define APP_SNELL_H
+#ifndef APP_TEMP_H
+#define APP_TEMP_H
+
+#include "../limbrary/limclude.h"
 
 namespace lim
 {
-	class AppSnell: public AppBase
+	class AppTemplate: public AppBase
 	{
 	public:
-        inline static constexpr const char *APP_DIR = "imsnells/";
-        inline static constexpr const char *APP_NAME = "snell'row tester";
-		inline static constexpr const char *APP_DISC = "drag cursor to test";
+        inline static constexpr const char const *APP_DIR = "imtests/";
+        inline static constexpr const char const *APP_NAME = "template";
+		inline static constexpr const char const *APP_DISC = "hello, world";
 	private:
 
 
 	public:
-		AppSnell(): AppBase(1280, 720, APP_NAME)
+		AppTemplate(): AppBase(1280, 720, APP_NAME)
 		{
 			stbi_set_flip_vertically_on_load(true);
 		}
-		~AppSnell()
+		~AppTemplate()
 		{
 
 		}
@@ -42,12 +46,11 @@ namespace lim
 		}
 		virtual void renderImGui() final
 		{
-			imgui_modules::ShowExampleAppDockSpace([]() {});
+			//imgui_modules::ShowExampleAppDockSpace([]() {});
 
 			ImGui::ShowDemoWindow();
 
-			ImGui::Begin("state");
-			//ImGui::PushItemWidth()
+			ImGui::Begin("test window");
 			ImGui::End();
 		}
 

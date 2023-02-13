@@ -13,7 +13,9 @@
 #include "imsimplification/app_simplification.h"
 #include "impbr/app_pbr.h"
 #include "imtests/app_astar.h"
-//#include "imsnells/app_snell.h"
+#include "imtests/app_gen_mesh.h"
+#include "imtests/app_template.h"
+#include "imfluid/app_fluid.h"
 
 lim::AppBase *app;
 
@@ -23,6 +25,46 @@ std::vector<const char*> appNames;
 std::vector<const char*> appDicripts;
 
 extern const char *demo_window_name;
+
+template<class App>
+void pushAppData();
+void drawAppSellector();
+
+// rid unused variables warnings
+int main(int, char**)
+{
+	lim::imgui_modules::draw_appselector = drawAppSellector;
+
+	// first order is shown first
+	pushAppData<lim::AppFluid>();
+	pushAppData<lim::AppHatching>();
+	pushAppData<lim::AppGenMesh>();
+	pushAppData<lim::AppPbr>();
+	pushAppData<lim::AppAstar>();
+    pushAppData<lim::AppHdr>();
+    pushAppData<lim::AppSimplification>();
+
+	lim::AppPref::get().selectedAppIdx=0;
+	lim::AppPref::get().selectedAppName = appNames[0];
+
+	while( appSelected ) {
+		appSelected = false;
+		int appIdx = lim::AppPref::get().selectedAppIdx;
+
+		std::string demoWindowName = "Dear ImGui Demo##demo";
+		demoWindowName += std::string(appNames[appIdx]);
+		demo_window_name = demoWindowName.c_str();
+
+		app = appConstructors[appIdx]();
+
+		app->run();
+
+		delete app;
+	}
+
+	return 0;
+}
+
 
 template<class App>
 void pushAppData()
@@ -44,44 +86,11 @@ void drawAppSellector()
 			lim::AppPref::get().selectedAppIdx=i;
 			lim::AppPref::get().selectedAppName = appNames[i];
 
-			selectorName = "AppSelector##app"; 
+			selectorName = "AppSelector##app";
 			selectorName += std::string(appNames[i]);
 
 			glfwSetWindowShouldClose(app->window, true);
 		}
 	}
 	ImGui::End();
-}
-
-// rid unused variables warnings
-int main(int, char**)
-{
-	lim::imgui_modules::draw_appselector = drawAppSellector;
-
-	pushAppData<lim::AppHatching>();
-	pushAppData<lim::AppPbr>();
-	pushAppData<lim::AppAstar>();
-    pushAppData<lim::AppHdr>();
-    pushAppData<lim::AppSimplification>();
-	//pushAppData<lim::AppSnell>();
-
-	lim::AppPref::get().selectedAppIdx=0;
-	lim::AppPref::get().selectedAppName = appNames[0];
-
-	while( appSelected ) {
-		appSelected = false;
-		int appIdx = lim::AppPref::get().selectedAppIdx;
-
-		std::string demoWindowName = "Dear ImGui Demo##demo";
-		demoWindowName += std::string(appNames[appIdx]);
-		demo_window_name = demoWindowName.c_str();
-
-		app = appConstructors[appIdx]();
-
-		app->run();
-
-		delete app;
-	}
-
-	return 0;
 }

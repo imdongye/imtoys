@@ -11,22 +11,21 @@
 
 namespace lim
 {
-	class ArtMap: public Texture
+	class ArtMap: public TexBase
 	{
 	public:
 		static constexpr GLint nr_mips = 4;
 		GLint tone;
+		std::string path;
 	public:
 		ArtMap(const std::string_view _path, GLint _tone)
-			: Texture(), tone(_tone)
+			: TexBase(), tone(_tone)
 		{
 			path = _path;
-			format = path.c_str()+path.rfind('.')+1;
-			name = path.c_str()+path.rfind('\\')+path.rfind('/')+2;
 
 			internal_format = GL_SRGB8;
 			src_chanel_type = GL_UNSIGNED_BYTE;
-			bit_per_channel = 8;
+			src_bit_per_channel = 8;
 
 			glGenTextures(1, &tex_id);
 			glBindTexture(GL_TEXTURE_2D, tex_id);

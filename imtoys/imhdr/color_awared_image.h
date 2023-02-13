@@ -588,7 +588,7 @@ namespace lim
 		{
 			if( refCount++==0 ) {
 				colorAwareDisplayProg = new Program("color aware display program");
-				colorAwareDisplayProg->attatch("tex_to_quad.vs").attatch("rgb_to_pcs_to_display.fs").link();
+				colorAwareDisplayProg->attatch("tex_to_quad.vs").attatch("imhdr/shader/rgb_to_pcs_to_display.fs").link();
 			}
 			/* read meta data Exif
 			LibRaw raw;

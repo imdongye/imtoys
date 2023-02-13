@@ -35,12 +35,16 @@ lim::AssetLib::AssetLib()
 	Logger::get()<<"load quad vao to vram\n";
 
 
-	to_quad_prog = new Program("toQuad");
-	to_quad_prog->attatch("tex_to_quad.vs").attatch("tex_to_quad.fs").link();
+	tex_to_quad_prog = new Program("texToQuad");
+	tex_to_quad_prog->attatch("tex_to_quad.vs").attatch("tex_to_quad.fs").link();
+
+
+	gray_to_quad_prog = new Program("grayToQuad");
+	gray_to_quad_prog->attatch("tex_to_quad.vs").attatch("gray_to_quad.fs").link();
 }
 lim::AssetLib::~AssetLib()
 {
-	delete to_quad_prog;
+	delete tex_to_quad_prog;
 	glDeleteVertexArrays(1, &quad_vao); quad_vao=0;
 }
 

@@ -12,12 +12,14 @@ namespace lim
 	{
 	public:
 		//****** property ******//
-		Program* to_quad_prog;
+		Program* gray_to_quad_prog;
+		Program* tex_to_quad_prog;
 		GLuint quad_vao = 0;
 	private:
 		inline static AssetLib* instance = nullptr;
 		AssetLib();
 		~AssetLib();
+	private:
 		/* detete copy & copy asignment singleton obj */
 		AssetLib(const AssetLib&)=delete;
 		AssetLib &operator=(const AssetLib&)=delete;

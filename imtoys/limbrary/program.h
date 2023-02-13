@@ -70,10 +70,10 @@ namespace lim
 				Logger::get()<<"[error] "<<type<<" extension is not supported.";
 				return *this;
 			}
-			// AUTO PATHING
+			// AUTO PATHING : 파일이름만 들어오면 homedir경로로
 			if( path.find('/')==std::string::npos && path.find('\\')==std::string::npos ) {
 				// todo: 임시 객체 줄이기 최적화
-				path = home_dir+"shader/"+std::string{type}+"/"+path;
+				path = home_dir+"shader/"+"/"+path;
 			}
 
 			// load text
@@ -248,6 +248,7 @@ namespace lim
 			glUniformMatrix4fv(getUniformLocation(name), 1, 0, glm::value_ptr(v));
 		}
 	};
+
 	// Todo: deprecate
 	static inline void setUniform(GLuint pid, const std::string_view name, const int v)
 	{
