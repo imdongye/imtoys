@@ -113,7 +113,6 @@ namespace lim
 					glBindTexture(GL_TEXTURE_2D, tex->tex_id);
 					setUniform(pid, varName.c_str(), slotCounter++);// to sampler2d
 				}
-				glActiveTexture(GL_TEXTURE0);
 				setUniform(pid, "texCount", (int)textures.size());
 				setUniform(pid, "Kd", color);
 			}
@@ -121,8 +120,6 @@ namespace lim
 			glBindVertexArray(VAO);
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 			glDrawElements(drawMode, static_cast<GLuint>(indices.size()), GL_UNSIGNED_INT, 0);
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-			glBindVertexArray(0);
 		}
 
 		// upload VRAM
@@ -167,8 +164,6 @@ namespace lim
 			// - weights
 			glEnableVertexAttribArray(6);
 			glVertexAttribPointer(6, n_mesh::MAX_BONE_INFLUENCE, GL_FLOAT, GL_FALSE, SIZE_OF_VERTEX, (void*)offsetof(n_mesh::Vertex, m_Weights));
-
-			glBindVertexArray(0);
 
 			// 이게 왜 가능한거지 IN WINDOWS
 			//glDeleteBuffers(1, &VBO);

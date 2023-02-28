@@ -7,7 +7,6 @@
 
 #include "limbrary/limclude.h"
 
-
 #include "imnpr/app_hatching.h"
 #include "imhdr/app_hdr.h"
 #include "imsimplification/app_simplification.h"
@@ -15,7 +14,9 @@
 #include "imtests/app_astar.h"
 #include "imtests/app_gen_mesh.h"
 #include "imtests/app_template.h"
-#include "imfluid/app_fluid.h"
+#include "imanims/app_kinematics.h"
+#include "imanims/app_fluid.h"
+#include "imanims/app_nano.h"
 
 lim::AppBase *app;
 
@@ -23,8 +24,6 @@ bool appSelected=true;
 std::vector<std::function<lim::AppBase*()>> appConstructors;
 std::vector<const char*> appNames;
 std::vector<const char*> appDicripts;
-
-extern const char *demo_window_name;
 
 template<class App>
 void pushAppData();
@@ -37,12 +36,14 @@ int main(int, char**)
 
 	// first order is shown first
 	pushAppData<lim::AppFluid>();
+	pushAppData<lim::AppKinematics>();
+	pushAppData<lim::AppNano>();
+	pushAppData<lim::AppPbr>();
+	pushAppData<lim::AppSimplification>();
+	pushAppData<lim::AppHdr>();
 	pushAppData<lim::AppHatching>();
 	pushAppData<lim::AppGenMesh>();
-	pushAppData<lim::AppPbr>();
 	pushAppData<lim::AppAstar>();
-    pushAppData<lim::AppHdr>();
-    pushAppData<lim::AppSimplification>();
 
 	lim::AppPref::get().selectedAppIdx=0;
 	lim::AppPref::get().selectedAppName = appNames[0];
@@ -50,10 +51,6 @@ int main(int, char**)
 	while( appSelected ) {
 		appSelected = false;
 		int appIdx = lim::AppPref::get().selectedAppIdx;
-
-		std::string demoWindowName = "Dear ImGui Demo##demo";
-		demoWindowName += std::string(appNames[appIdx]);
-		demo_window_name = demoWindowName.c_str();
 
 		app = appConstructors[appIdx]();
 
@@ -64,7 +61,6 @@ int main(int, char**)
 
 	return 0;
 }
-
 
 template<class App>
 void pushAppData()

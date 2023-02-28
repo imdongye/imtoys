@@ -33,11 +33,18 @@ namespace lim
 		WindowData w_data;
 		double delta_time; // sec
 
-		int scr_width;
-		int scr_height;
+		// relative to ratina or window monitor setting
+		int win_width, win_height;
+		// real pixel coordinate
+		int fb_width, fb_height;
+		float aspect_ratio; // width/height;
+		float pixel_ratio;    // (DPI)
+		glm::ivec2 mouse_pos;
+
 	protected:
 		virtual void update()=0;
 		virtual void renderImGui()=0;
+		virtual void framebufferSizeCallback(int w, int h) {};
 		virtual void keyCallback(int key, int scancode, int action, int mods) {};
 		virtual void cursorPosCallback(double xPos, double yPos) {};
 		virtual void mouseBtnCallback(int button, int action, int mods) {};
@@ -45,22 +52,30 @@ namespace lim
 		virtual void dndCallback(int count, const char **paths) {};
 	public:
 		/* init */
-		AppBase(int _scr_width=1280, int _scr_height=720, const char* title="nonamed")
-			:scr_width(_scr_width), scr_height(_scr_height)
+		AppBase(int winWidth=1280, int winHeight=720, const char* title="nonamed")
+			:win_width(winWidth), win_height(winHeight)
 		{
 			glfwSetErrorCallback([](int error, const char *description) {
 				Logger::get(1).log(stderr, "\nGlfw Error %d: %s\n", error, description);
 			});
+
 			if( !glfwInit() ) std::exit(-1);
+
 			glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 			glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1); // mac support 4.1
 			glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-			//glfwWindowHint(GLFW_SAMPLES, 4);
+			//glfwWindowHint(GLFW_SAMPLES, 4); // MSAA
 		#ifdef __APPLE__
 			glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 		#endif
+			// (1) invisible setting before creating for move center
+			glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
-			window = glfwCreateWindow(scr_width, scr_height, title, NULL, NULL);
+			window = glfwCreateWindow(win_width, win_height, title, NULL, NULL);
+			glfwGetFramebufferSize(window, &fb_width, &fb_height);
+			aspect_ratio = fb_width/(float)fb_height;
+			pixel_ratio =  fb_width/(float)win_width;
+
 			if( window == NULL ) {
 				std::cout << "Failed to create GLFW window" << std::endl;
 				glfwTerminate();
@@ -68,31 +83,36 @@ namespace lim
 			}
 
 			/* window setting */
-			glfwMakeContextCurrent(window);
-			glfwSwapInterval(1);
 			// glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 			// glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+			int nrMonitors;
+			GLFWmonitor** monitors = glfwGetMonitors(&nrMonitors);
+			const GLFWvidmode* vidMode = glfwGetVideoMode(monitors[0]);
+
+			glfwSetWindowPos(window, (vidMode->width-win_width)*0.5f, (vidMode->height-win_height)*0.5f);
+			glfwShowWindow(window);
+
+
+			glfwMakeContextCurrent(window);
+			// default is 0 then make tearing so must 1 to buffer swap when all buffer is showen
+			glfwSwapInterval(1); // vsync
 
 			if( !gladLoadGLLoader((GLADloadproc)glfwGetProcAddress) ) {
 				std::cout << "Failed to initialize GLAD" << std::endl;
 				std::exit(-1);
 			}
 
+			// register callback after glad initialization
 			initGlfwCallbacks();
 
-			printVersion();
-
-			Logger::get()<<"Current path is "<<std::filesystem::current_path().u8string()<<Logger::endl<<Logger::endl;
+			printVersionAndStatus();
 
 			imgui_modules::initImGui(window);
-
-
-			glViewport(0, 0, scr_width, scr_height);
 
 			// need for restart app
 			AppPref::get();
 			Viewport::id_generator=0;
-			Logger::get().windowName = "Logger##log"+std::to_string(AppPref::get().selectedAppIdx);
+			Logger::get().windowName = "Logger##log"+AppPref::get().selectedAppName;
 			AssetLib::reload();
 			Scene::sceneCounter=0;
 		}
@@ -122,40 +142,48 @@ namespace lim
 
 				imgui_modules::draw_appselector();
 
-				imgui_modules::endImGui(scr_width, scr_height);
+				imgui_modules::endImGui(win_width, win_height);
 
 				glfwPollEvents();
 				glfwSwapBuffers(window);
 			}
 		}
 	private:
-		void registerCallbacks()
+		void initGlfwCallbacks()
 		{
 			glfwSetWindowUserPointer(window, &w_data);
 
+			// first call when resize window
 			w_data.framebuffer_size_callbacks.push_back([this](int width, int height) {
-				scr_width=width; scr_height=height;
+				fb_width=width; fb_height=height;
+			});
+			// second call when resize window
+			w_data.win_size_callbacks.push_back([this](int width, int height) {
+				win_width=width; win_height=height;
+			aspect_ratio = fb_width/fb_height;
+			pixel_ratio = fb_width/win_width;
+			});
+			w_data.cursor_pos_callbacks.push_back([this](int x, int y) {
+				mouse_pos = {x,y};
 			});
 
 			/* lambda is better then std::bind */
+			w_data.framebuffer_size_callbacks.push_back([this](int w, int h) {
+				framebufferSizeCallback(w, h); });
 			w_data.key_callbacks.push_back([this](int key, int scancode, int action, int mods) {
 				keyCallback(key, scancode, action, mods); });
-			w_data.mouse_btn_callbacks.push_back([this](int button, int action, int mods){
+			w_data.mouse_btn_callbacks.push_back([this](int button, int action, int mods) {
 				mouseBtnCallback(button, action, mods); });
 			w_data.scroll_callbacks.push_back([this](double xOff, double yOff) {
 				scrollCallback(xOff, yOff); });
-			w_data.cursor_pos_callbacks.push_back([this](double xPos, double yPos) { 
+			w_data.cursor_pos_callbacks.push_back([this](double xPos, double yPos) {
 				cursorPosCallback(xPos, yPos); });
-			w_data.dnd_callbacks.push_back([this](int count, const char **path) { 
+			w_data.dnd_callbacks.push_back([this](int count, const char **path) {
 				dndCallback(count, path); });
-		}
-		void initGlfwCallbacks()
-		{
-			registerCallbacks();
 
 			glfwSetWindowSizeCallback(window, [](GLFWwindow *win, int width, int height) {
 				WindowData &data = *(WindowData*)glfwGetWindowUserPointer(win);
-				for(auto cb : data.win_size_callbacks ) if(cb) cb(width, height);
+				for(auto cb : data.win_size_callbacks ) cb(width, height);
 			});
 			glfwSetFramebufferSizeCallback(window, [](GLFWwindow *win, int width, int height) {
 				WindowData &data = *(WindowData*)glfwGetWindowUserPointer(win);
@@ -182,7 +210,7 @@ namespace lim
 				for( auto cb : data.dnd_callbacks ) cb(count, paths);
 			});
 		}
-		void printVersion()
+		void printVersionAndStatus()
 		{
 			const GLubyte *renderer = glGetString(GL_RENDERER);
 			const GLubyte *vendor = glGetString(GL_VENDOR);
@@ -193,7 +221,7 @@ namespace lim
 			glGetIntegerv(GL_MAJOR_VERSION, &major);
 			glGetIntegerv(GL_MINOR_VERSION, &minor);
 
-			Logger::get().log("Frame size           : %d x %d\n", scr_width, scr_height);
+			Logger::get().log("Frame size           : %d x %d\n", win_width, win_height);
 			Logger::get().log("GL Vendor            : %s\n", vendor);
 			Logger::get().log("GL Renderer          : %s\n", renderer);
 			Logger::get().log("GL Version (string)  : %s\n", version);
@@ -203,6 +231,8 @@ namespace lim
 			Logger::get().log("Maximum nr of vertex attributes supported: %d\n", nrAttributes);
 			glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &nrTextureUnits);
 			Logger::get().log("Maximum nr of texture slots supported: %d\n", nrTextureUnits);
+
+			Logger::get()<<"Current path is "<<std::filesystem::current_path().u8string()<<Logger::endl<<Logger::endl;
 		}
 	};
 }

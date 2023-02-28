@@ -49,7 +49,7 @@ namespace lim
 			}
 
 			shadowMap.clear_color = glm::vec4(1);
-			shadowMap.setSize(shadowMapSize, shadowMapSize);
+			shadowMap.resize(shadowMapSize, shadowMapSize);
 
 			// fov 1.0은 60도 정도 2에서 1~-1사이의 중앙모델만 그린다고 가정하면 far을 엄청 멀리까지 안잡아도되고
 			// depth의 4바이트 깊이를 많이 사용할수있다.

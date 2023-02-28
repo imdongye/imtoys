@@ -85,8 +85,6 @@ namespace lim
 			camera->updateProjMat();
 
 			drawModels(camera);
-
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
 		void render(Framebuffer* framebuffer, Camera* camera)
 		{

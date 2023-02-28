@@ -120,7 +120,6 @@ namespace lim
 				glActiveTexture(GL_TEXTURE31);
 				glBindTexture(GL_TEXTURE_2D, targetNormalMap.color_tex);
 				setUniform(pid, "map_TargetNormal", 31);// to sampler2d
-				glActiveTexture(GL_TEXTURE0);
 
 				// 원본의 노멀과 bumpmap, Target의 노멀으로 그린다.
 				for( auto& [oriMesh, targetMesh] : meshes ) {
@@ -132,7 +131,7 @@ namespace lim
 				glBindFramebuffer(GL_FRAMEBUFFER, bakedNormalMap.fbo);
 				glPixelStorei(GL_PACK_ALIGNMENT, 1);
 				glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, data);
-				glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 				// 덮어쓴다.
 				stbi_flip_vertically_on_write(true);
 				std::string texPath = modelDir+std::string(internalModelPath);
@@ -154,11 +153,11 @@ namespace lim
 			if( bakedNormalMapPointer==nullptr ) {
 				targetNormalMapPointer=new Framebuffer();
 				targetNormalMapPointer->clear_color = glm::vec4(0.5, 0.5, 1, 1);
-				targetNormalMapPointer->setSize(texSizes[selectedTexSizeIdx]);
+				targetNormalMapPointer->resize(texSizes[selectedTexSizeIdx]);
 
 				bakedNormalMapPointer=new Framebuffer();
 				bakedNormalMapPointer->clear_color = glm::vec4(0.5, 0.5, 1, 1);
-				bakedNormalMapPointer->setSize(texSizes[selectedTexSizeIdx]);
+				bakedNormalMapPointer->resize(texSizes[selectedTexSizeIdx]);
 			}
 			if( bakerProg==nullptr ) {
 				normalDrawProg = new Program("normal to tex coord", "imsimplification/");

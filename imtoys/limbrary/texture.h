@@ -72,8 +72,6 @@ namespace lim
 
 			glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, src_format, src_chanel_type, data);
 			glGenerateMipmap(GL_TEXTURE_2D);
-
-			glBindTexture(GL_TEXTURE_2D, 0);
 		}
 		void clear()
 		{
@@ -174,44 +172,52 @@ namespace lim
 			loadImageToTex(_path, *this);
 		}
 	};
-
-	static void TexToFramebuffer(GLuint texID, const Framebuffer& fb, float gamma=2.2f)
+	
+	/* do not use below for multisampling framebuffer */
+	inline static void Tex2Fbo(GLuint texID, GLuint fbo, int w, int h, float gamma=2.2f)
 	{
-		fb.bind();
+		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+		glViewport(0, 0, w, h);
+		glClearColor(0.f, 0.f, 0.f, 0.f);
+		glClear(GL_COLOR_BUFFER_BIT);
+
+		glDisable(GL_DEPTH_TEST);
+		glDisable(GL_MULTISAMPLE);
 
 		Program& to_quad_prog = *AssetLib::get().tex_to_quad_prog;
 		to_quad_prog.use();
 
-		glBindTexture(GL_TEXTURE_2D, texID);
 		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texID);
 
 		setUniform(to_quad_prog.pid, "tex", 0);
 		setUniform(to_quad_prog.pid, "gamma", gamma);
 
 		glBindVertexArray(AssetLib::get().quad_vao);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
-		glBindVertexArray(0);
-
-		fb.unbind();
 	}
-	static void GrayToFramebuffer(GLuint texID, const Framebuffer& fb, float gamma=2.2f)
+
+	inline static void Gray2Fbo(GLuint texID, GLuint fbo, int w, int h, float gamma=2.2f)
 	{
-		fb.bind();
+		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+		glViewport(0, 0, w, h);
+		glClearColor(0.f, 0.f, 0.f, 0.f);
+		glClear(GL_COLOR_BUFFER_BIT);
+
+		glDisable(GL_DEPTH_TEST);
+		glDisable(GL_MULTISAMPLE);
 
 		Program& to_quad_prog = *AssetLib::get().gray_to_quad_prog;
 		to_quad_prog.use();
 
-		glBindTexture(GL_TEXTURE_2D, texID);
 		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texID);
 
 		setUniform(to_quad_prog.pid, "tex", 0);
 		setUniform(to_quad_prog.pid, "gamma", gamma);
 
 		glBindVertexArray(AssetLib::get().quad_vao);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
-		glBindVertexArray(0);
-
-		fb.unbind();
 	}
 }
 

@@ -25,13 +25,9 @@ lim::AssetLib::AssetLib()
 	glGenVertexArrays(1, &quad_vao);
 	glBindVertexArray(quad_vao);
 
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 	glEnableVertexAttribArray(0);  // Vertex position
 
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
 	Logger::get()<<"load quad vao to vram\n";
 
 

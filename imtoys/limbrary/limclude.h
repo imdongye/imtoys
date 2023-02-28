@@ -38,7 +38,7 @@
 // 
 //	int *a, *b; int *c;
 //	int& a = b; 
-//	로 포인터는 변수명앞에 레퍼런스는 자료형 뒤에 붙인다.
+//	포인터는 변수명앞에 레퍼런스는 자료형 뒤에 붙인다.
 //	레퍼런스는 선언과동시에 초기화해야되므로 연속선언이 필요없고 가독성이 더 좋기때문에
 // 
 //	
@@ -51,6 +51,9 @@
 
 #ifndef LIMCLUDE_H
 #define LIMCLUDE_H
+
+//#pragma comment(lib, "OpenGL32.lib")
+//#pragma comment(lib, "lib/glfw3.lib")
 
 /* for vsprintf_s */
 #if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)
@@ -86,6 +89,8 @@
 /* PNG, TGA, BMP */
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb/stb_image_write.h>
+#define STB_TRUETYPE_IMPLEMENTATION
+#include <stb/stb_truetype.h>
 
 #define COMP_IMVEC2(X, Y) ((X).x==(Y).x)&&((X).y==(Y).y)
 

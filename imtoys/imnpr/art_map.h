@@ -72,8 +72,6 @@ namespace lim
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, nr_mips-1);
 			glGenerateMipmap(GL_TEXTURE_2D);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
-
-			glBindTexture(GL_TEXTURE_2D, 0);
 		}
 	};
 }

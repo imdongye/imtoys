@@ -186,15 +186,25 @@ namespace lim
 				}
 			}
 			/* render to screen */
-			// scenes[0]->render(0, scr_width, scr_height, camera[0]);
+			//scenes[0]->render(0, scr_width, scr_height, camera[0]);
+			
+			// clear backbuffer
+			glEnable(GL_DEPTH_TEST);
+			glDisable(GL_MULTISAMPLE);
+
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			glViewport(0, 0, fb_width, fb_height);
+			glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		}
 		virtual void renderImGui() final
 		{
 			const Model *fromModel = vpPackage.models[fromVpIdx];
 			const Model *toModel = vpPackage.models[toVpIdx];
 
-			imgui_modules::ShowExampleAppDockSpace([&]()
-			{
+			ImGui::DockSpaceOverViewport();
+
+			if( ImGui::BeginMainMenuBar() ) {
 				if( ImGui::BeginMenu("File") ) {
 					if( ImGui::BeginMenu("Import Recent") ) {
 						for( Viewport* vp : vpPackage.viewports ) {
@@ -242,9 +252,10 @@ namespace lim
 						addEmptyViewport();
 					}
 					ImGui::EndMenu();
-				} });
+				}
 
-			ImGui::ShowDemoWindow();
+				ImGui::EndMainMenuBar();
+			}
 
 			/* 실행후 겹쳤을때 그리는순서에 따라서 위로오는게 결정됨 */
 			// 중요한게 뒤로 오게 해야함

@@ -54,7 +54,7 @@ namespace lim
 			metal_colors.push_back( {0.972, 0.960, 0.915} ); // Silver
 			metal_colors.push_back( {0.955, 0.638, 0.583} ); // Corper
 
-			camera = new Camera( glm::vec3(0, 0, 12), scr_width/(float)scr_height );
+			camera = new Camera( glm::vec3(0, 0, 12), win_width/(float)win_height );
 			camera->fovy = 45.f;
 			camera->updateProjMat();
 
@@ -107,17 +107,17 @@ namespace lim
 
 			glm::mat4 modelMat;
 
-			/* draw light */
+			///* draw light */
 			modelMat = glm::translate(glm::mat4(1), lightPos);
 			modelMat = glm::scale(modelMat, glm::vec3(0.5f));
 			setUniform(pid, "model", modelMat);
 			sphere->draw();
 
-			/* draw spheres */
+			///* draw spheres */
 			glm::vec2 pivot = {(nr_cols-1)*spacing*0.5f, (nr_rows-1)*spacing*0.5f};
 
 			for( int row = 0; row < nr_rows; ++row ) {
-				//setUniform(pid, "metallic", row/(float)nr_rows);
+				setUniform(pid, "metallic", row/(float)nr_rows);
 				setUniform(pid, "isGGX", (row%2==0));
 
 				for( int col = 0; col < nr_cols; ++col ) {
@@ -144,7 +144,7 @@ namespace lim
 			setUniform(pid, "metallic", metallic);
 			setUniform(pid, "roughness", roughness);
 
-			/* draw two test shpere */
+			///* draw two test shpere */
 			setUniform(pid, "isGGX", true);
 			modelMat = glm::translate(glm::mat4(1), glm::vec3(spacing*3, spacing, 0));
 			modelMat *= glm::scale(glm::vec3(2.f));
@@ -166,17 +166,18 @@ namespace lim
             
             viewport->framebuffer->unbind();
             
-            // clear backbuffer
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
-			glViewport(0, 0, scr_width, scr_height);
-            glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			// clear backbuffer
+			glEnable(GL_DEPTH_TEST);
+			glDisable(GL_MULTISAMPLE);
+
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			glViewport(0, 0, fb_width, fb_height);
+			glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		}
 		virtual void renderImGui() final
 		{
-			imgui_modules::ShowExampleAppDockSpace([]() {});
-
-			ImGui::ShowDemoWindow();
+			ImGui::DockSpaceOverViewport();
             
 			// draw framebuffer on viewport gui
             viewport->drawImGui();

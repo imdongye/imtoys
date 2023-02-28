@@ -41,7 +41,7 @@ namespace lim
 			//glPolygonMode(GL_FRONT, GL_LINE);
 			stbi_set_flip_vertically_on_load(true);
 
-			camera = new Camera(glm::vec3(0, 0, 8), scr_width/(float)scr_height);
+			camera = new Camera(glm::vec3(0, 0, 8), win_width/(float)win_height);
 			camera->fovy = 45.f;
 			camera->updateProjMat();
 
@@ -143,10 +143,21 @@ namespace lim
 			}
 
 			viewport->framebuffer->unbind();
+
+			// clear backbuffer
+			glEnable(GL_DEPTH_TEST);
+			glDisable(GL_MULTISAMPLE);
+
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			glViewport(0, 0, fb_width, fb_height);
+			glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		}
 		virtual void renderImGui() final
 		{
-			imgui_modules::ShowExampleAppDockSpace([]() {});
+			ImGui::DockSpaceOverViewport();
+
+
 			viewport->drawImGui();
 
 			/* controller */

@@ -77,11 +77,20 @@ namespace lim
 				imgs[i]->toFramebuffer(*viewports[i]->framebuffer);
 				//texIDToFramebuffer(imgs[i]->tex_id, *viewports[i]->framebuffer, 1.f);
 			}
+
+			// clear backbuffer
+			glEnable(GL_DEPTH_TEST);
+			glDisable(GL_MULTISAMPLE);
+
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			glViewport(0, 0, fb_width, fb_height);
+			glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		}
 		virtual void renderImGui() final
 		{
-			imgui_modules::ShowExampleAppDockSpace([](){});
-			//ImGui::ShowDemoWindow();
+			ImGui::DockSpaceOverViewport();
+
 
 			for( int i = viewports.size()-1; i>=0; i-- ) {
 				viewports[i]->drawImGui();

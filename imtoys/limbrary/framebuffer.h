@@ -54,7 +54,6 @@ namespace lim
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
-			glBindTexture(GL_TEXTURE_2D, 0);
 		}
 		virtual void initGL()
 		{
@@ -69,10 +68,9 @@ namespace lim
 
 			GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 			if( status !=GL_FRAMEBUFFER_COMPLETE ) std::cerr<<"Framebuffer is not completed!! ("<<status<<")"<<std::endl;
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
 	public:
-		bool setSize(GLuint _width, GLuint _height=0)
+		bool resize(GLuint _width, GLuint _height=0)
 		{
 			if( _height==0 ) _height = _width;
 			if( width==_width && height==_height )
@@ -95,7 +93,7 @@ namespace lim
 		}
 		virtual void unbind() const
 		{
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			//glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
 		/* ms framebuffer return intermidiate */
 		virtual GLuint getRenderedTex() const
@@ -128,7 +126,6 @@ namespace lim
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
-			glBindTexture(GL_TEXTURE_2D, 0);
 		}
 		virtual void initGL() override
 		{
@@ -145,14 +142,17 @@ namespace lim
 
 			GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 			if( status !=GL_FRAMEBUFFER_COMPLETE ) std::cerr<<"TexFramebuffer is not completed!! ("<<status<<")"<<std::endl;
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
 	public:
 		virtual void bind() const override
 		{
-			Framebuffer::bind();
+			glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+			glViewport(0, 0, width, height);
+			glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
+			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+
+			glDisable(GL_MULTISAMPLE);
 			glEnable(GL_DEPTH_TEST);
-			glClear(GL_DEPTH_BUFFER_BIT);
 		}
 	};
 
@@ -194,14 +194,17 @@ namespace lim
 
 			GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 			if( status !=GL_FRAMEBUFFER_COMPLETE ) std::cerr<<"RboFramebuffer is not completed!! ("<<status<<")"<<std::endl;
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
 	public:
 		virtual void bind() const override
 		{
-			Framebuffer::bind();
+			glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+			glViewport(0, 0, width, height);
+			glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
+			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+
 			glEnable(GL_DEPTH_TEST);
-			glClear(GL_DEPTH_BUFFER_BIT);
+			glDisable(GL_MULTISAMPLE);
 		}
 	};
 
@@ -238,7 +241,7 @@ namespace lim
 		}
 		virtual void initGL() override
 		{
-			intermediate_fb.setSize(width, height);
+			intermediate_fb.resize(width, height);
 
 			MsFramebuffer::genGLFboMs();
 
@@ -251,15 +254,17 @@ namespace lim
 
 			GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 			if( status !=GL_FRAMEBUFFER_COMPLETE ) std::cerr<<"MsFramebuffer is not completed!! ("<<status<<")"<<std::endl;
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
 	public:
 		virtual void bind() const override
 		{
-			Framebuffer::bind();
+			glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+			glViewport(0, 0, width, height);
+			glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
+
 			glEnable(GL_DEPTH_TEST);
 			glEnable(GL_MULTISAMPLE);
-			glClear(GL_DEPTH_BUFFER_BIT);
+			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 		}
 		virtual void unbind() const override
 		{
@@ -269,10 +274,6 @@ namespace lim
 
 			glBlitFramebuffer(0, 0, width, height, 0, 0, width, height
 							  , GL_COLOR_BUFFER_BIT, GL_NEAREST);
-
-			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-			glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
 		virtual GLuint getRenderedTex() const override
 		{

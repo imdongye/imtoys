@@ -18,8 +18,8 @@ namespace lim
 	class AppTemplate: public AppBase
 	{
 	public:
-        inline static constexpr const char const *APP_DIR = "imtests/";
         inline static constexpr const char const *APP_NAME = "template";
+        inline static constexpr const char const *APP_DIR = "imtests/";
 		inline static constexpr const char const *APP_DISC = "hello, world";
 	private:
 
@@ -36,17 +36,18 @@ namespace lim
 	private:
 		virtual void update() final
 		{
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-			glViewport(0, 0, scr_width, scr_height);
-			glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-			glClear(GL_COLOR_BUFFER_BIT);
+			// clear backbuffer
+			glEnable(GL_DEPTH_TEST);
+			glDisable(GL_MULTISAMPLE);
 
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
+			glViewport(0, 0, fb_width, fb_height);
+			glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		}
 		virtual void renderImGui() final
 		{
-			//imgui_modules::ShowExampleAppDockSpace([]() {});
+			//ImGui::DockSpaceOverViewport();
 
 			ImGui::ShowDemoWindow();
 
@@ -55,11 +56,11 @@ namespace lim
 		}
 
 	private:
-		virtual void keyCallback(int key, int scancode, int action, int mods) final
+		virtual void keyCallback(int key, int scancode, int action, int mods) override
 		{
 			std::cout<<ImGui::GetFrameHeight();
 		}
-		virtual void cursorPosCallback(double xPos, double yPos) final
+		virtual void cursorPosCallback(double xPos, double yPos) override
 		{
 			static double xOld, yOld, xOff, yOff=0;
 			xOff = xPos - xOld;

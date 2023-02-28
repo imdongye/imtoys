@@ -634,8 +634,8 @@ namespace lim
 
 			GLuint pid = colorAwareDisplayProg->use();
 
-			glBindTexture(GL_TEXTURE_2D, tex_id);
 			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, tex_id);
 
 			setUniform(pid, "tex", 0);
 			setUniform(pid, "nrChannels", nr_channels);
@@ -649,7 +649,6 @@ namespace lim
 
 			glBindVertexArray(AssetLib::get().quad_vao);
 			glDrawArrays(GL_TRIANGLES, 0, 6);
-			glBindVertexArray(0);
 
 			fb.unbind();
 		}
