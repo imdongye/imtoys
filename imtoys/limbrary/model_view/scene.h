@@ -44,7 +44,7 @@ namespace lim
 				ground = new Model(groundMesh, "ground", groundProgram);
 				ground->position = glm::vec3(0, 0, 0);
 				ground->scale = glm::vec3(100, 100, 1);
-                ground->rotation = glm::angleAxis(F_PI*0.5f, glm::vec3(1,0,0));
+                ground->orientation = glm::angleAxis(F_PI*0.5f, glm::vec3(1,0,0));
 				ground->updateModelMat();
 				models.push_back(ground);
 			}

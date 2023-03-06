@@ -34,7 +34,7 @@ namespace lim
 
 		}
 	private:
-		virtual void update() final
+		void update() override
 		{
 			// clear backbuffer
 			glEnable(GL_DEPTH_TEST);
@@ -45,7 +45,7 @@ namespace lim
 			glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		}
-		virtual void renderImGui() final
+		void renderImGui() override
 		{
 			//ImGui::DockSpaceOverViewport();
 
@@ -56,11 +56,11 @@ namespace lim
 		}
 
 	private:
-		virtual void keyCallback(int key, int scancode, int action, int mods) override
+		void keyCallback(int key, int scancode, int action, int mods) override
 		{
 			std::cout<<ImGui::GetFrameHeight();
 		}
-		virtual void cursorPosCallback(double xPos, double yPos) override
+		void cursorPosCallback(double xPos, double yPos) override
 		{
 			static double xOld, yOld, xOff, yOff=0;
 			xOff = xPos - xOld;

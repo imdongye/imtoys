@@ -26,7 +26,7 @@ namespace lim
 	public:
 		std::string name;
 		glm::vec3 position;
-		glm::quat rotation;
+		glm::quat orientation;
 		glm::vec3 scale;
 		glm::mat4 model_mat; // = trans*rot*scale*pivot
 		// shared_ptr for managing omit dup texture loading
@@ -58,7 +58,7 @@ namespace lim
 		Model& operator=(Model const&) = delete;
 	public:
 		Model(const std::string_view _name = "", Program* _program=nullptr)
-			: position(glm::vec3(0)), rotation(glm::quat()), scale(glm::vec3(1))
+			: position(glm::vec3(0)), orientation(glm::quat()), scale(glm::vec3(1))
 			, pivot_mat(glm::mat4(1.0f)), nr_vertices(0)
 			, name(_name), program(_program)
 		{   //mat4(1) is identity mat
@@ -73,7 +73,7 @@ namespace lim
 			updateBoundary();
 
 			position = model.position;
-			rotation = model.rotation;
+			orientation = model.orientation;
 			scale = model.scale;
 			model_mat = model.model_mat;
 			textures_loaded = model.textures_loaded; // deepcopy
@@ -138,7 +138,7 @@ namespace lim
 		{
 			glm::mat4 translateMat = glm::translate(position);
 			glm::mat4 scaleMat = glm::scale(scale);
-			glm::mat4 rotateMat = glm::toMat4(rotation);
+			glm::mat4 rotateMat = glm::toMat4(orientation);
 			model_mat = translateMat * rotateMat * scaleMat * pivot_mat;
 		}
 		void setUnitScaleAndPivot()

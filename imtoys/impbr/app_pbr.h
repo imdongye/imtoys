@@ -19,7 +19,7 @@ namespace lim
 		inline static constexpr const char *APP_NAME = "impbr";
 		inline static constexpr const char *APP_DISC = "ggx beckman";
 	private:
-		Camera *camera;
+		AutoCamera *camera;
 		Program *prog;
         Viewport *viewport;
 		Mesh *sphere;
@@ -54,15 +54,13 @@ namespace lim
 			metal_colors.push_back( {0.972, 0.960, 0.915} ); // Silver
 			metal_colors.push_back( {0.955, 0.638, 0.583} ); // Corper
 
-			camera = new Camera( glm::vec3(0, 0, 12), win_width/(float)win_height );
-			camera->fovy = 45.f;
-			camera->updateProjMat();
-
 			prog = new Program("pbr", APP_DIR);
 			prog->attatch("1.1.pbr.vs").attatch("1.1.pbr.fs").link();
             
             viewport = new Viewport(new MsFramebuffer());
             viewport->framebuffer->clear_color = {0.1f, 0.1f, 0.1f, 1.0f};
+
+			camera = new AutoCamera(window, viewport);
 
 			model = ModelLoader::loadFile("common/archive/meshes/happy.obj", true);
 			model->position = glm::vec3(15, 0, 0);
@@ -84,18 +82,14 @@ namespace lim
 			delete model;
 		}
 	private:
-		virtual void update() final
-		{
-            processInput(window);
-                        
+		void update() override
+		{               
 			/* render to fbo in viewport */
             viewport->framebuffer->bind();
 
 			GLuint pid = prog->use();
 			setUniform(pid, "beckmannGamma", beckmannGamma);
             
-            camera->aspect = viewport->framebuffer->aspect;
-            camera->updateProjMat();
 			setUniform(pid, "view", camera->view_mat);
 			setUniform(pid, "camPos", camera->position);
             setUniform(pid, "projection", camera->proj_mat);
@@ -175,7 +169,7 @@ namespace lim
 			glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		}
-		virtual void renderImGui() final
+		void renderImGui() override
 		{
 			ImGui::DockSpaceOverViewport();
             
@@ -191,65 +185,6 @@ namespace lim
 			ImGui::SliderFloat("beckmannGamma", &beckmannGamma, 0.7f, 2.f);
             ImGui::End();
 		}
-	private:
-		void processInput(GLFWwindow *window)
-		{
-			static const double cameraMoveSpeed = 4.2;
-			if( glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS )
-				glfwSetWindowShouldClose(window, true);
-
-			if( glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS )
-				camera->move(Camera::MOVEMENT::FORWARD, delta_time, cameraMoveSpeed);
-			if( glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS )
-				camera->move(Camera::MOVEMENT::BACKWARD, delta_time, cameraMoveSpeed);
-			if( glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS )
-				camera->move(Camera::MOVEMENT::LEFT, delta_time, cameraMoveSpeed);
-			if( glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS )
-				camera->move(Camera::MOVEMENT::RIGHT, delta_time, cameraMoveSpeed);
-			if( glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS )
-				camera->move(Camera::MOVEMENT::UP, delta_time, cameraMoveSpeed);
-			if( glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS )
-				camera->move(Camera::MOVEMENT::DOWN, delta_time, cameraMoveSpeed);
-			camera->updateFreeViewMat();
-		}
-		/* glfw callback */
-		virtual void framebufferSizeCallback(double width, double height) final
-		{
-			glViewport(0, 0, width, height);
-		}
-		virtual void scrollCallback(double xoff, double yoff) final
-		{
-			if( !viewport->focused ) return;
-			camera->shiftZoom(yoff*5.f);
-			camera->updateProjMat();
-		}
-		virtual void mouseBtnCallback(int button, int action, int mods) final
-		{
-			start_dragging = action==GLFW_PRESS;
-		}
-		virtual void cursorPosCallback(double xpos, double ypos) final
-		{
-			static const float rotateSpeed = 0.08f;
-			static float xoff, yoff;
-			static double xold, yold;
-			
-			if( !viewport->dragging )return;
-
-			if( start_dragging ) {
-				xold = xpos;
-				yold = ypos;
-                start_dragging = false;
-			}
-
-			xoff = xpos - xold;
-			yoff = yold - ypos;
-
-			xold = xpos;
-			yold = ypos;
-
-			camera->rotateCamera(xoff * rotateSpeed, yoff * rotateSpeed);
-			camera->updateFreeViewMat();
-        }
 	};
 }
 

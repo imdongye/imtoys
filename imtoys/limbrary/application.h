@@ -20,17 +20,20 @@ namespace lim
 	{
 	public:
 		GLFWwindow *window;
+		
 		struct WindowData // for avoid member func pointer 
 		{
-			std::vector<std::function<void(int width, int height)>> win_size_callbacks;
-			std::vector<std::function<void(int width, int height)>> framebuffer_size_callbacks;
-			std::vector<std::function<void(int key, int scancode, int action, int mods)>> key_callbacks;
-			std::vector<std::function<void(int button, int action, int mods)>> mouse_btn_callbacks;
-			std::vector<std::function<void(double xOff, double yOff)>> scroll_callbacks;
-			std::vector<std::function<void(double xPos, double yPos)>> cursor_pos_callbacks;
-			std::vector<std::function<void(int count, const char **paths)>> dnd_callbacks;
+			Callbacks<void(int width, int height)> win_size_callbacks;
+			Callbacks<void(int width, int height)> framebuffer_size_callbacks;
+			Callbacks<void(int key, int scancode, int action, int mods)> key_callbacks;
+			Callbacks<void(int button, int action, int mods)> mouse_btn_callbacks;
+			Callbacks<void(double xOff, double yOff)> scroll_callbacks;
+			Callbacks<void(double xPos, double yPos)> cursor_pos_callbacks;
+			Callbacks<void(int count, const char **paths)> dnd_callbacks;
+			Callbacks<void(float deltaTime)> update_hooks;
 		};
 		WindowData w_data;
+		
 		double delta_time; // sec
 
 		// relative to ratina or window monitor setting
@@ -39,7 +42,7 @@ namespace lim
 		int fb_width, fb_height;
 		float aspect_ratio; // width/height;
 		float pixel_ratio;    // (DPI)
-		glm::ivec2 mouse_pos;
+		glm::ivec2 mouse_pos; // todo float
 
 	protected:
 		virtual void update()=0;
@@ -127,14 +130,16 @@ namespace lim
 		}
 		void run()
 		{
-			double lastTime=0.0;
+			double lastTime=glfwGetTime();
 
 			while( !glfwWindowShouldClose(window) ) {
-				float currentFrame = static_cast<float>(glfwGetTime());
-				delta_time = currentFrame - lastTime;
-				lastTime = currentFrame;
+				double currentTime = glfwGetTime();
+				delta_time = currentTime - lastTime;
+				lastTime = currentTime;
 
 				update();
+				for( auto& [_, cb] : w_data.update_hooks ) 
+					cb(delta_time);
 
 				imgui_modules::beginImGui();
 
@@ -153,63 +158,65 @@ namespace lim
 		{
 			glfwSetWindowUserPointer(window, &w_data);
 
-			// first call when resize window
-			w_data.framebuffer_size_callbacks.push_back([this](int width, int height) {
-				fb_width=width; fb_height=height;
-			});
-			// second call when resize window
-			w_data.win_size_callbacks.push_back([this](int width, int height) {
-				win_width=width; win_height=height;
-			aspect_ratio = fb_width/fb_height;
-			pixel_ratio = fb_width/win_width;
-			});
-			w_data.cursor_pos_callbacks.push_back([this](int x, int y) {
-				mouse_pos = {x,y};
-			});
-
 			/* lambda is better then std::bind */
-			w_data.framebuffer_size_callbacks.push_back([this](int w, int h) {
-				framebufferSizeCallback(w, h); });
-			w_data.key_callbacks.push_back([this](int key, int scancode, int action, int mods) {
-				keyCallback(key, scancode, action, mods); });
-			w_data.mouse_btn_callbacks.push_back([this](int button, int action, int mods) {
-				mouseBtnCallback(button, action, mods); });
-			w_data.scroll_callbacks.push_back([this](double xOff, double yOff) {
-				scrollCallback(xOff, yOff); });
-			w_data.cursor_pos_callbacks.push_back([this](double xPos, double yPos) {
-				cursorPosCallback(xPos, yPos); });
-			w_data.dnd_callbacks.push_back([this](int count, const char **path) {
-				dndCallback(count, path); });
 
-			glfwSetWindowSizeCallback(window, [](GLFWwindow *win, int width, int height) {
-				WindowData &data = *(WindowData*)glfwGetWindowUserPointer(win);
-				for(auto cb : data.win_size_callbacks ) cb(width, height);
+			// first call when resize window
+			w_data.framebuffer_size_callbacks[this] =[this](int w, int h) {
+				fb_width=w; fb_height=h;
+				framebufferSizeCallback(w, h);
+			};
+			// second call when resize window
+			w_data.win_size_callbacks[this] = [this](int width, int height) {
+				win_width=width; win_height=height;
+				aspect_ratio = fb_width/fb_height;
+				pixel_ratio = fb_width/win_width;
+			};			w_data.key_callbacks[this] = [this](int key, int scancode, int action, int mods) {
+				keyCallback(key, scancode, action, mods); 
+			};
+			w_data.mouse_btn_callbacks[this] = [this](int button, int action, int mods) {
+				mouseBtnCallback(button, action, mods); 
+			};
+			w_data.scroll_callbacks[this] = [this](double xOff, double yOff) {
+				scrollCallback(xOff, yOff); 
+			};
+			w_data.cursor_pos_callbacks[this] = [this](double x, double y) {
+				mouse_pos = {x,y};
+				cursorPosCallback(x, y); 
+			};
+			w_data.dnd_callbacks[this] = [this](int count, const char **path) {
+				dndCallback(count, path); 
+			};
+
+			glfwSetWindowSizeCallback(window, [](GLFWwindow *window, int width, int height) {
+				WindowData &data = *(WindowData*)glfwGetWindowUserPointer(window);
+				for(auto& [_, cb] : data.win_size_callbacks ) cb(width, height);
 			});
-			glfwSetFramebufferSizeCallback(window, [](GLFWwindow *win, int width, int height) {
-				WindowData &data = *(WindowData*)glfwGetWindowUserPointer(win);
-				for( auto cb : data.framebuffer_size_callbacks ) cb(width, height);
+			glfwSetFramebufferSizeCallback(window, [](GLFWwindow *window, int width, int height) {
+				WindowData &data = *(WindowData*)glfwGetWindowUserPointer(window);
+				for( auto& [_, cb] : data.framebuffer_size_callbacks ) cb(width, height);
 			});
-			glfwSetKeyCallback(window, [](GLFWwindow *win, int key, int scancode, int action, int mods) {
-				WindowData &data = *(WindowData*)glfwGetWindowUserPointer(win);
-				for( auto cb : data.key_callbacks ) cb(key, scancode, action, mods);
+			glfwSetKeyCallback(window, [](GLFWwindow *window, int key, int scancode, int action, int mods) {
+				WindowData &data = *(WindowData*)glfwGetWindowUserPointer(window);
+				for( auto& [_, cb] : data.key_callbacks ) cb(key, scancode, action, mods);
 			});
-			glfwSetMouseButtonCallback(window, [](GLFWwindow *win, int button, int action, int mods) {
-				WindowData &data = *(WindowData*)glfwGetWindowUserPointer(win);
-				for( auto cb : data.mouse_btn_callbacks ) cb(button, action, mods);
+			glfwSetMouseButtonCallback(window, [](GLFWwindow *window, int button, int action, int mods) {
+				WindowData &data = *(WindowData*)glfwGetWindowUserPointer(window);
+				for( auto& [_, cb] : data.mouse_btn_callbacks ) cb(button, action, mods);
 			});
-			glfwSetScrollCallback(window, [](GLFWwindow *win, double xOff, double yOff) {
-				WindowData &data = *(WindowData*)glfwGetWindowUserPointer(win);
-				for( auto cb : data.scroll_callbacks) cb(xOff, yOff);
+			glfwSetScrollCallback(window, [](GLFWwindow *window, double xOff, double yOff) {
+				WindowData &data = *(WindowData*)glfwGetWindowUserPointer(window);
+				for( auto& [_, cb] : data.scroll_callbacks) cb(xOff, yOff);
 			});
-			glfwSetCursorPosCallback(window, [](GLFWwindow *win, double xPos, double yPos) {
-				WindowData &data = *(WindowData*)glfwGetWindowUserPointer(win);
-				for( auto cb : data.cursor_pos_callbacks) cb(xPos, yPos);
+			glfwSetCursorPosCallback(window, [](GLFWwindow *window, double xPos, double yPos) {
+				WindowData &data = *(WindowData*)glfwGetWindowUserPointer(window);
+				for( auto& [_, cb] : data.cursor_pos_callbacks) cb(xPos, yPos);
 			});
-			glfwSetDropCallback(window, [](GLFWwindow *win, int count, const char **paths) {
-				WindowData &data = *(WindowData*)glfwGetWindowUserPointer(win);
-				for( auto cb : data.dnd_callbacks ) cb(count, paths);
+			glfwSetDropCallback(window, [](GLFWwindow *window, int count, const char **paths) {
+				WindowData &data = *(WindowData*)glfwGetWindowUserPointer(window);
+				for( auto& [_, cb] : data.dnd_callbacks ) cb(count, paths);
 			});
 		}
+
 		void printVersionAndStatus()
 		{
 			const GLubyte *renderer = glGetString(GL_RENDERER);

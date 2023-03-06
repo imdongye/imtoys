@@ -1,103 +1,66 @@
 //
+//	멤버변수로 view projection 생성
+// 
 //  2022-07-21 / im dongye
-//  edit learnopengl code
 //
-//  noti:
-//  기본 -z방향이 뷰방향, roll-pitch-yaw 순서로 
-//  fixed-axis rotation(pre multiflication)
-// `g => free rotation
-//  좌클릭+wasd+qe => 움직임 (shift속도증가)
-//  좌클릭+alt+drag => ceter pivot rotation
-//  좌클릭+alt+ctrl+drag => center pivot fovy, dist 조정
-//  스크롤 => fovy 조정
+//  note:
+//	yaw, pitch, roll 은 free/pivot 모드일때 다르게 사용됨.
+//	입력은 degree로 사용하고 행렬 만들때 radian으로 변환함.
 // 
-//	distance = -1 ...
+//  Euler angles : roll(z)-pitch(x)-yaw(y)
 // 
+//	free view (pos and dir) 와 pivot view (track ball, orbit) 지원
 //
 //  TODO list :
-//  1. roll
-//  2. fix zoom and change mode error
+//  1. quaternion
 //
 
 #ifndef CAMERA_H
 #define CAMERA_H
 
-
 namespace lim
 {
-	const float SCROLL_SPEED = 1.0f;
-	const float MAX_FOVY = 120.f;
-	const float MIN_FOVY = 20.f;
-	const float MAX_DIST = 17.f;
-	const float MIN_DIST = 0.1f;
 	class Camera
 	{
+	private:
+		const float MAX_FOVY = 120.f;
+		const float MIN_FOVY = 20.f;
+		const float MAX_DIST = 17.f;
+		const float MIN_DIST = 0.1f;
 	public:
-		enum class MOVEMENT
-		{
-			FORWARD,
-			BACKWARD,
-			LEFT,
-			RIGHT,
-			UP,
-			DOWN
-		};
-	public:
-		// camera options
+		// <editable camera options>
 		float aspect=1;
 		float z_near=0.1;
 		float z_far=100;
-		// editable
+
 		glm::vec3 position;
-		float yaw; // degrees
-		float pitch;
-		float roll=0;
-		float fovy = 55; // feild of view y axis dir
-		// for pivot view mode
+		float orientation;
+		float yaw, pitch, roll;
+
+		float fovy = 46.f; // 50mm, feild of view y axis dir
+		/* for pivot view mode */
 		float distance;
-		glm::vec3 pivot;
-		// result of inside update
+		glm::vec3 pivot= {0,0,0};
+
+		// <result of inside update>
 		glm::vec3 front;
 		glm::vec3 up;
 		glm::vec3 right;
 		glm::mat4 view_mat;
 		glm::mat4 proj_mat;
-		//glm::mat4 vpMat;
 	public:
-		Camera(glm::vec3 _position, float _aspect=1, glm::vec3 _front=glm::vec3(0,0,-1))
-			: position(_position), aspect(_aspect), front(glm::normalize(_front))
+		// free view (pos and dir)
+		Camera(glm::vec3 _position, glm::vec3 _front= {0,0,-1}, float _aspect=1)
+			: position(_position), front(glm::normalize(_front)), aspect(_aspect)
 		{
-			distance = -1;
-
 			position = _position;
-			updateRotateFromFront();
+			updateOrientationFromFront();
 
 			updateFreeViewMat();
 			updateProjMat();
 		}
-		Camera(float _distance, float _yaw, float _pitch, glm::vec3 _pivot, float _aspect=1)
-			:pivot(_pivot)
-		{
-			distance = _distance;
-			yaw = _yaw;
-			pitch = _pitch;
-			aspect = _aspect;
-			updatePivotViewMat(); // for make position
-			updateProjMat();
-		}
-		void move(MOVEMENT direction, float speed, float deltaTime)
-		{
-			float velocity = speed * deltaTime;
-
-			switch( direction ) {
-			case MOVEMENT::FORWARD:   position += front * velocity; break;
-			case MOVEMENT::BACKWARD:  position -= front * velocity; break;
-			case MOVEMENT::LEFT:      position -= right * velocity; break;
-			case MOVEMENT::RIGHT:     position += right * velocity; break;
-			case MOVEMENT::UP:        position += glm::vec3(0, 1, 0) * velocity; break;
-			case MOVEMENT::DOWN:      position -= glm::vec3(0, 1, 0) * velocity; break;
-			}
-		}
+		virtual ~Camera() {}
+	public:
 		void rotateCamera(float xoff, float yoff)
 		{
 			yaw += xoff;
@@ -120,36 +83,11 @@ namespace lim
 			fovy = glm::clamp(fovy, MIN_FOVY, MAX_FOVY);
 		}
 	public:
-		void updatePivotViewMat()
-		{
-			static glm::vec3 dir;
-			if( distance<0 ) {
-				dir = pivot-position;
-				distance = glm::length(dir);
-				// front => yaw pitch
-				updateRotateFromFront();
-			}
-
-			// -yaw to match obj ro
-			position = glm::vec3(glm::rotate(glm::radians(-yaw), glm::vec3(0, 1, 0))
-								 * glm::rotate(glm::radians(pitch), glm::vec3(1, 0, 0))
-								 * glm::vec4(0, 0, distance, 1)) + pivot;
-			position.y = std::max(position.y, 0.0f);
-			view_mat = glm::lookAt(position, pivot, glm::vec3(0, 1, 0));
-
-			dir = pivot-position;
-			front = glm::normalize(dir);
-			right = glm::normalize(glm::cross(front, glm::vec3(0, 1, 0)));
-			up    = glm::normalize(glm::cross(right, front));
-		}
 		void updateFreeViewMat()
 		{
-			if( distance>0 ) distance = -1;
 			// roll-pitch-yaw
 			// fixed(world) basis => pre multiplication
 			// https://answers.opencv.org/question/161369/retrieve-yaw-pitch-roll-from-rvec/
-			// 
-			// 기본 뷰방향을 -z로 봤을때
 			glm::vec3 f;
 			f.x = cos(glm::radians(pitch)) * sin(glm::radians(yaw));
 			f.y = sin(glm::radians(pitch));
@@ -159,28 +97,39 @@ namespace lim
 			right = glm::normalize(glm::cross(front, glm::vec3(0, 1, 0)));
 			up    = glm::normalize(glm::cross(right, front));
 
-			view_mat = glm::lookAt(position, position + front, glm::vec3(0, 1, 0)); // todo: roll => edit up
+			view_mat = glm::lookAt(position, position + front, glm::vec3(0, 1, 0));
+		}
+		void updatePivotViewMat()
+		{
+			static glm::vec3 dir;
+
+			// -yaw to match obj ro
+			position = glm::vec3(glm::rotate(glm::radians(-yaw), glm::vec3(0, 1, 0))
+									* glm::rotate(glm::radians(pitch), glm::vec3(1, 0, 0))
+									* glm::vec4(0, 0, distance, 1)) + pivot;
+			position.y = std::max(position.y, 0.0f);
+			view_mat = glm::lookAt(position, pivot, glm::vec3(0, 1, 0));
+
+			dir = pivot-position;
+			front = glm::normalize(dir);
+			right = glm::normalize(glm::cross(front, glm::vec3(0, 1, 0)));
+			up    = glm::normalize(glm::cross(right, front));
 		}
 		void updateProjMat()
 		{
 			proj_mat = glm::perspective(glm::radians(fovy), aspect, z_near, z_far);
 		}
-	private:
-		void updateRotateFromFront()
+		void updateOrientationFromFront()
 		{
 			pitch = glm::degrees(asin(front.y));
 			//yaw = glm::degrees(acos(-front.z/cos(glm::radians(pitch))));
 			yaw = glm::degrees(asin(front.x/cos(glm::radians(pitch))));
 		}
-		void updateVPMat()
-		{
-			//vpMat = view_mat*projMat;
-		}
 		void printCameraState()
 		{
-			Logger::get().log("PYR  : %f.2, %f.2, %f.2\n", pitch, yaw, roll);
-			Logger::get().log("POS  : %f.2, %f.2, %f.2\n", position.x, position.y, position.z);
-			Logger::get().log("DIST : %f\n", distance);
+			printf("PitchYawRoll  : %f.2, %f.2, %f.2\n", pitch, yaw, roll);
+			printf("POS  : %f.2, %f.2, %f.2\n", position.x, position.y, position.z);
+			printf("DIST : %f\n", distance);
 		}
 	};
 } // namespace lim

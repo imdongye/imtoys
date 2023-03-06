@@ -72,7 +72,7 @@
 #include <functional>
 #include <vector>
 #include <tuple>
-#include <memory>
+#include <map>
 
 #include <glad/glad.h>
 #define GLM_SWIZZLE // for var.zyx
@@ -92,15 +92,8 @@
 #define STB_TRUETYPE_IMPLEMENTATION
 #include <stb/stb_truetype.h>
 
-#define COMP_IMVEC2(X, Y) ((X).x==(Y).x)&&((X).y==(Y).y)
 
-namespace lim
-{
-	constexpr float Q_PI = 0.78539816339f; // quarter
-	constexpr float H_PI = 1.57079632679f; // half
-	constexpr float F_PI = 3.14159265359f; // float
-	constexpr float D_PI = 6.28318530718f; // double
-}
+#include "declaration.h"
 
 #include "logger.h"
 #include "asset_lib.h"
@@ -123,5 +116,6 @@ namespace lim
 #include "asset_lib.inl"
 
 #include "application.h"
+#include "model_view/auto_camera.h"
 
 #endif 

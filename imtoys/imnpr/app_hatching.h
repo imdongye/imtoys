@@ -21,7 +21,7 @@ namespace lim
 		inline static constexpr const char *APP_DISC = "aplicate real-time hatching paper";
 	private:
 		bool start_dragging = false;
-		Camera *camera;
+		AutoCamera *camera;
 		Program *program;
 		Viewport *viewport;
 		std::vector<Model*> models;
@@ -42,15 +42,13 @@ namespace lim
 			//glPolygonMode(GL_FRONT, GL_LINE);
 			stbi_set_flip_vertically_on_load(true);
 
-			camera = new Camera(glm::vec3(0, 0, 8), win_width/(float)win_height);
-			camera->fovy = 45.f;
-			camera->updateProjMat();
-
 			program = new Program("hatching prog", APP_DIR);
 			program->attatch("hatching.vs").attatch("hatching.fs").link();
 
 			viewport = new Viewport(new MsFramebuffer());
 			viewport->framebuffer->clear_color ={0.1f, 0.1f, 0.1f, 1.0f};
+
+			camera = new AutoCamera(window, viewport, AutoCamera::VM_FREE);
 
 			models.push_back(ModelLoader::loadFile("common/archive/dwarf/Dwarf_2_Low.obj", true));
 			models.push_back(new Model(MeshGenerator::genSphere(50, 25), "sphere"));
@@ -102,16 +100,12 @@ namespace lim
 	private:
 		virtual void update() final
 		{
-			processInput(window);
-
 			/* render to fbo in viewport */
 			viewport->framebuffer->bind();
 
 			Program& prog = *program;
 			prog.use();
 
-			camera->aspect = viewport->framebuffer->aspect;
-			camera->updateProjMat();
 			prog.setUniform("viewMat", camera->view_mat);
 			prog.setUniform("projMat", camera->proj_mat);
 			prog.setUniform("cameraPos", camera->position);
@@ -188,67 +182,6 @@ namespace lim
 			ImGui::Begin("state##hatching");
 			ImGui::Text("fovy: %f", camera->fovy);
 			ImGui::End();
-		}
-
-	private:
-		void processInput(GLFWwindow *window)
-		{
-			static const double cameraMoveSpeed = 4.2;
-			if( glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS )
-				glfwSetWindowShouldClose(window, true);
-
-			if( glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS )
-				camera->move(Camera::MOVEMENT::FORWARD, delta_time, cameraMoveSpeed);
-			if( glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS )
-				camera->move(Camera::MOVEMENT::BACKWARD, delta_time, cameraMoveSpeed);
-			if( glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS )
-				camera->move(Camera::MOVEMENT::LEFT, delta_time, cameraMoveSpeed);
-			if( glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS )
-				camera->move(Camera::MOVEMENT::RIGHT, delta_time, cameraMoveSpeed);
-			if( glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS )
-				camera->move(Camera::MOVEMENT::UP, delta_time, cameraMoveSpeed);
-			if( glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS )
-				camera->move(Camera::MOVEMENT::DOWN, delta_time, cameraMoveSpeed);
-			camera->updateFreeViewMat();
-		}
-		/* glfw callback */
-		virtual void framebufferSizeCallback(double width, double height) final
-		{
-			glViewport(0, 0, width, height);
-		}
-		virtual void scrollCallback(double xoff, double yoff) final
-		{
-			if( !viewport->focused ) return;
-			camera->shiftZoom(yoff*5.f);
-			camera->updateProjMat();
-		}
-		virtual void 
-			Callback(int button, int action, int mods) final
-		{
-			start_dragging = action==GLFW_PRESS;
-		}
-		virtual void cursorPosCallback(double xpos, double ypos) final
-		{
-			static const float rotateSpeed = 0.08f;
-			static float xoff, yoff;
-			static double xold, yold;
-
-			if( !viewport->dragging )return;
-
-			if( start_dragging ) {
-				xold = xpos;
-				yold = ypos;
-				start_dragging = false;
-			}
-
-			xoff = xpos - xold;
-			yoff = yold - ypos;
-
-			xold = xpos;
-			yold = ypos;
-
-			camera->rotateCamera(xoff * rotateSpeed, yoff * rotateSpeed);
-			camera->updateFreeViewMat();
 		}
 	};
 }

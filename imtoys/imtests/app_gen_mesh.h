@@ -24,8 +24,8 @@ namespace lim
 		glm::vec2 uv_scale ={1.f, 1.f};
 		float vs_t = 0.f;
 
-		bool start_dragging = false;
-		Camera *camera;
+		AutoCamera *camera;
+
 		Program *program;
 		Viewport *viewport;
 		std::vector<Model*> models;
@@ -41,15 +41,13 @@ namespace lim
 			//glPolygonMode(GL_FRONT, GL_LINE);
 			stbi_set_flip_vertically_on_load(true);
 
-			camera = new Camera(glm::vec3(0, 0, 8), win_width/(float)win_height);
-			camera->fovy = 45.f;
-			camera->updateProjMat();
-
 			program = new Program("debugging", APP_DIR);
 			program->attatch("debug.vs").attatch("debug.fs").link();
 
 			viewport = new Viewport(new MsFramebuffer());
 			viewport->framebuffer->clear_color ={0.1f, 0.1f, 0.1f, 1.0f};
+
+			camera = new AutoCamera(window, viewport);
 
 			/* gen models */
 			models.push_back(new Model(MeshGenerator::genSphere(50, 25), "sphere"));
@@ -87,6 +85,12 @@ namespace lim
 				models[i]->updateModelMat();
 			}
 
+			models.push_back(new Model(MeshGenerator::genPlane(), "plane"));
+			models.back()->position = glm::vec3(0,-3.5,0);
+			models.back()->scale = glm::vec3(50.f);
+			models.back()->updateModelMat();
+
+
 			light = new Light();
 			light->distance = 10.f;
 			light_model = new Model(MeshGenerator::genSphere(8, 4), "sphere");
@@ -112,16 +116,14 @@ namespace lim
 	private:
 		virtual void update() final
 		{
-			processInput(window);
-
 			/* render to fbo in viewport */
 			viewport->framebuffer->bind();
 
 			Program& prog = *program;
 			prog.use();
 
-			camera->aspect = viewport->framebuffer->aspect;
-			camera->updateProjMat();
+
+			//camera->printCameraState();
 			prog.setUniform("viewMat", camera->view_mat);
 			prog.setUniform("projMat", camera->proj_mat);
 			prog.setUniform("cameraPos", camera->position);
@@ -152,99 +154,51 @@ namespace lim
 			glViewport(0, 0, fb_width, fb_height);
 			glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+			processInput(window);
 		}
 		virtual void renderImGui() final
 		{
 			ImGui::DockSpaceOverViewport();
 
-
 			viewport->drawImGui();
 
 			/* controller */
-			ImGui::Begin("controller##genMesh");
+			if( false&&ImGui::Begin("controller##genMesh") ) {
 
-			ImGui::SliderFloat("vs_t", &vs_t, 0.f, 1.f);
+				ImGui::SliderFloat("vs_t", &vs_t, 0.f, 1.f);
 
-			ImGui::Text("<light>");
-			const float yawSpd = 360 * 0.001;
-			const float pitchSpd = 80 * 0.001;
-			const float distSpd = 94 * 0.001;
-			bool isDraging = ImGui::SliderFloat("yaw", &light->yaw, 0, 360, "%.3f");
-			isDraging |= ImGui::SliderFloat("pitch", &light->pitch, 10, 90, "%.3f");
-			isDraging |= ImGui::SliderFloat("distance", &light->distance, 6, 100, "%.3f");
-			if( isDraging ) {
-				light->updateMembers();
-				light_model->position = light->position;
-				light_model->updateModelMat();
+				ImGui::Text("<light>");
+				const float yawSpd = 360 * 0.001;
+				const float pitchSpd = 80 * 0.001;
+				const float distSpd = 94 * 0.001;
+				bool isDraging = ImGui::SliderFloat("yaw", &light->yaw, 0, 360, "%.3f");
+				isDraging |= ImGui::SliderFloat("pitch", &light->pitch, 10, 90, "%.3f");
+				isDraging |= ImGui::SliderFloat("distance", &light->distance, 6, 100, "%.3f");
+				if( isDraging ) {
+					light->updateMembers();
+					light_model->position = light->position;
+					light_model->updateModelMat();
+				}
+				ImGui::Text("pos %f %f %f", light->position.x, light->position.y, light->position.z);
+
+				ImGui::End();
 			}
-			ImGui::Text("pos %f %f %f", light->position.x, light->position.y, light->position.z);
-
-			ImGui::End();
 
 			/* state view */
-			ImGui::Begin("state##genMesh");
-			ImGui::Text("fovy: %f", camera->fovy);
-			ImGui::End();
+			if( ImGui::Begin("camera##genMesh") ) {
+				static float rad = F_PI;
+				ImGui::SliderAngle("rad", &rad);
+				ImGui::Text("%d", camera->viewing_mode);
+				ImGui::End();
+			}
 		}
 
 	private:
 		void processInput(GLFWwindow *window)
 		{
-			static const double cameraMoveSpeed = 4.2;
 			if( glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS )
 				glfwSetWindowShouldClose(window, true);
-
-			if( glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS )
-				camera->move(Camera::MOVEMENT::FORWARD, delta_time, cameraMoveSpeed);
-			if( glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS )
-				camera->move(Camera::MOVEMENT::BACKWARD, delta_time, cameraMoveSpeed);
-			if( glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS )
-				camera->move(Camera::MOVEMENT::LEFT, delta_time, cameraMoveSpeed);
-			if( glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS )
-				camera->move(Camera::MOVEMENT::RIGHT, delta_time, cameraMoveSpeed);
-			if( glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS )
-				camera->move(Camera::MOVEMENT::UP, delta_time, cameraMoveSpeed);
-			if( glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS )
-				camera->move(Camera::MOVEMENT::DOWN, delta_time, cameraMoveSpeed);
-			camera->updateFreeViewMat();
-		}
-		/* glfw callback */
-		virtual void framebufferSizeCallback(double width, double height) final
-		{
-			glViewport(0, 0, width, height);
-		}
-		virtual void scrollCallback(double xoff, double yoff) final
-		{
-			if( !viewport->focused ) return;
-			camera->shiftZoom(yoff*5.f);
-			camera->updateProjMat();
-		}
-		virtual void mouseBtnCallback(int button, int action, int mods) final
-		{
-			start_dragging = action==GLFW_PRESS;
-		}
-		virtual void cursorPosCallback(double xpos, double ypos) final
-		{
-			static const float rotateSpeed = 0.08f;
-			static float xoff, yoff;
-			static double xold, yold;
-
-			if( !viewport->dragging )return;
-
-			if( start_dragging ) {
-				xold = xpos;
-				yold = ypos;
-				start_dragging = false;
-			}
-
-			xoff = xpos - xold;
-			yoff = yold - ypos;
-
-			xold = xpos;
-			yold = ypos;
-
-			camera->rotateCamera(xoff * rotateSpeed, yoff * rotateSpeed);
-			camera->updateFreeViewMat();
 		}
 	};
 }

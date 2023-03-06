@@ -27,14 +27,6 @@ namespace lim
 		inline static constexpr const char *APP_NAME = "Cloth-Simplificator";
 		inline static constexpr const char *APP_DISC = "simplify and bake normal map";
 	private:
-		// ++로 순회하려고 enum class안씀
-		enum VIEWING_MODE
-		{
-			VM_PIVOT,
-			VM_FREE,
-			VM_SCROLL
-		};
-		int viewingMode = VM_PIVOT;
 		bool isSameCamera = false;
 		float cameraMoveSpeed = 1.6;
 		Light light = Light();
@@ -97,7 +89,7 @@ namespace lim
 			Viewport *viewport = new Viewport(new MsFramebuffer);
 			viewport->framebuffer->clear_color = {0,0,1,1};
 			Scene *scene = new Scene(light, true);
-			Camera *camera = new Camera(glm::vec3(0.0f, 1.0f, 3.0f));
+			AutoCamera *camera = new AutoCamera(window, viewport, 0, {0,1,8});
 			vpPackage.push_back(viewport, scene, nullptr, camera);
 		}
 		void loadModel(std::string_view path, int vpIdx)
@@ -169,8 +161,6 @@ namespace lim
 	private:
 		virtual void update() final
 		{
-			processInput();
-
 			if( isSameCamera ) {
 				Camera *firstCam = vpPackage.cameras[0];
 				for( int i = 0; i < vpPackage.size; i++ ) {
@@ -322,8 +312,13 @@ namespace lim
 			if( ImGui::Begin("Viewing Options##simp") ) {
 				ImGui::Text("<camera>");
 				static int focusedCameraIdx = 0;
-				static const char *vmode_strs[] ={"pivot", "free", "scroll"};
-				ImGui::Combo("mode", &viewingMode, vmode_strs, sizeof(vmode_strs) / sizeof(char *));
+				static const char *vmode_strs[] ={"free", "pivot", "scroll"};
+				int viewMode=0;
+				if( ImGui::Combo("mode", &viewMode, vmode_strs, sizeof(vmode_strs) / sizeof(char *)) ) {
+					for( AutoCamera *cam : vpPackage.cameras ) {
+						cam->setViewMode(viewMode);
+					}
+				}
 				ImGui::Checkbox("use same camera", &isSameCamera);
 				ImGui::SliderFloat("move speed", &cameraMoveSpeed, 0.2f, 3.0f);
 				for( int i = 0; i < vpPackage.size; i++ ) { // for test
@@ -547,41 +542,8 @@ namespace lim
 			ImGui::End();
 			ImGui::PopStyleVar();
 		}
-		void processInput()
+		void keyCallback(int key, int scancode, int action, int mods) override
 		{
-			for( int i = 0; i < vpPackage.size; i++ ) {
-				Viewport &vp = *(vpPackage.viewports[i]);
-				if( vp.dragging == false )
-					continue;
-				Camera &camera = *(vpPackage.cameras[(isSameCamera) ? 0 : i]);
-				switch( viewingMode ) {
-				case VM_FREE:
-					float multiple = 1.0f;
-					if( glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS )
-						multiple = 1.3f;
-					if( glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS )
-						camera.move(Camera::MOVEMENT::FORWARD, delta_time, cameraMoveSpeed * multiple);
-					if( glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS )
-						camera.move(Camera::MOVEMENT::BACKWARD, delta_time, cameraMoveSpeed * multiple);
-					if( glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS )
-						camera.move(Camera::MOVEMENT::LEFT, delta_time, cameraMoveSpeed * multiple);
-					if( glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS )
-						camera.move(Camera::MOVEMENT::RIGHT, delta_time, cameraMoveSpeed * multiple);
-					if( glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS )
-						camera.move(Camera::MOVEMENT::UP, delta_time, cameraMoveSpeed * multiple);
-					if( glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS )
-						camera.move(Camera::MOVEMENT::DOWN, delta_time, cameraMoveSpeed * multiple);
-					camera.updateFreeViewMat();
-					break;
-				}
-				break;
-			}
-		}
-		virtual void keyCallback(int key, int scancode, int action, int mods) final
-		{
-			if( key == GLFW_KEY_TAB && action == GLFW_PRESS ) {
-				viewingMode = (viewingMode + 1) % 3;
-			}
 			if( (GLFW_MOD_CONTROL == mods) && (GLFW_KEY_S == key) ) {
 				simplifyTrigger = true;
 				bakeTrigger = true;
@@ -593,47 +555,9 @@ namespace lim
 				glfwSetWindowShouldClose(window, GL_TRUE);
 			}
 		}
-		virtual void cursorPosCallback(double xPos, double yPos) final
+		void mouseBtnCallback(int button, int action, int mods) override
 		{
-			static const double pivotRotSpd = 0.3;
-			static const double pivotShiftSpd = -0.003;
-			static const double freeRotSpd = 0.2;
-			static double xOld, yOld;
-			static double xOff, yOff;
-			xOff = xPos - xOld;
-			yOff = yOld - yPos;
-
-			for( int i = 0; i < vpPackage.size; i++ ) {
-				Viewport &vp = *(vpPackage.viewports[i]);
-				if( vp.dragging == false )
-					continue;
-				Camera &camera = *(vpPackage.cameras[(isSameCamera) ? 0 : i]);
-
-				switch( viewingMode ) {
-				case VM_PIVOT:
-					if( glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS || glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS ) {
-						camera.shiftPos(xOff * pivotShiftSpd, yOff * pivotShiftSpd);
-						camera.updatePivotViewMat();
-					}
-					else {
-						camera.rotateCamera(xOff * pivotRotSpd, yOff * pivotRotSpd);
-						camera.updatePivotViewMat();
-					}
-					break;
-				case VM_FREE:
-					camera.rotateCamera(xOff * freeRotSpd, yOff * freeRotSpd);
-					camera.updateFreeViewMat();
-					break;
-				case VM_SCROLL:
-					break;
-				}
-				break;
-			}
-			xOld = xPos;
-			yOld = yPos;
-		}
-		virtual void mouseBtnCallback(int button, int action, int mods) final
-		{
+			// 이전에 선택된 viewport 저장
 			if( vpPackage.viewports[lastFocusedVpIdx]->hovered == false ) {
 				for( int i = 0; i < vpPackage.size; i++ ) {
 					if( vpPackage.viewports[i]->hovered )
@@ -641,45 +565,7 @@ namespace lim
 				}
 			}
 		}
-		virtual void scrollCallback(double xOff, double yOff) final
-		{
-			static const double rotateSpd = 4.5;
-			static const double pivotShiftSpd = -0.09;
-
-			for( int i = 0; i < vpPackage.size; i++ ) {
-				Viewport &vp = *(vpPackage.viewports[i]);
-				if( !vp.hovered )
-					continue;
-				Camera &camera = *(vpPackage.cameras[(isSameCamera) ? 0 : i]);
-
-				switch( viewingMode ) {
-				case VM_PIVOT:
-					camera.shiftDist(yOff * 3.f);
-					camera.updatePivotViewMat();
-					break;
-				case VM_FREE:
-					camera.shiftZoom(yOff * 5.f);
-					camera.updateProjMat();
-					break;
-				case VM_SCROLL:
-					if( glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ) {
-						camera.shiftPos(xOff * pivotShiftSpd, yOff * -pivotShiftSpd);
-						camera.updatePivotViewMat();
-					}
-					else if( glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS ) {
-						camera.shiftDist(yOff * 3.f);
-						camera.updatePivotViewMat();
-					}
-					else {
-						camera.rotateCamera(xOff * rotateSpd, yOff * -rotateSpd);
-						camera.updatePivotViewMat();
-					}
-					break;
-				}
-				break;
-			}
-		}
-		virtual void dndCallback(int count, const char **paths) final
+		void dndCallback(int count, const char **paths) override
 		{
 			int selectedVpIdx = -1;
 			double xPos, yPos;

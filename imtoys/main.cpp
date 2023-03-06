@@ -8,14 +8,14 @@
 #include "limbrary/limclude.h"
 
 #include "imnpr/app_hatching.h"
+#include "imtests/app_gen_mesh.h"
 #include "imhdr/app_hdr.h"
 #include "imsimplification/app_simplification.h"
 #include "impbr/app_pbr.h"
+#include "imanims/app_fluid.h"
 #include "imtests/app_astar.h"
-#include "imtests/app_gen_mesh.h"
 #include "imtests/app_template.h"
 #include "imanims/app_kinematics.h"
-#include "imanims/app_fluid.h"
 #include "imanims/app_nano.h"
 
 lim::AppBase *app;
@@ -35,14 +35,14 @@ int main(int, char**)
 	lim::imgui_modules::draw_appselector = drawAppSellector;
 
 	// first order is shown first
-	pushAppData<lim::AppFluid>();
 	pushAppData<lim::AppKinematics>();
-	pushAppData<lim::AppNano>();
+	pushAppData<lim::AppFluid>();
 	pushAppData<lim::AppPbr>();
 	pushAppData<lim::AppSimplification>();
 	pushAppData<lim::AppHdr>();
 	pushAppData<lim::AppHatching>();
 	pushAppData<lim::AppGenMesh>();
+	pushAppData<lim::AppNano>();
 	pushAppData<lim::AppAstar>();
 
 	lim::AppPref::get().selectedAppIdx=0;

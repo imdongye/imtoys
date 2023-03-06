@@ -20,11 +20,12 @@ namespace lim
 		glm::vec2 win_pos;
 
 	public:
-		AppKinematics(): AppBase(300, 300, APP_NAME)
+		AppKinematics(): AppBase(600, 600, APP_NAME)
 		{
 			stbi_set_flip_vertically_on_load(true);
-
-			win_pos = {300,300};
+			int x, y;
+			glfwGetWindowPos(window, &x, &y);
+			win_pos = {x,y};
 		}
 		~AppKinematics()
 		{

@@ -40,7 +40,7 @@ namespace lim
 		glm::ivec2 mouse_pos;
 		WindowMode window_mode;
 		bool window_opened;
-		std::function<void(int, int)> resize_callback;
+		Callbacks<void(int, int)> resize_callbacks;
 	public:
 		Viewport(Framebuffer* createdFB, GLuint _width=256, GLuint _height=256, WindowMode wm=WM_FREE)
 			: id(id_generator++), name("Viewport"+std::to_string(id)+"##vp"+AppPref::get().selectedAppName)
@@ -49,7 +49,6 @@ namespace lim
 			framebuffer = createdFB;
 			framebuffer->resize(width, height);
 			hovered = focused = dragging = false;
-			resize_callback = [](int w, int h) {};
 		}
 		virtual ~Viewport()
 		{
@@ -99,7 +98,9 @@ namespace lim
 				height = contentSize.y;
 				aspect = contentSize.x/contentSize.y;
 				framebuffer->resize(width, height);
-				resize_callback(width, height);
+				for( auto& [_,cb] : resize_callbacks ) {
+					cb(width, height);
+				}
 			}
 
 			GLuint texID = framebuffer->getRenderedTex();

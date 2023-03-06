@@ -13,7 +13,7 @@ namespace lim
 		std::vector<Viewport*> viewports;
 		std::vector<Scene*> scenes;
 		std::vector<Model*> models;
-		std::vector<Camera*> cameras;
+		std::vector<AutoCamera*> cameras;
 		void clear()
 		{
 			for( int i=0; i<size; i++ ) {
@@ -24,7 +24,7 @@ namespace lim
 			}
 			viewports.clear(); scenes.clear(); models.clear(); cameras.clear();
 		}
-		void push_back(Viewport* vp, Scene* sc, Model* md, Camera* cm)
+		void push_back(Viewport* vp, Scene* sc, Model* md, AutoCamera* cm)
 		{
 			size++;
 			viewports.push_back(vp);
