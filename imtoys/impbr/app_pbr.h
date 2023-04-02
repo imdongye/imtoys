@@ -10,6 +10,8 @@
 #ifndef APP_PBR_H
 #define APP_PBR_H
 
+#include <limbrary/limclude.h>
+
 namespace lim
 {
 	class AppPbr: public AppBase

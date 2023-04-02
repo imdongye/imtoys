@@ -6,7 +6,7 @@
 #ifndef APP_KINEMATICS_H
 #define APP_KINEMATICS_H
 
-#include "../limbrary/limclude.h"
+#include <limbrary/limclude.h>
 
 namespace lim
 {

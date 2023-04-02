@@ -16,7 +16,7 @@ and there are several toys that use limbrary
 
 ## 의존성
 
-c++17, glfw3.3, glad(opengl4.1, core profile), stb(image, write, font), assimp5.2.4, imgui1.88, nlohmann/json, fqms, nanovg
+c++17, glfw, glad, stb(image, write, truetype), assimp, imgui, nlohmann/json, fqms, nanovg, freetype
 
 https://github.com/nothings/stb
 

@@ -6,11 +6,7 @@
 #ifndef APP_NANO_H
 #define APP_NANO_H
 
-#include "../limbrary/limclude.h"
-
-#include <nanovg/nanovg.h>
-#define NANOVG_GL3_IMPLEMENTATION
-#include <nanovg/nanovg_gl.h>
+#include <limbrary/limclude.h>
 
 namespace lim
 {
@@ -21,23 +17,51 @@ namespace lim
 		inline static constexpr const char const *APP_DIR = "imanims/";
 		inline static constexpr const char const *APP_DISC = "hello, world";
 	private:
-		NVGcontext* vg = NULL;
+		enum
+		{
+			LAGLANGIAN,
+			LINEAR,
+			BEZIER,
+			CATMULL,
+			BSPLINE,
+			CUBIC_NATURAL,
+			CUBIC_CLOSED,
+			CUBIC_NATURAL_QR,
+		};
 
+		enum
+		{
+			DRAW_LINES,
+			DRAW_DOTS,
+		};
+
+		int curveType = LINEAR;
+		int drawType = DRAW_LINES;
+		bool closed = false;
+
+		std::vector<glm::vec2> srcPts;
+		std::vector<glm::vec2> samplePts;
+		int underPt = -1;
+
+		NVGcontext* vg = NULL;
 
 	public:
 		AppNano(): AppBase(1280, 720, APP_NAME)
 		{
-			stbi_set_flip_vertically_on_load(true);
-
 			vg = nvgCreateGL3(NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG);
 			assert(vg != NULL);
+
+			for( int i=0; i<=10; i++ ) {
+				glm::vec2 p = {i/10.f*fb_width, fb_height*0.5f};
+				srcPts.push_back(p);
+				samplePts.push_back(p);
+			}
 		}
 		~AppNano()
 		{
-
+			nvgDeleteGL3(vg);
 		}
 	private:
-
 		void drawEyes(NVGcontext* vg, float x, float y, float w, float h, float mx, float my, float t)
 		{
 			NVGpaint gloss, bg;
@@ -106,9 +130,6 @@ namespace lim
 		virtual void update() final
 		{
 			// clear backbuffer
-			glEnable(GL_DEPTH_TEST);
-			glDisable(GL_MULTISAMPLE);
-
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 			glViewport(0, 0, fb_width, fb_height);
 			glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
@@ -116,30 +137,38 @@ namespace lim
 
 			nvgBeginFrame(vg, fb_width, fb_height, pixel_ratio);
 
-			float rect_w = 250.f, rect_h = 250.f;
-			NVGcolor nvg_stroke_color = nvgRGBAf(0.f, 0.f, 0.f, 1.f);
-			NVGcolor nvg_fill_color = nvgRGBAf(0.f, 1.f, 0.1f, 1.f);
+			nvgSave(vg);
 
 			nvgBeginPath(vg);
-
-			nvgRoundedRectVarying(
-				vg,
-				(float)win_width/2.f - rect_w/2.f, win_height/2.f - rect_h/2.f,
-				rect_w, rect_h,
-				30.f, 8.f, 30.f, 8.f
-			);
-
-			nvgFillColor(vg, nvg_fill_color);
-			nvgFill(vg);
-			nvgStrokeWidth(vg, 2.f);
-			nvgStrokeColor(vg, nvg_stroke_color);
+			nvgMoveTo(vg, samplePts[0].x, samplePts[0].y);
+			for( auto i=1; i<samplePts.size(); i++ ) {
+				nvgLineTo(vg, samplePts[i].x, samplePts[i].y);
+			}
+			nvgStrokeColor(vg, nvgRGBAf(0, .3f, 1, 1));
+			nvgStrokeWidth(vg, 2);
 			nvgStroke(vg);
 
-			drawEyes(vg, 100, 100, 100, 100, mouse_pos.x, mouse_pos.y, glfwGetTime());
+			nvgRestore(vg);
+
+			for( auto i=0; i<srcPts.size(); i++ )
+				if( i!= underPt ) {
+					nvgBeginPath(vg);
+					nvgCircle(vg, srcPts[i].x, srcPts[i].y, 5);
+					nvgFillColor(vg, nvgRGBAf(1, 1, 0, .8f));
+					nvgFill(vg);
+				}
+			if( underPt>=0 ) {
+				nvgBeginPath(vg);
+				nvgCircle(vg, srcPts[underPt].x, srcPts[underPt].y, 5);
+				nvgFillColor(vg, nvgRGBAf(1, .1f, 0, .8f));
+				nvgFill(vg);
+			}
+
+			//drawEyes(vg, 100, 100, 100, 100, mouse_pos.x, mouse_pos.y, glfwGetTime());
 
 			nvgEndFrame(vg);
 		}
-		virtual void renderImGui() final
+		virtual void renderImGui() override
 		{
 			//imgui_modules::DockSpaceOverViewport();
 
@@ -150,18 +179,37 @@ namespace lim
 		}
 
 	private:
-		virtual void keyCallback(int key, int scancode, int action, int mods) final
+		glm::vec2 initialOffset = {0,0};
+		bool isDragging = false;
+		virtual void mouseBtnCallback(int btn, int action, int mod) override
+		{
+			if( action == GLFW_PRESS && underPt>0 ) {
+				initialOffset = mouse_pos - srcPts[underPt];
+				isDragging = true;
+			}
+			else {
+				isDragging = false;
+			}
+		}
+		virtual void keyCallback(int key, int scancode, int action, int mods) override
 		{
 			std::cout<<ImGui::GetFrameHeight();
 		}
-		virtual void cursorPosCallback(double xPos, double yPos) final
+		virtual void cursorPosCallback(double xPos, double yPos) override
 		{
-			static double xOld, yOld, xOff, yOff=0;
-			xOff = xPos - xOld;
-			yOff = yOld - yPos;
+			if( !isDragging ) {
+				underPt = -1;
+				for( int i=0; i<srcPts.size(); i++ ) {
+					if( glm::length(srcPts[i]-mouse_pos)<6 ) {
+						underPt = i;
+					}
+				}
+			}
 
-			xOld = xPos;
-			yOld = yPos;
+			if( isDragging ) {
+				srcPts[underPt] = mouse_pos -initialOffset;
+				samplePts[underPt] = srcPts[underPt];
+			}
 		}
 	};
 }

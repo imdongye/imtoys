@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{e4a58012-decd-46cf-9b51-e146b4219a26}</ProjectGuid>
+    <RootNamespace>imtoys</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(SolutionDir)bin\$(Configuration)-windows-$(Platform)\</OutDir>
+    <IntDir>$(SolutionDir)bin\$(Configuration)-windows-$(Platform)\intermediate\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(SolutionDir)bin\$(Configuration)-windows-$(Platform)\</OutDir>
+    <IntDir>$(SolutionDir)bin\$(Configuration)-windows-$(Platform)\intermediate\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)vender\assimp-5.2.5\include;$(SolutionDir)vender\eigen-3.4.0;$(SolutionDir)vender\glad-gl4.6-core\include;$(SolutionDir)vender\glfw-3.3.8\include;$(SolutionDir)vender\glm-0.9.9.8;$(SolutionDir)vender\imgui-docking-1.89.4;$(SolutionDir)vender\others;$(SolutionDir)limbrary;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>assimp-vc143-mtd.lib;glfw3.lib;glad-gl4.6-core.lib;opengl32.lib;nanovg.lib;imgui-docking-1.89.4.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)vender\assimp-5.2.5\lib\Debug;$(SolutionDir)vender\glfw-3.3.8\lib-vc2022;$(SolutionDir)vender\glad-gl4.6-core\bin\Debug;$(SolutionDir)vender\others\nanovg\bin\Debug;$(SolutionDir)\vender\imgui-docking-1.89.4\bin\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(SolutionDir)vender\assimp-5.2.5\include;$(SolutionDir)vender\eigen-3.4.0;$(SolutionDir)vender\glad-gl4.6-core\include;$(SolutionDir)vender\glfw-3.3.8\include;$(SolutionDir)vender\glm-0.9.9.8;$(SolutionDir)vender\imgui-docking-1.89.4;$(SolutionDir)vender\others;$(SolutionDir)limbrary;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>assimp-vc143-mt.lib;glfw3.lib;glad-gl4.6-core.lib;opengl32.lib;nanovg.lib;imgui-docking-1.89.4.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)vender\assimp-5.2.5\lib\Release;$(SolutionDir)vender\glfw-3.3.8\lib-vc2022;$(SolutionDir)vender\glad-gl4.6-core\bin\Release;$(SolutionDir)vender\others\nanovg\bin\Release;$(SolutionDir)\vender\imgui-docking-1.89.4\bin\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\limbrary\limbrary\application.h" />
+    <ClInclude Include="..\limbrary\limbrary\app_pref.h" />
+    <ClInclude Include="..\limbrary\limbrary\asset_lib.h" />
+    <ClInclude Include="..\limbrary\limbrary\declaration.h" />
+    <ClInclude Include="..\limbrary\limbrary\framebuffer.h" />
+    <ClInclude Include="..\limbrary\limbrary\imgui_modules.h" />
+    <ClInclude Include="..\limbrary\limbrary\limclude.h" />
+    <ClInclude Include="..\limbrary\limbrary\logger.h" />
+    <ClInclude Include="..\limbrary\limbrary\model_view\auto_camera.h" />
+    <ClInclude Include="..\limbrary\limbrary\model_view\camera.h" />
+    <ClInclude Include="..\limbrary\limbrary\model_view\light.h" />
+    <ClInclude Include="..\limbrary\limbrary\model_view\mesh.h" />
+    <ClInclude Include="..\limbrary\limbrary\model_view\mesh_generator.h" />
+    <ClInclude Include="..\limbrary\limbrary\model_view\model.h" />
+    <ClInclude Include="..\limbrary\limbrary\model_view\model_exporter.h" />
+    <ClInclude Include="..\limbrary\limbrary\model_view\model_loader.h" />
+    <ClInclude Include="..\limbrary\limbrary\model_view\scene.h" />
+    <ClInclude Include="..\limbrary\limbrary\program.h" />
+    <ClInclude Include="..\limbrary\limbrary\texture.h" />
+    <ClInclude Include="..\limbrary\limbrary\viewport.h" />
+    <ClInclude Include="imanims\app_fluid.h" />
+    <ClInclude Include="imanims\app_kinematics.h" />
+    <ClInclude Include="imanims\app_nano.h" />
+    <ClInclude Include="imanims\canvas.h" />
+    <ClInclude Include="imhdr\app_hdr.h" />
+    <ClInclude Include="imhdr\color_awared_image.h" />
+    <ClInclude Include="imnpr\app_hatching.h" />
+    <ClInclude Include="imnpr\art_map.h" />
+    <ClInclude Include="impbr\app_pbr.h" />
+    <ClInclude Include="imsimplification\app_simplification.h" />
+    <ClInclude Include="imsimplification\fqms.h" />
+    <ClInclude Include="imsimplification\map_baker.h" />
+    <ClInclude Include="imsimplification\simplify.h" />
+    <ClInclude Include="imsimplification\viewport_pack.h" />
+    <ClInclude Include="imtests\app_astar.h" />
+    <ClInclude Include="imtests\app_font.h" />
+    <ClInclude Include="imtests\app_gen_mesh.h" />
+    <ClInclude Include="imtests\app_icp.h" />
+    <ClInclude Include="imtests\app_template.h" />
+    <ClInclude Include="imtests\path_finder.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\limbrary\limbrary\asset_lib.inl" />
+    <None Include="common\shader\amiga_ground.fs" />
+    <None Include="common\shader\depth.fs" />
+    <None Include="common\shader\gray_to_quad.fs" />
+    <None Include="common\shader\pos.vs" />
+    <None Include="common\shader\tex_to_quad.fs" />
+    <None Include="common\shader\tex_to_quad.vs" />
+    <None Include="imhdr\README.md" />
+    <None Include="imhdr\shader\rgb_to_pcs_to_display.fs" />
+    <None Include="imnpr\shader\hatching.fs" />
+    <None Include="imnpr\shader\hatching.vs" />
+    <None Include="impbr\shader\1.1.pbr.fs" />
+    <None Include="impbr\shader\1.1.pbr.vs" />
+    <None Include="imsimplification\shader\auto_normal.fs" />
+    <None Include="imsimplification\shader\bake_normal.fs" />
+    <None Include="imsimplification\shader\depth.fs" />
+    <None Include="imsimplification\shader\fb_to_scr.fs" />
+    <None Include="imsimplification\shader\fb_to_scr.vs" />
+    <None Include="imsimplification\shader\map_view.fs" />
+    <None Include="imsimplification\shader\map_wnor.fs" />
+    <None Include="imsimplification\shader\map_wnor_added_bump_map.fs" />
+    <None Include="imsimplification\shader\ndl.fs" />
+    <None Include="imsimplification\shader\ndv.fs" />
+    <None Include="imsimplification\shader\pos.vs" />
+    <None Include="imsimplification\shader\pos_nor_uv.vs" />
+    <None Include="imsimplification\shader\shadowed.fs" />
+    <None Include="imsimplification\shader\shadowed.vs" />
+    <None Include="imsimplification\shader\uv.fs" />
+    <None Include="imsimplification\shader\uv_view.vs" />
+    <None Include="imtests\shader\debug.fs" />
+    <None Include="imtests\shader\debug.vs" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

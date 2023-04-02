@@ -11,7 +11,7 @@
 #ifndef APP_TEMP_H
 #define APP_TEMP_H
 
-#include "../limbrary/limclude.h"
+#include <limbrary/limclude.h>
 
 namespace lim
 {
@@ -22,7 +22,7 @@ namespace lim
         inline static constexpr const char const *APP_DIR = "imtests/";
 		inline static constexpr const char const *APP_DISC = "hello, world";
 	private:
-
+		
 
 	public:
 		AppTemplate(): AppBase(1280, 720, APP_NAME)
@@ -38,7 +38,6 @@ namespace lim
 		{
 			// clear backbuffer
 			glEnable(GL_DEPTH_TEST);
-			glDisable(GL_MULTISAMPLE);
 
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 			glViewport(0, 0, fb_width, fb_height);
@@ -56,11 +55,11 @@ namespace lim
 		}
 
 	private:
-		void keyCallback(int key, int scancode, int action, int mods) override
+		virtual void keyCallback(int key, int scancode, int action, int mods) override
 		{
 			std::cout<<ImGui::GetFrameHeight();
 		}
-		void cursorPosCallback(double xPos, double yPos) override
+		virtual void cursorPosCallback(double xPos, double yPos) override
 		{
 			static double xOld, yOld, xOff, yOff=0;
 			xOff = xPos - xOld;

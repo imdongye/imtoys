@@ -8,7 +8,7 @@
 #ifndef CANVAS_H
 #define CANVAS_H
 
-#include "../limbrary/texture.h"
+#include <limbrary/texture.h>
 
 namespace lim
 {

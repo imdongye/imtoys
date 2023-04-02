@@ -9,7 +9,7 @@
 #ifndef APP_MESH_H
 #define APP_MESH_H
 
-#include "../limbrary/limclude.h"
+#include <limbrary/limclude.h>
 
 namespace lim
 {

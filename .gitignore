@@ -1,30 +1,36 @@
-/.vs/
-/dlls/
-/ignored/
-/include/
-/lib/
-/x64/
-*/x64/
-/*.sln
-/*.xcodeproj
+# for visual studio
+*.vs/
+*bin/
+!*bin/Debug/*.lib
+!*bin/Debug/*.dll
+!*bin/Release/*.lib
+!*bin/Release/*.dll
+
+#*vcxproj*
+#*.sln
+
+# for xcode
 /Build/
-
-._*
-*vcxproj*
-*.ini
-app_pref.json
-
-!imgui.ini
-!/include/i cmgui/imgui_demo.cpp
-imtoys/imnpr/TAM/
-
-
-*xcodeproj*
-*entitlements
+/*.xcodeproj
 .DS_Store
+*entitlements
+._*
+*xcodeproj*
 
+
+# common
+/ignored
+/include
+/*.sln
+/imtoys/common
+!/imtoys/common/shader
+
+# etc
+app_pref.json
 *private/
 *todo/
 *archive/
 *result/
 *images/
+
+imtoys/imnpr/TAM/

@@ -7,7 +7,7 @@
 #ifndef APP_FLUID_H
 #define APP_FLUID_H
 
-#include "../limbrary/limclude.h"
+#include <limbrary/limclude.h>
 #include "canvas.h"
 
 namespace lim

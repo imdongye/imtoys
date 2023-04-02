@@ -1,0 +1,264 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="commons">
+      <UniqueIdentifier>{34857100-5aa8-4768-9870-c78b079bb49b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="imtests">
+      <UniqueIdentifier>{a1f3aa69-b59c-4b1b-8971-905fb92bc894}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="limbrary">
+      <UniqueIdentifier>{71e47624-8f0c-498e-b12d-973c600a7d2f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="limbrary\model_view">
+      <UniqueIdentifier>{39e1573e-25d6-4963-bab5-01523cac54f5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="old_apps">
+      <UniqueIdentifier>{31da9208-fc2d-4636-9c1d-7475dde757fe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="old_apps\imanims">
+      <UniqueIdentifier>{e694edf0-544a-4fe9-80ed-52851f84519a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="old_apps\imhdr">
+      <UniqueIdentifier>{ea2923c5-4a4e-4915-8fc2-d42dc4ea0fcf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="old_apps\imnpr">
+      <UniqueIdentifier>{4d95020c-62ed-45fc-b9a1-b2a9415bb7b3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="old_apps\impbr">
+      <UniqueIdentifier>{8ca35be8-261a-4bc1-8f11-b43fbfd3f7f2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="old_apps\imsimplification">
+      <UniqueIdentifier>{37fec299-32be-4e61-9ca3-5b928d9c10de}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="old_apps\imsimplification\shader">
+      <UniqueIdentifier>{d8a977bc-0f84-4fe6-9f88-b3a4681533f9}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="imhdr\app_hdr.h">
+      <Filter>old_apps\imhdr</Filter>
+    </ClInclude>
+    <ClInclude Include="impbr\app_pbr.h">
+      <Filter>old_apps\impbr</Filter>
+    </ClInclude>
+    <ClInclude Include="imsimplification\app_simplification.h">
+      <Filter>old_apps\imsimplification</Filter>
+    </ClInclude>
+    <ClInclude Include="imsimplification\fqms.h">
+      <Filter>old_apps\imsimplification</Filter>
+    </ClInclude>
+    <ClInclude Include="imsimplification\map_baker.h">
+      <Filter>old_apps\imsimplification</Filter>
+    </ClInclude>
+    <ClInclude Include="imsimplification\simplify.h">
+      <Filter>old_apps\imsimplification</Filter>
+    </ClInclude>
+    <ClInclude Include="imsimplification\viewport_pack.h">
+      <Filter>old_apps\imsimplification</Filter>
+    </ClInclude>
+    <ClInclude Include="imhdr\color_awared_image.h">
+      <Filter>old_apps\imhdr</Filter>
+    </ClInclude>
+    <ClInclude Include="imtests\app_astar.h">
+      <Filter>imtests</Filter>
+    </ClInclude>
+    <ClInclude Include="imtests\path_finder.h">
+      <Filter>imtests</Filter>
+    </ClInclude>
+    <ClInclude Include="imnpr\app_hatching.h">
+      <Filter>old_apps\imnpr</Filter>
+    </ClInclude>
+    <ClInclude Include="imnpr\art_map.h">
+      <Filter>old_apps\imnpr</Filter>
+    </ClInclude>
+    <ClInclude Include="imtests\app_gen_mesh.h">
+      <Filter>imtests</Filter>
+    </ClInclude>
+    <ClInclude Include="imtests\app_template.h">
+      <Filter>imtests</Filter>
+    </ClInclude>
+    <ClInclude Include="imanims\app_fluid.h">
+      <Filter>old_apps\imanims</Filter>
+    </ClInclude>
+    <ClInclude Include="imanims\canvas.h">
+      <Filter>old_apps\imanims</Filter>
+    </ClInclude>
+    <ClInclude Include="imanims\app_kinematics.h">
+      <Filter>old_apps\imanims</Filter>
+    </ClInclude>
+    <ClInclude Include="imanims\app_nano.h">
+      <Filter>old_apps\imanims</Filter>
+    </ClInclude>
+    <ClInclude Include="imtests\app_font.h">
+      <Filter>imtests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\limbrary\limbrary\app_pref.h">
+      <Filter>limbrary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\limbrary\limbrary\application.h">
+      <Filter>limbrary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\limbrary\limbrary\asset_lib.h">
+      <Filter>limbrary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\limbrary\limbrary\declaration.h">
+      <Filter>limbrary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\limbrary\limbrary\framebuffer.h">
+      <Filter>limbrary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\limbrary\limbrary\imgui_modules.h">
+      <Filter>limbrary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\limbrary\limbrary\limclude.h">
+      <Filter>limbrary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\limbrary\limbrary\logger.h">
+      <Filter>limbrary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\limbrary\limbrary\program.h">
+      <Filter>limbrary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\limbrary\limbrary\texture.h">
+      <Filter>limbrary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\limbrary\limbrary\viewport.h">
+      <Filter>limbrary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\limbrary\limbrary\model_view\camera.h">
+      <Filter>limbrary\model_view</Filter>
+    </ClInclude>
+    <ClInclude Include="..\limbrary\limbrary\model_view\light.h">
+      <Filter>limbrary\model_view</Filter>
+    </ClInclude>
+    <ClInclude Include="..\limbrary\limbrary\model_view\mesh.h">
+      <Filter>limbrary\model_view</Filter>
+    </ClInclude>
+    <ClInclude Include="..\limbrary\limbrary\model_view\mesh_generator.h">
+      <Filter>limbrary\model_view</Filter>
+    </ClInclude>
+    <ClInclude Include="..\limbrary\limbrary\model_view\model.h">
+      <Filter>limbrary\model_view</Filter>
+    </ClInclude>
+    <ClInclude Include="..\limbrary\limbrary\model_view\model_exporter.h">
+      <Filter>limbrary\model_view</Filter>
+    </ClInclude>
+    <ClInclude Include="..\limbrary\limbrary\model_view\model_loader.h">
+      <Filter>limbrary\model_view</Filter>
+    </ClInclude>
+    <ClInclude Include="..\limbrary\limbrary\model_view\scene.h">
+      <Filter>limbrary\model_view</Filter>
+    </ClInclude>
+    <ClInclude Include="..\limbrary\limbrary\model_view\auto_camera.h">
+      <Filter>limbrary\model_view</Filter>
+    </ClInclude>
+    <ClInclude Include="imtests\app_icp.h">
+      <Filter>imtests</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="imhdr\README.md">
+      <Filter>old_apps\imhdr</Filter>
+    </None>
+    <None Include="imtests\shader\debug.fs">
+      <Filter>imtests</Filter>
+    </None>
+    <None Include="imtests\shader\debug.vs">
+      <Filter>imtests</Filter>
+    </None>
+    <None Include="imsimplification\shader\fb_to_scr.vs">
+      <Filter>old_apps\imsimplification\shader</Filter>
+    </None>
+    <None Include="imsimplification\shader\map_view.fs">
+      <Filter>old_apps\imsimplification\shader</Filter>
+    </None>
+    <None Include="imsimplification\shader\map_wnor.fs">
+      <Filter>old_apps\imsimplification\shader</Filter>
+    </None>
+    <None Include="imsimplification\shader\map_wnor_added_bump_map.fs">
+      <Filter>old_apps\imsimplification\shader</Filter>
+    </None>
+    <None Include="imsimplification\shader\ndl.fs">
+      <Filter>old_apps\imsimplification\shader</Filter>
+    </None>
+    <None Include="imsimplification\shader\ndv.fs">
+      <Filter>old_apps\imsimplification\shader</Filter>
+    </None>
+    <None Include="imsimplification\shader\pos.vs">
+      <Filter>old_apps\imsimplification\shader</Filter>
+    </None>
+    <None Include="imsimplification\shader\pos_nor_uv.vs">
+      <Filter>old_apps\imsimplification\shader</Filter>
+    </None>
+    <None Include="imsimplification\shader\shadowed.fs">
+      <Filter>old_apps\imsimplification\shader</Filter>
+    </None>
+    <None Include="imsimplification\shader\shadowed.vs">
+      <Filter>old_apps\imsimplification\shader</Filter>
+    </None>
+    <None Include="imsimplification\shader\uv.fs">
+      <Filter>old_apps\imsimplification\shader</Filter>
+    </None>
+    <None Include="imsimplification\shader\uv_view.vs">
+      <Filter>old_apps\imsimplification\shader</Filter>
+    </None>
+    <None Include="imsimplification\shader\auto_normal.fs">
+      <Filter>old_apps\imsimplification\shader</Filter>
+    </None>
+    <None Include="imsimplification\shader\bake_normal.fs">
+      <Filter>old_apps\imsimplification\shader</Filter>
+    </None>
+    <None Include="imsimplification\shader\depth.fs">
+      <Filter>old_apps\imsimplification\shader</Filter>
+    </None>
+    <None Include="imsimplification\shader\fb_to_scr.fs">
+      <Filter>old_apps\imsimplification\shader</Filter>
+    </None>
+    <None Include="imhdr\shader\rgb_to_pcs_to_display.fs">
+      <Filter>old_apps\imhdr</Filter>
+    </None>
+    <None Include="imnpr\shader\hatching.fs">
+      <Filter>old_apps\imnpr</Filter>
+    </None>
+    <None Include="imnpr\shader\hatching.vs">
+      <Filter>old_apps\imnpr</Filter>
+    </None>
+    <None Include="impbr\shader\1.1.pbr.fs">
+      <Filter>old_apps\impbr</Filter>
+    </None>
+    <None Include="impbr\shader\1.1.pbr.vs">
+      <Filter>old_apps\impbr</Filter>
+    </None>
+    <None Include="common\shader\amiga_ground.fs">
+      <Filter>commons</Filter>
+    </None>
+    <None Include="common\shader\depth.fs">
+      <Filter>commons</Filter>
+    </None>
+    <None Include="common\shader\pos.vs">
+      <Filter>commons</Filter>
+    </None>
+    <None Include="common\shader\tex_to_quad.fs">
+      <Filter>commons</Filter>
+    </None>
+    <None Include="common\shader\tex_to_quad.vs">
+      <Filter>commons</Filter>
+    </None>
+    <None Include="common\shader\gray_to_quad.fs">
+      <Filter>commons</Filter>
+    </None>
+    <None Include="..\limbrary\limbrary\asset_lib.inl">
+      <Filter>limbrary</Filter>
+    </None>
+  </ItemGroup>
+</Project>
