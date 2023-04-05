@@ -73,7 +73,7 @@ namespace lim
 			// AUTO PATHING : 파일이름만 들어오면 homedir경로로
 			if( path.find('/')==std::string::npos && path.find('\\')==std::string::npos ) {
 				// todo: 임시 객체 줄이기 최적화
-				path = home_dir+"shader/"+"/"+path;
+				path = home_dir+"shader/"+path;
 			}
 
 			// load text

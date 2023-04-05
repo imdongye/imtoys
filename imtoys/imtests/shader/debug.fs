@@ -15,6 +15,8 @@ uniform vec3 lightColor;
 uniform float lightInt;
 uniform vec3 cameraPos;
 
+uniform vec3 Kd;
+
 void main() {
 	vec3 FaceN = normalize(cross(dFdx(wPos), dFdy(wPos)));
 	vec3 N = normalize(wNor);
@@ -31,5 +33,5 @@ void main() {
 	//outColor = vec3(mUv, 1.0);
 	outColor = vec3(1);
 
-	FragColor = vec4(outColor,1);
+	FragColor = vec4(Kd,1);
 }

@@ -1,10 +1,6 @@
 # for visual studio
 *.vs/
 *bin/
-!*bin/Debug/*.lib
-!*bin/Debug/*.dll
-!*bin/Release/*.lib
-!*bin/Release/*.dll
 
 #*vcxproj*
 #*.sln

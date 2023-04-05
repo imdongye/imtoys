@@ -43,6 +43,9 @@
     <ClCompile Include="main.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="imtests\icp.cpp">
+      <Filter>imtests</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="imhdr\app_hdr.h">
@@ -163,6 +166,12 @@
       <Filter>limbrary\model_view</Filter>
     </ClInclude>
     <ClInclude Include="imtests\app_icp.h">
+      <Filter>imtests</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="imtests\icp.h">
       <Filter>imtests</Filter>
     </ClInclude>
   </ItemGroup>

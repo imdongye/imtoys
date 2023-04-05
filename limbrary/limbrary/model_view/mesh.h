@@ -46,7 +46,7 @@ namespace lim
 		GLuint angles=3; // set size of indices
 		glm::vec3 color; // Kd, diffuse color
 		int has_texture = 1;
-		GLenum draw_mode;
+		GLenum draw_mode = GL_TRIANGLES;
 	private:
 		GLuint VAO, VBO, EBO;
 		unsigned int ai_mat_idx;

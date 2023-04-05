@@ -4,7 +4,11 @@
 //  if you mac you must set
 //  Product->schema->edit-schema->run->option->custom-working-dir
 //
+
+#include "pch.h"
 #include <limbrary/limclude.h>
+//#include <glm/gtx/norm.hpp>
+
 
 //#include "imnpr/app_hatching.h"
 //#include "imtests/app_gen_mesh.h"
@@ -38,6 +42,7 @@ int main(int, char**)
 
 	// first order is shown first
 	pushAppData<lim::AppICP>();
+
 	/*pushAppData<lim::AppFont>();
 	pushAppData<lim::AppTemplate>();
 	pushAppData<lim::AppKinematics>();

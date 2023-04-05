@@ -79,7 +79,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(SolutionDir)vender\assimp-5.2.5\include;$(SolutionDir)vender\eigen-3.4.0;$(SolutionDir)vender\glad-gl4.6-core\include;$(SolutionDir)vender\glfw-3.3.8\include;$(SolutionDir)vender\glm-0.9.9.8;$(SolutionDir)vender\imgui-docking-1.89.4;$(SolutionDir)vender\others;$(SolutionDir)limbrary;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
@@ -92,6 +92,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="imtests\icp.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -134,7 +135,9 @@
     <ClInclude Include="imtests\app_gen_mesh.h" />
     <ClInclude Include="imtests\app_icp.h" />
     <ClInclude Include="imtests\app_template.h" />
+    <ClInclude Include="imtests\icp.h" />
     <ClInclude Include="imtests\path_finder.h" />
+    <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\limbrary\limbrary\asset_lib.inl" />
