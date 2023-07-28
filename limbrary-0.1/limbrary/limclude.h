@@ -61,6 +61,23 @@
 //#pragma comment(lib, "OpenGL32.lib")
 //#pragma comment(lib, "lib/glfw3.lib")
 
+/* for vsprintf_s */
+#if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+// for min max dup define error when include windows.h
+#define NOMINMAX
+
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <cassert>
+#include <memory>
+#include <functional>
+#include <vector>
+#include <tuple>
+#include <map>
 
 
 #include <glad/glad.h>

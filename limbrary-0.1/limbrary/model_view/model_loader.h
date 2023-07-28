@@ -121,11 +121,12 @@ namespace lim
 					Logger::get().log("%s\n", texture->internal_model_path);
 
 					switch( ai_type ) {
-					case aiTextureType_DIFFUSE: texture->tag = "map_Kd"; break;
-					case aiTextureType_SPECULAR: texture->tag = "map_Ks"; break;
-					case aiTextureType_AMBIENT: texture->tag = "map_Normal"; break;
-					case aiTextureType_HEIGHT: texture->tag = "map_Bump"; break; // map_bump, bump
-					}
+                        case aiTextureType_DIFFUSE: texture->tag = "map_Kd"; break;
+                        case aiTextureType_SPECULAR: texture->tag = "map_Ks"; break;
+                        case aiTextureType_AMBIENT: texture->tag = "map_Normal"; break;
+                        case aiTextureType_HEIGHT: texture->tag = "map_Bump"; break; // map_bump, bump
+                        default: break;
+                    }
 					Logger::get()<<"┗"<<texture->tag<<Logger::endl;
 					textures_loaded.push_back(texture);
 					meshTextures.push_back(textures_loaded.back());

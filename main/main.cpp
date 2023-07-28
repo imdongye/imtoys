@@ -5,11 +5,11 @@
 //  Product->schema->edit-schema->run->option->custom-working-dir
 //
 
-#include "pch.h"
 #include <limbrary/limclude.h>
 //#include <glm/gtx/norm.hpp>
 
 
+#include "imtests/app_template.h"
 //#include "imnpr/app_hatching.h"
 //#include "imtests/app_gen_mesh.h"
 //#include "imhdr/app_hdr.h"
@@ -17,11 +17,10 @@
 //#include "impbr/app_pbr.h"
 //#include "imanims/app_fluid.h"
 //#include "imtests/app_astar.h"
-//#include "imtests/app_template.h"
 //#include "imanims/app_kinematics.h"
 //#include "imanims/app_nano.h"
 //#include "imtests/app_font.h"
-#include "imtests/app_icp.h"
+//#include "imtests/app_icp.h"
 
 
 lim::AppBase *app;
@@ -41,10 +40,9 @@ int main(int, char**)
 	lim::imgui_modules::draw_appselector = drawAppSellector;
 
 	// first order is shown first
-	pushAppData<lim::AppICP>();
-
-	/*pushAppData<lim::AppFont>();
-	pushAppData<lim::AppTemplate>();
+    pushAppData<lim::AppTemplate>();
+	/*pushAppData<lim::AppICP>();
+	pushAppData<lim::AppFont>();
 	pushAppData<lim::AppKinematics>();
 	pushAppData<lim::AppFluid>();
 	pushAppData<lim::AppPbr>();
