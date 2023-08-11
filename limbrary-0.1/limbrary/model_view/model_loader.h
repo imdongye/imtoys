@@ -127,7 +127,7 @@ namespace lim
                         case aiTextureType_HEIGHT: texture->tag = "map_Bump"; break; // map_bump, bump
                         default: break;
                     }
-					Logger::get()<<"┗"<<texture->tag<<Logger::endl;
+					Logger::get()<<"-"<<texture->tag<<Logger::endl;
 					textures_loaded.push_back(texture);
 					meshTextures.push_back(textures_loaded.back());
 				}

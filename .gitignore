@@ -1,32 +1,14 @@
-# for visual studio
-*.vs/
-*bin/
+# cmake
+[Bb]uild*/ 
 
-#*vcxproj*
-#*.sln
+# Visual Studio
+.vscode/
 
-# for xcode
-/Build/
-/*.xcodeproj
+# Mac
 .DS_Store
-*entitlements
-._*
-*xcodeproj*
-
-
-# common
-/ignored
-/include
-/*.sln
-/imtoys/common
-!/imtoys/common/shader
 
 # etc
-app_pref.json
+*ignored/
 *private/
 *todo/
-*archive/
 *result/
-*images/
-
-imtoys/imnpr/TAM/
