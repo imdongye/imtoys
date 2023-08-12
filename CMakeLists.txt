@@ -11,36 +11,27 @@
 # * target_link_libraries로 연결한 cmake 라이브러리(.lib나 .a를 생략해도 됨)는 target_include_directories 로 헤더 경로를 입력 안해줘도 자동으로 된다.
 #
 # Todo:
-# 1. add_lib( OBJECT로 정적라이브럴 생상하지 않고 오브젝트로 실행파일 생성하기
+# 1. add_lib( OBJECT로 정적라이브러리 생상하지 않고 오브젝트로 실행파일 생성하기
 # 2. BUILD_SHARED로 빌드할때 dll 옮기기
 # 3. 다수의 add_exe.. 골라 실행 시스템
-# 4. glfw 솔루션탐색기 폴더 어떻게 했는지
 #
-# 1. 헤더온리라이브러리 INTERFACE
-# https://stackoverflow.com/questions/60604249/how-to-make-a-header-only-library-with-cmake
-# https://dropfl.github.io/blog/2020/12/15/cmake-interface.html
-
 
 
 cmake_minimum_required(VERSION 3.26...3.27 FATAL_ERROR)
 
-option(LIM_USE_GLAD "[only mac] If you turn it off, use the default opengl.framework of the mac." ON)
-
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 99)
-
-set(CMAKE_CXX_FLAGS_RELEASE "/MT")
-set(CMAKE_CXX_FLAGS_DEBUG "/MTd")
 
 # global variables
 set(sln_name imtoys)
 set(exe_name imtoys_exe)
 set(working_dir ${CMAKE_SOURCE_DIR}/main)
 
+
 project(
     ${sln_name}
     VERSION 0.1
-    DESCRIPTION "cmake-opengl-template"
+    DESCRIPTION "imtoys"
     LANGUAGES C CXX
 )
 set(CMAKE_VERBOSE_MAKEFILE true)
@@ -52,27 +43,22 @@ add_subdirectory(vendor/glfw-3.3.8)
 add_subdirectory(vendor/assimp-5.2.5)
 
 ### glad ###
-if( WIN32 OR LIM_USE_GLAD )
-    # opengl function pointers (replaced by glad)
-    set(lib_name "glad")
-    if(WIN32)
-        set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/glad-gl4.6-core")
-    endif(WIN32)
-    if(APPLE)
-        set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/glad-gl4.1-core")
-    endif(APPLE)
-    file(GLOB_RECURSE headers "${lib_dir}/*.h" "${lib_dir}/*.hpp")
-    file(GLOB_RECURSE sources "${lib_dir}/*.c" "${lib_dir}/*.cpp")
-    list(LENGTH headers nr_headers)
-    list(LENGTH sources nr_sources)
-    message("[LIM] load ${lib_name} from ${lib_dir} with ${nr_headers} headers and ${nr_sources} sources...")
-    add_library(${lib_name} STATIC ${headers} ${sources})
-    source_group(TREE "${lib_dir}" FILES ${headers} ${sources})
-    target_include_directories(${lib_name} PUBLIC "${lib_dir}/include")
-else()
-    find_package(OpenGL REQUIRED)
-endif()
-
+# opengl function pointers (replaced by glad)
+set(lib_name "glad")
+if(WIN32)
+    set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/glad-gl4.6-core")
+endif(WIN32)
+if(APPLE)
+    set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/glad-gl4.1-core")
+endif(APPLE)
+file(GLOB_RECURSE headers "${lib_dir}/*.h" "${lib_dir}/*.hpp")
+file(GLOB_RECURSE sources "${lib_dir}/*.c" "${lib_dir}/*.cpp")
+list(LENGTH headers nr_headers)
+list(LENGTH sources nr_sources)
+message("[LIM] load ${lib_name} from ${lib_dir} with ${nr_headers} headers and ${nr_sources} sources...")
+add_library(${lib_name} STATIC ${headers} ${sources})
+source_group(TREE "${lib_dir}" FILES ${headers} ${sources})
+target_include_directories(${lib_name} PUBLIC "${lib_dir}/include")
 
 ### imgui ###
 set(lib_name "imgui")
@@ -91,7 +77,6 @@ target_include_directories(${lib_name} PUBLIC "${lib_dir}")
 target_link_libraries(${lib_name} PUBLIC glfw)
 add_dependencies(${lib_name} glfw)
 
-
 ### nanovg ###
 set(lib_name "nanovg")
 set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/others/nanovg")
@@ -104,10 +89,55 @@ add_library(${lib_name} STATIC ${headers} ${sources})
 source_group(TREE "${lib_dir}" FILES ${headers} ${sources})
 target_include_directories(${lib_name} PUBLIC "${lib_dir}/include")
 
+### glm ###
+set(lib_name "glm")
+set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/glm-0.9.9.8")
+file(GLOB_RECURSE lib_files CONFIGURE_DEPENDS "${lib_dir}/*.*")
+add_library(${lib_name} INTERFACE ${lib_files})
+source_group(TREE "${lib_dir}/glm" FILES ${lib_files})
+target_include_directories(${lib_name} INTERFACE  ${lib_dir})
+
+### eigen ###
+set(lib_name "eigen")
+set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/eigen-3.4.0")
+file(GLOB_RECURSE lib_files CONFIGURE_DEPENDS "${lib_dir}/*.*")
+add_library(${lib_name} INTERFACE ${lib_files})
+source_group(TREE "${lib_dir}/Eigen" FILES ${lib_files})
+target_include_directories(${lib_name} INTERFACE  ${lib_dir})
+
+### others ###
+set(lib_name "others")
+set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/others")
+file(GLOB_RECURSE lib_files CONFIGURE_DEPENDS "${lib_dir}/*.*")
+list(FILTER lib_files EXCLUDE REGEX "${lib_dir}/nanovg/*")
+add_library(${lib_name} INTERFACE ${lib_files})
+source_group(TREE ${lib_dir} FILES ${lib_files})
+target_include_directories(${lib_name} INTERFACE  ${lib_dir})
+
+### limbrary ###
+set(lib_name "limbrary")
+set(lib_dir "${CMAKE_SOURCE_DIR}/limbrary-0.1")
+set(dep_libs
+    glad
+    glm
+    eigen
+    others
+    imgui
+    assimp::assimp
+    nanovg
+)
+file(GLOB_RECURSE lib_files CONFIGURE_DEPENDS "${lib_dir}/*.*")
+add_library(${lib_name} INTERFACE)
+target_include_directories(${lib_name} INTERFACE ${lib_dir})
+target_link_directories(${lib_name} INTERFACE)
+target_link_libraries(${lib_name} INTERFACE ${dep_libs})
+add_dependencies(${lib_name} ${dep_libs})
+target_sources(${lib_name} INTERFACE ${lib_files})
+source_group(TREE "${lib_dir}" FILES ${lib_files})
 
 ### assets ###
 file(GLOB_RECURSE asset_files CONFIGURE_DEPENDS
-    ${CMAKE_SOURCE_DIR}/assets/*.*
+    ${CMAKE_SOURCE_DIR}/main/assets/*.*
 )
 add_custom_target(assets ALL
     SOURCES ${asset_files}
@@ -122,42 +152,6 @@ source_group(TREE "${CMAKE_SOURCE_DIR}/main/assets" FILES ${asset_files})
 #     COMMENT "[LIM] copying to executable folder"
 # )
 
-
-### limbrary ###
-file(GLOB_RECURSE limb_files CONFIGURE_DEPENDS 
-    ${CMAKE_SOURCE_DIR}/limbrary-0.1/*.h 
-    ${CMAKE_SOURCE_DIR}/limbrary-0.1/*.hpp 
-    ${CMAKE_SOURCE_DIR}/limbrary-0.1/*.inl
-)
-set(limb_include_dirs
-    "vendor/glm-0.9.9.8"
-    "vendor/eigen-3.4.0"
-    "vendor/others"
-    "limbrary-0.1"
-)
-set(limb_lib_dirs
-    # nothing
-)
-set(limb_libs
-    imgui
-    assimp::assimp
-)
-if(WIN32 OR LIM_USE_GLAD)
-    list(APPEND limb_libs glad)
-else()
-    list(APPEND limb_libs ${OPENGL_gl_LIBRARY})
-endif()
-
-#add_custom_target(limbrary SOURCES ${limb_files})
-add_library(limbrary INTERFACE)
-target_include_directories(limbrary INTERFACE  ${limb_include_dirs})
-target_link_directories(limbrary INTERFACE  ${limb_lib_dirs})
-target_link_libraries(limbrary INTERFACE  ${limb_libs})
-target_sources(limbrary INTERFACE ${limb_files})
-source_group(TREE "${CMAKE_SOURCE_DIR}/limbrary-0.1" FILES ${limb_files})
-add_dependencies(limbrary ${limb_libs})
-
-
 ### main proj ###
 file(GLOB_RECURSE main_files CONFIGURE_DEPENDS 
     ${CMAKE_SOURCE_DIR}/main/*.cpp
@@ -168,6 +162,7 @@ file(GLOB_RECURSE main_files CONFIGURE_DEPENDS
     ${CMAKE_SOURCE_DIR}/main/*.vert
     ${CMAKE_SOURCE_DIR}/main/*.frag
 )
+list(FILTER main_files EXCLUDE REGEX "${CMAKE_SOURCE_DIR}/main/assets/*")
 add_executable(${exe_name} ${main_files})
 source_group(TREE "${CMAKE_SOURCE_DIR}/main" FILES ${main_files})
 target_link_libraries(${exe_name} PUBLIC limbrary)
@@ -181,6 +176,18 @@ set_target_properties(${exe_name} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BI
 
 
 ### IDE 설정 ###
+set_target_properties(glfw PROPERTIES FOLDER "vendor")
+set_target_properties(update_mappings PROPERTIES FOLDER "vendor")
+set_target_properties(assimp PROPERTIES FOLDER "vendor")
+set_target_properties(glad PROPERTIES FOLDER "vendor")
+set_target_properties(imgui PROPERTIES FOLDER "vendor")
+set_target_properties(nanovg PROPERTIES FOLDER "vendor")
+set_target_properties(UpdateAssimpLibsDebugSymbolsAndDLLs PROPERTIES FOLDER "vendor")
+set_target_properties(zlibstatic PROPERTIES FOLDER "vendor")
+set_target_properties(glm PROPERTIES FOLDER "vendor")
+set_target_properties(eigen PROPERTIES FOLDER "vendor")
+set_target_properties(others PROPERTIES FOLDER "vendor")
+
 if(WIN32)
     message("[LIM] detect windows")
     if(CMAKE_GENERATOR MATCHES "Visual Studio*")

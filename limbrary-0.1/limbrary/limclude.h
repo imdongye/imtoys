@@ -53,6 +53,9 @@
 //	2. premake로 멀티플렛폼 실행환경 지원
 //	3. imgui, glad, nanovg lib로 만들었는데 왜 컴파일타임 0.3초밖에 안줄었지 어디서 느려지는거지
 //	4. nanovg와 imgui stb 의존성중복 해결
+// 
+// 
+// https://stackoverflow.com/questions/67677799/problem-when-using-assimp-library-together-with-stb-image
 //
 
 #ifndef LIMCLUDE_H
@@ -90,7 +93,7 @@
 #include <GLFW/glfw3.h>
 
 /* JPG, PNG, TGA, BMP, PSD, GIF, HDR, PIC */
-// #define STB_IMAGE_IMPLEMENTATION in nanovg.lib
+//#define STB_IMAGE_IMPLEMENTATION //in nanovg.lib
 #include <stb/stb_image.h>
 /* PNG, TGA, BMP */
 #define STB_IMAGE_WRITE_IMPLEMENTATION
