@@ -15,24 +15,23 @@
 
 namespace lim
 {
-	class AppTemplate: public AppBase
+	class AppTemplate : public AppBase
 	{
 	public:
-        inline static constexpr const char const *APP_NAME = "template";
-        inline static constexpr const char const *APP_DIR = "imtests/";
-		inline static constexpr const char const *APP_DISC = "hello, world";
-	private:
-		
+		inline static constexpr const char *const APP_NAME = "template";
+		inline static constexpr const char *const APP_DIR = "imtests/";
+		inline static constexpr const char *const APP_DISC = "hello, world";
 
+	private:
 	public:
-		AppTemplate(): AppBase(1280, 720, APP_NAME)
+		AppTemplate() : AppBase(1280, 720, APP_NAME)
 		{
 			stbi_set_flip_vertically_on_load(true);
 		}
 		~AppTemplate()
 		{
-
 		}
+
 	private:
 		void update() override
 		{
@@ -46,7 +45,7 @@ namespace lim
 		}
 		void renderImGui() override
 		{
-			//ImGui::DockSpaceOverViewport();
+			// ImGui::DockSpaceOverViewport();
 
 			ImGui::ShowDemoWindow();
 
@@ -57,11 +56,11 @@ namespace lim
 	private:
 		virtual void keyCallback(int key, int scancode, int action, int mods) override
 		{
-			std::cout<<ImGui::GetFrameHeight();
+			std::cout << ImGui::GetFrameHeight();
 		}
 		virtual void cursorPosCallback(double xPos, double yPos) override
 		{
-			static double xOld, yOld, xOff, yOff=0;
+			static double xOld, yOld, xOff, yOff = 0;
 			xOff = xPos - xOld;
 			yOff = yOld - yPos;
 

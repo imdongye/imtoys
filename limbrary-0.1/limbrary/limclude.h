@@ -126,8 +126,8 @@
 #include "application.h"
 #include "model_view/auto_camera.h"
 
-//#include <nanovg/nanovg.h>
-//#define NANOVG_GL3_IMPLEMENTATION
-//#include <nanovg/nanovg_gl.h>
+#include <nanovg/nanovg.h>
+#define NANOVG_GL3_IMPLEMENTATION
+#include <nanovg/nanovg_gl.h>
 
 #endif

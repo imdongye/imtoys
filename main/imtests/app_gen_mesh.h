@@ -13,46 +13,46 @@
 
 namespace lim
 {
-	class AppGenMesh: public AppBase
+	class AppGenMesh : public AppBase
 	{
 	public:
-		inline static constexpr const char *APP_DIR = "imtests/";
-		inline static constexpr const char *APP_NAME = "mesh gen tester";
-		inline static constexpr const char *APP_DISC = "hello, world";
+		inline static constexpr char *constexpr APP_DIR = "imtests/";
+		inline static constexpr char *constexpr APP_NAME = "mesh gen tester";
+		inline static constexpr char *constexpr APP_DISC = "hello, world";
+
 	private:
 		// ui vars
-		glm::vec2 uv_scale ={1.f, 1.f};
+		glm::vec2 uv_scale = {1.f, 1.f};
 		float vs_t = 0.f;
 
 		AutoCamera *camera;
 
 		Program *program;
 		Viewport *viewport;
-		std::vector<Model*> models;
+		std::vector<Model *> models;
 		Light *light;
 		Model *light_model;
 		TexBase *debugging_tex;
 
 	public:
-		AppGenMesh(): AppBase(1480, 720, APP_NAME)
+		AppGenMesh() : AppBase(1480, 720, APP_NAME)
 		{
 			glEnable(GL_CULL_FACE);
-			//glCullFace(GL_FRONT);
-			//glPolygonMode(GL_FRONT, GL_LINE);
+			// glCullFace(GL_FRONT);
+			// glPolygonMode(GL_FRONT, GL_LINE);
 			stbi_set_flip_vertically_on_load(true);
 
 			program = new Program("debugging", APP_DIR);
 			program->attatch("debug.vs").attatch("debug.fs").link();
 
 			viewport = new Viewport(new MsFramebuffer());
-			viewport->framebuffer->clear_color ={0.1f, 0.1f, 0.1f, 1.0f};
+			viewport->framebuffer->clear_color = {0.1f, 0.1f, 0.1f, 1.0f};
 
 			camera = new AutoCamera(window, viewport);
 
 			/* gen models */
 			models.push_back(new Model(MeshGenerator::genSphere(50, 25), "sphere"));
 
-			
 			models.push_back(new Model(MeshGenerator::genDonut(50, 25), "donut"));
 			models.push_back(new Model(MeshGenerator::genCapsule(50, 25), "capsule"));
 
@@ -61,7 +61,7 @@ namespace lim
 			models.push_back(new Model(MeshGenerator::genCubeSphere(2), "cube sphere2"));
 			models.push_back(new Model(MeshGenerator::genCubeSphere(5), "cube sphere2"));
 			models.push_back(new Model(MeshGenerator::genCubeSphere2(5), "cube sphere2"));
-			//models.back()->meshes.back()->drawMode = GL_LINE_LOOP;
+			// models.back()->meshes.back()->drawMode = GL_LINE_LOOP;
 
 			models.push_back(new Model(MeshGenerator::genQuad(), "quad"));
 
@@ -72,24 +72,23 @@ namespace lim
 			models.push_back(ModelLoader::loadFile("common/archive/dwarf/Dwarf_2_Low.obj", true));
 
 			models.push_back(ModelLoader::loadFile("common/archive/meshes/stanford-bunny.obj", true));
-			
 
 			const float interModels = 3.5f;
-			const float biasModels = -interModels*models.size()/2.f;
+			const float biasModels = -interModels * models.size() / 2.f;
 
-			models[0]->position ={biasModels-interModels, 0, 0};
+			models[0]->position = {biasModels - interModels, 0, 0};
 			models[0]->updateModelMat();
 
-			for( int i = 1; i<models.size(); i++ ) {
-				models[i]->position ={biasModels+interModels*i, 0, 0};
+			for (int i = 1; i < models.size(); i++)
+			{
+				models[i]->position = {biasModels + interModels * i, 0, 0};
 				models[i]->updateModelMat();
 			}
 
 			models.push_back(new Model(MeshGenerator::genPlane(), "plane"));
-			models.back()->position = glm::vec3(0,-3.5,0);
+			models.back()->position = glm::vec3(0, -3.5, 0);
 			models.back()->scale = glm::vec3(50.f);
 			models.back()->updateModelMat();
-
 
 			light = new Light();
 			light->distance = 10.f;
@@ -107,23 +106,24 @@ namespace lim
 			delete camera;
 			delete program;
 			delete viewport;
-			for( Model* m : models ) {
+			for (Model *m : models)
+			{
 				delete m;
 			}
 			delete light;
 			delete light_model;
 		}
+
 	private:
 		virtual void update() final
 		{
 			/* render to fbo in viewport */
 			viewport->framebuffer->bind();
 
-			Program& prog = *program;
+			Program &prog = *program;
 			prog.use();
 
-
-			//camera->printCameraState();
+			// camera->printCameraState();
 			prog.setUniform("viewMat", camera->view_mat);
 			prog.setUniform("projMat", camera->proj_mat);
 			prog.setUniform("cameraPos", camera->position);
@@ -139,7 +139,8 @@ namespace lim
 			prog.setUniform("modelMat", light_model->model_mat);
 			light_model->meshes.back()->draw();
 
-			for( Model* m : models ) {
+			for (Model *m : models)
+			{
 				prog.setUniform("modelMat", m->model_mat);
 				m->meshes.back()->draw();
 			}
@@ -164,7 +165,8 @@ namespace lim
 			viewport->drawImGui();
 
 			/* controller */
-			if( false&&ImGui::Begin("controller##genMesh") ) {
+			if (false && ImGui::Begin("controller##genMesh"))
+			{
 
 				ImGui::SliderFloat("vs_t", &vs_t, 0.f, 1.f);
 
@@ -175,7 +177,8 @@ namespace lim
 				bool isDraging = ImGui::SliderFloat("yaw", &light->yaw, 0, 360, "%.3f");
 				isDraging |= ImGui::SliderFloat("pitch", &light->pitch, 10, 90, "%.3f");
 				isDraging |= ImGui::SliderFloat("distance", &light->distance, 6, 100, "%.3f");
-				if( isDraging ) {
+				if (isDraging)
+				{
 					light->updateMembers();
 					light_model->position = light->position;
 					light_model->updateModelMat();
@@ -186,7 +189,8 @@ namespace lim
 			}
 
 			/* state view */
-			if( ImGui::Begin("camera##genMesh") ) {
+			if (ImGui::Begin("camera##genMesh"))
+			{
 				static float rad = F_PI;
 				ImGui::SliderAngle("rad", &rad);
 				ImGui::Text("%d", camera->viewing_mode);
@@ -197,7 +201,7 @@ namespace lim
 	private:
 		void processInput(GLFWwindow *window)
 		{
-			if( glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS )
+			if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 				glfwSetWindowShouldClose(window, true);
 		}
 	};
