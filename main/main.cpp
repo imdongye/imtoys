@@ -10,7 +10,7 @@
 
 #include "imtests/app_template.h"
 // #include "imnpr/app_hatching.h"
-// #include "imtests/app_gen_mesh.h"
+#include "imtests/app_gen_mesh.h"
 // #include "imhdr/app_hdr.h"
 // #include "imsimplification/app_simplification.h"
 // #include "impbr/app_pbr.h"
@@ -38,6 +38,7 @@ int main(int, char **)
 	lim::imgui_modules::draw_appselector = drawAppSellector;
 
 	// first order is shown first
+    pushAppData<lim::AppGenMesh>();
 	pushAppData<lim::AppTemplate>();
 	// pushAppData<lim::AppICP>();
 	// pushAppData<lim::AppFont>();
@@ -47,7 +48,6 @@ int main(int, char **)
 	// pushAppData<lim::AppSimplification>();
 	// pushAppData<lim::AppHdr>();
 	// pushAppData<lim::AppHatching>();
-	// pushAppData<lim::AppGenMesh>();
 	// pushAppData<lim::AppAstar>();
 	// pushAppData<lim::AppNano>();
 

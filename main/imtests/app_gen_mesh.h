@@ -16,9 +16,9 @@ namespace lim
 	class AppGenMesh : public AppBase
 	{
 	public:
-		inline static constexpr char *constexpr APP_DIR = "imtests/";
-		inline static constexpr char *constexpr APP_NAME = "mesh gen tester";
-		inline static constexpr char *constexpr APP_DISC = "hello, world";
+		inline static constexpr const char * const APP_DIR = "imtests/";
+		inline static constexpr const char * const APP_NAME = "mesh gen tester";
+		inline static constexpr const char * const APP_DISC = "hello, world";
 
 	private:
 		// ui vars
@@ -69,9 +69,9 @@ namespace lim
 
 			models.push_back(new Model(MeshGenerator::genCylinder(20), "cylinder"));
 
-			models.push_back(ModelLoader::loadFile("common/archive/dwarf/Dwarf_2_Low.obj", true));
+			models.push_back(ModelLoader::loadFile("assets/assimp-mdb/model-db/Obj/Wuson/WusonOBJ.obj", true));
 
-			models.push_back(ModelLoader::loadFile("common/archive/meshes/stanford-bunny.obj", true));
+			models.push_back(ModelLoader::loadFile("assets/assimp-mdb/model-db/Obj/Wuson/WusonOBJ.obj", true));
 
 			const float interModels = 3.5f;
 			const float biasModels = -interModels * models.size() / 2.f;

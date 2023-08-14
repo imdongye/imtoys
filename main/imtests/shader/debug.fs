@@ -31,7 +31,7 @@ void main() {
 	//outColor = texture(uvgridTex, scaledUv).rgb+vec3(lambertian);
 	//outColor = vec3(max(0, dot(FaceN, L)));
 	//outColor = vec3(mUv, 1.0);
-	outColor = vec3(1);
+	//outColor = vec3(1);
 
-	FragColor = vec4(Kd,1);
+	FragColor = vec4(outColor,1);
 }

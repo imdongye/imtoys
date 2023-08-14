@@ -203,7 +203,6 @@ if(APPLE)
         set_target_properties(${exe_name} PROPERTIES 
                         XCODE_GENERATE_SCHEME TRUE
                         XCODE_SCHEME_WORKING_DIRECTORY "${workding_dir}")
-        message(${working_dir})
         # 시작 schema 설정 못찾음
     endif()
 endif(APPLE)
