@@ -191,8 +191,9 @@ set_target_properties(others PROPERTIES FOLDER "vendor")
 if(WIN32)
     message("[LIM] detect windows")
     if(CMAKE_GENERATOR MATCHES "Visual Studio*")
-        set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTIES VS_STARTUP_PROJECT ${exe_name})
-        set_property(TARGET ${exe_name} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY ${workding_dir})
+        set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${exe_name})
+        # From: https://stackoverflow.com/questions/41864259/how-to-set-working-directory-for-visual-studio-2017-rc-cmake-project
+        set_target_properties(${exe_name} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${workding_dir}")
     endif()
 endif(WIN32)
 
@@ -202,6 +203,7 @@ if(APPLE)
         set_target_properties(${exe_name} PROPERTIES 
                         XCODE_GENERATE_SCHEME TRUE
                         XCODE_SCHEME_WORKING_DIRECTORY "${workding_dir}")
+        message(${working_dir})
         # 시작 schema 설정 못찾음
     endif()
 endif(APPLE)
