@@ -1,9 +1,9 @@
+[submodule "vendor/glfw"]
+	path = vendor/glfw
+	url = https://github.com/imdongye/glfw
+[submodule "vendor/assimp"]
+	path = vendor/assimp
+	url = https://github.com/imdongye/assimp
 [submodule "main/assets/assimp-mdb"]
 	path = main/assets/assimp-mdb
 	url = https://github.com/assimp/assimp-mdb.git
-[submodule "vendor/glfw-3.3.8"]
-	path = vendor/glfw-3.3.8
-	url = https://github.com/imdongye/glfw-3.3.8.git
-[submodule "vendor/assimp-5.2.5"]
-	path = vendor/assimp-5.2.5
-	url = https://github.com/imdongye/assimp-5.2.5.git

@@ -38,24 +38,23 @@ set(CMAKE_VERBOSE_MAKEFILE true)
 
 ### glfw ###
 option(BUILD_SHARED_LIBS "" OFF)
-add_subdirectory(vendor/glfw-3.3.8
-    ${CMAKE_BINARY_DIR}/$<CONFIG>/glfw
-)
+option(GLFW_BUILD_EXAMPLES "" OFF)
+option(GLFW_BUILD_TESTS "" OFF)
+option(GLFW_BUILD_DOCS "" OFF)
+option(GLFW_INSTALL "" OFF)
+add_subdirectory(vendor/glfw)
 
 ### assimp ###
 option(BUILD_SHARED_LIBS "" OFF)
 option(ASSIMP_BUILD_TESTS "" OFF)
 option(ASSIMP_INSTALL "" OFF)
-
-add_subdirectory(vendor/assimp-5.2.5
-    ${CMAKE_BINARY_DIR}/$<CONFIG>/assimp
-)
+add_subdirectory(vendor/assimp)
 
 ### glad ###
 # opengl function pointers (replaced by glad)
 set(lib_name "glad")
 if(WIN32)
-    set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/glad-gl4.1-core")
+    set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/glad-gl4.6-core")
 endif(WIN32)
 if(APPLE)
     set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/glad-gl4.1-core")
@@ -192,8 +191,8 @@ set_target_properties(others PROPERTIES FOLDER "vendor")
 if(WIN32)
     message("[LIM] detect windows")
     if(CMAKE_GENERATOR MATCHES "Visual Studio*")
-        set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${exe_name})
-        set_property(TARGET ${exe_name} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY ${workding_dir})
+        set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTIES VS_STARTUP_PROJECT ${exe_name})
+        set_property(TARGET ${exe_name} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY ${workding_dir})
     endif()
 endif(WIN32)
 
