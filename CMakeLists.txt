@@ -193,7 +193,11 @@ if(WIN32)
     if(CMAKE_GENERATOR MATCHES "Visual Studio*")
         set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${exe_name})
         # From: https://stackoverflow.com/questions/41864259/how-to-set-working-directory-for-visual-studio-2017-rc-cmake-project
-        set_target_properties(${exe_name} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${workding_dir}")
+        #set_target_properties(${exe_name} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${workding_dir}") # nor working
+    endif()
+    if(MSVC)
+        target_compile_definitions(${exe_name} PUBLIC _CRT_SECURE_NO_WARNINGS)
+        #set_property(TARGET ${exe_name} PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
     endif()
 endif(WIN32)
 

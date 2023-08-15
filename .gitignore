@@ -2,7 +2,8 @@
 [Bb]uild*/ 
 
 # Visual Studio
-.vscode/
+.vscode/*
+!.vscode/launch.json
 
 # Mac
 .DS_Store
@@ -12,6 +13,7 @@
 *private/
 *todo/
 *result/
+main/imgui.ini
 main/assets/archive
 main/assets/font
 main/assets/images
