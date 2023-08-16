@@ -105,7 +105,7 @@ namespace lim
 
 			GLuint texID = framebuffer->getRenderedTex();
 			if( texID!=0 )
-				ImGui::Image(reinterpret_cast<void*>(texID), ImVec2{(float)width, (float)height}, ImVec2{0, 1}, ImVec2{1, 0});
+				ImGui::Image((void*)(intptr_t)texID, ImVec2{(float)width, (float)height}, ImVec2{0, 1}, ImVec2{1, 0});
 
 			ImGui::End();
 			ImGui::PopStyleVar();

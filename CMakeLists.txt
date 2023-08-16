@@ -12,12 +12,11 @@
 #
 # Todo:
 # 1. add_lib( OBJECT로 정적라이브러리 생상하지 않고 오브젝트로 실행파일 생성하기
-# 2. BUILD_SHARED로 빌드할때 dll 옮기기
-# 3. 다수의 add_exe.. 골라 실행 시스템
+# 2. 다수의 add_exe.. 골라 실행 시스템
 #
 
 
-cmake_minimum_required(VERSION 3.26...3.27 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.24...3.27 FATAL_ERROR)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 99)
@@ -37,17 +36,26 @@ project(
 set(CMAKE_VERBOSE_MAKEFILE true)
 
 ### glfw ###
-option(BUILD_SHARED_LIBS "" OFF)
-option(GLFW_BUILD_EXAMPLES "" OFF)
-option(GLFW_BUILD_TESTS "" OFF)
-option(GLFW_BUILD_DOCS "" OFF)
-option(GLFW_INSTALL "" OFF)
+set(BUILD_SHARED_LIBS ON CACHE BOOL "")
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "")
+set(GLFW_BUILD_TESTS OFF CACHE BOOL "")
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "")
+set(GLFW_INSTALL OFF CACHE BOOL "")
 add_subdirectory(vendor/glfw)
 
 ### assimp ###
-option(BUILD_SHARED_LIBS "" OFF)
-option(ASSIMP_BUILD_TESTS "" OFF)
-option(ASSIMP_INSTALL "" OFF)
+set(BUILD_SHARED_LIBS ON CACHE BOOL "")
+set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "")
+set(ASSIMP_INSTALL OFF CACHE BOOL "")
+set(ASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT OFF CACHE BOOL "")
+set(ASSIMP_BUILD_OBJ_IMPORTER ON CACHE BOOL "")
+set(ASSIMP_BUILD_FBX_IMPORTER ON CACHE BOOL "")
+set(ASSIMP_BUILD_GLTF_IMPORTER ON CACHE BOOL "")
+set(ASSIMP_BUILD_BLEND_IMPORTER ON CACHE BOOL "")
+set(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT OFF CACHE BOOL "")
+set(ASSIMP_BUILD_OBJ_EXPORTER ON CACHE BOOL "")
+#set(ASSIMP_BUILD_FBX_EXPORTER ON CACHE BOOL "")
+#set(ASSIMP_BUILD_GLTF_EXPORTER ON CACHE BOOL "")
 add_subdirectory(vendor/assimp)
 
 ### glad ###
@@ -87,7 +95,7 @@ add_library(${lib_name} STATIC ${headers} ${sources})
 source_group(TREE "${lib_dir}" FILES ${headers} ${sources})
 target_include_directories(${lib_name} PUBLIC ${lib_dir})
 
-### glm ###
+### glm (header only) ###
 set(lib_name "glm")
 set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/glm-0.9.9.8")
 file(GLOB_RECURSE lib_files CONFIGURE_DEPENDS "${lib_dir}/*.*")
@@ -95,7 +103,7 @@ add_library(${lib_name} INTERFACE ${lib_files})
 source_group(TREE "${lib_dir}/glm" FILES ${lib_files})
 target_include_directories(${lib_name} INTERFACE  ${lib_dir})
 
-### eigen ###
+### eigen (header only) ###
 set(lib_name "eigen")
 set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/eigen-3.4.0")
 file(GLOB_RECURSE lib_files CONFIGURE_DEPENDS "${lib_dir}/*.*")
@@ -103,7 +111,7 @@ add_library(${lib_name} INTERFACE ${lib_files})
 source_group(TREE "${lib_dir}/Eigen" FILES ${lib_files})
 target_include_directories(${lib_name} INTERFACE  ${lib_dir})
 
-### others ###
+### others (header only) ###
 set(lib_name "others")
 set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/others")
 file(GLOB_RECURSE lib_files CONFIGURE_DEPENDS "${lib_dir}/*.*")
@@ -121,7 +129,7 @@ set(dep_libs
     eigen
     others
     imgui
-    assimp::assimp
+    assimp
     nanovg
 )
 file(GLOB_RECURSE lib_files CONFIGURE_DEPENDS "${lib_dir}/*.*")
@@ -168,9 +176,9 @@ add_dependencies(${exe_name} limbrary)
 
 
 ### 결과 파일 생성 위치 지정 ###
-set_target_properties(imgui glad nanovg PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/$<CONFIG>/library)
-set_target_properties(imgui glad nanovg PROPERTIES LIBRARY_OUTPUT_DIRECTORY  ${CMAKE_BINARY_DIR}/$<CONFIG>/library)
-set_target_properties(${exe_name} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/$<CONFIG>/executable)
+set_target_properties(limbrary ${dep_libs} ${exe_name} glfw PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/$<CONFIG>/library) # static, dll load lib
+set_target_properties(limbrary ${dep_libs} ${exe_name} glfw PROPERTIES LIBRARY_OUTPUT_DIRECTORY  ${CMAKE_BINARY_DIR}/$<CONFIG>/module) # dll of module 
+set_target_properties(limbrary ${dep_libs} ${exe_name} glfw PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/$<CONFIG>/executable) # exe
 
 
 ### IDE 설정 ###
