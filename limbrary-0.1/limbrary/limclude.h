@@ -47,6 +47,7 @@
 //
 //	glEnable/Disable은 사용후 초기값으로 복구 시켜두기
 //
+//  virtual, 기본파라미터는 선언부에만
 //
 //	Todo:
 //  1. 어느정도 완성되면 확장자 hpp로
@@ -54,6 +55,7 @@
 //	3. imgui, glad, nanovg lib로 만들었는데 왜 컴파일타임 0.3초밖에 안줄었지 어디서 느려지는거지
 //	4. nanovg와 imgui stb 의존성중복 해결
 // 
+//  https://en.cppreference.com/w/cpp/language/definition
 // 
 // https://stackoverflow.com/questions/67677799/problem-when-using-assimp-library-together-with-stb-image
 //
@@ -101,30 +103,30 @@
 // #define STB_TRUETYPE_IMPLEMENTATION in nanovg.lib
 #include <stb/stb_truetype.h>
 
-#include "declaration.h"
+//#include "utils.h"
 
-#include "logger.h"
-#include "asset_lib.h"
-#include "imgui_modules.h"
-#include "app_pref.h"
-#include "program.h"
-#include "framebuffer.h"
-#include "texture.h"
-#include "viewport.h"
+//#include "logger.h"
+//#include "asset_lib.h"
+//#include "imgui_modules.h"
+//#include "app_pref.h"
+// #include "program.h"
+// #include "framebuffer.h"
+// #include "texture.h"
+// //#include "viewport.h"
 
-#include "model_view/camera.h"
-#include "model_view/light.h"
-#include "model_view/mesh.h"
-#include "model_view/mesh_generator.h"
-#include "model_view/model.h"
-#include "model_view/model_loader.h"
-#include "model_view/model_exporter.h"
-#include "model_view/scene.h"
+// #include "model_view/camera.h"
+// #include "model_view/light.h"
+// #include "model_view/mesh.h"
+// #include "model_view/mesh_generator.h"
+// #include "model_view/model.h"
+// #include "model_view/model_loader.h"
+// #include "model_view/model_exporter.h"
+// #include "model_view/scene.h"
 
-#include "asset_lib.inl"
+// #include "asset_lib.inl"
 
-#include "application.h"
-#include "model_view/auto_camera.h"
+// #include "application.h"
+// #include "model_view/auto_camera.h"
 
 #include <nanovg/nanovg.h>
 #define NANOVG_GL3_IMPLEMENTATION

@@ -121,6 +121,7 @@ source_group(TREE ${lib_dir} FILES ${lib_files})
 target_include_directories(${lib_name} INTERFACE  ${lib_dir})
 
 ### limbrary ###
+# 배포할땐 cpp를 삭제하고 배포하기로 하자.
 set(lib_name "limbrary")
 set(lib_dir "${CMAKE_SOURCE_DIR}/limbrary-0.1")
 set(dep_libs
@@ -133,13 +134,15 @@ set(dep_libs
     nanovg
 )
 file(GLOB_RECURSE lib_files CONFIGURE_DEPENDS "${lib_dir}/*.*")
-add_library(${lib_name} INTERFACE)
-target_include_directories(${lib_name} INTERFACE ${lib_dir})
-target_link_directories(${lib_name} INTERFACE)
-target_link_libraries(${lib_name} INTERFACE ${dep_libs})
-add_dependencies(${lib_name} ${dep_libs})
-target_sources(${lib_name} INTERFACE ${lib_files})
+add_library(${lib_name} STATIC ${lib_files})
 source_group(TREE "${lib_dir}" FILES ${lib_files})
+target_include_directories(${lib_name} PUBLIC ${lib_dir})
+target_link_directories(${lib_name} PUBLIC)
+target_link_libraries(${lib_name} PUBLIC ${dep_libs})
+if(APPLE)
+    target_compile_definitions(${lib_name} PUBLIC GL_SILENCE_DEPRECATION)
+endif()
+add_dependencies(${lib_name} ${dep_libs})
 
 ### assets ###
 file(GLOB_RECURSE asset_files CONFIGURE_DEPENDS
@@ -149,7 +152,6 @@ add_custom_target(assets ALL
     SOURCES ${asset_files}
 )
 source_group(TREE "${CMAKE_SOURCE_DIR}/main/assets" FILES ${asset_files})
-
 # 배포할땐 직접 복붙하기로 하자.
 # add_custom_command(TARGET ${exe_name} POST_BUILD
 #     COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different  

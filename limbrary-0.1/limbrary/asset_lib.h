@@ -2,8 +2,10 @@
 //	2022-12-30 / im dong ye
 //
 
-#ifndef ASSET_LIB_H
-#define ASSET_LIB_H
+#ifndef __asset_lib_h_
+#define __asset_lib_h_
+
+#include <glad/gl_types.h>
 
 namespace lim
 {
@@ -24,18 +26,8 @@ namespace lim
 		AssetLib(const AssetLib&)=delete;
 		AssetLib &operator=(const AssetLib&)=delete;
 	public:
-		static AssetLib& get()
-		{
-			if( !instance ) {
-				instance = new AssetLib();
-			}
-			return *instance;
-		}
-		static void reload()
-		{
-			if( !instance )delete instance;
-			instance = new AssetLib();
-		}
+		static AssetLib& get();
+		static void reload();
 	};
 }
 

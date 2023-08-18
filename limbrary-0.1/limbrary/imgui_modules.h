@@ -5,12 +5,13 @@
 //	1. 한글 지원
 //
 
-#ifndef IMGUI_MODULES_H
-#define IMGUI_MODULES_H
+#ifndef __imgui_modules_h_
+#define __imgui_modules_h_
 
 #include <imgui.h>
 #include <backend/imgui_impl_glfw.h>
 #include <backend/imgui_impl_opengl3.h>
+#include <GLFW/glfw3.h>
 
 namespace lim
 {
@@ -18,9 +19,9 @@ namespace lim
 	{
         inline static std::function<void()> draw_appselector = [](){};
 
-		inline const glm::ivec2 imToIvec(ImVec2 v) { return {v.x, v.y}; }
+		inline static const glm::ivec2 imToIvec(ImVec2 v) { return {v.x, v.y}; }
 
-		static inline void initImGui(GLFWwindow* window)
+		inline static void initImGui(GLFWwindow* window)
 		{
 			IMGUI_CHECKVERSION();
 			ImGui::CreateContext();
@@ -52,14 +53,14 @@ namespace lim
 			ImGui_ImplGlfw_InitForOpenGL(window, true);
 			ImGui_ImplOpenGL3_Init("#version 410");
 		}
-		static inline void beginImGui()
+		inline static void beginImGui()
 		{
 			ImGui_ImplOpenGL3_NewFrame();
 			ImGui_ImplGlfw_NewFrame();
 			ImGui::NewFrame();
 			//ImGuizmo::BeginFrame();
 		}
-		static inline void endImGui(float frameWidth, float frameHeight)
+		inline static void endImGui(float frameWidth, float frameHeight)
 		{
 			ImGuiIO& io = ImGui::GetIO();
 			io.DisplaySize = ImVec2(frameWidth, frameHeight);
@@ -77,13 +78,12 @@ namespace lim
 				glfwMakeContextCurrent(backup_current_context);
 			}
 		}
-		static inline void destroyImGui()
+		inline static void destroyImGui()
 		{
 			ImGui_ImplOpenGL3_Shutdown();
 			ImGui_ImplGlfw_Shutdown();
 			ImGui::DestroyContext();
 		}
-	} /* namespace imgui */
-} /* namespace lim */
-
-#endif // !IMGUI_MODULES_H
+	}
+}
+#endif
