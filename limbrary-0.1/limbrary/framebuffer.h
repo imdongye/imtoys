@@ -20,7 +20,7 @@
 #ifndef __framebuffer_h_
 #define __framebuffer_h_
 
-#include <glad/gl_types.h>
+#include <glad/glad.h>
 #include <glm/glm.hpp>
 
 namespace lim

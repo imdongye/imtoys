@@ -14,9 +14,9 @@
 #ifndef __application_h_
 #define __application_h_
 
-#include <GLFW/glfw3.h>
 #include "utils.h"
 #include <glm/glm.hpp>
+#include <GLFW/glfw3.h>
 
 
 namespace lim

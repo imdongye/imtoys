@@ -15,7 +15,7 @@
 #ifndef __viewport_h_
 #define __viewport_h_
 
-#include <glad/gl_types.h>
+#include <glad/glad.h>
 #include "framebuffer.h"
 #include <glm/glm.hpp>
 #include <string>

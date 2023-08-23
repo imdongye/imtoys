@@ -1,5 +1,5 @@
-#include "logger.h"
-#include "GLFW/glfw3.h"
+#include <limbrary/logger.h>
+#include <GLFW/glfw3.h>
 
 namespace lim
 {
@@ -8,7 +8,7 @@ namespace lim
 		lines.emplace_back("");
 	};
 
-	Logger& Logger::get(int mode=0)
+	Logger& Logger::get(int mode)
 	{
 		static Logger logger;
 		if( mode==1 ) {
@@ -40,7 +40,7 @@ namespace lim
 		// Multiple calls to Text(), manually coarsely clipped - demonstrate how to use the ImGuiListClipper helper.
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
 		ImGuiListClipper clipper;
-		clipper.Begin(lines.size());
+		clipper.Begin((int)lines.size());
 		while( clipper.Step() )
 			for( int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++ )
 				ImGui::TextUnformatted(lines[i].c_str());

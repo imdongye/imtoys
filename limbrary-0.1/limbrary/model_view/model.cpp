@@ -15,14 +15,14 @@
 //	7. reload normal map 외부로 빼기
 // 
 //
-#include "model.h"
-#include "../logger.h"
+#include <limbrary/model_view/model.h>
+#include <limbrary/logger.h>
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/transform.hpp>
 
 namespace lim
 {
-	Model::Model(const std::string_view _name = "", Program* _program=nullptr)
+	Model::Model(const std::string_view _name, Program* _program)
 		: position(glm::vec3(0)), orientation(glm::quat()), scale(glm::vec3(1))
 		, pivot_mat(glm::mat4(1.0f)), nr_vertices(0)
 		, name(_name), program(_program)
@@ -48,7 +48,7 @@ namespace lim
 		ai_mats = model.ai_mats; // shared memory
 	}
 	// create with only mesh
-	Model::Model(Mesh* _mesh, std::string_view _name ="none", Program* _program=nullptr)
+	Model::Model(Mesh* _mesh, std::string_view _name, Program* _program)
 		:Model(_name, _program)
 	{
 		meshes.push_back(_mesh);

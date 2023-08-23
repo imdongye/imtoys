@@ -13,13 +13,12 @@
 //		로 앱별 tag부여해서 ini 윈도우 설정 겹치지 않게
 
 
-#include "viewport.h"
-#include "glad/glad.h"
-#include "app_pref.h"
-#include "imgui_modules.h"
+#include <limbrary/viewport.h>
+#include <limbrary/app_pref.h>
+#include <limbrary/imgui_modules.h>
 
 namespace lim {
-	Viewport::Viewport(Framebuffer* createdFB, GLuint _width=256, GLuint _height=256, WindowMode wm=WM_FREE)
+	Viewport::Viewport(Framebuffer* createdFB, GLuint _width, GLuint _height, WindowMode wm)
 		: id(id_generator++), name("Viewport"+std::to_string(id)+"##vp"+AppPref::get().selectedAppName)
 		, width(_width), height(_height), window_mode(wm), aspect(width/(float)height), mouse_pos(0), window_opened(true)
 	{
@@ -71,9 +70,9 @@ namespace lim {
 		// update size
 		auto contentSize = ImGui::GetContentRegionAvail();
 		if( width!=contentSize.x || height !=contentSize.y ) {
-			width = contentSize.x;
-			height = contentSize.y;
-			aspect = contentSize.x/contentSize.y;
+			width = (GLuint)contentSize.x;
+			height = (GLuint)contentSize.y;
+			aspect = (GLuint)(contentSize.x/contentSize.y);
 			framebuffer->resize(width, height);
 			for( auto& [_,cb] : resize_callbacks ) {
 				cb(width, height);

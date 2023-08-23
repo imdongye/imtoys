@@ -1,10 +1,10 @@
-#include "app_pref.h"
+#include <limbrary/app_pref.h>
+#include <limbrary/utils.h>
+#include <limbrary/logger.h>
 #include <fstream>
 #include <nlohmann/json.h>
 #include <vector>
 #include <regex>
-#include "utils.h"
-#include "logger.h"
 
 using Json = nlohmann::json;
 
@@ -23,9 +23,6 @@ namespace lim
 
 		recentModelPaths = ijson["recentModelPaths"];
 	}
-	/* detete copy & copy asignment singleton obj */
-	AppPref::AppPref(const AppPref&)=delete;
-	AppPref& AppPref::operator=(const AppPref&)=delete;
 
 	AppPref& AppPref::get()
 	{

@@ -5,7 +5,7 @@
 #ifndef __asset_lib_h_
 #define __asset_lib_h_
 
-#include <glad/gl_types.h>
+#include <glad/glad.h>
 
 namespace lim
 {

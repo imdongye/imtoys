@@ -13,6 +13,7 @@
 
 #include <glad/glad.h>
 #include <string>
+#include <memory>
 
 namespace lim
 {
@@ -40,7 +41,7 @@ namespace lim
 		TexBase(GLint internalFormat = GL_SRGB8);
 		virtual ~TexBase();
 	public:
-		void create(int _width, int _height, GLuint internalFormat, GLuint srcFormat, GLuint srcChanelType, void* data);
+		void create(int _width, int _height, GLint internalFormat, GLuint srcFormat, GLuint srcChanelType, void* data);
 		void create(void* data = nullptr);
 		void clear();
 		void bind(GLuint pid, GLuint activeSlot, const std::string_view shaderUniformName) const;
@@ -71,8 +72,8 @@ namespace lim
 	};
 	
 	/* do not use below for multisampling framebuffer */
-	static void Tex2Fbo(GLuint texID, GLuint fbo, int w, int h, float gamma=2.2f);
-	static void Gray2Fbo(GLuint texID, GLuint fbo, int w, int h, float gamma=2.2f);
+	void Tex2Fbo(GLuint texID, GLuint fbo, int w, int h, float gamma=2.2f);
+	void Gray2Fbo(GLuint texID, GLuint fbo, int w, int h, float gamma=2.2f);
 }
 
 #endif

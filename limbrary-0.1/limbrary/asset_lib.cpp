@@ -1,7 +1,6 @@
-#include "asset_lib.h"
-#include <glad/glad.h>
-#include "program.h"
-#include "logger.h"
+#include <limbrary/asset_lib.h>
+#include <limbrary/program.h>
+#include <limbrary/logger.h>
 
 namespace lim
 {

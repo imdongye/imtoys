@@ -1,12 +1,12 @@
-#include "program.h"
-#include "logger.h"
-#include "utils.h"
+#include <limbrary/program.h>
+#include <limbrary/logger.h>
+#include <limbrary/utils.h>
 
 namespace lim
 {
 	
-	Program::Program(const char* _name, const char* homeDir)
-	: name(_name), home_dir(homeDir) {}
+	Program::Program(const char* name, const char* homeDir)
+	: _name(name), home_dir(homeDir) {}
 	Program::~Program() { clear(); }
 	
 	Program& Program::clear()
@@ -56,7 +56,7 @@ namespace lim
 			return *this;
 		}
 		glAttachShader(pid, sid);
-		Logger::get().log("[program %s] attch %s success\n", name.c_str(), path.c_str());
+		Logger::get().log("[program %s] attch %s success\n", _name.c_str(), path.c_str());
 
 		return *this;
 	}
@@ -68,7 +68,7 @@ namespace lim
 			pid = 0;
 			return *this;
 		}
-		Logger::get().log("[program %s] linking success\n\n", name.c_str());
+		Logger::get().log("[program %s] linking success\n\n", _name.c_str());
 		return *this;
 	}
 	GLuint Program::use() const
@@ -96,7 +96,7 @@ namespace lim
 	}
 	bool Program::checkLinkingErrors(GLuint shader)
 	{
-		GLint success;
+		GLint success = 0;
 		GLchar infoLog[1024];
 
 		glGetProgramiv(shader, GL_LINK_STATUS, &success);
@@ -111,7 +111,7 @@ namespace lim
 	// string_view는 char* char[]을 받아도 string으로 임시객체를 만들지 않고 포인터를 사용함
 	std::tuple<int, const char*> Program::createShaderAuto(const std::string_view filename)
 	{
-		int index = filename.rfind(".");
+		size_t index = filename.rfind(".");
 		std::string_view ext = filename.substr(index + 1);
 		if( ext=="vert"||ext=="vs" ) {
 			vert_id = glCreateShader(GL_VERTEX_SHADER);
@@ -135,14 +135,14 @@ namespace lim
 		return std::make_tuple(0, "none");
 	}
 	// From: https://www.youtube.com/watch?v=nBB0LGSIm5Q
-	GLint Program::getUniformLocation(const std::string_view _name) const
+	GLint Program::getUniformLocation(const std::string_view name) const
 	{
-		std::string name(_name);
-		if( uniform_location_cache.find(name) != uniform_location_cache.end() ) {
-			return uniform_location_cache[name];
+		std::string sname(name);
+		if( uniform_location_cache.find(sname) != uniform_location_cache.end() ) {
+			return uniform_location_cache[sname];
 		}
-		GLint loc = glGetUniformLocation(pid, name.c_str());
-		uniform_location_cache[name] = loc;
+		GLint loc = glGetUniformLocation(pid, sname.c_str());
+		uniform_location_cache[sname] = loc;
 		return loc;
 	}
 }

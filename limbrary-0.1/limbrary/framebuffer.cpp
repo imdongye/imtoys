@@ -1,15 +1,16 @@
-#include "framebuffer.h"
-#include <glad/glad.h>
+#include <limbrary/framebuffer.h>
 #include <vector>
-#include "logger.h"
+#include <limbrary/logger.h>
 
 namespace lim
 {
 
 	Framebuffer::Framebuffer(): clear_color({0.2f, 0.3f, 0.3f, 1.0f})
 	{
+		// todo
 		fbo = color_tex = 0;
-		aspect= width = height = 0;
+		width = height = 0;
+		aspect = 0.f;
 	}
 	Framebuffer::~Framebuffer() 
 	{
@@ -44,7 +45,7 @@ namespace lim
 		GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 		if( status !=GL_FRAMEBUFFER_COMPLETE ) Logger::get()<<"Framebuffer is not completed!! ("<<status<<")"<<Logger::endl;
 	}
-	bool Framebuffer::resize(GLuint _width, GLuint _height=0)
+	bool Framebuffer::resize(GLuint _width, GLuint _height)
 	{
 		if( _height==0 ) _height = _width;
 		if( width==_width && height==_height )

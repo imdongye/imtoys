@@ -8,16 +8,15 @@
 //	3. texture loading 분리
 //
 
-#include "texture.h"
-#include "program.h"
-#include "logger.h"
-#include "asset_lib.h"
-#include <memory>
+#include <limbrary/texture.h>
+#include <limbrary/program.h>
+#include <limbrary/logger.h>
+#include <limbrary/asset_lib.h>
 #include <stb/stb_image.h>
 
 namespace lim
 {
-	TexBase::TexBase(GLint internalFormat = GL_SRGB8)
+	TexBase::TexBase(GLint internalFormat)
 	{
 		internal_format = internalFormat;
 	}
@@ -25,7 +24,7 @@ namespace lim
 	{
 		clear();
 	}
-	void TexBase::create(int _width, int _height, GLuint internalFormat, GLuint srcFormat, GLuint srcChanelType, void* data)
+	void TexBase::create(int _width, int _height, GLint internalFormat, GLuint srcFormat, GLuint srcChanelType, void* data)
 	{
 		if( width!=_width||height!=_height||internal_format!=internalFormat ) 
 			clear();
@@ -38,7 +37,7 @@ namespace lim
 
 		create(data);
 	}
-	void TexBase::create(void* data = nullptr)
+	void TexBase::create(void* data)
 	{
 		glGenTextures(1, &tex_id);
 		glBindTexture(GL_TEXTURE_2D, tex_id);
@@ -114,7 +113,7 @@ namespace lim
 
 	/* load texture */
 	// internalFormat : GL_RGB32F(default), GL_RGB8, GL_SRGB8
-	Texture::Texture(const std::string_view _path, GLint internalFormat=GL_RGB32F):TexBase()
+	Texture::Texture(const std::string_view _path, GLint internalFormat):TexBase()
 		, path(_path), format(path.c_str()+path.rfind('.')+1)
 		, name(path.c_str()+path.rfind('\\')+path.rfind('/')+2)
 	{
@@ -131,7 +130,7 @@ namespace lim
 	{
 		return std::make_shared<Texture>(path, internal_format);
 	}
-	void Texture::reload(const std::string_view _path, GLint internalFormat=GL_RGB32F)
+	void Texture::reload(const std::string_view _path, GLint internalFormat)
 	{
 		clear();
 		path = _path; internal_format = internalFormat;
@@ -139,7 +138,7 @@ namespace lim
 	}
 	
 	/* do not use below for multisampling framebuffer */
-	static void Tex2Fbo(GLuint texID, GLuint fbo, int w, int h, float gamma=2.2f)
+	void Tex2Fbo(GLuint texID, GLuint fbo, int w, int h, float gamma)
 	{
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		glViewport(0, 0, w, h);
@@ -162,7 +161,7 @@ namespace lim
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 	}
 
-	static void Gray2Fbo(GLuint texID, GLuint fbo, int w, int h, float gamma=2.2f)
+	void Gray2Fbo(GLuint texID, GLuint fbo, int w, int h, float gamma)
 	{
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		glViewport(0, 0, w, h);

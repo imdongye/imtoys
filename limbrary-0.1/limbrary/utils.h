@@ -17,9 +17,8 @@ namespace lim
 	template <class _Fty>
 	using Callbacks = std::map<void* const, std::function<_Fty>>;
 
-	static std::string getStrFromFile(std::string_view path);
-	static void setStrToFile(std::string_view path, std::string_view text);
-	static std::string fmToStr(const char* format, ...);
+	std::string getStrFromFile(std::string_view path);
+	void setStrToFile(std::string_view path, std::string_view text);
+	std::string fmToStr(const char* format, ...);
 }
-
 #endif

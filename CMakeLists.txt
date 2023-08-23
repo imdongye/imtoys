@@ -15,7 +15,6 @@
 # 2. 다수의 add_exe.. 골라 실행 시스템
 #
 
-
 cmake_minimum_required(VERSION 3.24...3.27 FATAL_ERROR)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -34,31 +33,36 @@ project(
     LANGUAGES C CXX
 )
 set(CMAKE_VERBOSE_MAKEFILE true)
+if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+    add_compile_options(/utf-8)
+endif()
+
 
 ### glfw ###
-set(BUILD_SHARED_LIBS ON CACHE BOOL "")
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "")
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "")
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "")
 set(GLFW_INSTALL OFF CACHE BOOL "")
 add_subdirectory(vendor/glfw)
+target_compile_definitions(glfw INTERFACE GLFW_INCLUDE_NONE) # Todo?: glad include 순서 무시하기위함
 
 ### assimp ###
-set(BUILD_SHARED_LIBS ON CACHE BOOL "")
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
 set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "")
 set(ASSIMP_INSTALL OFF CACHE BOOL "")
 set(ASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT OFF CACHE BOOL "")
 set(ASSIMP_BUILD_OBJ_IMPORTER ON CACHE BOOL "")
-set(ASSIMP_BUILD_FBX_IMPORTER ON CACHE BOOL "")
 set(ASSIMP_BUILD_GLTF_IMPORTER ON CACHE BOOL "")
-set(ASSIMP_BUILD_BLEND_IMPORTER ON CACHE BOOL "")
+#set(ASSIMP_BUILD_FBX_IMPORTER ON CACHE BOOL "")
+#set(ASSIMP_BUILD_BLEND_IMPORTER ON CACHE BOOL "")
 set(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT OFF CACHE BOOL "")
 set(ASSIMP_BUILD_OBJ_EXPORTER ON CACHE BOOL "")
 #set(ASSIMP_BUILD_FBX_EXPORTER ON CACHE BOOL "")
 #set(ASSIMP_BUILD_GLTF_EXPORTER ON CACHE BOOL "")
 add_subdirectory(vendor/assimp)
 
-### glad ###
+### glad ### C
 # opengl function pointers (replaced by glad)
 set(lib_name "glad")
 if(WIN32)
@@ -73,6 +77,15 @@ add_library(${lib_name} STATIC ${headers} ${sources})
 source_group(TREE "${lib_dir}" FILES ${headers} ${sources})
 target_include_directories(${lib_name} PUBLIC "${lib_dir}/include")
 
+### nanovg ### C
+set(lib_name "nanovg")
+set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/nanovg")
+file(GLOB_RECURSE headers "${lib_dir}/*.h")
+file(GLOB_RECURSE sources "${lib_dir}/*.c")
+add_library(${lib_name} STATIC ${headers} ${sources})
+source_group(TREE "${lib_dir}" FILES ${headers} ${sources})
+target_include_directories(${lib_name} PUBLIC ${lib_dir})
+
 ### imgui ###
 set(lib_name "imgui")
 set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/imgui-docking-1.89.4")
@@ -86,15 +99,6 @@ target_include_directories(${lib_name} PUBLIC "${lib_dir}")
 target_link_libraries(${lib_name} PUBLIC glfw)
 add_dependencies(${lib_name} glfw)
 
-### nanovg ###
-set(lib_name "nanovg")
-set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/others/nanovg")
-file(GLOB_RECURSE headers "${lib_dir}/*.h" "${lib_dir}/*.hpp")
-file(GLOB_RECURSE sources "${lib_dir}/*.c" "${lib_dir}/*.cpp")
-add_library(${lib_name} STATIC ${headers} ${sources})
-source_group(TREE "${lib_dir}" FILES ${headers} ${sources})
-target_include_directories(${lib_name} PUBLIC ${lib_dir})
-
 ### glm (header only) ###
 set(lib_name "glm")
 set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/glm-0.9.9.8")
@@ -102,6 +106,7 @@ file(GLOB_RECURSE lib_files CONFIGURE_DEPENDS "${lib_dir}/*.*")
 add_library(${lib_name} INTERFACE ${lib_files})
 source_group(TREE "${lib_dir}/glm" FILES ${lib_files})
 target_include_directories(${lib_name} INTERFACE  ${lib_dir})
+target_compile_definitions(${lib_name} INTERFACE GLM_FORCE_SILENT_WARNINGS)
 
 ### eigen (header only) ###
 set(lib_name "eigen")
@@ -119,6 +124,7 @@ list(FILTER lib_files EXCLUDE REGEX "${lib_dir}/nanovg/*")
 add_library(${lib_name} INTERFACE ${lib_files})
 source_group(TREE ${lib_dir} FILES ${lib_files})
 target_include_directories(${lib_name} INTERFACE  ${lib_dir})
+
 
 ### limbrary ###
 # 배포할땐 cpp를 삭제하고 배포하기로 하자.
@@ -139,26 +145,37 @@ source_group(TREE "${lib_dir}" FILES ${lib_files})
 target_include_directories(${lib_name} PUBLIC ${lib_dir})
 target_link_directories(${lib_name} PUBLIC)
 target_link_libraries(${lib_name} PUBLIC ${dep_libs})
-if(APPLE)
-    target_compile_definitions(${lib_name} PUBLIC GL_SILENCE_DEPRECATION)
-endif()
 add_dependencies(${lib_name} ${dep_libs})
+if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+    target_compile_definitions(${lib_name}
+        PUBLIC
+            _SCL_SECURE_NO_WARNINGS  # Calling any one of the potentially unsafe methods in the Standard C++ Library
+            _CRT_SECURE_NO_WARNINGS  # Calling any one of the potentially unsafe methods in the CRT Library
+    )
+    target_compile_options(${lib_name} 
+        PRIVATE
+            #/W3
+            /wd4100
+            #/wd4819 
+            #/WX
+    )
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    target_compile_definitions(
+        PUBLIC
+            GL_SILENCE_DEPRECATION
+    )
+    target_compile_options(${lib_name} 
+        PRIVATE
+            -Wall
+            #-Werror
+    )
+endif()
 
 ### assets ###
-file(GLOB_RECURSE asset_files CONFIGURE_DEPENDS
-    ${CMAKE_SOURCE_DIR}/main/assets/*.*
-)
-add_custom_target(assets ALL
-    SOURCES ${asset_files}
-)
-source_group(TREE "${CMAKE_SOURCE_DIR}/main/assets" FILES ${asset_files})
 # 배포할땐 직접 복붙하기로 하자.
-# add_custom_command(TARGET ${exe_name} POST_BUILD
-#     COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different  
-#     ${CMAKE_SOURCE_DIR}/assets
-#     ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/executable/assets
-#     COMMENT "[LIM] copying to executable folder"
-# )
+file(GLOB_RECURSE asset_files CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/main/assets/*.*)
+add_custom_target(assets ALL SOURCES ${asset_files})
+source_group(TREE "${CMAKE_SOURCE_DIR}/main/assets" FILES ${asset_files})
 
 ### main proj ###
 file(GLOB_RECURSE main_files CONFIGURE_DEPENDS 
@@ -173,8 +190,29 @@ file(GLOB_RECURSE main_files CONFIGURE_DEPENDS
 list(FILTER main_files EXCLUDE REGEX "${CMAKE_SOURCE_DIR}/main/assets/*")
 add_executable(${exe_name} ${main_files})
 source_group(TREE "${CMAKE_SOURCE_DIR}/main" FILES ${main_files})
-target_link_libraries(${exe_name} PUBLIC limbrary)
+target_include_directories(${exe_name} PRIVATE "${CMAKE_SOURCE_DIR}/main")
+target_link_libraries(${exe_name} PRIVATE limbrary)
 add_dependencies(${exe_name} limbrary)
+if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+    target_compile_options(${lib_name} 
+        PRIVATE
+            /W4
+            #/wd4819 
+            #/WX
+    )
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    target_compile_options(${lib_name} 
+        PRIVATE
+            -Wall
+            #-Werror
+    )
+endif()
+target_compile_definitions(${exe_name} 
+    PRIVATE
+        WINDOW_NAME="opengl template window"
+        WINDOW_WIDTH=600
+        WINDOW_HEIGHT=400
+)
 
 
 ### 결과 파일 생성 위치 지정 ###
@@ -190,7 +228,7 @@ set_target_properties(assimp PROPERTIES FOLDER "vendor")
 set_target_properties(glad PROPERTIES FOLDER "vendor")
 set_target_properties(imgui PROPERTIES FOLDER "vendor")
 set_target_properties(nanovg PROPERTIES FOLDER "vendor")
-if(MSVC12 OR MSVC14 OR MSVC15 )
+if(WIN32)
     set_target_properties(UpdateAssimpLibsDebugSymbolsAndDLLs PROPERTIES FOLDER "vendor")
 endif()
 set_target_properties(zlibstatic PROPERTIES FOLDER "vendor")
@@ -198,47 +236,15 @@ set_target_properties(glm PROPERTIES FOLDER "vendor")
 set_target_properties(eigen PROPERTIES FOLDER "vendor")
 set_target_properties(others PROPERTIES FOLDER "vendor")
 
-if(WIN32)
-    message("[LIM] detect windows")
-    if(CMAKE_GENERATOR MATCHES "Visual Studio*")
-        set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${exe_name})
-        # From: https://stackoverflow.com/questions/41864259/how-to-set-working-directory-for-visual-studio-2017-rc-cmake-project
-        #set_target_properties(${exe_name} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${workding_dir}") # nor working
-    endif()
-    if(MSVC)
-        target_compile_definitions(${exe_name} PUBLIC _CRT_SECURE_NO_WARNINGS)
-        #set_property(TARGET ${exe_name} PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
-    endif()
-endif(WIN32)
 
-if(APPLE)
-    message("[LIM] detect mac")
-    if(CMAKE_GENERATOR MATCHES "Xcode")
-        set_target_properties(${exe_name} PROPERTIES 
-                        XCODE_GENERATE_SCHEME TRUE
-                        XCODE_SCHEME_WORKING_DIRECTORY "${workding_dir}")
-        # 시작 schema 설정 못찾음
-    endif()
-endif(APPLE)
-
-
-# 모든 경고 표시 및 컴파일에러처리
-#target_compile_options(${proj_name} PUBLIC -Wall -Werror)
-# if(MSVC)
-#   # Force to always compile with W4
-#   if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
-#     string(REGEX REPLACE "/W[0-4]" "/W4" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-#   else()
-#     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
-#   endif()
-# elseif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
-#   # Update if necessary
-#   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-long-long -pedantic")
-# endif()
-
-### define 변수 설정 ###
-target_compile_definitions(${exe_name} PUBLIC
-    WINDOW_NAME="opengl template window"
-    WINDOW_WIDTH=600
-    WINDOW_HEIGHT=400
-)
+if(CMAKE_GENERATOR MATCHES "Visual Studio*")
+    set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${exe_name})
+    # From: https://stackoverflow.com/questions/41864259/how-to-set-working-directory-for-visual-studio-2017-rc-cmake-project
+    set_target_properties(${exe_name} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${workding_dir}") # not working
+endif()
+if(CMAKE_GENERATOR MATCHES "Xcode")
+    set_target_properties(${exe_name} PROPERTIES 
+                    XCODE_GENERATE_SCHEME TRUE
+                    XCODE_SCHEME_WORKING_DIRECTORY "${workding_dir}")
+    # 시작 schema 설정 못찾음
+endif()

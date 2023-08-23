@@ -11,6 +11,7 @@
 #include <imgui.h>
 #include <backend/imgui_impl_glfw.h>
 #include <backend/imgui_impl_opengl3.h>
+#include <glm/glm.hpp>
 #include <GLFW/glfw3.h>
 
 namespace lim

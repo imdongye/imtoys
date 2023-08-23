@@ -10,19 +10,20 @@
 //	2. glfw에서 함수 이름 스네이크/카멜 혼용 이유 찾기
 //  3. glfwSwapInterval(1); // vsync??
 //
-#include "application.h"
-#include "logger.h"
+#include <limbrary/application.h>
+#include <limbrary/logger.h>
+#include <limbrary/viewport.h>
+#include <limbrary/app_pref.h>
+#include <limbrary/asset_lib.h>
+#include <limbrary/model_view/scene.h>
 #include <glad/glad.h>
 #include <iostream>
 #include <filesystem>
-#include "viewport.h"
-#include "app_pref.h"
-#include "asset_lib.h"
-#include "model_view/scene.h" // todo : 의존성제거
+
 
 namespace lim
 {
-	AppBase::AppBase(int winWidth=1280, int winHeight=720, const char* title="nonamed")
+	AppBase::AppBase(int winWidth, int winHeight, const char* title)
 		:win_width(winWidth), win_height(winHeight)
 	{
 		glfwSetErrorCallback([](int error, const char *description) {

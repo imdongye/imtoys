@@ -1,16 +1,18 @@
-#include "scene.h"
-#include "mesh_generator.h"
-#include "../utils.h"
+#include <limbrary/model_view/scene.h>
+#include <limbrary/model_view/mesh_generator.h>
+#include <limbrary/utils.h>
+
+
 
 namespace lim
 {
-	Scene::Scene(Light& _light, bool addGround=true): light(_light)
+	Scene::Scene(Light& _light, bool addGround): light(_light)
 	{
 		if( sceneCounter==0 ) {
 			groundProgram = new Program("Ground");
 			groundProgram->attatch("pos.vs").attatch("amiga_ground.fs").link();
 
-			groundMesh = MeshGenerator::genQuad();
+			groundMesh = code_mesh::genQuad();
 			groundMesh->color = glm::vec3(0.8, 0.8, 0); // yello ground			
 		}
 

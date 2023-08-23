@@ -38,6 +38,7 @@ Product -> Scheme -> Edit Scheme -> Use custom working directory
 프로젝트 속성 -> 디버깅 -> 작업 디렉터리
 # VSCode
 cmake와 c/c++ 확장설치 -> 왼쪽 실행및 디버그탭 -> 구성 선택 -> f5
+ctrl(cmd)+, -> cmake build directory : ${workspaceFolder}/build/${buildType}
 ```
 
 ## Dependency

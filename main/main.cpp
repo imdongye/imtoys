@@ -5,12 +5,11 @@
 //  Product->schema->edit-schema->run->option->custom-working-dir
 //
 
-#include <limbrary/limclude.h>
-// #include <glm/gtx/norm.hpp>
-
 #include "imtests/app_template.h"
+#include <limbrary/imgui_modules.h>
+#include <limbrary/app_pref.h>
 // #include "imnpr/app_hatching.h"
-#include "imtests/app_gen_mesh.h"
+//#include "imtests/app_gen_mesh.h"
 // #include "imhdr/app_hdr.h"
 // #include "imsimplification/app_simplification.h"
 // #include "impbr/app_pbr.h"
@@ -38,7 +37,7 @@ int main(int, char **)
 	lim::imgui_modules::draw_appselector = drawAppSellector;
 
 	// first order is shown first
-    pushAppData<lim::AppGenMesh>();
+    //pushAppData<lim::AppGenMesh>();
 	pushAppData<lim::AppTemplate>();
 	// pushAppData<lim::AppICP>();
 	// pushAppData<lim::AppFont>();

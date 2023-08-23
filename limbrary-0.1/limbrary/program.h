@@ -27,7 +27,7 @@ namespace lim
 	class Program
 	{
 	public:
-		std::string name="unnamed";
+		std::string _name="unnamed";
 		std::string home_dir;
 		GLuint pid=0;
 	private:
@@ -41,7 +41,7 @@ namespace lim
 		Program(const Program&) = delete;
 		Program& operator=(const Program&) = delete;
 	public:
-		Program(const char* _name = "unnamed", const char* homeDir="assets/");
+		Program(const char* name = "unnamed", const char* homeDir="assets/");
 		~Program();
 	public:
 		// chaining //
@@ -66,7 +66,7 @@ namespace lim
 		// string_view는 char* char[]을 받아도 string으로 임시객체를 만들지 않고 포인터를 사용함
 		std::tuple<int, const char*> createShaderAuto(const std::string_view filename);
 		// From: https://www.youtube.com/watch?v=nBB0LGSIm5Q
-		GLint getUniformLocation(const std::string_view _name) const;
+		GLint getUniformLocation(const std::string_view name) const;
 	public:
 		inline void setUniform(const std::string_view name, const int v) const
 		{
@@ -104,11 +104,11 @@ namespace lim
 		{
 			glUniform3fv(getUniformLocation(name), n, (GLfloat*)v);
 		}
-		inline void setUniform(const std::string_view name, const glm::mat3& v)
+		inline void setUniform(const std::string_view name, const glm::mat3& v) const
 		{
 			glUniformMatrix3fv(getUniformLocation(name), 1, 0, glm::value_ptr(v));
 		}
-		inline void setUniform(const std::string_view name, const glm::mat4& v)
+		inline void setUniform(const std::string_view name, const glm::mat4& v) const
 		{
 			glUniformMatrix4fv(getUniformLocation(name), 1, 0, glm::value_ptr(v));
 		}
