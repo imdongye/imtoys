@@ -167,7 +167,7 @@ namespace
 
 namespace lim
 {
-	static Model *loadModelFromFile(std::string_view path, bool makeNormalized)
+	Model *loadModelFromFile(std::string_view path, bool makeNormalized)
 	{
 		std::string spath(path);
 

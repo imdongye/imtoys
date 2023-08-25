@@ -45,7 +45,7 @@ namespace lim
 	void Light::updateMembers()
 	{
 		yaw = glm::mod(yaw, 360.f);
-		const float minPitchDegree = 20;
+		//const float minPitchDegree = 20;
 		pitch = glm::clamp(pitch, 20.f, 89.f);
 		position = glm::vec3(glm::rotate(glm::radians(yaw), glm::vec3(0, 1, 0))
 								* glm::rotate(glm::radians(-pitch), glm::vec3(1, 0, 0))

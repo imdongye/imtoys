@@ -16,6 +16,7 @@
 #include <limbrary/app_pref.h>
 #include <limbrary/asset_lib.h>
 #include <limbrary/model_view/scene.h>
+#include <limbrary/imgui_module.h>
 #include <glad/glad.h>
 #include <iostream>
 #include <filesystem>
@@ -60,7 +61,7 @@ namespace lim
 		GLFWmonitor** monitors = glfwGetMonitors(&nrMonitors);
 		const GLFWvidmode* vidMode = glfwGetVideoMode(monitors[0]);
 
-		glfwSetWindowPos(window, (vidMode->width-win_width)*0.5f, (vidMode->height-win_height)*0.5f);
+		glfwSetWindowPos(window, (vidMode->width-win_width)/2, (vidMode->height-win_height)/2);
 		glfwShowWindow(window);
 
 
@@ -78,7 +79,7 @@ namespace lim
 
 		printVersionAndStatus();
 
-		imgui_modules::initImGui(window);
+		ImguiModule::initImGui(window);
 
 		// need for restart app
 		AppPref::get();
@@ -90,7 +91,7 @@ namespace lim
 
 	AppBase::~AppBase()
 	{
-		imgui_modules::destroyImGui();
+		ImguiModule::destroyImGui();
 
 		AppPref::get().save();
 		glfwDestroyWindow(window);
@@ -103,20 +104,20 @@ namespace lim
 
 		while( !glfwWindowShouldClose(window) ) {
 			double currentTime = glfwGetTime();
-			delta_time = currentTime - lastTime;
+			delta_time = (float)(currentTime - lastTime);
 			lastTime = currentTime;
 
 			update();
 			for( auto& [_, cb] : w_data.update_hooks ) 
 				cb(delta_time);
 
-			imgui_modules::beginImGui();
+			ImguiModule::beginImGui();
 
 			renderImGui();
 
-			imgui_modules::draw_appselector();
+			ImguiModule::draw_appselector();
 
-			imgui_modules::endImGui(win_width, win_height);
+			ImguiModule::endImGui((float)win_width, (float)win_height);
 
 			glfwPollEvents();
 			glfwSwapBuffers(window);
@@ -137,8 +138,8 @@ namespace lim
 		// second call when resize window
 		w_data.win_size_callbacks[this] = [this](int width, int height) {
 			win_width=width; win_height=height;
-			aspect_ratio = fb_width/fb_height;
-			pixel_ratio = fb_width/win_width;
+			aspect_ratio = fb_width/(float)fb_height;
+			pixel_ratio = fb_width/(float)win_width;
 		};			w_data.key_callbacks[this] = [this](int key, int scancode, int action, int mods) {
 			keyCallback(key, scancode, action, mods); 
 		};

@@ -309,7 +309,7 @@ namespace lim::code_mesh
 
 			GLuint offset = vertices.size();
 
-			float sliceLength = 2.f / nrSlices;
+			//float sliceLength = 2.f / nrSlices;
 
 			for (int y = 0; y <= nrSlices; y++)
 			{
@@ -410,6 +410,7 @@ namespace lim::code_mesh
 
 	Mesh *genCylinder(const int nrSlices)
 	{
+		const GLuint slices = nrSlices;
 		const float radius = 1.f;
 		const float half = 1.f; // height
 
@@ -418,7 +419,7 @@ namespace lim::code_mesh
 		vertices.push_back({{0, half, 0}, {0, 1, 0}, {.5f, .5f}});
 		vertices.push_back({{0, -half, 0}, {0, -1, 0}, {.5f, .5f}});
 
-		for (int slice = 0; slice <= nrSlices; slice++)
+		for (GLuint slice = 0; slice <= slices; slice++)
 		{
 			float theta = D_PI * slice / (float)nrSlices;
 			float x = radius * cosf(theta);
@@ -437,8 +438,8 @@ namespace lim::code_mesh
 			vertices.push_back({pos, sideNor, {sideU, 0}});
 			vertices.push_back({pos, {0, -1, 0}, circleUv});
 		}
-		const unsigned int nrCols = 4;
-		for (unsigned int slice = 0; slice < nrSlices; slice++)
+		const GLuint nrCols = 4;
+		for (GLuint slice = 0; slice < slices; slice++)
 		{
 			indices.insert(indices.end(), {0, 2 + nrCols * slice, 2 + nrCols * (slice + 1)});
 			indices.insert(indices.end(), {3 + nrCols * slice, 4 + nrCols * slice, 4 + nrCols * (slice + 1)});		 // up

@@ -11,7 +11,7 @@
 #include <stb/stb_image.h>
 #include <glad/glad.h>
 #include <iostream>
-#include <limbrary/imgui_modules.h>
+#include <imgui.h>
 
 namespace lim
 {
@@ -23,7 +23,6 @@ namespace lim
 	{
 	}
 	void AppTemplate::update() 	{
-		// clear backbuffer
 		glEnable(GL_DEPTH_TEST);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);

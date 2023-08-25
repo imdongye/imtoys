@@ -91,17 +91,17 @@ namespace lim
 	void AutoCamera::mouseBtnCallback(int button, int action, int mods)
 	{
 		if( vp && !vp->hovered ) return;
-
-		glfwGetCursorPos(window, &cur_x_off, &cur_y_off);
+		double xpos, ypos;
+		glfwGetCursorPos(window, &xpos, &ypos);
+		prev_mouse_x = xpos;
+		prev_mouse_y = ypos;
 	}
 	void AutoCamera::cursorPosCallback(double xpos, double ypos)
 	{
-		static float xoff, yoff;
-
 		if( vp && !vp->dragging )return;
 
-		xoff = xpos - cur_x_off;
-		yoff = cur_y_off - ypos;
+		float xoff = xpos - prev_mouse_x;
+		float yoff = prev_mouse_y - ypos;
 
 		switch( viewing_mode ) {
 			case VM_PIVOT:
@@ -122,8 +122,8 @@ namespace lim
 			case VM_SCROLL:
 				break;
 		}
-		cur_x_off = xpos;
-		cur_y_off = ypos;
+		prev_mouse_x = xpos;
+		prev_mouse_y = ypos;
 	}
 	void AutoCamera::scrollCallback(double xOff, double yOff)
 	{

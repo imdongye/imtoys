@@ -74,20 +74,20 @@ namespace lim
 	}
 	void Scene::drawModels(Camera* camera)
 	{
-		for( Model* model : models ) {
-			if( model==nullptr ) continue;
-			model->draw(*camera, light);
+		for( Model* md : models ) {
+			if( md==nullptr ) continue;
+			md->draw(*camera, light);
 		}
 	}
 	void Scene::drawShadowMap()
 	{
 		// todo
 		light.drawShadowMap([&](GLuint shadowProgID) {
-			for( Model* model : models ) {
-				setUniform(shadowProgID, "modelMat", model->model_mat);
+			for( Model* md : models ) {
+				setUniform(shadowProgID, "modelMat", md->model_mat);
 
-				for( Mesh* mesh : model->meshes )
-					mesh->draw(0); // only draw
+				for( Mesh* ms : model->meshes )
+					ms->draw(0); // only draw
 			}
 		});
 	}

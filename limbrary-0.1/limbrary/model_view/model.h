@@ -46,7 +46,7 @@ namespace lim
 
 		Program *program;
 		float bumpHeight = 100;
-		float texDelta = 0.00001;
+		float texDelta = 0.00001f;
 
 		GLuint nr_vertices;
 		GLuint nr_triangles;

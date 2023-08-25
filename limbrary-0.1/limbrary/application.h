@@ -39,7 +39,7 @@ namespace lim
 		};
 		WindowData w_data;
 		
-		double delta_time; // sec
+		float delta_time; // sec
 
 		// relative to ratina or window monitor setting
 		int win_width, win_height;

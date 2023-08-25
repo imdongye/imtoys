@@ -17,10 +17,9 @@
 #ifndef __logger_h_
 #define __logger_h_
 
+#include <string>
+#include <vector>
 #include <stdarg.h>
-#include <string.h>
-#include "utils.h"
-#include "imgui_modules.h"
 
 
 namespace lim

@@ -15,7 +15,7 @@
 
 #include <limbrary/viewport.h>
 #include <limbrary/app_pref.h>
-#include <limbrary/imgui_modules.h>
+#include <imgui.h>
 
 namespace lim {
 	Viewport::Viewport(Framebuffer* createdFB, GLuint _width, GLuint _height, WindowMode wm)
@@ -61,10 +61,11 @@ namespace lim {
 		hovered = ImGui::IsWindowHovered();
 		dragging = focused && (ImGui::IsMouseDown(0)||ImGui::IsMouseDown(2));
 
-		static glm::ivec2 winPos;
-		winPos = imgui_modules::imToIvec(ImGui::GetWindowPos());
-		mouse_pos = imgui_modules::imToIvec(ImGui::GetMousePos());
-		mouse_pos = mouse_pos - winPos - glm::ivec2(0, ImGui::GetFrameHeight());
+		ImVec2 imWinPos = ImGui::GetWindowPos();
+		ImVec2 imMousePos = ImGui::GetMousePos();
+		glm::ivec2 winPos ={imWinPos.x, imWinPos.y};
+		glm::ivec2 mousePos = {imMousePos.x, imMousePos.y};
+		mouse_pos = mousePos - winPos - glm::ivec2(0, ImGui::GetFrameHeight());
 		if( dragging ) ImGui::SetMouseCursor(7);
 
 		// update size

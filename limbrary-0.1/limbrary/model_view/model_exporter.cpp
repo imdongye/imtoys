@@ -5,23 +5,26 @@
 //
 #include <limbrary/model_view/model_exporter.h>
 #include <limbrary/logger.h>
+#include <limbrary/utils.h>
 #include <assimp/Exporter.hpp>
 #include <assimp/scene.h>
 #include <filesystem>
+
 
 namespace
 {
 	using namespace lim;
 
 	Assimp::Exporter exporter;
-	GLuint nr_formats = exporter.GetExportFormatCount();
+	const int nr_formats = (int)exporter.GetExportFormatCount();
+
 	const aiExportFormatDesc *formats[32] = {
 		nullptr,
 	};
 
 	aiScene *makeScene(Model *model)
 	{
-		const GLuint nr_meshes = model->meshes.size();
+		const int nr_meshes = (int)model->meshes.size();
 		aiScene *scene = new aiScene();
 		aiNode *node = new aiNode();
 
@@ -32,7 +35,7 @@ namespace
 		for (int i = 0; i < nr_mat; i++)
 		{
 			scene->mMaterials[i] = new aiMaterial();
-			aiMaterial *mat;
+			//aiMaterial *mat; // todo???
 			aiMaterial::CopyPropertyList(scene->mMaterials[i], (aiMaterial *)(model->ai_mats[i]));
 		}
 
@@ -125,10 +128,12 @@ namespace lim
 
 		/* export model */
 		aiScene *scene = makeScene(model);
-		aiReturn ret = exporter.Export(scene, format->id, newModelPath.data(), scene->mFlags);
-		const char *error = exporter.GetErrorString();
-		if (strlen(error) > 0)
-			Logger::get() << "[error::exporter] " << error << Logger::endl;
+		if(exporter.Export(scene, format->id, newModelPath.data(), scene->mFlags)!=AI_SUCCESS)
+		{
+			const char *error = exporter.GetErrorString();
+			if (strlen(error) > 0)
+				Logger::get() << "[error::exporter] " << error << Logger::endl;
+		}
 
 		/* ctrl cv texture */
 		for (std::shared_ptr<Texture> tex : model->textures_loaded)

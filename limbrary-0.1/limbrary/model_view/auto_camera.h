@@ -29,21 +29,21 @@ namespace lim
 		GLFWwindow *window;
 		Viewport *vp;
 	private:
-		float move_free_spd = 4.2;
-		float move_free_spd_fast = 8.2;
-		float rot_free_spd = 0.09;
+		float move_free_spd = 4.2f;
+		float move_free_spd_fast = 8.2f;
+		float rot_free_spd = 0.09f;
 
-		float move_pivot_spd = -0.003;
-		float rot_pivot_spd = 0.003;
+		float move_pivot_spd = -0.003f;
+		float rot_pivot_spd = 0.003f;
 
-		float rot_pivot_scroll_spd = 0.045;
-		float move_pivot_scroll_spd = -0.09;
+		float rot_pivot_scroll_spd = 0.045f;
+		float move_pivot_scroll_spd = -0.09f;
 
 		float zoom_spd = 1;
 		float zoom_dist_spd = 1;
 
-		double cur_x_off = 0;
-		double cur_y_off = 0;
+		double prev_mouse_x = 0;
+		double prev_mouse_y = 0;
 		AutoCamera(const AutoCamera&)=delete;
 		AutoCamera& operator=(const AutoCamera&) = delete;
 	public:

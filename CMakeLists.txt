@@ -6,6 +6,7 @@
 # cmake --build build --config Debug
 #
 # 실행경로는 main 폴더, assets폴더를 사용했다면 실행파일을 배포할때 assets 폴더도 같이 배포해야한다.
+# assimp, glfw 의 BUILD_SHARED_LIBS 옵션을 삭제하고 현재 스코프의 BUILD_SHARED_LIBS를 참조하게 한다.
 #
 # Note:
 # * target_link_libraries로 연결한 cmake 라이브러리(.lib나 .a를 생략해도 됨)는 target_include_directories 로 헤더 경로를 입력 안해줘도 자동으로 된다.
@@ -34,33 +35,35 @@ project(
 )
 set(CMAKE_VERBOSE_MAKEFILE true)
 if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+    #add_compile_options(/wd4819) # 코드페이지 949 경고
     add_compile_options(/utf-8)
 endif()
 
 
 ### glfw ###
-set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
-set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "")
-set(GLFW_BUILD_TESTS OFF CACHE BOOL "")
-set(GLFW_BUILD_DOCS OFF CACHE BOOL "")
-set(GLFW_INSTALL OFF CACHE BOOL "")
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
 add_subdirectory(vendor/glfw)
 target_compile_definitions(glfw INTERFACE GLFW_INCLUDE_NONE) # Todo?: glad include 순서 무시하기위함
 
 ### assimp ###
-set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
-set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "")
-set(ASSIMP_INSTALL OFF CACHE BOOL "")
-set(ASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT OFF CACHE BOOL "")
-set(ASSIMP_BUILD_OBJ_IMPORTER ON CACHE BOOL "")
-set(ASSIMP_BUILD_GLTF_IMPORTER ON CACHE BOOL "")
-#set(ASSIMP_BUILD_FBX_IMPORTER ON CACHE BOOL "")
-#set(ASSIMP_BUILD_BLEND_IMPORTER ON CACHE BOOL "")
-set(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT OFF CACHE BOOL "")
-set(ASSIMP_BUILD_OBJ_EXPORTER ON CACHE BOOL "")
-#set(ASSIMP_BUILD_FBX_EXPORTER ON CACHE BOOL "")
-#set(ASSIMP_BUILD_GLTF_EXPORTER ON CACHE BOOL "")
+set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(ASSIMP_INSTALL OFF CACHE BOOL "" FORCE)
+option(ASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT OFF)
+    set(ASSIMP_BUILD_OBJ_IMPORTER ON CACHE BOOL "" FORCE)
+    set(ASSIMP_BUILD_GLTF_IMPORTER ON CACHE BOOL "" FORCE)
+    set(ASSIMP_BUILD_FBX_IMPORTER ON CACHE BOOL "" FORCE)
+    set(ASSIMP_BUILD_BLEND_IMPORTER ON CACHE BOOL "" FORCE)
+option(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT OFF)
+    set(ASSIMP_BUILD_OBJ_EXPORTER ON CACHE BOOL "" FORCE)
+    set(ASSIMP_BUILD_FBX_EXPORTER ON CACHE BOOL "" FORCE)
+    set(ASSIMP_BUILD_GLTF_EXPORTER ON CACHE BOOL "" FORCE)
 add_subdirectory(vendor/assimp)
+option(BUILD_SHARED_LIBS OFF)
 
 ### glad ### C
 # opengl function pointers (replaced by glad)
@@ -154,9 +157,12 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     )
     target_compile_options(${lib_name} 
         PRIVATE
-            #/W3
-            /wd4100
-            #/wd4819 
+            /W4
+            /wd4100 # 참조되지않은 매개변수
+            /wd4244 # double to float
+            /wd4267 # size_t to uint
+            /wd4018 # < : signed, unsinged
+            /wd4702 # program.cpp 접근할수없는 코드
             #/WX
     )
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -197,7 +203,6 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     target_compile_options(${lib_name} 
         PRIVATE
             /W4
-            #/wd4819 
             #/WX
     )
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -213,7 +218,6 @@ target_compile_definitions(${exe_name}
         WINDOW_WIDTH=600
         WINDOW_HEIGHT=400
 )
-
 
 ### 결과 파일 생성 위치 지정 ###
 set_target_properties(limbrary ${dep_libs} ${exe_name} glfw PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/$<CONFIG>/library) # static, dll load lib
@@ -240,11 +244,11 @@ set_target_properties(others PROPERTIES FOLDER "vendor")
 if(CMAKE_GENERATOR MATCHES "Visual Studio*")
     set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${exe_name})
     # From: https://stackoverflow.com/questions/41864259/how-to-set-working-directory-for-visual-studio-2017-rc-cmake-project
-    set_target_properties(${exe_name} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${workding_dir}") # not working
+    set_target_properties(${exe_name} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${working_dir}")
 endif()
 if(CMAKE_GENERATOR MATCHES "Xcode")
     set_target_properties(${exe_name} PROPERTIES 
                     XCODE_GENERATE_SCHEME TRUE
-                    XCODE_SCHEME_WORKING_DIRECTORY "${workding_dir}")
+                    XCODE_SCHEME_WORKING_DIRECTORY "${working_dir}")
     # 시작 schema 설정 못찾음
 endif()

@@ -5,9 +5,11 @@
 //  Product->schema->edit-schema->run->option->custom-working-dir
 //
 
-#include "imtests/app_template.h"
-#include <limbrary/imgui_modules.h>
+#include <imgui.h>
+#include <limbrary/imgui_module.h>
 #include <limbrary/app_pref.h>
+#include <imtests/app_template.h>
+#include <imtests/app_icp.h>
 // #include "imnpr/app_hatching.h"
 //#include "imtests/app_gen_mesh.h"
 // #include "imhdr/app_hdr.h"
@@ -18,7 +20,6 @@
 // #include "imanims/app_kinematics.h"
 // #include "imanims/app_nano.h"
 // #include "imtests/app_font.h"
-// #include "imtests/app_icp.h"
 
 lim::AppBase *app;
 
@@ -34,12 +35,12 @@ void drawAppSellector();
 // rid unused variables warnings
 int main(int, char **)
 {
-	lim::imgui_modules::draw_appselector = drawAppSellector;
+	lim::ImguiModule::draw_appselector = drawAppSellector;
 
 	// first order is shown first
     //pushAppData<lim::AppGenMesh>();
 	pushAppData<lim::AppTemplate>();
-	// pushAppData<lim::AppICP>();
+	pushAppData<lim::AppICP>();
 	// pushAppData<lim::AppFont>();
 	// pushAppData<lim::AppKinematics>();
 	// pushAppData<lim::AppFluid>();
