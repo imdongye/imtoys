@@ -32,7 +32,7 @@ namespace lim
 	}
 	void AppTemplate::renderImGui()
 	{
-		// ImGui::DockSpaceOverViewport();
+		ImGui::DockSpaceOverViewport();
 
 		ImGui::ShowDemoWindow();
 

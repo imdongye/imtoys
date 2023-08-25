@@ -187,7 +187,7 @@ namespace lim
 
         camera = new AutoCamera(window, viewport, 0, glm::vec3{0,1,5}, glm::vec3{0,1,0});
 
-        model = loadModelFromFile("common/archive/meshes/woody.obj", true);
+        model = loadModelFromFile("assets/models/objs/woody.obj", true);
 
 
         dest = makeTransformedMesh(*model->meshes[0], model->model_mat);
@@ -234,12 +234,12 @@ namespace lim
         viewport->framebuffer->unbind();
 
         // clear backbuffer
-        glEnable(GL_DEPTH_TEST);
+		glEnable(GL_DEPTH_TEST);
 
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glViewport(0, 0, fb_width, fb_height);
-        glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glViewport(0, 0, fb_width, fb_height);
+		glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
     void AppICP::renderImGui()
     {

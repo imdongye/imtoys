@@ -57,6 +57,7 @@ namespace lim
 		/* window setting */
 		// glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 		// glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+
 		int nrMonitors;
 		GLFWmonitor** monitors = glfwGetMonitors(&nrMonitors);
 		const GLFWvidmode* vidMode = glfwGetVideoMode(monitors[0]);
@@ -108,8 +109,6 @@ namespace lim
 			lastTime = currentTime;
 
 			update();
-			for( auto& [_, cb] : w_data.update_hooks ) 
-				cb(delta_time);
 
 			ImguiModule::beginImGui();
 
@@ -117,9 +116,11 @@ namespace lim
 
 			ImguiModule::draw_appselector();
 
-			ImguiModule::endImGui((float)win_width, (float)win_height);
+			ImguiModule::endImGui((float)fb_width, (float)fb_height);
 
 			glfwPollEvents();
+			for( auto& [_, cb] : w_data.update_hooks ) 
+				cb(delta_time);
 			glfwSwapBuffers(window);
 		}
 	}
