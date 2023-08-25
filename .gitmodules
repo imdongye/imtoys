@@ -4,6 +4,3 @@
 [submodule "vendor/assimp"]
 	path = vendor/assimp
 	url = https://github.com/imdongye/assimp
-[submodule "main/assets/assimp-mdb"]
-	path = main/assets/assimp-mdb
-	url = https://github.com/assimp/assimp-mdb.git
