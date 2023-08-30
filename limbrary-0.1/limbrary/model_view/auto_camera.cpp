@@ -98,6 +98,10 @@ namespace lim
 	void AutoCamera::cursorPosCallback(double xpos, double ypos)
 	{
 		if( vp && !vp->dragging )return;
+		if( !vp && !glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)
+				&& !glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) )
+				return;
+
 
 		float xoff = xpos - prev_mouse_x;
 		float yoff = prev_mouse_y - ypos;

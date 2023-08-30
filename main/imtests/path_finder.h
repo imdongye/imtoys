@@ -6,36 +6,17 @@
 //
 //
 
-#ifndef PATH_FINDER_H
-#define PATH_FINDER_H
+#ifndef __path_finder_h_
+#define __path_finder_h_
 
 #include <queue>
+#include <glm/glm.hpp>
 
 namespace lim
 {
 	class PathFinder
 	{
 	public:
-		struct Pos
-		{
-			int x, y;
-			void operator = (const Pos& p)
-			{
-				x=p.x; y=p.y;
-			}
-			bool operator == (const Pos& p) const
-			{
-				return (x==p.x)&&(y==p.y);
-			}
-			bool operator !=  (const Pos& p) const
-			{
-				return (x!=p.x)||(y!=p.y);
-			}
-			Pos operator + (const Pos& p) const
-			{
-				return {x+p.x, y+p.y};
-			}
-		};
 		enum NodeState
 		{
 			NS_ROAD, NS_OPEN, NS_CLOSE, NS_WALL, NS_START, NS_END, NS_PATH
@@ -43,7 +24,7 @@ namespace lim
 		// (4+4)+8(x64)+4+4+4+(4padding) = 32byte
 		struct Node
 		{
-			Pos pos;
+			glm::ivec2 pos;
 			Node *prev;
 			int gCost, hCost;
 			NodeState state;
@@ -77,14 +58,14 @@ namespace lim
 		int width, height;
 		std::vector<std::vector<Node>> map; // 1000*1000*1 = 1Mb
 		Node __wall, __space;
-		Pos start_pos, end_pos; // (goal)
-		Pos dir[4] ={
+		glm::ivec2 start_pos, end_pos; // (goal)
+		glm::ivec2 dir[4] ={
 				{1,0}, //우
 				{0,1}, //하
 				{-1,0},//좌
 				{0,-1},//상
 		};
-		std::vector<Pos> path;
+		std::vector<glm::ivec2> path;
 	public:
 		PathFinder(int _width, int _height)
 		{
@@ -135,7 +116,7 @@ namespace lim
 		{
 			if( x<0||y<0||x>=width||y>=height ) return false;
 
-			Pos oldStartPos, oldEndPos;
+			glm::ivec2 oldStartPos, oldEndPos;
 			NodeState prevNs = map[y][x].state;
 
 			if( prevNs==NS_START ) {
@@ -169,7 +150,7 @@ namespace lim
 		}
 	private:		
 		// admissible heuristic fuction으로 실제 거리보다 같거나 짧은거리를 사용한다.
-		int manhattan(Pos& a, Pos& b)
+		int manhattan(glm::ivec2& a, glm::ivec2& b)
 		{
 			int xDist = glm::abs(a.x-b.x);
 			int yDist = glm::abs(a.y-b.y);
@@ -201,7 +182,7 @@ namespace lim
 				int gCost = cur->gCost+1;
 
 				for( int i=0; i<4; i++ ) {
-					Pos newPos = cur->pos + dir[i];
+					glm::ivec2 newPos = cur->pos + dir[i];
 					if( newPos.x<0||newPos.y<0||newPos.x>=width||newPos.y>=height )
 						continue;
 

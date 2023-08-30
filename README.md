@@ -1,4 +1,4 @@
-## limbrary
+## Limbrary
 
 'lim'brary is Extendable framework for model and texture viewer with imgui
 
@@ -13,6 +13,11 @@ and there are several toys that use limbrary
 -   real time hatching tester
 
 -   astar visualizer
+
+## Note
+
+application 클래스를 상속해서 프로그램을 작성하는 이유는 여러 프로그램을 하나의 프로젝트에서 실행할때
+class의 생성자 소멸자에 의한 직관적인 lifecycle과 전역변수를 줄여 Data영역을 적게 사용하고, 멤버변수의 메모리 할당과 삭제를 통해 heap공간에서 메모리 누수를 관리 하기 위함.
 
 ## Build / Install Instructions
 
@@ -38,6 +43,10 @@ Product -> Scheme -> Edit Scheme -> Use custom working directory
 프로젝트 속성 -> 디버깅 -> 작업 디렉터리
 # VSCode
 cmake와 c/c++ 확장설치 -> 왼쪽 실행및 디버그탭 -> 구성 선택 -> f5
+<settings.json>
+"cmake.debugConfig": {
+    "cwd": "${workspaceFolder}/main"
+},
 ```
 
 ## Dependency

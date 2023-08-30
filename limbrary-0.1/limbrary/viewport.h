@@ -39,6 +39,7 @@ namespace lim
 		GLuint id;
 		std::string name;
 		Framebuffer* framebuffer;
+		// dragging with left or middle button
 		bool hovered, focused, dragging;
 		GLuint width, height;
         float aspect;

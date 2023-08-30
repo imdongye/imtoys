@@ -40,3 +40,6 @@ glsl 변수이름 camelCase
 #define NANOVG_GL3_IMPLEMENTATION
 #include <nanovg_gl.h>
 ```
+
+## etc
+나중에 cpp와 헤더를 다른 폴더로 분리할 수 있기 때문에 limbrary source에서 #include <>로 절대경로만 참조할것.

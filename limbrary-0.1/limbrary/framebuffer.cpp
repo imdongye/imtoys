@@ -5,7 +5,7 @@
 namespace lim
 {
 
-	Framebuffer::Framebuffer(): clear_color({0.2f, 0.3f, 0.3f, 1.0f})
+	Framebuffer::Framebuffer(): clear_color({0.05f, 0.09f, 0.11f, 1.0f})
 	{
 		// todo
 		fbo = color_tex = 0;

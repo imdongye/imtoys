@@ -47,7 +47,7 @@ namespace lim
 		void bind(GLuint pid, GLuint activeSlot, const std::string_view shaderUniformName) const;
 	};
 
-	static bool loadImageToTex(std::string_view path, TexBase& tex);
+	bool loadImageToTex(std::string_view path, TexBase& tex);
 
 	// for model
 	class Texture: public TexBase

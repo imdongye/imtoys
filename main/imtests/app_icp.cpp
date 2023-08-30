@@ -1,4 +1,4 @@
-#include <imtests/app_icp.h>
+#include "app_icp.h"
 #include <stb_image.h>
 #include <limbrary/model_view/model_loader.h>
 #include <glm/gtx/transform.hpp>
@@ -34,7 +34,6 @@ namespace
 
         return rst;
     }
-
 
     struct Neighbor
     {
@@ -169,8 +168,6 @@ namespace
 
         return neigh;
     }
-
-
 }
 
 namespace lim
@@ -182,10 +179,7 @@ namespace lim
         prog = new Program("icp", APP_DIR);
         prog->attatch("mvp.vs").attatch("blue.fs").link();
 
-        viewport = new Viewport(new MsFramebuffer());
-        viewport->framebuffer->clear_color = {0.1f, 0.1f, 0.1f, 1.0f};
-
-        camera = new AutoCamera(window, viewport, 0, glm::vec3{0,1,5}, glm::vec3{0,1,0});
+        camera = new AutoCamera(window, nullptr, 0, glm::vec3{0,1,5}, glm::vec3{0,1,0});
 
         model = loadModelFromFile("assets/models/objs/woody.obj", true);
 
@@ -211,12 +205,16 @@ namespace lim
     {
         delete camera;
         delete prog;
-        delete viewport;
         delete model;
     }
     void AppICP::update()
     {
-        viewport->framebuffer->bind();
+		glEnable(GL_DEPTH_TEST);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glViewport(0, 0, fb_width, fb_height);
+		glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         GLuint pid = prog->use();
 
@@ -227,26 +225,12 @@ namespace lim
         setUniform(pid, "modelMat", glm::mat4(1));
         dest->draw(pid);
 
-        setUniform(pid, "modelMat", icpMat);
+        setUniform(pid, "modelMat", icp_mat);
         src->draw(pid);
         //model->meshes[0]->draw(pid);
-            
-        viewport->framebuffer->unbind();
-
-        // clear backbuffer
-		glEnable(GL_DEPTH_TEST);
-
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glViewport(0, 0, fb_width, fb_height);
-		glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
     void AppICP::renderImGui()
     {
-        ImGui::DockSpaceOverViewport();
-
-        viewport->drawImGui();
-
         static bool isoverlay = true;
         ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
         ImGui::Begin("icp tester", &isoverlay, window_flags);
@@ -267,7 +251,7 @@ namespace lim
             Eigen::Matrix4d eMat = icp(srcdata, dstdata);
 
             for( int i=0; i<4; i++ ) for( int j=0; j<4; j++ ) {
-                icpMat[i][j] = eMat(j, i);
+                icp_mat[i][j] = eMat(j, i);
             }
             printf("done\n");
         }

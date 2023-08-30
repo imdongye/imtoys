@@ -3,10 +3,8 @@
 in vec3 wPos;
 in vec3 wNor;
 in vec2 mUv;
-
 layout(location=0) out vec4 FragColor;
 
-uniform float time = 0.f;
 uniform vec2 uvScale = vec2(1.f);
 uniform sampler2D uvgridTex;
 
@@ -26,9 +24,9 @@ void main() {
 	vec3 outColor = vec3(0);
 
 	// for debuging
-	outColor = vec3(lambertian);
+	//outColor = vec3(lambertian);
 	//outColor = texture(uvgridTex, scaledUv).rgb;
-	//outColor = texture(uvgridTex, scaledUv).rgb+vec3(lambertian);
+	outColor = texture(uvgridTex, scaledUv).rgb+vec3(lambertian*0.3);
 	//outColor = vec3(max(0, dot(FaceN, L)));
 	//outColor = vec3(mUv, 1.0);
 	//outColor = vec3(1);

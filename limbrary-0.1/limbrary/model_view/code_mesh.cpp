@@ -11,7 +11,7 @@
 // 	3. 최소 최대 slice 예외처리
 //
 
-#include <limbrary/model_view/mesh_generator.h>
+#include <limbrary/model_view/code_mesh.h>
 #include <limbrary/texture.h>
 #include <limbrary/utils.h>
 #include <vector>

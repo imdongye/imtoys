@@ -9,7 +9,6 @@
 #include <limbrary/application.h>
 #include <limbrary/model_view/auto_camera.h>
 #include <limbrary/program.h>
-#include <limbrary/viewport.h>
 #include <limbrary/model_view/model.h>
 
 namespace lim
@@ -23,10 +22,9 @@ namespace lim
 	private:
 		AutoCamera* camera;
 		Program* prog;
-		Viewport* viewport;
 		Model* model;
 		Mesh *src, *dest;
-		glm::mat4 icpMat = glm::mat4(1);
+		glm::mat4 icp_mat = glm::mat4(1);
 	public:
 		AppICP();
 		~AppICP();

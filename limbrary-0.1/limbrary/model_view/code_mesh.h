@@ -9,8 +9,8 @@
 //	1. bumpmap normalmap확인
 //	2. https://modoocode.com/129
 
-#ifndef __mesh_generator_h_
-#define __mesh_generator_h_
+#ifndef __code_mesh_
+#define __code_mesh_
 
 #include "mesh.h"
 
