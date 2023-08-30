@@ -159,13 +159,13 @@ typedef struct FONSttFontImpl FONSttFontImpl;
 
 #else
 
-#define STB_TRUETYPE_IMPLEMENTATION
+// #define STB_TRUETYPE_IMPLEMENTATION
 
 static void* fons__tmpalloc(size_t size, void* up);
 static void fons__tmpfree(void* ptr, void* up);
 #define STBTT_malloc(x,u)    fons__tmpalloc(x,u)
 #define STBTT_free(x,u)      fons__tmpfree(x,u)
-#include "../others/stb/stb_truetype.h"
+#include "../stb/stb_truetype.h"
 
 struct FONSttFontImpl {
 	stbtt_fontinfo font;

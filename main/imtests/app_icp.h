@@ -1,11 +1,6 @@
 //
-//  framework template
+//  icp test app
 //	2022-11-14 / im dong ye
-//
-//	TODO list:
-//	1. define var
-//	2. class name
-//  3. dir, name, disc
 //
 
 #ifndef __app_icp_h_
@@ -22,9 +17,9 @@ namespace lim
 	class AppICP: public AppBase
 	{
 	public:
-		inline static constexpr const char *const APP_NAME = "icp test app";
-		inline static constexpr const char *const APP_DIR  = "imtests/";
-		inline static constexpr const char *const APP_DISC = "icp is iterative closest point";
+		inline static constexpr CStr APP_NAME = "icp test app";
+		inline static constexpr CStr APP_DIR  = "imtests";
+		inline static constexpr CStr APP_DISC = "icp is iterative closest point";
 	private:
 		AutoCamera* camera;
 		Program* prog;

@@ -41,7 +41,7 @@ namespace lim
 		Program(const Program&) = delete;
 		Program& operator=(const Program&) = delete;
 	public:
-		Program(const char* name = "unnamed", const char* homeDir="assets/");
+		Program(const char* name = "unnamed", const char* homeDir="assets");
 		~Program();
 	public:
 		// chaining //

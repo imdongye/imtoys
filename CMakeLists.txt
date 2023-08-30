@@ -89,6 +89,15 @@ add_library(${lib_name} STATIC ${headers} ${sources})
 source_group(TREE "${lib_dir}" FILES ${headers} ${sources})
 target_include_directories(${lib_name} PUBLIC ${lib_dir})
 
+### stb ### C
+set(lib_name "stb")
+set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/stb")
+file(GLOB_RECURSE headers "${lib_dir}/*.h")
+file(GLOB_RECURSE sources "${lib_dir}/*.c")
+add_library(${lib_name} STATIC ${headers} ${sources})
+source_group(TREE "${lib_dir}" FILES ${headers} ${sources})
+target_include_directories(${lib_name} PUBLIC ${lib_dir})
+
 ### imgui ###
 set(lib_name "imgui")
 set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/imgui-docking-1.89.4")
@@ -100,8 +109,15 @@ list(REMOVE_ITEM headers "${lib_dir}/misc/freetype/imgui_freetype.h")
 add_library(${lib_name} STATIC ${headers} ${sources})
 source_group(TREE "${lib_dir}" FILES ${headers} ${sources})
 target_include_directories(${lib_name} PUBLIC "${lib_dir}")
-target_link_libraries(${lib_name} PUBLIC glfw)
-add_dependencies(${lib_name} glfw)
+target_link_libraries(${lib_name} PUBLIC glfw stb)
+target_compile_definitions(${lib_name}
+    PRIVATE
+        IMGUI_DISABLE_STB_TRUETYPE_IMPLEMENTATION
+        IMGUI_STB_TRUETYPE_FILENAME="../stb/stb_truetype.h"
+        IMGUI_DISABLE_STB_RECT_PACK_IMPLEMENTATION
+        IMGUI_STB_RECT_PACK_FILENAME="../stb/stb_rect_pack.h"
+)
+add_dependencies(${lib_name} glfw stb)
 
 ### glm (header only) ###
 set(lib_name "glm")
@@ -124,7 +140,6 @@ target_include_directories(${lib_name} INTERFACE  ${lib_dir})
 set(lib_name "others")
 set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/others")
 file(GLOB_RECURSE lib_files CONFIGURE_DEPENDS "${lib_dir}/*.*")
-list(FILTER lib_files EXCLUDE REGEX "${lib_dir}/nanovg/*")
 add_library(${lib_name} INTERFACE ${lib_files})
 source_group(TREE ${lib_dir} FILES ${lib_files})
 target_include_directories(${lib_name} INTERFACE  ${lib_dir})

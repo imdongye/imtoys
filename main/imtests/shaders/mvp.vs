@@ -12,13 +12,9 @@ uniform mat4 modelMat;
 uniform mat4 viewMat;
 uniform mat4 projMat;
 
-uniform float time = 0.f;
-
 void main()
 {
-	vec3 pos = mix(aPos, vec3(2*aUv-vec2(1),0), time);
-
-	wPos = vec3(modelMat*vec4(pos, 1.f));
+	wPos = vec3(modelMat*vec4(aPos, 1.f));
 	wNor = mat3(modelMat)*aNor;
 	mUv = aUv;
 

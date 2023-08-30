@@ -1,14 +1,5 @@
-//
-//  framework template
-//	2022-11-14 / im dong ye
-//
-//	TODO list:
-//	1. define var
-//	2. class name
-//  3. dir, name, disc
-//
 #include <imtests/app_template.h>
-#include <stb/stb_image.h>
+#include <stb_image.h>
 #include <glad/glad.h>
 #include <iostream>
 #include <imgui.h>

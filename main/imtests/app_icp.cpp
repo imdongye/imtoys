@@ -1,5 +1,5 @@
 #include <imtests/app_icp.h>
-#include <stb/stb_image.h>
+#include <stb_image.h>
 #include <limbrary/model_view/model_loader.h>
 #include <glm/gtx/transform.hpp>
 #include <imgui.h>
@@ -179,8 +179,8 @@ namespace lim
     {
         stbi_set_flip_vertically_on_load(true);
 
-        prog = new Program("pbr", APP_DIR);
-        prog->attatch("debug.vs").attatch("debug.fs").link();
+        prog = new Program("icp", APP_DIR);
+        prog->attatch("mvp.vs").attatch("blue.fs").link();
 
         viewport = new Viewport(new MsFramebuffer());
         viewport->framebuffer->clear_color = {0.1f, 0.1f, 0.1f, 1.0f};

@@ -76,8 +76,6 @@ namespace lim
 			// update pivot view mat??
 		}
 	}
-
-
 	void AutoCamera::keyCallback(int key, int scancode, int action, int mods)
 	{
 		if( key == GLFW_KEY_TAB && action == GLFW_PRESS ) {
@@ -87,6 +85,7 @@ namespace lim
 	void AutoCamera::viewportSizeCallback(int w, int h)
 	{
 		aspect = w/(float)h;
+		updateProjMat();
 	}
 	void AutoCamera::mouseBtnCallback(int button, int action, int mods)
 	{

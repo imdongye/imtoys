@@ -12,7 +12,7 @@
 #include <limbrary/program.h>
 #include <limbrary/logger.h>
 #include <limbrary/asset_lib.h>
-#include <stb/stb_image.h>
+#include <stb_image.h>
 
 namespace lim
 {
