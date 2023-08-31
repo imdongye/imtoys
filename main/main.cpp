@@ -13,20 +13,20 @@
 #include "imtests/app_gen_mesh.h"
 #include "imtests/app_font.h"
 #include "imtests/app_astar.h"
-// #include "imnpr/app_hatching.h"
-// #include "imhdr/app_hdr.h"
-// #include "imsimplification/app_simplification.h"
-// #include "impbr/app_pbr.h"
-// #include "imanims/app_fluid.h"
-// #include "imanims/app_kinematics.h"
-// #include "imanims/app_nano.h"
+#include "imsimplification/app_simplification.h"
+#include "impbr/app_pbr.h"
+#include "imnpr/app_hatching.h"
+#include "imhdr/app_hdr.h"
+#include "imanims/app_nano.h"
+#include "imanims/app_kinematics.h"
+#include "imanims/app_fluid.h"
 
 lim::AppBase *app;
 
 bool appSelected = true;
-std::vector<std::function<lim::AppBase *()>> appConstructors;
-std::vector<const char *> appNames;
-std::vector<const char *> appDicripts;
+std::vector<std::function<lim::AppBase*()>> appConstructors;
+std::vector<const char*> appNames;
+std::vector<const char*> appDicripts;
 
 template <class App>
 void pushAppData();
@@ -38,19 +38,18 @@ int main(int, char **)
 	lim::ImguiModule::draw_appselector = drawAppSellector;
 
 	// first order is shown first
-    //pushAppData<lim::AppGenMesh>();
 	pushAppData<lim::AppTemplate>();
 	pushAppData<lim::AppICP>();
 	pushAppData<lim::AppGenMesh>();
 	pushAppData<lim::AppFont>();
 	pushAppData<lim::AppAstar>();
-	// pushAppData<lim::AppKinematics>();
-	// pushAppData<lim::AppFluid>();
-	// pushAppData<lim::AppPbr>();
-	// pushAppData<lim::AppSimplification>();
-	// pushAppData<lim::AppHdr>();
-	// pushAppData<lim::AppHatching>();
-	// pushAppData<lim::AppNano>();
+	pushAppData<lim::AppSimplification>();
+	pushAppData<lim::AppPbr>();
+	pushAppData<lim::AppHatching>();
+	pushAppData<lim::AppHdr>();
+	pushAppData<lim::AppNano>();
+	pushAppData<lim::AppKinematics>();
+	pushAppData<lim::AppFluid>();
 
 	lim::AppPref::get().selectedAppIdx = 0;
 	lim::AppPref::get().selectedAppName = appNames[0];

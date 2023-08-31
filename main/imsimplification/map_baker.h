@@ -13,8 +13,11 @@
 //	assimp scene의 texture을 조작해서 연결한뒤 export해야함.
 
 
-#ifndef MAP_BAKER_H
-#define MAP_BAKER_H
+#ifndef __map_backer_h_
+#define __map_backer_h_
+
+#include <filesystem>
+#include <stb_image_write.h>
 
 namespace lim
 {

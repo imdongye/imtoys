@@ -6,10 +6,12 @@
 //
 //
 
-#ifndef SIMPLIFY_H
-#define SIMPLIFY_H
+#ifndef __simplify_h_
+#define __simplify_h_
 
 #include "fqms.h"
+#include <limbrary/model_view/model.h>
+#include <limbrary/logger.h>
 
 namespace fqms
 {

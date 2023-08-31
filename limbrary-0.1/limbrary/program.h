@@ -27,7 +27,7 @@ namespace lim
 	class Program
 	{
 	public:
-		std::string _name="unnamed";
+		std::string name;
 		std::string home_dir;
 		GLuint pid=0;
 	private:
@@ -41,7 +41,7 @@ namespace lim
 		Program(const Program&) = delete;
 		Program& operator=(const Program&) = delete;
 	public:
-		Program(const char* name = "unnamed", const char* homeDir="assets");
+		Program(const char* _name = "unnamed", const char* homeDir="assets");
 		~Program();
 	public:
 		// chaining //
@@ -53,10 +53,10 @@ namespace lim
 		GLuint use() const;
 		// todo: bind
 		template<typename T> 
-		Program& bind(std::string const& name, T&& value)
+		Program& bind(std::string const& vname, T&& value)
 		{
-			int location = glGetUniformLocation(pid, name.c_str());
-			if( location == -1 ) Logger::get().log("missing uniform: %s\n", name.c_str());
+			int location = glGetUniformLocation(pid, vname.c_str());
+			if( location == -1 ) Logger::get().log("missing uniform: %s\n", vname.c_str());
 			else bind(location, std::forward<T>(value));
 			return *this;
 		}
@@ -66,88 +66,88 @@ namespace lim
 		// string_view는 char* char[]을 받아도 string으로 임시객체를 만들지 않고 포인터를 사용함
 		std::tuple<int, const char*> createShaderAuto(const std::string_view filename);
 		// From: https://www.youtube.com/watch?v=nBB0LGSIm5Q
-		GLint getUniformLocation(const std::string_view name) const;
+		GLint getUniformLocation(const std::string_view vname) const;
 	public:
-		inline void setUniform(const std::string_view name, const int v) const
+		inline void setUniform(const std::string_view vname, const int v) const
 		{
-			glUniform1i(getUniformLocation(name), v);
+			glUniform1i(getUniformLocation(vname), v);
 		}
-		inline void setUniform(const std::string_view name, const int v[], int n) const
+		inline void setUniform(const std::string_view vname, const int v[], int n) const
 		{
-			glUniform1iv(getUniformLocation(name), n, (GLint*)v);
+			glUniform1iv(getUniformLocation(vname), n, (GLint*)v);
 		}
-		inline void setUniform(const std::string_view name, const glm::ivec2& v) const
+		inline void setUniform(const std::string_view vname, const glm::ivec2& v) const
 		{
-			glUniform2iv(getUniformLocation(name), 1, glm::value_ptr(v));
+			glUniform2iv(getUniformLocation(vname), 1, glm::value_ptr(v));
 		}
-		inline void setUniform(const std::string_view name, const glm::ivec3& v) const
+		inline void setUniform(const std::string_view vname, const glm::ivec3& v) const
 		{
-			glUniform3iv(getUniformLocation(name), 1, glm::value_ptr(v));
+			glUniform3iv(getUniformLocation(vname), 1, glm::value_ptr(v));
 		}
-		inline void setUniform(const std::string_view name, const float v) const
+		inline void setUniform(const std::string_view vname, const float v) const
 		{
-			glUniform1f(getUniformLocation(name), v);
+			glUniform1f(getUniformLocation(vname), v);
 		}
-		inline void setUniform(const std::string_view name, const glm::vec2& v) const
+		inline void setUniform(const std::string_view vname, const glm::vec2& v) const
 		{
-			glUniform2fv(getUniformLocation(name), 1, glm::value_ptr(v));
+			glUniform2fv(getUniformLocation(vname), 1, glm::value_ptr(v));
 		}
-		inline void setUniform(const std::string_view name, const glm::vec3& v) const
+		inline void setUniform(const std::string_view vname, const glm::vec3& v) const
 		{
-			glUniform3fv(getUniformLocation(name), 1, glm::value_ptr(v));
+			glUniform3fv(getUniformLocation(vname), 1, glm::value_ptr(v));
 		}
-		inline void setUniform(const std::string_view name, const glm::vec4& v) const
+		inline void setUniform(const std::string_view vname, const glm::vec4& v) const
 		{
-			glUniform4fv(getUniformLocation(name), 1, glm::value_ptr(v));
+			glUniform4fv(getUniformLocation(vname), 1, glm::value_ptr(v));
 		}
-		inline void setUniform(const std::string_view name, const glm::vec3* v, int n) const
+		inline void setUniform(const std::string_view vname, const glm::vec3* v, int n) const
 		{
-			glUniform3fv(getUniformLocation(name), n, (GLfloat*)v);
+			glUniform3fv(getUniformLocation(vname), n, (GLfloat*)v);
 		}
-		inline void setUniform(const std::string_view name, const glm::mat3& v) const
+		inline void setUniform(const std::string_view vname, const glm::mat3& v) const
 		{
-			glUniformMatrix3fv(getUniformLocation(name), 1, 0, glm::value_ptr(v));
+			glUniformMatrix3fv(getUniformLocation(vname), 1, 0, glm::value_ptr(v));
 		}
-		inline void setUniform(const std::string_view name, const glm::mat4& v) const
+		inline void setUniform(const std::string_view vname, const glm::mat4& v) const
 		{
-			glUniformMatrix4fv(getUniformLocation(name), 1, 0, glm::value_ptr(v));
+			glUniformMatrix4fv(getUniformLocation(vname), 1, 0, glm::value_ptr(v));
 		}
 	};
-	static inline void setUniform(GLuint pid, const std::string_view name, const int v)
+	static inline void setUniform(GLuint pid, const std::string_view vname, const int v)
 	{
-		glUniform1i(glGetUniformLocation(pid, name.data()), v);
+		glUniform1i(glGetUniformLocation(pid, vname.data()), v);
 	}
-	static inline void setUniform(GLuint pid, const std::string_view name, const glm::ivec2& v)
+	static inline void setUniform(GLuint pid, const std::string_view vname, const glm::ivec2& v)
 	{
-		glUniform2iv(glGetUniformLocation(pid, name.data()), 1, glm::value_ptr(v));
+		glUniform2iv(glGetUniformLocation(pid, vname.data()), 1, glm::value_ptr(v));
 	}
-	static inline void setUniform(GLuint pid, const std::string_view name, const glm::ivec3& v)
+	static inline void setUniform(GLuint pid, const std::string_view vname, const glm::ivec3& v)
 	{
-		glUniform3iv(glGetUniformLocation(pid, name.data()), 1, glm::value_ptr(v));
+		glUniform3iv(glGetUniformLocation(pid, vname.data()), 1, glm::value_ptr(v));
 	}
-	static inline void setUniform(GLuint pid, const std::string_view name, const glm::vec2& v)
+	static inline void setUniform(GLuint pid, const std::string_view vname, const glm::vec2& v)
 	{
-		glUniform2fv(glGetUniformLocation(pid, name.data()), 1, glm::value_ptr(v));
+		glUniform2fv(glGetUniformLocation(pid, vname.data()), 1, glm::value_ptr(v));
 	}
-	static inline void setUniform(GLuint pid, const std::string_view name, const glm::vec3& v)
+	static inline void setUniform(GLuint pid, const std::string_view vname, const glm::vec3& v)
 	{
-		glUniform3fv(glGetUniformLocation(pid, name.data()), 1, glm::value_ptr(v));
+		glUniform3fv(glGetUniformLocation(pid, vname.data()), 1, glm::value_ptr(v));
 	}
-	static inline void setUniform(GLuint pid, const std::string_view name, const glm::vec4& v)
+	static inline void setUniform(GLuint pid, const std::string_view vname, const glm::vec4& v)
 	{
-		glUniform4fv(glGetUniformLocation(pid, name.data()), 1, glm::value_ptr(v));
+		glUniform4fv(glGetUniformLocation(pid, vname.data()), 1, glm::value_ptr(v));
 	}
-	static inline void setUniform(GLuint pid, const std::string_view name, const glm::vec3* v, int n)
+	static inline void setUniform(GLuint pid, const std::string_view vname, const glm::vec3* v, int n)
 	{
-		glUniform3fv(glGetUniformLocation(pid, name.data()), n, (GLfloat*)v);
+		glUniform3fv(glGetUniformLocation(pid, vname.data()), n, (GLfloat*)v);
 	}
-	static inline void setUniform(GLuint pid, const std::string_view name, const glm::mat3& v)
+	static inline void setUniform(GLuint pid, const std::string_view vname, const glm::mat3& v)
 	{
-		glUniformMatrix3fv(glGetUniformLocation(pid, name.data()), 1, 0, glm::value_ptr(v));
+		glUniformMatrix3fv(glGetUniformLocation(pid, vname.data()), 1, 0, glm::value_ptr(v));
 	}
-	static inline void setUniform(GLuint pid, const std::string_view name, const glm::mat4& v)
+	static inline void setUniform(GLuint pid, const std::string_view vname, const glm::mat4& v)
 	{
-		glUniformMatrix4fv(glGetUniformLocation(pid, name.data()), 1, 0, glm::value_ptr(v));
+		glUniformMatrix4fv(glGetUniformLocation(pid, vname.data()), 1, 0, glm::value_ptr(v));
 	}
 }
 

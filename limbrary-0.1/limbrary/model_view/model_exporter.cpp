@@ -113,7 +113,7 @@ namespace lim
 			return nullptr;
 		return formats[idx];
 	}
-	void exportModel(std::string_view exportDir, Model *model, size_t pIndex)
+	void exportModelToFile(std::string_view exportDir, Model *model, size_t pIndex)
 	{
 		namespace fs = std::filesystem;
 		const aiExportFormatDesc *format = formats[pIndex];

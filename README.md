@@ -4,7 +4,7 @@
 
 and there are several toys that use limbrary
 
--   model simplifier, normal map baker
+-   model simplifier, normal map baker https://wheat-papyrus-835.notion.site/Simplification-d21e692652104cb39ce3befde034fcd2
 
 -   color aware image viewer
 
@@ -16,8 +16,7 @@ and there are several toys that use limbrary
 
 ## Note
 
-application 클래스를 상속해서 프로그램을 작성하는 이유는 여러 프로그램을 하나의 프로젝트에서 실행할때
-class의 생성자 소멸자에 의한 직관적인 lifecycle과 전역변수를 줄여 Data영역을 적게 사용하고, 멤버변수의 메모리 할당과 삭제를 통해 heap공간에서 메모리 누수를 관리 하기 위함.
+The reason why inherit an application class and write a program is because when you run multiple programs on this one project To make explicite life cycle with constructor and deconstructor and use less data area by reducing global variables, and to manage memory leaks in the heap space by allocating and deleting memory of member variables.
 
 ## Build / Install Instructions
 

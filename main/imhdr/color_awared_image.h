@@ -9,10 +9,19 @@
 //
 
 
-#ifndef COLOR_AWARED_IMAGE_H
-#define COLOR_AWARED_IMAGE_H
+#ifndef __color_aware_image_h_
+#define __color_aware_image_h_
 
-//#include <libraw/libraw.h>
+#include <glm/glm.hpp>
+#include <glad/glad.h>
+#include <string>
+#include <vector>
+#include <stdio.h>
+#include <limbrary/texture.h>
+#include <limbrary/framebuffer.h>
+#include <limbrary/program.h>
+#include <limbrary/asset_lib.h>
+
 
 namespace ICC
 {
@@ -372,7 +381,7 @@ namespace ICC
 			{ // get icc size and copy data
 				uint8_t C1=fgetc(file), C2=fgetc(file);
 				iccSize = C1<<8|C2;// little endian
-				printf("iccSize :  %d\n", iccSize);
+				printf("iccSize :  %d\n", (int)iccSize);
 
 				char temp[100];
 				fread(temp, 14, 1, file);
@@ -446,9 +455,12 @@ namespace ICC
 				whtPt = header.illuminantXYZ;
 			}
 			{ // init profile name
-				glm::vec2 xyR = XYZToxyY(r).xy();
-				glm::vec2 xyG = XYZToxyY(g).xy();
-				glm::vec2 xyB = XYZToxyY(b).xy();
+				glm::vec3 rXYZ = XYZToxyY(r);
+				glm::vec3 gXYZ = XYZToxyY(g);
+				glm::vec3 bXYZ = XYZToxyY(b);
+				glm::vec2 xyR = {rXYZ.x, rXYZ.y};
+				glm::vec2 xyG = {gXYZ.x, gXYZ.y};
+				glm::vec2 xyB = {bXYZ.x, bXYZ.y};
 
 				float min;
 				float error = 0;
@@ -588,7 +600,7 @@ namespace lim
 		{
 			if( refCount++==0 ) {
 				colorAwareDisplayProg = new Program("color aware display program");
-				colorAwareDisplayProg->attatch("tex_to_quad.vs").attatch("imhdr/shader/rgb_to_pcs_to_display.fs").link();
+				colorAwareDisplayProg->attatch("tex_to_quad.vs").attatch("imhdr/shaders/rgb_to_pcs_to_display.fs").link();
 			}
 			/* read meta data Exif
 			LibRaw raw;
@@ -654,4 +666,5 @@ namespace lim
 		}
 	};
 }
+
 #endif

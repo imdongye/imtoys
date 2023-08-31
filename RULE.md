@@ -11,11 +11,10 @@
 * 멤버 변수 : snake_case
 * 지역 변수, 파라미터 : camelCase ( _ward )
 
-* 함수의 선언부 매개변수에서 Class이름등으로 어떤객체인지 확실할때는 약어로 쓴다.
-    ex) void init(Player p, int _age)
+* 함수의 선언부 매개변수에서 Class이름등으로 어떤객체인지 확실할때는 약어로 쓴다 ex) void init(Player p, int _age)
+
 * 경로 뒤에 /를 붙이지 않는다.
-* 포인터변수 선언에서 *는 자료형 옆에 붙이고 한줄에서 여러 포인터 변수를 선언할때만 변수 앞에 붙인다.
-    ex) int* a; int  
+* 포인터변수 선언에서 \*는 자료형 옆에 붙이고 한줄에서 여러 포인터 변수를 선언할때만 변수 앞에 붙인다. ex) int\* a; int  \*a1 \*a2;
 
 ### < 표준 위배 이유 >
 https://en.cppreference.com/w/cpp/language/definition

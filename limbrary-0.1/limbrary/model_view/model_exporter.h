@@ -14,6 +14,6 @@ namespace lim
 {
 	int getNrExportFormats();
 	const aiExportFormatDesc *getExportFormatInfo(int idx);
-	void exportModel(std::string_view exportDir, Model *model, size_t pIndex);
+	void exportModelToFile(std::string_view exportDir, Model *model, size_t pIndex);
 }
 #endif

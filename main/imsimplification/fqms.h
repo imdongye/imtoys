@@ -9,8 +9,8 @@
 //	2. boundary도 simplify되는 버그
 //
 
-#ifndef FQMS_H
-#define FQMS_H
+#ifndef __fqms_h_
+#define __fqms_h_
 /////////////////////////////////////////////
 //
 // Mesh Simplification Tutorial
@@ -24,14 +24,14 @@
 //
 // 5/2016: Chris Rorden created minimal version for OSX/Linux/Windows compile
 
-//#include <iostream>
-//#include <stddef.h>
-//#include <functional>
-//#include <sys/stat.h>
-//#include <stdbool.h>
+#include <iostream>
+#include <stddef.h>
+#include <functional>
+#include <sys/stat.h>
+#include <stdbool.h>
 #include <string.h>
-//#include <ctype.h>
-//#include <float.h>
+#include <ctype.h>
+#include <float.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <map>
@@ -39,6 +39,7 @@
 #include <string>
 #include <math.h>
 #include <float.h> //FLT_EPSILON, DBL_EPSILON
+#include <limbrary/logger.h>
 
 #define loopi(start_l, end_l) for (int i = start_l; i < end_l; ++i)
 #define loopi(start_l, end_l) for (int i = start_l; i < end_l; ++i)

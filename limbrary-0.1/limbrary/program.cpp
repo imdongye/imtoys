@@ -5,8 +5,8 @@
 namespace lim
 {
 	
-	Program::Program(const char* name, const char* homeDir)
-	: _name(name), home_dir(homeDir) {}
+	Program::Program(const char* _name, const char* homeDir)
+	: name(_name), home_dir(homeDir) {}
 	Program::~Program() { clear(); }
 	
 	Program& Program::clear()
@@ -56,7 +56,7 @@ namespace lim
 			return *this;
 		}
 		glAttachShader(pid, sid);
-		Logger::get().log("[program %s] attch %s success\n", _name.c_str(), path.c_str());
+		Logger::get().log("[program %s] attch %s success\n", name.c_str(), path.c_str());
 
 		return *this;
 	}
@@ -68,7 +68,7 @@ namespace lim
 			pid = 0;
 			return *this;
 		}
-		Logger::get().log("[program %s] linking success\n\n", _name.c_str());
+		Logger::get().log("[program %s] linking success\n\n", name.c_str());
 		return *this;
 	}
 	GLuint Program::use() const
@@ -135,9 +135,9 @@ namespace lim
 		return std::make_tuple(0, "none");
 	}
 	// From: https://www.youtube.com/watch?v=nBB0LGSIm5Q
-	GLint Program::getUniformLocation(const std::string_view name) const
+	GLint Program::getUniformLocation(const std::string_view _name) const
 	{
-		std::string sname(name);
+		std::string sname(_name);
 		if( uniform_location_cache.find(sname) != uniform_location_cache.end() ) {
 			return uniform_location_cache[sname];
 		}

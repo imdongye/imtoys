@@ -1,12 +1,11 @@
-
 //
 //	2022-03-13 / im dong ye
 //
 //	TODO list:
 //
 
-#ifndef CANVAS_H
-#define CANVAS_H
+#ifndef __canvas_h_
+#define __canvas_h_
 
 #include <limbrary/texture.h>
 

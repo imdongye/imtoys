@@ -85,9 +85,9 @@ namespace lim
 		light.drawShadowMap([&](GLuint shadowProgID) {
 			for( Model* md : models ) {
 				setUniform(shadowProgID, "modelMat", md->model_mat);
-
-				for( Mesh* ms : model->meshes )
+				for( Mesh* ms : model->meshes ) {
 					ms->draw(0); // only draw
+				}
 			}
 		});
 	}

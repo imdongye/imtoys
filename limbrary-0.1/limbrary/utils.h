@@ -6,6 +6,7 @@
 #include <map>
 
 #define COMP_IMVEC2(X, Y) ((X).x==(Y).x)&&((X).y==(Y).y)
+#define INT2VOIDP(i) (void*)(uintptr_t)(i)
 
 namespace lim
 {
