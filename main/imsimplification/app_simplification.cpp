@@ -175,8 +175,8 @@ namespace lim
 						if (ImGui::BeginMenu(("Viewport" + std::to_string(vp->id)).c_str()))
 						{
 							typename std::vector<std::string>::reverse_iterator iter;
-							for (iter = AppPref::get().recentModelPaths.rbegin();
-									iter != AppPref::get().recentModelPaths.rend(); iter++)
+							for (iter = AppPref::get().recent_model_paths.rbegin();
+									iter != AppPref::get().recent_model_paths.rend(); iter++)
 							{
 								if (ImGui::MenuItem((*iter).c_str()))
 								{

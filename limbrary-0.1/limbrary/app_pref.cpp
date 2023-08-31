@@ -21,7 +21,7 @@ namespace lim
 		// dump para is tab size, none is one line
 		//Logger::get()<<"read "<<FILE_PATH<<Logger::endl<< ijson.dump(2) <<Logger::endl;
 
-		recentModelPaths = ijson["recentModelPaths"];
+		recent_model_paths = ijson["recentModelPaths"];
 	}
 
 	AppPref& AppPref::get()
@@ -31,19 +31,19 @@ namespace lim
 	}
 	void AppPref::clearData()
 	{
-		recentModelPaths.clear();
+		recent_model_paths.clear();
 	}
 	void AppPref::save()
 	{
 		Json ojson;
 		//*********************
 
-		if( recentModelPaths.size() > MAX_RECENT_MP_SIZE ) {
-			auto end = recentModelPaths.end();
+		if( recent_model_paths.size() > MAX_RECENT_MP_SIZE ) {
+			auto end = recent_model_paths.end();
 			auto begin = end-MAX_RECENT_MP_SIZE;
-			recentModelPaths = std::vector<std::string>(begin, end);
+			recent_model_paths = std::vector<std::string>(begin, end);
 		}
-		ojson["recentModelPaths"] = recentModelPaths;
+		ojson["recentModelPaths"] = recent_model_paths;
 
 		//*********************
 		std::ofstream ofile;
@@ -67,10 +67,10 @@ namespace lim
 
 		Logger::get()<<rp<<Logger::endll;
 		//같은거 있으면 지우기
-		auto samePathPos = std::find(recentModelPaths.begin(), recentModelPaths.end(), rp);
-		if( samePathPos!=recentModelPaths.end() )
-			recentModelPaths.erase(samePathPos);
+		auto samePathPos = std::find(recent_model_paths.begin(), recent_model_paths.end(), rp);
+		if( samePathPos!=recent_model_paths.end() )
+			recent_model_paths.erase(samePathPos);
 		if( rp.size()<1 ) return;
-		recentModelPaths.emplace_back(rp);
+		recent_model_paths.emplace_back(rp);
 	}
 }

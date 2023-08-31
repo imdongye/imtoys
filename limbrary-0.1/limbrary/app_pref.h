@@ -20,6 +20,7 @@
 
 namespace lim
 {
+	// singleton
 	class AppPref
 	{
 	private:
@@ -27,10 +28,10 @@ namespace lim
 	public:
 		//****** property ******//
 		const int MAX_RECENT_MP_SIZE = 10;
-		std::vector<std::string> recentModelPaths;
+		std::vector<std::string> recent_model_paths;
 		//todo: store last excute app idx
-		int selectedAppIdx = 0;
-		std::string selectedAppName = "none";
+		int selected_app_idx = 0;
+		std::string selected_app_name = "none";
 	private:
 		AppPref();
 		/* detete copy & copy asignment singleton obj */

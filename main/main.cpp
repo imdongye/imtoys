@@ -21,23 +21,54 @@
 #include "imanims/app_kinematics.h"
 #include "imanims/app_fluid.h"
 
-lim::AppBase *app;
+using namespace std;
 
-bool appSelected = true;
-std::vector<std::function<lim::AppBase*()>> appConstructors;
-std::vector<const char*> appNames;
-std::vector<const char*> appDicripts;
+
+static lim::AppBase *app;
+static bool appSelected = true;
+static char appSelectorName[64];
+static vector<function<lim::AppBase*()>> appConstructors;
+static vector<const char*> appNames;
+static vector<const char*> appDicripts;
+
 
 template <class App>
-void pushAppData();
-void drawAppSellector();
+static void pushAppData()
+{
+	appNames.push_back(App::APP_NAME);
+	appDicripts.push_back(App::APP_DISC);
+	appConstructors.push_back([](){ return new App(); });
+}
+
+
+static void selectApp(int idx)
+{
+	appSelected = true;
+	lim::AppPref::get().selected_app_idx = idx;
+	lim::AppPref::get().selected_app_name = appNames[idx];
+	strcpy(appSelectorName, "AppSelector##");
+	strcat(appSelectorName, appNames[idx]);
+}
+
+
+static void drawAppSellector()
+{
+	ImGui::Begin(appSelectorName);
+	for (int i = 0; i < appNames.size(); i++)
+	{
+		if (ImGui::Button(appNames[i]))
+		{
+			selectApp(i);
+			glfwSetWindowShouldClose(app->window, true);
+		}
+	}
+	ImGui::End();
+}
+
 
 // rid unused variables warnings
 int main(int, char **)
 {
-	lim::ImguiModule::draw_appselector = drawAppSellector;
-
-	// first order is shown first
 	pushAppData<lim::AppTemplate>();
 	pushAppData<lim::AppICP>();
 	pushAppData<lim::AppGenMesh>();
@@ -51,13 +82,15 @@ int main(int, char **)
 	pushAppData<lim::AppKinematics>();
 	pushAppData<lim::AppFluid>();
 
-	lim::AppPref::get().selectedAppIdx = 0;
-	lim::AppPref::get().selectedAppName = appNames[0];
+	selectApp(0);
+
+	if(appNames.size()>1)
+		lim::ImguiModule::draw_appselector = drawAppSellector;
 
 	while (appSelected)
 	{
 		appSelected = false;
-		int appIdx = lim::AppPref::get().selectedAppIdx;
+		int appIdx = lim::AppPref::get().selected_app_idx;
 
 		app = appConstructors[appIdx]();
 
@@ -67,38 +100,4 @@ int main(int, char **)
 	}
 
 	return 0;
-}
-
-template <class App>
-void pushAppData()
-{
-	appNames.push_back(App::APP_NAME);
-	appDicripts.push_back(App::APP_DISC);
-	appConstructors.push_back([]()
-							  { return new App(); });
-}
-
-void drawAppSellector()
-{
-	static std::string selectorName = "AppSelector##app" + std::string(appNames[lim::AppPref::get().selectedAppIdx]);
-
-	if (appNames.size() == 1)
-		return;
-	ImGui::Begin(selectorName.c_str());
-	for (int i = 0; i < appNames.size(); i++)
-	{
-		// when button pushed
-		if (ImGui::Button(appNames[i]))
-		{
-			appSelected = true;
-			lim::AppPref::get().selectedAppIdx = i;
-			lim::AppPref::get().selectedAppName = appNames[i];
-
-			selectorName = "AppSelector##app";
-			selectorName += std::string(appNames[i]);
-
-			glfwSetWindowShouldClose(app->window, true);
-		}
-	}
-	ImGui::End();
 }

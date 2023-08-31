@@ -1,5 +1,5 @@
 #
-#   가방싸기, 여행준비
+#   
 #   2023-07-09 / imdongye
 #
 # cmake -B build . -G [XCode, Ninja ...]
@@ -157,6 +157,8 @@ set(dep_libs
     imgui
     assimp
     nanovg
+    glfw
+    stb
 )
 file(GLOB_RECURSE lib_files CONFIGURE_DEPENDS "${lib_dir}/*.*")
 add_library(${lib_name} STATIC ${lib_files})
@@ -236,9 +238,9 @@ target_compile_definitions(${exe_name}
 )
 
 ### 결과 파일 생성 위치 지정 ###
-set_target_properties(limbrary ${dep_libs} ${exe_name} glfw PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/$<CONFIG>/library) # static, dll load lib
-set_target_properties(limbrary ${dep_libs} ${exe_name} glfw PROPERTIES LIBRARY_OUTPUT_DIRECTORY  ${CMAKE_BINARY_DIR}/$<CONFIG>/module) # dll of module 
-set_target_properties(limbrary ${dep_libs} ${exe_name} glfw PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/$<CONFIG>/executable) # exe
+set_target_properties(limbrary ${dep_libs} ${exe_name} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/$<CONFIG>/library) # static, dll load lib
+set_target_properties(limbrary ${dep_libs} ${exe_name} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/$<CONFIG>/module) # dll of module 
+set_target_properties(limbrary ${dep_libs} ${exe_name} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/$<CONFIG>/executable) # exe
 
 
 ### IDE 설정 ###

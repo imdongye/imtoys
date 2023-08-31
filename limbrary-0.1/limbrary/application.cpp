@@ -85,7 +85,7 @@ namespace lim
 		// need for restart app
 		AppPref::get();
 		Viewport::id_generator=0;
-		Logger::get().windowName = "Logger##log"+AppPref::get().selectedAppName;
+		Logger::get().windowName = "Logger##log"+AppPref::get().selected_app_name;
 		AssetLib::reload();
 		Scene::sceneCounter=0;
 	}

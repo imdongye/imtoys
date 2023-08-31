@@ -27,7 +27,8 @@ namespace lim
 
 		ImGui::ShowDemoWindow();
 
-		ImGui::Begin("test window");
+		ImGui::Begin("test window##template");
+		ImGui::Text("%d", 1);
 		ImGui::End();
 	}
 	void AppTemplate::keyCallback(int key, int scancode, int action, int mods)
