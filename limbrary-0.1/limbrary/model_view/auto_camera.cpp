@@ -9,6 +9,7 @@
 
 #include <limbrary/model_view/auto_camera.h>
 #include <limbrary/application.h>
+#include <imgui.h>
 
 namespace lim
 {
@@ -98,9 +99,13 @@ namespace lim
 	void AutoCamera::cursorPosCallback(double xpos, double ypos)
 	{
 		if( vp && !vp->dragging )return;
-		if( !vp && !glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)
+		if( !vp ){
+			if( !glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)
 				&& !glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) )
 				return;
+			if( ImGui::GetIO().WantCaptureMouse )
+				return;
+		}
 
 
 		float xoff = xpos - prev_mouse_x;

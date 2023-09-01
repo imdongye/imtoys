@@ -232,8 +232,8 @@ namespace lim
     void AppICP::renderImGui()
     {
         static bool isoverlay = true;
-        ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
-        ImGui::Begin("icp tester", &isoverlay, window_flags);
+        //ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
+        ImGui::Begin("icp tester##icp", &isoverlay);
         if( ImGui::Button("iterate") ) {
             const int nr_verts = src->vertices.size();
             // 열벡터로 나열

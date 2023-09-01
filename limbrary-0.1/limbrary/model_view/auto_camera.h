@@ -44,6 +44,7 @@ namespace lim
 
 		double prev_mouse_x = 0;
 		double prev_mouse_y = 0;
+
 		AutoCamera(const AutoCamera&)=delete;
 		AutoCamera& operator=(const AutoCamera&) = delete;
 	public:
