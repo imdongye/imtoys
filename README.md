@@ -23,7 +23,7 @@ The reason why inherit an application class and write a program is because when 
 ```
 brew install cmake OR install @ https://cmake.org/download/
 
-git clone https://github.com/imdongye/cmake-opengl-template.git
+git clone https://github.com/imdongye/imtoys.git
 git submodule init
 git submodule update
 

@@ -7,7 +7,7 @@
 
 namespace lim
 {
-	AppNano::AppNano(): AppBase(1280, 720, APP_NAME)
+	AppNano::AppNano(): AppBase(1400, 780, APP_NAME)
 	{
 		vg = nvgCreateGL3(NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG);
 		assert(vg != NULL);
@@ -130,11 +130,6 @@ namespace lim
 	}
 	void AppNano::renderImGui()
 	{
-
-		//ImGui::ShowDemoWindow();
-
-		//ImGui::Begin("test window");
-		//ImGui::End();
 	}
 	void AppNano::mouseBtnCallback(int btn, int action, int mod)
 	{

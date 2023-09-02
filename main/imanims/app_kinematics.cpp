@@ -5,7 +5,7 @@
 
 namespace lim
 {
-	AppKinematics::AppKinematics(): AppBase(600, 600, APP_NAME)
+	AppKinematics::AppKinematics(): AppBase(1200, 780, APP_NAME)
 	{
 		stbi_set_flip_vertically_on_load(true);
 		int x, y;
@@ -35,8 +35,6 @@ namespace lim
 	void AppKinematics::renderImGui()
 	{
 		//ImGui::DockSpaceOverViewport();
-
-		//ImGui::ShowDemoWindow();
 
 		ImGui::Begin("test window");
 		ImGui::End();

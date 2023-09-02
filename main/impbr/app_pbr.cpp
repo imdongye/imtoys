@@ -7,7 +7,7 @@
 
 namespace lim
 {
-	AppPbr::AppPbr(): AppBase(1600, 900, APP_NAME)
+	AppPbr::AppPbr(): AppBase(1200, 780, APP_NAME)
 	{
 		stbi_set_flip_vertically_on_load(true);
 		glEnable(GL_CULL_FACE);

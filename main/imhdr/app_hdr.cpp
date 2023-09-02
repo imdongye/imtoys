@@ -11,11 +11,11 @@ namespace
 
 namespace lim
 {
-	AppHdr::AppHdr(): AppBase(1950, 620, APP_NAME)
+	AppHdr::AppHdr(): AppBase(1400, 780, APP_NAME)
 	{
 		stbi_set_flip_vertically_on_load(true);
 
-		addImage("imhdr/images/italy-P3.jpg");
+		addImage("assets/images/italy-P3.jpg");
 	}
 	AppHdr::~AppHdr()
 	{

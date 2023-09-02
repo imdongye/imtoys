@@ -10,7 +10,7 @@ namespace
 
 namespace lim
 {
-	AppFluid::AppFluid(): AppBase(1000, 800, APP_NAME)
+	AppFluid::AppFluid(): AppBase(1200, 780, APP_NAME)
 	{
 		stbi_set_flip_vertically_on_load(true);
 

@@ -58,7 +58,7 @@ namespace lim
 	}
 	void Mesh::draw(const GLuint pid)
 	{
-		/* shadowMap draw할때 pid=0 으로 해서 텍스쳐 uniform 안함 */
+		/* shadow_map draw할때 pid=0 으로 해서 텍스쳐 uniform 안함 */
 		if (pid != 0)
 		{
 			int slotCounter = 0;

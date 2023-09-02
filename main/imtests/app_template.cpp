@@ -1,12 +1,12 @@
 #include "app_template.h"
 #include <stb_image.h>
 #include <glad/glad.h>
-#include <iostream>
+#include <limbrary/logger.h>
 #include <imgui.h>
 
 namespace lim
 {
-	AppTemplate::AppTemplate() : AppBase(1280, 720, APP_NAME)
+	AppTemplate::AppTemplate() : AppBase(1200, 780, APP_NAME)
 	{
 		stbi_set_flip_vertically_on_load(true);
 	}
@@ -25,15 +25,13 @@ namespace lim
 	{
 		ImGui::DockSpaceOverViewport();
 
-		ImGui::ShowDemoWindow();
-
 		ImGui::Begin("test window##template");
 		ImGui::Text("%d", 1);
 		ImGui::End();
 	}
 	void AppTemplate::keyCallback(int key, int scancode, int action, int mods)
 	{
-		std::cout << ImGui::GetFrameHeight();
+		Logger::get() << ImGui::GetFrameHeight();
 	}
 	void AppTemplate::cursorPosCallback(double xPos, double yPos)
 	{

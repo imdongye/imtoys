@@ -6,7 +6,7 @@
 
 namespace lim
 {
-	Logger::Logger():windowName("Logger##log0"),simpTime(0.0), buffer{0}, autoScroll(true), addTimeStamp(false)
+	Logger::Logger()
 	{
 		lines.emplace_back("");
 	};

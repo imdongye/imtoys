@@ -23,9 +23,7 @@
 namespace lim
 {
 	Model::Model(const std::string_view _name, Program* _program)
-		: position(glm::vec3(0)), orientation(glm::quat()), scale(glm::vec3(1))
-		, pivot_mat(glm::mat4(1.0f)), nr_vertices(0)
-		, name(_name), program(_program)
+		: name(_name), program(_program)
 	{
 		updateModelMat();
 	}

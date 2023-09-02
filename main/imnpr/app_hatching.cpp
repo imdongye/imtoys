@@ -74,7 +74,7 @@ namespace lim
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 	}
 
-	AppHatching::AppHatching(): AppBase(1080, 1080, APP_NAME)
+	AppHatching::AppHatching(): AppBase(1200, 780, APP_NAME)
 	{
 		glEnable(GL_CULL_FACE);
 		//glCullFace(GL_FRONT);

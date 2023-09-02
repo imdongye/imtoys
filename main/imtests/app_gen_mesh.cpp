@@ -8,7 +8,7 @@
 
 namespace lim
 {
-	AppGenMesh::AppGenMesh() : AppBase(1480, 720, APP_NAME)
+	AppGenMesh::AppGenMesh() : AppBase(1200, 780, APP_NAME)
 	{
 		glEnable(GL_CULL_FACE);
 		// glCullFace(GL_FRONT);

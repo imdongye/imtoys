@@ -36,10 +36,10 @@ namespace lim
 	{
 	public:
 		std::string name;
-		glm::vec3 position;
-		glm::quat orientation;
-		glm::vec3 scale;
-		glm::mat4 model_mat; // = trans*rot*scale*pivot
+		glm::vec3 position = glm::vec3(0);
+		glm::quat orientation = glm::quat();
+		glm::vec3 scale = glm::vec3(1);
+		glm::mat4 model_mat = glm::mat4(1); // = trans*rot*scale*pivot
 		// shared_ptr for managing omit dup texture loading
 		std::vector<std::shared_ptr<Texture>> textures_loaded;
 		std::vector<Mesh *> meshes;
@@ -48,14 +48,14 @@ namespace lim
 		float bumpHeight = 100;
 		float texDelta = 0.00001f;
 
-		GLuint nr_vertices;
-		GLuint nr_triangles;
+		GLuint nr_vertices = 0;
+		GLuint nr_triangles = 0;
 		glm::vec3 boundary_max;
 		glm::vec3 boundary_min;
 
 	public:
 		// define when model loading
-		glm::mat4 pivot_mat;
+		glm::mat4 pivot_mat = glm::mat4(1);
 		// for texture loading
 		std::string data_dir;
 		// for model exporting

@@ -26,28 +26,28 @@ namespace lim
 	{
 	public:
 		inline static int ref_count = 0;
-		inline static Program* shadowProg = nullptr;
+		inline static Program* shadow_prog = nullptr;
 
-		const GLuint shadowMapSize = 1024;
-		const float shadowZNaer = 3;
-		const float shadowZFar = 6;
-		const float orthoWidth = 4;
-		const float orthoHeight = 8;
+		const GLuint shadow_map_size = 1024;
+		const float shadow_z_near = 3;
+		const float shadow_z_far = 6;
+		const float ortho_width = 4;
+		const float ortho_height = 8;
 		float distance = 5;
 	public: // editable
-		bool shadowEnabled; // 밖에서 확인하고 사용하기
+		bool shadow_enabled; // 밖에서 확인하고 사용하기
 		float yaw, pitch;
 		glm::vec3 color;
 		float intensity;
 	public: // update result
 		glm::vec3 position;
 		glm::vec3 direction;
-		TexFramebuffer shadowMap;
-		glm::mat4 viewMat;
-		glm::mat4 projMat;
-		glm::mat4 vpMat;
+		TexFramebuffer shadow_map;
+		glm::mat4 view_mat;
+		glm::mat4 proj_mat;
+		glm::mat4 vp_mat;
 	public:
-		Light(float _yaw=58.f, float _pitch=51.f, glm::vec3 _color={1,1,1}, float _intensity = 1.f, float shadowEnabled=false);
+		Light(float _yaw=58.f, float _pitch=51.f, glm::vec3 _color={1,1,1}, float _intensity = 1.f, bool shadowEnabled=false);
 		~Light();
 	public:
 		void updateMembers();

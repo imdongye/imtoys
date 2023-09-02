@@ -3,4 +3,4 @@
 	url = https://github.com/imdongye/glfw
 [submodule "vendor/assimp"]
 	path = vendor/assimp
-	url = https://github.com/imdongye/assimppu
+	url = https://github.com/imdongye/assimp

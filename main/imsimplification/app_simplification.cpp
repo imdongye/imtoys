@@ -9,7 +9,7 @@
 
 namespace lim
 {
-	AppSimplification::AppSimplification() : AppBase(1600, 900, APP_NAME)
+	AppSimplification::AppSimplification() : AppBase(1200, 780, APP_NAME)
 	{
 		stbi_set_flip_vertically_on_load(true);
 
@@ -566,14 +566,14 @@ namespace lim
 			data->DesiredSize.x = glm::max(data->DesiredSize.x, data->DesiredSize.y);
 			data->DesiredSize.y = data->DesiredSize.x; });
 
-		if (ImGui::Begin("shadowMap##simp") && light.shadowEnabled)
+		if (ImGui::Begin("shadowMap##simp") && light.shadow_enabled)
 		{
 			ImVec2 vMin = ImGui::GetWindowContentRegionMin();
 			ImVec2 vMax = ImGui::GetWindowContentRegionMax();
 			glm::vec2 rectSize{vMax.x - vMin.x, vMax.y - vMin.y};
 			// ImGui::Text("%f %f", rectSize.x, rectSize.y);
 			const float minLength = glm::min(rectSize.x, rectSize.y);
-			ImGui::Image(INT2VOIDP(light.shadowMap.getRenderedTex()), ImVec2{minLength, minLength}, ImVec2{0, 1}, ImVec2{1, 0});
+			ImGui::Image(INT2VOIDP(light.shadow_map.getRenderedTex()), ImVec2{minLength, minLength}, ImVec2{0, 1}, ImVec2{1, 0});
 		}
 		ImGui::End();
 		ImGui::PopStyleVar();

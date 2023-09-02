@@ -9,24 +9,27 @@
 
 #include <limbrary/application.h>
 #include <limbrary/viewport.h>
+#include <vector>
 
 namespace lim
 {
-	class AppFluid: public AppBase
+	class AppFluid : public AppBase
 	{
 	public:
 		inline static constexpr const char *APP_NAME = "fluid tester";
 		inline static constexpr const char *APP_DIR = "imanims";
 		inline static constexpr const char *APP_DISC = "hello, world";
+
 	private:
-		Viewport* vp;
-		Framebuffer* fb;
+		Viewport *vp;
+		Framebuffer *fb;
 
 		std::vector<glm::vec2> points;
 
 	public:
 		AppFluid();
 		~AppFluid();
+
 	private:
 		virtual void update() override;
 		virtual void renderImGui() override;

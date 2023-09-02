@@ -9,6 +9,7 @@
 #include <limbrary/imgui_module.h>
 #include <limbrary/app_pref.h>
 #include <imtests/app_template.h>
+#include <imtests/app_imgui_test.h>
 #include <imtests/app_icp.h>
 #include "imtests/app_gen_mesh.h"
 #include "imtests/app_font.h"
@@ -70,6 +71,7 @@ static void drawAppSellector()
 int main(int, char **)
 {
 	pushAppData<lim::AppTemplate>();
+	pushAppData<lim::AppImGuiTest>();
 	pushAppData<lim::AppICP>();
 	pushAppData<lim::AppGenMesh>();
 	pushAppData<lim::AppFont>();

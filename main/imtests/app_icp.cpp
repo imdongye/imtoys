@@ -172,7 +172,7 @@ namespace
 
 namespace lim
 {
-    AppICP::AppICP(): AppBase(1280, 720, APP_NAME)
+    AppICP::AppICP(): AppBase(1200, 780, APP_NAME)
     {
         stbi_set_flip_vertically_on_load(true);
 

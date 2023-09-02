@@ -48,7 +48,7 @@ namespace lim
 	/* framebuffer직접설정해서 렌더링 */
 	void Scene::render(GLuint fbo, GLuint width, GLuint height, Camera* camera)
 	{
-		if( light.shadowEnabled ) drawShadowMap();
+		if( light.shadow_enabled ) drawShadowMap();
 
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		glViewport(0, 0, width, height);
@@ -63,7 +63,7 @@ namespace lim
 	}
 	void Scene::render(Framebuffer* framebuffer, Camera* camera)
 	{
-		if( light.shadowEnabled ) drawShadowMap();
+		if( light.shadow_enabled ) drawShadowMap();
 
 		camera->aspect = framebuffer->aspect;
 		camera->updateProjMat();

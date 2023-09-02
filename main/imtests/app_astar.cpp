@@ -11,7 +11,7 @@ namespace
 
 namespace lim
 {
-	AppAstar::AppAstar(): AppBase(900, 1050, APP_NAME)
+	AppAstar::AppAstar(): AppBase(1100, 780, APP_NAME)
 		, width(18), height(18)
 	{
 		path_finder = new PathFinder(width, height);

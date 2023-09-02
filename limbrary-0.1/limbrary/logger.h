@@ -29,13 +29,13 @@ namespace lim
 	private:
 		/* 고정 상수식이기에 static으로 data메모리에 있어야함 */
 		static constexpr int BUFFER_SIZE = 512;
-		char buffer[BUFFER_SIZE];
+		char buffer[BUFFER_SIZE] = {0};
 	public:
-		std::string windowName;
+		std::string windowName="Logger##log0";
 		std::vector<std::string> lines;
-		double simpTime;
-		bool autoScroll;
-		bool addTimeStamp;
+		double simpTime = 0.0;
+		bool autoScroll = true;
+		bool addTimeStamp = false;
 	private:
 		Logger();
 		Logger(const Logger&)=delete;

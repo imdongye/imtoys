@@ -8,15 +8,17 @@
 
 #include <limbrary/application.h>
 #include <nanovg.h>
+#include <vector>
 
 namespace lim
 {
-	class AppNano: public AppBase
+	class AppNano : public AppBase
 	{
 	public:
 		inline static constexpr CStr APP_NAME = "imnano";
 		inline static constexpr CStr APP_DIR = "imanims";
 		inline static constexpr CStr APP_DISC = "hello, world";
+
 	private:
 		enum
 		{
@@ -44,14 +46,16 @@ namespace lim
 		std::vector<glm::vec2> samplePts;
 		int underPt = -1;
 
-		NVGcontext* vg = NULL;
-		glm::vec2 initialOffset = {0,0};
+		NVGcontext *vg = NULL;
+		glm::vec2 initialOffset = {0, 0};
 		bool isDragging = false;
+
 	public:
 		AppNano();
 		~AppNano();
+
 	private:
-		void drawEyes(NVGcontext* vg, float x, float y, float w, float h, float mx, float my, float t);
+		void drawEyes(NVGcontext *vg, float x, float y, float w, float h, float mx, float my, float t);
 		virtual void update() override;
 		virtual void renderImGui() override;
 		virtual void mouseBtnCallback(int btn, int action, int mod) override;

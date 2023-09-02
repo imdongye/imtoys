@@ -13,7 +13,6 @@
 
 namespace lim
 {
-
 	// if vp is nullptr then interaction with window
 	AutoCamera::AutoCamera(GLFWwindow* _win, Viewport *_vp, int viewingMode, glm::vec3 _pos, glm::vec3 _focus)
 		:Camera(_pos, _focus-_pos), window(_win), vp(_vp), viewing_mode(viewingMode)
@@ -91,6 +90,8 @@ namespace lim
 	void AutoCamera::mouseBtnCallback(int button, int action, int mods)
 	{
 		if( vp && !vp->hovered ) return;
+		if( !vp && ImGui::GetIO().WantCaptureMouse ) return;
+
 		double xpos, ypos;
 		glfwGetCursorPos(window, &xpos, &ypos);
 		prev_mouse_x = xpos;
@@ -136,6 +137,7 @@ namespace lim
 	void AutoCamera::scrollCallback(double xOff, double yOff)
 	{
 		if( vp && !vp->hovered )return;
+		if( !vp && ImGui::GetIO().WantCaptureMouse ) return;
 
 		switch( viewing_mode ) {
 			case VM_PIVOT:

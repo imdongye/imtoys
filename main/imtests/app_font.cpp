@@ -6,7 +6,7 @@
 
 namespace lim
 {
-	AppFont::AppFont(): AppBase(1280, 720, APP_NAME)
+	AppFont::AppFont(): AppBase(1200, 780, APP_NAME)
 	{
 		//cpp11 raw string
 		vert_shader = R"shader( 
@@ -69,7 +69,6 @@ namespace lim
 	}
 	void AppFont::renderImGui()
 	{
-		ImGui::ShowDemoWindow();
 		ImGui::Begin("asdf");
 		ImGui::PushFont(font1);
 		ImGui::Text(u8"asdf안녕하세요😊");

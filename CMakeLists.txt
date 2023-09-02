@@ -184,7 +184,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
             #/WX
     )
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    target_compile_definitions(
+    target_compile_definitions(${lib_name} 
         PUBLIC
             GL_SILENCE_DEPRECATION
     )
