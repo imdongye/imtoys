@@ -28,7 +28,7 @@ namespace lim
 		:win_width(winWidth), win_height(winHeight)
 	{
 		glfwSetErrorCallback([](int error, const char *description) {
-			Log::get(1).log(stderr, "\nGlfw Error %d: %s\n", error, description);
+			Log::get(Log::LL_ERR).log(stderr, "\nGlfw Error %d: %s\n", error, description);
 		});
 
 		if( !glfwInit() ) std::exit(-1);

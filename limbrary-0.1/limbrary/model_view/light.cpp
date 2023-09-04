@@ -17,8 +17,8 @@
 namespace lim
 {
 	Light::Light(float _yaw, float _pitch, glm::vec3 _color, float _intensity, bool shadowEnabled)
-		:yaw(_yaw), pitch(_pitch), color(_color), intensity(_intensity), shadow_enabled(shadowEnabled)
 	{
+		yaw=_yaw; pitch=_pitch; shadow_enabled=shadowEnabled; color=_color; intensity=_intensity;
 		if( ref_count++==0 ) {
 			shadow_prog = new Program("shadow program");
 			shadow_prog->attatch("pos.vs").attatch("depth.fs").link();

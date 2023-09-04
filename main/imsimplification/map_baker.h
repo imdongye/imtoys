@@ -75,7 +75,7 @@ namespace lim
 					target->textures_loaded.back()->tag = "map_Bump";
 					target->meshes[i]->textures.push_back(target->textures_loaded.back());
 					*/
-					Log::get(1).log("No bump map in mesh: %s\n", targetMesh->name.c_str());
+					Log::get(Log::LL_ERR).log("No bump map in mesh: %s\n", targetMesh->name.c_str());
 
 				}
 			}

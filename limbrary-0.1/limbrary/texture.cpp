@@ -90,7 +90,7 @@ namespace lim
 			tex.src_bit_per_channel = 8;
 		}
 		if( !data ) {
-			Log::get(1).log("texture failed to load at path: %s\n", path.data());
+			Log::get(Log::LL_ERR).log("texture failed to load at path: %s\n", path.data());
 			return false;
 		}
 

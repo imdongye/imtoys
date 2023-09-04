@@ -46,7 +46,7 @@ namespace lim
 
 			data=stbi_load(leveledPath.c_str(), &w, &h, &ch, 0);
 			if( !data ) {
-				Log::get(1).log("[error]texture failed to load at path: %s\n", path.c_str());
+				Log::get(Log::LL_ERR).log("[error]texture failed to load at path: %s\n", path.c_str());
 				return;
 			}
 			if( lv==0 ) {

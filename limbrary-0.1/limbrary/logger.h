@@ -3,7 +3,7 @@
 // 
 //	usage : 
 //	1. Log::get().attach("%d\n", a);
-//	2. Log::get()<<"asdf"<<Log::endl;		
+//	2. Log::get()<<"asdf"<<Log::endl;
 // 
 //	TODO list:
 //  0. 분리
@@ -26,6 +26,12 @@ namespace lim
 {
 	class Log
 	{
+	public:
+		enum LOG_LEVEL {
+			LL_NOTE,
+			LL_WARN,
+			LL_ERR,
+		};
 	private:
 		/* 고정 상수식이기에 static으로 data메모리에 있어야함 */
 		static constexpr int BUFFER_SIZE = 512;
@@ -33,7 +39,6 @@ namespace lim
 	public:
 		std::string windowName="Log##log0";
 		std::vector<std::string> lines;
-		double simpTime = 0.0;
 		bool autoScroll = true;
 		bool addTimeStamp = false;
 	private:
@@ -41,7 +46,7 @@ namespace lim
 		Log(const Log&)=delete;
 		Log &operator=(const Log&)=delete;
 	public:
-		static Log& get(int mode=0);
+		static Log& get(LOG_LEVEL lev=LL_NOTE);
 		void drawImGui();
 		Log& log(FILE* stream, const char* format, ...);
 		Log& log(const char* format, ...);
@@ -59,4 +64,7 @@ namespace lim
 		void seperate_and_save();
 	};
 }
+
+#define LIM_LOG(...) lim::Log::get().printf(__VA_ARGS__)
+
 #endif

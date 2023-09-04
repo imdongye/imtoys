@@ -44,6 +44,8 @@ namespace lim
 		int toVpIdx = 1;
 		ViewportPackage vpPackage;
 
+		float simp_time=0;
+
 		const char *exportPath = "imsimplification/result/";
 
 	public:

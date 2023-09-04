@@ -3,6 +3,7 @@
 #include <GLFW/glfw3.h>
 #include <imgui.h>
 #include <stdarg.h>
+#include <iostream>
 
 namespace lim
 {
@@ -11,10 +12,10 @@ namespace lim
 		lines.emplace_back("");
 	};
 
-	Log& Log::get(int mode)
+	Log& Log::get(LOG_LEVEL lev)
 	{
 		static Log logger;
-		if( mode==1 ) {
+		if( lev==LL_ERR ) {
 			static const char *__color_start = "[0;31;40m";
 			static const char *__color_end = "[0m";
 			printf("%s%s%s", __color_start, "[error]", __color_end);

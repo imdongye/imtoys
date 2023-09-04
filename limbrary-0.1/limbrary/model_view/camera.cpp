@@ -23,9 +23,10 @@
 namespace lim
 {
 	Camera::Camera(glm::vec3 _position, glm::vec3 _front, float _aspect)
-		: position(_position), front(glm::normalize(_front)), aspect(_aspect)
 	{
 		position = _position;
+		front = glm::normalize(_front);
+		aspect = _aspect;
 		updateOrientationFromFront();
 
 		updateFreeViewMat();

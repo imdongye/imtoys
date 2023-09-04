@@ -113,9 +113,8 @@ namespace lim
 		vpPackage.scenes[toVpIdx]->setModel(toModel);
 		vpPackage.cameras[toVpIdx]->pivot = toModel->position;
 
-		double simpTime = glfwGetTime() - start;
-		Log::get().simpTime = simpTime;
-		Log::get().log("Done! %d => %d in %.3f sec. \n\n", fromModel->nr_vertices, toModel->nr_vertices, simpTime);
+		simp_time = glfwGetTime() - start;
+		Log::get().log("Done! %d => %d in %.3f sec. \n\n", fromModel->nr_vertices, toModel->nr_vertices, simp_time);
 	}
 	// From: https://stackoverflow.com/questions/62007672/png-saved-from-opengl-framebuffer-using-stbi-write-png-is-shifted-to-the-right
 	void AppSimplification::bakeNormalMap()
@@ -123,7 +122,7 @@ namespace lim
 		if (vpPackage.models[fromVpIdx] != nullptr && vpPackage.models[toVpIdx] != nullptr)
 			MapBaker::bakeNormalMap(exportPath, vpPackage.models[fromVpIdx], vpPackage.models[toVpIdx]);
 		else
-			Log::get(1).log("You Must to simplify before baking\n");
+			Log::get(Log::LL_ERR).log("You Must to simplify before baking\n");
 	}
 	void AppSimplification::update()
 	{
@@ -291,7 +290,7 @@ namespace lim
 
 			ImGui::SameLine();
 			ImGui::Text("target triangles = %d", static_cast<int>(fromModel->nr_triangles * pct));
-			ImGui::Text("simplified in %lf sec", Log::get().simpTime);
+			ImGui::Text("simplified in %lf sec", simp_time);
 			ImGui::NewLine();
 
 			// baking
