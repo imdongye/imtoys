@@ -11,6 +11,8 @@
 * 멤버 변수 : snake_case
 * 지역 변수, 파라미터 : camelCase ( _ward )
 
+* 지역변수를 snake_case로 하고 맴버변수를 camelCase로 해야지 사용할때 길이 발란스가 맞을것같다는 생각이듬
+
 * 함수의 선언부 매개변수에서 Class이름등으로 어떤객체인지 확실할때는 약어로 쓴다 ex) void init(Player p, int _age)
 
 * 경로 뒤에 /를 붙이지 않는다.

@@ -18,7 +18,7 @@
 #include <limbrary/model_view/camera.h>
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/extended_min_max.hpp>
-#include <limbrary/logger.h>
+#include <limbrary/log.h>
 
 namespace lim
 {
@@ -97,8 +97,8 @@ namespace lim
 	}
 	void Camera::printCameraState()
 	{
-		Log::get().log("PitchYawRoll  : %f.2, %f.2, %f.2\n", pitch, yaw, roll);
-		Log::get().log("POS  : %f.2, %f.2, %f.2\n", position.x, position.y, position.z);
-		Log::get().log("DIST : %f\n", distance);
+		log::pure("PitchYawRoll  : %f.2, %f.2, %f.2\n", pitch, yaw, roll);
+		log::pure("POS  : %f.2, %f.2, %f.2\n", position.x, position.y, position.z);
+		log::pure("DIST : %f\n", distance);
 	}
 }

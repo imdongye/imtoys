@@ -11,7 +11,7 @@
 
 #include "fqms.h"
 #include <limbrary/model_view/model.h>
-#include <limbrary/logger.h>
+#include <limbrary/log.h>
 
 namespace fqms
 {
@@ -44,7 +44,7 @@ namespace fqms
 			}
 		}
 		if( triCount * 3 != mesh->indices.size() || mesh->indices.size() % 3 != 0 ) {
-			lim::Log::get().log(stderr, "simplify failed : mesh is not triangle mesh\n");
+			lim::log::err("simplify failed : mesh is not triangle mesh\n");
 		}
 	}
 	void loadFromGlobal(lim::Mesh *mesh)
@@ -79,7 +79,7 @@ namespace fqms
 							, int version = 0, int agressiveness=7, bool verbose=true)
 	{
 		if( lived_pct > 1 || lived_pct < 0 ) {
-			lim::Log::get().log("error : simplify percent range error");
+			lim::log::err("simplify percent range error");
 			return nullptr;
 		}
 		updateGlobal(mesh);

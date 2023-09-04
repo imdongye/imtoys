@@ -75,7 +75,7 @@ namespace lim
 					target->textures_loaded.back()->tag = "map_Bump";
 					target->meshes[i]->textures.push_back(target->textures_loaded.back());
 					*/
-					Log::get(Log::LL_ERR).log("No bump map in mesh: %s\n", targetMesh->name.c_str());
+					log::err("No bump map in mesh: %s\n", targetMesh->name.c_str());
 
 				}
 			}
@@ -139,7 +139,7 @@ namespace lim
 				stbi_flip_vertically_on_write(true);
 				std::string texPath = modelDir+std::string(internalModelPath);
 				stbi_write_png(texPath.c_str(), w, h, 3, data, w * 3);
-				Log::get() << "baked in " << texPath.c_str() << Log::endll;
+				log::pure("baked in %s\n\n", texPath.c_str());
 			}
 
 			/* 새로운 노멀맵으로 로딩 */
@@ -149,7 +149,7 @@ namespace lim
 				}
 			}
 
-			Log::get() << "reload normal map" << Log::endll;
+			log::pure("reload normal map\n");
 		}
 		static void enable()
 		{

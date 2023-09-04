@@ -10,7 +10,7 @@
 
 #include <limbrary/texture.h>
 #include <limbrary/program.h>
-#include <limbrary/logger.h>
+#include <limbrary/log.h>
 #include <limbrary/asset_lib.h>
 #include <stb_image.h>
 
@@ -90,7 +90,7 @@ namespace lim
 			tex.src_bit_per_channel = 8;
 		}
 		if( !data ) {
-			Log::get(Log::LL_ERR).log("texture failed to load at path: %s\n", path.data());
+			log::err("texture failed to load at path: %s\n", path.data());
 			return false;
 		}
 
@@ -101,7 +101,7 @@ namespace lim
 			case 2: tex.src_format = GL_RG; break;
 			case 3: tex.src_format = GL_RGB; break;
 			case 4: tex.src_format = GL_RGBA; break;
-			default: Log::get().log("[error] texter channels is over 4\n");
+			log::err("texter channels is over 4\n");
 		}
 
 		tex.create(data);

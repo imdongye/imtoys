@@ -1,7 +1,7 @@
 #include "app_template.h"
 #include <stb_image.h>
 #include <glad/glad.h>
-#include <limbrary/logger.h>
+#include <limbrary/log.h>
 #include <imgui.h>
 
 namespace lim
@@ -25,13 +25,19 @@ namespace lim
 	{
 		ImGui::DockSpaceOverViewport();
 
+		log::drawViewer("logger#template");;
+		
+
 		ImGui::Begin("test window##template");
 		ImGui::Text("%d", 1);
 		ImGui::End();
 	}
 	void AppTemplate::keyCallback(int key, int scancode, int action, int mods)
 	{
-		Log::get() << ImGui::GetFrameHeight();
+		log::pure("%d\n", key);
+		log::info("%d\n", key);
+		log::warn("%d\n", key);
+		log::err("%d\n", key);
 	}
 	void AppTemplate::cursorPosCallback(double xPos, double yPos)
 	{

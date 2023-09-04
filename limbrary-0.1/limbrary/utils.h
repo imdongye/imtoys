@@ -22,6 +22,5 @@ namespace lim
 
 	std::string getStrFromFile(std::string_view path);
 	void setStrToFile(std::string_view path, std::string_view text);
-	std::string fmToStr(const char* format, ...);
 }
 #endif

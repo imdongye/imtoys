@@ -1,6 +1,6 @@
 #include <limbrary/app_pref.h>
 #include <limbrary/utils.h>
-#include <limbrary/logger.h>
+#include <limbrary/log.h>
 #include <fstream>
 #include <nlohmann/json.h>
 #include <vector>
@@ -14,13 +14,12 @@ namespace lim
 	{
 		std::string text = getStrFromFile(FILE_PATH);
 		if( text.length()<1 ) {
-			Log::get()<<"length<1 so not make json\n";
+			log::err("length<1 so not make json\n");
 			return;
 		}
 		Json ijson = Json::parse(text);
 		// dump para is tab size, none is one line
-		//Log::get()<<"read "<<FILE_PATH<<Log::endl<< ijson.dump(2) <<Log::endl;
-
+		// log::infoln("read %s\n %s", FILE_PATH, ijson.dump(2));
 		recent_model_paths = ijson["recentModelPaths"];
 	}
 
@@ -52,11 +51,11 @@ namespace lim
 			ofile << std::setw(4) << ojson << std::endl;
 			ofile.close();
 		} catch( std::ifstream::failure& e ) {
-			Log::get()<<"[error] fail read : "<<FILE_PATH<<", what? "<<e.what();
+			log::err("fail read : %s, what? %s \n", FILE_PATH, e.what());
 		}
 
 		//std::string temp = ojson.dump(2);
-		//Log::get()<<"write "<<FILE_PATH<<Log::endl<<temp<<Log::endl;
+		//log::info("write %s\n %s\n", FILE_PATH, temp);
 	}
 	void AppPref::pushPathWithoutDup(const std::string_view path)
 	{
@@ -65,7 +64,7 @@ namespace lim
 		std::string rp = std::filesystem::relative(ap, std::filesystem::current_path()).u8string();
 		std::replace(rp.begin(), rp.end(), '\\', '/');
 
-		Log::get()<<rp<<Log::endll;
+		log::pure("%s\n", rp.c_str());
 		//같은거 있으면 지우기
 		auto samePathPos = std::find(recent_model_paths.begin(), recent_model_paths.end(), rp);
 		if( samePathPos!=recent_model_paths.end() )

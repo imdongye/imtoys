@@ -21,7 +21,7 @@
 #include <unordered_map>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <limbrary/logger.h>
+#include <limbrary/log.h>
 
 namespace lim
 {
@@ -62,7 +62,7 @@ namespace lim
 		{
 			int location = glGetUniformLocation(pid, vname.c_str());
 			if (location == -1)
-				Log::get().log("missing uniform: %s\n", vname.c_str());
+				log::err("missing uniform: %s\n", vname.c_str());
 			else
 				bind(location, std::forward<T>(value));
 			return *this;

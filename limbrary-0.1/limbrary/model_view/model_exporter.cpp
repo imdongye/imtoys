@@ -4,7 +4,7 @@
 //	edit from : https://github.com/assimp/assimp/issues/203
 //
 #include <limbrary/model_view/model_exporter.h>
-#include <limbrary/logger.h>
+#include <limbrary/log.h>
 #include <limbrary/utils.h>
 #include <assimp/Exporter.hpp>
 #include <assimp/scene.h>
@@ -78,7 +78,7 @@ namespace
 			const GLuint nr_indices = mesh->indices.size();
 			const GLuint nr_tris = nr_indices / 3;
 			if (nr_indices % 3 != 0)
-				Log::get().log("[error] not triangle mesh in exporter");
+				log::err("not triangle mesh in exporter");
 			ai_mesh->mNumFaces = nr_tris;
 			ai_mesh->mFaces = new aiFace[nr_tris];
 
@@ -120,11 +120,11 @@ namespace lim
 
 		/* create path */
 		std::string newModelDir(exportDir);
-		newModelDir += model->name + "/";
+		newModelDir += model->name + "/"; // todo : test
 		fs::path createdPath(newModelDir);
 		if (!std::filesystem::is_directory(createdPath))
 			fs::create_directories(createdPath);
-		std::string newModelPath = newModelDir + fmToStr("%s.%s", model->name.c_str(), format->fileExtension);
+		std::string newModelPath = newModelDir + model->name.c_str() +'.'+format->fileExtension;
 
 		/* export model */
 		aiScene *scene = makeScene(model);
@@ -132,7 +132,7 @@ namespace lim
 		{
 			const char *error = exporter.GetErrorString();
 			if (strlen(error) > 0)
-				Log::get() << "[error::exporter] " << error << Log::endl;
+				log::err("in exporter %s\n", error);
 		}
 
 		/* ctrl cv texture */
@@ -143,7 +143,7 @@ namespace lim
 			fs::path fromTexPath(tex->path);
 			fs::path toTexPath(newTexPath);
 			fs::copy(fromTexPath, toTexPath, fs::copy_options::skip_existing);
-			Log::get().log("%s %s\n", fromTexPath.string().c_str(), toTexPath.string().c_str());
+			log::pure("%s %s\n", fromTexPath.string().c_str(), toTexPath.string().c_str());
 		}
 	}
 }

@@ -1,5 +1,5 @@
 #include <limbrary/program.h>
-#include <limbrary/logger.h>
+#include <limbrary/log.h>
 #include <limbrary/utils.h>
 
 namespace lim
@@ -35,7 +35,7 @@ namespace lim
 		auto [sid, type] = createShaderAuto(path);
 
 		if( sid==0 ) {
-			Log::get()<<"[error] "<<type<<" extension is not supported.";
+			log::err("%s extension is not supported.\n", type);
 			return *this;
 		}
 		// AUTO PATHING : 파일이름만 들어오면 homedir경로로
@@ -56,7 +56,7 @@ namespace lim
 			return *this;
 		}
 		glAttachShader(pid, sid);
-		Log::get().log("[program %s] attch %s success\n", name.c_str(), path.c_str());
+		log::info("[program %s] attch %s success\n", name.c_str(), path.c_str());
 
 		return *this;
 	}
@@ -68,13 +68,13 @@ namespace lim
 			pid = 0;
 			return *this;
 		}
-		Log::get().log("[program %s] linking success\n\n", name.c_str());
+		log::info("[program %s] linking success\n\n", name.c_str());
 		return *this;
 	}
 	GLuint Program::use() const
 	{
 		if( pid==0 ) {
-			Log::get()<<"[error] program is not linked"<<Log::endll;
+			log::info("program is not linked\n");
 		}
 		glUseProgram(pid);
 		return pid;
@@ -88,7 +88,7 @@ namespace lim
 		glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
 		if( !success ) {
 			glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-			Log::get()<<"[error] shader compile error in "<< path.data()<<"\n"<<infoLog << Log::endl;
+			log::err("shader compile error in %s\n%s\n",path, infoLog);
 			//std::abort();
 			return false;
 		}
@@ -102,7 +102,8 @@ namespace lim
 		glGetProgramiv(shader, GL_LINK_STATUS, &success);
 		if( !success ) {
 			glGetProgramInfoLog(shader, 1024, NULL, infoLog);
-			Log::get()<<"[error] shader linking error\n"<<infoLog<<Log::endl;
+			log::err("shader linking error\n%s\n",infoLog);
+
 			std::abort();
 			return false;
 		}

@@ -1,6 +1,6 @@
 #include <limbrary/asset_lib.h>
 #include <limbrary/program.h>
-#include <limbrary/logger.h>
+#include <limbrary/log.h>
 
 namespace lim
 {
@@ -25,7 +25,7 @@ namespace lim
 		glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 		glEnableVertexAttribArray(0);  // Vertex position
 
-		Log::get()<<"load quad vao to vram\n";
+		log::info("load quad vao to vram\n");
 
 
 		tex_to_quad_prog = new Program("texToQuad");

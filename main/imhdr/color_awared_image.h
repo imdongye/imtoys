@@ -603,18 +603,16 @@ namespace lim
 				colorAwareDisplayProg->attatch("tex_to_quad.vs").attatch("imhdr/shaders/rgb_to_pcs_to_display.fs").link();
 			}
 			/* read meta data Exif
-			LibRaw raw;
-			raw.open_file(path.c_str());
-			raw.unpack();
-			Log::get() << "< Meta data >" << Log::endl;
-			Log::get() << "ISO : " << raw.imgdata.other.iso_speed << Log::endl;
-			Log::get() << "Exposure Time : " << raw.imgdata.other.shutter << Log::endl;
-			Log::get() << "Aperture : " << raw.imgdata.other.aperture << Log::endl;
-			Log::get() << "Focal Lenth : " << raw.imgdata.other.focal_len << Log::endl;
-			Log::get() << "Black Level : " << raw.imgdata.color.black << Log::endl;
-			Log::get() << "Max Value : " << raw.imgdata.color.maximum << Log::endl;
-			Log::get() << "RAW bit: " << raw.imgdata.color.raw_bps << Log::endl;
+			log::pure(R"(< Meta data >
+ISO:
+Exposure Time : 
+Aperture :
+Focal Lenth :
+Black Level :
+Max Value :
+RAW bit :)");
 			*/
+
 
 			// is JPEG
 			if( (strcmp(format, "jpg")==0||strcmp(format, "jpeg")==0) && profile.initWithJPEG(path, true) ) {

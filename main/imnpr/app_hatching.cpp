@@ -11,7 +11,7 @@
 
 #include "app_hatching.h"
 #include <stb_image.h>
-#include <limbrary/logger.h>
+#include <limbrary/log.h>
 #include <limbrary/model_view/model_loader.h>
 #include <imgui.h>
 #include <limbrary/model_view/code_mesh.h>
@@ -46,7 +46,7 @@ namespace lim
 
 			data=stbi_load(leveledPath.c_str(), &w, &h, &ch, 0);
 			if( !data ) {
-				Log::get(Log::LL_ERR).log("[error]texture failed to load at path: %s\n", path.c_str());
+				log::err("texture failed to load at path: %s\n", path.c_str());
 				return;
 			}
 			if( lv==0 ) {
@@ -59,7 +59,7 @@ namespace lim
 				case 2: src_format = GL_RG; break;
 				case 3: src_format = GL_RGB; break;
 				case 4: src_format = GL_RGBA; break;
-				default: Log::get().log("[error] texter channels is over 4\n"); return;
+				default: log::err("texter channels is over 4\n"); return;
 			}
 			printf("%s loaded : lv:%d, texID:%d, %dx%d, nrCh:%d\n"
 					, leveledPath.c_str(), lv, tex_id, w, h, ch);

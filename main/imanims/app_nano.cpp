@@ -2,7 +2,7 @@
 #include <glad/glad.h>
 #define NANOVG_GL3
 #include <nanovg_gl.h>
-#include <limbrary/logger.h>
+#include <limbrary/log.h>
 #include <imgui.h>
 
 namespace lim
@@ -143,7 +143,6 @@ namespace lim
 	}
 	void AppNano::keyCallback(int key, int scancode, int action, int mods)
 	{
-		Log::get()<<ImGui::GetFrameHeight();
 	}
 	void AppNano::cursorPosCallback(double xPos, double yPos)
 	{

@@ -2,6 +2,7 @@
 #include "simplify.h"
 #include "map_baker.h"
 #include <stb_image.h>
+#include <stb_sprintf.h>
 #include <limbrary/app_pref.h>
 #include <limbrary/model_view/model_loader.h>
 #include <limbrary/model_view/model_exporter.h>
@@ -74,7 +75,7 @@ namespace lim
 		vpPackage.models[vpIdx] = temp;
 		vpPackage.cameras[vpIdx]->pivot = temp->position;
 		vpPackage.cameras[vpIdx]->updatePivotViewMat();
-		Log::get().log("Done! in %.3f sec.  \n", glfwGetTime() - start);
+		log::pure("Done! in %.3f sec.  \n", glfwGetTime() - start);
 		AppPref::get().pushPathWithoutDup(path.data());
 	}
 	void AppSimplification::exportModel(size_t pIndex, int vpIdx)
@@ -83,16 +84,16 @@ namespace lim
 
 		if (toModel == nullptr)
 		{
-			Log::get() << "error : export" << Log::endl;
+			log::err("export\n");
 			return;
 		}
 
 		double start = glfwGetTime();
-		Log::get().log("Exporting %s.. .. ...... ...  .... .. . .... . .\n", toModel->name.c_str());
+		log::pure("Exporting %s.. .. ...... ...  .... .. . .... . .\n", toModel->name.c_str());
 
 		exportModelToFile(exportPath, toModel, pIndex);
 
-		Log::get().log("Done! in %.3f sec.  \n\n", glfwGetTime() - start);
+		log::pure("Done! in %.3f sec.  \n\n", glfwGetTime() - start);
 	}
 	void AppSimplification::simplifyModel(float lived_pct, int version, int agressiveness, bool verbose)
 	{
@@ -100,21 +101,21 @@ namespace lim
 		Model *toModel = vpPackage.models[toVpIdx];
 
 		double start = glfwGetTime();
-		Log::get().log("\nSimplifing %s..... . ... ... .. .. . .  .\n", fromModel->name.c_str());
+		log::pure("\nSimplifing %s..... . ... ... .. .. . .  .\n", fromModel->name.c_str());
 
 		if (toModel != nullptr)
 			delete toModel;
 
 		toModel = fqms::simplifyModel(fromModel, lived_pct, version, agressiveness, verbose);
 		int pct = 100.0 * toModel->nr_vertices / fromModel->nr_vertices;
-		toModel->name += fmToStr("_%d_pct", pct);
+		toModel->name += "_"+std::to_string(pct)+"_pct";
 
 		vpPackage.models[toVpIdx] = toModel;
 		vpPackage.scenes[toVpIdx]->setModel(toModel);
 		vpPackage.cameras[toVpIdx]->pivot = toModel->position;
 
 		simp_time = glfwGetTime() - start;
-		Log::get().log("Done! %d => %d in %.3f sec. \n\n", fromModel->nr_vertices, toModel->nr_vertices, simp_time);
+		log::pure("Done! %d => %d in %.3f sec. \n\n", fromModel->nr_vertices, toModel->nr_vertices, simp_time);
 	}
 	// From: https://stackoverflow.com/questions/62007672/png-saved-from-opengl-framebuffer-using-stbi-write-png-is-shifted-to-the-right
 	void AppSimplification::bakeNormalMap()
@@ -122,7 +123,7 @@ namespace lim
 		if (vpPackage.models[fromVpIdx] != nullptr && vpPackage.models[toVpIdx] != nullptr)
 			MapBaker::bakeNormalMap(exportPath, vpPackage.models[fromVpIdx], vpPackage.models[toVpIdx]);
 		else
-			Log::get(Log::LL_ERR).log("You Must to simplify before baking\n");
+			log::err("You Must to simplify before baking\n");
 	}
 	void AppSimplification::update()
 	{
@@ -212,7 +213,9 @@ namespace lim
 								}
 								if (ImGui::IsItemHovered())
 								{
-									ImGui::SetTooltip(fmToStr("%s\n%s.%s", format->description, md->name.c_str(), format->fileExtension).c_str());
+									static char exportFormatTooltipBuf[64];
+									stbsp_sprintf(exportFormatTooltipBuf, "%s\n%s.%s", format->description, md->name.c_str(), format->fileExtension); // todo : caching
+									ImGui::SetTooltip(exportFormatTooltipBuf);
 								}
 							}
 							ImGui::EndMenu();
@@ -242,7 +245,7 @@ namespace lim
 			vpPackage.viewports[i]->drawImGui();
 		}
 
-		Log::get().drawImGui();
+		log::drawViewer("log viwer##simplification");
 
 		if (ImGui::Begin("Simplify Options##simp"))
 		{
@@ -268,7 +271,7 @@ namespace lim
 				ImGui::SameLine();
 				if (ImGui::RadioButton((std::to_string(vp->id) + "##2").c_str(), &toVpIdx, vp->id))
 				{
-					Log::get() << vp->id;
+					log::info("%s",vp->id);
 				}
 			}
 
@@ -628,7 +631,7 @@ namespace lim
 		}
 		else
 		{
-			Log::get() << "[error] you must drop to viewport" << Log::endl;
+			log::err("you must drop to viewport\n");
 		}
 	}
 }

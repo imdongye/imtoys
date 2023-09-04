@@ -6,7 +6,7 @@
 //	1. bumpmap normalmap확인
 
 #include <limbrary/model_view/mesh.h>
-#include <limbrary/logger.h>
+#include <limbrary/log.h>
 #include <limbrary/texture.h>
 #include <limbrary/program.h>
 
@@ -143,7 +143,7 @@ namespace lim
 	}
 	void Mesh::print() const
 	{
-		Log::get().log("%s, verts %d, tris %d\n", name.c_str(), vertices.size(), indices.size() / 3);
+		log::info("%s, verts %d, tris %d\n", name.c_str(), vertices.size(), indices.size() / 3);
 	}
 	void Mesh::replicateExtraData(const Mesh &target)
 	{

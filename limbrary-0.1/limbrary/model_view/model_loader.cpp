@@ -9,7 +9,7 @@
 //  1. model path texture path 그냥 하나로 합치기
 //
 #include <limbrary/model_view/model_loader.h>
-#include <limbrary/logger.h>
+#include <limbrary/log.h>
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
@@ -56,7 +56,7 @@ namespace
 				// kd일때만 linear space변환
 				auto texture = std::make_shared<Texture>(texPath, (ai_type == aiTextureType_DIFFUSE) ? GL_SRGB8 : GL_RGB8);
 				texture->internal_model_path = texture->path.c_str() + model->data_dir.size();
-				Log::get().log("%s\n", texture->internal_model_path);
+				log::pure("%s\n", texture->internal_model_path);
 
 				switch (ai_type)
 				{
@@ -75,7 +75,7 @@ namespace
 				default:
 					break;
 				}
-				Log::get() << "-" << texture->tag << Log::endl;
+				log::pure("-%s\n", texture->tag.c_str());
 				textures_loaded.push_back(texture);
 				meshTextures.push_back(textures_loaded.back());
 			}
@@ -154,8 +154,8 @@ namespace
 		{
 			model->meshes.push_back(getParsedMesh(scene->mMeshes[node->mMeshes[i]], scene));
 			for (int j = 0; j < depth_tex; j++)
-				Log::get() << " ";
-			Log::get().log("mesh loaded : %s,", node->mName.C_Str());
+				log::pure(" ");
+			log::pure("mesh loaded : %s,", node->mName.C_Str());
 			(*(model->meshes.back())).print();
 		}
 		for (GLuint i = 0; i < node->mNumChildren; i++)
@@ -179,7 +179,7 @@ namespace lim
 		model->name = spath.substr(lastSlashPos + 1, dotPos - lastSlashPos - 1);
 		model->data_dir = (lastSlashPos == 0) ? "" : spath.substr(0, lastSlashPos) + "/";
 
-		Log::get().log("model loading : %s\n", model->name.c_str());
+		log::pure("model loading : %s\n", model->name.c_str());
 
 		/* Assimp 설정 */
 		Assimp::Importer loader;
@@ -198,7 +198,7 @@ namespace lim
 
 		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 		{
-			Log::get() << loader.GetErrorString();
+			log::err("%s\n", loader.GetErrorString());
 			return nullptr;
 		}
 
@@ -219,7 +219,7 @@ namespace lim
 
 		model->updateNums();
 		model->updateBoundary();
-		Log::get().log("model loaded : %s, vertices: %u\n\n", model->name.c_str(), model->nr_vertices);
+		log::pure("model loaded : %s, vertices: %u\n\n", model->name.c_str(), model->nr_vertices);
 
 		if (makeNormalized)
 		{

@@ -1,7 +1,7 @@
 #include "app_imgui_test.h"
 #include <stb_image.h>
 #include <glad/glad.h>
-#include <limbrary/logger.h>
+#include <limbrary/log.h>
 #include <imgui.h>
 #include <glm/glm.hpp>
 
@@ -71,7 +71,6 @@ namespace lim
 	}
 	void AppImGuiTest::keyCallback(int key, int scancode, int action, int mods)
 	{
-		Log::get() << ImGui::GetFrameHeight();
 	}
 	void AppImGuiTest::cursorPosCallback(double xPos, double yPos)
 	{

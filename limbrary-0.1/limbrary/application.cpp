@@ -11,7 +11,7 @@
 //  3. glfwSwapInterval(1); // vsync??
 //
 #include <limbrary/application.h>
-#include <limbrary/logger.h>
+#include <limbrary/log.h>
 #include <limbrary/viewport.h>
 #include <limbrary/app_pref.h>
 #include <limbrary/asset_lib.h>
@@ -28,7 +28,7 @@ namespace lim
 		:win_width(winWidth), win_height(winHeight)
 	{
 		glfwSetErrorCallback([](int error, const char *description) {
-			Log::get(Log::LL_ERR).log(stderr, "\nGlfw Error %d: %s\n", error, description);
+			log::err("Glfw Error %d: %s\n", error, description);
 		});
 
 		if( !glfwInit() ) std::exit(-1);
@@ -85,7 +85,6 @@ namespace lim
 		// need for restart app
 		AppPref::get();
 		Viewport::id_generator=0;
-		Log::get().windowName = "Log##log"+AppPref::get().selected_app_name;
 		AssetLib::reload();
 		Scene::sceneCounter=0;
 	}
@@ -199,17 +198,17 @@ namespace lim
 		glGetIntegerv(GL_MAJOR_VERSION, &major);
 		glGetIntegerv(GL_MINOR_VERSION, &minor);
 
-		Log::get().log("Frame size           : %d x %d\n", win_width, win_height);
-		Log::get().log("GL Vendor            : %s\n", vendor);
-		Log::get().log("GL Renderer          : %s\n", renderer);
-		Log::get().log("GL Version (string)  : %s\n", version);
-		Log::get().log("GLSL Version         : %s\n", glslVersion);
+		log::pure("Frame size           : %d x %d\n", win_width, win_height);
+		log::pure("GL Vendor            : %s\n", vendor);
+		log::pure("GL Renderer          : %s\n", renderer);
+		log::pure("GL Version (string)  : %s\n", version);
+		log::pure("GLSL Version         : %s\n", glslVersion);
 		int nrAttributes, nrTextureUnits;
 		glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &nrAttributes);
-		Log::get().log("Maximum nr of vertex attributes supported: %d\n", nrAttributes);
+		log::pure("Maximum nr of vertex attributes supported: %d\n", nrAttributes);
 		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &nrTextureUnits);
-		Log::get().log("Maximum nr of texture slots supported: %d\n", nrTextureUnits);
+		log::pure("Maximum nr of texture slots supported: %d\n", nrTextureUnits);
 
-		Log::get()<<"Current path is "<<std::filesystem::current_path().u8string()<<Log::endl<<Log::endl;
+		log::pure("Current path is %s\n\n", std::filesystem::current_path().string().c_str());
 	}
 }

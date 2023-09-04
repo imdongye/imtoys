@@ -1,5 +1,5 @@
 #include <limbrary/utils.h>
-#include <limbrary/logger.h>
+#include <limbrary/log.h>
 #include <fstream>
 #include <sstream>
 
@@ -17,10 +17,10 @@ namespace lim {
 			ifile.close();
 			text = ss.str();
 		} catch( std::ifstream::failure& e ) {
-			Log::get()<<"[error] fail read : "<<path.data()<<", what? "<<e.what()<<Log::endl;
+			log::err("fail read : %s, what? %s\n", path.data(), e.what());
 		}
 		if( text.length()<1 ) {
-			Log::get()<<"[error] length<1 : "<<path.data()<<Log::endl;
+			log::err("length<1 : %s\n",path.data());
 		}
 		return text;
 	}
@@ -32,16 +32,7 @@ namespace lim {
 			ofile<<text;
 			ofile.close();
 		} catch( std::ifstream::failure& e ) {
-			Log::get()<<"[error] fail read : "<<path.data()<<", what? "<<e.what();
+			log::err("fail read : %s, what? %s", path, e.what());
 		}
-	}
-	std::string fmToStr(const char* format, ...)
-	{
-		static char buffer[512]={0};
-		va_list ap;
-		va_start(ap, format);
-		vsprintf(buffer, format, ap);
-		va_end(ap);
-		return std::string(buffer);
 	}
 }

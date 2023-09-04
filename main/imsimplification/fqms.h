@@ -39,7 +39,7 @@
 #include <string>
 #include <math.h>
 #include <float.h> //FLT_EPSILON, DBL_EPSILON
-#include <limbrary/logger.h>
+#include <limbrary/log.h>
 
 #define loopi(start_l, end_l) for (int i = start_l; i < end_l; ++i)
 #define loopi(start_l, end_l) for (int i = start_l; i < end_l; ++i)
@@ -481,7 +481,7 @@ namespace fqms
 
 			// target number of triangles reached ? Then break
 			if( (verbose) && (iteration % 5 == 0) ) {
-				lim::Log::get().log("iteration %d - triangles %d threshold %g\n", iteration, triangle_count - deleted_triangles, threshold);
+				lim::log::pure("iteration %d - triangles %d threshold %g\n", iteration, triangle_count - deleted_triangles, threshold);
 			}
 
 			// remove vertices & mark deleted triangles
@@ -589,7 +589,7 @@ namespace fqms
 
 			// target number of triangles reached ? Then break
 			if( (verbose) && (iteration % 5 == 0) ) {
-				lim::Log::get().log("iteration %d - triangles %d threshold %g\n", iteration, triangle_count - deleted_triangles, threshold);
+				lim::log::pure("iteration %d - triangles %d threshold %g\n", iteration, triangle_count - deleted_triangles, threshold);
 			}
 
 			// remove vertices & mark deleted triangles
@@ -689,7 +689,7 @@ namespace fqms
 			//
 			double threshold = DBL_EPSILON; // 1.0E-3 EPS;
 			if( verbose ) {
-				lim::Log::get().log("lossless iteration %d\n", iteration);
+				lim::log::pure("lossless iteration %d\n", iteration);
 			}
 
 			// remove vertices & mark deleted triangles

@@ -1,6 +1,6 @@
 #include <limbrary/framebuffer.h>
 #include <vector>
-#include <limbrary/logger.h>
+#include <limbrary/log.h>
 
 namespace lim
 {
@@ -43,7 +43,9 @@ namespace lim
 		glDrawBuffers(1, drawBuffers.data());
 
 		GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-		if( status !=GL_FRAMEBUFFER_COMPLETE ) Log::get()<<"Framebuffer is not completed!! ("<<status<<")"<<Log::endl;
+		if( status !=GL_FRAMEBUFFER_COMPLETE )
+			log::err("Framebuffer is not completed!! (%d)\n", status);
+
 	}
 	bool Framebuffer::resize(GLuint _width, GLuint _height)
 	{
@@ -110,7 +112,8 @@ namespace lim
 		glDrawBuffers(1, drawBuffers.data());
 
 		GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-		if( status !=GL_FRAMEBUFFER_COMPLETE ) Log::get()<<"TexFramebuffer is not completed!! ("<<status<<")"<<Log::endl;
+		if( status !=GL_FRAMEBUFFER_COMPLETE )
+			log::err("TexFramebuffer is not completed!! (%d)\n", status);
 	}
 	void TexFramebuffer::bind() const
 	{
@@ -155,7 +158,8 @@ namespace lim
 		glDrawBuffers(1, drawBuffers.data());
 
 		GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-		if( status !=GL_FRAMEBUFFER_COMPLETE ) Log::get()<<"RboFramebuffer is not completed!! ("<<status<<")"<<Log::endl;
+		if( status !=GL_FRAMEBUFFER_COMPLETE )
+			log::err("RboFramebuffer is not completed!! (%d)\n", status);
 	}
 	void RboFramebuffer::bind() const
 	{
@@ -207,7 +211,8 @@ namespace lim
 		glDrawBuffers(1, drawBuffers.data());
 
 		GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-		if( status !=GL_FRAMEBUFFER_COMPLETE ) Log::get()<<"MsFramebuffer is not completed!! ("<<status<<")"<<Log::endl;
+		if( status !=GL_FRAMEBUFFER_COMPLETE )
+			log::err("MsFramebuffer is not completed!! (%d)\n", status);
 	}
 	void MsFramebuffer::bind() const
 	{
