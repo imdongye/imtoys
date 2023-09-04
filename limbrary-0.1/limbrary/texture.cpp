@@ -90,7 +90,7 @@ namespace lim
 			tex.src_bit_per_channel = 8;
 		}
 		if( !data ) {
-			Logger::get(1).log("texture failed to load at path: %s\n", path.data());
+			Log::get(1).log("texture failed to load at path: %s\n", path.data());
 			return false;
 		}
 
@@ -101,7 +101,7 @@ namespace lim
 			case 2: tex.src_format = GL_RG; break;
 			case 3: tex.src_format = GL_RGB; break;
 			case 4: tex.src_format = GL_RGBA; break;
-			default: Logger::get().log("[error] texter channels is over 4\n");
+			default: Log::get().log("[error] texter channels is over 4\n");
 		}
 
 		tex.create(data);

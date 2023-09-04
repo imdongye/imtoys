@@ -43,7 +43,7 @@ namespace lim
 		glDrawBuffers(1, drawBuffers.data());
 
 		GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-		if( status !=GL_FRAMEBUFFER_COMPLETE ) Logger::get()<<"Framebuffer is not completed!! ("<<status<<")"<<Logger::endl;
+		if( status !=GL_FRAMEBUFFER_COMPLETE ) Log::get()<<"Framebuffer is not completed!! ("<<status<<")"<<Log::endl;
 	}
 	bool Framebuffer::resize(GLuint _width, GLuint _height)
 	{
@@ -110,7 +110,7 @@ namespace lim
 		glDrawBuffers(1, drawBuffers.data());
 
 		GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-		if( status !=GL_FRAMEBUFFER_COMPLETE ) Logger::get()<<"TexFramebuffer is not completed!! ("<<status<<")"<<Logger::endl;
+		if( status !=GL_FRAMEBUFFER_COMPLETE ) Log::get()<<"TexFramebuffer is not completed!! ("<<status<<")"<<Log::endl;
 	}
 	void TexFramebuffer::bind() const
 	{
@@ -155,7 +155,7 @@ namespace lim
 		glDrawBuffers(1, drawBuffers.data());
 
 		GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-		if( status !=GL_FRAMEBUFFER_COMPLETE ) Logger::get()<<"RboFramebuffer is not completed!! ("<<status<<")"<<Logger::endl;
+		if( status !=GL_FRAMEBUFFER_COMPLETE ) Log::get()<<"RboFramebuffer is not completed!! ("<<status<<")"<<Log::endl;
 	}
 	void RboFramebuffer::bind() const
 	{
@@ -207,7 +207,7 @@ namespace lim
 		glDrawBuffers(1, drawBuffers.data());
 
 		GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-		if( status !=GL_FRAMEBUFFER_COMPLETE ) Logger::get()<<"MsFramebuffer is not completed!! ("<<status<<")"<<Logger::endl;
+		if( status !=GL_FRAMEBUFFER_COMPLETE ) Log::get()<<"MsFramebuffer is not completed!! ("<<status<<")"<<Log::endl;
 	}
 	void MsFramebuffer::bind() const
 	{

@@ -96,8 +96,8 @@ namespace lim
 	}
 	void Camera::printCameraState()
 	{
-		Logger::get().log("PitchYawRoll  : %f.2, %f.2, %f.2\n", pitch, yaw, roll);
-		Logger::get().log("POS  : %f.2, %f.2, %f.2\n", position.x, position.y, position.z);
-		Logger::get().log("DIST : %f\n", distance);
+		Log::get().log("PitchYawRoll  : %f.2, %f.2, %f.2\n", pitch, yaw, roll);
+		Log::get().log("POS  : %f.2, %f.2, %f.2\n", position.x, position.y, position.z);
+		Log::get().log("DIST : %f\n", distance);
 	}
 }

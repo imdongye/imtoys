@@ -56,7 +56,7 @@ namespace
 				// kd일때만 linear space변환
 				auto texture = std::make_shared<Texture>(texPath, (ai_type == aiTextureType_DIFFUSE) ? GL_SRGB8 : GL_RGB8);
 				texture->internal_model_path = texture->path.c_str() + model->data_dir.size();
-				Logger::get().log("%s\n", texture->internal_model_path);
+				Log::get().log("%s\n", texture->internal_model_path);
 
 				switch (ai_type)
 				{
@@ -75,7 +75,7 @@ namespace
 				default:
 					break;
 				}
-				Logger::get() << "-" << texture->tag << Logger::endl;
+				Log::get() << "-" << texture->tag << Log::endl;
 				textures_loaded.push_back(texture);
 				meshTextures.push_back(textures_loaded.back());
 			}
@@ -154,8 +154,8 @@ namespace
 		{
 			model->meshes.push_back(getParsedMesh(scene->mMeshes[node->mMeshes[i]], scene));
 			for (int j = 0; j < depth_tex; j++)
-				Logger::get() << " ";
-			Logger::get().log("mesh loaded : %s,", node->mName.C_Str());
+				Log::get() << " ";
+			Log::get().log("mesh loaded : %s,", node->mName.C_Str());
 			(*(model->meshes.back())).print();
 		}
 		for (GLuint i = 0; i < node->mNumChildren; i++)
@@ -179,7 +179,7 @@ namespace lim
 		model->name = spath.substr(lastSlashPos + 1, dotPos - lastSlashPos - 1);
 		model->data_dir = (lastSlashPos == 0) ? "" : spath.substr(0, lastSlashPos) + "/";
 
-		Logger::get().log("model loading : %s\n", model->name.c_str());
+		Log::get().log("model loading : %s\n", model->name.c_str());
 
 		/* Assimp 설정 */
 		Assimp::Importer loader;
@@ -198,7 +198,7 @@ namespace lim
 
 		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 		{
-			Logger::get() << loader.GetErrorString();
+			Log::get() << loader.GetErrorString();
 			return nullptr;
 		}
 
@@ -219,7 +219,7 @@ namespace lim
 
 		model->updateNums();
 		model->updateBoundary();
-		Logger::get().log("model loaded : %s, vertices: %u\n\n", model->name.c_str(), model->nr_vertices);
+		Log::get().log("model loaded : %s, vertices: %u\n\n", model->name.c_str(), model->nr_vertices);
 
 		if (makeNormalized)
 		{

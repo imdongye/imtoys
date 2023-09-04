@@ -14,12 +14,12 @@ namespace lim
 	{
 		std::string text = getStrFromFile(FILE_PATH);
 		if( text.length()<1 ) {
-			Logger::get()<<"length<1 so not make json\n";
+			Log::get()<<"length<1 so not make json\n";
 			return;
 		}
 		Json ijson = Json::parse(text);
 		// dump para is tab size, none is one line
-		//Logger::get()<<"read "<<FILE_PATH<<Logger::endl<< ijson.dump(2) <<Logger::endl;
+		//Log::get()<<"read "<<FILE_PATH<<Log::endl<< ijson.dump(2) <<Log::endl;
 
 		recent_model_paths = ijson["recentModelPaths"];
 	}
@@ -52,11 +52,11 @@ namespace lim
 			ofile << std::setw(4) << ojson << std::endl;
 			ofile.close();
 		} catch( std::ifstream::failure& e ) {
-			Logger::get()<<"[error] fail read : "<<FILE_PATH<<", what? "<<e.what();
+			Log::get()<<"[error] fail read : "<<FILE_PATH<<", what? "<<e.what();
 		}
 
 		//std::string temp = ojson.dump(2);
-		//Logger::get()<<"write "<<FILE_PATH<<Logger::endl<<temp<<Logger::endl;
+		//Log::get()<<"write "<<FILE_PATH<<Log::endl<<temp<<Log::endl;
 	}
 	void AppPref::pushPathWithoutDup(const std::string_view path)
 	{
@@ -65,7 +65,7 @@ namespace lim
 		std::string rp = std::filesystem::relative(ap, std::filesystem::current_path()).u8string();
 		std::replace(rp.begin(), rp.end(), '\\', '/');
 
-		Logger::get()<<rp<<Logger::endll;
+		Log::get()<<rp<<Log::endll;
 		//같은거 있으면 지우기
 		auto samePathPos = std::find(recent_model_paths.begin(), recent_model_paths.end(), rp);
 		if( samePathPos!=recent_model_paths.end() )

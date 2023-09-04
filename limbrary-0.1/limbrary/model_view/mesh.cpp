@@ -143,7 +143,7 @@ namespace lim
 	}
 	void Mesh::print() const
 	{
-		Logger::get().log("%s, verts %d, tris %d\n", name.c_str(), vertices.size(), indices.size() / 3);
+		Log::get().log("%s, verts %d, tris %d\n", name.c_str(), vertices.size(), indices.size() / 3);
 	}
 	void Mesh::replicateExtraData(const Mesh &target)
 	{

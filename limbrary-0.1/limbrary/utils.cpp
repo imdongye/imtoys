@@ -17,10 +17,10 @@ namespace lim {
 			ifile.close();
 			text = ss.str();
 		} catch( std::ifstream::failure& e ) {
-			Logger::get()<<"[error] fail read : "<<path.data()<<", what? "<<e.what()<<Logger::endl;
+			Log::get()<<"[error] fail read : "<<path.data()<<", what? "<<e.what()<<Log::endl;
 		}
 		if( text.length()<1 ) {
-			Logger::get()<<"[error] length<1 : "<<path.data()<<Logger::endl;
+			Log::get()<<"[error] length<1 : "<<path.data()<<Log::endl;
 		}
 		return text;
 	}
@@ -32,7 +32,7 @@ namespace lim {
 			ofile<<text;
 			ofile.close();
 		} catch( std::ifstream::failure& e ) {
-			Logger::get()<<"[error] fail read : "<<path.data()<<", what? "<<e.what();
+			Log::get()<<"[error] fail read : "<<path.data()<<", what? "<<e.what();
 		}
 	}
 	std::string fmToStr(const char* format, ...)

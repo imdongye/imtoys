@@ -143,7 +143,7 @@ namespace lim
 	}
 	void AppNano::keyCallback(int key, int scancode, int action, int mods)
 	{
-		Logger::get()<<ImGui::GetFrameHeight();
+		Log::get()<<ImGui::GetFrameHeight();
 	}
 	void AppNano::cursorPosCallback(double xPos, double yPos)
 	{

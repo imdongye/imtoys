@@ -74,7 +74,7 @@ namespace lim
 		vpPackage.models[vpIdx] = temp;
 		vpPackage.cameras[vpIdx]->pivot = temp->position;
 		vpPackage.cameras[vpIdx]->updatePivotViewMat();
-		Logger::get().log("Done! in %.3f sec.  \n", glfwGetTime() - start);
+		Log::get().log("Done! in %.3f sec.  \n", glfwGetTime() - start);
 		AppPref::get().pushPathWithoutDup(path.data());
 	}
 	void AppSimplification::exportModel(size_t pIndex, int vpIdx)
@@ -83,16 +83,16 @@ namespace lim
 
 		if (toModel == nullptr)
 		{
-			Logger::get() << "error : export" << Logger::endl;
+			Log::get() << "error : export" << Log::endl;
 			return;
 		}
 
 		double start = glfwGetTime();
-		Logger::get().log("Exporting %s.. .. ...... ...  .... .. . .... . .\n", toModel->name.c_str());
+		Log::get().log("Exporting %s.. .. ...... ...  .... .. . .... . .\n", toModel->name.c_str());
 
 		exportModelToFile(exportPath, toModel, pIndex);
 
-		Logger::get().log("Done! in %.3f sec.  \n\n", glfwGetTime() - start);
+		Log::get().log("Done! in %.3f sec.  \n\n", glfwGetTime() - start);
 	}
 	void AppSimplification::simplifyModel(float lived_pct, int version, int agressiveness, bool verbose)
 	{
@@ -100,7 +100,7 @@ namespace lim
 		Model *toModel = vpPackage.models[toVpIdx];
 
 		double start = glfwGetTime();
-		Logger::get().log("\nSimplifing %s..... . ... ... .. .. . .  .\n", fromModel->name.c_str());
+		Log::get().log("\nSimplifing %s..... . ... ... .. .. . .  .\n", fromModel->name.c_str());
 
 		if (toModel != nullptr)
 			delete toModel;
@@ -114,8 +114,8 @@ namespace lim
 		vpPackage.cameras[toVpIdx]->pivot = toModel->position;
 
 		double simpTime = glfwGetTime() - start;
-		Logger::get().simpTime = simpTime;
-		Logger::get().log("Done! %d => %d in %.3f sec. \n\n", fromModel->nr_vertices, toModel->nr_vertices, simpTime);
+		Log::get().simpTime = simpTime;
+		Log::get().log("Done! %d => %d in %.3f sec. \n\n", fromModel->nr_vertices, toModel->nr_vertices, simpTime);
 	}
 	// From: https://stackoverflow.com/questions/62007672/png-saved-from-opengl-framebuffer-using-stbi-write-png-is-shifted-to-the-right
 	void AppSimplification::bakeNormalMap()
@@ -123,7 +123,7 @@ namespace lim
 		if (vpPackage.models[fromVpIdx] != nullptr && vpPackage.models[toVpIdx] != nullptr)
 			MapBaker::bakeNormalMap(exportPath, vpPackage.models[fromVpIdx], vpPackage.models[toVpIdx]);
 		else
-			Logger::get(1).log("You Must to simplify before baking\n");
+			Log::get(1).log("You Must to simplify before baking\n");
 	}
 	void AppSimplification::update()
 	{
@@ -243,7 +243,7 @@ namespace lim
 			vpPackage.viewports[i]->drawImGui();
 		}
 
-		Logger::get().drawImGui();
+		Log::get().drawImGui();
 
 		if (ImGui::Begin("Simplify Options##simp"))
 		{
@@ -269,7 +269,7 @@ namespace lim
 				ImGui::SameLine();
 				if (ImGui::RadioButton((std::to_string(vp->id) + "##2").c_str(), &toVpIdx, vp->id))
 				{
-					Logger::get() << vp->id;
+					Log::get() << vp->id;
 				}
 			}
 
@@ -291,7 +291,7 @@ namespace lim
 
 			ImGui::SameLine();
 			ImGui::Text("target triangles = %d", static_cast<int>(fromModel->nr_triangles * pct));
-			ImGui::Text("simplified in %lf sec", Logger::get().simpTime);
+			ImGui::Text("simplified in %lf sec", Log::get().simpTime);
 			ImGui::NewLine();
 
 			// baking
@@ -629,7 +629,7 @@ namespace lim
 		}
 		else
 		{
-			Logger::get() << "[error] you must drop to viewport" << Logger::endl;
+			Log::get() << "[error] you must drop to viewport" << Log::endl;
 		}
 	}
 }

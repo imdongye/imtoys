@@ -2,8 +2,8 @@
 //	2022-09-17 / im dong ye
 // 
 //	usage : 
-//	1. Logger::get().attach("%d\n", a);
-//	2. Logger::get()<<"asdf"<<Logger::endl;		
+//	1. Log::get().attach("%d\n", a);
+//	2. Log::get()<<"asdf"<<Log::endl;		
 // 
 //	TODO list:
 //  0. 분리
@@ -24,37 +24,37 @@
 
 namespace lim
 {
-	class Logger
+	class Log
 	{
 	private:
 		/* 고정 상수식이기에 static으로 data메모리에 있어야함 */
 		static constexpr int BUFFER_SIZE = 512;
 		char buffer[BUFFER_SIZE] = {0};
 	public:
-		std::string windowName="Logger##log0";
+		std::string windowName="Log##log0";
 		std::vector<std::string> lines;
 		double simpTime = 0.0;
 		bool autoScroll = true;
 		bool addTimeStamp = false;
 	private:
-		Logger();
-		Logger(const Logger&)=delete;
-		Logger &operator=(const Logger&)=delete;
+		Log();
+		Log(const Log&)=delete;
+		Log &operator=(const Log&)=delete;
 	public:
-		static Logger& get(int mode=0);
+		static Log& get(int mode=0);
 		void drawImGui();
-		Logger& log(FILE* stream, const char* format, ...);
-		Logger& log(const char* format, ...);
-		Logger& operator<<(const int n);
-		Logger& operator<<(const unsigned int n);
-		Logger& operator<<(const float f);
-		Logger& operator<<(const double f);
-		Logger& operator<<(const char c);
-		Logger& operator<<(const char* str);
-		Logger& operator<<(const std::string& str);
-		Logger& operator<<(Logger& (*fp)(Logger&));
-		static Logger& endl(Logger& ref);
-		static Logger& endll(Logger& ref);
+		Log& log(FILE* stream, const char* format, ...);
+		Log& log(const char* format, ...);
+		Log& operator<<(const int n);
+		Log& operator<<(const unsigned int n);
+		Log& operator<<(const float f);
+		Log& operator<<(const double f);
+		Log& operator<<(const char c);
+		Log& operator<<(const char* str);
+		Log& operator<<(const std::string& str);
+		Log& operator<<(Log& (*fp)(Log&));
+		static Log& endl(Log& ref);
+		static Log& endll(Log& ref);
 	private:
 		void seperate_and_save();
 	};

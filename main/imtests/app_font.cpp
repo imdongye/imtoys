@@ -77,7 +77,7 @@ namespace lim
 	}
 	void AppFont::keyCallback(int key, int scancode, int action, int mods)
 	{
-		Logger::get()<<ImGui::GetFrameHeight();
+		Log::get()<<ImGui::GetFrameHeight();
 	}
 	void AppFont::cursorPosCallback(double xPos, double yPos)
 	{

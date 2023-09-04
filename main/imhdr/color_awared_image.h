@@ -606,14 +606,14 @@ namespace lim
 			LibRaw raw;
 			raw.open_file(path.c_str());
 			raw.unpack();
-			Logger::get() << "< Meta data >" << Logger::endl;
-			Logger::get() << "ISO : " << raw.imgdata.other.iso_speed << Logger::endl;
-			Logger::get() << "Exposure Time : " << raw.imgdata.other.shutter << Logger::endl;
-			Logger::get() << "Aperture : " << raw.imgdata.other.aperture << Logger::endl;
-			Logger::get() << "Focal Lenth : " << raw.imgdata.other.focal_len << Logger::endl;
-			Logger::get() << "Black Level : " << raw.imgdata.color.black << Logger::endl;
-			Logger::get() << "Max Value : " << raw.imgdata.color.maximum << Logger::endl;
-			Logger::get() << "RAW bit: " << raw.imgdata.color.raw_bps << Logger::endl;
+			Log::get() << "< Meta data >" << Log::endl;
+			Log::get() << "ISO : " << raw.imgdata.other.iso_speed << Log::endl;
+			Log::get() << "Exposure Time : " << raw.imgdata.other.shutter << Log::endl;
+			Log::get() << "Aperture : " << raw.imgdata.other.aperture << Log::endl;
+			Log::get() << "Focal Lenth : " << raw.imgdata.other.focal_len << Log::endl;
+			Log::get() << "Black Level : " << raw.imgdata.color.black << Log::endl;
+			Log::get() << "Max Value : " << raw.imgdata.color.maximum << Log::endl;
+			Log::get() << "RAW bit: " << raw.imgdata.color.raw_bps << Log::endl;
 			*/
 
 			// is JPEG

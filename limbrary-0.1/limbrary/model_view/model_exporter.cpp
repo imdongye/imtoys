@@ -78,7 +78,7 @@ namespace
 			const GLuint nr_indices = mesh->indices.size();
 			const GLuint nr_tris = nr_indices / 3;
 			if (nr_indices % 3 != 0)
-				Logger::get().log("[error] not triangle mesh in exporter");
+				Log::get().log("[error] not triangle mesh in exporter");
 			ai_mesh->mNumFaces = nr_tris;
 			ai_mesh->mFaces = new aiFace[nr_tris];
 
@@ -132,7 +132,7 @@ namespace lim
 		{
 			const char *error = exporter.GetErrorString();
 			if (strlen(error) > 0)
-				Logger::get() << "[error::exporter] " << error << Logger::endl;
+				Log::get() << "[error::exporter] " << error << Log::endl;
 		}
 
 		/* ctrl cv texture */
@@ -143,7 +143,7 @@ namespace lim
 			fs::path fromTexPath(tex->path);
 			fs::path toTexPath(newTexPath);
 			fs::copy(fromTexPath, toTexPath, fs::copy_options::skip_existing);
-			Logger::get().log("%s %s\n", fromTexPath.string().c_str(), toTexPath.string().c_str());
+			Log::get().log("%s %s\n", fromTexPath.string().c_str(), toTexPath.string().c_str());
 		}
 	}
 }

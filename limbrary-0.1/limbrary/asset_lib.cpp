@@ -25,7 +25,7 @@ namespace lim
 		glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 		glEnableVertexAttribArray(0);  // Vertex position
 
-		Logger::get()<<"load quad vao to vram\n";
+		Log::get()<<"load quad vao to vram\n";
 
 
 		tex_to_quad_prog = new Program("texToQuad");

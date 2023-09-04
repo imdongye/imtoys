@@ -62,7 +62,7 @@ namespace lim
 		{
 			int location = glGetUniformLocation(pid, vname.c_str());
 			if (location == -1)
-				Logger::get().log("missing uniform: %s\n", vname.c_str());
+				Log::get().log("missing uniform: %s\n", vname.c_str());
 			else
 				bind(location, std::forward<T>(value));
 			return *this;

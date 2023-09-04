@@ -6,14 +6,14 @@
 
 namespace lim
 {
-	Logger::Logger()
+	Log::Log()
 	{
 		lines.emplace_back("");
 	};
 
-	Logger& Logger::get(int mode)
+	Log& Log::get(int mode)
 	{
-		static Logger logger;
+		static Log logger;
 		if( mode==1 ) {
 			static const char *__color_start = "[0;31;40m";
 			static const char *__color_end = "[0m";
@@ -22,7 +22,7 @@ namespace lim
 
 		return logger;
 	}
-	void Logger::drawImGui()
+	void Log::drawImGui()
 	{
 		ImGui::Begin(windowName.c_str());
 
@@ -55,7 +55,7 @@ namespace lim
 		ImGui::EndChild();
 		ImGui::End();
 	}
-	Logger& Logger::log(FILE* stream, const char* format, ...)
+	Log& Log::log(FILE* stream, const char* format, ...)
 	{
 		va_list args;
 		va_start(args, format);
@@ -66,7 +66,7 @@ namespace lim
 		seperate_and_save();
 		return *this;
 	}
-	Logger& Logger::log(const char* format, ...)
+	Log& Log::log(const char* format, ...)
 	{
 		va_list ap;
 		va_start(ap, format);
@@ -77,47 +77,47 @@ namespace lim
 		seperate_and_save();
 		return *this;
 	}
-	Logger& Logger::operator<<(const int n)
+	Log& Log::operator<<(const int n)
 	{
 		return log("%d", n);
 	}
-	Logger& Logger::operator<<(const unsigned int n)
+	Log& Log::operator<<(const unsigned int n)
 	{
 		return log("%ld", n);
 	}
-	Logger& Logger::operator<<(const float f)
+	Log& Log::operator<<(const float f)
 	{
 		return log("%f", f);
 	}
-	Logger& Logger::operator<<(const double f)
+	Log& Log::operator<<(const double f)
 	{
 		return log("%lf", f);
 	}
-	Logger& Logger::operator<<(const char c)
+	Log& Log::operator<<(const char c)
 	{
 		return log("%c", c);
 	}
-	Logger& Logger::operator<<(const char* str)
+	Log& Log::operator<<(const char* str)
 	{
 		return log("%s", str);
 	}
-	Logger& Logger::operator<<(const std::string& str)
+	Log& Log::operator<<(const std::string& str)
 	{
 		return log("%s", str.c_str());
 	}
-	Logger& Logger::operator<<(Logger& (*fp)(Logger&))
+	Log& Log::operator<<(Log& (*fp)(Log&))
 	{
 		return fp(*this);
 	}
-	Logger& Logger::endl(Logger& ref)
+	Log& Log::endl(Log& ref)
 	{
 		return ref.log("\n");
 	}
-	Logger& Logger::endll(Logger& ref)
+	Log& Log::endll(Log& ref)
 	{
 		return ref.log("\n\n");
 	}
-	void Logger::seperate_and_save()
+	void Log::seperate_and_save()
 	{
 		const char *start, *end;
 		static char line_head[32];

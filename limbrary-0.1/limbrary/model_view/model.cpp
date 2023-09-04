@@ -52,7 +52,7 @@ namespace lim
 		meshes.push_back(_mesh);
 		updateNums();
 		updateBoundary();
-		Logger::get().log("model(mesh) generaged : %s, vertices: %u\n\n", name.c_str(), nr_vertices);
+		Log::get().log("model(mesh) generaged : %s, vertices: %u\n\n", name.c_str(), nr_vertices);
 	}
 	Model::~Model()
 	{
@@ -69,7 +69,7 @@ namespace lim
 	void Model::draw(const GLuint pid)
 	{
 		if( pid==0 )
-			Logger::get()<<"[error] model draw pid param is zero"<<Logger::endl;
+			Log::get()<<"[error] model draw pid param is zero"<<Log::endl;
 
 		setUniform(pid, "modelMat", model_mat);
 		setUniform(pid, "bumpHeight", bumpHeight);
@@ -81,7 +81,7 @@ namespace lim
 	void Model::draw(const Camera& camera, const Light& light)
 	{
 		if( program==nullptr )
-			Logger::get()<<"[error] model has not progam"<<Logger::endl;
+			Log::get()<<"[error] model has not progam"<<Log::endl;
 		GLuint pid = program->use();
 
 		setUniform(pid, "projMat", camera.proj_mat);
@@ -120,7 +120,7 @@ namespace lim
 	}
 	void Model::setPivot(glm::vec3 pivot)
 	{
-		Logger::get()<<"pivot: "<<glm::to_string(pivot)<<Logger::endl;
+		Log::get()<<"pivot: "<<glm::to_string(pivot)<<Log::endl;
 		pivot_mat = glm::translate(-pivot);
 	}
 	void Model::updateNums()
@@ -151,6 +151,6 @@ namespace lim
 				else if( boundary_min.z > v.p.z ) boundary_min.z = v.p.z;
 			}
 		}
-		Logger::get()<<"boundary size: "<<glm::to_string(getBoundarySize())<<Logger::endl;
+		Log::get()<<"boundary size: "<<glm::to_string(getBoundarySize())<<Log::endl;
 	}
 }

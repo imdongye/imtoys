@@ -28,7 +28,7 @@ namespace lim
 		:win_width(winWidth), win_height(winHeight)
 	{
 		glfwSetErrorCallback([](int error, const char *description) {
-			Logger::get(1).log(stderr, "\nGlfw Error %d: %s\n", error, description);
+			Log::get(1).log(stderr, "\nGlfw Error %d: %s\n", error, description);
 		});
 
 		if( !glfwInit() ) std::exit(-1);
@@ -85,7 +85,7 @@ namespace lim
 		// need for restart app
 		AppPref::get();
 		Viewport::id_generator=0;
-		Logger::get().windowName = "Logger##log"+AppPref::get().selected_app_name;
+		Log::get().windowName = "Log##log"+AppPref::get().selected_app_name;
 		AssetLib::reload();
 		Scene::sceneCounter=0;
 	}
@@ -199,17 +199,17 @@ namespace lim
 		glGetIntegerv(GL_MAJOR_VERSION, &major);
 		glGetIntegerv(GL_MINOR_VERSION, &minor);
 
-		Logger::get().log("Frame size           : %d x %d\n", win_width, win_height);
-		Logger::get().log("GL Vendor            : %s\n", vendor);
-		Logger::get().log("GL Renderer          : %s\n", renderer);
-		Logger::get().log("GL Version (string)  : %s\n", version);
-		Logger::get().log("GLSL Version         : %s\n", glslVersion);
+		Log::get().log("Frame size           : %d x %d\n", win_width, win_height);
+		Log::get().log("GL Vendor            : %s\n", vendor);
+		Log::get().log("GL Renderer          : %s\n", renderer);
+		Log::get().log("GL Version (string)  : %s\n", version);
+		Log::get().log("GLSL Version         : %s\n", glslVersion);
 		int nrAttributes, nrTextureUnits;
 		glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &nrAttributes);
-		Logger::get().log("Maximum nr of vertex attributes supported: %d\n", nrAttributes);
+		Log::get().log("Maximum nr of vertex attributes supported: %d\n", nrAttributes);
 		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &nrTextureUnits);
-		Logger::get().log("Maximum nr of texture slots supported: %d\n", nrTextureUnits);
+		Log::get().log("Maximum nr of texture slots supported: %d\n", nrTextureUnits);
 
-		Logger::get()<<"Current path is "<<std::filesystem::current_path().u8string()<<Logger::endl<<Logger::endl;
+		Log::get()<<"Current path is "<<std::filesystem::current_path().u8string()<<Log::endl<<Log::endl;
 	}
 }

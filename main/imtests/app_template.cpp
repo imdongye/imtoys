@@ -31,7 +31,7 @@ namespace lim
 	}
 	void AppTemplate::keyCallback(int key, int scancode, int action, int mods)
 	{
-		Logger::get() << ImGui::GetFrameHeight();
+		Log::get() << ImGui::GetFrameHeight();
 	}
 	void AppTemplate::cursorPosCallback(double xPos, double yPos)
 	{

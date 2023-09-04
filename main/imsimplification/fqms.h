@@ -481,7 +481,7 @@ namespace fqms
 
 			// target number of triangles reached ? Then break
 			if( (verbose) && (iteration % 5 == 0) ) {
-				lim::Logger::get().log("iteration %d - triangles %d threshold %g\n", iteration, triangle_count - deleted_triangles, threshold);
+				lim::Log::get().log("iteration %d - triangles %d threshold %g\n", iteration, triangle_count - deleted_triangles, threshold);
 			}
 
 			// remove vertices & mark deleted triangles
@@ -589,7 +589,7 @@ namespace fqms
 
 			// target number of triangles reached ? Then break
 			if( (verbose) && (iteration % 5 == 0) ) {
-				lim::Logger::get().log("iteration %d - triangles %d threshold %g\n", iteration, triangle_count - deleted_triangles, threshold);
+				lim::Log::get().log("iteration %d - triangles %d threshold %g\n", iteration, triangle_count - deleted_triangles, threshold);
 			}
 
 			// remove vertices & mark deleted triangles
@@ -689,7 +689,7 @@ namespace fqms
 			//
 			double threshold = DBL_EPSILON; // 1.0E-3 EPS;
 			if( verbose ) {
-				lim::Logger::get().log("lossless iteration %d\n", iteration);
+				lim::Log::get().log("lossless iteration %d\n", iteration);
 			}
 
 			// remove vertices & mark deleted triangles

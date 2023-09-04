@@ -26,7 +26,7 @@ namespace lim
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glViewport(0, 0, fb_width, fb_height);
-		glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
+		glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	}
 	void AppImGuiTest::renderImGui()
@@ -71,7 +71,7 @@ namespace lim
 	}
 	void AppImGuiTest::keyCallback(int key, int scancode, int action, int mods)
 	{
-		Logger::get() << ImGui::GetFrameHeight();
+		Log::get() << ImGui::GetFrameHeight();
 	}
 	void AppImGuiTest::cursorPosCallback(double xPos, double yPos)
 	{
