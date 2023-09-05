@@ -4,6 +4,7 @@
 # Visual Studio
 .vscode/*
 !.vscode/launch.json
+!.vscode/settings.json
 
 # Mac
 .DS_Store
