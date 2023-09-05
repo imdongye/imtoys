@@ -16,7 +16,9 @@ namespace lim
 		//****** property ******//
 		Program* gray_to_quad_prog;
 		Program* tex_to_quad_prog;
+		Program* depth_prog;
 		GLuint quad_vao = 0;
+
 	private:
 		inline static AssetLib* instance = nullptr;
 		AssetLib();

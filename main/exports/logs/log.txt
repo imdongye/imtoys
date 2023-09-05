@@ -1,0 +1,18 @@
+Frame size           : 1200 x 780
+GL Vendor            : Intel Inc.
+GL Renderer          : Intel HD Graphics 5000 OpenGL Engine
+GL Version (string)  : 4.1 INTEL-16.5.14
+GLSL Version         : 4.10
+Maximum nr of vertex attributes supported: 16
+Maximum nr of texture slots supported: 16
+Current path is /Users/dongye-im/workspace/OpenGL-projects/LIM/imtoys/main
+
+[info] load quad vao to vram
+[info] [program texToQuad] attch assets/shaders/tex_to_quad.vs success
+[info] [program texToQuad] attch assets/shaders/tex_to_quad.fs success
+[info] [program texToQuad] linking success
+
+[info] [program grayToQuad] attch assets/shaders/tex_to_quad.vs success
+[info] [program grayToQuad] attch assets/shaders/gray_to_quad.fs success
+[info] [program grayToQuad] linking success
+

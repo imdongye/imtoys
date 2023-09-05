@@ -10,7 +10,7 @@ namespace lim
 	{
 		if( sceneCounter==0 ) {
 			groundProgram = new Program("Ground");
-			groundProgram->attatch("pos.vs").attatch("amiga_ground.fs").link();
+			groundProgram->attatch("mvp.vs").attatch("amiga_ground.fs").link();
 
 			groundMesh = code_mesh::genQuad();
 			groundMesh->color = glm::vec3(0.8, 0.8, 0); // yello ground			

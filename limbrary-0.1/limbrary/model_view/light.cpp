@@ -12,17 +12,18 @@
 #include <limbrary/model_view/light.h>
 #include <limbrary/framebuffer.h>
 #include <glm/gtx/transform.hpp>
+#include <limbrary/asset_lib.h>
+#include <limbrary/model_view/model.h>
 
 
 namespace lim
 {
 	Light::Light(float _yaw, float _pitch, glm::vec3 _color, float _intensity, bool shadowEnabled)
 	{
-		yaw=_yaw; pitch=_pitch; shadow_enabled=shadowEnabled; color=_color; intensity=_intensity;
-		if( ref_count++==0 ) {
-			shadow_prog = new Program("shadow program");
-			shadow_prog->attatch("pos.vs").attatch("depth.fs").link();
-		}
+		yaw=_yaw; pitch=_pitch; color=_color;
+		intensity=_intensity; shadow_enabled=shadowEnabled;
+
+		depth_prog = AssetLib::get().depth_prog;
 
 		shadow_map.clear_color = glm::vec4(1);
 		shadow_map.resize(shadow_map_size, shadow_map_size);
@@ -38,9 +39,6 @@ namespace lim
 	}
 	Light::~Light()
 	{
-		if( --ref_count==0 ) {
-			delete shadow_prog;
-		}
 	}
 	void Light::updateMembers()
 	{
@@ -71,20 +69,23 @@ namespace lim
 			prog.setUniform("shadowMap", 31);
 		}
 		else {
-			prog.setUniform("shadowEnabled", -1);
+			prog.setUniform("shadowEnabled", 0);
 		}
 	}
-	/* light 와 model의 circular dependency때문에 shadowMap을 직접 그리는 함수를 외부에서 정의하게함. */
-	// todo: solve circular dependency with inl file
-	void Light::drawShadowMap(std::function<void(GLuint shadowProgID)> drawModelsMeshWithModelMat)
+	void Light::drawShadowMap(std::vector<Model*> models)
 	{
 		shadow_map.bind();
 
-		shadow_prog->use();
-		shadow_prog->setUniform("viewMat", view_mat);
-		shadow_prog->setUniform("projMat", proj_mat);
+		depth_prog->use();
+		depth_prog->setUniform("viewMat", view_mat);
+		depth_prog->setUniform("projMat", proj_mat);
 
-		drawModelsMeshWithModelMat(shadow_prog->pid);
+		for( Model* md : models ) {
+			depth_prog->setUniform("modelMat", md->model_mat);
+			for( Mesh* ms : md->meshes ) {
+				ms->draw(0); // only draw
+			}
+		}
 
 		shadow_map.unbind();
 	}

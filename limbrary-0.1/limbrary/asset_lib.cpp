@@ -34,10 +34,15 @@ namespace lim
 
 		gray_to_quad_prog = new Program("grayToQuad");
 		gray_to_quad_prog->attatch("tex_to_quad.vs").attatch("gray_to_quad.fs").link();
+	
+		depth_prog = new Program("depth");
+		depth_prog->attatch("mvp.vs").attatch("depth.fs").link();
 	}
 	AssetLib::~AssetLib()
 	{
 		delete tex_to_quad_prog;
+		delete gray_to_quad_prog;
+		delete depth_prog;
 		glDeleteVertexArrays(1, &quad_vao); quad_vao=0;
 	}
 	AssetLib& AssetLib::get()

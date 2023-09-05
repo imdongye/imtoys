@@ -15,7 +15,7 @@ namespace lim
 {
 	// if vp is nullptr then interaction with window
 	AutoCamera::AutoCamera(GLFWwindow* _win, Viewport *_vp, int viewingMode, glm::vec3 _pos, glm::vec3 _focus)
-		:Camera(_pos, _focus-_pos), window(_win), vp(_vp), viewing_mode(viewingMode)
+		:Camera(_pos, _focus-_pos), window(_win),  viewing_mode(viewingMode), vp(_vp)
 	{
 		pivot = _focus;
 		distance = glm::length(position-pivot);

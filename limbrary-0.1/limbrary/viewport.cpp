@@ -20,8 +20,9 @@
 namespace lim {
 	Viewport::Viewport(Framebuffer* createdFB, GLuint _width, GLuint _height, WindowMode wm)
 		: id(id_generator++), name("Viewport"+std::to_string(id)+"##vp"+AppPref::get().selected_app_name)
-		, width(_width), height(_height), window_mode(wm), aspect(width/(float)height), mouse_pos(0), window_opened(true)
 	{
+		width = _width; height = _height; window_mode = wm; aspect = width/(float)height;
+		mouse_pos = {0,0}, window_opened = false;
 		framebuffer = createdFB;
 		framebuffer->resize(width, height);
 		hovered = focused = dragging = false;

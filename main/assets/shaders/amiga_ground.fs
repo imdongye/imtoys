@@ -1,5 +1,5 @@
 #version 410 core
-out vec4 FragColor;
+layout(location=0) out vec4 fragColor;
 
 in vec3 wPos;
 
@@ -15,5 +15,5 @@ void main()
     //out_color *= mix(vec3(1,1,1),vec3(0.1,0.1,0.1),t/d);
     
     outColor = pow(outColor, vec3(1/gamma));
-    FragColor = vec4(outColor, 1);
+    fragColor = vec4(outColor, 1);
 }

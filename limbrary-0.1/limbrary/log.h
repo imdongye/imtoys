@@ -10,7 +10,7 @@ ExampleAppLog in imgui_demo.cpp
 
 todo:
 1. err call back
-2. , operator 출력
+2. ,comma operator 출력
 
 */
 
@@ -27,6 +27,7 @@ namespace lim
         void err(const char* format, ...);
 
         void clear();
+        void exportToFile(const char* filename = "log.txt");
         void drawViewer(const char* title, bool* pOpen = nullptr);
     }
 }

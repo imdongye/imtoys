@@ -25,8 +25,7 @@ namespace lim
 	class Light // direction
 	{
 	public:
-		inline static int ref_count = 0;
-		inline static Program* shadow_prog = nullptr;
+		Program* depth_prog;
 
 		const GLuint shadow_map_size = 1024;
 		const float shadow_z_near = 3;
@@ -54,7 +53,7 @@ namespace lim
 		void setUniforms(const Program& prog) const;
 		/* light 와 model의 circular dependency때문에 shadowMap을 직접 그리는 함수를 외부에서 정의하게함. */
 		// todo: solve circular dependency with inl file
-		void drawShadowMap(std::function<void(GLuint shadowProgID)> drawModelsMeshWithModelMat);
+		void drawShadowMap(std::vector<Model*> models);
 	};
 }
 #endif

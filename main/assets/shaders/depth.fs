@@ -1,7 +1,7 @@
 #version 410 core
-out vec4 FragColor;
+layout(location=0) out vec4 fragColor;
 
 void main(void)
 {
-	FragColor = vec4(vec3(gl_FragCoord.z),1);
+	fragColor = vec4(vec3(gl_FragCoord.z),1);
 }

@@ -14,6 +14,7 @@
 #include <limbrary/application.h>
 #include <limbrary/program.h>
 #include <limbrary/viewport.h>
+#include <vector>
 
 namespace lim
 {

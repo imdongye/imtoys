@@ -177,7 +177,7 @@ namespace lim
         stbi_set_flip_vertically_on_load(true);
 
         prog = new Program("icp", APP_DIR);
-        prog->attatch("mvp.vs").attatch("blue.fs").link();
+        prog->attatch("assets/shaders/mvp.vs").attatch("blue.fs").link();
 
         camera = new AutoCamera(window, nullptr, 0, glm::vec3{0,1,5}, glm::vec3{0,1,0});
 

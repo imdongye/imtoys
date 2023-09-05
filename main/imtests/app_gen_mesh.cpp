@@ -16,7 +16,7 @@ namespace lim
 		stbi_set_flip_vertically_on_load(true);
 
 		program = new Program("debugging", APP_DIR);
-		program->attatch("mvp.vs").attatch("debug.fs").link();
+		program->attatch("assets/shaders/mvp.vs").attatch("debug.fs").link();
 
 		viewport = new Viewport(new MsFramebuffer());
 

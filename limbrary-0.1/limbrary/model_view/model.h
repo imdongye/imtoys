@@ -44,7 +44,7 @@ namespace lim
 		std::vector<std::shared_ptr<Texture>> textures_loaded;
 		std::vector<Mesh *> meshes;
 
-		Program *program;
+		Program* program;
 		float bumpHeight = 100;
 		float texDelta = 0.00001f;
 

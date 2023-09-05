@@ -5,6 +5,8 @@
 #include <stdarg.h>
 #include <stb_sprintf.h>
 #include <imgui.h>
+#include <fstream>
+#include <filesystem>
 
 
 using namespace std;
@@ -22,7 +24,7 @@ namespace
     void appendHead(string_view level)
     {
         if(is_time_stamp_on)
-            stbsp_sprintf(line_buf, "[%05d] ");
+            stbsp_sprintf(line_buf, "[%05d] ", ImGui::GetFrameCount());
         else
             line_buf[0] = '\0';
         strcat(line_buf, level.data());
@@ -98,6 +100,21 @@ namespace lim
         line_offsets.clear();
         line_offsets.push_back(0);
     }
+    void log::exportToFile(const char* filename)
+    {
+        string path = "exports/logs/";
+
+        filesystem::path createdPath(path);
+		if (!std::filesystem::is_directory(createdPath))
+			filesystem::create_directories(createdPath);
+
+        path += filename;
+        ofstream file(path.c_str());
+        if(file.is_open()){
+            file.write(buf.c_str(),buf.size());
+        }
+        log::info("export log to %s", path.c_str());
+    }
     void log::drawViewer(const char* title, bool* pOpen)
     {
         if (!ImGui::Begin(title, pOpen))
@@ -120,6 +137,10 @@ namespace lim
         ImGui::SameLine();
         bool doClear = ImGui::Button("Clear");
         ImGui::SameLine();
+        if(ImGui::Button("Export")) {
+            exportToFile("log.txt");
+        }
+        ImGui::SameLine();
         filter.Draw("Filter", -100.0f);
 
         ImGui::Separator();
@@ -130,8 +151,8 @@ namespace lim
                 log::clear();
 
             ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
-            const char* bufStart = buf.begin()._Ptr;
-            const char* bufEnd = buf.end()._Ptr;
+            const char* bufStart = buf.begin().base();
+            const char* bufEnd = buf.end().base();
             int nrLines = line_offsets.size();
 
             if (filter.IsActive())

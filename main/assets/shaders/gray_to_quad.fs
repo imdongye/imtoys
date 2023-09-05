@@ -1,5 +1,5 @@
 #version 410 core
-out vec4 FragColor;
+layout(location=0) out vec4 fragColor;
 
 in vec2 texCoord;
 
@@ -12,5 +12,5 @@ void main()
 
 	outColor = pow(outColor, vec3(1/gamma));
 
-    FragColor = vec4(outColor, 1.0);
+    fragColor = vec4(outColor, 1.0);
 } 
