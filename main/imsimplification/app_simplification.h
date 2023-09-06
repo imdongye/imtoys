@@ -32,7 +32,8 @@ namespace lim
 	private:
 		bool isSameCamera = false;
 		float cameraMoveSpeed = 1.6;
-		Light light = Light();
+		Light light;
+		Model ground;
 
 		int selectedProgIdx = 0;
 		std::vector<Program *> programs;

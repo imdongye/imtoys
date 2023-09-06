@@ -18,6 +18,7 @@
 
 #include <filesystem>
 #include <stb_image_write.h>
+#include <glad/glad.h>
 
 namespace lim
 {
@@ -111,7 +112,9 @@ namespace lim
 				GLuint pid = normalDrawProg->use();
 				targetNormalMap.bind();
 				for( auto& [oriMesh, targetMesh] : meshes ) {
-					targetMesh->draw(0); // not bind textures
+					glBindVertexArray(targetMesh->VAO);
+					glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, targetMesh->EBO);
+					glDrawElements(targetMesh->draw_mode, static_cast<GLuint>(targetMesh->indices.size()), GL_UNSIGNED_INT, 0);
 				}
 				targetNormalMap.unbind();
 
@@ -126,7 +129,9 @@ namespace lim
 
 				// 원본의 노멀과 bumpmap, Target의 노멀으로 그린다.
 				for( auto& [oriMesh, targetMesh] : meshes ) {
-					oriMesh->draw(pid);
+					glBindVertexArray(oriMesh->VAO);
+					glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, oriMesh->EBO);
+					glDrawElements(oriMesh->draw_mode, static_cast<GLuint>(oriMesh->indices.size()), GL_UNSIGNED_INT, 0);
 				}
 				bakedNormalMap.unbind();
 

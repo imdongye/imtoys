@@ -6,49 +6,17 @@
 
 namespace lim
 {
-	Scene::Scene(Light& _light, bool addGround): light(_light)
+	Scene::Scene()
 	{
-		if( sceneCounter==0 ) {
-			groundProgram = new Program("Ground");
-			groundProgram->attatch("mvp.vs").attatch("amiga_ground.fs").link();
-
-			groundMesh = code_mesh::genQuad();
-			groundMesh->color = glm::vec3(0.8, 0.8, 0); // yello ground			
-		}
-
-		if( addGround ) {
-			ground = new Model(groundMesh, "ground", groundProgram);
-			ground->position = glm::vec3(0, 0, 0);
-			ground->scale = glm::vec3(100, 100, 1);
-			ground->orientation = glm::angleAxis(F_PI*0.5f, glm::vec3(1,0,0));
-			ground->updateModelMat();
-			models.push_back(ground);
-		}
-
-		sceneCounter++;
 	}
 	Scene::~Scene()
 	{
-		sceneCounter--;
-
-		if( sceneCounter==0 ) {
-			delete groundProgram;
-			delete ground;
-		}
-	}
-	void Scene::setModel(Model* _model)
-	{
-		if( model!=nullptr )
-			models.erase(std::find(models.begin(), models.end(), model));
-		model = _model;
-		ground->program = model->program;
-		if( model!=nullptr )
-			models.push_back(_model);
 	}
 	/* framebuffer직접설정해서 렌더링 */
 	void Scene::render(GLuint fbo, GLuint width, GLuint height, Camera* camera)
 	{
-		if( light.shadow_enabled ) drawShadowMap();
+		const Light& light = *lights[0];
+		if( light.shadow_enabled ) light.drawShadowMap(models);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		glViewport(0, 0, width, height);
@@ -56,17 +24,13 @@ namespace lim
 		glClearColor(0, 0, 1, 1);
 		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
-		camera->aspect = width/(float)height;
-		camera->updateProjMat();
-
 		drawModels(camera);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 	void Scene::render(Framebuffer* framebuffer, Camera* camera)
 	{
-		if( light.shadow_enabled ) drawShadowMap();
-
-		camera->aspect = framebuffer->aspect;
-		camera->updateProjMat();
+		const Light& light = *lights[0];
+		if( light.shadow_enabled ) light.drawShadowMap(models);
 
 		framebuffer->bind();
 		drawModels(camera);
@@ -76,19 +40,69 @@ namespace lim
 	{
 		for( Model* md : models ) {
 			if( md==nullptr ) continue;
-			md->draw(*camera, light);
+			drawModel(*camera, *md);
 		}
 	}
-	void Scene::drawShadowMap()
-	{
-		// todo
-		light.drawShadowMap([&](GLuint shadowProgID) {
-			for( Model* md : models ) {
-				setUniform(shadowProgID, "modelMat", md->model_mat);
-				for( Mesh* ms : model->meshes ) {
-					ms->draw(0); // only draw
-				}
+	void Scene::drawModel(const Camera& camera, const Model& model) {
+		if( model.program==nullptr ) {
+			log::err("model has not progam\n");
+			return;
+		}
+		const Program& prog = *model.program;
+		const Light& light = *lights[0];
+		prog.use();
+		prog.setUniform("cameraPos", camera.position);
+		prog.setUniform("projMat", camera.proj_mat);
+		prog.setUniform("viewMat", camera.view_mat);
+		prog.setUniform("modelMat", model.model_mat);
+		prog.setUniform("bumpHeight", model.bumpHeight);
+		prog.setUniform("texDelta", model.texDelta);
+		prog.setUniform("lightDir", light.direction);
+		prog.setUniform("lightColor", light.color);
+		prog.setUniform("lightInt", light.intensity);
+		prog.setUniform("lightPos", light.position);
+		prog.setUniform("shadowEnabled", (light.shadow_enabled)?1:0);
+		if( light.shadow_enabled ) {
+			prog.setUniform("shadowVP", light.vp_mat);
+			/* slot을 shadowMap은 뒤에서 부터 사용 texture은 앞에서 부터 사용 */
+			glActiveTexture(GL_TEXTURE31);
+			glBindTexture(GL_TEXTURE_2D, light.shadow_map.color_tex);
+			prog.setUniform("shadowMap", 31);
+		}
+		for( int i=0; i<model.meshes.size(); i++ ) {
+			const Mesh& mesh = *model.meshes[i];
+
+			int slotCounter = 0;
+			GLuint diffuseNr = 0;
+			GLuint specularNr = 0;
+			GLuint normalNr = 0;
+			GLuint ambientNr = 0;
+			for (std::shared_ptr<Texture> tex : mesh.textures)
+			{
+				std::string &type = tex->tag;
+				// uniform samper2d nr is start with 0
+				int backNum = 0;
+				if (type == "map_Kd")
+					backNum = diffuseNr++;
+				else if (type == "map_Ks")
+					backNum = specularNr++;
+				else if (type == "map_Bump")
+					backNum = normalNr++;
+				else if (type == "map_Ka")
+					backNum = ambientNr++;
+
+				std::string varName = type + std::to_string(backNum);
+				glActiveTexture(GL_TEXTURE0 + slotCounter); // slot
+				glBindTexture(GL_TEXTURE_2D, tex->tex_id);
+				prog.setUniform(varName.c_str(), slotCounter++); // to sampler2d
 			}
-		});
+			prog.setUniform("texCount", (int)mesh.textures.size());
+			prog.setUniform("Kd", mesh.color);
+		
+
+			glBindVertexArray(mesh.VAO);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.EBO);
+			glDrawElements(mesh.draw_mode, static_cast<GLuint>(mesh.indices.size()), GL_UNSIGNED_INT, 0);
+		}
 	}
 }

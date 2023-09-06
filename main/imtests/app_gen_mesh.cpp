@@ -99,7 +99,10 @@ namespace lim
 		prog.setUniform("projMat", camera->proj_mat);
 		prog.setUniform("cameraPos", camera->position);
 
-		light->setUniforms(prog);
+		prog.setUniform("lightDir", light->direction);
+		prog.setUniform("lightColor", light->color);
+		prog.setUniform("lightInt", light->intensity);
+		prog.setUniform("lightPos", light->position);
 
 		prog.setUniform("time", vs_t);
 
@@ -108,12 +111,18 @@ namespace lim
 		prog.setUniform("uvgridTex", 31);
 
 		prog.setUniform("modelMat", light_model->model_mat);
-		light_model->meshes.back()->draw();
+		Mesh* mesh = light_model->meshes.back();
+		glBindVertexArray(mesh->VAO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->EBO);
+		glDrawElements(mesh->draw_mode, static_cast<GLuint>(mesh->indices.size()), GL_UNSIGNED_INT, 0);
 
 		for (Model *m : models)
 		{
+			Mesh* mesh = m->meshes.back();
 			prog.setUniform("modelMat", m->model_mat);
-			m->meshes.back()->draw();
+			glBindVertexArray(mesh->VAO);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->EBO);
+			glDrawElements(mesh->draw_mode, static_cast<GLuint>(mesh->indices.size()), GL_UNSIGNED_INT, 0);
 		}
 
 		viewport->framebuffer->unbind();

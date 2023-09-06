@@ -26,27 +26,19 @@ namespace lim
 {
 	class Scene
 	{
-	private:
-		inline static GLuint sceneCounter=0;
-		inline static Program *groundProgram=nullptr;
-		inline static Mesh *groundMesh = nullptr;
-		friend class AppBase;
 	public:
-		Model* model=nullptr; // main model
-		Model* ground=nullptr;
 		std::vector<Model*> models;
-		Light& light;
+		std::vector<Light*> lights;
 	public:
-		Scene(Light& _light, bool addGround=true);
+		Scene();
 		virtual ~Scene();
 	public:
-		void setModel(Model* _model);
 		/* framebuffer직접설정해서 렌더링 */
 		void render(GLuint fbo, GLuint width, GLuint height, Camera* camera);
 		void render(Framebuffer* framebuffer, Camera* camera);
 	private:
-		inline void drawModels(Camera* camera);
-		void drawShadowMap();
+		void drawModels(Camera* camera);
+		void drawModel(const Camera& cam, const Model& md);
 	};
 }
 #endif

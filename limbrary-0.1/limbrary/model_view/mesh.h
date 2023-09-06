@@ -62,7 +62,6 @@ namespace lim
 		Mesh(const std::vector<n_mesh::Vertex> &_vertices, const std::vector<GLuint> &_indices, const std::vector<std::shared_ptr<Texture>> &_textures, const std::string_view _name = "");
 		~Mesh();
 		void clear();
-		void draw(const GLuint pid = 0);
 		// upload VRAM
 		void setupMesh();
 		void print() const;

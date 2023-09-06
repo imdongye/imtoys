@@ -56,44 +56,6 @@ namespace lim
 			VAO = 0;
 		}
 	}
-	void Mesh::draw(const GLuint pid)
-	{
-		/* shadow_map draw할때 pid=0 으로 해서 텍스쳐 uniform 안함 */
-		if (pid != 0)
-		{
-			int slotCounter = 0;
-			GLuint diffuseNr = 0;
-			GLuint specularNr = 0;
-			GLuint normalNr = 0;
-			GLuint ambientNr = 0;
-			for (std::shared_ptr<Texture> tex : textures)
-			{
-				std::string &type = tex->tag;
-				// uniform samper2d nr is start with 0
-				int backNum = 0;
-				if (type == "map_Kd")
-					backNum = diffuseNr++;
-				else if (type == "map_Ks")
-					backNum = specularNr++;
-				else if (type == "map_Bump")
-					backNum = normalNr++;
-				else if (type == "map_Ka")
-					backNum = ambientNr++;
-
-				std::string varName = type + std::to_string(backNum);
-				glActiveTexture(GL_TEXTURE0 + slotCounter); // slot
-				glBindTexture(GL_TEXTURE_2D, tex->tex_id);
-				setUniform(pid, varName.c_str(), slotCounter++); // to sampler2d
-			}
-			setUniform(pid, "texCount", (int)textures.size());
-			setUniform(pid, "Kd", color);
-		}
-
-		glBindVertexArray(VAO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-		glDrawElements(draw_mode, static_cast<GLuint>(indices.size()), GL_UNSIGNED_INT, 0);
-	}
-
 	// upload VRAM
 	void Mesh::setupMesh()
 	{

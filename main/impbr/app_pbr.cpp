@@ -69,7 +69,11 @@ namespace lim
 		modelMat = glm::translate(glm::mat4(1), lightPos);
 		modelMat = glm::scale(modelMat, glm::vec3(0.5f));
 		setUniform(pid, "model", modelMat);
-		sphere->draw();
+		prog->setUniform("Kd", sphere->color);
+		glBindVertexArray(sphere->VAO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sphere->EBO);
+		glDrawElements(sphere->draw_mode, static_cast<GLuint>(sphere->indices.size()), GL_UNSIGNED_INT, 0);
+
 
 		///* draw spheres */
 		glm::vec2 pivot = {(nr_cols-1)*spacing*0.5f, (nr_rows-1)*spacing*0.5f};
@@ -94,7 +98,9 @@ namespace lim
 				modelMat = glm::translate(glm::mat4(1.0f), glm::vec3( col*spacing-pivot.x, pivot.y-row*spacing, 0.0f ));
 				setUniform(pid, "model", modelMat);
 
-				sphere->draw();
+				glBindVertexArray(sphere->VAO);
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sphere->EBO);
+				glDrawElements(sphere->draw_mode, static_cast<GLuint>(sphere->indices.size()), GL_UNSIGNED_INT, 0);
 			}
 		}
 
@@ -107,19 +113,25 @@ namespace lim
 		modelMat = glm::translate(glm::mat4(1), glm::vec3(spacing*3, spacing, 0));
 		modelMat *= glm::scale(glm::vec3(2.f));
 		setUniform(pid, "model", modelMat);
-		sphere->draw();
+		glBindVertexArray(sphere->VAO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sphere->EBO);
+		glDrawElements(sphere->draw_mode, static_cast<GLuint>(sphere->indices.size()), GL_UNSIGNED_INT, 0);
 
 		setUniform(pid, "isGGX", false);
 		modelMat = glm::translate(glm::mat4(1), glm::vec3(spacing*3, -spacing, 0));
 		modelMat *= glm::scale(glm::vec3(2.f));
 		setUniform(pid, "model", modelMat);
-		sphere->draw();
+		glBindVertexArray(sphere->VAO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sphere->EBO);
+		glDrawElements(sphere->draw_mode, static_cast<GLuint>(sphere->indices.size()), GL_UNSIGNED_INT, 0);
 
 		/* draw models */
 		setUniform(pid, "isGGX", true);
 		setUniform(pid, "model", model->model_mat);
 		for( Mesh* mesh: model->meshes ) {
-			mesh->draw();
+			glBindVertexArray(mesh->VAO);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->EBO);
+			glDrawElements(mesh->draw_mode, static_cast<GLuint>(mesh->indices.size()), GL_UNSIGNED_INT, 0);
 		}
 		
 		viewport->framebuffer->unbind();

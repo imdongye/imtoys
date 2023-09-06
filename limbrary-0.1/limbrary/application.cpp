@@ -86,7 +86,6 @@ namespace lim
 		AppPref::get();
 		Viewport::id_generator=0;
 		AssetLib::reload();
-		Scene::sceneCounter=0;
 	}
 
 	AppBase::~AppBase()

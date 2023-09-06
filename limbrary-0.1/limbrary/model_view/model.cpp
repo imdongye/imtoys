@@ -66,36 +66,6 @@ namespace lim
 		}
 		meshes.clear();
 	}
-	void Model::draw(const GLuint pid)
-	{
-		if( pid==0 )
-			log::err("model draw pid param is zero\n");
-
-		setUniform(pid, "modelMat", model_mat);
-		setUniform(pid, "bumpHeight", bumpHeight);
-		setUniform(pid, "texDelta", texDelta);
-
-		for( GLuint i=0; i<meshes.size(); i++ )
-			meshes[i]->draw(pid);
-	}
-	void Model::draw(const Camera& camera, const Light& light)
-	{
-		if( program==nullptr )
-			log::err("model has not progam\n");
-		GLuint pid = program->use();
-
-		setUniform(pid, "projMat", camera.proj_mat);
-		setUniform(pid, "viewMat", camera.view_mat);
-		setUniform(pid, "modelMat", model_mat);
-		setUniform(pid, "cameraPos", camera.position);
-		setUniform(pid, "bumpHeight", bumpHeight);
-		setUniform(pid, "texDelta", texDelta);
-
-		light.setUniforms(*program);
-
-		for( GLuint i=0; i<meshes.size(); i++ )
-			meshes[i]->draw(pid);
-	}
 	void Model::updateModelMat()
 	{
 		glm::mat4 translateMat = glm::translate(position);

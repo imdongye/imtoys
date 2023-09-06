@@ -7,6 +7,7 @@
 #include <imgui.h>
 #include <fstream>
 #include <filesystem>
+#include <iostream>
 
 
 using namespace std;
@@ -29,7 +30,7 @@ namespace
             line_buf[0] = '\0';
         strcat(line_buf, level.data());
         
-        puts(line_buf);
+        cout<<line_buf;
         buf.append(line_buf);
     }
 
@@ -37,7 +38,7 @@ namespace
     {
         stbsp_vsprintf(line_buf, fmt, args);
 
-        puts(line_buf);
+        cout<<line_buf;
         buf.append(line_buf);
     }
 

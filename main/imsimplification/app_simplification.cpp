@@ -4,13 +4,15 @@
 #include <stb_image.h>
 #include <stb_sprintf.h>
 #include <limbrary/app_pref.h>
+#include <limbrary/model_view/code_mesh.h>
 #include <limbrary/model_view/model_loader.h>
 #include <limbrary/model_view/model_exporter.h>
 #include <imgui.h>
 
 namespace lim
 {
-	AppSimplification::AppSimplification() : AppBase(1200, 780, APP_NAME)
+	AppSimplification::AppSimplification() : AppBase(1200, 780, APP_NAME),
+		light(), ground(code_mesh::genPlane(), "ground")
 	{
 		stbi_set_flip_vertically_on_load(true);
 
@@ -38,6 +40,13 @@ namespace lim
 		programs.push_back(new Program("Shadowed", APP_DIR));
 		programs.back()->attatch("shadowed.vs").attatch("shadowed.fs").link();
 
+		ground.program = programs[0];
+		ground.meshes[0]->color = glm::vec3(0.8, 0.8, 0);
+		ground.position = glm::vec3(0, 0, 0);
+		ground.scale = glm::vec3(100, 100, 1);
+		ground.orientation = glm::angleAxis(F_PI*0.5f, glm::vec3(1,0,0));
+		ground.updateModelMat();
+
 		addEmptyViewport();
 		loadModel("assets/models/dwarf/Dwarf_2_Low.obj", 0);
 		addEmptyViewport();
@@ -55,25 +64,29 @@ namespace lim
 	{
 		Viewport *viewport = new Viewport(new MsFramebuffer);
 		viewport->framebuffer->clear_color = {0, 0, 1, 1};
-		Scene *scene = new Scene(light, true);
+		Scene *scene = new Scene();
+		scene->lights.push_back(&light);
 		AutoCamera *camera = new AutoCamera(window, viewport, 0, {0, 1, 8});
 		vpPackage.push_back(viewport, scene, nullptr, camera);
 	}
 	void AppSimplification::loadModel(std::string_view path, int vpIdx)
 	{
-		Model *temp = vpPackage.models[vpIdx];
-		if (temp != nullptr)
-		{
-			delete temp;
-		}
+		Model* prevModel = vpPackage.models[vpIdx];
+		if (prevModel != nullptr)
+			delete prevModel;
 
 		double start = glfwGetTime();
-		temp = loadModelFromFile(path.data(), true);
-		temp->program = programs[selectedProgIdx];
+		Model* newModel = loadModelFromFile(path.data(), true);
+		if( !newModel ) return;
 
-		vpPackage.scenes[vpIdx]->setModel(temp);
-		vpPackage.models[vpIdx] = temp;
-		vpPackage.cameras[vpIdx]->pivot = temp->position;
+		newModel->program = programs[selectedProgIdx];
+
+		Scene* curScene = vpPackage.scenes[vpIdx];
+		if( prevModel!=nullptr )
+			curScene->models.erase(std::find(curScene->models.begin(), curScene->models.end(), prevModel));
+		curScene->models.push_back(newModel);
+		vpPackage.models[vpIdx] = newModel;
+		vpPackage.cameras[vpIdx]->pivot = newModel->position;
 		vpPackage.cameras[vpIdx]->updatePivotViewMat();
 		log::pure("Done! in %.3f sec.  \n", glfwGetTime() - start);
 		AppPref::get().pushPathWithoutDup(path.data());
@@ -110,9 +123,16 @@ namespace lim
 		int pct = 100.0 * toModel->nr_vertices / fromModel->nr_vertices;
 		toModel->name += "_"+std::to_string(pct)+"_pct";
 
+		Model* prevModel = vpPackage.models[toVpIdx];
+		if (prevModel != nullptr)
+			delete prevModel;
 		vpPackage.models[toVpIdx] = toModel;
-		vpPackage.scenes[toVpIdx]->setModel(toModel);
+		Scene* curScene = vpPackage.scenes[toVpIdx];
+		if( prevModel!=nullptr )
+			curScene->models.erase(std::find(curScene->models.begin(), curScene->models.end(), prevModel));
+		curScene->models.push_back(toModel);
 		vpPackage.cameras[toVpIdx]->pivot = toModel->position;
+		vpPackage.cameras[toVpIdx]->updatePivotViewMat();
 
 		simp_time = glfwGetTime() - start;
 		log::pure("Done! %d => %d in %.3f sec. \n\n", fromModel->nr_vertices, toModel->nr_vertices, simp_time);
@@ -215,7 +235,7 @@ namespace lim
 								{
 									static char exportFormatTooltipBuf[64];
 									stbsp_sprintf(exportFormatTooltipBuf, "%s\n%s.%s", format->description, md->name.c_str(), format->fileExtension); // todo : caching
-									ImGui::SetTooltip(exportFormatTooltipBuf);
+									ImGui::SetTooltip("%s",exportFormatTooltipBuf);
 								}
 							}
 							ImGui::EndMenu();
@@ -336,53 +356,15 @@ namespace lim
 			ImGui::Dummy(ImVec2(0.0f, 3.0f));
 
 			ImGui::Text("<shader>");
-			static int shaderTargetIdx = 0;
-			std::vector<const char *> stargetList;
-			stargetList.push_back("All");
-			for (Viewport *vp : vpPackage.viewports)
-				stargetList.push_back(vp->name.c_str());
-			if (ImGui::Combo("target", &shaderTargetIdx, stargetList.data(), stargetList.size()))
-			{
-				if (shaderTargetIdx == 0)
-				{
-					for (auto &sc : vpPackage.scenes)
-					{
-						sc->ground->program = programs[selectedProgIdx];
-						if (sc->model == nullptr)
-							continue;
-						sc->model->program = programs[selectedProgIdx];
-						sc->ground->program = programs[selectedProgIdx];
-					}
-				}
-				else
-				{
-					vpPackage.scenes[shaderTargetIdx - 1]->ground->program = programs[selectedProgIdx];
-					Model *md = vpPackage.models[shaderTargetIdx - 1];
-					if (md != nullptr)
-						md->program = programs[selectedProgIdx];
-				}
-			}
 			std::vector<const char *> shaderList;
 			for (Program *prog : programs)
 				shaderList.push_back(prog->name.c_str());
 			if (ImGui::Combo("type", &selectedProgIdx, shaderList.data(), shaderList.size()))
 			{
-				if (shaderTargetIdx == 0)
+				ground.program = programs[selectedProgIdx];
+				for(Model* md : vpPackage.models)
 				{
-					for (auto &sc : vpPackage.scenes)
-					{
-						sc->ground->program = programs[selectedProgIdx];
-						if (sc->model == nullptr)
-							continue;
-						sc->model->program = programs[selectedProgIdx];
-					}
-				}
-				else
-				{
-					vpPackage.scenes[shaderTargetIdx - 1]->ground->program = programs[selectedProgIdx];
-					Model *md = vpPackage.models[shaderTargetIdx - 1];
-					if (md != nullptr)
-						md->program = programs[selectedProgIdx];
+					md->program = programs[selectedProgIdx];
 				}
 			}
 			ImGui::Dummy(ImVec2(0.0f, 8.0f));
@@ -517,7 +499,7 @@ namespace lim
 						if (md == nullptr)
 							ImGui::Text("");
 						else
-							ImGui::Text("%d", md->meshes.size());
+							ImGui::Text("%d", (int)md->meshes.size());
 					}
 				}
 				column = 0;
@@ -531,7 +513,7 @@ namespace lim
 						if (md == nullptr)
 							ImGui::Text("");
 						else
-							ImGui::Text("%d", md->textures_loaded.size());
+							ImGui::Text("%d", (int)md->textures_loaded.size());
 					}
 				}
 				ImGui::EndTable();

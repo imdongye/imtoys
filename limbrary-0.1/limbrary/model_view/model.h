@@ -75,8 +75,6 @@ namespace lim
 		Model(Mesh *_mesh, std::string_view _name = "none", Program *_program = nullptr);
 		~Model();
 		void clear();
-		void draw(const GLuint pid);
-		void draw(const Camera &camera, const Light &light);
 		void updateModelMat();
 		void setUnitScaleAndPivot();
 		glm::vec3 getBoundarySize();

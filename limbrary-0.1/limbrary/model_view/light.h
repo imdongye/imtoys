@@ -22,6 +22,8 @@
 
 namespace lim
 {
+	class Model;
+	
 	class Light // direction
 	{
 	public:
@@ -50,10 +52,9 @@ namespace lim
 		~Light();
 	public:
 		void updateMembers();
-		void setUniforms(const Program& prog) const;
 		/* light 와 model의 circular dependency때문에 shadowMap을 직접 그리는 함수를 외부에서 정의하게함. */
 		// todo: solve circular dependency with inl file
-		void drawShadowMap(std::vector<Model*> models);
+		void drawShadowMap(std::vector<Model*> models) const;
 	};
 }
 #endif

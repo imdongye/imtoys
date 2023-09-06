@@ -223,10 +223,16 @@ namespace lim
         setUniform(pid, "projMat", camera->proj_mat);
 
         setUniform(pid, "modelMat", glm::mat4(1));
-        dest->draw(pid);
+        glBindVertexArray(dest->VAO);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, dest->EBO);
+        glDrawElements(dest->draw_mode, static_cast<GLuint>(dest->indices.size()), GL_UNSIGNED_INT, 0);
+		
 
         setUniform(pid, "modelMat", icp_mat);
-        src->draw(pid);
+        glBindVertexArray(src->VAO);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, src->EBO);
+        glDrawElements(src->draw_mode, static_cast<GLuint>(src->indices.size()), GL_UNSIGNED_INT, 0);
+		
         //model->meshes[0]->draw(pid);
     }
     void AppICP::renderImGui()

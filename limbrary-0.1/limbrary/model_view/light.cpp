@@ -53,26 +53,7 @@ namespace lim
 		view_mat = glm::lookAt(position, {0,0,0}, {0,1,0});
 		vp_mat = proj_mat * view_mat;
 	}
-	void Light::setUniforms(const Program& prog) const
-	{
-		prog.setUniform("lightDir", direction);
-		prog.setUniform("lightColor", color);
-		prog.setUniform("lightInt", intensity);
-		prog.setUniform("lightPos", position);
-
-		if( shadow_enabled ) {
-			prog.setUniform("shadowEnabled", 1);
-			prog.setUniform("shadowVP", vp_mat);
-			/* slot을 shadowMap은 뒤에서 부터 사용 texture은 앞에서 부터 사용 */
-			glActiveTexture(GL_TEXTURE31);
-			glBindTexture(GL_TEXTURE_2D, shadow_map.color_tex);
-			prog.setUniform("shadowMap", 31);
-		}
-		else {
-			prog.setUniform("shadowEnabled", 0);
-		}
-	}
-	void Light::drawShadowMap(std::vector<Model*> models)
+	void Light::drawShadowMap(std::vector<Model*> models) const
 	{
 		shadow_map.bind();
 
@@ -83,7 +64,9 @@ namespace lim
 		for( Model* md : models ) {
 			depth_prog->setUniform("modelMat", md->model_mat);
 			for( Mesh* ms : md->meshes ) {
-				ms->draw(0); // only draw
+				glBindVertexArray(ms->VAO);
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ms->EBO);
+				glDrawElements(ms->draw_mode, static_cast<GLuint>(ms->indices.size()), GL_UNSIGNED_INT, 0);
 			}
 		}
 
