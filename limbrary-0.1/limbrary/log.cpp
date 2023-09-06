@@ -152,8 +152,8 @@ namespace lim
                 log::clear();
 
             ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
-            const char* bufStart = buf.begin().base();
-            const char* bufEnd = buf.end().base();
+            const char* bufStart = buf.c_str();
+            const char* bufEnd = bufStart + buf.size();
             int nrLines = line_offsets.size();
 
             if (filter.IsActive())

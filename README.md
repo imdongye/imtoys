@@ -38,10 +38,7 @@ cmake --build build --config Debug
 cd main; ../build/Debug/executable/imtoys_exe; cd ..
 # VSCode
 cmake와 c/c++ 확장설치 -> 왼쪽 실행및 디버그탭 -> 구성 선택 -> f5
-<settings.json>
-"cmake.debugConfig": {
-    "cwd": "${workspaceFolder}/main"
-},
+    or 하단 딱정벌레
 ```
 
 ## Dependency
