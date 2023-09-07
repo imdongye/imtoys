@@ -2,4 +2,15 @@
     "cmake.debugConfig": {
         "cwd": "${workspaceFolder}/main"
     },
+    "files.associations": {
+        "vector": "cpp",
+        "deque": "cpp",
+        "forward_list": "cpp",
+        "list": "cpp",
+        "xhash": "cpp",
+        "xstring": "cpp",
+        "xtree": "cpp",
+        "xutility": "cpp"
+    },
+    //"cmake.generator": "Xcode"
 }

@@ -17,6 +17,7 @@
 
 #include <string>
 #include <vector>
+#include <GLFW/glfw3.h>
 
 namespace lim
 {
@@ -27,6 +28,7 @@ namespace lim
 		const char* FILE_PATH = "app_pref.json";
 	public:
 		//****** property ******//
+		GLFWwindow* window;
 		const int MAX_RECENT_MP_SIZE = 10;
 		std::vector<std::string> recent_model_paths;
 		//todo: store last excute app idx

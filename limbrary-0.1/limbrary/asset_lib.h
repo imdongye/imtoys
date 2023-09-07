@@ -29,7 +29,7 @@ namespace lim
 		AssetLib &operator=(const AssetLib&)=delete;
 	public:
 		static AssetLib& get();
-		static void reload();
+		static void close();
 	};
 }
 

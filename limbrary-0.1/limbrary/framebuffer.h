@@ -25,6 +25,7 @@
 
 namespace lim
 {
+	// depth attachment 없음
 	class Framebuffer
 	{
 	public:
@@ -46,6 +47,7 @@ namespace lim
 		virtual GLuint getRenderedTex() const;
 	};
 
+	// depth_tex 샘플링 가능, 성능저하
 	class TexFramebuffer: public Framebuffer
 	{
 	public:
@@ -60,6 +62,7 @@ namespace lim
 		virtual void bind() const override;
 	};
 
+	// depth_rbo 샘플링 불가능, 성능향상
 	class RboFramebuffer: public Framebuffer
 	{
 	public:
@@ -74,6 +77,7 @@ namespace lim
 		virtual void bind() const override;
 	};
 
+	// 멀티셈플링으로 안티엘리어싱됨
 	class MsFramebuffer: public RboFramebuffer
 	{
 	public:

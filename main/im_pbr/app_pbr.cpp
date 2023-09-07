@@ -22,10 +22,8 @@ namespace lim
 		prog = new Program("pbr", APP_DIR);
 		prog->attatch("1.1.pbr.vs").attatch("1.1.pbr.fs").link();
 		
-		viewport = new Viewport(new MsFramebuffer());
+		viewport = new ViewportWithCamera(new MsFramebuffer());
 		viewport->framebuffer->clear_color = {0.1f, 0.1f, 0.1f, 1.0f};
-
-		camera = new AutoCamera(window, viewport);
 
 		model = loadModelFromFile("assets/models/objs/bunny.obj", true);
 		model->scale = model->scale*3.f;
@@ -41,7 +39,6 @@ namespace lim
 	}
 	AppPbr::~AppPbr()
 	{
-		delete camera;
 		delete prog;
 		delete viewport;
 		delete model;
@@ -53,10 +50,10 @@ namespace lim
 
 		GLuint pid = prog->use();
 		setUniform(pid, "beckmannGamma", beckmannGamma);
-		
-		setUniform(pid, "view", camera->view_mat);
-		setUniform(pid, "camPos", camera->position);
-		setUniform(pid, "projection", camera->proj_mat);
+		const Camera& cam = viewport->camera;
+		setUniform(pid, "view", cam.view_mat);
+		setUniform(pid, "camPos", cam.position);
+		setUniform(pid, "projection", cam.proj_mat);
 
 		glm::vec3 lightPos = light_position + glm::vec3(sin(glfwGetTime() * 2.0) * 5.0, 0.0, 0.0);
 		if(!movedLight) lightPos = light_position;

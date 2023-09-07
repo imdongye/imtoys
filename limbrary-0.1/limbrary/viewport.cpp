@@ -1,18 +1,3 @@
-
-//
-//	2022-08-24 / im dong ye
-//
-//	TODO list:
-//	1. initial framebuffer size setting
-//	2. drag imgui demo 참고해서 다시짜기
-//  3. https://github.com/ocornut/imgui/issues/3152
-//		https://github.com/ocornut/imgui/issues/3492
-//		https://jamssoft.tistory.com/234
-//		https://github.com/ocornut/imgui/blob/master/docs/FAQ.md
-//		https://github.com/ocornut/imgui/issues/270
-//		로 앱별 tag부여해서 ini 윈도우 설정 겹치지 않게
-
-
 #include <limbrary/viewport.h>
 #include <limbrary/app_pref.h>
 #include <imgui.h>

@@ -2,9 +2,9 @@
 #define __app_gen_mesh_h_
 
 #include <limbrary/application.h>
-#include <limbrary/model_view/auto_camera.h>
 #include <limbrary/program.h>
 #include <limbrary/model_view/model.h>
+#include <limbrary/model_view/viewport_with_camera.h>
 
 namespace lim
 {
@@ -12,7 +12,7 @@ namespace lim
 	{
 	public:
 		inline static constexpr CStr APP_NAME = "code mesh viewer";
-		inline static constexpr CStr APP_DIR  = "imtests";
+		inline static constexpr CStr APP_DIR  = "im_tests";
 		inline static constexpr CStr APP_DISC = "test my code meshes";
 
 	private:
@@ -20,10 +20,8 @@ namespace lim
 		glm::vec2 uv_scale = {1.f, 1.f};
 		float vs_t = 0.f;
 
-		AutoCamera* camera;
-
 		Program* program;
-		Viewport* viewport;
+		ViewportWithCamera* viewport;
 		std::vector<Model*> models;
 		Light* light;
 		Model* light_model;

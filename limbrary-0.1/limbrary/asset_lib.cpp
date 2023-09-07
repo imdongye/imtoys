@@ -52,9 +52,10 @@ namespace lim
 		}
 		return *instance;
 	}
-	void AssetLib::reload()
+	void AssetLib::close()
 	{
-		if( !instance )delete instance;
-		instance = new AssetLib();
+		if( !instance ) {
+			delete instance;
+		}
 	}
 }

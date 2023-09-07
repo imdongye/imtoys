@@ -22,7 +22,7 @@ namespace lim
 	{
 	public: 
 		inline static constexpr CStr APP_NAME = "color aware image viewer";
-		inline static constexpr CStr APP_DIR = "imhdr";
+		inline static constexpr CStr APP_DIR  = "im_hdr";
 		inline static constexpr CStr APP_DISC = "loader/display";
 	private:
 		CStr exportPath = "result/";

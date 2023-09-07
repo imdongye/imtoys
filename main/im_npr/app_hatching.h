@@ -10,9 +10,8 @@
 #define __app_hatching_h_
 
 #include <limbrary/application.h>
-#include <limbrary/model_view/auto_camera.h>
 #include <limbrary/program.h>
-#include <limbrary/viewport.h>
+#include <limbrary/model_view/viewport_with_camera.h>
 #include <limbrary/model_view/model.h>
 #include <glad/glad.h>
 
@@ -32,16 +31,15 @@ namespace lim
 	{
 	public:
 		inline static constexpr CStr APP_NAME = "real-time hatching";
-		inline static constexpr CStr APP_DIR =  "imnpr";
+		inline static constexpr CStr APP_DIR  = "im_npr";
 		inline static constexpr CStr APP_DISC = "aplicate real-time hatching paper";
 	private:
 		bool start_dragging = false;
-		AutoCamera *camera;
-		Program *program;
-		Viewport *viewport;
+		Program* program;
+		ViewportWithCamera* viewport;
 		std::vector<Model*> models;
-		Light *light;
-		Model *light_model;
+		Light* light;
+		Model* light_model;
 	private:
 		static constexpr GLint nr_tones = 6;
 		glm::vec2 uv_scale = {3.5f, 3.5f};

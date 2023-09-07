@@ -1,17 +1,23 @@
-//
-//	윈도우 또는 뷰포트와 3가지 모드로 상호작용하는 카메라
-// 
-//  2023-02-28 / im dongye
-// 
-//	Todo:
-//	1. 화면 크기 비례해서 드레그 속도 조절
-//
+/*
+
+2023-02-28 / im dongye
+
+3가지 모드로 윈도우와 상호작용하는 카메라
+
+Note:
+* VpAutoCamera control setting is same as AutoCamera
+  so you must edit code togather
+
+Todo:
+1. 화면 크기 비례해서 드레그 속도 조절
+
+
+*/
 
 #ifndef __auto_camera_h_
 #define __auto_camera_h_
 
 #include "camera.h"
-#include "../viewport.h"
 #include <GLFW/glfw3.h>
 
 namespace lim
@@ -25,9 +31,8 @@ namespace lim
 			VM_PIVOT,
 			VM_SCROLL
 		};
-		int viewing_mode;
+		int viewing_mode = VM_FREE;
 		GLFWwindow *window;
-		Viewport *vp;
 	private:
 		float move_free_spd = 4.2f;
 		float move_free_spd_fast = 8.2f;
@@ -48,10 +53,7 @@ namespace lim
 		AutoCamera(const AutoCamera&)=delete;
 		AutoCamera& operator=(const AutoCamera&) = delete;
 	public:
-		// if vp is nullptr then interaction with window
-		AutoCamera(GLFWwindow* _win, Viewport *_vp = nullptr
-				   , int viewingMode = VM_FREE
-				   , glm::vec3 _pos = {0,0,8}, glm::vec3 _focus = {0,0,0});
+		AutoCamera(glm::vec3 _pos = {0,0,8}, glm::vec3 _focus = {0,0,0});
 		virtual ~AutoCamera();
 	public:
 		void setViewMode(int vm);

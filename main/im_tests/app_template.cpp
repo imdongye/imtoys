@@ -25,7 +25,7 @@ namespace lim
 	{
 		ImGui::DockSpaceOverViewport();
 
-		log::drawViewer("logger#template");;
+		log::drawViewer("logger##template");;
 		
 
 		ImGui::Begin("test window##template");

@@ -84,10 +84,8 @@ namespace lim
 		program = new Program("hatching prog", APP_DIR);
 		program->attatch("hatching.vs").attatch("hatching.fs").link();
 
-		viewport = new Viewport(new MsFramebuffer());
+		viewport = new ViewportWithCamera(new MsFramebuffer());
 		viewport->framebuffer->clear_color ={0.1f, 0.1f, 0.1f, 1.0f};
-
-		camera = new AutoCamera(window, viewport, AutoCamera::VM_FREE);
 
 		models.push_back(loadModelFromFile("assets/models/dwarf/Dwarf_2_Low.obj", true));
 		models.push_back(new Model(code_mesh::genSphere(50, 25), "sphere"));
@@ -124,7 +122,6 @@ namespace lim
 	}
 	AppHatching::~AppHatching()
 	{
-		delete camera;
 		delete program;
 		delete viewport;
 		for( Model* m : models ) {
@@ -143,10 +140,11 @@ namespace lim
 
 		Program& prog = *program;
 		prog.use();
-
-		prog.setUniform("viewMat", camera->view_mat);
-		prog.setUniform("projMat", camera->proj_mat);
-		prog.setUniform("cameraPos", camera->position);
+		
+		const Camera& camera = viewport->camera;
+		prog.setUniform("viewMat", camera.view_mat);
+		prog.setUniform("projMat", camera.proj_mat);
+		prog.setUniform("cameraPos", camera.position);
 
 		
 		prog.setUniform("lightDir", light->direction);
@@ -230,7 +228,7 @@ namespace lim
 
 		/* state view */
 		ImGui::Begin("state##hatching");
-		ImGui::Text("fovy: %f", camera->fovy);
+		ImGui::Text("fovy: %f", viewport->camera.fovy);
 		ImGui::End();
 	}
 }

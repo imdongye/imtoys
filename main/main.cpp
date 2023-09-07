@@ -7,20 +7,25 @@
 
 #include <imgui.h>
 #include <limbrary/imgui_module.h>
+#include <limbrary/asset_lib.h>
 #include <limbrary/app_pref.h>
-#include <imtests/app_template.h>
-#include <imtests/app_imgui_test.h>
-#include <imtests/app_icp.h>
-#include "imtests/app_gen_mesh.h"
-#include "imtests/app_font.h"
-#include "imtests/app_astar.h"
-#include "imsimplification/app_simplification.h"
-#include "impbr/app_pbr.h"
-#include "imnpr/app_hatching.h"
-#include "imhdr/app_hdr.h"
-#include "imanims/app_nano.h"
-#include "imanims/app_kinematics.h"
-#include "imanims/app_fluid.h"
+#include <limbrary/log.h>
+#include <limbrary/viewport.h>
+
+#include "im_tests/app_template.h"
+#include "im_tests/app_imgui_test.h"
+#include "im_tests/app_icp.h"
+#include "im_tests/app_gen_mesh.h"
+#include "im_tests/app_font.h"
+#include "im_tests/app_astar.h"
+#include "im_simplification/app_simplification.h"
+#include "im_pbr/app_pbr.h"
+#include "im_npr/app_hatching.h"
+#include "im_hdr/app_hdr.h"
+#include "im_anims/app_nano.h"
+#include "im_anims/app_kinematics.h"
+#include "im_anims/app_fluid.h"
+#include "im_model_viewer/app_model_viewer.h"
 
 using namespace std;
 
@@ -83,23 +88,32 @@ int main(int, char **)
 	pushAppData<lim::AppNano>();
 	pushAppData<lim::AppKinematics>();
 	pushAppData<lim::AppFluid>();
+	pushAppData<lim::AppModelViewer>();
 
 	selectApp(0);
 
 	if(appNames.size()>1)
 		lim::ImguiModule::draw_appselector = drawAppSellector;
 
+
 	while (appSelected)
 	{
+		lim::log::clear();
 		appSelected = false;
 		int appIdx = lim::AppPref::get().selected_app_idx;
 
 		app = appConstructors[appIdx]();
 
+		lim::AppPref::get().window = app->window;
+		lim::AssetLib::get();
+		lim::Viewport::id_generator=0;
+
 		app->run();
 
+		lim::AppPref::get().save();
 		delete app;
 	}
+	lim::AssetLib::close();
 
 	return 0;
 }

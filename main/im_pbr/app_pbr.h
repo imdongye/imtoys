@@ -11,9 +11,8 @@
 #define __app_pbr_h_
 
 #include <limbrary/application.h>
-#include <limbrary/model_view/auto_camera.h>
+#include <limbrary/model_view/viewport_with_camera.h>
 #include <limbrary/program.h>
-#include <limbrary/viewport.h>
 #include <limbrary/model_view/model.h>
 
 namespace lim
@@ -22,14 +21,13 @@ namespace lim
 	{
 	public:
         inline static constexpr CStr APP_NAME = "pbr tester";
-		inline static constexpr CStr APP_DIR  = "impbr";
+		inline static constexpr CStr APP_DIR  = "im_pbr";
 		inline static constexpr CStr APP_DISC = "ggx beckman";
 	private:
-		AutoCamera *camera;
-		Program *prog;
-        Viewport *viewport;
-		Mesh *sphere;
-		Model *model;
+		Program* prog;
+        ViewportWithCamera* viewport;
+		Mesh* sphere;
+		Model* model;
 
 		int nr_rows    = 4;
 		int nr_cols = 4;

@@ -6,6 +6,7 @@
 #define __viewport_pack_
 
 #include <limbrary/model_view/scene.h>
+#include <limbrary/model_view/viewport_with_camera.h>
 #include <limbrary/model_view/auto_camera.h>
 #include <stdexcept>
 

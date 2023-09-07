@@ -18,9 +18,7 @@ namespace lim
 		program = new Program("debugging", APP_DIR);
 		program->attatch("assets/shaders/mvp.vs").attatch("debug.fs").link();
 
-		viewport = new Viewport(new MsFramebuffer());
-
-		camera = new AutoCamera(window, viewport);
+		viewport = new ViewportWithCamera(new MsFramebuffer());
 
 		/* gen models */
 		models.push_back(new Model(code_mesh::genSphere(50, 25), "sphere"));
@@ -75,7 +73,6 @@ namespace lim
 	}
 	AppGenMesh::~AppGenMesh()
 	{
-		delete camera;
 		delete program;
 		delete viewport;
 		for (Model *m : models)
@@ -95,9 +92,10 @@ namespace lim
 		prog.use();
 
 		// camera->printCameraState();
-		prog.setUniform("viewMat", camera->view_mat);
-		prog.setUniform("projMat", camera->proj_mat);
-		prog.setUniform("cameraPos", camera->position);
+		const Camera& camera = viewport->camera;
+		prog.setUniform("viewMat", camera.view_mat);
+		prog.setUniform("projMat", camera.proj_mat);
+		prog.setUniform("cameraPos", camera.position);
 
 		prog.setUniform("lightDir", light->direction);
 		prog.setUniform("lightColor", light->color);
@@ -173,7 +171,7 @@ namespace lim
 		{
 			static float rad = F_PI;
 			ImGui::SliderAngle("rad", &rad);
-			ImGui::Text("%d", camera->viewing_mode);
+			ImGui::Text("%d", viewport->camera.viewing_mode);
 			ImGui::End();
 		}
 	}

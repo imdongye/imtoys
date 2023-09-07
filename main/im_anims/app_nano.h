@@ -16,7 +16,7 @@ namespace lim
 	{
 	public:
 		inline static constexpr CStr APP_NAME = "imnano";
-		inline static constexpr CStr APP_DIR = "imanims";
+		inline static constexpr CStr APP_DIR  = "im_anims";
 		inline static constexpr CStr APP_DISC = "hello, world";
 
 	private:

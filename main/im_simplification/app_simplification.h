@@ -26,7 +26,7 @@ namespace lim
 	{
 	public:
 		inline static constexpr CStr APP_NAME =  "Cloth-Simplificator";
-		inline static constexpr CStr APP_DIR  =  "imsimplification";
+		inline static constexpr CStr APP_DIR  =  "im_simplification";
 		inline static constexpr CStr APP_DISC =  "simplify and bake normal map";
 
 	private:

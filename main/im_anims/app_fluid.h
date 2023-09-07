@@ -17,7 +17,7 @@ namespace lim
 	{
 	public:
 		inline static constexpr const char *APP_NAME = "fluid tester";
-		inline static constexpr const char *APP_DIR = "imanims";
+		inline static constexpr const char *APP_DIR  = "im_anims";
 		inline static constexpr const char *APP_DISC = "hello, world";
 
 	private:

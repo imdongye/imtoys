@@ -66,7 +66,7 @@ namespace lim
 		viewport->framebuffer->clear_color = {0, 0, 1, 1};
 		Scene *scene = new Scene();
 		scene->lights.push_back(&light);
-		AutoCamera *camera = new AutoCamera(window, viewport, 0, {0, 1, 8});
+		AutoCamera *camera = new AutoCamera({0, 1, 8});
 		vpPackage.push_back(viewport, scene, nullptr, camera);
 	}
 	void AppSimplification::loadModel(std::string_view path, int vpIdx)

@@ -12,10 +12,6 @@
 //
 #include <limbrary/application.h>
 #include <limbrary/log.h>
-#include <limbrary/viewport.h>
-#include <limbrary/app_pref.h>
-#include <limbrary/asset_lib.h>
-#include <limbrary/model_view/scene.h>
 #include <limbrary/imgui_module.h>
 #include <glad/glad.h>
 #include <iostream>
@@ -27,6 +23,7 @@ namespace lim
 	AppBase::AppBase(int winWidth, int winHeight, const char* title)
 		:win_width(winWidth), win_height(winHeight)
 	{
+		
 		glfwSetErrorCallback([](int error, const char *description) {
 			log::err("Glfw Error %d: %s\n", error, description);
 		});
@@ -44,6 +41,7 @@ namespace lim
 		glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
 		window = glfwCreateWindow(win_width, win_height, title, NULL, NULL);
+		
 		glfwGetFramebufferSize(window, &fb_width, &fb_height);
 		aspect_ratio = fb_width/(float)fb_height;
 		pixel_ratio =  fb_width/(float)win_width;
@@ -81,18 +79,11 @@ namespace lim
 		printVersionAndStatus();
 
 		ImguiModule::initImGui(window);
-
-		// need for restart app
-		AppPref::get();
-		Viewport::id_generator=0;
-		AssetLib::reload();
 	}
 
 	AppBase::~AppBase()
 	{
 		ImguiModule::destroyImGui();
-
-		AppPref::get().save();
 		glfwDestroyWindow(window);
 		glfwTerminate();
 	}

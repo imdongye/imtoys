@@ -14,7 +14,7 @@ namespace lim
 	{
 	public:
 		inline static constexpr CStr APP_NAME = "imkenematics";
-		inline static constexpr CStr APP_DIR = "imanims";
+		inline static constexpr CStr APP_DIR  = "im_anims";
 		inline static constexpr CStr APP_DISC = "hello, world";
 	private:
 		glm::vec2 win_pos;

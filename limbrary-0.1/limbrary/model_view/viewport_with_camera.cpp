@@ -1,41 +1,27 @@
-/*
-
-2023-02-28 / im dongye
-
-윈도우 또는 뷰포트와 3가지 모드로 상호작용하는 카메라
-
-Note:
-* Viewport AutoCamera는 Viewport delete하기전에 delete해야함.
-
-Todo:
-1. 화면 크기 비례해서 드레그 속도 조절
-
-*/
-
-#include <limbrary/model_view/auto_camera.h>
+#include <limbrary/model_view/viewport_with_camera.h>
 #include <limbrary/app_pref.h>
 #include <limbrary/application.h>
 #include <imgui.h>
 
 namespace lim
 {
-	// if vp is nullptr then interaction with window
-	AutoCamera::AutoCamera(glm::vec3 _pos, glm::vec3 _focus)
+    // if vp is nullptr then interaction with window
+	VpAutoCamera::VpAutoCamera(Viewport *_vp, glm::vec3 _pos, glm::vec3 _focus)
 		:Camera(_pos, _focus-_pos)
 	{
-		window = AppPref::get().window;
+        window = AppPref::get().window;
+        vp = _vp;
 
 		pivot = _focus;
 		distance = glm::length(position-pivot);
 
+        aspect = vp->width/(float)vp->height;
+
 		// register callbacks
 		AppBase::WindowData &data = *(AppBase::WindowData*)glfwGetWindowUserPointer(window);
-		int w, h;
-		glfwGetFramebufferSize(window, &w, &h);
-		aspect = w/(float)h;
-		data.framebuffer_size_callbacks[this] = [this](int w, int h) {
-			viewportSizeCallback(w, h);
-		};
+        vp->resize_callbacks[this] = [this](int w, int h) {
+            viewportSizeCallback(w, h);
+        };
 		data.update_hooks[this] = [this](float dt) {
 			processInput(dt); 
 		};
@@ -49,17 +35,17 @@ namespace lim
 			scrollCallback(xOff, yOff);
 		};
 	}
-	AutoCamera::~AutoCamera()
+	VpAutoCamera::~VpAutoCamera()
 	{
 		// unregister callbacks
 		AppBase::WindowData &data = *(AppBase::WindowData*)glfwGetWindowUserPointer(window);
-		data.framebuffer_size_callbacks.erase(this);
+        vp->resize_callbacks.erase(this);
 		data.update_hooks.erase(this);
 		data.mouse_btn_callbacks.erase(this);
 		data.cursor_pos_callbacks.erase(this);
 		data.scroll_callbacks.erase(this);
 	}
-	void AutoCamera::setViewMode(int vm)
+	void VpAutoCamera::setViewMode(int vm)
 	{
 		viewing_mode = vm%3;
 		if( viewing_mode == VM_PIVOT || viewing_mode == VM_SCROLL ) {
@@ -71,34 +57,29 @@ namespace lim
 			// update pivot view mat??
 		}
 	}
-	void AutoCamera::keyCallback(int key, int scancode, int action, int mods)
+	void VpAutoCamera::keyCallback(int key, int scancode, int action, int mods)
 	{
-		if( key == GLFW_KEY_TAB && action == GLFW_PRESS ) {
+		if( vp->hovered && key == GLFW_KEY_TAB && action == GLFW_PRESS ) {
 			setViewMode(viewing_mode+1);
 		}
 	}
-	void AutoCamera::viewportSizeCallback(int w, int h)
+	void VpAutoCamera::viewportSizeCallback(int w, int h)
 	{
 		aspect = w/(float)h;
 		updateProjMat();
 	}
-	void AutoCamera::mouseBtnCallback(int button, int action, int mods)
+	void VpAutoCamera::mouseBtnCallback(int button, int action, int mods)
 	{
-		if( ImGui::GetIO().WantCaptureMouse ) return;
+		if( vp && !vp->hovered ) return;
 
 		double xpos, ypos;
 		glfwGetCursorPos(window, &xpos, &ypos);
 		prev_mouse_x = xpos;
 		prev_mouse_y = ypos;
 	}
-	void AutoCamera::cursorPosCallback(double xpos, double ypos)
+	void VpAutoCamera::cursorPosCallback(double xpos, double ypos)
 	{
-		if( !glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)
-			&& !glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) )
-			return;
-		if( ImGui::GetIO().WantCaptureMouse )
-			return;
-
+		if( vp && !vp->dragging ) return;
 
 		float xoff = xpos - prev_mouse_x;
 		float yoff = prev_mouse_y - ypos;
@@ -125,9 +106,9 @@ namespace lim
 		prev_mouse_x = xpos;
 		prev_mouse_y = ypos;
 	}
-	void AutoCamera::scrollCallback(double xOff, double yOff)
+	void VpAutoCamera::scrollCallback(double xOff, double yOff)
 	{
-		if( ImGui::GetIO().WantCaptureMouse ) return;
+		if( vp && !vp->hovered ) return;
 
 		switch( viewing_mode ) {
 			case VM_PIVOT:
@@ -154,12 +135,14 @@ namespace lim
 				break;
 		}
 	}
-	void AutoCamera::processInput(float dt)
+	void VpAutoCamera::processInput(float dt)
 	{
+		if( vp && !vp->focused )return;
+
 		switch( viewing_mode ) {
 			case VM_FREE:
 			{
-				glm::vec3 dir(0);
+                glm::vec3 dir(0);
 				float moveSpd =move_free_spd;
 				if( glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ) moveSpd = move_free_spd_fast;
 				if( glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS ) dir += front;
@@ -182,4 +165,14 @@ namespace lim
 		}
 		updateProjMat();
 	}
+
+
+    ViewportWithCamera::ViewportWithCamera(Framebuffer* createdFB, GLuint _width, GLuint _height, WindowMode wm)
+        :Viewport(createdFB, _width, _height, wm), camera(this)
+    {
+    }
+	ViewportWithCamera::~ViewportWithCamera()
+    {
+    }
+
 }

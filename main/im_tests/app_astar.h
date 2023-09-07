@@ -18,7 +18,7 @@ namespace lim
 	{
 	public:
         inline static constexpr CStr APP_NAME = "astar visualizer";
-        inline static constexpr CStr APP_DIR  = "imtests";
+        inline static constexpr CStr APP_DIR  = "im_tests";
 		inline static constexpr CStr APP_DISC = "left click: destination, right click: start position";
 	private:
 		ImColor state_colors[7];
