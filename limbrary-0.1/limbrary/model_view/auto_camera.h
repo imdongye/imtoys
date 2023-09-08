@@ -18,7 +18,6 @@ Todo:
 #define __auto_camera_h_
 
 #include "camera.h"
-#include <GLFW/glfw3.h>
 
 namespace lim
 {
@@ -32,7 +31,6 @@ namespace lim
 			VM_SCROLL
 		};
 		int viewing_mode = VM_FREE;
-		GLFWwindow *window;
 	private:
 		float move_free_spd = 4.2f;
 		float move_free_spd_fast = 8.2f;

@@ -26,18 +26,14 @@ namespace lim
 	public:
 		GLFWwindow *window;
 		
-		struct WindowData // for avoid member func pointer 
-		{
-			Callbacks<void(int width, int height)> win_size_callbacks;
-			Callbacks<void(int width, int height)> framebuffer_size_callbacks;
-			Callbacks<void(int key, int scancode, int action, int mods)> key_callbacks;
-			Callbacks<void(int button, int action, int mods)> mouse_btn_callbacks;
-			Callbacks<void(double xOff, double yOff)> scroll_callbacks;
-			Callbacks<void(double xPos, double yPos)> cursor_pos_callbacks;
-			Callbacks<void(int count, const char **paths)> dnd_callbacks;
-			Callbacks<void(float deltaTime)> update_hooks;
-		};
-		WindowData w_data;
+		Callbacks<void(int width, int height)> win_size_callbacks;
+		Callbacks<void(int width, int height)> framebuffer_size_callbacks;
+		Callbacks<void(int key, int scancode, int action, int mods)> key_callbacks;
+		Callbacks<void(int button, int action, int mods)> mouse_btn_callbacks;
+		Callbacks<void(double xOff, double yOff)> scroll_callbacks;
+		Callbacks<void(double xPos, double yPos)> cursor_pos_callbacks;
+		Callbacks<void(int count, const char **paths)> dnd_callbacks;
+		Callbacks<void(float deltaTime)> update_hooks;
 		
 		float delta_time; // sec
 

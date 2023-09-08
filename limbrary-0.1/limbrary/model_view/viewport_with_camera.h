@@ -26,7 +26,6 @@ Todo:
 
 #include "../viewport.h"
 #include "camera.h"
-#include <GLFW/glfw3.h>
 
 
 namespace lim
@@ -41,7 +40,6 @@ namespace lim
 			VM_SCROLL
 		};
 		int viewing_mode = VM_FREE;
-		GLFWwindow *window;
 		Viewport *vp;
 	private:
 		float move_free_spd = 4.2f;

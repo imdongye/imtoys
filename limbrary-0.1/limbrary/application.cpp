@@ -13,6 +13,9 @@
 #include <limbrary/application.h>
 #include <limbrary/log.h>
 #include <limbrary/imgui_module.h>
+#include <limbrary/app_pref.h>
+#include <limbrary/asset_lib.h>
+#include <limbrary/viewport.h>
 #include <glad/glad.h>
 #include <iostream>
 #include <filesystem>
@@ -23,7 +26,7 @@ namespace lim
 	AppBase::AppBase(int winWidth, int winHeight, const char* title)
 		:win_width(winWidth), win_height(winHeight)
 	{
-		
+		AppPref::get().app = this;
 		glfwSetErrorCallback([](int error, const char *description) {
 			log::err("Glfw Error %d: %s\n", error, description);
 		});
@@ -79,10 +82,14 @@ namespace lim
 		printVersionAndStatus();
 
 		ImguiModule::initImGui(window);
+
+		AssetLib::get();
+		Viewport::id_generator = 0;
 	}
 
 	AppBase::~AppBase()
 	{
+		AppPref::get().save();
 		ImguiModule::destroyImGui();
 		glfwDestroyWindow(window);
 		glfwTerminate();
@@ -108,7 +115,7 @@ namespace lim
 			ImguiModule::endImGui((float)fb_width, (float)fb_height);
 
 			glfwPollEvents();
-			for( auto& [_, cb] : w_data.update_hooks ) 
+			for( auto& [_, cb] : update_hooks ) 
 				cb(delta_time);
 			glfwSwapBuffers(window);
 		}
@@ -116,64 +123,62 @@ namespace lim
 
 	void AppBase::initGlfwCallbacks()
 	{
-		glfwSetWindowUserPointer(window, &w_data);
+		glfwSetWindowUserPointer(window, this);
 
 		/* lambda is better then std::bind */
 
-		// first call when resize window
-		w_data.framebuffer_size_callbacks[this] =[this](int w, int h) {
-			fb_width=w; fb_height=h;
+		// first call framebuffer resize, next window resize  when resize window
+		framebuffer_size_callbacks[this] = [this](int w, int h) {
 			framebufferSizeCallback(w, h);
 		};
-		// second call when resize window
-		w_data.win_size_callbacks[this] = [this](int width, int height) {
-			win_width=width; win_height=height;
-			aspect_ratio = fb_width/(float)fb_height;
-			pixel_ratio = fb_width/(float)win_width;
-		};			w_data.key_callbacks[this] = [this](int key, int scancode, int action, int mods) {
+		key_callbacks[this] = [this](int key, int scancode, int action, int mods) {
 			keyCallback(key, scancode, action, mods); 
 		};
-		w_data.mouse_btn_callbacks[this] = [this](int button, int action, int mods) {
+		mouse_btn_callbacks[this] = [this](int button, int action, int mods) {
 			mouseBtnCallback(button, action, mods); 
 		};
-		w_data.scroll_callbacks[this] = [this](double xOff, double yOff) {
+		scroll_callbacks[this] = [this](double xOff, double yOff) {
 			scrollCallback(xOff, yOff); 
 		};
-		w_data.cursor_pos_callbacks[this] = [this](double x, double y) {
+		cursor_pos_callbacks[this] = [this](double x, double y) {
 			mouse_pos = {x,y};
 			cursorPosCallback(x, y); 
 		};
-		w_data.dnd_callbacks[this] = [this](int count, const char **path) {
+		dnd_callbacks[this] = [this](int count, const char **path) {
 			dndCallback(count, path); 
 		};
 
 		glfwSetWindowSizeCallback(window, [](GLFWwindow *window, int width, int height) {
-			WindowData &data = *(WindowData*)glfwGetWindowUserPointer(window);
-			for(auto& [_, cb] : data.win_size_callbacks ) cb(width, height);
+			AppBase& app = *(AppBase*)glfwGetWindowUserPointer(window);
+			app.win_width = width; app.win_height = height;
+			app.aspect_ratio = width/(float)height;
+			app.pixel_ratio = app.fb_width/(float)app.win_width;
+			for(auto& [_, cb] : app.win_size_callbacks ) cb(width, height);
 		});
 		glfwSetFramebufferSizeCallback(window, [](GLFWwindow *window, int width, int height) {
-			WindowData &data = *(WindowData*)glfwGetWindowUserPointer(window);
-			for( auto& [_, cb] : data.framebuffer_size_callbacks ) cb(width, height);
+			AppBase& app = *(AppBase*)glfwGetWindowUserPointer(window);
+			app.fb_height = width; app.fb_height = height;
+			for( auto& [_, cb] : app.framebuffer_size_callbacks ) cb(width, height);
 		});
 		glfwSetKeyCallback(window, [](GLFWwindow *window, int key, int scancode, int action, int mods) {
-			WindowData &data = *(WindowData*)glfwGetWindowUserPointer(window);
-			for( auto& [_, cb] : data.key_callbacks ) cb(key, scancode, action, mods);
+			AppBase& app = *(AppBase*)glfwGetWindowUserPointer(window);
+			for( auto& [_, cb] : app.key_callbacks ) cb(key, scancode, action, mods);
 		});
 		glfwSetMouseButtonCallback(window, [](GLFWwindow *window, int button, int action, int mods) {
-			WindowData &data = *(WindowData*)glfwGetWindowUserPointer(window);
-			for( auto& [_, cb] : data.mouse_btn_callbacks ) cb(button, action, mods);
+			AppBase& app = *(AppBase*)glfwGetWindowUserPointer(window);
+			for( auto& [_, cb] : app.mouse_btn_callbacks ) cb(button, action, mods);
 		});
 		glfwSetScrollCallback(window, [](GLFWwindow *window, double xOff, double yOff) {
-			WindowData &data = *(WindowData*)glfwGetWindowUserPointer(window);
-			for( auto& [_, cb] : data.scroll_callbacks) cb(xOff, yOff);
+			AppBase& app = *(AppBase*)glfwGetWindowUserPointer(window);
+			for( auto& [_, cb] : app.scroll_callbacks) cb(xOff, yOff);
 		});
 		glfwSetCursorPosCallback(window, [](GLFWwindow *window, double xPos, double yPos) {
-			WindowData &data = *(WindowData*)glfwGetWindowUserPointer(window);
-			for( auto& [_, cb] : data.cursor_pos_callbacks) cb(xPos, yPos);
+			AppBase& app = *(AppBase*)glfwGetWindowUserPointer(window);
+			for( auto& [_, cb] : app.cursor_pos_callbacks) cb(xPos, yPos);
 		});
 		glfwSetDropCallback(window, [](GLFWwindow *window, int count, const char **paths) {
-			WindowData &data = *(WindowData*)glfwGetWindowUserPointer(window);
-			for( auto& [_, cb] : data.dnd_callbacks ) cb(count, paths);
+			AppBase& app = *(AppBase*)glfwGetWindowUserPointer(window);
+			for( auto& [_, cb] : app.dnd_callbacks ) cb(count, paths);
 		});
 	}
 

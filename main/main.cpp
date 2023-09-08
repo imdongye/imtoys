@@ -104,13 +104,8 @@ int main(int, char **)
 
 		app = appConstructors[appIdx]();
 
-		lim::AppPref::get().window = app->window;
-		lim::AssetLib::get();
-		lim::Viewport::id_generator=0;
-
 		app->run();
 
-		lim::AppPref::get().save();
 		delete app;
 	}
 	lim::AssetLib::close();

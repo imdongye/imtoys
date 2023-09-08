@@ -17,47 +17,51 @@ Todo:
 #include <limbrary/application.h>
 #include <imgui.h>
 
+namespace
+{
+	GLFWwindow* window;
+}
+
 namespace lim
 {
 	// if vp is nullptr then interaction with window
 	AutoCamera::AutoCamera(glm::vec3 _pos, glm::vec3 _focus)
 		:Camera(_pos, _focus-_pos)
 	{
-		window = AppPref::get().window;
-
 		pivot = _focus;
 		distance = glm::length(position-pivot);
 
+		AppBase& app = *AppPref::get().app;
+		window = app.window;
+
+		aspect = app.win_width/(float)app.win_height;
+
 		// register callbacks
-		AppBase::WindowData &data = *(AppBase::WindowData*)glfwGetWindowUserPointer(window);
-		int w, h;
-		glfwGetFramebufferSize(window, &w, &h);
-		aspect = w/(float)h;
-		data.framebuffer_size_callbacks[this] = [this](int w, int h) {
+		app.framebuffer_size_callbacks[this] = [this](int w, int h) {
 			viewportSizeCallback(w, h);
 		};
-		data.update_hooks[this] = [this](float dt) {
+		app.update_hooks[this] = [this](float dt) {
 			processInput(dt); 
 		};
-		data.mouse_btn_callbacks[this] = [this](int button, int action, int mods) {
+		app.mouse_btn_callbacks[this] = [this](int button, int action, int mods) {
 			mouseBtnCallback(button, action, mods);
 		};
-		data.cursor_pos_callbacks[this] = [this](double xPos, double yPos) {
+		app.cursor_pos_callbacks[this] = [this](double xPos, double yPos) {
 			cursorPosCallback(xPos, yPos);
 		};
-		data.scroll_callbacks[this] = [this](double xOff, double yOff) {
+		app.scroll_callbacks[this] = [this](double xOff, double yOff) {
 			scrollCallback(xOff, yOff);
 		};
 	}
 	AutoCamera::~AutoCamera()
 	{
 		// unregister callbacks
-		AppBase::WindowData &data = *(AppBase::WindowData*)glfwGetWindowUserPointer(window);
-		data.framebuffer_size_callbacks.erase(this);
-		data.update_hooks.erase(this);
-		data.mouse_btn_callbacks.erase(this);
-		data.cursor_pos_callbacks.erase(this);
-		data.scroll_callbacks.erase(this);
+		AppBase& app = *AppPref::get().app;
+		app.framebuffer_size_callbacks.erase(this);
+		app.update_hooks.erase(this);
+		app.mouse_btn_callbacks.erase(this);
+		app.cursor_pos_callbacks.erase(this);
+		app.scroll_callbacks.erase(this);
 	}
 	void AutoCamera::setViewMode(int vm)
 	{
