@@ -1,7 +1,7 @@
 #include "app_gen_mesh.h"
 #include <stb_image.h>
 #include <limbrary/model_view/code_mesh.h>
-#include <limbrary/model_view/model_loader.h>
+#include <limbrary/model_view/model_importer.h>
 #include <glm/gtx/transform.hpp>
 #include <imgui.h>
 
@@ -18,7 +18,7 @@ namespace lim
 		program = new Program("debugging", APP_DIR);
 		program->attatch("assets/shaders/mvp.vs").attatch("debug.fs").link();
 
-		viewport = new ViewportWithCamera(new MsFramebuffer());
+		viewport = new ViewportWithCamera("viewport##gen_mesh", new MsFramebuffer());
 
 		/* gen models */
 		models.push_back(new Model(code_mesh::genSphere(50, 25), "sphere"));
@@ -39,9 +39,9 @@ namespace lim
 
 		models.push_back(new Model(code_mesh::genCylinder(20), "cylinder"));
 
-		models.push_back(loadModelFromFile("assets/models/objs/spot.obj", true));
+		models.push_back(importModelFromFile("assets/models/objs/spot.obj", true));
 
-		models.push_back(loadModelFromFile("assets/models/objs/Wooden Crate.obj", true));
+		models.push_back(importModelFromFile("assets/models/objs/Wooden Crate.obj", true));
 
 		const float interModels = 3.5f;
 		const float biasModels = -interModels * models.size() / 2.f;

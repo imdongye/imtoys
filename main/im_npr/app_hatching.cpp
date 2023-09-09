@@ -12,7 +12,7 @@
 #include "app_hatching.h"
 #include <stb_image.h>
 #include <limbrary/log.h>
-#include <limbrary/model_view/model_loader.h>
+#include <limbrary/model_view/model_importer.h>
 #include <imgui.h>
 #include <limbrary/model_view/code_mesh.h>
 
@@ -84,12 +84,12 @@ namespace lim
 		program = new Program("hatching prog", APP_DIR);
 		program->attatch("hatching.vs").attatch("hatching.fs").link();
 
-		viewport = new ViewportWithCamera(new MsFramebuffer());
+		viewport = new ViewportWithCamera("viewport##hatching", new MsFramebuffer());
 		viewport->framebuffer->clear_color ={0.1f, 0.1f, 0.1f, 1.0f};
 
-		models.push_back(loadModelFromFile("assets/models/dwarf/Dwarf_2_Low.obj", true));
+		models.push_back(importModelFromFile("assets/models/dwarf/Dwarf_2_Low.obj", true));
 		models.push_back(new Model(code_mesh::genSphere(50, 25), "sphere"));
-		models.push_back(loadModelFromFile("assets/models/objs/bunny.obj", true) );
+		models.push_back(importModelFromFile("assets/models/objs/bunny.obj", true) );
 
 		const float interModels = 3.5f;
 		//1-0

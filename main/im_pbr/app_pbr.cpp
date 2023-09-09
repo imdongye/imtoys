@@ -1,7 +1,7 @@
 #include "app_pbr.h"
 #include "imgui.h"
 #include "stb_image.h"
-#include <limbrary/model_view/model_loader.h>
+#include <limbrary/model_view/model_importer.h>
 #include <limbrary/model_view/code_mesh.h>
 #include <glm/gtx/transform.hpp>
 
@@ -22,10 +22,10 @@ namespace lim
 		prog = new Program("pbr", APP_DIR);
 		prog->attatch("1.1.pbr.vs").attatch("1.1.pbr.fs").link();
 		
-		viewport = new ViewportWithCamera(new MsFramebuffer());
+		viewport = new ViewportWithCamera("viewport##pbr", new MsFramebuffer());
 		viewport->framebuffer->clear_color = {0.1f, 0.1f, 0.1f, 1.0f};
 
-		model = loadModelFromFile("assets/models/objs/bunny.obj", true);
+		model = importModelFromFile("assets/models/objs/bunny.obj", true);
 		model->scale = model->scale*3.f;
 		model->position = glm::vec3(15, 0, 0);
 		model->updateModelMat();

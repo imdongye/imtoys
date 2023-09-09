@@ -170,8 +170,8 @@ namespace lim
 	}
 
 
-    ViewportWithCamera::ViewportWithCamera(Framebuffer* createdFB, GLuint _width, GLuint _height, WindowMode wm)
-        :Viewport(createdFB, _width, _height, wm), camera(this)
+    ViewportWithCamera::ViewportWithCamera(std::string_view _name, Framebuffer* createdFB)
+        :Viewport(_name, createdFB), camera(this)
     {
     }
 	ViewportWithCamera::~ViewportWithCamera()

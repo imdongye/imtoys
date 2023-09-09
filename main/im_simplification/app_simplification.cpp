@@ -5,7 +5,7 @@
 #include <stb_sprintf.h>
 #include <limbrary/app_pref.h>
 #include <limbrary/model_view/code_mesh.h>
-#include <limbrary/model_view/model_loader.h>
+#include <limbrary/model_view/model_importer.h>
 #include <limbrary/model_view/model_exporter.h>
 #include <imgui.h>
 
@@ -62,7 +62,8 @@ namespace lim
 	}
 	void AppSimplification::addEmptyViewport()
 	{
-		Viewport *viewport = new Viewport(new MsFramebuffer);
+		char* vpName = fmtStrToBuf("viewport%d##simp", vpPackage.size);
+		Viewport *viewport = new Viewport(vpName, new MsFramebuffer);
 		viewport->framebuffer->clear_color = {0, 0, 1, 1};
 		Scene *scene = new Scene();
 		scene->lights.push_back(&light);
@@ -76,7 +77,7 @@ namespace lim
 			delete prevModel;
 
 		double start = glfwGetTime();
-		Model* newModel = loadModelFromFile(path.data(), true);
+		Model* newModel = importModelFromFile(path.data(), true);
 		if( !newModel ) return;
 
 		newModel->program = programs[selectedProgIdx];
@@ -190,9 +191,10 @@ namespace lim
 			{
 				if (ImGui::BeginMenu("Import Recent"))
 				{
-					for (Viewport *vp : vpPackage.viewports)
+					for (int i=0; i<vpPackage.viewports.size(); i++)
 					{
-						if (ImGui::BeginMenu(("Viewport" + std::to_string(vp->id)).c_str()))
+						Viewport* vp = vpPackage.viewports[i];
+						if (ImGui::BeginMenu(("Viewport" + std::to_string(i)).c_str()))
 						{
 							typename std::vector<std::string>::reverse_iterator iter;
 							for (iter = AppPref::get().recent_model_paths.rbegin();
@@ -200,7 +202,7 @@ namespace lim
 							{
 								if (ImGui::MenuItem((*iter).c_str()))
 								{
-									loadModel((*iter), vp->id);
+									loadModel((*iter), i);
 									break;
 								}
 							}
@@ -221,7 +223,7 @@ namespace lim
 						if (md == nullptr)
 							continue;
 						Viewport *vp = vpPackage.viewports[i];
-						if (ImGui::BeginMenu(("Viewport" + std::to_string(vp->id)).c_str()))
+						if (ImGui::BeginMenu(("Viewport" + std::to_string(i)).c_str()))
 						{
 							int nr_formats = getNrExportFormats();
 							for (size_t pIndex = 0; pIndex < nr_formats; pIndex++)
@@ -272,7 +274,7 @@ namespace lim
 			ImGui::Text("From viewport:");
 			for (int i = 0; i < vpPackage.size; i++)
 			{
-				int id = vpPackage.viewports[i]->id;
+				int id = i;
 				if (vpPackage.models[i] == nullptr)
 					continue;
 				ImGui::SameLine();
@@ -284,14 +286,15 @@ namespace lim
 			}
 
 			ImGui::Text("to viewport:");
-			for (Viewport *vp : vpPackage.viewports)
+			for( int i=0; i<vpPackage.size; i++ )
 			{
-				if (vp->id == fromVpIdx)
+				Viewport* vp = vpPackage.viewports[i];
+				if (i == fromVpIdx)
 					continue;
 				ImGui::SameLine();
-				if (ImGui::RadioButton((std::to_string(vp->id) + "##2").c_str(), &toVpIdx, vp->id))
+				if (ImGui::RadioButton((std::to_string(i) + "##2").c_str(), &toVpIdx, i))
 				{
-					log::info("%s",vp->id);
+					log::info("%s", i);
 				}
 			}
 

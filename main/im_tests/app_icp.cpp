@@ -1,6 +1,6 @@
 #include "app_icp.h"
 #include <stb_image.h>
-#include <limbrary/model_view/model_loader.h>
+#include <limbrary/model_view/model_importer.h>
 #include <glm/gtx/transform.hpp>
 #include <imgui.h>
 #include <Eigen/Eigen>
@@ -181,7 +181,7 @@ namespace lim
 
         camera = new AutoCamera(glm::vec3{0,1,5}, glm::vec3{0,1,0});
 
-        model = loadModelFromFile("assets/models/objs/woody.obj", true);
+        model = importModelFromFile("assets/models/objs/woody.obj", true);
 
 
         dest = makeTransformedMesh(*model->meshes[0], model->model_mat);

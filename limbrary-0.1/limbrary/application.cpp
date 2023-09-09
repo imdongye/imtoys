@@ -84,7 +84,6 @@ namespace lim
 		ImguiModule::initImGui(window);
 
 		AssetLib::get();
-		Viewport::id_generator = 0;
 	}
 
 	AppBase::~AppBase()

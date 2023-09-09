@@ -2,6 +2,8 @@
 #include <limbrary/log.h>
 #include <fstream>
 #include <sstream>
+#include <stb_sprintf.h>
+#include <stdarg.h>
 
 
 namespace lim {
@@ -34,5 +36,16 @@ namespace lim {
 		} catch( std::ifstream::failure& e ) {
 			log::err("fail read : %s, what? %s", path, e.what());
 		}
+	}
+
+	char* fmtStrToBuf(const char* format, ...)
+	{
+		static char buf[SPRINTF_BUF_SIZE];
+		va_list args;
+        va_start(args, format);
+        stbsp_vsprintf(buf, format, args);
+        va_end(args);
+
+		return buf;
 	}
 }

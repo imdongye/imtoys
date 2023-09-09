@@ -79,7 +79,7 @@ namespace lim
 	public:
 		VpAutoCamera camera;
 	public:
-		ViewportWithCamera(Framebuffer* createdFB, GLuint _width=256, GLuint _height=256, WindowMode wm=WM_FREE);
+		ViewportWithCamera(std::string_view _name, Framebuffer* createdFB);
 		virtual ~ViewportWithCamera();
 	};
 }

@@ -4,7 +4,14 @@
 
 imgui framebuffer viewer
 
+Note:
+* Framebuffer은 Dependent Injection으로 외부에서 생성돼서 들어오지만 
+  viewport에 종속돼서 viewport와 같이 삭제된다.
+* dragging with left or middle button
+
+
 Todo:
+0. template화하는게 더 좋을까?(부모클래스 탬플릿조건)
 1. initial framebuffer size setting
 2. drag imgui demo 참고해서 다시짜기
 3. https://github.com/ocornut/imgui/issues/3152
@@ -38,23 +45,23 @@ namespace lim
 			WM_FIXED_SIZE,
 		};
 	public:
-		/* c++17 non-const static data member can initialize in declaration with inline keyword*/
-		inline static GLuint id_generator = 0;
-		GLuint id;
 		std::string name;
 		Framebuffer* framebuffer;
-		// dragging with left or middle button
-		bool hovered, focused, dragging;
-		GLuint width, height;
-        float aspect;
-		glm::ivec2 mouse_pos;
-		WindowMode window_mode;
-		bool window_opened;
+		GLuint width = 256;
+		GLuint height = 256;
+        float aspect = 1.f;
+		WindowMode window_mode = WM_FREE;
+		bool window_opened = false;
+		bool hovered = false;
+		bool focused = false;
+		bool dragging = false;
+		glm::ivec2 mouse_pos = {0,0};
 		Callbacks<void(int, int)> resize_callbacks;
 	public:
-		Viewport(Framebuffer* createdFB, GLuint _width=256, GLuint _height=256, WindowMode wm=WM_FREE);
+		Viewport(std::string_view _name, Framebuffer* createdFB);
 		virtual ~Viewport();
 		void drawImGui();
+		void resize(GLuint _width, GLuint _height);
 	};
 }
 

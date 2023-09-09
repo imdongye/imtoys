@@ -33,8 +33,11 @@ namespace lim
 		vpWidth = glm::min(maxWidth, imgs.back()->width);
 		vpHeight = (vpWidth==maxWidth)?maxWidth/imgs.back()->aspect_ratio : imgs.back()->height;
 
-		viewports.push_back(new Viewport(new Framebuffer(), vpWidth, vpHeight, Viewport::WM_FIXED_RATIO));
-		viewports.back()->name = std::string(imgs.back()->name)+std::string(" - color awared");
+		std::string viewerName = std::string(imgs.back()->name)+std::string(" - color awared");
+		Viewport* vp = new Viewport(viewerName, new Framebuffer());
+		vp->resize(vpWidth, vpHeight);
+		vp->window_mode = Viewport::WM_FIXED_RATIO;
+		viewports.push_back(vp);
 
 		// direct viewer
 		imgs.push_back(new ColorAwareImage(path));
@@ -44,8 +47,10 @@ namespace lim
 		imgs.back()->PCS2RGB = glm::mat3(1);
 		imgs.back()->chromatic_adaptation = glm::mat3(1);
 
-		viewports.push_back(new Viewport(new Framebuffer(), vpWidth, vpHeight, Viewport::WM_FIXED_RATIO));
-		viewports.back()->name = std::string(imgs.back()->name)+std::string(" - direct view");
+		viewerName = std::string(imgs.back()->name)+std::string(" - direct view");
+		vp = new Viewport(viewerName, new Framebuffer());
+		vp->window_mode = Viewport::WM_FIXED_RATIO;
+		viewports.push_back(vp);
 	}
 	void AppHdr::update()
 	{

@@ -10,6 +10,7 @@
 
 namespace lim
 {
+	constexpr int SPRINTF_BUF_SIZE = 128;
 	constexpr float Q_PI = 0.78539816339f; // quarter
 	constexpr float H_PI = 1.57079632679f; // half
 	constexpr float F_PI = 3.14159265359f; // float
@@ -22,5 +23,7 @@ namespace lim
 
 	std::string getStrFromFile(std::string_view path);
 	void setStrToFile(std::string_view path, std::string_view text);
+
+	char* fmtStrToBuf(const char* format, ...);
 }
 #endif

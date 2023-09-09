@@ -8,7 +8,7 @@
 //  Todo:
 //  1. model path texture path 그냥 하나로 합치기
 //
-#include <limbrary/model_view/model_loader.h>
+#include <limbrary/model_view/model_importer.h>
 #include <limbrary/log.h>
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -167,7 +167,7 @@ namespace
 
 namespace lim
 {
-	Model *loadModelFromFile(std::string_view path, bool makeNormalized)
+	Model *importModelFromFile(std::string_view path, bool makeNormalized)
 	{
 		std::string spath(path);
 

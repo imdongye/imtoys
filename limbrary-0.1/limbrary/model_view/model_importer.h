@@ -9,14 +9,14 @@
 //  1. model path texture path 그냥 하나로 합치기
 //
 
-#ifndef __model_loader_h_
-#define __model_loader_h_
+#ifndef __model_importer_h_
+#define __model_importer_h_
 
 #include "model.h"
 
 namespace lim
 {
-	Model *loadModelFromFile(std::string_view path, bool makeNormalized = false);
+	Model* importModelFromFile(std::string_view path, bool makeNormalized = false);
 }
 
 #endif

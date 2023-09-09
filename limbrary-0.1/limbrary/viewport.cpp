@@ -1,16 +1,12 @@
 #include <limbrary/viewport.h>
-#include <limbrary/app_pref.h>
 #include <imgui.h>
 
 namespace lim {
-	Viewport::Viewport(Framebuffer* createdFB, GLuint _width, GLuint _height, WindowMode wm)
-		: id(id_generator++), name("Viewport"+std::to_string(id)+"##vp"+AppPref::get().selected_app_name)
+	Viewport::Viewport(std::string_view _name, Framebuffer* createdFB)
+		:name(_name)
 	{
-		width = _width; height = _height; window_mode = wm; aspect = width/(float)height;
-		mouse_pos = {0,0}, window_opened = false;
 		framebuffer = createdFB;
 		framebuffer->resize(width, height);
-		hovered = focused = dragging = false;
 	}
 	Viewport::~Viewport()
 	{
@@ -57,13 +53,7 @@ namespace lim {
 		// update size
 		auto contentSize = ImGui::GetContentRegionAvail();
 		if( width!=contentSize.x || height !=contentSize.y ) {
-			width = (GLuint)contentSize.x;
-			height = (GLuint)contentSize.y;
-			aspect = (GLuint)(contentSize.x/contentSize.y);
-			framebuffer->resize(width, height);
-			for( auto& [_,cb] : resize_callbacks ) {
-				cb(width, height);
-			}
+			resize(contentSize.x, contentSize.y);
 		}
 
 		GLuint texID = framebuffer->getRenderedTex();
@@ -72,5 +62,15 @@ namespace lim {
 
 		ImGui::End();
 		ImGui::PopStyleVar();
+	}
+	void Viewport::resize(GLuint _width, GLuint _height)
+	{
+		width = _width;
+		height = _height;
+		aspect = width/(float)height;
+		framebuffer->resize(width, height);
+		for( auto& [_,cb] : resize_callbacks ) {
+			cb(width, height);
+		}
 	}
 }
