@@ -14,6 +14,7 @@
 #include <limbrary/application.h>
 #include <limbrary/program.h>
 #include <limbrary/viewport.h>
+#include <im_hdr/color_awared_image.h>
 #include <vector>
 
 namespace lim
@@ -27,6 +28,7 @@ namespace lim
 	private:
 		CStr exportPath = "result/";
 
+		std::vector<ColorAwareImage*> imgs;
 		std::vector<Program*> programs;
 		std::vector<Viewport*> viewports;
 	public:
@@ -37,9 +39,6 @@ namespace lim
 	private:
 		virtual void update() override;
 		virtual void renderImGui() override;
-		virtual void keyCallback(int key, int scancode, int action, int mods) override;
-		virtual void cursorPosCallback(double xPos, double yPos) override;
-		virtual void mouseBtnCallback(int btn, int action, int mods) override;
 		virtual void dndCallback(int count, const char **paths) override;
 	};
 }

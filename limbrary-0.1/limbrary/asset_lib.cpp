@@ -6,6 +6,7 @@ namespace lim
 {
 	AssetLib::AssetLib()
 	{
+		log::info("init AssetLib");
 		// Array for full-screen quad
 		GLfloat vertices[] ={
 			-1.0f,1.0f,0.0f,  1.0f,1.0f,0.0f,  1.0f,-1.0f,0.0f, // top right
@@ -40,6 +41,7 @@ namespace lim
 	}
 	AssetLib::~AssetLib()
 	{
+		log::info("delete AssetLib");
 		delete tex_to_quad_prog;
 		delete gray_to_quad_prog;
 		delete depth_prog;

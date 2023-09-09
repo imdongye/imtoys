@@ -16,22 +16,22 @@ using namespace glm;
 
 namespace 
 {
-	vector<ViewportWithCamera*> viewports;
+	vector<ViewportWithCamera*> asdffff;
 	vector<Model*> models;
 	Program* program;
 
 	void addModelViewer(const char* path) {
 		ViewportWithCamera* vp = new ViewportWithCamera(
-			fmtStrToBuf("viewport%d##model_view", (int)viewports.size()), new RboFramebuffer());
-		viewports.push_back(vp);
+			fmtStrToBuf("viewport%d##model_view", (int)asdffff.size()), new RboFramebuffer());
+		asdffff.push_back(vp);
 
 		Model* md = importModelFromFile(path, true);
 	}
 	void drawModelsToViewports(const Light& light)
 	{
-		for(int i=0; i<viewports.size(); i++) {
-			const Viewport& vp = *viewports[i];
-			const Camera& cam = viewports[i]->camera;
+		for(int i=0; i<asdffff.size(); i++) {
+			const Viewport& vp = *asdffff[i];
+			const Camera& cam = asdffff[i]->camera;
 			const Model& md = *models[i];
 
 			vp.framebuffer->bind();
@@ -76,9 +76,9 @@ namespace lim
 	}
 	AppModelViewer::~AppModelViewer()
 	{
-		for(auto vp : viewports)
+		for(auto vp : asdffff)
 			delete vp;
-		viewports.clear();
+		asdffff.clear();
 		for(auto md : models)
 			delete md;
 		models.clear();
@@ -103,7 +103,7 @@ namespace lim
 		ImGui::Text("hi");
 		ImGui::End();
 
-		for(ViewportWithCamera* vp : viewports) {
+		for(ViewportWithCamera* vp : asdffff) {
 			vp->drawImGui();
 		}
 	}

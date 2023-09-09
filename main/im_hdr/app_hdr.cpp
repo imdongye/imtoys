@@ -1,12 +1,11 @@
 #include "app_hdr.h"
-#include "color_awared_image.h"
 #include <stb_image.h>
 #include <glm/gtx/extended_min_max.hpp>
 #include <imgui.h>
 
 namespace
 {
-	std::vector<lim::ColorAwareImage*> imgs;
+	
 }
 
 namespace lim
@@ -28,14 +27,18 @@ namespace lim
 	{
 		const int maxWidth = 800;
 		int vpWidth, vpHeight;
+		Viewport* vp;
+		std::string vpName;
+
 		// color awared viewer
 		imgs.push_back(new ColorAwareImage(path));
 		vpWidth = glm::min(maxWidth, imgs.back()->width);
 		vpHeight = (vpWidth==maxWidth)?maxWidth/imgs.back()->aspect_ratio : imgs.back()->height;
 
-		std::string viewerName = std::string(imgs.back()->name)+std::string(" - color awared");
-		Viewport* vp = new Viewport(viewerName, new Framebuffer());
+		vpName = std::string(imgs.back()->name)+std::string(" - color awared");
+		vp = new Viewport(vpName, new Framebuffer());
 		vp->resize(vpWidth, vpHeight);
+		vp->framebuffer->clear_color = {1,1,1,1};
 		vp->window_mode = Viewport::WM_FIXED_RATIO;
 		viewports.push_back(vp);
 
@@ -47,8 +50,9 @@ namespace lim
 		imgs.back()->PCS2RGB = glm::mat3(1);
 		imgs.back()->chromatic_adaptation = glm::mat3(1);
 
-		viewerName = std::string(imgs.back()->name)+std::string(" - direct view");
-		vp = new Viewport(viewerName, new Framebuffer());
+		vpName = std::string(imgs.back()->name)+std::string(" - direct view");
+		vp = new Viewport(vpName, new Framebuffer());
+		vp->resize(vpWidth, vpHeight);
 		vp->window_mode = Viewport::WM_FIXED_RATIO;
 		viewports.push_back(vp);
 	}
@@ -73,6 +77,7 @@ namespace lim
 		glViewport(0, 0, fb_width, fb_height);
 		glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		
 	}
 	void AppHdr::renderImGui()
 	{
@@ -95,24 +100,9 @@ namespace lim
 			}
 		}
 
-		ImGui::End();
-	}
-	void AppHdr::keyCallback(int key, int scancode, int action, int mods)
-	{
-		//std::cout<<ImGui::GetFrameHeight();
-	}
-	void AppHdr::cursorPosCallback(double xPos, double yPos)
-	{
-		static double xOld, yOld, xOff, yOff=0;
-		xOff = xPos - xOld;
-		yOff = yOld - yPos;
+		log::drawViewer("log##hdr");
 
-		
-		xOld = xPos;
-		yOld = yPos;
-	}
-	void AppHdr::mouseBtnCallback(int btn, int action, int mods)
-	{
+		ImGui::End();
 	}
 	void AppHdr::dndCallback(int count, const char **paths) 
 	{

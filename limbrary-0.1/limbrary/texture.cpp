@@ -119,11 +119,11 @@ namespace lim
 	{
 		internal_format = internalFormat;
 		loadImageToTex(path, *this);
-		printf("%s loaded : texID:%d, %dx%d, nrCh:%d, bit:%d, fm:%s, aspect:%.3f\n", path.c_str(), tex_id, width, height, nr_channels, src_bit_per_channel, format, width/(float)height);
+		log::info("%s loaded : texID:%d, %dx%d, nrCh:%d, bit:%d, fm:%s, aspect:%.3f\n", path.c_str(), tex_id, width, height, nr_channels, src_bit_per_channel, format, width/(float)height);
 	}
 	Texture::~Texture()
 	{
-		printf("texture clear\n");
+		log::info("texture clear\n");
 		clear();
 	}
 	std::shared_ptr<Texture> Texture::clone()
