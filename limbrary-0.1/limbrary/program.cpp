@@ -45,7 +45,7 @@ namespace lim
 		}
 
 		// load text
-		std::string scode = getStrFromFile(path);
+		std::string scode = readStrFromFile(path);
 
 		// compile
 		const GLchar* ccode = scode.c_str();
@@ -56,7 +56,7 @@ namespace lim
 			return *this;
 		}
 		glAttachShader(pid, sid);
-		log::info("[program %s] attch %s success\n", name.c_str(), path.c_str());
+		log::pure("[program %s] attch %s success\n", name.c_str(), path.c_str());
 
 		return *this;
 	}
@@ -68,13 +68,13 @@ namespace lim
 			pid = 0;
 			return *this;
 		}
-		log::info("[program %s] linking success\n\n", name.c_str());
+		log::pure("[program %s] linking success\n\n", name.c_str());
 		return *this;
 	}
 	GLuint Program::use() const
 	{
 		if( pid==0 ) {
-			log::info("program is not linked\n");
+			log::pure("program is not linked\n");
 		}
 		glUseProgram(pid);
 		return pid;

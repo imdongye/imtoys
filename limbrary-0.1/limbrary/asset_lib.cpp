@@ -6,6 +6,8 @@ namespace lim
 {
 	AssetLib::AssetLib()
 	{
+		log::pure("init AssetLib\n");
+
 		// Array for full-screen quad
 		GLfloat vertices[] ={
 			-1.0f,1.0f,0.0f,  1.0f,1.0f,0.0f,  1.0f,-1.0f,0.0f, // top right
@@ -13,10 +15,9 @@ namespace lim
 		};
 
 		// Set up the buffers
-		GLuint vbo;
-		glGenBuffers(1, &vbo);
-		glBindBuffer(GL_ARRAY_BUFFER, vbo);
-		glBufferData(GL_ARRAY_BUFFER, 6 * 3*sizeof(GLfloat), vertices, GL_STATIC_DRAW);
+		glGenBuffers(1, &quad_vbo);
+		glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
 		// Set up the vertex array object
 		glGenVertexArrays(1, &quad_vao);
@@ -25,25 +26,34 @@ namespace lim
 		glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 		glEnableVertexAttribArray(0);  // Vertex position
 
-		log::info("load quad vao to vram\n");
+		glBindVertexArray(0);
+		glBindBuffer(GL_ARRAY_BUFFER, 0); 
+
+		log::pure("load quad vao to vram\n");
 
 
 		tex_to_quad_prog = new Program("texToQuad");
-		tex_to_quad_prog->attatch("tex_to_quad.vs").attatch("tex_to_quad.fs").link();
-
+		tex_to_quad_prog->attatch("quad.vs").attatch("tex_to_quad.fs").link();
 
 		gray_to_quad_prog = new Program("grayToQuad");
-		gray_to_quad_prog->attatch("tex_to_quad.vs").attatch("gray_to_quad.fs").link();
+		gray_to_quad_prog->attatch("quad.vs").attatch("gray_to_quad.fs").link();
 	
 		depth_prog = new Program("depth");
 		depth_prog->attatch("mvp.vs").attatch("depth.fs").link();
+
+		red_prog = new Program("red");
+		red_prog->attatch("quad.vs").attatch("red.fs").link();
 	}
 	AssetLib::~AssetLib()
 	{
+		log::pure("delete AssetLib\n");
+
 		delete tex_to_quad_prog;
 		delete gray_to_quad_prog;
 		delete depth_prog;
+		delete red_prog;
 		glDeleteVertexArrays(1, &quad_vao); quad_vao=0;
+		glDeleteBuffers(1, &quad_vbo); quad_vbo=0;
 	}
 	AssetLib& AssetLib::get()
 	{
@@ -52,10 +62,10 @@ namespace lim
 		}
 		return *instance;
 	}
-	void AssetLib::close()
+	void AssetLib::destroy()
 	{
-		if( !instance ) {
+		if( instance )
 			delete instance;
-		}
+		instance = nullptr;
 	}
 }

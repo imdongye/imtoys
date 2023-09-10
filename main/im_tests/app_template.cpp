@@ -3,6 +3,7 @@
 #include <glad/glad.h>
 #include <limbrary/log.h>
 #include <imgui.h>
+#include <imgui_internal.h>
 
 namespace lim
 {
@@ -29,13 +30,14 @@ namespace lim
 		
 
 		ImGui::Begin("test window##template");
-		ImGui::Text("%d", 1);
+		ImGui::Text("win size : %d %d", win_width, win_height);
+		ImGui::Text("fb size  : %d %d", fb_width, fb_height);
 		ImGui::End();
 	}
 	void AppTemplate::keyCallback(int key, int scancode, int action, int mods)
 	{
 		log::pure("%d\n", key);
-		log::info("%d\n", key);
+		log::pure("%d\n", key);
 		log::warn("%d\n", key);
 		log::err("%d\n", key);
 	}

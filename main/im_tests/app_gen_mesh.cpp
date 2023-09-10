@@ -1,7 +1,6 @@
 #include "app_gen_mesh.h"
 #include <stb_image.h>
 #include <limbrary/model_view/code_mesh.h>
-#include <limbrary/model_view/model_importer.h>
 #include <glm/gtx/transform.hpp>
 #include <imgui.h>
 

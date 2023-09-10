@@ -7,7 +7,7 @@
 
 
 namespace lim {
-	std::string getStrFromFile(std::string_view path)
+	std::string readStrFromFile(std::string_view path)
 	{
 		std::string text;
 		std::ifstream ifile;
@@ -26,7 +26,7 @@ namespace lim {
 		}
 		return text;
 	}
-	void setStrToFile(std::string_view path, std::string_view text)
+	void writeStrToFile(std::string_view path, std::string_view text)
 	{
 		std::ofstream ofile;
 		try {

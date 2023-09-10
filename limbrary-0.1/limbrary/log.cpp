@@ -114,7 +114,7 @@ namespace lim
         if(file.is_open()){
             file.write(buf.c_str(),buf.size());
         }
-        log::info("export log to %s", path.c_str());
+        log::pure("export log to %s", path.c_str());
     }
     void log::drawViewer(const char* title, bool* pOpen)
     {

@@ -1,20 +1,12 @@
 {
     "cmake.debugConfig": {
-        "cwd": "${workspaceFolder}/main"
+        "cwd": "${workspaceFolder}/main",
+        "console": "integratedTerminal"
     },
     "files.associations": {
-        "vector": "cpp",
-        "deque": "cpp",
-        "forward_list": "cpp",
-        "list": "cpp",
-        "xhash": "cpp",
         "xstring": "cpp",
-        "xtree": "cpp",
-        "xutility": "cpp",
-        "string": "cpp",
-        "filesystem": "cpp",
-        "iosfwd": "cpp",
-        "ios": "cpp"
+        "vector": "cpp",
+        "functional": "cpp"
     },
     //"cmake.generator": "Xcode"
 }

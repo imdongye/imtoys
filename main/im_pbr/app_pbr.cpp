@@ -1,7 +1,7 @@
 #include "app_pbr.h"
 #include "imgui.h"
 #include "stb_image.h"
-#include <limbrary/model_view/model_importer.h>
+#include <limbrary/model_view/model.h>
 #include <limbrary/model_view/code_mesh.h>
 #include <glm/gtx/transform.hpp>
 

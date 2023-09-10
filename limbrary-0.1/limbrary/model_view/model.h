@@ -29,13 +29,14 @@
 #include "mesh.h"
 #include "light.h"
 #include "camera.h"
+#include <assimp/cexport.h>
 
 namespace lim
 {
 	class Model
 	{
 	public:
-		std::string name;
+		std::string name = "nonamed";
 		glm::vec3 position = glm::vec3(0);
 		glm::quat orientation = glm::quat();
 		glm::vec3 scale = glm::vec3(1);
@@ -84,5 +85,13 @@ namespace lim
 		void updateNums();
 		void updateBoundary();
 	};
+
+	// import model
+	Model* importModelFromFile(std::string_view path, bool makeNormalized = false);
+
+	// export model
+	int getNrExportFormats();
+	const aiExportFormatDesc *getExportFormatInfo(int idx);
+	void exportModelToFile(std::string_view exportDir, Model *model, size_t pIndex);
 }
 #endif

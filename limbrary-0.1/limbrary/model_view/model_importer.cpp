@@ -8,7 +8,7 @@
 //  Todo:
 //  1. model path texture path 그냥 하나로 합치기
 //
-#include <limbrary/model_view/model_importer.h>
+#include <limbrary/model_view/model.h>
 #include <limbrary/log.h>
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -198,7 +198,7 @@ namespace lim
 
 		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 		{
-			log::err("%s\n", loader.GetErrorString());
+			log::err("[import assimp] %s\n", loader.GetErrorString());
 			return nullptr;
 		}
 

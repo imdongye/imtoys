@@ -10,6 +10,8 @@
 namespace lim
 {
 	class Program;
+	class Mesh;
+
 	class AssetLib
 	{
 	public:
@@ -17,7 +19,10 @@ namespace lim
 		Program* gray_to_quad_prog;
 		Program* tex_to_quad_prog;
 		Program* depth_prog;
+		Program* red_prog;
+		GLuint quad_vbo = 0;
 		GLuint quad_vao = 0;
+		Mesh* quad;
 
 	private:
 		inline static AssetLib* instance = nullptr;
@@ -26,10 +31,10 @@ namespace lim
 	private:
 		/* detete copy & copy asignment singleton obj */
 		AssetLib(const AssetLib&)=delete;
-		AssetLib &operator=(const AssetLib&)=delete;
+		AssetLib&operator=(const AssetLib&)=delete;
 	public:
 		static AssetLib& get();
-		static void close();
+		static void destroy();
 	};
 }
 

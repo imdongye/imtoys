@@ -7,7 +7,6 @@
 #define __app_model_viewer_h_
 
 #include <limbrary/application.h>
-#include <limbrary/model_view/light.h>
 
 namespace lim
 {
@@ -17,8 +16,6 @@ namespace lim
 		inline static constexpr CStr APP_NAME = "model viewer";
 		inline static constexpr CStr APP_DIR  = "im_model_viewer";
 		inline static constexpr CStr APP_DISC = "model viewer for test materials";
-	private:
-		Light light;
 	public:
 		AppModelViewer();
 		~AppModelViewer();

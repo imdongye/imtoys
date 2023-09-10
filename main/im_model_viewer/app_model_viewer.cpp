@@ -3,12 +3,12 @@
 #include <glad/glad.h>
 #include <imgui.h>
 #include <limbrary/model_view/model.h>
-#include <limbrary/model_view/model_importer.h>
 #include <limbrary/log.h>
 #include <limbrary/model_view/viewport_with_camera.h>
 #include <limbrary/program.h>
 #include <limbrary/model_view/light.h>
 #include <vector>
+#include <limbrary/model_view/renderer.h>
 
 using namespace lim;
 using namespace std;
@@ -19,47 +19,31 @@ namespace
 	vector<ViewportWithCamera*> viewports;
 	vector<Model*> models;
 	Program* program;
+	Light* light;
 
 	void addModelViewer(const char* path) {
-		ViewportWithCamera* vp = new ViewportWithCamera(
-			fmtStrToBuf("viewport%d##model_view", (int)viewports.size()), new RboFramebuffer());
+		char* vpName = fmtStrToBuf("viewport%d##model_view", (int)viewports.size());
+		ViewportWithCamera* vp = new ViewportWithCamera(vpName, new RboFramebuffer());
 		viewports.push_back(vp);
 
 		Model* md = importModelFromFile(path, true);
+		models.push_back(md);
 	}
-	void drawModelsToViewports(const Light& light)
+
+	void drawModelsToViewports()
 	{
-		for(int i=0; i<viewports.size(); i++) {
-			const Viewport& vp = *viewports[i];
-			const Camera& cam = viewports[i]->camera;
-			const Model& md = *models[i];
-
-			vp.framebuffer->bind();
-			const Program& prog = *program;
-			prog.use();
-			prog.setUniform("cameraPos", cam.position);
-			prog.setUniform("projMat", cam.proj_mat);
-			prog.setUniform("viewMat", cam.view_mat);
-			prog.setUniform("modelMat", md.model_mat);
-
-			prog.setUniform("lightDir", light.direction);
-			prog.setUniform("lightColor", light.color);
-			prog.setUniform("lightInt", light.intensity);
-			prog.setUniform("lightPos", light.position);
-
-	
-			for( Mesh* pMesh : md.meshes)
-			{
-				const Mesh& mesh = *pMesh;
-
-				glBindVertexArray(mesh.VAO);
-				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.EBO);
-				glDrawElements(mesh.draw_mode, static_cast<GLuint>(mesh.indices.size()), GL_UNSIGNED_INT, 0);
+		for(int i=0; i<viewports.size(); i++ ) {
+			if( !viewports[i]->window_opened ) {
+				delete models[i];
+				delete viewports[i];
+				models.erase(models.begin()+i);
+				viewports.erase(viewports.begin()+i);
+				i--;
+				continue;
 			}
-
-
-
-			vp.framebuffer->unbind();
+			const auto& vp = *viewports[i];
+			render(*vp.framebuffer,
+				   *program, vp.camera, *models[i], *light);
 		}
 		
 	}
@@ -73,6 +57,9 @@ namespace lim
 		stbi_set_flip_vertically_on_load(true);
 		program = new Program("model_view", APP_DIR);
 		program->attatch("assets/shaders/mvp.vs").attatch("debug.fs").link();
+		light = new Light();
+
+		addModelViewer("assets/models/objs/spot.obj");
 	}
 	AppModelViewer::~AppModelViewer()
 	{
@@ -83,15 +70,17 @@ namespace lim
 			delete md;
 		models.clear();
 		delete program;
+		delete light;
 	}
-	void AppModelViewer::update() 	{
+	void AppModelViewer::update() 	
+	{
+		drawModelsToViewports();
+
 		glEnable(GL_DEPTH_TEST);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glViewport(0, 0, fb_width, fb_height);
 		glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		drawModelsToViewports(light);
 	}
 	void AppModelViewer::renderImGui()
 	{
@@ -109,10 +98,6 @@ namespace lim
 	}
 	void AppModelViewer::keyCallback(int key, int scancode, int action, int mods)
 	{
-		log::pure("%d\n", key);
-		log::info("%d\n", key);
-		log::warn("%d\n", key);
-		log::err("%d\n", key);
 	}
 	void AppModelViewer::cursorPosCallback(double xPos, double yPos)
 	{

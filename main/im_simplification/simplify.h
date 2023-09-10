@@ -72,7 +72,7 @@ namespace fqms
 				mesh->vertices[tri.v[i]].uv = glm::vec2(tri.uvs[i].x, tri.uvs[i].y);
 			}
 		}
-		mesh->setupMesh();
+		mesh->initGL();
 	}
 
 	lim::Mesh *simplifyMesh(lim::Mesh *mesh, float lived_pct

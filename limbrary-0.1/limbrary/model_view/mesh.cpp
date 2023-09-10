@@ -39,7 +39,7 @@ namespace lim
 		indices = _indices;
 		textures = _textures;
 		has_texture = (textures.size() > 0) ? 1 : 0;
-		setupMesh();
+		initGL();
 	}
 	Mesh::~Mesh()
 	{
@@ -52,16 +52,22 @@ namespace lim
 		textures.clear();
 		if (VAO != 0)
 		{
-			glDeleteVertexArrays(1, &VAO);
-			VAO = 0;
+			deinitGL();
 		}
 	}
+	void Mesh::deinitGL()
+	{
+		glDeleteVertexArrays(1, &VAO);
+		glDeleteBuffers(1, &EBO);
+		glDeleteBuffers(1, &VBO);
+		VAO = EBO = VBO = 0;
+	}
 	// upload VRAM
-	void Mesh::setupMesh()
+	void Mesh::initGL()
 	{
 		const size_t SIZE_OF_VERTEX = sizeof(n_mesh::Vertex);
 		if (VAO != 0)
-			glDeleteVertexArrays(1, &VAO);
+			deinitGL();
 
 		glGenVertexArrays(1, &VAO);
 		glGenBuffers(1, &VBO);
@@ -105,7 +111,7 @@ namespace lim
 	}
 	void Mesh::print() const
 	{
-		log::info("%s, verts %d, tris %d\n", name.c_str(), vertices.size(), indices.size() / 3);
+		log::pure("%s, verts %d, tris %d\n", name.c_str(), vertices.size(), indices.size() / 3);
 	}
 	void Mesh::replicateExtraData(const Mesh &target)
 	{

@@ -24,6 +24,8 @@ namespace lim
 	class AppBase
 	{
 	public:
+		inline static std::function<void()> draw_appselector = [](){};
+	public:
 		GLFWwindow *window;
 		
 		Callbacks<void(int width, int height)> win_size_callbacks;

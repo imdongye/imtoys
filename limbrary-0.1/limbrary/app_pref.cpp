@@ -12,14 +12,14 @@ namespace lim
 {
 	AppPref::AppPref()
 	{
-		std::string text = getStrFromFile(FILE_PATH);
+		std::string text = readStrFromFile(FILE_PATH);
 		if( text.length()<1 ) {
 			log::err("length<1 so not make json\n");
 			return;
 		}
 		Json ijson = Json::parse(text);
 		// dump para is tab size, none is one line
-		// log::infoln("read %s\n %s", FILE_PATH, ijson.dump(2));
+		// log::pureln("read %s\n %s", FILE_PATH, ijson.dump(2));
 		recent_model_paths = ijson["recentModelPaths"];
 	}
 
@@ -55,7 +55,7 @@ namespace lim
 		}
 
 		//std::string temp = ojson.dump(2);
-		//log::info("write %s\n %s\n", FILE_PATH, temp);
+		//log::pure("write %s\n %s\n", FILE_PATH, temp);
 	}
 	void AppPref::pushPathWithoutDup(const std::string_view path)
 	{

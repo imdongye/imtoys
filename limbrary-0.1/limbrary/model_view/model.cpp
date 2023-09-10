@@ -52,7 +52,7 @@ namespace lim
 		meshes.push_back(_mesh);
 		updateNums();
 		updateBoundary();
-		log::info("model(mesh) generaged : %s, vertices: %u\n\n", name.c_str(), nr_vertices);
+		log::pure("model(mesh) generaged : %s, vertices: %u\n\n", name.c_str(), nr_vertices);
 	}
 	Model::~Model()
 	{
@@ -90,7 +90,7 @@ namespace lim
 	}
 	void Model::setPivot(glm::vec3 pivot)
 	{
-		log::info("pivot: %s\n",glm::to_string(pivot).c_str());
+		log::pure("pivot: %s\n",glm::to_string(pivot).c_str());
 		pivot_mat = glm::translate(-pivot);
 	}
 	void Model::updateNums()
@@ -121,6 +121,6 @@ namespace lim
 				else if( boundary_min.z > v.p.z ) boundary_min.z = v.p.z;
 			}
 		}
-		log::info("boundary size: %s\n", glm::to_string(getBoundarySize()).c_str());
+		log::pure("boundary size: %s\n", glm::to_string(getBoundarySize()).c_str());
 	}
 }

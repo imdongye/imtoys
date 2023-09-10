@@ -6,7 +6,6 @@
 //
 
 #include <imgui.h>
-#include <limbrary/imgui_module.h>
 #include <limbrary/asset_lib.h>
 #include <limbrary/app_pref.h>
 #include <limbrary/log.h>
@@ -93,12 +92,11 @@ int main(int, char **)
 	selectApp(0);
 
 	if(appNames.size()>1)
-		lim::ImguiModule::draw_appselector = drawAppSellector;
+		lim::AppBase::draw_appselector = drawAppSellector;
 
 
 	while (appSelected)
 	{
-		lim::log::clear();
 		appSelected = false;
 		int appIdx = lim::AppPref::get().selected_app_idx;
 
@@ -108,7 +106,6 @@ int main(int, char **)
 
 		delete app;
 	}
-	lim::AssetLib::close();
 
 	return 0;
 }

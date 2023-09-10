@@ -51,7 +51,7 @@ namespace lim
 		GLuint height = 256;
         float aspect = 1.f;
 		WindowMode window_mode = WM_FREE;
-		bool window_opened = false;
+		bool window_opened = true;
 		bool hovered = false;
 		bool focused = false;
 		bool dragging = false;

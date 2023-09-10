@@ -3,7 +3,7 @@
 //
 //	edit from : https://github.com/assimp/assimp/issues/203
 //
-#include <limbrary/model_view/model_exporter.h>
+#include <limbrary/model_view/model.h>
 #include <limbrary/log.h>
 #include <limbrary/utils.h>
 #include <assimp/Exporter.hpp>

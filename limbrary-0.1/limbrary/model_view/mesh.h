@@ -11,9 +11,8 @@
 #include <string>
 #include <vector>
 #include <glm/glm.hpp>
-#include <memory>
-#include "../texture.h"
 #include <glad/glad.h>
+#include "material.h"
 
 namespace lim
 {
@@ -41,13 +40,9 @@ namespace lim
 		std::string name;
 		std::vector<n_mesh::Vertex> vertices;
 		std::vector<GLuint> indices;
-		std::vector<std::shared_ptr<Texture>> textures;
-		GLuint angles = 3; // set size of indices
-		glm::vec3 color;   // Kd, diffuse color
-		int has_texture = 1;
+		Material* material;
 		GLenum draw_mode = GL_TRIANGLES;
 
-	public:
 		GLuint VAO, VBO, EBO;
 		unsigned int ai_mat_idx;
 
@@ -55,7 +50,6 @@ namespace lim
 		// disable copying
 		Mesh(Mesh const &) = delete;
 		Mesh &operator=(Mesh const &) = delete;
-
 	public:
 		Mesh();
 		// shared vertex triangle mesh
@@ -63,7 +57,8 @@ namespace lim
 		~Mesh();
 		void clear();
 		// upload VRAM
-		void setupMesh();
+		void initGL();
+		void deinitGL();
 		void print() const;
 		void replicateExtraData(const Mesh &target);
 	};

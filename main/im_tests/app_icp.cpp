@@ -1,10 +1,10 @@
 #include "app_icp.h"
 #include <stb_image.h>
-#include <limbrary/model_view/model_importer.h>
 #include <glm/gtx/transform.hpp>
 #include <imgui.h>
 #include <Eigen/Eigen>
 #include <numeric>
+#include <limbrary/asset_lib.h>
 
 using namespace lim;
 using namespace Eigen;
@@ -30,7 +30,7 @@ namespace
         }
 
         rst->has_texture = false;
-        rst->setupMesh();
+        rst->initGL();
 
         return rst;
     }
@@ -232,7 +232,7 @@ namespace lim
         glBindVertexArray(src->VAO);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, src->EBO);
         glDrawElements(src->draw_mode, static_cast<GLuint>(src->indices.size()), GL_UNSIGNED_INT, 0);
-		
+
         //model->meshes[0]->draw(pid);
     }
     void AppICP::renderImGui()

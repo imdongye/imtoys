@@ -5,8 +5,6 @@
 #include <stb_sprintf.h>
 #include <limbrary/app_pref.h>
 #include <limbrary/model_view/code_mesh.h>
-#include <limbrary/model_view/model_importer.h>
-#include <limbrary/model_view/model_exporter.h>
 #include <imgui.h>
 
 namespace lim
@@ -294,7 +292,7 @@ namespace lim
 				ImGui::SameLine();
 				if (ImGui::RadioButton((std::to_string(i) + "##2").c_str(), &toVpIdx, i))
 				{
-					log::info("%s", i);
+					log::pure("%s", i);
 				}
 			}
 

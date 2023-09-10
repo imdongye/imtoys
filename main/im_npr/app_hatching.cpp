@@ -12,7 +12,6 @@
 #include "app_hatching.h"
 #include <stb_image.h>
 #include <limbrary/log.h>
-#include <limbrary/model_view/model_importer.h>
 #include <imgui.h>
 #include <limbrary/model_view/code_mesh.h>
 

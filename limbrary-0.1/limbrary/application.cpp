@@ -12,13 +12,15 @@
 //
 #include <limbrary/application.h>
 #include <limbrary/log.h>
-#include <limbrary/imgui_module.h>
 #include <limbrary/app_pref.h>
 #include <limbrary/asset_lib.h>
 #include <limbrary/viewport.h>
 #include <glad/glad.h>
 #include <iostream>
 #include <filesystem>
+#include <imgui.h>
+#include <backend/imgui_impl_glfw.h>
+#include <backend/imgui_impl_opengl3.h>
 
 
 namespace lim
@@ -50,7 +52,7 @@ namespace lim
 		pixel_ratio =  fb_width/(float)win_width;
 
 		if( window == NULL ) {
-			std::cout << "Failed to create GLFW window" << std::endl;
+			log::err("Failed to create GLFW window\n");
 			glfwTerminate();
 			std::exit(-1);
 		}
@@ -72,7 +74,7 @@ namespace lim
 		glfwSwapInterval(1); // vsync
 
 		if( !gladLoadGLLoader((GLADloadproc)glfwGetProcAddress) ) {
-			std::cout << "Failed to initialize GLAD" << std::endl;
+			log::err("Failed to initialize GLAD\n");
 			std::exit(-1);
 		}
 
@@ -81,21 +83,63 @@ namespace lim
 
 		printVersionAndStatus();
 
-		ImguiModule::initImGui(window);
+
+		// Setup Dear ImGui context
+		IMGUI_CHECKVERSION();
+		ImGui::CreateContext();
+		ImGuiIO& io = ImGui::GetIO(); (void)io;
+		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
+		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
+		//io.ConfigViewportsNoAutoMerge = true;
+		//io.ConfigViewportsNoTaskBarIcon = true;
+		io.ConfigWindowsMoveFromTitleBarOnly = true;
+
+		//float fontSize = 18.0f;// *2.0f;
+		//io.Fonts->AddFontFromFileTTF("fonts/SpoqaHanSansNeo/SpoqaHanSansNeo-Bold.ttf", fontSize);
+		//io.FontDefault = io.Fonts->AddFontFromFileTTF("fonts/SpoqaHanSansNeo/SpoqaHanSansNeo-Regular.ttf", fontSize);
+
+		// Setup Dear ImGui style
+		ImGui::StyleColorsDark();
+		//ImGui::StyleColorsLight();
+
+		// When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
+		ImGuiStyle& style = ImGui::GetStyle();
+		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+		{
+			style.WindowRounding = 0.0f;
+			style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+		}
+
+		// Setup Platform/Renderer backends
+		ImGui_ImplGlfw_InitForOpenGL(window, true);
+		ImGui_ImplOpenGL3_Init("#version 410");
+
 
 		AssetLib::get();
 	}
 
 	AppBase::~AppBase()
 	{
+		// Cleanup
+		ImGui_ImplOpenGL3_Shutdown();
+		ImGui_ImplGlfw_Shutdown();
+		ImGui::DestroyContext();
+
 		AppPref::get().save();
-		ImguiModule::destroyImGui();
+		AssetLib::destroy();
+
 		glfwDestroyWindow(window);
 		glfwTerminate();
+
+		log::pure("\n\n\n");
+		log::clear();
 	}
 
 	void AppBase::run()
 	{
+		ImGuiIO& io = ImGui::GetIO();
 		double lastTime=glfwGetTime();
 
 		while( !glfwWindowShouldClose(window) ) {
@@ -103,19 +147,34 @@ namespace lim
 			delta_time = (float)(currentTime - lastTime);
 			lastTime = currentTime;
 
-			update();
+			glfwPollEvents();
+			io.DisplaySize = ImVec2(fb_width, fb_height); // todo?
 
-			ImguiModule::beginImGui();
+
+			update();
+			for( auto& [_, cb] : update_hooks ) 
+				cb(delta_time);
+
+
+			ImGui_ImplOpenGL3_NewFrame();
+			ImGui_ImplGlfw_NewFrame();
+			ImGui::NewFrame();
+			//ImGuizmo::BeginFrame();
 
 			renderImGui();
 
-			ImguiModule::draw_appselector();
+			draw_appselector();
 
-			ImguiModule::endImGui((float)fb_width, (float)fb_height);
+			ImGui::Render();
+			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+			if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+			{
+				GLFWwindow* backup_current_context = glfwGetCurrentContext();
+				ImGui::UpdatePlatformWindows();
+				ImGui::RenderPlatformWindowsDefault();
+				glfwMakeContextCurrent(backup_current_context);
+			}
 
-			glfwPollEvents();
-			for( auto& [_, cb] : update_hooks ) 
-				cb(delta_time);
 			glfwSwapBuffers(window);
 		}
 	}
@@ -148,35 +207,35 @@ namespace lim
 		};
 
 		glfwSetWindowSizeCallback(window, [](GLFWwindow *window, int width, int height) {
-			AppBase& app = *(AppBase*)glfwGetWindowUserPointer(window);
+			AppBase& app = *AppPref::get().app;
 			app.win_width = width; app.win_height = height;
 			app.aspect_ratio = width/(float)height;
 			app.pixel_ratio = app.fb_width/(float)app.win_width;
 			for(auto& [_, cb] : app.win_size_callbacks ) cb(width, height);
 		});
 		glfwSetFramebufferSizeCallback(window, [](GLFWwindow *window, int width, int height) {
-			AppBase& app = *(AppBase*)glfwGetWindowUserPointer(window);
-			app.fb_height = width; app.fb_height = height;
+			AppBase& app = *AppPref::get().app;
+			app.fb_width = width; app.fb_height = height;
 			for( auto& [_, cb] : app.framebuffer_size_callbacks ) cb(width, height);
 		});
 		glfwSetKeyCallback(window, [](GLFWwindow *window, int key, int scancode, int action, int mods) {
-			AppBase& app = *(AppBase*)glfwGetWindowUserPointer(window);
+			AppBase& app = *AppPref::get().app;
 			for( auto& [_, cb] : app.key_callbacks ) cb(key, scancode, action, mods);
 		});
 		glfwSetMouseButtonCallback(window, [](GLFWwindow *window, int button, int action, int mods) {
-			AppBase& app = *(AppBase*)glfwGetWindowUserPointer(window);
+			AppBase& app = *AppPref::get().app;
 			for( auto& [_, cb] : app.mouse_btn_callbacks ) cb(button, action, mods);
 		});
 		glfwSetScrollCallback(window, [](GLFWwindow *window, double xOff, double yOff) {
-			AppBase& app = *(AppBase*)glfwGetWindowUserPointer(window);
+			AppBase& app = *AppPref::get().app;
 			for( auto& [_, cb] : app.scroll_callbacks) cb(xOff, yOff);
 		});
 		glfwSetCursorPosCallback(window, [](GLFWwindow *window, double xPos, double yPos) {
-			AppBase& app = *(AppBase*)glfwGetWindowUserPointer(window);
+			AppBase& app = *AppPref::get().app;
 			for( auto& [_, cb] : app.cursor_pos_callbacks) cb(xPos, yPos);
 		});
 		glfwSetDropCallback(window, [](GLFWwindow *window, int count, const char **paths) {
-			AppBase& app = *(AppBase*)glfwGetWindowUserPointer(window);
+			AppBase& app = *AppPref::get().app;
 			for( auto& [_, cb] : app.dnd_callbacks ) cb(count, paths);
 		});
 	}

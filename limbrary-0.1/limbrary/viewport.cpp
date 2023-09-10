@@ -41,7 +41,7 @@ namespace lim {
 
 		focused = ImGui::IsWindowFocused();
 		hovered = ImGui::IsWindowHovered();
-		dragging = focused && (ImGui::IsMouseDown(0)||ImGui::IsMouseDown(2));
+		dragging = !ImGui::IsItemHovered() && (ImGui::IsMouseDown(0)||ImGui::IsMouseDown(2));
 
 		ImVec2 imWinPos = ImGui::GetWindowPos();
 		ImVec2 imMousePos = ImGui::GetMousePos();

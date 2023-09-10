@@ -21,8 +21,8 @@ namespace lim
 
 	using CStr = const char* const;
 
-	std::string getStrFromFile(std::string_view path);
-	void setStrToFile(std::string_view path, std::string_view text);
+	std::string readStrFromFile(std::string_view path);
+	void writeStrToFile(std::string_view path, std::string_view text);
 
 	char* fmtStrToBuf(const char* format, ...);
 }

@@ -19,7 +19,7 @@ void main() {
 	float lambertian = max(0,dot(N,L));
     float ndv = max(0, dot(N,V));
 	
-    vec3 outColor = ndv;
+    vec3 outColor = vec3(ndv);
 
-	FragColor = vec4(outColor,1);
+	fragColor = vec4(outColor,1);
 }
