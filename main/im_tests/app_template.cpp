@@ -3,7 +3,6 @@
 #include <glad/glad.h>
 #include <limbrary/log.h>
 #include <imgui.h>
-#include <imgui_internal.h>
 
 namespace lim
 {

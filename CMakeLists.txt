@@ -174,6 +174,8 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
             _CRT_SECURE_NO_WARNINGS  # Calling any one of the potentially unsafe methods in the CRT Library
     )
     target_compile_options(${lib_name} 
+        PUBLIC
+            /MD$<$<CONFIG:Debug>:d>
         PRIVATE
             /W4
             /wd4100 # 참조되지않은 매개변수

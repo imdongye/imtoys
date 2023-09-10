@@ -60,12 +60,12 @@ namespace lim
 	}
 	void Framebuffer::bind() const
 	{
+		glDisable(GL_DEPTH_TEST);
+
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		glViewport(0, 0, width, height);
 		glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
 		glClear(GL_COLOR_BUFFER_BIT);
-
-		glDisable(GL_DEPTH_TEST);
 	}
 	void Framebuffer::unbind() const
 	{

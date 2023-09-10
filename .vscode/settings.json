@@ -1,7 +1,7 @@
 {
     "cmake.debugConfig": {
         "cwd": "${workspaceFolder}/main",
-        "console": "integratedTerminal"
+        "console": "integratedTerminal",
     },
     "files.associations": {
         "xstring": "cpp",

@@ -22,7 +22,7 @@ namespace lim
         glm::vec3 Ka = {0.2f, 0.2f, 0.2f};          // ambient
         glm::vec3 Ke = {0.f, 0.f, 0.f};             // emission
         glm::vec3 Tf = {0.f, 0.f, 0.f};             // transmission
-        float Ni = 1.45;                            // index of refraction
+        float Ni     = 1.45f;                       // index of refraction
         
         Texture* map_Kd = nullptr;
         Texture* map_Ks = nullptr;
