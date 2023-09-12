@@ -39,7 +39,7 @@ namespace lim
 		{
 			std::vector<Mesh*> meshes;
 			std::vector<Node*> childs;
-			glm::mat4 trans = glm::mat4(1);
+			glm::mat4 transformation = glm::mat4(1);
 			~Node();
 		};
 	public:
@@ -67,10 +67,7 @@ namespace lim
 		float pivoted_scaled_bottom_height = 0;
 		
 	private:
-		/* backup for export */
-		bool isCloned = false;
-		aiScene* backupScene = nullptr;
-		friend Model *importModelFromFile(std::string_view modelPath, bool normalizeAndPivot, bool withMaterial, bool readyExport);
+		friend Model *importModelFromFile(std::string_view modelPath, bool normalizeAndPivot, bool withMaterial);
 		friend void exportModelToFile(std::string exportDir, Model *model, size_t pIndex);
 	
 	private:
@@ -92,7 +89,7 @@ namespace lim
 
 
 	// import model
-	Model* importModelFromFile(std::string_view modelPath, bool unitScaleAndPivot = false, bool withMaterial = true, bool readyExport=false);
+	Model* importModelFromFile(std::string_view modelPath, bool unitScaleAndPivot = false, bool withMaterial = true);
 
 	// export model
 	int getNrExportFormats();

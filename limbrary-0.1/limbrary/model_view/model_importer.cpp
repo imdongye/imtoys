@@ -113,6 +113,8 @@ namespace
 			mat.map_Bump = loadTexture(tempStr.C_Str(), GL_RGB8);
 			mat.bumpIsNormal = false;
 		}
+
+		return rst;
 	}
 
 	Mesh* convertMesh(aiMesh* aiMesh)
@@ -150,7 +152,8 @@ namespace
 		if( aiMesh->HasTextureCoords(0) ) {
 			mesh->uvs.resize( aiMesh->mNumVertices );
 			for( GLuint i=0; i<aiMesh->mNumVertices; i++ ) {
-				mesh->uvs[i] = toGLM( aiMesh->mTextureCoords[0][i] );
+				// Todo: why aiVector3D
+				mesh->uvs[i] = {aiMesh->mTextureCoords[0][i].x, aiMesh->mTextureCoords[0][i].y};
 			}
 		}
 
@@ -196,12 +199,12 @@ namespace
 		return mesh;
 	}
 
-	Model::Node* recursiveConvertTree( const aiNode* nd) {
+	Model::Node* recursiveConvertTree( const aiNode* nd) 
+	{
 		const vector<Mesh*>& meshes = md->meshes;
-		// nd->mTransformation 노드에 변환행렬
 
 		Model::Node* node = new Model::Node();
-		node->trans = toGLM(nd->mTransformation);
+		node->transformation = toGLM(nd->mTransformation);
 		for( size_t i=0; i<nd->mNumMeshes; i++ )
 			node->meshes.push_back( meshes[nd->mMeshes[i]] );
 		for( size_t i=0; i< nd->mNumChildren; i++ )
@@ -213,7 +216,7 @@ namespace
 
 namespace lim
 {
-	Model *importModelFromFile(string_view modelPath, bool normalizeAndPivot, bool withMaterial, bool readyExport)
+	Model *importModelFromFile(string_view modelPath, bool normalizeAndPivot, bool withMaterial)
 	{
 		const char* extension = strrchr(modelPath.data(), '.');
 		if( !extension ) {
@@ -275,9 +278,6 @@ namespace lim
 		if( normalizeAndPivot ) {
 			md->updateUnitScaleAndPivot();
 			md->updateModelMat();
-		}
-		if( readyExport ) {
-			md->backupScene = scene;
 		}
 		else {
 			aiReleaseImport(scene);

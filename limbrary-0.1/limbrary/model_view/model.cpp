@@ -44,10 +44,6 @@ namespace lim
 		for( auto mesh : meshes )
 			delete mesh;
 		delete root;
-
-		if( isCloned == false ) {
-			delete backupScene;
-		}
 	}
 	Model* Model::clone()
 	{
@@ -70,7 +66,7 @@ namespace lim
 			
 			copy->meshes.reserve(orig->meshes.size());
 			for(auto mesh : orig->meshes) {
-				GLuint idxOfMesh = distance(meshes.begin(), find(meshes.begin(), meshes.end(), mesh));
+				GLuint idxOfMesh = std::distance(meshes.begin(), std::find(meshes.begin(), meshes.end(), mesh));
 				copy->meshes.push_back(copiedModel->meshes[idxOfMesh]);
 			}
 			copy->childs.reserve(orig->childs.size());
@@ -86,8 +82,6 @@ namespace lim
 		copiedModel->scale = scale;
 		copiedModel->model_mat = model_mat;
 		copiedModel->pivot_mat = pivot_mat;
-		copiedModel->backupScene = backupScene;
-		copiedModel->isCloned = true;
 	}
 	void Model::updateModelMat()
 	{
