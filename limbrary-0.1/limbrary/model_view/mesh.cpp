@@ -7,117 +7,120 @@
 
 #include <limbrary/model_view/mesh.h>
 #include <limbrary/log.h>
-#include <limbrary/texture.h>
-#include <limbrary/program.h>
+
+using namespace std;
+using namespace glm;
+
+namespace {
+	inline void deleteGLBuf(GLuint& buf) {
+		if( buf>0 ){
+			glDeleteBuffers(1, &buf);
+			buf = 0;
+		}
+	}
+}
 
 namespace lim
 {
-	namespace n_mesh
-	{
-		Vertex &Vertex::operator=(const Vertex &copy)
-		{
-			p = copy.p;
-			n = copy.n;
-			uv = copy.uv;
-			tangent = copy.tangent;
-			bitangent = copy.bitangent;
-			memcpy(m_BoneIDs, copy.m_BoneIDs, sizeof(int) * MAX_BONE_INFLUENCE);
-			memcpy(m_Weights, copy.m_Weights, sizeof(float) * MAX_BONE_INFLUENCE);
-			return *this;
-		}
-	}
-
 	Mesh::Mesh()
 	{
-	}
-	// shared vertex triangle mesh
-	Mesh::Mesh(const std::vector<n_mesh::Vertex> &_vertices, const std::vector<GLuint> &_indices, const std::vector<std::shared_ptr<Texture>> &_textures, const std::string_view _name)
-		: name(_name)
-	{
-		draw_mode = GL_TRIANGLES;
-		vertices = _vertices; // todo: fix deep copy
-		indices = _indices;
-		textures = _textures;
-		has_texture = (textures.size() > 0) ? 1 : 0;
-		initGL();
+
 	}
 	Mesh::~Mesh()
 	{
-		clear();
-	}
-	void Mesh::clear()
-	{
-		vertices.clear();
-		indices.clear();
-		textures.clear();
-		if (VAO != 0)
-		{
-			deinitGL();
-		}
+		deinitGL();
 	}
 	void Mesh::deinitGL()
 	{
-		glDeleteVertexArrays(1, &VAO);
-		glDeleteBuffers(1, &EBO);
-		glDeleteBuffers(1, &VBO);
-		VAO = EBO = VBO = 0;
+		deleteGLBuf(pos_buf);
+		deleteGLBuf(nor_buf);
+		deleteGLBuf(uv_buf);
+		deleteGLBuf(tangent_buf);
+		deleteGLBuf(bitangent_buf);
+		deleteGLBuf(color_buf);
+		deleteGLBuf(bone_id_buf);
+		deleteGLBuf(bending_factor_buf);
+		deleteGLBuf(element_buf);
+		if( vert_array>0 ){
+			glDeleteVertexArrays(1, &vert_array);
+			vert_array = 0;
+		}
 	}
 	// upload VRAM
 	void Mesh::initGL()
 	{
-		const size_t SIZE_OF_VERTEX = sizeof(n_mesh::Vertex);
-		if (VAO != 0)
-			deinitGL();
+		if( poss.size()==0 ){
+			log::err("no verts in mesh");
+			return;
+		}
+		deinitGL();
 
-		glGenVertexArrays(1, &VAO);
-		glGenBuffers(1, &VBO);
-		glGenBuffers(1, &EBO);
+		glGenVertexArrays(1, &vert_array);
+		glBindVertexArray(vert_array);
 
-		glBindVertexArray(VAO);
-
-		glBindBuffer(GL_ARRAY_BUFFER, VBO);
-		glBufferData(GL_ARRAY_BUFFER, vertices.size() * SIZE_OF_VERTEX, &vertices[0], GL_STATIC_DRAW);
-
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLuint), &indices[0], GL_STATIC_DRAW);
-
-		// VAO setting //
-		// - position
+		glGenBuffers(1, &pos_buf);
+		glBindBuffer(GL_ARRAY_BUFFER, pos_buf);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(poss[0])*poss.size(), poss.data(), GL_STATIC_DRAW);
 		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, SIZE_OF_VERTEX, (void *)0);
-		// - normal
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, SIZE_OF_VERTEX, (void *)offsetof(n_mesh::Vertex, n));
-		// - tex coord
-		glEnableVertexAttribArray(2);
-		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, SIZE_OF_VERTEX, (void *)offsetof(n_mesh::Vertex, uv));
-		// - tangent
-		glEnableVertexAttribArray(3);
-		glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, SIZE_OF_VERTEX, (void *)offsetof(n_mesh::Vertex, tangent));
-		// - bi tangnet
-		glEnableVertexAttribArray(4);
-		glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, SIZE_OF_VERTEX, (void *)offsetof(n_mesh::Vertex, bitangent));
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-		// - bone ids
-		glEnableVertexAttribArray(5);
-		glVertexAttribIPointer(5, n_mesh::MAX_BONE_INFLUENCE, GL_INT, SIZE_OF_VERTEX, (void *)offsetof(n_mesh::Vertex, m_BoneIDs));
-		// - weights
-		glEnableVertexAttribArray(6);
-		glVertexAttribPointer(6, n_mesh::MAX_BONE_INFLUENCE, GL_FLOAT, GL_FALSE, SIZE_OF_VERTEX, (void *)offsetof(n_mesh::Vertex, m_Weights));
-
-		// 이게 왜 가능한거지 IN WINDOWS
-		// glDeleteBuffers(1, &VBO);
-		// glDeleteBuffers(1, &EBO);
+		if( nors.size()>0 ){
+			glGenBuffers(1, &nor_buf);
+			glBindBuffer(GL_ARRAY_BUFFER, nor_buf);
+			glBufferData(GL_ARRAY_BUFFER, sizeof(nors[0])*nors.size(), nors.data(), GL_STATIC_DRAW);
+			glEnableVertexAttribArray(1);
+			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+		}
+		if( uvs.size()>0 ){
+			glGenBuffers(1, &uv_buf);
+			glBindBuffer(GL_ARRAY_BUFFER, uv_buf);
+			glBufferData(GL_ARRAY_BUFFER, sizeof(uvs[0])*uvs.size(), uvs.data(), GL_STATIC_DRAW);
+			glEnableVertexAttribArray(2);
+			glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, 0);
+		}
+		if( cols.size()>0 ){
+			glGenBuffers(1, &color_buf);
+			glBindBuffer(GL_ARRAY_BUFFER, color_buf);
+			glBufferData(GL_ARRAY_BUFFER, sizeof(cols[0])*cols.size(), cols.data(), GL_STATIC_DRAW);
+			glEnableVertexAttribArray(3);
+			glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 0, 0);
+		}
+		if( tangents.size()>0 ){
+			glGenBuffers(1, &tangent_buf);
+			glBindBuffer(GL_ARRAY_BUFFER, tangent_buf);
+			glBufferData(GL_ARRAY_BUFFER, sizeof(tangents[0])*tangents.size(), tangents.data(), GL_STATIC_DRAW);
+			glEnableVertexAttribArray(4);
+			glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, 0, 0);
+		}
+		if( bitangents.size()>0 ){
+			glGenBuffers(1, &bitangent_buf);
+			glBindBuffer(GL_ARRAY_BUFFER, bitangent_buf);
+			glBufferData(GL_ARRAY_BUFFER, sizeof(bitangents[0])*bitangents.size(), bitangents.data(), GL_STATIC_DRAW);
+			glEnableVertexAttribArray(5);
+			glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, 0, 0);
+		}
+		if( bone_ids.size()>0 ){
+			glGenBuffers(1, &bone_id_buf);
+			glBindBuffer(GL_ARRAY_BUFFER, bone_id_buf);
+			glBufferData(GL_ARRAY_BUFFER, sizeof(bone_ids[0])*bone_ids.size(), bone_ids.data(), GL_STATIC_DRAW);
+			glEnableVertexAttribArray(6);
+			glVertexAttribPointer(6, MAX_BONE_INFLUENCE, GL_INT, GL_FALSE, 0, 0);
+		}
+		if( bending_factors.size()>0 ){
+			glGenBuffers(1, &bending_factor_buf);
+			glBindBuffer(GL_ARRAY_BUFFER, bending_factor_buf);
+			glBufferData(GL_ARRAY_BUFFER, sizeof(bending_factors[0])*bending_factors.size(), bending_factors.data(), GL_STATIC_DRAW);
+			glEnableVertexAttribArray(7);
+			glVertexAttribPointer(7, MAX_BONE_INFLUENCE, GL_FLOAT, GL_FALSE, 0, 0);
+		}
+		if( tris.size()>0 ){
+			glGenBuffers(1, &element_buf);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, element_buf);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(tris[0])*tris.size(), tris.data(), GL_STATIC_DRAW);
+		}
 	}
 	void Mesh::print() const
 	{
-		log::pure("%s, verts %d, tris %d\n", name.c_str(), vertices.size(), indices.size() / 3);
-	}
-	void Mesh::replicateExtraData(const Mesh &target)
-	{
-		draw_mode = target.draw_mode;
-		color = target.color;
-		textures = target.textures;
-		ai_mat_idx = target.ai_mat_idx;
+		log::pure("mesh: %s, verts %d, tris %d\n", name.c_str(), poss.size(), tris.size());
 	}
 }

@@ -214,6 +214,7 @@ file(GLOB_RECURSE main_files CONFIGURE_DEPENDS
     ${CMAKE_SOURCE_DIR}/main/*.frag
 )
 list(FILTER main_files EXCLUDE REGEX "${CMAKE_SOURCE_DIR}/main/assets/*")
+list(FILTER main_files EXCLUDE REGEX "${CMAKE_SOURCE_DIR}/main/ignored/*")
 add_executable(${exe_name} ${main_files})
 source_group(TREE "${CMAKE_SOURCE_DIR}/main" FILES ${main_files})
 target_include_directories(${exe_name} PRIVATE "${CMAKE_SOURCE_DIR}/main")

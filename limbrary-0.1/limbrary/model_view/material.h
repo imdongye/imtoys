@@ -24,13 +24,17 @@ namespace lim
         glm::vec3 Tf = {0.f, 0.f, 0.f};             // transmission
         float Ni     = 1.45f;                       // index of refraction
         
-        Texture* map_Kd = nullptr;
-        Texture* map_Ks = nullptr;
-        Texture* map_Ka = nullptr;
-        Texture* map_Ns = nullptr;
-        Texture* map_Bump = nullptr;
+        TexBase* map_Kd = nullptr;
+        TexBase* map_Ks = nullptr;
+        TexBase* map_Ka = nullptr;
+        TexBase* map_Ns = nullptr;
+        TexBase* map_Bump = nullptr;
+        bool bumpIsNormal = true;
 
         Program* prog = nullptr;
+
+        
+		unsigned int ai_mat_idx;
     };
 }
 #endif

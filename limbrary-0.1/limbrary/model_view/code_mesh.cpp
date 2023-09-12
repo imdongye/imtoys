@@ -23,7 +23,7 @@ namespace
 	using namespace lim;
 	static std::vector<n_mesh::Vertex> vertices;
 	std::vector<GLuint> indices;
-	std::vector<std::shared_ptr<Texture>> textures;
+	std::vector<std::shared_ptr<TexBase>> textures;
 
 	void clearBuf()
 	{

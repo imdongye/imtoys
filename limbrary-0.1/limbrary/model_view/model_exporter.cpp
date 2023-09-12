@@ -113,7 +113,7 @@ namespace lim
 			return nullptr;
 		return formats[idx];
 	}
-	void exportModelToFile(std::string_view exportDir, Model *model, size_t pIndex)
+	void exportModelToFile(std::string exportDir, Model *model, size_t pIndex)
 	{
 		namespace fs = std::filesystem;
 		const aiExportFormatDesc *format = formats[pIndex];
@@ -136,7 +136,7 @@ namespace lim
 		}
 
 		/* ctrl cv texture */
-		for (std::shared_ptr<Texture> tex : model->textures_loaded)
+		for (std::shared_ptr<TexBase> tex : model->textures_loaded)
 		{
 			std::string newTexPath = newModelDir + std::string(tex->internal_model_path);
 

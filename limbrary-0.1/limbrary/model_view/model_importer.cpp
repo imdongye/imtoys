@@ -9,180 +9,231 @@
 //  1. model path texture path 그냥 하나로 합치기
 //
 #include <limbrary/model_view/model.h>
+#include <limbrary/texture.h>
 #include <limbrary/log.h>
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
+using namespace lim;
+using namespace std;
+using namespace glm;
+
 namespace
 {
-	using namespace lim;
+	Model* md = nullptr; // temp model
+	string mdDir;
 
-	Model *model = nullptr; // temp model
 
-	std::vector<std::shared_ptr<Texture>> loadMaterialTextures(aiMaterial *ai_mat, aiTextureType ai_type)
-	{
-		// store it as texture loaded for entire model, to ensure we won't unnecesery load duplicate textures.
-		std::vector<std::shared_ptr<Texture>> &textures_loaded = model->textures_loaded;
-		std::vector<std::shared_ptr<Texture>> meshTextures;
-
-		for (GLuint i = 0; i < ai_mat->GetTextureCount(ai_type); i++)
-		{
-			aiString ai_path;
-			/* blend 등 attrib에서 bm값이 안읽힘 */
-			ai_mat->GetTexture(ai_type, i, &ai_path);
-			std::string texPath(ai_path.C_Str());
-			// assimp가 뒤에오는 옵션을 읽지 않음 (ex: eye.png -bm 0.4)
-			// 그래서 아래와 같이 필터링한다.
-			texPath = texPath.substr(0, texPath.find_first_of(' '));
-			texPath = model->data_dir + texPath;
-
-			// check already loaded
-			// to skip loading same texture
-			bool skip = false;
-			for (GLuint j = 0; j < textures_loaded.size(); j++)
-			{
-				if (texPath.compare(textures_loaded[j]->path) == 0)
-				{
-					meshTextures.push_back(textures_loaded[j]);
-					skip = true;
-					break;
-				}
-			}
-
-			// load texture
-			if (!skip)
-			{
-				// kd일때만 linear space변환
-				auto texture = std::make_shared<Texture>(texPath, (ai_type == aiTextureType_DIFFUSE) ? GL_SRGB8 : GL_RGB8);
-				texture->internal_model_path = texture->path.c_str() + model->data_dir.size();
-				log::pure("%s\n", texture->internal_model_path);
-
-				switch (ai_type)
-				{
-				case aiTextureType_DIFFUSE:
-					texture->tag = "map_Kd";
-					break;
-				case aiTextureType_SPECULAR:
-					texture->tag = "map_Ks";
-					break;
-				case aiTextureType_AMBIENT:
-					texture->tag = "map_Normal";
-					break;
-				case aiTextureType_HEIGHT:
-					texture->tag = "map_Bump";
-					break; // map_bump, bump
-				default:
-					break;
-				}
-				log::pure("-%s\n", texture->tag.c_str());
-				textures_loaded.push_back(texture);
-				meshTextures.push_back(textures_loaded.back());
-			}
-		}
-		return meshTextures;
+	inline vec3 toGLM( const aiVector3D& v ) {
+		return { v.x, v.y, v.z };
 	}
-	Mesh *getParsedMesh(aiMesh *mesh, const aiScene *scene)
-	{
-		std::vector<n_mesh::Vertex> vertices;
-		std::vector<GLuint> indices;
-		std::vector<std::shared_ptr<Texture>> textures;
-		// now only triangle mesh
-		const GLuint angles = 3;
-
-		// - per vertex
-		n_mesh::Vertex vertex;
-		for (GLuint i = 0; i < mesh->mNumVertices; i++)
-		{
-			vertex.p = glm::vec3(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z);
-			if (mesh->HasNormals())
-			{
-				vertex.n = glm::vec3(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z);
-			}
-			// 버텍스당 최대 8개의 uv를 가질수있지만 하나만 사용.
-			if (mesh->mTextureCoords[0])
-			{
-				vertex.uv = glm::vec2(mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y);
-				// tangent
-				vertex.tangent = glm::vec3(mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z);
-				// bitangent
-				vertex.bitangent = glm::vec3(mesh->mBitangents[i].x, mesh->mBitangents[i].y, mesh->mBitangents[i].z);
-			}
-			else
-			{
-				vertex.uv = glm::vec2(0.0f);
-			}
-			vertices.push_back(vertex);
-		}
-
-		// - per triangles
-		for (GLuint i = 0; i < mesh->mNumFaces; i++)
-		{
-			aiFace &face = mesh->mFaces[i];
-			// if not triangle mesh
-			if (face.mNumIndices != angles)
-				return nullptr;
-			for (GLuint j = 0; j < face.mNumIndices; j++)
-				indices.push_back(face.mIndices[j]);
-		}
-		// - materials. per texture type
-		aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
-		// 1. diffuse maps
-		auto diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE);
-		textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
-		// 2. specular maps
-		auto specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR);
-		textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
-		// 3. normal maps
-		auto normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT);
-		textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
-		// 4. ambient maps
-		auto heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT);
-		textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
-
-		Mesh *newMesh = new Mesh(vertices, indices, textures, mesh->mName.C_Str());
-		aiColor3D ai_color;
-		material->Get(AI_MATKEY_COLOR_DIFFUSE, ai_color);
-		newMesh->color = glm::vec3(ai_color.r, ai_color.g, ai_color.b);
-		newMesh->ai_mat_idx = mesh->mMaterialIndex;
-		return newMesh;
+	inline vec3 toGLM( const aiColor3D& c ) {
+		return { c.r, c.g, c.b };
 	}
-	void parseNode(aiNode *node, const aiScene *scene, int depth_tex = 0)
+	inline vec4 toGLM( const aiColor4D& c ) {
+		return { c.r, c.g, c.b, c.a };
+	}
+	inline mat4 toGLM( const aiMatrix4x4& m ) {
+		return mat4(m.a1, m.b1, m.c1, m.d1,
+					m.a2, m.b2, m.c2, m.d2,
+					m.a3, m.b3, m.c3, m.d3,
+					m.a4, m.b4, m.c4, m.d4);
+	}
+
+	TexBase* loadTexture(string texPath, GLint internalFormat=GL_RGB8)
 	{
-		// in current node
-		for (GLuint i = 0; i < node->mNumMeshes; i++)
-		{
-			model->meshes.push_back(getParsedMesh(scene->mMeshes[node->mMeshes[i]], scene));
-			for (int j = 0; j < depth_tex; j++)
-				log::pure(" ");
-			log::pure("mesh loaded : %s,", node->mName.C_Str());
-			(*(model->meshes.back())).print();
+		vector<TexBase*>& loadedTestures = md->textures_loaded;
+
+		// assimp가 뒤에오는 옵션을 읽지 않음 (ex: eye.png -bm 0.4) 그래서 아래와 같이 필터링한다.
+		texPath = texPath.substr(0, texPath.find_first_of(' '));
+		texPath = mdDir + texPath;
+
+		for( size_t i = 0; i < loadedTestures.size(); i++ ) {
+			if( texPath.compare(loadedTestures[i]->path)==0 ) {
+				return loadedTestures[i];
+			}
 		}
-		for (GLuint i = 0; i < node->mNumChildren; i++)
-		{
-			parseNode(node->mChildren[i], scene, depth_tex + 1);
+
+		// kd일때만 linear space변환
+		TexBase* tex = new TexBase(internalFormat);
+		loadImageToTex(texPath, *tex);
+		loadedTestures.push_back(tex);
+
+		return tex;
+	}
+
+	Material* convertMaterial(aiMaterial* aiMat)
+	{
+		Material* rst = new Material();
+		Material& mat = *rst;
+		aiColor3D temp3d;
+		aiColor4D temp4d;
+		aiString tempStr;
+		float tempFloat;
+
+		if( aiMat->Get(AI_MATKEY_COLOR_DIFFUSE, temp4d) == AI_SUCCESS ) {
+			mat.Kd = toGLM(temp4d);
 		}
+		if( aiMat->Get(AI_MATKEY_OPACITY, tempFloat) == AI_SUCCESS ) {
+			mat.Kd.a = tempFloat; // todo
+		}
+		if( aiMat->Get(AI_MATKEY_COLOR_SPECULAR, temp4d) == AI_SUCCESS ) {
+			mat.Ks = toGLM(temp4d);
+		}
+		if( aiMat->Get(AI_MATKEY_SHININESS, tempFloat) == AI_SUCCESS ) {
+			mat.Ks.a = tempFloat;
+		}
+		if( aiMat->Get(AI_MATKEY_SHININESS_STRENGTH, tempFloat ) != AI_SUCCESS ) {
+			mat.Ks = vec4( vec3( mat.Ks )*tempFloat, mat.Ks.a );
+		}
+		if( aiMat->Get(AI_MATKEY_COLOR_AMBIENT, temp3d) == AI_SUCCESS ) {
+			mat.Ka = toGLM(temp3d);
+		}
+		if( aiMat->Get(AI_MATKEY_COLOR_EMISSIVE, temp3d) == AI_SUCCESS ) {
+			mat.Ke = toGLM(temp3d);
+		}
+		if( aiMat->Get(AI_MATKEY_COLOR_TRANSPARENT, temp3d) == AI_SUCCESS ) {
+			mat.Tf = toGLM(temp3d);
+		}
+		if( aiMat->GetTexture(aiTextureType_DIFFUSE, 0, &tempStr) == AI_SUCCESS ) {
+			mat.map_Kd = loadTexture(tempStr.C_Str(), GL_SRGB8);
+		}
+		if( aiMat->GetTexture(aiTextureType_SPECULAR, 0, &tempStr) == AI_SUCCESS ) {
+			mat.map_Ks = loadTexture(tempStr.C_Str(), GL_SRGB8);
+		}
+		if( aiMat->GetTexture(aiTextureType_AMBIENT, 0, &tempStr) == AI_SUCCESS ) {
+			mat.map_Ka = loadTexture(tempStr.C_Str(), GL_SRGB8);
+		}
+		if( aiMat->GetTexture(aiTextureType_NORMALS, 0, &tempStr) == AI_SUCCESS ) {
+			mat.map_Bump = loadTexture(tempStr.C_Str(), GL_RGB8);
+			mat.bumpIsNormal = true;
+		}
+		if( aiMat->GetTexture(aiTextureType_HEIGHT, 0, &tempStr) == AI_SUCCESS ) {
+			mat.map_Bump = loadTexture(tempStr.C_Str(), GL_RGB8);
+			mat.bumpIsNormal = false;
+		}
+	}
+
+	Mesh* convertMesh(aiMesh* aiMesh)
+	{
+		Mesh* mesh = new Mesh();
+		vec3& boundaryMax = md->boundary_max;
+		vec3& boundaryMin = md->boundary_min;
+
+		const vector<Material*>& mats = md->materials;
+		if( mats.size()>0 ) {
+			mesh->material = mats[aiMesh->mMaterialIndex];
+		}
+
+		mesh->poss.resize( aiMesh->mNumVertices );
+		if( md->nr_vertices == 0 ) {
+			md->boundary_max = toGLM( aiMesh->mVertices[0] );
+			md->boundary_min = toGLM( aiMesh->mVertices[0] );
+		}
+		for( GLuint i=0; i<aiMesh->mNumVertices; i++ ) {
+			mesh->poss[i] = toGLM( aiMesh->mVertices[i] );
+			vec3& p = mesh->poss[i];
+
+			if( boundaryMax.x < p.x ) 		boundaryMax.x = p.x;
+			else if( boundaryMin.x > p.x ) 	boundaryMin.x = p.x;
+
+			if( boundaryMax.y < p.y ) 		boundaryMax.y = p.y;
+			else if( boundaryMin.y > p.y ) 	boundaryMin.y = p.y;
+
+			if( boundaryMax.z < p.z ) 		boundaryMax.z = p.z;
+			else if( boundaryMin.z > p.z ) 	boundaryMin.z = p.z;
+		}
+		md->nr_vertices += mesh->poss.size();
+		
+		if( aiMesh->HasNormals() ) {
+			mesh->nors.resize( aiMesh->mNumVertices );
+			for( GLuint i=0; i<aiMesh->mNumVertices; i++ ) {
+				mesh->nors[i] = toGLM( aiMesh->mNormals[i] );
+			}
+		}
+
+		if( aiMesh->HasTextureCoords(0) ) {
+			mesh->uvs.resize( aiMesh->mNumVertices );
+			for( GLuint i=0; i<aiMesh->mNumVertices; i++ ) {
+				mesh->uvs[i] = toGLM( aiMesh->mTextureCoords[0][i] );
+			}
+		}
+
+		if( aiMesh->HasVertexColors(0) ) {
+			mesh->cols.resize( aiMesh->mNumVertices );
+			for( GLuint i=0; i<aiMesh->mNumVertices; i++ ) {
+				mesh->cols[i] = toGLM( aiMesh->mColors[0][i] );
+			}
+		}
+
+		if( aiMesh->HasTangentsAndBitangents() ) {
+			mesh->cols.resize( aiMesh->mNumVertices );
+			for( GLuint i=0; i<aiMesh->mNumVertices; i++ ) {
+				mesh->tangents[i] = toGLM( aiMesh->mTangents[i] );
+				mesh->bitangents[i] = toGLM( aiMesh->mBitangents[i] );
+			}
+		}
+
+		if( aiMesh->HasBones() ) {
+			mesh->bone_ids.resize( aiMesh->mNumVertices );
+			mesh->bending_factors.resize( aiMesh->mNumVertices );
+			// for( GLuint i=0; i<aiMesh->mNumVertices; i++ ) {
+			// 	for( GLuint j=0; j<Mesh::MAX_BONE_INFLUENCE; j++ ) {
+			// 		mesh->bone_ids[i] =
+			// 		mesh->bending_factors[i] =
+			// 	}
+			// }
+		}
+
+		if( aiMesh->HasFaces() ) {
+			mesh->tris.reserve( aiMesh->mNumFaces );
+			for( GLuint i=0; i<aiMesh->mNumFaces; i++ ) {
+				const aiFace& face = aiMesh->mFaces[i];
+				if( face.mNumIndices !=3 ) {
+					log::err("mesh is not tri mesh");
+					continue;
+				}
+				mesh->tris.push_back( uvec3(face.mIndices[0], face.mIndices[1], face.mIndices[2]));
+			}
+			md->nr_triangles += mesh->tris.size();
+		}
+		mesh->initGL();
+		return mesh;
+	}
+
+	Model::Node* recursiveConvertTree( const aiNode* nd) {
+		const vector<Mesh*>& meshes = md->meshes;
+
+		Model::Node* node = new Model::Node();
+		for( size_t i=0; i<nd->mNumMeshes; i++ )
+			node->meshes.push_back( meshes[nd->mMeshes[i]] );
+		for( size_t i=0; i< nd->mNumChildren; i++ )
+			node->childs.push_back( recursiveConvertTree(nd->mChildren[i]) );
+
+		return node;
 	}
 }
 
 namespace lim
 {
-	Model *importModelFromFile(std::string_view path, bool makeNormalized)
+	Model *importModelFromFile(string_view modelPath, bool makeNormalizeMat, bool withMaterial)
 	{
-		std::string spath(path);
+		Assimp::Importer importer;
 
-		model = new Model();
+		const char* extension = strrchr(modelPath.data(), '.');
+		if( !extension ) {
+			log::err("Please provide a file with a valid extension\n");
+			return nullptr;
+		}
 
-		// 찾지 못하면 std::string:npos == -1
-		const size_t lastSlashPos = spath.find_last_of("/\\");
-		const size_t dotPos = spath.find_last_of('.');
-		model->name = spath.substr(lastSlashPos + 1, dotPos - lastSlashPos - 1);
-		model->data_dir = (lastSlashPos == 0) ? "" : spath.substr(0, lastSlashPos) + "/";
-
-		log::pure("model loading : %s\n", model->name.c_str());
-
+		if ( !importer.IsExtensionSupported(extension) ) {
+			log::err("The specified model file extension is currently\n");
+			return nullptr;
+		}
+		
 		/* Assimp 설정 */
-		Assimp::Importer loader;
+		
 		// aiProcess_Triangulate : 다각형이 있다면 삼각형으로
 		GLuint pFrags = aiProcess_Triangulate;
 		// aiProcess_GenNormals : 노멀이 없으면 생성
@@ -194,39 +245,60 @@ namespace lim
 		pFrags |= aiProcess_JoinIdenticalVertices;
 		// aiProcess_SplitLargeMeshes : 큰 mesh를 작은 sub mesh로 나눠줌
 		// aiProcess_OptimizeMeshes : mesh를 합쳐서 draw call을 줄인다. batching?
-		const aiScene *scene = loader.ReadFile(spath, pFrags);
+		const aiScene *scene = importer.ReadFile(string(modelPath), pFrags);
 
-		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
-		{
-			log::err("[import assimp] %s\n", loader.GetErrorString());
+
+		md = new Model();
+		md->path = modelPath;
+		string& spath = md->path;
+		const size_t lastSlashPos = spath.find_last_of("/\\");
+		const size_t dotPos = spath.find_last_of('.');
+		md->name = spath.substr(lastSlashPos + 1, dotPos - lastSlashPos - 1);
+		mdDir = (lastSlashPos == 0) ? "" : spath.substr(0, lastSlashPos) + "/";
+
+		log::pure("model loading : %s\n", md->name.c_str());
+
+		if( !scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode ) {
+			log::err("[import assimp] %s\n", importer.GetErrorString());
 			return nullptr;
 		}
 
 		/* backup for export */
-		int nr_mat = scene->mNumMaterials;
-		model->ai_nr_mats = nr_mat;
-		model->ai_mats = (void **)(new aiMaterial *[nr_mat]);
+		const GLuint nrMats = scene->mNumMaterials;
+		md->ai_nr_mats = nrMats;
+		md->ai_mats = (void **)(new aiMaterial*[nrMats]);
 
-		for (int i = 0; i < nr_mat; i++)
-		{
-			model->ai_mats[i] = new aiMaterial();
-			aiMaterial::CopyPropertyList((aiMaterial *)(model->ai_mats[i]), scene->mMaterials[i]);
-		}
-		// aimat->AddProperty()
-
-		/* load Mesh */
-		parseNode(scene->mRootNode, scene);
-
-		model->updateNums();
-		model->updateBoundary();
-		log::pure("model loaded : %s, vertices: %u\n\n", model->name.c_str(), model->nr_vertices);
-
-		if (makeNormalized)
-		{
-			model->setUnitScaleAndPivot();
-			model->updateModelMat();
+		for( GLuint i=0; i<nrMats; i++ ) {
+			md->ai_mats[i] = new aiMaterial();
+			aiMaterial::CopyPropertyList( (aiMaterial*)(md->ai_mats[i]), scene->mMaterials[i] );
 		}
 
-		return model;
+		/* import mats */
+		if( withMaterial ) {
+			md->materials.resize(nrMats);
+			for( GLuint i=0; i<nrMats; i++ ) {
+				md->materials[i] = convertMaterial(scene->mMaterials[i]);
+			}
+		}
+
+		/* import meshes */
+		md->meshes.resize(scene->mNumMeshes);
+		for( GLuint i=0; i<scene->mNumMeshes; i++ ) {
+			md->meshes[i] = convertMesh(scene->mMeshes[i]);
+		}
+
+		/* import Mesh */
+		md->root = recursiveConvertTree(scene->mRootNode);
+		md->updateNums();
+		md->updateBoundary();
+		log::pure("model loaded : %s, vertices: %u\n\n", md->name.c_str(), md->nr_vertices);
+
+		if( makeNormalizeMat )
+		{
+			md->setUnitScaleAndPivot();
+			md->updateModelMat();
+		}
+
+		return md;
 	}
 }

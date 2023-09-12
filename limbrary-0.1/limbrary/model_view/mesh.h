@@ -1,6 +1,6 @@
 //
 //  2022-07-20 / im dong ye
-//  edit learnopengl code
+//	shared vertex triangle mesh
 //
 //	todo :
 //	1. bumpmap normalmap확인
@@ -10,57 +10,53 @@
 
 #include <string>
 #include <vector>
+#include <array>
 #include <glm/glm.hpp>
 #include <glad/glad.h>
 #include "material.h"
 
 namespace lim
 {
-	namespace n_mesh
-	{
-		const int MAX_BONE_INFLUENCE = 4;
-		// 4byte * (3+3+2+3+3+4+4) = 88
-		// offsetof(Vertex, Normal) = 12
-		struct Vertex
-		{
-			glm::vec3 p, n;
-			glm::vec2 uv; // texture coordinate
-			glm::vec3 tangent, bitangent;
-			int m_BoneIDs[MAX_BONE_INFLUENCE];
-			float m_Weights[MAX_BONE_INFLUENCE];
-			float bendingFactor; // 1 : 많이접힘, 0 :
-
-			Vertex &operator=(const Vertex &copy);
-		};
-	}
-
 	class Mesh
 	{
 	public:
-		std::string name;
-		std::vector<n_mesh::Vertex> vertices;
-		std::vector<GLuint> indices;
-		Material* material;
-		GLenum draw_mode = GL_TRIANGLES;
+		std::string name = "unnamed mesh";
 
-		GLuint VAO, VBO, EBO;
-		unsigned int ai_mat_idx;
+		std::vector<glm::vec3> poss;
+		std::vector<glm::vec3> nors;
+		std::vector<glm::vec2> uvs;
+		std::vector<glm::vec2> cols;
+		std::vector<glm::vec2> tangents;
+		std::vector<glm::vec2> bitangents;
+		GLuint pos_buf = 0;
+		GLuint nor_buf = 0;
+		GLuint uv_buf  = 0;
+		GLuint color_buf = 0;
+		GLuint tangent_buf = 0;
+		GLuint bitangent_buf = 0;
 
+		static constexpr int MAX_BONE_INFLUENCE = 4;
+		std::vector<std::array<int, MAX_BONE_INFLUENCE>> bone_ids;
+		std::vector<std::array<float, MAX_BONE_INFLUENCE>> bending_factors;
+		GLuint bone_id_buf = 0;
+		GLuint bending_factor_buf = 0;
+
+		std::vector<glm::uvec3> tris;
+		GLuint element_buf = 0;
+
+		GLuint vert_array = 0;
+
+		Material* material = nullptr;
 	private:
 		// disable copying
 		Mesh(Mesh const &) = delete;
 		Mesh &operator=(Mesh const &) = delete;
 	public:
 		Mesh();
-		// shared vertex triangle mesh
-		Mesh(const std::vector<n_mesh::Vertex> &_vertices, const std::vector<GLuint> &_indices, const std::vector<std::shared_ptr<Texture>> &_textures, const std::string_view _name = "");
 		~Mesh();
-		void clear();
-		// upload VRAM
 		void initGL();
 		void deinitGL();
 		void print() const;
-		void replicateExtraData(const Mesh &target);
 	};
 }
 

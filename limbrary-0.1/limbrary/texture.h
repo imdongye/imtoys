@@ -20,6 +20,10 @@ namespace lim
 	struct TexBase
 	{
 	public:
+		std::string path = "nopath/texture.png";
+		const char* name = path.c_str()+5;
+		const char* format = path.c_str()+10;
+
 		// 내부 저장 포맷, sRGB면 data에서 감마 변환
 		GLint internal_format;
 		GLenum src_format, src_chanel_type;
@@ -48,28 +52,6 @@ namespace lim
 	};
 
 	bool loadImageToTex(std::string_view path, TexBase& tex);
-
-	// for model
-	class Texture: public TexBase
-	{
-	public:
-		std::string tag;
-		std::string path;
-		// for simp mesh export
-		const char *internal_model_path = nullptr;
-		const char *format;
-		const char *name;
-	private:
-		Texture(const Texture&) = delete;
-		Texture& operator=(const Texture&) = delete;
-	public:
-		/* load texture */
-		// internalFormat : GL_RGB32F(default), GL_RGB8, GL_SRGB8
-		Texture(const std::string_view _path, GLint internalFormat=GL_RGB32F);
-		virtual ~Texture();
-		std::shared_ptr<Texture> clone();
-		void reload(const std::string_view _path, GLint internalFormat=GL_RGB32F);
-	};
 	
 	/* do not use below for multisampling framebuffer */
 	void Tex2Fbo(GLuint texID, GLuint fbo, int w, int h, float gamma=2.2f);

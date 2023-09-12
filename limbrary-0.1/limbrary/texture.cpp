@@ -113,7 +113,7 @@ namespace lim
 
 	/* load texture */
 	// internalFormat : GL_RGB32F(default), GL_RGB8, GL_SRGB8
-	Texture::Texture(const std::string_view _path, GLint internalFormat):TexBase()
+	TexBase::TexBase(const std::string_view _path, GLint internalFormat):TexBase()
 		, path(_path), format(path.c_str()+path.rfind('.')+1)
 		, name(path.c_str()+path.rfind('\\')+path.rfind('/')+2)
 	{
@@ -121,16 +121,16 @@ namespace lim
 		loadImageToTex(path, *this);
 		log::info("%s loaded : texID:%d, %dx%d, nrCh:%d, bit:%d, fm:%s, aspect:%.3f\n", path.c_str(), tex_id, width, height, nr_channels, src_bit_per_channel, format, width/(float)height);
 	}
-	Texture::~Texture()
+	TexBase::~TexBase()
 	{
 		log::info("texture clear\n");
 		clear();
 	}
-	std::shared_ptr<Texture> Texture::clone()
+	std::shared_ptr<TexBase> TexBase::clone()
 	{
-		return std::make_shared<Texture>(path, internal_format);
+		return std::make_shared<TexBase>(path, internal_format);
 	}
-	void Texture::reload(const std::string_view _path, GLint internalFormat)
+	void TexBase::reload(const std::string_view _path, GLint internalFormat)
 	{
 		clear();
 		path = _path; internal_format = internalFormat;

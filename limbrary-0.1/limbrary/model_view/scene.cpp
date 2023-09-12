@@ -77,7 +77,7 @@ namespace lim
 			GLuint specularNr = 0;
 			GLuint normalNr = 0;
 			GLuint ambientNr = 0;
-			for (std::shared_ptr<Texture> tex : mesh.textures)
+			for (std::shared_ptr<TexBase> tex : mesh.textures)
 			{
 				std::string &type = tex->tag;
 				// uniform samper2d nr is start with 0

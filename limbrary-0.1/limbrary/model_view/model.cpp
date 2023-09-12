@@ -93,34 +93,4 @@ namespace lim
 		log::pure("pivot: %s\n",glm::to_string(pivot).c_str());
 		pivot_mat = glm::translate(-pivot);
 	}
-	void Model::updateNums()
-	{
-		nr_vertices = 0;
-		nr_triangles = 0;
-		for( Mesh* mesh : meshes ) {
-			nr_vertices += mesh->vertices.size();
-			nr_triangles += mesh->indices.size()/3;
-		}
-	}
-	void Model::updateBoundary()
-	{
-		if( meshes.size()==0 )
-			return;
-		boundary_max = meshes[0]->vertices[0].p;
-		boundary_min = boundary_max;
-
-		for( Mesh* mesh : meshes ) {
-			for( n_mesh::Vertex& v : mesh->vertices ) {
-				if( boundary_max.x < v.p.x ) boundary_max.x = v.p.x;
-				else if( boundary_min.x > v.p.x ) boundary_min.x = v.p.x;
-
-				if( boundary_max.y < v.p.y ) boundary_max.y = v.p.y;
-				else if( boundary_min.y > v.p.y ) boundary_min.y = v.p.y;
-
-				if( boundary_max.z < v.p.z ) boundary_max.z = v.p.z;
-				else if( boundary_min.z > v.p.z ) boundary_min.z = v.p.z;
-			}
-		}
-		log::pure("boundary size: %s\n", glm::to_string(getBoundarySize()).c_str());
-	}
 }

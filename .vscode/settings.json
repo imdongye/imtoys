@@ -3,10 +3,5 @@
         "cwd": "${workspaceFolder}/main",
         "console": "integratedTerminal",
     },
-    "files.associations": {
-        "xstring": "cpp",
-        "vector": "cpp",
-        "functional": "cpp"
-    },
     //"cmake.generator": "Xcode"
 }
