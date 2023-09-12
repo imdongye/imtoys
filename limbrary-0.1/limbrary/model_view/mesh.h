@@ -38,6 +38,7 @@ namespace lim
 		static constexpr int MAX_BONE_INFLUENCE = 4;
 		std::vector<std::array<int, MAX_BONE_INFLUENCE>> bone_ids;
 		std::vector<std::array<float, MAX_BONE_INFLUENCE>> bending_factors;
+
 		GLuint bone_id_buf = 0;
 		GLuint bending_factor_buf = 0;
 
@@ -47,13 +48,16 @@ namespace lim
 		GLuint vert_array = 0;
 
 		Material* material = nullptr;
+
 	private:
 		// disable copying
 		Mesh(Mesh const &) = delete;
 		Mesh &operator=(Mesh const &) = delete;
+
 	public:
 		Mesh();
 		~Mesh();
+		Mesh* clone();
 		void initGL();
 		void deinitGL();
 		void print() const;

@@ -27,6 +27,7 @@ TODO list:
 #include "mesh.h"
 #include "light.h"
 #include "camera.h"
+#include <assimp/scene.h>
 #include <assimp/cexport.h>
 
 namespace lim
@@ -38,60 +39,60 @@ namespace lim
 		{
 			std::vector<Mesh*> meshes;
 			std::vector<Node*> childs;
-			GLuint ai_mat_idx;
+			glm::mat4 trans = glm::mat4(1);
+			~Node();
 		};
 	public:
 		std::string name = "nonamed model";
+		std::string path = "nopath";
+
+		/* transformation */
 		glm::vec3 position = glm::vec3(0);
 		glm::quat orientation = glm::quat();
 		glm::vec3 scale = glm::vec3(1);
+		glm::mat4 pivot_mat = glm::mat4(1);
 		glm::mat4 model_mat = glm::mat4(1); // = trans*rot*scale*pivot
 
+		/* render data */
 		std::vector<Material*> materials;
 		std::vector<TexBase*> textures_loaded;
 		std::vector<Mesh*> meshes;
-
-		Node* root;
+		Node* root = nullptr;
 
 		GLuint nr_vertices = 0;
 		GLuint nr_triangles = 0;
 		glm::vec3 boundary_max = glm::vec3(-1);
 		glm::vec3 boundary_min = glm::vec3(-1);
+		glm::vec3 boundary_size = glm::vec3(-1);
+		float pivoted_scaled_bottom_height = 0;
+		
+	private:
+		/* backup for export */
+		bool isCloned = false;
+		aiScene* backupScene = nullptr;
+		friend Model *importModelFromFile(std::string_view modelPath, bool normalizeAndPivot, bool withMaterial, bool readyExport);
+		friend void exportModelToFile(std::string exportDir, Model *model, size_t pIndex);
 	
-
-		std::string path;
-		// define when model loading
-		glm::mat4 pivot_mat = glm::mat4(1);
-		// for texture loading
-		// for model exporting
-		GLuint ai_nr_mats;
-		void **ai_mats;
-
 	private:
 		// Disable Copying and Assignment
 		Model(Model const &) = delete;
 		Model &operator=(Model const &) = delete;
 
 	public:
-		Model(const std::string_view _name = "", Program *_program = nullptr);
-		// copy with new mesh
-		Model(const Model &model, const std::vector<Mesh *> &_meshes);
-		// create with only mesh
-		Model(Mesh *_mesh, std::string_view _name = "none", Program *_program = nullptr);
+		Model();
 		~Model();
-		void clear();
+		// 부모 Model에 material, texture, backup 이 있으므로 부모를 삭제하면 안됨.
+		// mesh정보만 clone됨.
+		Model* clone();
 		void updateModelMat();
-		void setUnitScaleAndPivot();
-		glm::vec3 getBoundarySize();
-		void setPivot(glm::vec3 pivot);
-
-	public:
-		void updateNums();
-		void updateBoundary();
+		void updateUnitScaleAndPivot();
+		void updateNrAndBoundary();
+		void setPivot(const glm::vec3& pivot);
 	};
 
+
 	// import model
-	Model* importModelFromFile(std::string_view modelPath, bool makeNormalizeMat = false, bool withMaterial = true);
+	Model* importModelFromFile(std::string_view modelPath, bool unitScaleAndPivot = false, bool withMaterial = true, bool readyExport=false);
 
 	// export model
 	int getNrExportFormats();

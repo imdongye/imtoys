@@ -17,54 +17,77 @@
 //
 #include <limbrary/model_view/model.h>
 #include <limbrary/log.h>
-#include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/transform.hpp>
+#include <assimp/material.h>
+#include <stack>
+
 
 namespace lim
 {
-	Model::Model(const std::string_view _name, Program* _program)
-		: name(_name), program(_program)
+	Model::Node::~Node()
 	{
-		updateModelMat();
+		for( Node* child: childs ) {
+			delete child;
+		}
 	}
-	// copy with new mesh
-	Model::Model(const Model& model, const std::vector<Mesh*>& _meshes)
-		:Model(model.name, model.program)
-	{
-		meshes = _meshes;
-		updateNums();
-		updateBoundary();
 
-		position = model.position;
-		orientation = model.orientation;
-		scale = model.scale;
-		model_mat = model.model_mat;
-		textures_loaded = model.textures_loaded; // deepcopy
-		data_dir = model.data_dir;
-		pivot_mat = model.pivot_mat;
-		ai_nr_mats = model.ai_nr_mats;
-		ai_mats = model.ai_mats; // shared memory
-	}
-	// create with only mesh
-	Model::Model(Mesh* _mesh, std::string_view _name, Program* _program)
-		:Model(_name, _program)
+	Model::Model()
 	{
-		meshes.push_back(_mesh);
-		updateNums();
-		updateBoundary();
-		log::pure("model(mesh) generaged : %s, vertices: %u\n\n", name.c_str(), nr_vertices);
+		
 	}
 	Model::~Model()
 	{
-		clear();
-	}
-	void Model::clear()
-	{
-		textures_loaded.clear();
-		for( Mesh* mesh : meshes ) {
+		for( auto mat : materials )
+			delete mat;
+		for( auto tex : textures_loaded )
+			delete tex;
+		for( auto mesh : meshes )
 			delete mesh;
+		delete root;
+
+		if( isCloned == false ) {
+			delete backupScene;
 		}
-		meshes.clear();
+	}
+	Model* Model::clone()
+	{
+		Model* copiedModel = new Model();
+
+		copiedModel->meshes.reserve(meshes.size());
+		for(Mesh* ms : meshes) {
+			copiedModel->meshes.push_back(ms->clone());
+		}
+
+		copiedModel->root = new Node();
+		std::stack<Node*> origs;
+		std::stack<Node*> copys;
+		origs.push(root);
+		copys.push(copiedModel->root);
+
+		while( origs.size()>0 ) {
+			Node* orig = origs.top(); origs.pop();
+			Node* copy = copys.top(); copys.pop();
+			
+			copy->meshes.reserve(orig->meshes.size());
+			for(auto mesh : orig->meshes) {
+				GLuint idxOfMesh = distance(meshes.begin(), find(meshes.begin(), meshes.end(), mesh));
+				copy->meshes.push_back(copiedModel->meshes[idxOfMesh]);
+			}
+			copy->childs.reserve(orig->childs.size());
+			for(auto oriChild : orig->childs) {
+				origs.push(oriChild);
+				copys.push(new Node());
+				copy->childs.push_back(copys.top());
+			}
+		}
+
+		copiedModel->position = position;
+		copiedModel->orientation = orientation;
+		copiedModel->scale = scale;
+		copiedModel->model_mat = model_mat;
+		copiedModel->pivot_mat = pivot_mat;
+		copiedModel->backupScene = backupScene;
+		copiedModel->isCloned = true;
 	}
 	void Model::updateModelMat()
 	{
@@ -73,24 +96,48 @@ namespace lim
 		glm::mat4 rotateMat = glm::toMat4(orientation);
 		model_mat = translateMat * rotateMat * scaleMat * pivot_mat;
 	}
-	void Model::setUnitScaleAndPivot()
+	void Model::updateNrAndBoundary()
 	{
-		glm::vec3 bSize = getBoundarySize();
-		setPivot(boundary_min + bSize*0.5f);
+		nr_vertices = 0;
+		nr_triangles = 0;
+		if( meshes.size()>0 && meshes[0]->poss.size()>0 ) {
+			boundary_max = meshes[0]->poss[0];
+			boundary_min = meshes[0]->poss[0];
+		}
+		else {
+			boundary_max = glm::vec3(-1);
+			boundary_min = glm::vec3(-1);
+			log::err("there's no mesh when updateNrBoundary\n");
+			return;
+		}
 
-		const float unit_length = 2.f;
-		float max_axis_length = std::max(bSize.x, std::max(bSize.y, bSize.z));
+		for(Mesh* pMesh : meshes) {
+			const Mesh& m = *pMesh;
+			nr_vertices += m.poss.size();
+			for(glm::vec3 p : m.poss) {
+				boundary_max = glm::max(boundary_max, p);
+				boundary_min = glm::min(boundary_min, p);
+			}
+			nr_triangles += m.tris.size();
+		}
+		boundary_size = boundary_max-boundary_min;
+	}
+	void Model::updateUnitScaleAndPivot()
+	{
+		if( nr_vertices==0 ) {
+			updateNrAndBoundary();
+		}
+		constexpr float unit_length = 2.f;
+		float max_axis_length = glm::max(glm::max(boundary_size.x, boundary_size.y), boundary_size.z);
 		scale = glm::vec3(unit_length/max_axis_length);
 
-		position = glm::vec3(0, scale.y*bSize.y*0.5f, 0);
+		setPivot(boundary_min + boundary_size*0.5f);
+
+		updateModelMat();
 	}
-	glm::vec3 Model::getBoundarySize()
+	void Model::setPivot(const glm::vec3& pivot) 
 	{
-		return boundary_max-boundary_min;
-	}
-	void Model::setPivot(glm::vec3 pivot)
-	{
-		log::pure("pivot: %s\n",glm::to_string(pivot).c_str());
 		pivot_mat = glm::translate(-pivot);
+		pivoted_scaled_bottom_height = -(scale.y*boundary_size.y*0.5f);
 	}
 }

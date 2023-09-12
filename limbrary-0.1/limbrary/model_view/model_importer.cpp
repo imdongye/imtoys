@@ -11,7 +11,7 @@
 #include <limbrary/model_view/model.h>
 #include <limbrary/texture.h>
 #include <limbrary/log.h>
-#include <assimp/Importer.hpp>
+#include <assimp/cimport.h>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
@@ -134,15 +134,9 @@ namespace
 		for( GLuint i=0; i<aiMesh->mNumVertices; i++ ) {
 			mesh->poss[i] = toGLM( aiMesh->mVertices[i] );
 			vec3& p = mesh->poss[i];
-
-			if( boundaryMax.x < p.x ) 		boundaryMax.x = p.x;
-			else if( boundaryMin.x > p.x ) 	boundaryMin.x = p.x;
-
-			if( boundaryMax.y < p.y ) 		boundaryMax.y = p.y;
-			else if( boundaryMin.y > p.y ) 	boundaryMin.y = p.y;
-
-			if( boundaryMax.z < p.z ) 		boundaryMax.z = p.z;
-			else if( boundaryMin.z > p.z ) 	boundaryMin.z = p.z;
+			// 요소들끼리의 min max
+			boundaryMax = glm::max(boundaryMax, p);
+			boundaryMin = glm::min(boundaryMin, p);
 		}
 		md->nr_vertices += mesh->poss.size();
 		
@@ -204,8 +198,10 @@ namespace
 
 	Model::Node* recursiveConvertTree( const aiNode* nd) {
 		const vector<Mesh*>& meshes = md->meshes;
+		// nd->mTransformation 노드에 변환행렬
 
 		Model::Node* node = new Model::Node();
+		node->trans = toGLM(nd->mTransformation);
 		for( size_t i=0; i<nd->mNumMeshes; i++ )
 			node->meshes.push_back( meshes[nd->mMeshes[i]] );
 		for( size_t i=0; i< nd->mNumChildren; i++ )
@@ -217,35 +213,30 @@ namespace
 
 namespace lim
 {
-	Model *importModelFromFile(string_view modelPath, bool makeNormalizeMat, bool withMaterial)
+	Model *importModelFromFile(string_view modelPath, bool normalizeAndPivot, bool withMaterial, bool readyExport)
 	{
-		Assimp::Importer importer;
-
 		const char* extension = strrchr(modelPath.data(), '.');
 		if( !extension ) {
 			log::err("Please provide a file with a valid extension\n");
 			return nullptr;
 		}
-
-		if ( !importer.IsExtensionSupported(extension) ) {
+		if ( aiIsExtensionSupported(extension) == AI_FALSE ) {
 			log::err("The specified model file extension is currently\n");
 			return nullptr;
 		}
 		
 		/* Assimp 설정 */
-		
-		// aiProcess_Triangulate : 다각형이 있다면 삼각형으로
-		GLuint pFrags = aiProcess_Triangulate;
-		// aiProcess_GenNormals : 노멀이 없으면 생성
-		pFrags |= aiProcess_GenSmoothNormals;
-		// opengl 텍스쳐 밑에서 읽는문제 or stbi_set_flip_vertically_on_load(true)
-		// pFrags |= aiProcess_FlipUVs;
-		pFrags |= aiProcess_CalcTangentSpace;
-		// 이설정을 안하면 vert array로 중복 vert생성. 키면 shared vertex
-		pFrags |= aiProcess_JoinIdenticalVertices;
-		// aiProcess_SplitLargeMeshes : 큰 mesh를 작은 sub mesh로 나눠줌
-		// aiProcess_OptimizeMeshes : mesh를 합쳐서 draw call을 줄인다. batching?
-		const aiScene *scene = importer.ReadFile(string(modelPath), pFrags);
+		GLuint pFrags = 0;
+		pFrags |= aiProcess_Triangulate; // 다각형이 있다면 삼각형으로
+		// pFrags |= aiProcess_GenNormals;  // 노멀이 없으면 생성
+		pFrags |= aiProcess_GenSmoothNormals; // 생성하고 보간
+		// pFrags |= aiProcess_FlipUVs; // opengl 텍스쳐 밑에서 읽는문제 or stbi_set_flip_vertically_on_load(true)
+		// pFrags |= aiProcess_CalcTangentSpace;
+		pFrags |= aiProcess_JoinIdenticalVertices; // shared vertex
+		// pFrags |= aiProcess_SplitLargeMeshes : 큰 mesh를 작은 sub mesh로 나눠줌
+		// pFrags |= aiProcess_OptimizeMeshes : mesh를 합쳐서 draw call을 줄인다. batching?
+		pFrags |= aiProcessPreset_TargetRealtime_MaxQuality;
+		const aiScene* scene = aiImportFile(modelPath.data(), pFrags);
 
 
 		md = new Model();
@@ -259,24 +250,14 @@ namespace lim
 		log::pure("model loading : %s\n", md->name.c_str());
 
 		if( !scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode ) {
-			log::err("[import assimp] %s\n", importer.GetErrorString());
+			log::err("[import assimp] %s\n", aiGetErrorString());
 			return nullptr;
-		}
-
-		/* backup for export */
-		const GLuint nrMats = scene->mNumMaterials;
-		md->ai_nr_mats = nrMats;
-		md->ai_mats = (void **)(new aiMaterial*[nrMats]);
-
-		for( GLuint i=0; i<nrMats; i++ ) {
-			md->ai_mats[i] = new aiMaterial();
-			aiMaterial::CopyPropertyList( (aiMaterial*)(md->ai_mats[i]), scene->mMaterials[i] );
 		}
 
 		/* import mats */
 		if( withMaterial ) {
-			md->materials.resize(nrMats);
-			for( GLuint i=0; i<nrMats; i++ ) {
+			md->materials.resize(scene->mNumMaterials);
+			for( GLuint i=0; i<scene->mNumMaterials; i++ ) {
 				md->materials[i] = convertMaterial(scene->mMaterials[i]);
 			}
 		}
@@ -287,18 +268,20 @@ namespace lim
 			md->meshes[i] = convertMesh(scene->mMeshes[i]);
 		}
 
-		/* import Mesh */
+		/* set node tree structure */
 		md->root = recursiveConvertTree(scene->mRootNode);
-		md->updateNums();
-		md->updateBoundary();
-		log::pure("model loaded : %s, vertices: %u\n\n", md->name.c_str(), md->nr_vertices);
 
-		if( makeNormalizeMat )
-		{
-			md->setUnitScaleAndPivot();
+
+		if( normalizeAndPivot ) {
+			md->updateUnitScaleAndPivot();
 			md->updateModelMat();
 		}
-
+		if( readyExport ) {
+			md->backupScene = scene;
+		}
+		else {
+			aiReleaseImport(scene);
+		}
 		return md;
 	}
 }

@@ -30,6 +30,23 @@ namespace lim
 	{
 		deinitGL();
 	}
+	Mesh* Mesh::clone()
+	{
+		Mesh* copy = new Mesh();
+		copy->name = name+"-copied";
+		copy->poss = poss;
+		copy->nors = nors;
+		copy->uvs = uvs;
+		copy->cols = cols;
+		copy->tangents = tangents;
+		copy->bitangents = bitangents;
+		copy->bone_ids = bone_ids;
+		copy->bending_factors = bending_factors;
+		copy->tris = tris;
+		initGL();
+
+		copy->material = material;
+	}
 	void Mesh::deinitGL()
 	{
 		deleteGLBuf(pos_buf);

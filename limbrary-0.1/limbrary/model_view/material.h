@@ -32,9 +32,6 @@ namespace lim
         bool bumpIsNormal = true;
 
         Program* prog = nullptr;
-
-        
-		unsigned int ai_mat_idx;
     };
 }
 #endif

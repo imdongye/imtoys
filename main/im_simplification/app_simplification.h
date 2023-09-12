@@ -47,7 +47,7 @@ namespace lim
 
 		float simp_time=0;
 
-		const char *exportPath = "imsimplification/result/";
+		const char *exportPath = "im_simplification/result/";
 
 	public:
 		AppSimplification();
