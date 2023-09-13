@@ -16,9 +16,8 @@
 
 namespace lim
 {
-	TexBase::TexBase(GLint internalFormat)
+	TexBase::TexBase()
 	{
-		internal_format = internalFormat;
 	}
 	TexBase::~TexBase()
 	{
@@ -53,63 +52,6 @@ namespace lim
 		setUniform(pid, shaderUniformName, (int)activeSlot);
 	}
 
-
-	TexBase* makeTextureFromImage(std::string_view path, GLint internalFormat)
-	{
-		TexBase* rst = new TexBase();
-		TexBase& tex = *rst;
-		void *data;
-
-		// hdr loading
-		if( stbi_is_hdr(path.data()) ) {
-			data=stbi_loadf(path.data(), &tex.width, &tex.height, &tex.nr_channels, 0);
-			if( stbi_is_16_bit(path.data()) ) {
-				tex.src_chanel_type = GL_HALF_FLOAT;
-				tex.src_bit_per_channel = 16;
-			}
-			else {
-				tex.src_chanel_type = GL_FLOAT;
-				tex.src_bit_per_channel = 32;
-			}
-		}
-		// ldr loading
-		else {
-			data=stbi_load(path.data(), &tex.width, &tex.height, &tex.nr_channels, 0);
-			tex.src_chanel_type = GL_UNSIGNED_BYTE;
-			tex.src_bit_per_channel = 8;
-		}
-		if( !data ) {
-			log::err("texture failed to load at path: %s\n", path.data());
-			delete rst;
-			return nullptr;
-		}
-		
-		tex.internal_format = internalFormat;
-		tex.path = path;
-		tex.format = tex.path.c_str()+tex.path.rfind('.')+1;
-		tex.name = tex.path.c_str()+path.rfind('\\')+path.rfind('/')+2;
-		tex.aspect_ratio = tex.width/(float)tex.height;
-
-		switch( tex.nr_channels ) {
-			case 1: tex.src_format = GL_RED; break;
-			case 2: tex.src_format = GL_RG; break;
-			case 3: tex.src_format = GL_RGB; break;
-			case 4: tex.src_format = GL_RGBA; break;
-			log::err("texter channels is over 4\n");
-			delete rst;
-			stbi_image_free(data);
-			return nullptr;
-		}
-
-		tex.initGL(data);
-		stbi_image_free(data);
-
-		return rst;
-	}
-}
-
-namespace lim
-{
 	TexBase* makeTextureFromImage(std::string_view path, GLint internalFormat)
 	{
 		TexBase* rst = new TexBase();

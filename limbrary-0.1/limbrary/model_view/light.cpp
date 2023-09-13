@@ -10,10 +10,7 @@
 //	only one light
 //
 #include <limbrary/model_view/light.h>
-#include <limbrary/framebuffer.h>
 #include <glm/gtx/transform.hpp>
-#include <limbrary/asset_lib.h>
-#include <limbrary/model_view/model.h>
 
 
 namespace lim
@@ -23,10 +20,8 @@ namespace lim
 		yaw=_yaw; pitch=_pitch; color=_color;
 		intensity=_intensity; shadow_enabled=shadowEnabled;
 
-		depth_prog = AssetLib::get().depth_prog;
-
-		shadow_map.clear_color = glm::vec4(1);
-		shadow_map.resize(shadow_map_size, shadow_map_size);
+		map_Shadow.clear_color = glm::vec4(1);
+		map_Shadow.resize(shadow_map_size, shadow_map_size);
 
 		// fov 1.0은 60도 정도 2에서 1~-1사이의 중앙모델만 그린다고 가정하면 far을 엄청 멀리까지 안잡아도되고
 		// depth의 4바이트 깊이를 많이 사용할수있다.
@@ -52,24 +47,5 @@ namespace lim
 
 		view_mat = glm::lookAt(position, {0,0,0}, {0,1,0});
 		vp_mat = proj_mat * view_mat;
-	}
-	void Light::drawShadowMap(std::vector<Model*> models) const
-	{
-		shadow_map.bind();
-
-		depth_prog->use();
-		depth_prog->setUniform("viewMat", view_mat);
-		depth_prog->setUniform("projMat", proj_mat);
-
-		for( Model* md : models ) {
-			depth_prog->setUniform("modelMat", md->model_mat);
-			for( Mesh* ms : md->meshes ) {
-				glBindVertexArray(ms->VAO);
-				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ms->EBO);
-				glDrawElements(ms->draw_mode, static_cast<GLuint>(ms->indices.size()), GL_UNSIGNED_INT, 0);
-			}
-		}
-
-		shadow_map.unbind();
 	}
 }

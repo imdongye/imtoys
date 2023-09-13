@@ -558,7 +558,7 @@ namespace lim
 			glm::vec2 rectSize{vMax.x - vMin.x, vMax.y - vMin.y};
 			// ImGui::Text("%f %f", rectSize.x, rectSize.y);
 			const float minLength = glm::min(rectSize.x, rectSize.y);
-			ImGui::Image(INT2VOIDP(light.shadow_map.getRenderedTex()), ImVec2{minLength, minLength}, ImVec2{0, 1}, ImVec2{1, 0});
+			ImGui::Image(INT2VOIDP(light.map_Shadow.getRenderedTex()), ImVec2{minLength, minLength}, ImVec2{0, 1}, ImVec2{1, 0});
 		}
 		ImGui::End();
 		ImGui::PopStyleVar();

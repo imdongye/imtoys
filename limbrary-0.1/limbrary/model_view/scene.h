@@ -16,9 +16,7 @@
 #define __scene_h_
 
 #include "model.h"
-#include "../framebuffer.h"
 #include "light.h"
-#include "camera.h"
 #include <vector>
 
 
@@ -29,16 +27,6 @@ namespace lim
 	public:
 		std::vector<Model*> models;
 		std::vector<Light*> lights;
-	public:
-		Scene();
-		virtual ~Scene();
-	public:
-		/* framebuffer직접설정해서 렌더링 */
-		void render(GLuint fbo, GLuint width, GLuint height, Camera* camera);
-		void render(Framebuffer* framebuffer, Camera* camera);
-	private:
-		void drawModels(Camera* camera);
-		void drawModel(const Camera& cam, const Model& md);
 	};
 }
 #endif

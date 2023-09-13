@@ -246,8 +246,6 @@ namespace lim::code_mesh
 			}
 		}
 
-		vec3 pos, norm;
-		vec2 uv;
 		const float aStep = D_PI / 5.f;		 // angle step
 		const float halfH = radius * 0.5f;	 // half height
 		const float base = halfH * sqrtf(3); // bottom length 밑변
@@ -259,12 +257,12 @@ namespace lim::code_mesh
 		for (int i = 0; i < 6; i++)
 		{
 			poss.push_back({ base*cos(topA), halfH, -base*sin(topA) });
-			if(genNors) nors.push_back( normalize(pos) );
+			if(genNors) nors.push_back( normalize(poss.back()) );
 			if(genUvs) 	uvs.push_back({ uStep*(2*i), 2*vStep });
 			topA += aStep;
 
 			poss.push_back({ base*cos(botA), -halfH, -base*sin(botA)});
-			if(genNors)	nors.push_back( normalize(pos) );
+			if(genNors)	nors.push_back( normalize(poss.back()) );
 			if(genUvs) 	uvs.push_back({ uStep*(1+2*i), vStep });
 			botA += aStep;
 		}
@@ -304,7 +302,6 @@ namespace lim::code_mesh
 
 				const GLuint newIdx = poss.size();
 
-				vec3 normedPos[3];
 				poss.push_back( normalize((p1+p2)*0.5f) );
 				poss.push_back( normalize((p2+p3)*0.5f) );
 				poss.push_back( normalize((p3+p1)*0.5f) );
@@ -327,9 +324,9 @@ namespace lim::code_mesh
 					uvs.push_back( (uv3+uv1)*0.5f );
 				}
 
-				tris.push_back({ copiedTris[j+0], newIdx+0, newIdx+0 });
-				tris.push_back({ copiedTris[j+1], newIdx+1, newIdx+1 });
-				tris.push_back({ copiedTris[j+2], newIdx+2, newIdx+2 });
+				tris.push_back({ copiedTris[j].x, newIdx+0, newIdx+0 });
+				tris.push_back({ copiedTris[j].y, newIdx+1, newIdx+1 });
+				tris.push_back({ copiedTris[j].z, newIdx+2, newIdx+2 });
 				tris.push_back({ newIdx+0,  newIdx+1, newIdx+2 });
 			}
 		}

@@ -15,21 +15,15 @@
 
 #include "../program.h"
 #include "../framebuffer.h"
-#include <glad/glad.h>
 #include <glm/glm.hpp>
-#include <functional>
 
 
 namespace lim
 {
-	class Model;
-	
 	class Light // direction
 	{
 	public:
-		Program* depth_prog;
-
-		const GLuint shadow_map_size = 1024;
+		const int shadow_map_size = 1024;
 		const float shadow_z_near = 3;
 		const float shadow_z_far = 6;
 		const float ortho_width = 4;
@@ -42,8 +36,8 @@ namespace lim
 		float intensity;
 	public: // update result
 		glm::vec3 position;
-		glm::vec3 direction;
-		TexFramebuffer shadow_map;
+		glm::vec3 direction; // todo: vec4
+		TexFramebuffer map_Shadow;
 		glm::mat4 view_mat;
 		glm::mat4 proj_mat;
 		glm::mat4 vp_mat;
@@ -52,9 +46,6 @@ namespace lim
 		~Light();
 	public:
 		void updateMembers();
-		/* light 와 model의 circular dependency때문에 shadowMap을 직접 그리는 함수를 외부에서 정의하게함. */
-		// todo: solve circular dependency with inl file
-		void drawShadowMap(std::vector<Model*> models) const;
 	};
 }
 #endif

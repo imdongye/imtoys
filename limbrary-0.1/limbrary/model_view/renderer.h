@@ -11,6 +11,7 @@
 
 #include "../framebuffer.h"
 #include "model.h"
+#include "scene.h"
 
 namespace lim
 {

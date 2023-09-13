@@ -54,6 +54,7 @@ namespace lim
 		glm::mat4 model_mat = glm::mat4(1); // = trans*rot*scale*pivot
 
 		/* render data */
+		Material* default_mat;
 		std::vector<Material*> materials;
 		std::vector<TexBase*> textures_loaded;
 		std::vector<Mesh*> meshes;
@@ -73,7 +74,7 @@ namespace lim
 	private:
 		// Disable Copying and Assignment
 		Model(Model const &) = delete;
-		Model &operator=(Model const &) = delete;
+		Model& operator=(Model const &) = delete;
 
 	public:
 		Model();

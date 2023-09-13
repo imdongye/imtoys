@@ -56,8 +56,7 @@ namespace
 		}
 
 		// kd일때만 linear space변환
-		TexBase* tex = new TexBase(internalFormat);
-		loadImageToTex(texPath, *tex);
+		TexBase* tex = makeTextureFromImageAuto(texPath);
 		loadedTestures.push_back(tex);
 
 		return tex;
@@ -71,6 +70,8 @@ namespace
 		aiColor4D temp4d;
 		aiString tempStr;
 		float tempFloat;
+
+		mat.prog = nullptr;
 
 		if( aiMat->Get(AI_MATKEY_COLOR_DIFFUSE, temp4d) == AI_SUCCESS ) {
 			mat.Kd = toGLM(temp4d);
@@ -126,6 +127,9 @@ namespace
 		const vector<Material*>& mats = md->materials;
 		if( mats.size()>0 ) {
 			mesh->material = mats[aiMesh->mMaterialIndex];
+		} else {
+			mesh->material = nullptr;
+			log::warn("no material in mesh");
 		}
 
 		mesh->poss.resize( aiMesh->mNumVertices );

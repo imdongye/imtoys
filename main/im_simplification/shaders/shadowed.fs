@@ -11,7 +11,7 @@ uniform int shadowEnabled = -1;
 uniform vec3 lightDir = vec3(1,0,0);
 uniform vec3 lightColor = vec3(1);
 uniform float lightInt = 0.8;
-uniform sampler2D shadowMap;
+uniform sampler2D map_Shadow;
 /* matarial */
 uniform float ambInt = 0.1;
 uniform int shininess = 20;
@@ -46,7 +46,7 @@ float shadowing()
 	vec3 shadowTexPos = (shadowClipPos+1)*0.5f;
 	const float bias = 0.01;
 	float depth = shadowTexPos.z ;
-    float lightDepth = 1.0;//texture(shadowMap, shadowTexPos.xy).r;
+    float lightDepth = 1.0;//texture(map_Shadow, shadowTexPos.xy).r;
     
     // Percentage Closer Filtering PCF
     // shadow map에서 오쿨루더 사이의 거리도 알수있다.
@@ -60,13 +60,13 @@ float shadowing()
         vec2 shiftPos = poissonDisk[i]/hardness;
         shiftPos *= shadowRot;
         shiftPos += shadowTexPos.xy;
-        lightDepth = texture( shadowMap, shiftPos ).z;
+        lightDepth = texture( map_Shadow, shiftPos ).z;
         if ( lightDepth+bias >  depth ) {
             shadowFactor += factorAddition;
         }
     }
 
-	// 1이아니라 shadowMap의 최대값이어야함
+	// 1이아니라 map_Shadow 최대값이어야함
 	// todo : texture최대값찾기
 	if( shadowTexPos.z>=1 ) return 1;
 

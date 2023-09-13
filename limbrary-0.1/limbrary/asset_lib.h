@@ -11,6 +11,7 @@ namespace lim
 {
 	class Program;
 	class Mesh;
+	class Material;
 
 	class AssetLib
 	{
@@ -23,6 +24,8 @@ namespace lim
 		GLuint quad_vbo = 0;
 		GLuint quad_vao = 0;
 		Mesh* quad;
+		Program* defualt_prog;
+		Material* default_mat;
 
 	private:
 		inline static AssetLib* instance = nullptr;

@@ -19,6 +19,7 @@
 #include <limbrary/log.h>
 #include <glm/gtx/transform.hpp>
 #include <assimp/material.h>
+#include <limbrary/asset_lib.h>
 #include <stack>
 
 
@@ -33,7 +34,7 @@ namespace lim
 
 	Model::Model()
 	{
-		
+		default_mat = AssetLib::get().default_mat;
 	}
 	Model::~Model()
 	{
@@ -82,6 +83,8 @@ namespace lim
 		copiedModel->scale = scale;
 		copiedModel->model_mat = model_mat;
 		copiedModel->pivot_mat = pivot_mat;
+		
+		return copiedModel;
 	}
 	void Model::updateModelMat()
 	{

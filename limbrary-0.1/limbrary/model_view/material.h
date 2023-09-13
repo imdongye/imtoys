@@ -31,6 +31,9 @@ namespace lim
         TexBase* map_Bump = nullptr;
         bool bumpIsNormal = true;
 
+        float bump_height = 100;
+        float tex_delta = 0.00001f;
+
         Program* prog = nullptr;
     };
 }

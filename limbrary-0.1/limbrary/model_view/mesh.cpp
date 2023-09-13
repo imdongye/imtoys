@@ -46,6 +46,8 @@ namespace lim
 		initGL();
 
 		copy->material = material;
+		
+		return copy;
 	}
 	void Mesh::deinitGL()
 	{

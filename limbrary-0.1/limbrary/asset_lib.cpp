@@ -1,5 +1,6 @@
 #include <limbrary/asset_lib.h>
 #include <limbrary/program.h>
+#include <limbrary/model_view/material.h>
 #include <limbrary/log.h>
 
 namespace lim
@@ -43,6 +44,11 @@ namespace lim
 
 		red_prog = new Program("red");
 		red_prog->attatch("quad.vs").attatch("red.fs").link();
+
+		defualt_prog = new Program("defualt");
+		defualt_prog->attatch("mvp.vs").attatch("red.fs").link();
+		default_mat = new Material();
+		default_mat->prog = defualt_prog;
 	}
 	AssetLib::~AssetLib()
 	{

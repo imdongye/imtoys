@@ -49,9 +49,9 @@ namespace lim
 		void bind(GLuint pid, GLuint activeSlot, const std::string_view shaderUniformName) const;
 	};
 
-	TexBase* makeTextureFromImage(std::string_view path, GLint internalFormat = GL_SRGB8);
+	TexBase* makeTextureFromImage(std::string_view path, GLint internalFormat);
 	// nrChannels, bitPerChannel 0 is auto bit
-	TexBase* makeTextureFromImage(std::string_view path, bool convertLinear = false, int nrChannels = 0, int bitPerChannel = 0);
+	TexBase* makeTextureFromImageAuto(std::string_view path, bool convertLinear = false, int nrChannels = 0, int bitPerChannel = 0);
 
 	
 	/* do not use below for multisampling framebuffer */
