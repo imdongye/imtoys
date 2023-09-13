@@ -97,7 +97,7 @@ namespace lim
                     nextMat = ms.material;
                     nextProg = nextMat->prog;
 
-                    if( !nextProg && curProg != nextProg ) {
+                    if( nextProg && curProg != nextProg ) {
                         curProg = nextProg;
                         prog.use();
                         prog.setUniform("cameraPos", cam.position);
@@ -122,7 +122,7 @@ namespace lim
                         }
                     }
 
-                    if( !nextMat && curMat != nextMat ) {
+                    if( nextMat && curMat != nextMat ) {
                         const Material& mat = *nextMat;
                         curMat = nextMat;
 
