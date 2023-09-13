@@ -24,20 +24,14 @@ namespace lim
 	{
 		clear();
 	}
-	void TexBase::create(int _width, int _height, GLint internalFormat, GLuint srcFormat, GLuint srcChanelType, void* data)
+	void TexBase::clear()
 	{
-		if( width!=_width||height!=_height||internal_format!=internalFormat ) 
-			clear();
-
-		width = _width;
-		height = _height;
-		internal_format = internalFormat;
-		src_format = srcFormat;
-		src_chanel_type=srcChanelType;
-
-		create(data);
+		if( tex_id>0 ) {
+			glDeleteTextures(1, &tex_id);
+			tex_id=0;
+		}
 	}
-	void TexBase::create(void* data)
+	void TexBase::initGL(void* data)
 	{
 		glGenTextures(1, &tex_id);
 		glBindTexture(GL_TEXTURE_2D, tex_id);
@@ -52,13 +46,6 @@ namespace lim
 		glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, src_format, src_chanel_type, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
 	}
-	void TexBase::clear()
-	{
-		if( tex_id>0 ) {
-			glDeleteTextures(1, &tex_id);
-			tex_id=0;
-		}
-	}
 	void TexBase::bind(GLuint pid, GLuint activeSlot, const std::string_view shaderUniformName) const
 	{
 		glActiveTexture(GL_TEXTURE0 + activeSlot);
@@ -67,8 +54,10 @@ namespace lim
 	}
 
 
-	bool loadImageToTex(std::string_view path, TexBase& tex)
+	TexBase* makeTextureFromImage(std::string_view path, GLint internalFormat)
 	{
+		TexBase* rst = new TexBase();
+		TexBase& tex = *rst;
 		void *data;
 
 		// hdr loading
@@ -91,9 +80,14 @@ namespace lim
 		}
 		if( !data ) {
 			log::err("texture failed to load at path: %s\n", path.data());
-			return false;
+			delete rst;
+			return nullptr;
 		}
-
+		
+		tex.internal_format = internalFormat;
+		tex.path = path;
+		tex.format = tex.path.c_str()+tex.path.rfind('.')+1;
+		tex.name = tex.path.c_str()+path.rfind('\\')+path.rfind('/')+2;
 		tex.aspect_ratio = tex.width/(float)tex.height;
 
 		switch( tex.nr_channels ) {
@@ -102,42 +96,161 @@ namespace lim
 			case 3: tex.src_format = GL_RGB; break;
 			case 4: tex.src_format = GL_RGBA; break;
 			log::err("texter channels is over 4\n");
+			delete rst;
+			stbi_image_free(data);
+			return nullptr;
 		}
 
-		tex.create(data);
+		tex.initGL(data);
 		stbi_image_free(data);
 
-		return true;
+		return rst;
+	}
+}
+
+namespace lim
+{
+	TexBase* makeTextureFromImage(std::string_view path, GLint internalFormat)
+	{
+		TexBase* rst = new TexBase();
+		TexBase& tex = *rst;
+		void* data;
+
+		// hdr loading
+		if( stbi_is_hdr(path.data()) ) {
+			data=stbi_loadf(path.data(), &tex.width, &tex.height, &tex.nr_channels, 0);
+			if( stbi_is_16_bit(path.data()) ) {
+				tex.src_chanel_type = GL_HALF_FLOAT;
+				tex.src_bit_per_channel = 16;
+			}
+			else {
+				tex.src_chanel_type = GL_FLOAT;
+				tex.src_bit_per_channel = 32;
+			}
+		}
+		// ldr loading
+		else {
+			data=stbi_load(path.data(), &tex.width, &tex.height, &tex.nr_channels, 0);
+			tex.src_chanel_type = GL_UNSIGNED_BYTE;
+			tex.src_bit_per_channel = 8;
+		}
+		if( !data ) {
+			log::err("texture failed to load at path: %s\n", path.data());
+			delete rst;
+			return nullptr;
+		}
+
+		switch( tex.nr_channels ) {
+			case 1: tex.src_format = GL_RED; break;
+			case 2: tex.src_format = GL_RG; break;
+			case 3: tex.src_format = GL_RGB; break;
+			case 4: tex.src_format = GL_RGBA; break;
+			default: {
+				log::err("texter channels is over 4\n");
+				delete rst;
+				stbi_image_free(data);
+				return nullptr;
+			}
+		}
+
+		tex.internal_format = internalFormat;
+		tex.path = path;
+		tex.format = tex.path.c_str()+tex.path.rfind('.')+1;
+		tex.name = tex.path.c_str()+path.rfind('\\')+path.rfind('/')+2;
+		tex.aspect_ratio = tex.width/(float)tex.height;
+
+		tex.initGL(data);
+		stbi_image_free(data);
+
+		return rst;
 	}
 
+	TexBase* makeTextureFromImageAuto(std::string_view path, bool convertLinear, int nrChannels, int bitPerChannel)
+	{
+		TexBase* rst = new TexBase();
+		TexBase& tex = *rst;
+		void *data;
 
-	/* load texture */
-	// internalFormat : GL_RGB32F(default), GL_RGB8, GL_SRGB8
-	TexBase::TexBase(const std::string_view _path, GLint internalFormat):TexBase()
-		, path(_path), format(path.c_str()+path.rfind('.')+1)
-		, name(path.c_str()+path.rfind('\\')+path.rfind('/')+2)
-	{
-		internal_format = internalFormat;
-		loadImageToTex(path, *this);
-		log::info("%s loaded : texID:%d, %dx%d, nrCh:%d, bit:%d, fm:%s, aspect:%.3f\n", path.c_str(), tex_id, width, height, nr_channels, src_bit_per_channel, format, width/(float)height);
-	}
-	TexBase::~TexBase()
-	{
-		log::info("texture clear\n");
-		clear();
-	}
-	std::shared_ptr<TexBase> TexBase::clone()
-	{
-		return std::make_shared<TexBase>(path, internal_format);
-	}
-	void TexBase::reload(const std::string_view _path, GLint internalFormat)
-	{
-		clear();
-		path = _path; internal_format = internalFormat;
-		loadImageToTex(_path, *this);
+		// hdr loading
+		if( stbi_is_hdr(path.data()) ) {
+			data=stbi_loadf(path.data(), &tex.width, &tex.height, &tex.nr_channels, 0);
+			if( stbi_is_16_bit(path.data()) ) {
+				tex.src_chanel_type = GL_HALF_FLOAT;
+				tex.src_bit_per_channel = 16;
+			}
+			else {
+				tex.src_chanel_type = GL_FLOAT;
+				tex.src_bit_per_channel = 32;
+			}
+		}
+		// ldr loading
+		else {
+			data=stbi_load(path.data(), &tex.width, &tex.height, &tex.nr_channels, 0);
+			tex.src_chanel_type = GL_UNSIGNED_BYTE;
+			tex.src_bit_per_channel = 8;
+		}
+		if( !data ) {
+			log::err("texture failed to load at path: %s\n", path.data());
+			delete rst;
+			return nullptr;
+		}
+
+		switch( tex.nr_channels ) {
+			case 1: tex.src_format = GL_RED; break;
+			case 2: tex.src_format = GL_RG; break;
+			case 3: tex.src_format = GL_RGB; break;
+			case 4: tex.src_format = GL_RGBA; break;
+			default: {
+				log::err("texter channels is over 4\n");
+				delete rst;
+				stbi_image_free(data);
+				return nullptr;
+			}
+		}
+
+		/*** auto internal format ***/
+		tex.internal_format = -1;
+
+		if( bitPerChannel==0 )
+			bitPerChannel = tex.src_bit_per_channel;
+		if( nrChannels==0 )
+			nrChannels = tex.nr_channels;
+
+		// sRGB는 밝은영역을 압축하기 위함이라 8비트 이상이 필요없음
+		// From : https://registry.khronos.org/OpenGL-Refpages/gl4/html/glTexImage2D.xhtml
+		// Todo: GL_SRGB == GL_SRGB8 ?
+		// 		SNORM은 언제 쓰지?
+		//		I, UI, F 가 무슨 의미가 있지?
+		if( convertLinear ) {
+			if(nrChannels==3) tex.internal_format = GL_SRGB8;
+			if(nrChannels==4) tex.internal_format = GL_SRGB8_ALPHA8;
+		}
+		else {
+			if(nrChannels==1&&bitPerChannel==8) tex.internal_format = GL_R8;
+			if(nrChannels==2&&bitPerChannel==8) tex.internal_format = GL_RG8;
+			if(nrChannels==3&&bitPerChannel==8) tex.internal_format = GL_RGB8;
+			if(nrChannels==4&&bitPerChannel==8) tex.internal_format = GL_RGBA8;
+			if(nrChannels==1&&bitPerChannel==16) tex.internal_format = GL_R16F;
+			if(nrChannels==2&&bitPerChannel==16) tex.internal_format = GL_RG16F;
+			if(nrChannels==3&&bitPerChannel==16) tex.internal_format = GL_RGB16F;
+			if(nrChannels==4&&bitPerChannel==16) tex.internal_format = GL_RGBA16F;
+			if(nrChannels==1&&bitPerChannel==32) tex.internal_format = GL_R32F;
+			if(nrChannels==2&&bitPerChannel==32) tex.internal_format = GL_RG32F;
+			if(nrChannels==3&&bitPerChannel==32) tex.internal_format = GL_RGB32F;
+			if(nrChannels==4&&bitPerChannel==32) tex.internal_format = GL_RGBA32F;
+		}
+
+		tex.path = path;
+		tex.format = tex.path.c_str()+tex.path.rfind('.')+1;
+		tex.name = tex.path.c_str()+path.rfind('\\')+path.rfind('/')+2;
+		tex.aspect_ratio = tex.width/(float)tex.height;
+
+		tex.initGL(data);
+		stbi_image_free(data);
+
+		return rst;
 	}
 	
-	/* do not use below for multisampling framebuffer */
 	void Tex2Fbo(GLuint texID, GLuint fbo, int w, int h, float gamma)
 	{
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);

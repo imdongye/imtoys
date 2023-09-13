@@ -1,6 +1,6 @@
 //
 //  2022-11-14 / im dong ye
-//	edit HDRView by pf Hyun Joon Shin
+// 	From: https://registry.khronos.org/OpenGL-Refpages/gl4/html/glTexImage2D.xhtml
 //
 //	Todo:
 //	1. ARB 확장이 뭐지 어셈블리?
@@ -24,34 +24,35 @@ namespace lim
 		const char* name = path.c_str()+5;
 		const char* format = path.c_str()+10;
 
-		// 내부 저장 포맷, sRGB면 data에서 감마 변환
-		GLint internal_format;
-		GLenum src_format, src_chanel_type;
-		int src_bit_per_channel;
-
-		GLuint tex_id=0;
 		int width=0, height=0;
 		float aspect_ratio=1.f;
+		int nr_channels = 3;
 
-		// GL_NEAREST, LINEAR, *_MIPMAP_*
-		GLint mag_filter = GL_LINEAR;
-		// GL_CLAMP_TO_EDGE , GL_REPEAT , GL_REPEAT_MIRROR
+		GLuint tex_id=0;
+		// 내부 저장 포맷, sRGB면 data에서 감마 변환
+		GLint internal_format = GL_SRGB8_ALPHA8; // GL_R8, 
+		GLenum src_format = GL_RGBA;
+		GLenum src_chanel_type = GL_UNSIGNED_BYTE;
+		int src_bit_per_channel = 8;
+
+		GLint mag_filter = GL_LINEAR; // GL_NEAREST, LINEAR, *_MIPMAP_*
 		GLint min_filter = GL_LINEAR_MIPMAP_LINEAR;
-		GLint wrap_param = GL_CLAMP_TO_EDGE;
+		GLint wrap_param = GL_CLAMP_TO_EDGE; // GL_CLAMP_TO_EDGE , GL_REPEAT , GL_REPEAT_MIRROR
 		GLint mipmap_max_level = 1000;
 
-		int nr_channels=0;
 	public:
-		TexBase(GLint internalFormat = GL_SRGB8);
+		TexBase();
 		virtual ~TexBase();
 	public:
-		void create(int _width, int _height, GLint internalFormat, GLuint srcFormat, GLuint srcChanelType, void* data);
-		void create(void* data = nullptr);
+		void initGL(void* data = nullptr);
 		void clear();
 		void bind(GLuint pid, GLuint activeSlot, const std::string_view shaderUniformName) const;
 	};
 
-	bool loadImageToTex(std::string_view path, TexBase& tex);
+	TexBase* makeTextureFromImage(std::string_view path, GLint internalFormat = GL_SRGB8);
+	// nrChannels, bitPerChannel 0 is auto bit
+	TexBase* makeTextureFromImage(std::string_view path, bool convertLinear = false, int nrChannels = 0, int bitPerChannel = 0);
+
 	
 	/* do not use below for multisampling framebuffer */
 	void Tex2Fbo(GLuint texID, GLuint fbo, int w, int h, float gamma=2.2f);

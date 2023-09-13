@@ -18,70 +18,74 @@
 #include <memory>
 #include <glad/glad.h>
 
-namespace
-{
-	using namespace lim;
-	static std::vector<n_mesh::Vertex> vertices;
-	std::vector<GLuint> indices;
-	std::vector<std::shared_ptr<TexBase>> textures;
-
-	void clearBuf()
-	{
-		static bool first = true;
-		if (first)
-		{
-			first = false;
-			vertices.reserve(100);
-			indices.reserve(100);
-		}
-		vertices.clear();
-		indices.clear();
-		textures.clear();
-	}
-	n_mesh::Vertex genHalfVertex(const n_mesh::Vertex &v1, const n_mesh::Vertex &v2, float radius)
-	{
-		glm::vec3 pos = (v1.p + v2.p) * 0.5f;
-		glm::vec3 norm = glm::normalize(pos);
-		pos = norm * radius;
-		glm::vec2 uv = (v1.uv + v2.uv) * 0.5f;
-		return {pos, norm, uv};
-	}
-}
+using namespace lim;
+using namespace glm;
 
 namespace lim::code_mesh
 {
-	Mesh *genQuad()
+	Mesh* genQuad(bool genNors, bool genUvs)
 	{
+		Mesh* rst = new Mesh();
+		std::vector<vec3>& 	poss = rst->poss;
+		std::vector<vec3>& 	nors = rst->nors;
+		std::vector<vec2>& 	uvs  = rst->uvs;
+		std::vector<uvec3>& tris = rst->tris;
+
 		const float half = 1.0f;
-		const glm::vec3 front = {0, 0, 1};
+		const vec3 front = {0, 0, 1};
 
-		clearBuf();
+		poss.push_back({-half, half, 0});
+		poss.push_back({half, half, 0});
+		poss.push_back({-half, -half, 0});
+		poss.push_back({half, -half, 0});
 
-		vertices.push_back({{-half, half, 0}, front, {0, 1}});
-		vertices.push_back({{half, half, 0}, front, {1, 1}});
-		vertices.push_back({{-half, -half, 0}, front, {0, 0}});
-		vertices.push_back({{half, -half, 0}, front, {1, 0}});
+		if( genNors ) {
+			nors.push_back(front);
+			nors.push_back(front);
+			nors.push_back(front);
+			nors.push_back(front);
+		}
+		
+		if( genUvs ) {
+			uvs.push_back({0,1});
+			uvs.push_back({1,1});
+			uvs.push_back({0,0});
+			uvs.push_back({1,0});
+		}
 
-		indices.insert(indices.end(), {0, 3, 1});
-		indices.insert(indices.end(), {0, 2, 3});
+		tris.push_back({0,3,1});
+		tris.push_back({0,2,3});
 
-		return new Mesh(vertices, indices, textures);
+		rst->initGL();
+		return rst;
 	}
 
-	Mesh *genPlane(int nrSlice)
+	Mesh* genPlane(int nrSlice, bool genNors, bool genUvs)
 	{
+		Mesh* rst = new Mesh();
+		std::vector<vec3>& 	poss = rst->poss;
+		std::vector<vec3>& 	nors = rst->nors;
+		std::vector<vec2>& 	uvs  = rst->uvs;
+		std::vector<uvec3>& tris = rst->tris;
+
 		const float length = 2.0f;
 		const float start = -length / 2.f;
 		const float step = length / nrSlice;
-		const glm::vec3 up = {0, 1, 0};
-
-		clearBuf();
-
+		const vec3 up = {0, 1, 0};
 		const float div = nrSlice + 1;
+
+
 		for(int i = 0; i <= nrSlice; i++) for(int j = 0; j <= nrSlice; j++)
 		{
-			vertices.push_back({{start + step * j, 0, start + step * i}, up, {(j) / div, (div - i) / div}});
+			poss.push_back({start + step * j, 0, start + step * i});
+			if( genNors ) {
+				nors.push_back( up );
+			}
+			if( genUvs ) {
+				uvs.push_back({ j/div, (div-i)/div });
+			}
 		}
+
 
 		const int nrCols = nrSlice + 1;
 		for (int i = 0; i < nrSlice; i++) for (int j = 0; j < nrSlice; j++)
@@ -90,401 +94,104 @@ namespace lim::code_mesh
 			// |\|
 			// 2-3
 			const int ori = i * nrCols + j;
-			indices.push_back(ori + 0);
-			indices.push_back(ori + 0 + nrCols);
-			indices.push_back(ori + 1 + nrCols);
 
-			indices.push_back(ori + 0);
-			indices.push_back(ori + 1 + nrCols);
-			indices.push_back(ori + 1);
+			// lower
+			tris.push_back({ori + 0,
+							ori + 0 + nrCols,
+							ori + 1 + nrCols});
+			// upper
+			tris.push_back({ori + 0,
+							ori + 1 + nrCols,
+							ori + 1});
 		}
-		return new Mesh(vertices, indices, textures);
+		
+		rst->initGL();
+		return rst;
 	}
 
-	Mesh *genCube()
+	Mesh* genCube(bool genNors, bool genUvs)
 	{
-		const float half = 1.0f;
-		const glm::vec3 nors[6] = {
-			{0, 1, 0}, {0, 0, 1}, {1, 0, 0}, {-1, 0, 0}, {0, 0, -1}, {0, -1, 0}};
-		const glm::vec3 tans[6] = {
-			{1, 0, 0}, {1, 0, 0}, {0, 0, -1}, {0, 0, 1}, {-1, 0, 0}, {-1, 0, 0}};
+		Mesh* rst = new Mesh();
+		std::vector<vec3>& 	poss = rst->poss;
+		std::vector<vec3>& 	nors = rst->nors;
+		std::vector<vec2>& 	uvs  = rst->uvs;
+		std::vector<uvec3>& tris = rst->tris;
 
-		clearBuf();
+		const float half = 1.0f;
+		const vec3 cbNors[6] = {
+			{0, 1, 0}, {0, 0, 1}, {1, 0, 0}, {-1, 0, 0}, {0, 0, -1}, {0, -1, 0}};
+		const vec3 cbTans[6] = {
+			{1, 0, 0}, {1, 0, 0}, {0, 0, -1}, {0, 0, 1}, {-1, 0, 0}, {-1, 0, 0}};
 
 		for (int i = 0; i < 6; i++)
 		{
-			glm::vec3 n = nors[i];
-			glm::vec3 t = tans[i];
-			glm::vec3 b = cross(n, t);
+			vec3 n = cbNors[i];
+			vec3 t = cbTans[i];
+			vec3 b = cross(n, t);
 
-			vertices.push_back({t * half + b * half + n * half, n, {1, 1}});
+			poss.push_back(  t*half + b*half + n*half );
+			poss.push_back( -t*half + b*half + n*half );
+			poss.push_back( -t*half - b*half + n*half );
+			poss.push_back(  t*half - b*half + n*half );
 
-			vertices.push_back({-t * half + b * half + n * half, n, {0, 1}});
+			if( genNors ) {
+				nors.push_back(n);
+				nors.push_back(n);
+				nors.push_back(n);
+				nors.push_back(n);
+			}
 
-			vertices.push_back({-t * half - b * half + n * half, n, {0, 0}});
-
-			vertices.push_back({t * half - b * half + n * half, n, {1, 0}});
+			if( genUvs ) {
+				uvs.push_back({1,1});
+				uvs.push_back({0,1});
+				uvs.push_back({0,0});
+				uvs.push_back({1,0});
+			}
 		}
+
 		for (unsigned int i = 0; i < 6; i++)
 		{
-			indices.insert(indices.end(), {0 + i * 4, 1 + i * 4, 2 + i * 4});
-			indices.insert(indices.end(), {0 + i * 4, 2 + i * 4, 3 + i * 4});
+			tris.push_back({ 0+i*4, 1+i*4, 2+i*4 });
+			tris.push_back({ 0+i*4, 1+i*4, 2+i*4 });
+			tris.push_back({ 0+i*4, 2+i*4, 3+i*4 });
 		}
 
-		return new Mesh(vertices, indices, textures);
+		rst->initGL();
+		return rst;
 	}
 
 	// From: http://www.songho.ca/opengl/gl_sphere.html
 	// texture coord가 다른 같은 위치의 vertex가 많음
-	Mesh *genSphere(const int nrSlices, const int nrStacks)
+	Mesh* genSphere(const int nrSlices, const int nrStacks, bool genNors, bool genUvs)
 	{
+		Mesh* rst = new Mesh();
+		std::vector<vec3>& 	poss = rst->poss;
+		std::vector<vec3>& 	nors = rst->nors;
+		std::vector<vec2>& 	uvs  = rst->uvs;
+		std::vector<uvec3>& tris = rst->tris;
+
 		const float radius = 1.f;
-		clearBuf();
 
 		// phi : angle form xy-plane [-pi/2, pi/2]
 		// theta : y-axis angle [0, 2pi]
 		for (int stack = 0; stack <= nrStacks; stack++)
 		{
 			float phi = H_PI - F_PI * stack / (float)nrStacks;
-			float y = sinf(phi);
-			float rcos = radius * cosf(phi);
+			float y = sin(phi);
+			float rcos = radius * cos(phi);
 			for (int slice = 0; slice <= nrSlices; slice++)
 			{
 				float theta = D_PI * slice / (float)nrSlices;
-				float x = rcos * cosf(theta);
-				float z = -rcos * sinf(theta);
-				glm::vec3 pos = {x, y, z};
-				glm::vec3 norm = glm::normalize(pos);
-				glm::vec2 uv = {2.f * slice / (float)nrSlices, 1.f - stack / (float)nrStacks};
-				vertices.push_back({pos, norm, uv});
-			}
-		}
-
-		const int nr_cols = nrSlices + 1;
-
-		for (int stack = 0; stack < nrStacks; stack++)
-		{
-			int cur_row = nr_cols * stack;
-			int next_row = nr_cols * (stack + 1);
-			for (int slice = 0; slice < nrSlices; slice++)
-			{
-				int cur_col = slice;
-				int next_col = slice + 1;
-				if (stack < nrStacks)
-				{ // up tri
-					indices.push_back(cur_row + cur_col);
-					indices.push_back(next_row + cur_col);
-					indices.push_back(next_row + next_col);
+				float x = rcos * cos(theta);
+				float z = -rcos * sin(theta);
+				vec3 pos = {x, y, z};
+				poss.push_back(pos);
+				if( genNors ) {
+					nors.push_back(normalize(pos));
 				}
-				if (stack > 0)
-				{ // inv tri
-					indices.push_back(cur_row + cur_col);
-					indices.push_back(next_row + next_col);
-					indices.push_back(cur_row + next_col);
+				if( genUvs ) {
+					uvs.push_back({ 2.f*slice/(float)nrSlices, 1.f - stack/(float)nrStacks });
 				}
-			}
-		}
-
-		return new Mesh(vertices, indices, textures);
-	}
-
-	// icosahedron, 20면체
-	Mesh *genIcoSphere(const int subdivision)
-	{
-		const float uStep = 1.f / 11.f;
-		const float vStep = 1.f / 3.f;
-		const float radius = 1.f;
-		clearBuf();
-
-		vertices.reserve(22);
-
-		for (int i = 0; i < 5; i++)
-		{
-			vertices.push_back({{0, radius, 0}, {0, 1, 0}, {uStep * (1 + 2 * i), 1}});
-			vertices.push_back({{0, -radius, 0}, {0, -1, 0}, {uStep * (3 + 2 * i), 0}});
-		}
-
-		glm::vec3 pos, norm;
-		glm::vec2 uv;
-		const float aStep = D_PI / 5.f;		 // angle step
-		const float halfH = radius * 0.5f;	 // half height
-		const float base = halfH * sqrtf(3); // bottom length 밑변
-
-		float topA = 0; // top angle
-		float botA = aStep * 0.5f;
-
-		for (int i = 0; i < 6; i++)
-		{
-			pos = {base * cosf(topA), halfH, -base * sinf(topA)};
-			norm = glm::normalize(pos);
-			uv = {uStep * (2 * i), 2 * vStep};
-			vertices.push_back({pos, norm, uv});
-			topA += aStep;
-
-			pos = {base * cosf(botA), -halfH, -base * sinf(botA)};
-			norm = glm::normalize(pos);
-			uv = {uStep * (1 + 2 * i), vStep};
-			vertices.push_back({pos, norm, uv});
-			botA += aStep;
-		}
-
-		indices = {
-			0, 10, 12,
-			2, 12, 14,
-			4, 14, 16,
-			6, 16, 18,
-			8, 18, 20,
-			
-			10, 11, 12,
-			12, 13, 14,
-			14, 15, 16,
-			16, 17, 18,
-			18, 19, 20,
-			
-			13, 12, 11,
-			15, 14, 13,
-			17, 16, 15,
-			19, 18, 17,
-			21, 20, 19,
-			
-			1, 13, 11,
-			3, 15, 13,
-			5, 17, 15,
-			7, 19, 17,
-			9, 21, 19,
-		};
-
-		for (int i = 0; i < subdivision; i++)
-		{
-			const std::vector<GLuint> tmpIndices = indices;
-			indices.clear();
-			for (int j = 0; j < tmpIndices.size(); j += 3)
-			{
-				const auto &v1 = vertices[tmpIndices[j]];
-				const auto &v2 = vertices[tmpIndices[j + 1]];
-				const auto &v3 = vertices[tmpIndices[j + 2]];
-				const GLuint newIdx = vertices.size();
-
-				vertices.push_back(genHalfVertex(v1, v2, radius));
-				vertices.push_back(genHalfVertex(v2, v3, radius));
-				vertices.push_back(genHalfVertex(v3, v1, radius));
-
-				indices.push_back(tmpIndices[j + 0]);
-				indices.push_back(newIdx + 0);
-				indices.push_back(newIdx + 2);
-
-				indices.push_back(tmpIndices[j + 1]);
-				indices.push_back(newIdx + 1);
-				indices.push_back(newIdx + 0);
-
-				indices.push_back(tmpIndices[j + 2]);
-				indices.push_back(newIdx + 2);
-				indices.push_back(newIdx + 1);
-
-				indices.push_back(newIdx + 0);
-				indices.push_back(newIdx + 1);
-				indices.push_back(newIdx + 2);
-			}
-		}
-
-		return new Mesh(vertices, indices, textures);
-	}
-
-	Mesh *genCubeSphere(const int nrSlices)
-	{
-		const float radius = 1.f;
-
-		const glm::vec3 nors[6] = {
-			{0, 1, 0}, {0, 0, 1}, {1, 0, 0}, {-1, 0, 0}, {0, 0, -1}, {0, -1, 0}};
-		const glm::vec3 tans[6] = {
-			{1, 0, 0}, {1, 0, 0}, {0, 0, -1}, {0, 0, 1}, {-1, 0, 0}, {-1, 0, 0}};
-
-		clearBuf();
-
-		for (int side = 0; side < 6; side++)
-		{
-			glm::vec3 n = nors[side];
-			glm::vec3 t = tans[side];
-			glm::vec3 b = cross(n, t);
-
-			GLuint offset = vertices.size();
-
-			//float sliceLength = 2.f / nrSlices;
-
-			for (int y = 0; y <= nrSlices; y++)
-			{
-				for (int x = 0; x <= nrSlices; x++)
-				{
-					float dx = (float)x / nrSlices * 2.f - 1.f;
-					float dy = (float)y / nrSlices * 2.f - 1.f;
-					glm::vec3 pos = n + t * dx + b * dy;
-					glm::vec3 nor = glm::normalize(pos);
-					pos = nor * radius;
-					glm::vec2 uv = {dx * 0.5f + 0.5f, dy * 0.5f + 0.5f};
-					vertices.push_back({pos, nor, uv});
-				}
-			}
-			const int nrCols = nrSlices + 1;
-			for (int y = 0; y < nrSlices; y++)
-			{
-				const GLuint curRow = offset + y * nrCols;
-				const GLuint nextRow = offset + (y + 1) * nrCols;
-				for (int x = 0; x < nrSlices; x++)
-				{
-
-					indices.push_back(nextRow + x);
-					indices.push_back(curRow + x);
-					indices.push_back(curRow + x + 1);
-
-					indices.push_back(nextRow + x);
-					indices.push_back(curRow + x + 1);
-					indices.push_back(nextRow + x + 1);
-				}
-			}
-		}
-		return new Mesh(vertices, indices, textures);
-	}
-
-	// smooth
-	Mesh *genCubeSphere2(const int nrSlices)
-	{
-		const float radius = 1.f;
-
-		const glm::vec3 nors[6] = {
-			{0, 1, 0}, {0, 0, 1}, {1, 0, 0}, {-1, 0, 0}, {0, 0, -1}, {0, -1, 0}};
-		const glm::vec3 tans[6] = {
-			{1, 0, 0}, {1, 0, 0}, {0, 0, -1}, {0, 0, 1}, {-1, 0, 0}, {-1, 0, 0}};
-
-		/* genUnitCubeSpherePositiveXFace */
-		std::vector<glm::vec3> facePoints;
-
-		for (int y = 0; y <= nrSlices; y++)
-		{ // z-axis angle
-			float phi = H_PI * (float)y / nrSlices - Q_PI;
-			glm::vec3 n1 = {-sinf(phi), cos(phi), 0};
-			for (int x = 0; x <= nrSlices; x++)
-			{ // y-axis angle
-				float theta = H_PI * (float)x / nrSlices - Q_PI;
-				glm::vec3 n2 = {sinf(theta), 0, cos(theta)};
-				facePoints.push_back(glm::normalize(glm::cross(n1, n2)));
-			}
-		}
-
-		clearBuf();
-
-		for (int side = 0; side < 6; side++)
-		{
-			const int nrCols = nrSlices + 1;
-			const int offset = vertices.size();
-			const glm::mat3 rotMat = glm::mat3(nors[side],
-											   tans[side],
-											   cross(nors[side], tans[side]));
-
-			for (int y = 0; y <= nrSlices; y++) for (int x = 0; x <= nrSlices; x++)
-			{
-				glm::vec3 pos = rotMat * facePoints[nrCols * y + x];
-				glm::vec2 uv = {x / (float)nrSlices, y / (float)nrSlices};
-				vertices.push_back({radius * pos, pos, uv});
-			}
-
-			for (int y = 0; y < nrSlices; y++)
-			{
-				const GLuint curRow = offset + y * nrCols;
-				const GLuint upRow = offset + (y + 1) * nrCols;
-				for (int x = 0; x < nrSlices; x++)
-				{
-
-					indices.push_back(upRow + x);
-					indices.push_back(curRow + x);
-					indices.push_back(curRow + x + 1);
-
-					indices.push_back(upRow + x);
-					indices.push_back(curRow + x + 1);
-					indices.push_back(upRow + x + 1);
-				}
-			}
-		}
-
-		return new Mesh(vertices, indices, textures);
-	}
-
-	Mesh *genCylinder(const int nrSlices)
-	{
-		const GLuint slices = nrSlices;
-		const float radius = 1.f;
-		const float half = 1.f; // height
-
-		clearBuf();
-
-		vertices.push_back({{0, half, 0}, {0, 1, 0}, {.5f, .5f}});
-		vertices.push_back({{0, -half, 0}, {0, -1, 0}, {.5f, .5f}});
-
-		for (GLuint slice = 0; slice <= slices; slice++)
-		{
-			float theta = D_PI * slice / (float)nrSlices;
-			float x = radius * cosf(theta);
-			float z = -radius * sinf(theta);
-			glm::vec3 pos;
-			glm::vec3 sideNor = glm::normalize(glm::vec3(x, 0, z));
-			float sideU = 2.f * slice / (float)nrSlices;
-			glm::vec2 circleUv = {x, -z};
-			circleUv = .5f * (circleUv + glm::vec2(1));
-
-			pos = {x, half, z};
-			vertices.push_back({pos, {0, 1, 0}, circleUv});
-			vertices.push_back({pos, sideNor, {sideU, 1}});
-
-			pos = {x, -half, z};
-			vertices.push_back({pos, sideNor, {sideU, 0}});
-			vertices.push_back({pos, {0, -1, 0}, circleUv});
-		}
-		const GLuint nrCols = 4;
-		for (GLuint slice = 0; slice < slices; slice++)
-		{
-			indices.insert(indices.end(), {0, 2 + nrCols * slice, 2 + nrCols * (slice + 1)});
-			indices.insert(indices.end(), {3 + nrCols * slice, 4 + nrCols * slice, 4 + nrCols * (slice + 1)});		 // up
-			indices.insert(indices.end(), {3 + nrCols * slice, 4 + nrCols * (slice + 1), 3 + nrCols * (slice + 1)}); // inv
-			indices.insert(indices.end(), {1, 5 + nrCols * slice, 5 + nrCols * (slice + 1)});
-		}
-
-		return new Mesh(vertices, indices, textures);
-	}
-
-	Mesh *genCapsule(int nrSlices, int nrStacks)
-	{
-		const float radius = 1.f;
-		const float halfSylinder = 1.f; // height
-		const int halfStacks = nrStacks / 2;
-		nrStacks = halfStacks * 2;
-
-		clearBuf();
-
-		// phi : angle form xy-plane [-pi/2, pi/2]
-		// theta : y-axis angle [0, 2pi]
-		for (int stack = 0; stack <= nrStacks; stack++)
-		{
-			float phi = H_PI - F_PI * stack / (float)nrStacks;
-			float y = sinf(phi);
-			float rcos = radius * cosf(phi);
-			for (int slice = 0; slice <= nrSlices; slice++)
-			{
-				float theta = D_PI * slice / (float)nrSlices;
-				float x = rcos * cosf(theta);
-				float z = -rcos * sinf(theta);
-				glm::vec3 pos = {x, y, z};
-				glm::vec3 norm = glm::normalize(pos);
-				glm::vec2 uv = {2.f * slice / (float)nrSlices, 1.f - stack / (float)nrStacks};
-				if (stack < halfStacks)
-				{
-					pos.y += halfSylinder;
-					uv.y += 0.5f;
-				}
-				else
-				{
-					pos.y -= halfSylinder;
-					uv.y -= 0.5f;
-				}
-				vertices.push_back({pos, norm, uv});
 			}
 		}
 
@@ -492,76 +199,424 @@ namespace lim::code_mesh
 
 		for (int stack = 0; stack < nrStacks; stack++)
 		{
-			int cur_row = nrCols * stack;
-			int next_row = nrCols * (stack + 1);
+			int curRow = nrCols * stack;
+			int nextRow = nrCols * (stack + 1);
 			for (int slice = 0; slice < nrSlices; slice++)
 			{
 				int cur_col = slice;
 				int next_col = slice + 1;
-				if (stack < nrStacks)
-				{ // up tri
-					indices.push_back(cur_row + cur_col);
-					indices.push_back(next_row + cur_col);
-					indices.push_back(next_row + next_col);
+				if( stack < nrStacks ){ // upper
+					tris.push_back({ curRow+cur_col, nextRow+cur_col, nextRow+next_col });
 				}
-				if (stack > 0)
-				{ // inv tri
-					indices.push_back(cur_row + cur_col);
-					indices.push_back(next_row + next_col);
-					indices.push_back(cur_row + next_col);
+				if( stack > 0 ) { // lower
+					tris.push_back({ curRow+cur_col, nextRow+next_col, curRow+next_col });
 				}
 			}
 		}
 
-		return new Mesh(vertices, indices, textures);
+		rst->initGL();
+		return rst;
 	}
 
-	Mesh *genDonut(int nrSlices, int nrRingVerts)
+	// icosahedron, 20면체
+	Mesh* genIcoSphere(const int subdivision, bool genNors, bool genUvs)
 	{
+		Mesh* rst = new Mesh();
+		std::vector<vec3>& 	poss = rst->poss;
+		std::vector<vec3>& 	nors = rst->nors;
+		std::vector<vec2>& 	uvs  = rst->uvs;
+		std::vector<uvec3>& tris = rst->tris;
+
+		const float uStep = 1.f / 11.f;
+		const float vStep = 1.f / 3.f;
+		const float radius = 1.f;
+
+		// 위 아래 꼭지점
+		for (int i = 0; i < 5; i++)
+		{
+			poss.push_back({0, radius,0});
+			poss.push_back({0,-radius,0});
+			if( genNors ) {
+				nors.push_back({0, 1,0});
+				nors.push_back({0,-1,0});
+			}
+			if( genUvs ) {
+				uvs.push_back({ uStep*(1+ 2*i), 1 });
+				uvs.push_back({ uStep*(3+ 2*i), 0 });
+			}
+		}
+
+		vec3 pos, norm;
+		vec2 uv;
+		const float aStep = D_PI / 5.f;		 // angle step
+		const float halfH = radius * 0.5f;	 // half height
+		const float base = halfH * sqrtf(3); // bottom length 밑변
+
+		float topA = 0; // top angle
+		float botA = aStep * 0.5f;
+
+		// 옆 부분
+		for (int i = 0; i < 6; i++)
+		{
+			poss.push_back({ base*cos(topA), halfH, -base*sin(topA) });
+			if(genNors) nors.push_back( normalize(pos) );
+			if(genUvs) 	uvs.push_back({ uStep*(2*i), 2*vStep });
+			topA += aStep;
+
+			poss.push_back({ base*cos(botA), -halfH, -base*sin(botA)});
+			if(genNors)	nors.push_back( normalize(pos) );
+			if(genUvs) 	uvs.push_back({ uStep*(1+2*i), vStep });
+			botA += aStep;
+		}
+		tris.push_back({0, 10, 12});
+		tris.push_back({2, 12, 14});
+		tris.push_back({4, 14, 16});
+		tris.push_back({6, 16, 18});
+		tris.push_back({8, 18, 20});
+
+		tris.push_back({10, 11, 12});
+		tris.push_back({12, 13, 14});
+		tris.push_back({14, 15, 16});
+		tris.push_back({16, 17, 18});
+		tris.push_back({18, 19, 20});
+
+		tris.push_back({13, 12, 11});
+		tris.push_back({15, 14, 13});
+		tris.push_back({17, 16, 15});
+		tris.push_back({19, 18, 17});
+		tris.push_back({21, 20, 19});
+
+		tris.push_back({1, 13, 11});
+		tris.push_back({3, 15, 13});
+		tris.push_back({5, 17, 15});
+		tris.push_back({7, 19, 17});
+		tris.push_back({9, 21, 19});
+
+		for( int i=0; i<subdivision; i++ )
+		{
+			std::vector<uvec3> copiedTris = tris;
+			tris.clear();
+			for( int j=0; j<copiedTris.size(); j++ )
+			{
+				const vec3& p1 = poss[copiedTris[j].x];
+				const vec3& p2 = poss[copiedTris[j].y];
+				const vec3& p3 = poss[copiedTris[j].z];
+
+				const GLuint newIdx = poss.size();
+
+				vec3 normedPos[3];
+				poss.push_back( normalize((p1+p2)*0.5f) );
+				poss.push_back( normalize((p2+p3)*0.5f) );
+				poss.push_back( normalize((p3+p1)*0.5f) );
+
+				if( genNors ) {
+					nors.push_back( poss[poss.size()-3]);
+					nors.push_back( poss[poss.size()-2]);
+					nors.push_back( poss[poss.size()-1]);
+				}
+				poss[poss.size()-3] *= radius;
+				poss[poss.size()-2]	*= radius;
+				poss[poss.size()-1]	*= radius;
+
+				if( genUvs ) {
+					const vec2& uv1 = uvs[copiedTris[j].x];
+					const vec2& uv2 = uvs[copiedTris[j].y];
+					const vec2& uv3 = uvs[copiedTris[j].z];
+					uvs.push_back( (uv1+uv2)*0.5f );
+					uvs.push_back( (uv2+uv3)*0.5f );
+					uvs.push_back( (uv3+uv1)*0.5f );
+				}
+
+				tris.push_back({ copiedTris[j+0], newIdx+0, newIdx+0 });
+				tris.push_back({ copiedTris[j+1], newIdx+1, newIdx+1 });
+				tris.push_back({ copiedTris[j+2], newIdx+2, newIdx+2 });
+				tris.push_back({ newIdx+0,  newIdx+1, newIdx+2 });
+			}
+		}
+
+		rst->initGL();
+		return rst;
+	}
+
+	Mesh* genCubeSphere(const int nrSlices, bool genNors, bool genUvs)
+	{
+		Mesh* rst = new Mesh();
+		std::vector<vec3>& 	poss = rst->poss;
+		std::vector<vec3>& 	nors = rst->nors;
+		std::vector<vec2>& 	uvs  = rst->uvs;
+		std::vector<uvec3>& tris = rst->tris;
+
+		const float radius = 1.f;
+
+		const vec3 cbNors[6] = {
+			{0, 1, 0}, {0, 0, 1}, {1, 0, 0}, {-1, 0, 0}, {0, 0, -1}, {0, -1, 0}};
+		const vec3 cbTans[6] = {
+			{1, 0, 0}, {1, 0, 0}, {0, 0, -1}, {0, 0, 1}, {-1, 0, 0}, {-1, 0, 0}};
+
+		
+
+		for (int side = 0; side < 6; side++)
+		{
+			vec3 n = cbNors[side];
+			vec3 t = cbTans[side];
+			vec3 b = cross(n, t);
+
+			GLuint offset = poss.size();
+
+			for( int y=0; y<=nrSlices; y++ ) for( int x=0; x<=nrSlices; x++ ) 
+			{
+				float dx = x/(float)nrSlices*2.f - 1.f;
+				float dy = y/(float)nrSlices*2.f - 1.f;
+				vec3 nor = normalize( n + t*dx + b*dy );
+				poss.push_back( nor*radius );
+				if( genNors ) nors.push_back(nor);
+				if( genUvs )  uvs.push_back({ dx*0.5f+0.5f, dy*0.5f+0.5f });
+			}
+
+			const int nrCols = nrSlices + 1;
+			for (int y = 0; y < nrSlices; y++)
+			{
+				const GLuint curRow = offset + y * nrCols;
+				const GLuint nextRow = offset + (y + 1) * nrCols;
+				for (int x = 0; x < nrSlices; x++)
+				{
+					tris.push_back({ nextRow+x, curRow+x, 	curRow+x+1  });
+					tris.push_back({ nextRow+x, curRow+x+1, nextRow+x+1 });
+				}
+			}
+		}
+
+		rst->initGL();
+		return rst;
+	}
+
+	// smooth
+	Mesh* genCubeSphere2(const int nrSlices, bool genNors, bool genUvs)
+	{
+		Mesh* rst = new Mesh();
+		std::vector<vec3>& 	poss = rst->poss;
+		std::vector<vec3>& 	nors = rst->nors;
+		std::vector<vec2>& 	uvs  = rst->uvs;
+		std::vector<uvec3>& tris = rst->tris;
+
+		const float radius = 1.f;
+		const vec3 cbNors[6] = {
+			{0, 1, 0}, {0, 0, 1}, {1, 0, 0}, {-1, 0, 0}, {0, 0, -1}, {0, -1, 0}};
+		const vec3 cbTans[6] = {
+			{1, 0, 0}, {1, 0, 0}, {0, 0, -1}, {0, 0, 1}, {-1, 0, 0}, {-1, 0, 0}};
+
+		/* genUnitCubeSpherePositiveXFace */
+		std::vector<vec3> facePoints;
+
+		for( int y=0; y<=nrSlices; y++ ) { // z-axis angle
+			float phi = H_PI * y/(float)nrSlices - Q_PI;
+			vec3 n1 = { -sin(phi), cos(phi), 0 };
+			for( int x=0; x<=nrSlices; x++ ) { // y-axis angle
+				float theta = H_PI * (float)x / nrSlices - Q_PI;
+				vec3 n2 = { sin(theta), 0, cos(theta) };
+				facePoints.push_back(normalize(cross(n1, n2)));
+			}
+		}
+
+		for( int side=0; side<6; side++ ) {
+			const int nrCols = nrSlices + 1;
+			const int offset = poss.size();
+			const mat3 rotMat = mat3(cbNors[side], cbTans[side], cross(cbTans[side], cbTans[side]));
+
+			for( int y=0; y<=nrSlices; y++ ) for(int x=0; x<=nrSlices; x++ ) {
+				vec3 nor = rotMat * facePoints[nrCols * y + x];
+				poss.push_back(nor*radius);
+				if( genNors ) nors.push_back(nor);
+				if( genUvs )  uvs.push_back({ x/(float)nrSlices, y/(float)nrSlices });
+			}
+
+			for( int y=0; y<=nrSlices; y++ ) {
+				const GLuint curRow = offset + y*nrCols;
+				const GLuint upRow = offset + (y+1)*nrCols;
+				for( int x=0; x<nrSlices; x++ ) {
+					tris.push_back({upRow+x, curRow+x, curRow+x+1});
+					tris.push_back({upRow+x, curRow+x+1, upRow+x+1});
+				}
+			}
+		}
+		rst->initGL();
+		return rst;
+	}
+
+	Mesh* genCylinder(const int nrSlices, bool genNors, bool genUvs)
+	{
+		Mesh* rst = new Mesh();
+		std::vector<vec3>& 	poss = rst->poss;
+		std::vector<vec3>& 	nors = rst->nors;
+		std::vector<vec2>& 	uvs  = rst->uvs;
+		std::vector<uvec3>& tris = rst->tris;
+
+		const float radius = 1.f;
+		const float half = 1.f; // height
+
+		poss.push_back({ 0, half,0 });
+		poss.push_back({ 0,-half,0 });
+		if( genNors ) {
+			poss.push_back({ 0, 1,0 });
+			poss.push_back({ 0,-1,0 });
+		}
+		if( genUvs ) {
+			uvs.push_back({ .5f, .5f });
+			uvs.push_back({ .5f, .5f });
+		}
+
+		for( GLuint i=0; i<=nrSlices; i++ )
+		{
+			float theta = D_PI*i/(float)nrSlices;
+			float x =  radius*cos(theta);
+			float z = -radius*sin(theta);
+			vec3 pos;
+			vec3 sideNor = normalize(vec3(x, 0, z));
+			float sideU = 2.f * i / (float)nrSlices;
+			vec2 circleUv = {x, -z};
+			circleUv = .5f * (circleUv + vec2(1));
+
+			pos = {x, half, z};
+			poss.push_back(pos);
+			poss.push_back(pos);
+
+			pos = {x, -half, z};
+			poss.push_back(pos);
+			poss.push_back(pos);
+
+			if( genNors ) {
+				nors.push_back({ 0, 1,0 });
+				nors.push_back(sideNor);
+				nors.push_back(sideNor);
+				nors.push_back({ 0,-1,0 });
+			}
+			if( genUvs ) {
+				uvs.push_back(circleUv);
+				uvs.push_back({ sideU,1 });
+				uvs.push_back({ sideU,0 });
+				uvs.push_back(circleUv);
+			}
+		}
+		const GLuint nrCols = 4;
+		for( GLuint i=0; i<nrSlices; i++ )
+		{
+			tris.push_back({ 0,          2+nrCols*i,     2+nrCols*(i+1) });
+			tris.push_back({ 3+nrCols*i, 4+nrCols*i, 	 4+nrCols*(i+1) }); // upper
+			tris.push_back({ 3+nrCols*i, 4+nrCols*(i+1), 3+nrCols*(i+1) }); // lower
+			tris.push_back({ 0,          5+nrCols*i,     5+nrCols*(i+1) });
+		}
+
+		rst->initGL();
+		return rst;
+	}
+
+	Mesh* genCapsule(int nrSlices, int nrStacks, bool genNors, bool genUvs)
+	{
+		Mesh* rst = new Mesh();
+		std::vector<vec3>& 	poss = rst->poss;
+		std::vector<vec3>& 	nors = rst->nors;
+		std::vector<vec2>& 	uvs  = rst->uvs;
+		std::vector<uvec3>& tris = rst->tris;
+
+		const float radius = 1.f;
+		const float halfSylinder = 1.f; // height
+		const int halfStacks = nrStacks / 2;
+		nrStacks = halfStacks * 2;
+
+		// phi : angle form xy-plane [-pi/2, pi/2]
+		// theta : y-axis angle [0, 2pi]
+		for( int stack=0; stack<=nrStacks; stack++ )
+		{
+			float phi = H_PI - F_PI * stack / (float)nrStacks;
+			float y = sin(phi);
+			float rcos = radius * cos(phi);
+			for( int slice=0; slice<=nrSlices; slice++ )
+			{
+				float theta = D_PI * slice / (float)nrSlices;
+				float x = rcos * cos(theta);
+				float z = -rcos * sin(theta);
+				vec3 pos = {x, y, z};
+				vec3 nor = normalize(pos);
+				vec2 uv = { 2.f*slice/(float)nrSlices, 1.f-stack/(float)nrStacks };
+				pos.y += (stack<halfStacks)? halfSylinder : (-halfSylinder);
+				uv.y += (stack<halfStacks)? 0.5f : (-0.5f);
+
+				poss.push_back(pos);
+				if( genNors ) nors.push_back(nor);
+				if( genUvs )  uvs.push_back(uv);
+			}
+		}
+
+		const int nrCols = nrSlices + 1;
+
+		for (int stack = 0; stack < nrStacks; stack++)
+		{
+			int curRow = nrCols * stack;
+			int nextRow = nrCols * (stack + 1);
+			for (int slice = 0; slice < nrSlices; slice++)
+			{
+				int cur_col = slice;
+				int next_col = slice + 1;
+				if (stack < nrStacks) { // upper
+					tris.push_back({ curRow+cur_col, nextRow+cur_col, nextRow+next_col });
+				}
+				if (stack > 0) { // lower
+					tris.push_back({ curRow+cur_col, nextRow+next_col, curRow+next_col });
+				}
+			}
+		}
+
+		rst->initGL();
+
+		return rst;
+	}
+
+	Mesh *genDonut(int nrSlices, int nrRingVerts, bool genNors, bool genUvs)
+	{
+		Mesh* rst = new Mesh();
+		std::vector<vec3>& 	poss = rst->poss;
+		std::vector<vec3>& 	nors = rst->nors;
+		std::vector<vec2>& 	uvs  = rst->uvs;
+		std::vector<uvec3>& tris = rst->tris;
+
 		const float ringRad = 1.f;
 		const float donutRad = 1.5f;
 
-		clearBuf();
-
 		// calculus : shell method
-		for (int slice = 0; slice <= nrSlices; slice++)
+		for( int slice=0; slice<=nrSlices; slice++ )
 		{
-			float donutTheta = -D_PI * slice / (float)nrSlices;
-			for (int rv = 0; rv <= nrRingVerts; rv++)
+			float donutTheta = -D_PI*slice/(float)nrSlices;
+			for( int rv=0; rv<=nrRingVerts; rv++ )
 			{
-				float ringTheta = F_PI + D_PI * rv / (float)nrRingVerts;
-				float y = ringRad * sinf(ringTheta);
-				float relativeX = donutRad + ringRad * cosf(ringTheta);
-				float x = relativeX * cosf(donutTheta);
+				float ringTheta = F_PI + D_PI*rv/(float)nrRingVerts;
+				float y = ringRad * sin(ringTheta);
+				float relativeX = donutRad + ringRad * cos(ringTheta);
+				float x = relativeX * cos(donutTheta);
 				float z = relativeX * sin(donutTheta);
 
-				glm::vec3 pos = {x, y, z};
-				glm::vec3 norm = glm::normalize(pos);
-				glm::vec2 uv = {2.f * slice / (float)nrSlices, rv / (float)nrRingVerts};
-
-				vertices.push_back({pos, norm, uv});
+				poss.push_back({ x,y,z });
+				if( genNors ) nors.push_back( normalize(poss.back()));
+				if( genUvs )  uvs.push_back({ 2.f*slice/(float)nrSlices, rv/(float)nrRingVerts });
 			}
 		}
-		int nrRealRingVerts = nrRingVerts + 1;
-		for (int slice = 0; slice < nrSlices; slice++)
+
+		int nrRealRingVerts = nrRingVerts+1;
+		for( int slice=0; slice<nrSlices; slice++ )
 		{
 			int curRing = nrRealRingVerts * slice;
 			int nextRing = curRing + nrRealRingVerts;
-			for (int rv = 0; rv < nrRingVerts; rv++)
+			for( int rv=0; rv<nrRingVerts; rv++ )
 			{
 				int curVert = rv;
 				int nextVert = rv + 1;
-				// up tri
-				indices.push_back(curRing + curVert);
-				indices.push_back(nextRing + curVert);
-				indices.push_back(nextRing + nextVert);
-				// inv tri
-				indices.push_back(curRing + curVert);
-				indices.push_back(nextRing + nextVert);
-				indices.push_back(curRing + nextVert);
+
+				tris.push_back({ curRing+curVert, nextRing+curVert, nextRing+nextVert }); // upper
+				tris.push_back({ curRing+curVert, nextRing+nextVert, curRing+nextVert }); // lower
 			}
 		}
 
-		return new Mesh(vertices, indices, textures);
+		rst->initGL();
+
+		return rst;
 	}
 }

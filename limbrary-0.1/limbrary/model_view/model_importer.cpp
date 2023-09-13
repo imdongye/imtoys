@@ -22,7 +22,7 @@ using namespace glm;
 namespace
 {
 	Model* md = nullptr; // temp model
-	string mdDir;
+	string md_dir;
 
 
 	inline vec3 toGLM( const aiVector3D& v ) {
@@ -47,7 +47,7 @@ namespace
 
 		// assimp가 뒤에오는 옵션을 읽지 않음 (ex: eye.png -bm 0.4) 그래서 아래와 같이 필터링한다.
 		texPath = texPath.substr(0, texPath.find_first_of(' '));
-		texPath = mdDir + texPath;
+		texPath = md_dir + texPath;
 
 		for( size_t i = 0; i < loadedTestures.size(); i++ ) {
 			if( texPath.compare(loadedTestures[i]->path)==0 ) {
@@ -248,7 +248,7 @@ namespace lim
 		const size_t lastSlashPos = spath.find_last_of("/\\");
 		const size_t dotPos = spath.find_last_of('.');
 		md->name = spath.substr(lastSlashPos + 1, dotPos - lastSlashPos - 1);
-		mdDir = (lastSlashPos == 0) ? "" : spath.substr(0, lastSlashPos) + "/";
+		md_dir = (lastSlashPos == 0) ? "" : spath.substr(0, lastSlashPos) + "/";
 
 		log::pure("model loading : %s\n", md->name.c_str());
 

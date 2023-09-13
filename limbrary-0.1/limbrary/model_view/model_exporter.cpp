@@ -17,16 +17,14 @@ using namespace glm;
 
 namespace
 {
-	const int nrFormats = (int)aiGetExportFormatCount();
+	const int nr_formats = (int)aiGetExportFormatCount();
 
-	const aiExportFormatDesc *formats[32] = {
-		nullptr,
-	};
+	const aiExportFormatDesc *formats[32] = { nullptr, };
 
-	std::string mdDir;
+	std::string md_dir;
 
-	Model* targetModel = nullptr;
-	aiScene* targetScene = nullptr;
+	Model* src_md = nullptr;
+	aiScene* rst_scene = nullptr;
 
 	inline aiVector3D toAiV( const vec3& v ) {
 		return { v.x, v.y, v.z };
@@ -78,7 +76,7 @@ namespace
 		aiMat->AddProperty(&temp3d, 1, AI_MATKEY_COLOR_TRANSPARENT);
 
 
-		const GLuint slashPos = mdDir.size(); // todo: test
+		const GLuint slashPos = md_dir.size(); // todo: test
 
 		if( mat.map_Kd != nullptr ) {
 			tempStr = aiString(mat.map_Kd->path.data()+slashPos);
@@ -115,7 +113,7 @@ namespace
 
 		aiMesh* aiMs = new aiMesh();
 
-		GLuint idxOfMat = std::distance(targetModel->materials.begin(), find(targetModel->materials.begin(), targetModel->materials.end(), ms.material));
+		GLuint idxOfMat = std::distance(src_md->materials.begin(), find(src_md->materials.begin(), src_md->materials.end(), ms.material));
 		aiMs->mMaterialIndex = idxOfMat;
 
 		GLuint nrTemp = mesh->poss.size();
@@ -163,7 +161,7 @@ namespace
 	aiNode* recursiveConvertTree(Model::Node* nd)
 	{
 		aiNode* node = new aiNode();
-		std::vector<Mesh*>& modelMeshes = targetModel->meshes;
+		std::vector<Mesh*>& modelMeshes = src_md->meshes;
 		node->mTransformation = toAi(nd->transformation);
 
 		const size_t nrMeshes = nd->meshes.size();
@@ -213,15 +211,15 @@ namespace lim
 {
 	int getNrExportFormats()
 	{
-		return nrFormats;
+		return nr_formats;
 	}
 	const aiExportFormatDesc *getExportFormatInfo(int idx)
 	{
 		if (formats[0] == nullptr){
-			for (int i = 0; i < nrFormats; i++)
+			for (int i = 0; i < nr_formats; i++)
 				formats[i] = aiGetExportFormatDescription(i);
 		}
-		if (idx < 0 || idx >= nrFormats)
+		if (idx < 0 || idx >= nr_formats)
 			return nullptr;
 		return formats[idx];
 	}
@@ -230,10 +228,10 @@ namespace lim
 	{
 		namespace fs = std::filesystem;
 		const aiExportFormatDesc *format = formats[pIndex];
-		targetModel = model;
+		src_md = model;
 
 		const size_t lastSlashPos = model->path.find_last_of("/\\");
-		mdDir = model->path.substr(0, lastSlashPos) + "/";
+		md_dir = model->path.substr(0, lastSlashPos) + "/";
 
 		/* create path */
 		exportDir += "/"+model->name; // todo : test
@@ -243,14 +241,14 @@ namespace lim
 		std::string newModelPath = exportDir + model->name.c_str() +'.'+format->fileExtension;
 
 		/* export model */
-		targetScene = makeScene(model);
+		rst_scene = makeScene(model);
 		
-		if( aiExportScene(targetScene, format->id, newModelPath.data(), targetScene->mFlags)!=AI_SUCCESS )
+		if( aiExportScene(rst_scene, format->id, newModelPath.data(), rst_scene->mFlags)!=AI_SUCCESS )
 		{
 			log::err("failed export %s\n", newModelPath.data());
 		}
-		delete targetScene;
-		targetScene = nullptr;
+		delete rst_scene;
+		rst_scene = nullptr;
 
 
 		/* ctrl cv texture */
