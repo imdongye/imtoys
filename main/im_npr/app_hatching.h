@@ -35,7 +35,10 @@ namespace lim
 		inline static constexpr CStr APP_DISC = "aplicate real-time hatching paper";
 	private:
 		bool start_dragging = false;
-		Program* program;
+		
+		Material* h_mat;
+		Program* h_prog;
+
 		ViewportWithCamera* viewport;
 		std::vector<Model*> models;
 		Light* light;

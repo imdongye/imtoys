@@ -584,7 +584,7 @@ namespace ICC
 
 namespace lim
 {
-	class ColorAwareImage: public TexBase
+	class ColorAwareImage: public Texture
 	{
 	public:
 		inline static GLuint refCount = 0;
@@ -596,8 +596,10 @@ namespace lim
 		glm::vec3 output_gamma;
 	public:
 		ColorAwareImage(const std::string_view _path, glm::vec3 outputGamma = glm::vec3(2.4))
-			: TexBase(_path, GL_RGB32F), output_gamma(outputGamma)
+			: Texture(), output_gamma(outputGamma)
 		{
+			initFromImage(_path, GL_RGB32F);
+			
 			if( refCount++==0 ) {
 				colorAwareDisplayProg = new Program("color aware display program");
 				colorAwareDisplayProg->attatch("quad.vs").attatch("im_hdr/shaders/rgb_to_pcs_to_display.fs").link();

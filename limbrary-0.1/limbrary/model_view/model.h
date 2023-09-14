@@ -38,9 +38,8 @@ namespace lim
 		struct Node
 		{
 			std::vector<Mesh*> meshes;
-			std::vector<Node*> childs;
+			std::vector<Node> childs;
 			glm::mat4 transformation = glm::mat4(1);
-			~Node();
 		};
 	public:
 		std::string name = "nonamed model";
@@ -54,11 +53,11 @@ namespace lim
 		glm::mat4 model_mat = glm::mat4(1); // = trans*rot*scale*pivot
 
 		/* render data */
+		Node root;
 		Material* default_mat;
 		std::vector<Material*> materials;
-		std::vector<TexBase*> textures_loaded;
+		std::vector<Texture*> textures_loaded;
 		std::vector<Mesh*> meshes;
-		Node* root = nullptr;
 
 		GLuint nr_vertices = 0;
 		GLuint nr_triangles = 0;
@@ -79,15 +78,12 @@ namespace lim
 	public:
 		Model();
 		~Model();
-		// 부모 Model에 material, texture, backup 이 있으므로 부모를 삭제하면 안됨.
-		// mesh정보만 clone됨.
 		Model* clone();
 		void updateModelMat();
 		void updateUnitScaleAndPivot();
 		void updateNrAndBoundary();
 		void setPivot(const glm::vec3& pivot);
 	};
-
 
 	// import model
 	Model* importModelFromFile(std::string_view modelPath, bool unitScaleAndPivot = false, bool withMaterial = true);

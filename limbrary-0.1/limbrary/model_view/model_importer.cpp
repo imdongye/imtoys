@@ -41,9 +41,9 @@ namespace
 					m.a4, m.b4, m.c4, m.d4);
 	}
 
-	TexBase* loadTexture(string texPath, GLint internalFormat=GL_RGB8)
+	Texture* loadTexture(string texPath, GLint internalFormat=GL_RGB8)
 	{
-		vector<TexBase*>& loadedTestures = md->textures_loaded;
+		vector<Texture*>& loadedTestures = md->textures_loaded;
 
 		// assimp가 뒤에오는 옵션을 읽지 않음 (ex: eye.png -bm 0.4) 그래서 아래와 같이 필터링한다.
 		texPath = texPath.substr(0, texPath.find_first_of(' '));
@@ -56,7 +56,8 @@ namespace
 		}
 
 		// kd일때만 linear space변환
-		TexBase* tex = makeTextureFromImageAuto(texPath);
+		Texture* tex = new Texture();
+		tex->initFromImageAuto(texPath);
 		loadedTestures.push_back(tex);
 
 		return tex;
@@ -203,18 +204,17 @@ namespace
 		return mesh;
 	}
 
-	Model::Node* recursiveConvertTree( const aiNode* nd) 
+	void recursiveConvertTree(Model::Node& to, const aiNode* from) 
 	{
-		const vector<Mesh*>& meshes = md->meshes;
+		const vector<Mesh*>& meshes = to.meshes;
 
-		Model::Node* node = new Model::Node();
-		node->transformation = toGLM(nd->mTransformation);
-		for( size_t i=0; i<nd->mNumMeshes; i++ )
-			node->meshes.push_back( meshes[nd->mMeshes[i]] );
-		for( size_t i=0; i< nd->mNumChildren; i++ )
-			node->childs.push_back( recursiveConvertTree(nd->mChildren[i]) );
-
-		return node;
+		to.transformation = toGLM(from->mTransformation);
+		for( size_t i=0; i<from->mNumMeshes; i++ )
+			to.meshes.push_back( meshes[from->mMeshes[i]] );
+		for( size_t i=0; i< from->mNumChildren; i++ ) {
+			to.childs.push_back({});
+			recursiveConvertTree(to.childs.back(), from->mChildren[i]);
+		}
 	}
 }
 
@@ -276,7 +276,7 @@ namespace lim
 		}
 
 		/* set node tree structure */
-		md->root = recursiveConvertTree(scene->mRootNode);
+		recursiveConvertTree(md->root, scene->mRootNode);
 
 
 		if( normalizeAndPivot ) {

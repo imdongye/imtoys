@@ -17,12 +17,10 @@
 
 namespace lim
 {
-	struct TexBase
+	class TexBase
 	{
 	public:
-		std::string path = "nopath/texture.png";
-		const char* name = path.c_str()+5;
-		const char* format = path.c_str()+10;
+		std::string name = "nonamed texbase";
 
 		int width=0, height=0;
 		float aspect_ratio=1.f;
@@ -40,19 +38,29 @@ namespace lim
 		GLint wrap_param = GL_CLAMP_TO_EDGE; // GL_CLAMP_TO_EDGE , GL_REPEAT , GL_REPEAT_MIRROR
 		GLint mipmap_max_level = 1000;
 
+	private:
+		TexBase(const TexBase &) = delete;
+		TexBase &operator=(const TexBase &) = delete;
 	public:
 		TexBase();
 		virtual ~TexBase();
 	public:
 		void initGL(void* data = nullptr);
-		void clear();
+		void deinitGL();
 		void bind(GLuint pid, GLuint activeSlot, const std::string_view shaderUniformName) const;
+		TexBase* clone();
 	};
-
-	TexBase* makeTextureFromImage(std::string_view path, GLint internalFormat);
-	// nrChannels, bitPerChannel 0 is auto bit
-	TexBase* makeTextureFromImageAuto(std::string_view path, bool convertLinear = false, int nrChannels = 0, int bitPerChannel = 0);
-
+	class Texture: public TexBase
+	{
+	public:
+		std::string path = "nopath/texture.png";
+		const char* format = path.c_str()+10;
+	public:
+		Texture* clone();
+		bool initFromImage(std::string_view path, GLint internalFormat);
+		// nrChannels, bitPerChannel 0 is auto bit
+		bool initFromImageAuto(std::string_view path, bool convertLinear = false, int nrChannels = 0, int bitPerChannel = 0);
+	};
 	
 	/* do not use below for multisampling framebuffer */
 	void Tex2Fbo(GLuint texID, GLuint fbo, int w, int h, float gamma=2.2f);

@@ -252,7 +252,7 @@ namespace lim
 
 
 		/* ctrl cv texture */
-		for( TexBase* tex : model->textures_loaded )
+		for( Texture* tex : model->textures_loaded )
 		{
 			std::string internalPath = tex->path.data()+lastSlashPos;
 			std::string newTexPath = exportDir + internalPath;

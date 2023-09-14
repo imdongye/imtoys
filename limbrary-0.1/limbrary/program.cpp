@@ -77,6 +77,7 @@ namespace lim
 			log::pure("program is not linked\n");
 		}
 		glUseProgram(pid);
+		use_hook(*this);
 		return pid;
 	}
 

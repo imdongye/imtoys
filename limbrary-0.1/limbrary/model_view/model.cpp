@@ -22,16 +22,32 @@
 #include <limbrary/asset_lib.h>
 #include <stack>
 
+using namespace lim;
+
+namespace
+{
+	void correctMatTexLink( Material& to, const Material& from, 
+		const std::vector<Texture*>& toTexs, const std::vector<Texture*>& fromTexs ) {
+		if( to.map_Kd ) {
+			to.map_Kd = toTexs[std::distance(fromTexs.begin(), std::find(fromTexs.begin(), fromTexs.end(), from.map_Kd))];
+		}
+		if( to.map_Ks ) {
+			to.map_Ks = toTexs[std::distance(fromTexs.begin(), std::find(fromTexs.begin(), fromTexs.end(), from.map_Ks))];
+		}
+		if( to.map_Ka ) {
+			to.map_Ka = toTexs[std::distance(fromTexs.begin(), std::find(fromTexs.begin(), fromTexs.end(), from.map_Ka))];
+		}
+		if( to.map_Ns ) {
+			to.map_Ns = toTexs[std::distance(fromTexs.begin(), std::find(fromTexs.begin(), fromTexs.end(), from.map_Ns))];
+		}
+		if( to.map_Bump ) {
+			to.map_Bump = toTexs[std::distance(fromTexs.begin(), std::find(fromTexs.begin(), fromTexs.end(), from.map_Bump))];
+		}
+	}
+}
 
 namespace lim
 {
-	Model::Node::~Node()
-	{
-		for( Node* child: childs ) {
-			delete child;
-		}
-	}
-
 	Model::Model()
 	{
 		default_mat = AssetLib::get().default_mat;
@@ -44,47 +60,74 @@ namespace lim
 			delete tex;
 		for( auto mesh : meshes )
 			delete mesh;
-		delete root;
 	}
 	Model* Model::clone()
 	{
-		Model* copiedModel = new Model();
+		Model* rst = new Model();
+		Model& dup = *rst;
 
-		copiedModel->meshes.reserve(meshes.size());
-		for(Mesh* ms : meshes) {
-			copiedModel->meshes.push_back(ms->clone());
+		dup.name = name;
+		dup.path = path;
+
+		dup.position = position;
+		dup.orientation = orientation;
+		dup.scale = scale;
+		dup.pivot_mat = pivot_mat;
+		dup.model_mat = model_mat;
+	
+		dup.default_mat = default_mat;
+
+
+		dup.textures_loaded.reserve(textures_loaded.size());
+		dup.materials.reserve(materials.size());
+		for( Texture* tex : textures_loaded ) {
+			dup.textures_loaded.push_back( tex->clone() );
+		}
+		for( Material* mat : materials ) {
+			dup.materials.push_back( new Material(*mat) );
+			correctMatTexLink(*dup.materials.back(), *mat, dup.textures_loaded, textures_loaded);
 		}
 
-		copiedModel->root = new Node();
+		dup.meshes.reserve(meshes.size());
+		for( Mesh* ms : meshes ) {
+			dup.meshes.push_back( ms->clone() );
+			if( ms->material == nullptr ) {
+				dup.meshes.back()->material = nullptr;
+				continue;
+			}
+			int matIdx = std::distance(materials.begin(), std::find(materials.begin(), materials.end(), ms->material));
+			dup.meshes.back()->material = dup.materials[matIdx];
+		}
+
 		std::stack<Node*> origs;
 		std::stack<Node*> copys;
-		origs.push(root);
-		copys.push(copiedModel->root);
-
+		origs.push(&root);
+		copys.push(&dup.root);
 		while( origs.size()>0 ) {
 			Node* orig = origs.top(); origs.pop();
 			Node* copy = copys.top(); copys.pop();
 			
 			copy->meshes.reserve(orig->meshes.size());
-			for(auto mesh : orig->meshes) {
+			for(Mesh* mesh : orig->meshes) {
 				GLuint idxOfMesh = std::distance(meshes.begin(), std::find(meshes.begin(), meshes.end(), mesh));
-				copy->meshes.push_back(copiedModel->meshes[idxOfMesh]);
+				copy->meshes.push_back(dup.meshes[idxOfMesh]);
 			}
 			copy->childs.reserve(orig->childs.size());
-			for(auto oriChild : orig->childs) {
-				origs.push(oriChild);
+			for(Node& oriChild : orig->childs) {
+				origs.push(&oriChild);
 				copys.push(new Node());
 				copy->childs.push_back(copys.top());
 			}
 		}
 
-		copiedModel->position = position;
-		copiedModel->orientation = orientation;
-		copiedModel->scale = scale;
-		copiedModel->model_mat = model_mat;
-		copiedModel->pivot_mat = pivot_mat;
+		dup.nr_vertices = nr_vertices;
+		dup.nr_triangles = nr_triangles;
+		dup.boundary_max = boundary_max;
+		dup.boundary_min = boundary_min;
+		dup.boundary_size = boundary_size;
+		dup.pivoted_scaled_bottom_height = pivoted_scaled_bottom_height;
 		
-		return copiedModel;
+		return rst;
 	}
 	void Model::updateModelMat()
 	{

@@ -94,8 +94,8 @@ namespace lim
 			Viewport& vp = *viewports[i];
 			ColorAwareImage& img = *imgs[i];
 			if( vp.focused ) {
-				ImGui::Text(img.name);
-				ImGui::Text(img.profile.name.c_str());
+				ImGui::Text("%s", img.name.c_str());
+				ImGui::Text("%s", img.profile.name.c_str());
 				break;
 			}
 		}

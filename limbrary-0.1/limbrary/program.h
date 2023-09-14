@@ -22,6 +22,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <limbrary/log.h>
+#include <functional>
 
 namespace lim
 {
@@ -43,19 +44,20 @@ namespace lim
 		// Disable Copying and Assignment
 		Program(const Program &) = delete;
 		Program &operator=(const Program &) = delete;
-
 	public:
 		Program(const char *_name = "unnamed", const char *homeDir = "assets");
 		~Program();
 
 	public:
 		// chaining //
-		Program &clear();
-		Program &operator+=(const char *path);
-		Program &setHomeDir(std::string_view dir);
-		Program &attatch(std::string path);
-		Program &link();
+		Program& clear();
+		Program& operator+=(const char *path);
+		Program& setHomeDir(std::string_view dir);
+		Program& attatch(std::string path);
+		Program& link();
 		GLuint use() const;
+		std::function<void(const Program&)> use_hook;
+
 		// todo: bind
 		template <typename T>
 		Program &bind(std::string const &vname, T &&value)

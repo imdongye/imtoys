@@ -30,7 +30,7 @@ namespace lim
 	void AppFluid::update()
 	{
 		using namespace glm;
-		canvas->clear();
+		canvas->deinitGL();
 		points[0] = mouse_pos;
 		points[0].y = fb_height-1-points[0].y;
 
@@ -104,7 +104,7 @@ namespace lim
 			ImGui::SetNextWindowBgAlpha(0.35f);
 			ImGui::Begin("Example: Simple overlay", &pOpen, window_flags);
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-			ImGui::Text("mouse pos : %4d, %4d", mouse_pos.x, mouse_pos.y);
+			ImGui::Text("mouse pos : %4d, %4d", (int)mouse_pos.x, (int)mouse_pos.y);
 			ImGui::End();
 		}
 		//vp->drawImGui();

@@ -80,13 +80,46 @@ namespace lim
 		//glPolygonMode(GL_FRONT, GL_LINE);
 		stbi_set_flip_vertically_on_load(true);
 
-		program = new Program("hatching prog", APP_DIR);
-		program->attatch("hatching.vs").attatch("hatching.fs").link();
+		h_prog = new Program("hatching prog", APP_DIR);
+		h_prog->attatch("hatching.vs").attatch("hatching.fs").link();
+		h_prog->use_hook = [this](const Program& prog) 
+		{
+			prog.setUniform("uvScale", uv_scale);
+			prog.setUniform("fixedArtMapIdx", fixed_art_map_idx);
+			prog.setUniform("is6way", is6way);
+
+
+			/* texture binding */
+			for( GLint lv=0; lv<nr_tones; lv++ ) {
+				ArtMap& am = *tam[lv];
+
+				glActiveTexture(GL_TEXTURE0 + lv);
+				glBindTexture(GL_TEXTURE_2D, am.tex_id);
+			}
+			int tam[6] = {5,4,3,2,1,0};
+			prog.setUniform("tam", tam, nr_tones);
+		};
+
+		h_mat = new Material();
+		h_mat->prog = h_prog;
 
 		viewport = new ViewportWithCamera("viewport##hatching", new MsFramebuffer());
 		viewport->framebuffer->clear_color ={0.1f, 0.1f, 0.1f, 1.0f};
 
-		models.push_back(importModelFromFile("assets/models/dwarf/Dwarf_2_Low.obj", true));
+		Model* tModel;
+		Mesh* tMesh;
+		tModel = importModelFromFile("assets/models/dwarf/Dwarf_2_Low.obj", true, false);
+		tModel->default_mat = h_mat;
+		models.push_back(tModel);
+	
+		tModel = new Model();
+		tMesh = code_mesh::genSphere();
+		tMesh
+		tModel->root = new Model::Node();
+		tModel->root->meshes.push_back(tMesh);
+
+		md.a
+		models.push_back();
 		models.push_back(new Model(code_mesh::genSphere(50, 25), "sphere"));
 		models.push_back(importModelFromFile("assets/models/objs/bunny.obj", true) );
 
@@ -151,20 +184,7 @@ namespace lim
 		prog.setUniform("lightInt", light->intensity);
 		prog.setUniform("lightPos", light->position);
 
-		prog.setUniform("uvScale", uv_scale);
-		prog.setUniform("fixedArtMapIdx", fixed_art_map_idx);
-		prog.setUniform("is6way", is6way);
-
-
-		/* texture binding */
-		for( GLint lv=0; lv<nr_tones; lv++ ) {
-			ArtMap& am = *tam[lv];
-
-			glActiveTexture(GL_TEXTURE0 + lv);
-			glBindTexture(GL_TEXTURE_2D, am.tex_id);
-		}
-		int tam[6] = {5,4,3,2,1,0};
-		prog.setUniform("tam", tam, nr_tones);
+		
 
 		prog.setUniform("modelMat", light_model->model_mat);
 		Mesh* mesh = light_model->meshes.back();

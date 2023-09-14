@@ -24,11 +24,11 @@ namespace lim
         glm::vec3 Tf = {0.f, 0.f, 0.f};             // transmission
         float Ni     = 1.45f;                       // index of refraction
         
-        TexBase* map_Kd = nullptr;
-        TexBase* map_Ks = nullptr;
-        TexBase* map_Ka = nullptr;
-        TexBase* map_Ns = nullptr;
-        TexBase* map_Bump = nullptr;
+        Texture* map_Kd = nullptr;
+        Texture* map_Ks = nullptr;
+        Texture* map_Ka = nullptr;
+        Texture* map_Ns = nullptr;
+        Texture* map_Bump = nullptr;
         bool bumpIsNormal = true;
 
         float bump_height = 100;

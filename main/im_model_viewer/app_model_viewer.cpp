@@ -63,9 +63,9 @@ namespace lim
 	}
 	AppModelViewer::~AppModelViewer()
 	{
-		for(auto vp : asdffff)
+		for(auto vp : viewports)
 			delete vp;
-		asdffff.clear();
+		viewports.clear();
 		for(auto md : models)
 			delete md;
 		models.clear();
@@ -92,7 +92,7 @@ namespace lim
 		ImGui::Text("hi");
 		ImGui::End();
 
-		for(ViewportWithCamera* vp : asdffff) {
+		for(ViewportWithCamera* vp : viewports) {
 			vp->drawImGui();
 		}
 	}

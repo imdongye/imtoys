@@ -9,13 +9,14 @@
 
 #include <limbrary/texture.h>
 #include <vector>
+#include <glm/glm.hpp>
 
 namespace lim
 {
 	class CanvasGray : public TexBase
 	{
 	public:
-		std::vector<float> M;
+		std::vector<float> buf;
 
 	public:
 		CanvasGray(int w, int h) : TexBase()
@@ -23,48 +24,48 @@ namespace lim
 			internal_format = GL_R32F;
 			src_format = GL_RED;
 			src_chanel_type = GL_FLOAT;
+			src_bit_per_channel = 32;
 
 			mag_filter = GL_NEAREST;
 			min_filter = GL_NEAREST;
 			mipmap_max_level = 0;
 
 			resize(w, h);
+			initGL(buf.data());
 		}
 		virtual ~CanvasGray()
 		{
-			M.clear();
+		}
+		void clear(const float c)
+		{
+			std::fill(buf.begin(), buf.end()-1, c);
 		}
 		void resize(int w, int h)
 		{
 			width = w;
 			height = h;
-			M.resize(w * h);
-			clear();
+			buf.resize(w * h);
+			clear(0.f);
 
-			create(M.data());
+			initGL(buf.data());
 		}
 		void update()
 		{
 			glBindTexture(GL_TEXTURE_2D, tex_id);
-			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, src_format, src_chanel_type, M.data());
-		}
-		void clear(const float c = 0.f)
-		{
-			std::fill(M.begin(), M.end() - 1, c);
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, src_format, src_chanel_type, buf.data());
 		}
 		float &at(int x, int y)
 		{
 			x = glm::min(width - 1, glm::max(0, x));
 			y = glm::min(height - 1, glm::max(0, y));
-			return M[x + y * width];
+			return buf[x + y * width];
 		}
 	};
 
 	class CanvasColor : public TexBase
 	{
 	public:
-		std::vector<glm::vec3> M;
-
+		std::vector<glm::vec3> buf;
 	public:
 		CanvasColor(int w, int h) : TexBase()
 		{
@@ -80,32 +81,31 @@ namespace lim
 		}
 		virtual ~CanvasColor()
 		{
-			M.clear();
+		}
+		void clear(const glm::vec3 &c)
+		{
+			// memset(M.data(), 0, width*height*sizeof(glm::vec3)); // max30.1fps
+			// std::fill_n(M.data(), width*height, c); // max26.9fps
+			std::fill(buf.begin(), buf.end() - 1, c); // max27fps
 		}
 		void resize(int w, int h)
 		{
 			width = w;
 			height = h;
-			M.resize(w * h);
-			clear();
-			create(M.data());
+			buf.resize(w * h);
+			clear({0.f, 0.1f, 0.12f});
+			initGL(buf.data());
 		}
 		void update()
 		{
 			glBindTexture(GL_TEXTURE_2D, tex_id);
-			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, src_format, src_chanel_type, M.data());
-		}
-		void clear(const glm::vec3 &c = {0.f, 0.1f, 0.12f})
-		{
-			// memset(M.data(), 0, width*height*sizeof(glm::vec3)); // max30.1fps
-			// std::fill_n(M.data(), width*height, c); // max26.9fps
-			std::fill(M.begin(), M.end() - 1, c); // max27fps
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, src_format, src_chanel_type, buf.data());
 		}
 		glm::vec3 &at(int x, int y)
 		{
 			x = glm::min(width - 1, glm::max(0, x));
 			y = glm::min(height - 1, glm::max(0, y));
-			return M[x + y * width];
+			return buf[x + y * width];
 		}
 	};
 }
