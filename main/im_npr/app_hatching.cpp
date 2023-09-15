@@ -14,6 +14,8 @@
 #include <limbrary/log.h>
 #include <imgui.h>
 #include <limbrary/model_view/code_mesh.h>
+#include <limbrary/asset_lib.h>
+#include <limbrary/model_view/renderer.h>
 
 namespace lim
 {
@@ -107,21 +109,18 @@ namespace lim
 		viewport->framebuffer->clear_color ={0.1f, 0.1f, 0.1f, 1.0f};
 
 		Model* tModel;
-		Mesh* tMesh;
 		tModel = importModelFromFile("assets/models/dwarf/Dwarf_2_Low.obj", true, false);
 		tModel->default_mat = h_mat;
 		models.push_back(tModel);
 	
-		tModel = new Model();
-		tMesh = code_mesh::genSphere();
-		tMesh
-		tModel->root = new Model::Node();
-		tModel->root->meshes.push_back(tMesh);
+		tModel = new Model("sphere");
+		tModel->root.meshes.push_back(AssetLib::get().sphere);
+		tModel->default_mat = h_mat;
+		models.push_back(tModel);
 
-		md.a
-		models.push_back();
-		models.push_back(new Model(code_mesh::genSphere(50, 25), "sphere"));
-		models.push_back(importModelFromFile("assets/models/objs/bunny.obj", true) );
+		tModel = importModelFromFile("assets/models/objs/bunny.obj", true, false);
+		tModel->default_mat = h_mat;
+		models.push_back(tModel);
 
 		const float interModels = 3.5f;
 		//1-0
@@ -138,12 +137,12 @@ namespace lim
 
 		light = new Light();
 		light->distance = 10.f;
-		light_model = new Model(code_mesh::genSphere(8, 4), "sphere");
+		light_model = new Model("light model");
+		light_model->meshes.push_back(code_mesh::genSphere(8, 4));
+		light_model->root.meshes.push_back(light_model->meshes.back()); // delete sphere when delete model!
 		light_model->position = light->position;
 		light_model->scale = glm::vec3(0.3f);
 		light_model->updateModelMat();
-
-
 
 		const std::string basename = "assets/images/TAM/default.bmp";
 		for( int tone=0; tone<nr_tones; tone++ ) {
@@ -151,14 +150,17 @@ namespace lim
 			filename.insert(filename.rfind('.'), 1, '0'+tone);
 			tam.push_back(new ArtMap(filename, 0));
 		}
+
+		scene.lights.push_back(light);
+		scene.models = models;
 	}
 	AppHatching::~AppHatching()
 	{
-		delete program;
+		delete h_mat;
+		delete h_prog;
 		delete viewport;
-		for( Model* m : models ) {
+		for( Model* m : models )
 			delete m;
-		}
 		delete light;
 		delete light_model;
 		for( ArtMap* t : tam ) {
@@ -168,42 +170,9 @@ namespace lim
 	void AppHatching::update()
 	{
 		/* render to fbo in viewport */
-		viewport->framebuffer->bind();
 
-		Program& prog = *program;
-		prog.use();
+		render(*viewport->framebuffer, viewport->camera, scene);
 		
-		const Camera& camera = viewport->camera;
-		prog.setUniform("viewMat", camera.view_mat);
-		prog.setUniform("projMat", camera.proj_mat);
-		prog.setUniform("cameraPos", camera.position);
-
-		
-		prog.setUniform("lightDir", light->direction);
-		prog.setUniform("lightColor", light->color);
-		prog.setUniform("lightInt", light->intensity);
-		prog.setUniform("lightPos", light->position);
-
-		
-
-		prog.setUniform("modelMat", light_model->model_mat);
-		Mesh* mesh = light_model->meshes.back();
-		prog.setUniform("Kd", mesh->color);
-		glBindVertexArray(mesh->VAO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->EBO);
-		glDrawElements(mesh->draw_mode, static_cast<GLuint>(mesh->indices.size()), GL_UNSIGNED_INT, 0);
-
-		for( Model* m : models ) {
-			prog.setUniform("modelMat", m->model_mat);
-			mesh = m->meshes.back();
-			prog.setUniform("Kd", mesh->color);
-			glBindVertexArray(mesh->VAO);
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->EBO);
-			glDrawElements(mesh->draw_mode, static_cast<GLuint>(mesh->indices.size()), GL_UNSIGNED_INT, 0);
-		}
-
-		viewport->framebuffer->unbind();
-
 		// clear backbuffer
 		glEnable(GL_DEPTH_TEST);
 		glDisable(GL_MULTISAMPLE);

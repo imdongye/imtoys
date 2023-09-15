@@ -25,13 +25,8 @@ namespace lim
         prog.setUniform("lightInt", lit.intensity);
         prog.setUniform("lightPos", lit.position);
 
-        for( Mesh* pMesh : md.meshes)
-        {
-            const Mesh& mesh = *pMesh;
-
-            glBindVertexArray(mesh.vert_array);
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.element_buf);
-            glDrawElements(GL_TRIANGLES, (GLsizei)(mesh.tris.size()*3), GL_UNSIGNED_INT, 0);
+        for( Mesh* pMesh : md.meshes) {
+            pMesh->draw();
         }
 
         fb.unbind();
@@ -60,10 +55,7 @@ namespace lim
                     depthProg.setUniform("modelMat", md.model_mat);
 
                     for( Mesh* pMs : md.meshes ) {
-                        const Mesh& ms = *pMs;
-                        glBindVertexArray(ms.vert_array);
-                        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ms.element_buf);
-                        glDrawElements(GL_TRIANGLES, (GLsizei)(ms.tris.size()*3), GL_UNSIGNED_INT, 0);
+                        pMs->draw();
                     }
                 }
 
@@ -82,15 +74,15 @@ namespace lim
             nextMat = md.default_mat;
             nextProg = md.default_mat->prog;
 
-            nodeStack.push(md.root);
+            nodeStack.push(&(pMd->root));
             while( nodeStack.size()>0 ) {
-                const Model::Node& nd = *nodeStack.top();
+                Model::Node* pNd = nodeStack.top();
                 nodeStack.pop();
-                for( Model::Node* child : nd.childs ) {
-                    nodeStack.push(child);
+                for( Model::Node& child : pNd->childs ) {
+                    nodeStack.push(&child);
                 }
 
-                for( Mesh* pMs : nd.meshes ) {
+                for( Mesh* pMs : pNd->meshes ) {
                     const Mesh& ms = *pMs;
                     const Program& prog = *nextProg;
                     int activeSlot = 0;
@@ -163,10 +155,7 @@ namespace lim
                             }
                         }
                     }
-
-                    glBindVertexArray(ms.vert_array);
-			        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ms.element_buf);
-                    glDrawElements(GL_TRIANGLES, (GLsizei)(ms.tris.size()*3), GL_UNSIGNED_INT, 0);
+                    ms.draw();
                 }
             }
         }

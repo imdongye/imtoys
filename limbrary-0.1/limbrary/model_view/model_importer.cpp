@@ -100,19 +100,24 @@ namespace
 		}
 		if( aiMat->GetTexture(aiTextureType_DIFFUSE, 0, &tempStr) == AI_SUCCESS ) {
 			mat.map_Kd = loadTexture(tempStr.C_Str(), GL_SRGB8);
+			mat.map_Kd->tag = "map_Kd";
 		}
 		if( aiMat->GetTexture(aiTextureType_SPECULAR, 0, &tempStr) == AI_SUCCESS ) {
 			mat.map_Ks = loadTexture(tempStr.C_Str(), GL_SRGB8);
+			mat.map_Ks->tag = "map_Ks";
 		}
 		if( aiMat->GetTexture(aiTextureType_AMBIENT, 0, &tempStr) == AI_SUCCESS ) {
 			mat.map_Ka = loadTexture(tempStr.C_Str(), GL_SRGB8);
+			mat.map_Ka->tag = "map_Ka";
 		}
 		if( aiMat->GetTexture(aiTextureType_NORMALS, 0, &tempStr) == AI_SUCCESS ) {
 			mat.map_Bump = loadTexture(tempStr.C_Str(), GL_RGB8);
 			mat.bumpIsNormal = true;
+			mat.map_Bump->tag = "map_Bump";
 		}
 		if( aiMat->GetTexture(aiTextureType_HEIGHT, 0, &tempStr) == AI_SUCCESS ) {
 			mat.map_Bump = loadTexture(tempStr.C_Str(), GL_RGB8);
+			mat.map_Bump->tag = "map_Bump";
 			mat.bumpIsNormal = false;
 		}
 

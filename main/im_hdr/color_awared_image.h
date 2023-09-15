@@ -659,8 +659,9 @@ RAW bit :)");
 			setUniform(pid, "chromaticAdaptation", chromatic_adaptation);
 			setUniform(pid, "PCS2RGB", PCS2RGB);
 
-			glBindVertexArray(AssetLib::get().quad_vao);
-			glDrawArrays(GL_TRIANGLES, 0, 6);
+			glBindVertexArray(AssetLib::get().screen_quad->vert_array);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, AssetLib::get().screen_quad->element_buf);
+			glDrawElements(GL_TRIANGLES, 4, GL_UNSIGNED_INT, 0);
 
 			fb.unbind();
 		}

@@ -57,6 +57,7 @@ namespace lim
 	public:
 		Mesh();
 		~Mesh();
+		void draw() const;
 		Mesh* clone();
 		void initGL();
 		void deinitGL();

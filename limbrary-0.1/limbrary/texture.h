@@ -55,16 +55,13 @@ namespace lim
 	public:
 		std::string path = "nopath/texture.png";
 		const char* format = path.c_str()+10;
+		std::string tag = "notag";
 	public:
 		Texture* clone();
 		bool initFromImage(std::string_view path, GLint internalFormat);
 		// nrChannels, bitPerChannel 0 is auto bit
 		bool initFromImageAuto(std::string_view path, bool convertLinear = false, int nrChannels = 0, int bitPerChannel = 0);
 	};
-	
-	/* do not use below for multisampling framebuffer */
-	void Tex2Fbo(GLuint texID, GLuint fbo, int w, int h, float gamma=2.2f);
-	void Gray2Fbo(GLuint texID, GLuint fbo, int w, int h, float gamma=2.2f);
 }
 
 #endif

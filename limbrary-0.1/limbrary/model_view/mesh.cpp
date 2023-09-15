@@ -30,6 +30,12 @@ namespace lim
 	{
 		deinitGL();
 	}
+	void Mesh::draw() const
+	{
+		glBindVertexArray(vert_array);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, element_buf);
+		glDrawElements(GL_TRIANGLES, (int)(tris.size()*3), GL_UNSIGNED_INT, 0);
+	}
 	Mesh* Mesh::clone()
 	{
 		Mesh* copy = new Mesh();

@@ -20,6 +20,10 @@ namespace lim
                  const Camera& cam,
                  const Model& md, 
                  const Light& lit );
+
+    void render( const Framebuffer& fb,
+                 const Camera& cam,
+                 const Scene& scn );
 }
 
 

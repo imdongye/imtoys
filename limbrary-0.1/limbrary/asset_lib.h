@@ -6,6 +6,9 @@
 #define __asset_lib_h_
 
 #include <glad/glad.h>
+#include "program.h"
+#include "model_view/mesh.h"
+#include "model_view/material.h"
 
 namespace lim
 {
@@ -17,15 +20,16 @@ namespace lim
 	{
 	public:
 		//****** property ******//
-		Program* gray_to_quad_prog;
 		Program* tex_to_quad_prog;
+		Program* gray_to_quad_prog;
 		Program* depth_prog;
 		Program* red_prog;
-		GLuint quad_vbo = 0;
-		GLuint quad_vao = 0;
-		Mesh* quad;
-		Program* defualt_prog;
-		Material* default_mat;
+		Program* basic_prog;
+		Material* basic_mat;
+		
+		Mesh* screen_quad; // only poss
+		Mesh* sphere;
+		Mesh* cube;
 
 	private:
 		inline static AssetLib* instance = nullptr;

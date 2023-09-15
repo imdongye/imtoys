@@ -17,7 +17,8 @@
 #include <limbrary/application.h>
 #include <limbrary/program.h>
 #include <limbrary/model_view/light.h>
-#include "viewport_pack.h"
+#include <limbrary/model_view/model.h>
+#include <limbrary/model_view/viewport_with_camera.h>
 
 
 namespace lim
@@ -43,7 +44,9 @@ namespace lim
 		bool bakeTrigger = false;
 		int fromVpIdx = 0;
 		int toVpIdx = 1;
-		ViewportPackage vpPackage;
+		
+		std::vector<ViewportWithCamera*> viewports;
+		std::vector<Model*> models;
 
 		float simp_time=0;
 

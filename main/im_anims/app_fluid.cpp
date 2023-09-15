@@ -2,6 +2,9 @@
 #include "canvas.h"
 #include <stb_image.h>
 #include <imgui.h>
+#include <limbrary/asset_lib.h>
+
+using namespace glm;
 
 namespace
 {
@@ -29,7 +32,6 @@ namespace lim
 	}
 	void AppFluid::update()
 	{
-		using namespace glm;
 		canvas->deinitGL();
 		points[0] = mouse_pos;
 		points[0].y = fb_height-1-points[0].y;
@@ -62,7 +64,24 @@ namespace lim
 
 		canvas->update();
 
-		Tex2Fbo(canvas->tex_id, 0, fb_width, fb_height);
+		glDisable(GL_DEPTH_TEST);
+		glDisable(GL_MULTISAMPLE);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glViewport(0, 0, fb_width, fb_height);
+		glClearColor(0.f, 0.f, 0.f, 0.f);
+		glClear(GL_COLOR_BUFFER_BIT);
+
+		GLuint pid = AssetLib::get().tex_to_quad_prog->use(); //tex_to_gray_prog
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, canvas->tex_id);
+		setUniform(pid, "tex", 0);
+		setUniform(pid, "gamma", 2.2);
+
+		glBindVertexArray(AssetLib::get().screen_quad->vert_array);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, AssetLib::get().screen_quad->element_buf);
+		glDrawElements(GL_TRIANGLES, 4, GL_UNSIGNED_INT, 0);
 	}
 	void AppFluid::renderImGui()
 	{

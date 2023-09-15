@@ -11,7 +11,6 @@
 #include <limbrary/texture.h>
 #include <limbrary/program.h>
 #include <limbrary/log.h>
-#include <limbrary/asset_lib.h>
 #include <stb_image.h>
 
 namespace
@@ -101,6 +100,7 @@ namespace lim
 		copyTexBaseProps(*rst, *this);
 		tex.path = path;
 		tex.format = tex.path.c_str()+(format-path.c_str());
+		tex.tag = tag;
 
 		glGenTextures(1, &tex.tex_id);
 		glBindTexture(GL_TEXTURE_2D, tex.tex_id);
@@ -247,49 +247,4 @@ namespace lim
 		return true;
 	}
 	
-	void Tex2Fbo(GLuint texID, GLuint fbo, int w, int h, float gamma)
-	{
-		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-		glViewport(0, 0, w, h);
-		glClearColor(0.f, 0.f, 0.f, 0.f);
-		glClear(GL_COLOR_BUFFER_BIT);
-
-		glDisable(GL_DEPTH_TEST);
-		glDisable(GL_MULTISAMPLE);
-
-		Program& to_quad_prog = *AssetLib::get().tex_to_quad_prog;
-		to_quad_prog.use();
-
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, texID);
-
-		setUniform(to_quad_prog.pid, "tex", 0);
-		setUniform(to_quad_prog.pid, "gamma", gamma);
-
-		glBindVertexArray(AssetLib::get().quad_vao);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
-	}
-
-	void Gray2Fbo(GLuint texID, GLuint fbo, int w, int h, float gamma)
-	{
-		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-		glViewport(0, 0, w, h);
-		glClearColor(0.f, 0.f, 0.f, 0.f);
-		glClear(GL_COLOR_BUFFER_BIT);
-
-		glDisable(GL_DEPTH_TEST);
-		glDisable(GL_MULTISAMPLE);
-
-		Program& to_quad_prog = *AssetLib::get().gray_to_quad_prog;
-		to_quad_prog.use();
-
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, texID);
-
-		setUniform(to_quad_prog.pid, "tex", 0);
-		setUniform(to_quad_prog.pid, "gamma", gamma);
-
-		glBindVertexArray(AssetLib::get().quad_vao);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
-	}
 }

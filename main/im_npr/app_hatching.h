@@ -14,6 +14,7 @@
 #include <limbrary/model_view/viewport_with_camera.h>
 #include <limbrary/model_view/model.h>
 #include <glad/glad.h>
+#include <limbrary/model_view/scene.h>
 
 namespace lim
 {
@@ -43,6 +44,7 @@ namespace lim
 		std::vector<Model*> models;
 		Light* light;
 		Model* light_model;
+		Scene scene;
 	private:
 		static constexpr GLint nr_tones = 6;
 		glm::vec2 uv_scale = {3.5f, 3.5f};

@@ -158,27 +158,25 @@ namespace
 		return aiMs;
 	}
 
-	aiNode* recursiveConvertTree(Model::Node* nd)
+	void recursiveConvertTree(aiNode* to, const Model::Node& from)
 	{
 		aiNode* node = new aiNode();
 		std::vector<Mesh*>& modelMeshes = src_md->meshes;
-		node->mTransformation = toAi(nd->transformation);
+		node->mTransformation = toAi(from.transformation);
 
-		const size_t nrMeshes = nd->meshes.size();
+		const size_t nrMeshes = from.meshes.size();
 		node->mNumMeshes = nrMeshes;
 		node->mMeshes = new unsigned int[nrMeshes];
 		for( size_t i=0; i<nrMeshes; i++ ) {
-			node->mMeshes[i] = std::distance(modelMeshes.begin(), std::find(modelMeshes.begin(), modelMeshes.end(), nd->meshes[i]));
+			node->mMeshes[i] = std::distance(modelMeshes.begin(), std::find(modelMeshes.begin(), modelMeshes.end(), from.meshes[i]));
 		}
 
-		const size_t nrChilds = nd->childs.size();
+		const size_t nrChilds = from.childs.size();
 		node->mNumChildren = nrChilds;
 		node->mChildren = new aiNode*[nrChilds];
-		for( size_t i=0; i< nd->childs.size(); i++ ) {
-			node->mChildren[i] = recursiveConvertTree(nd->childs[i]);
+		for( size_t i=0; i< from.childs.size(); i++ ) {
+			recursiveConvertTree(node->mChildren[i], from.childs[i]);
 		}
-
-		return node;
 	}
 
 	aiScene* makeScene(Model* model)
@@ -201,7 +199,7 @@ namespace
 			scene->mMeshes[i] = convertMesh(md.meshes[i]);
 		}
 		
-		scene->mRootNode = recursiveConvertTree(md.root);
+		recursiveConvertTree(scene->mRootNode, md.root);
 
 		return scene;
 	}

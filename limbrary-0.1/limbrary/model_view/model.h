@@ -76,7 +76,7 @@ namespace lim
 		Model& operator=(Model const &) = delete;
 
 	public:
-		Model();
+		Model(std::string_view name = "nonamed model");
 		~Model();
 		Model* clone();
 		void updateModelMat();

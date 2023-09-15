@@ -49,6 +49,7 @@ namespace lim
 		viewport->framebuffer->bind();
 
 		GLuint pid = prog->use();
+
 		setUniform(pid, "beckmannGamma", beckmannGamma);
 		const Camera& cam = viewport->camera;
 		setUniform(pid, "view", cam.view_mat);
@@ -66,10 +67,8 @@ namespace lim
 		modelMat = glm::translate(glm::mat4(1), lightPos);
 		modelMat = glm::scale(modelMat, glm::vec3(0.5f));
 		setUniform(pid, "model", modelMat);
-		prog->setUniform("Kd", sphere->color);
-		glBindVertexArray(sphere->VAO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sphere->EBO);
-		glDrawElements(sphere->draw_mode, static_cast<GLuint>(sphere->indices.size()), GL_UNSIGNED_INT, 0);
+		prog->setUniform("Kd", glm::vec3(1,1,1));
+		sphere->draw();
 
 
 		///* draw spheres */
@@ -95,9 +94,7 @@ namespace lim
 				modelMat = glm::translate(glm::mat4(1.0f), glm::vec3( col*spacing-pivot.x, pivot.y-row*spacing, 0.0f ));
 				setUniform(pid, "model", modelMat);
 
-				glBindVertexArray(sphere->VAO);
-				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sphere->EBO);
-				glDrawElements(sphere->draw_mode, static_cast<GLuint>(sphere->indices.size()), GL_UNSIGNED_INT, 0);
+				sphere->draw();
 			}
 		}
 
@@ -110,25 +107,21 @@ namespace lim
 		modelMat = glm::translate(glm::mat4(1), glm::vec3(spacing*3, spacing, 0));
 		modelMat *= glm::scale(glm::vec3(2.f));
 		setUniform(pid, "model", modelMat);
-		glBindVertexArray(sphere->VAO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sphere->EBO);
-		glDrawElements(sphere->draw_mode, static_cast<GLuint>(sphere->indices.size()), GL_UNSIGNED_INT, 0);
+		sphere->draw();
+
 
 		setUniform(pid, "isGGX", false);
 		modelMat = glm::translate(glm::mat4(1), glm::vec3(spacing*3, -spacing, 0));
 		modelMat *= glm::scale(glm::vec3(2.f));
 		setUniform(pid, "model", modelMat);
-		glBindVertexArray(sphere->VAO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sphere->EBO);
-		glDrawElements(sphere->draw_mode, static_cast<GLuint>(sphere->indices.size()), GL_UNSIGNED_INT, 0);
+		sphere->draw();
+
 
 		/* draw models */
 		setUniform(pid, "isGGX", true);
 		setUniform(pid, "model", model->model_mat);
-		for( Mesh* mesh: model->meshes ) {
-			glBindVertexArray(mesh->VAO);
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->EBO);
-			glDrawElements(mesh->draw_mode, static_cast<GLuint>(mesh->indices.size()), GL_UNSIGNED_INT, 0);
+		for( const Mesh* mesh: model->meshes ) {
+			mesh->draw();
 		}
 		
 		viewport->framebuffer->unbind();

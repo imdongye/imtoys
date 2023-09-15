@@ -48,9 +48,10 @@ namespace
 
 namespace lim
 {
-	Model::Model()
+	Model::Model(std::string_view _name)
+		:name(_name)
 	{
-		default_mat = AssetLib::get().default_mat;
+		default_mat = AssetLib::get().basic_mat;
 	}
 	Model::~Model()
 	{
@@ -115,8 +116,8 @@ namespace lim
 			copy->childs.reserve(orig->childs.size());
 			for(Node& oriChild : orig->childs) {
 				origs.push(&oriChild);
-				copys.push(new Node());
-				copy->childs.push_back(copys.top());
+				copy->childs.push_back({});
+				copys.push(&copy->childs.back());
 			}
 		}
 
