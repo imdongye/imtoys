@@ -40,7 +40,8 @@ namespace lim
 		void genGlFboColor();
 		virtual void initGL();
 	public:
-		bool resize(GLuint _width, GLuint _height=0);
+		bool resize(GLuint _width, GLuint _height);
+		bool resize(GLuint square);
 		virtual void bind() const;
 		virtual void unbind() const;
 		/* ms framebuffer return intermidiate */

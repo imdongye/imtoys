@@ -30,7 +30,7 @@ namespace lim
 	{
 		deinitGL();
 	}
-	void Mesh::draw() const
+	void Mesh::drawGL() const
 	{
 		glBindVertexArray(vert_array);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, element_buf);

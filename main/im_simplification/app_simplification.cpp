@@ -318,13 +318,17 @@ namespace lim
 			ImGui::NewLine();
 
 			// baking
-			if (ImGui::Combo("texture resolution", &MapBaker::selectedTexSizeIdx, MapBaker::texSizeStrs, MapBaker::nrTexSize))
-			{
-			}
+			static int selectedTexSizeIdx = 2;
+			static const int nrTexSize=6;
+			static int texSizes[]={256, 512, 1024, 2048, 4096, 8192};
+			static const char* texSizeStrs[]={"256", "512", "1024", "2048", "4096", "8192"};
+
+			ImGui::Combo("texture resolution", &selectedTexSizeIdx, texSizeStrs, nrTexSize);
+
 			if (ImGui::Button("Bake normal map") || bakeTrigger)
 			{
 				bakeTrigger = false;
-				bakeNormalMap();
+				bakeNormalMap(texSizes[selectedTexSizeIdx]);
 			}
 		}
 		ImGui::End();

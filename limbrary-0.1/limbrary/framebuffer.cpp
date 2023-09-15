@@ -49,7 +49,6 @@ namespace lim
 	}
 	bool Framebuffer::resize(GLuint _width, GLuint _height)
 	{
-		if( _height==0 ) _height = _width;
 		if( width==_width && height==_height )
 			return false;
 		width = _width; height = _height;
@@ -58,6 +57,16 @@ namespace lim
 		initGL();
 		return true;
 	}
+	bool Framebuffer::resize(GLuint square)
+	{
+		if( width==square && height==square )
+			return false;
+		width = square; height = square;
+		aspect = width/(float)height;
+
+		initGL();
+		return true;
+	} 
 	void Framebuffer::bind() const
 	{
 		glDisable(GL_DEPTH_TEST);

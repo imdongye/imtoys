@@ -1,8 +1,13 @@
-//
-//  2022-09-27 / im dong ye
-//
-//	edit from : https://github.com/assimp/assimp/issues/203
-//
+/*
+
+2022-09-27 / im dong ye
+
+edit from : https://github.com/assimp/assimp/issues/203
+
+출력될때 texture의 path는 모델위치의 마지막 슬레쉬 위치로 잘려서 출력된다.
+
+
+*/
 #include <limbrary/model_view/model.h>
 #include <limbrary/log.h>
 #include <limbrary/utils.h>

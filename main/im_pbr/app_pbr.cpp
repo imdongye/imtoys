@@ -68,7 +68,7 @@ namespace lim
 		modelMat = glm::scale(modelMat, glm::vec3(0.5f));
 		setUniform(pid, "model", modelMat);
 		prog->setUniform("Kd", glm::vec3(1,1,1));
-		sphere->draw();
+		sphere->drawGL();
 
 
 		///* draw spheres */
@@ -94,7 +94,7 @@ namespace lim
 				modelMat = glm::translate(glm::mat4(1.0f), glm::vec3( col*spacing-pivot.x, pivot.y-row*spacing, 0.0f ));
 				setUniform(pid, "model", modelMat);
 
-				sphere->draw();
+				sphere->drawGL();
 			}
 		}
 
@@ -107,21 +107,21 @@ namespace lim
 		modelMat = glm::translate(glm::mat4(1), glm::vec3(spacing*3, spacing, 0));
 		modelMat *= glm::scale(glm::vec3(2.f));
 		setUniform(pid, "model", modelMat);
-		sphere->draw();
+		sphere->drawGL();
 
 
 		setUniform(pid, "isGGX", false);
 		modelMat = glm::translate(glm::mat4(1), glm::vec3(spacing*3, -spacing, 0));
 		modelMat *= glm::scale(glm::vec3(2.f));
 		setUniform(pid, "model", modelMat);
-		sphere->draw();
+		sphere->drawGL();
 
 
 		/* draw models */
 		setUniform(pid, "isGGX", true);
 		setUniform(pid, "model", model->model_mat);
 		for( const Mesh* mesh: model->meshes ) {
-			mesh->draw();
+			mesh->drawGL();
 		}
 		
 		viewport->framebuffer->unbind();

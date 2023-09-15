@@ -26,7 +26,7 @@ namespace lim
         prog.setUniform("lightPos", lit.position);
 
         for( Mesh* pMesh : md.meshes) {
-            pMesh->draw();
+            pMesh->drawGL();
         }
 
         fb.unbind();
@@ -55,7 +55,7 @@ namespace lim
                     depthProg.setUniform("modelMat", md.model_mat);
 
                     for( Mesh* pMs : md.meshes ) {
-                        pMs->draw();
+                        pMs->drawGL();
                     }
                 }
 
@@ -155,7 +155,7 @@ namespace lim
                             }
                         }
                     }
-                    ms.draw();
+                    ms.drawGL();
                 }
             }
         }
