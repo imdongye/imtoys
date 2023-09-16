@@ -1,3 +1,9 @@
+/*
+
+모델을 교체할때 scene.models[1]도 수정해줘야함
+
+*/
+
 #include "app_simplification.h"
 #include "simplify.h"
 #include "map_baker.h"
@@ -6,11 +12,12 @@
 #include <limbrary/app_pref.h>
 #include <limbrary/model_view/code_mesh.h>
 #include <imgui.h>
+#include <limbrary/model_view/renderer.h>
 
 namespace lim
 {
 	AppSimplification::AppSimplification() : AppBase(1200, 780, APP_NAME),
-		light(), ground(code_mesh::genPlane(), "ground")
+		light(), ground("ground")
 	{
 		stbi_set_flip_vertically_on_load(true);
 
@@ -38,64 +45,84 @@ namespace lim
 		programs.push_back(new Program("Shadowed", APP_DIR));
 		programs.back()->attatch("shadowed.vs").attatch("shadowed.fs").link();
 
-		ground.program = programs[0];
-		ground.meshes[0]->color = glm::vec3(0.8, 0.8, 0);
+		ground.meshes.push_back(code_mesh::genPlane());
+		ground.root.meshes.push_back(ground.meshes.back());
+		ground.materials.push_back({});
+		ground.materials.back()->prog = programs[0];
+		ground.default_mat = ground.materials.back();
 		ground.position = glm::vec3(0, 0, 0);
 		ground.scale = glm::vec3(100, 100, 1);
 		ground.orientation = glm::angleAxis(F_PI*0.5f, glm::vec3(1,0,0));
 		ground.updateModelMat();
 
 		addEmptyViewport();
-		loadModel("assets/models/dwarf/Dwarf_2_Low.obj", 0);
+		doLoadModel("assets/models/dwarf/Dwarf_2_Low.obj", 0);
 		addEmptyViewport();
-		loadModel("assets/models/dwarf/Dwarf_2_Low.obj", 1);
+		doLoadModel("assets/models/dwarf/Dwarf_2_Low.obj", 1);
 	}
 	AppSimplification::~AppSimplification()
 	{
-		vpPackage.clear();
-		for (Program *program : programs)
-		{
-			program->clear();
+		for( auto prog : programs ) {
+			delete prog;
+		}
+		for( auto vp : viewports ) {
+			delete vp;
+		}
+		for( auto md : models ) {
+			delete md;
 		}
 	}
 	void AppSimplification::addEmptyViewport()
 	{
-		char* vpName = fmtStrToBuf("viewport%d##simp", vpPackage.size);
-		Viewport *viewport = new Viewport(vpName, new MsFramebuffer);
-		viewport->framebuffer->clear_color = {0, 0, 1, 1};
-		Scene *scene = new Scene();
-		scene->lights.push_back(&light);
-		AutoCamera *camera = new AutoCamera({0, 1, 8});
-		vpPackage.push_back(viewport, scene, nullptr, camera);
+		const char* vpName = fmtStrToBuf("viewport%d##simp", nr_viewports);
+		ViewportWithCamera* vp = new ViewportWithCamera(vpName, new MsFramebuffer);
+		vp->framebuffer->clear_color = {0, 0, 1, 1};
+		viewports.push_back(vp);
+
+		Model* md = new Model();
+		models.push_back(md);
+
+		scenes.push_back({});
+		Scene& scn = scenes.back();
+		scn.models.push_back(&ground);
+		scn.models.push_back(md); // scene의 두번째 모델이 타겟 모델
+		scn.lights.push_back(&light);
+		nr_viewports++;
 	}
-	void AppSimplification::loadModel(std::string_view path, int vpIdx)
+	void AppSimplification::doLoadModel(std::string_view path, int vpIdx)
 	{
-		Model* prevModel = vpPackage.models[vpIdx];
-		if (prevModel != nullptr)
-			delete prevModel;
+		if( vpIdx<0||vpIdx>=nr_viewports ) {
+			log::err("wrong vpIdx in load model");
+			return;
+		}
+		delete models[vpIdx];
 
-		double start = glfwGetTime();
-		Model* newModel = importModelFromFile(path.data(), true);
-		if( !newModel ) return;
+		double elapsedTime = glfwGetTime();
+		models[vpIdx] = importModelFromFile(path.data(), true, true);
+		elapsedTime = glfwGetTime() - elapsedTime;
+		if( models[vpIdx]==nullptr ) {
+			return;
+		}
+		Model& md = *models[vpIdx];
+		log::pure("Done! in %.3f sec.  \n", elapsedTime);
 
-		newModel->program = programs[selectedProgIdx];
+		md.default_mat->prog = programs[selected_prog_idx];
 
-		Scene* curScene = vpPackage.scenes[vpIdx];
-		if( prevModel!=nullptr )
-			curScene->models.erase(std::find(curScene->models.begin(), curScene->models.end(), prevModel));
-		curScene->models.push_back(newModel);
-		vpPackage.models[vpIdx] = newModel;
-		vpPackage.cameras[vpIdx]->pivot = newModel->position;
-		vpPackage.cameras[vpIdx]->updatePivotViewMat();
-		log::pure("Done! in %.3f sec.  \n", glfwGetTime() - start);
-		AppPref::get().pushPathWithoutDup(path.data());
+		Scene& scn = scenes[vpIdx];
+		
+		scn.models[1] = models[vpIdx];
+
+		auto& vp = *viewports[vpIdx];
+		vp.camera.pivot = md.position;
+		vp.camera.updatePivotViewMat();
+
+		AppPref::get().saveRecentModelPath(path.data());
 	}
-	void AppSimplification::exportModel(size_t pIndex, int vpIdx)
+	void AppSimplification::doExportModel(size_t pIndex, int vpIdx)
 	{
-		Model *toModel = vpPackage.models[vpIdx];
+		Model* toModel = models[vpIdx];
 
-		if (toModel == nullptr)
-		{
+		if( toModel == nullptr ) {
 			log::err("export\n");
 			return;
 		}
@@ -103,69 +130,51 @@ namespace lim
 		double start = glfwGetTime();
 		log::pure("Exporting %s.. .. ...... ...  .... .. . .... . .\n", toModel->name.c_str());
 
-		exportModelToFile(exportPath, toModel, pIndex);
+		exportModelToFile(export_path, toModel, pIndex);
 
 		log::pure("Done! in %.3f sec.  \n\n", glfwGetTime() - start);
 	}
-	void AppSimplification::simplifyModel(float lived_pct, int version, int agressiveness, bool verbose)
+	void AppSimplification::doSimplifyModel(float lived_pct, int version, int agressiveness, bool verbose)
 	{
-		Model *fromModel = vpPackage.models[fromVpIdx];
-		Model *toModel = vpPackage.models[toVpIdx];
+		Model* fromMd = models[from_vp_idx];
+		Model* toMd = models[to_vp_idx];
 
-		double start = glfwGetTime();
-		log::pure("\nSimplifing %s..... . ... ... .. .. . .  .\n", fromModel->name.c_str());
+		if( toMd != nullptr )
+			delete toMd;
+		toMd = fromMd->clone();
+		models[to_vp_idx] = toMd;
+		scenes[to_vp_idx].models[1] = toMd;
 
-		if (toModel != nullptr)
-			delete toModel;
+		fqms::simplifyModel(toMd, lived_pct, version, agressiveness, verbose);
+		int pct = 100.0 * toMd->nr_vertices / fromMd->nr_vertices;
+		toMd->name += "_"+std::to_string(pct)+"_pct";
 
-		toModel = fqms::simplifyModel(fromModel, lived_pct, version, agressiveness, verbose);
-		int pct = 100.0 * toModel->nr_vertices / fromModel->nr_vertices;
-		toModel->name += "_"+std::to_string(pct)+"_pct";
-
-		Model* prevModel = vpPackage.models[toVpIdx];
-		if (prevModel != nullptr)
-			delete prevModel;
-		vpPackage.models[toVpIdx] = toModel;
-		Scene* curScene = vpPackage.scenes[toVpIdx];
-		if( prevModel!=nullptr )
-			curScene->models.erase(std::find(curScene->models.begin(), curScene->models.end(), prevModel));
-		curScene->models.push_back(toModel);
-		vpPackage.cameras[toVpIdx]->pivot = toModel->position;
-		vpPackage.cameras[toVpIdx]->updatePivotViewMat();
-
-		simp_time = glfwGetTime() - start;
-		log::pure("Done! %d => %d in %.3f sec. \n\n", fromModel->nr_vertices, toModel->nr_vertices, simp_time);
+		viewports[to_vp_idx]->camera.pivot = toMd->position;
+		viewports[to_vp_idx]->camera.updatePivotViewMat();
 	}
 	// From: https://stackoverflow.com/questions/62007672/png-saved-from-opengl-framebuffer-using-stbi-write-png-is-shifted-to-the-right
-	void AppSimplification::bakeNormalMap()
+	void AppSimplification::doBakeNormalMap(int texSize)
 	{
-		if (vpPackage.models[fromVpIdx] != nullptr && vpPackage.models[toVpIdx] != nullptr)
-			MapBaker::bakeNormalMap(exportPath, vpPackage.models[fromVpIdx], vpPackage.models[toVpIdx]);
+		if( models[from_vp_idx] != nullptr && models[to_vp_idx] != nullptr )
+			bakeNormalMap(export_path, models[to_vp_idx], models[from_vp_idx], texSize);
 		else
 			log::err("You Must to simplify before baking\n");
 	}
+
+
+
 	void AppSimplification::update()
 	{
-		if (isSameCamera)
+		if( is_same_camera )
 		{
-			Camera *firstCam = vpPackage.cameras[0];
-			for (int i = 0; i < vpPackage.size; i++)
-			{
-				Framebuffer *fb = vpPackage.viewports[i]->framebuffer;
-				vpPackage.scenes[i]->render(fb, firstCam);
-			}
+			for( int i=0; i<nr_viewports; i++ )
+				render(*viewports[i]->framebuffer, viewports[last_focused_vp_idx]->camera, scenes[i]);
 		}
 		else
 		{
-			for (int i = 0; i < vpPackage.size; i++)
-			{
-				Framebuffer *fb = vpPackage.viewports[i]->framebuffer;
-				Camera *cm = vpPackage.cameras[i];
-				vpPackage.scenes[i]->render(fb, cm);
-			}
+			for( int i=0; i<nr_viewports; i++ )
+				render(*viewports[i]->framebuffer, viewports[i]->camera, scenes[i]);
 		}
-		/* render to screen */
-		// scenes[0]->render(0, scr_width, scr_height, camera[0]);
 
 		// clear backbuffer
 		glEnable(GL_DEPTH_TEST);
@@ -178,33 +187,32 @@ namespace lim
 	}
 	void AppSimplification::renderImGui()
 	{
-		const Model *fromModel = vpPackage.models[fromVpIdx];
-		const Model *toModel = vpPackage.models[toVpIdx];
+		const Model& fromMd = *models[from_vp_idx];
+		const Model& toMd = *models[to_vp_idx];
 
 		ImGui::DockSpaceOverViewport();
 
-		if (ImGui::BeginMainMenuBar())
+		if( ImGui::BeginMainMenuBar() )
 		{
-			if (ImGui::BeginMenu("File"))
+			if( ImGui::BeginMenu("File") )
 			{
-				if (ImGui::BeginMenu("Import Recent"))
+				if( ImGui::BeginMenu("Import Recent") )
 				{
-					for (int i=0; i<vpPackage.viewports.size(); i++)
+					for( int i=0; i<nr_viewports; i++ )
 					{
-						Viewport* vp = vpPackage.viewports[i];
-						if (ImGui::BeginMenu(("Viewport" + std::to_string(i)).c_str()))
+						if( ImGui::BeginMenu(("Viewport" + std::to_string(i)).c_str())) 
 						{
 							typename std::vector<std::string>::reverse_iterator iter;
-							for (iter = AppPref::get().recent_model_paths.rbegin();
-									iter != AppPref::get().recent_model_paths.rend(); iter++)
+							for( iter = AppPref::get().recent_model_paths.rbegin();
+									iter != AppPref::get().recent_model_paths.rend(); iter++ )
 							{
-								if (ImGui::MenuItem((*iter).c_str()))
+								if( ImGui::MenuItem((*iter).c_str()) )
 								{
-									loadModel((*iter), i);
+									doLoadModel((*iter), i);
 									break;
 								}
 							}
-							if (ImGui::MenuItem("Clear Recent"))
+							if(ImGui::MenuItem("Clear Recent") )
 							{
 								AppPref::get().clearData();
 							}
@@ -213,28 +221,28 @@ namespace lim
 					}
 					ImGui::EndMenu();
 				}
-				if (ImGui::BeginMenu("Export"))
+				if(ImGui::BeginMenu("Export") )
 				{
-					for (int i = 0; i < vpPackage.size; i++)
+					for( int i = 0; i < nr_viewports; i++ )
 					{
-						Model *md = vpPackage.models[i];
-						if (md == nullptr)
+						const Model& md = *models[i];
+						if( md.meshes.size()==0 )
 							continue;
-						Viewport *vp = vpPackage.viewports[i];
-						if (ImGui::BeginMenu(("Viewport" + std::to_string(i)).c_str()))
+
+						if( ImGui::BeginMenu(("Viewport" + std::to_string(i)).c_str()) )
 						{
 							int nr_formats = getNrExportFormats();
-							for (size_t pIndex = 0; pIndex < nr_formats; pIndex++)
+							for( size_t pIndex = 0; pIndex < nr_formats; pIndex++ )
 							{
 								const aiExportFormatDesc *format = getExportFormatInfo(pIndex);
-								if (ImGui::MenuItem(format->id))
+								if( ImGui::MenuItem(format->id) )
 								{
-									exportModel(pIndex, i);
+									doExportModel(pIndex, i);
 								}
-								if (ImGui::IsItemHovered())
+								if( ImGui::IsItemHovered() )
 								{
 									static char exportFormatTooltipBuf[64];
-									stbsp_sprintf(exportFormatTooltipBuf, "%s\n%s.%s", format->description, md->name.c_str(), format->fileExtension); // todo : caching
+									stbsp_sprintf(exportFormatTooltipBuf, "%s\n%s.%s", format->description, md.name.c_str(), format->fileExtension); // todo : caching
 									ImGui::SetTooltip("%s",exportFormatTooltipBuf);
 								}
 							}
@@ -245,9 +253,9 @@ namespace lim
 				}
 				ImGui::EndMenu();
 			}
-			if (ImGui::BeginMenu("View"))
+			if( ImGui::BeginMenu("View") )
 			{
-				if (ImGui::MenuItem("add viewport"))
+				if( ImGui::MenuItem("add viewport") )
 				{
 					addEmptyViewport();
 				}
@@ -257,40 +265,35 @@ namespace lim
 			ImGui::EndMainMenuBar();
 		}
 
-		/* 실행후 겹쳤을때 그리는순서에 따라서 위로오는게 결정됨 */
-		// 중요한게 뒤로 오게 해야함
-
-		for (int i = vpPackage.size - 1; i >= 0; i--)
+		// 실행후 겹쳤을때 그리는순서에 따라서 위로오는게 결정됨, 방금 생성한게 위에 오기하기위함.
+		for( int i=nr_viewports-1; i>=0; i-- )
 		{
-			vpPackage.viewports[i]->drawImGui();
+			viewports[i]->drawImGui();
 		}
 
 		log::drawViewer("log viwer##simplification");
 
-		if (ImGui::Begin("Simplify Options##simp"))
+		if( ImGui::Begin("Simplify Options##simp") )
 		{
 			ImGui::Text("From viewport:");
-			for (int i = 0; i < vpPackage.size; i++)
+			for( int i=0; i<nr_viewports; i++ )
 			{
-				int id = i;
-				if (vpPackage.models[i] == nullptr)
+				if( models[i]->meshes.size() == 0 )
 					continue;
 				ImGui::SameLine();
-				if (ImGui::RadioButton((std::to_string(id) + "##1").c_str(), &fromVpIdx, id) && fromVpIdx == toVpIdx)
-				{
-					toVpIdx++;
-					toVpIdx %= vpPackage.size;
+				if( ImGui::RadioButton( fmtStrToBuf("%d##1", i), &from_vp_idx, i) && from_vp_idx == to_vp_idx ) {
+					to_vp_idx++;
+					to_vp_idx %= nr_viewports;
 				}
 			}
 
 			ImGui::Text("to viewport:");
-			for( int i=0; i<vpPackage.size; i++ )
+			for( int i=0; i<nr_viewports; i++ )
 			{
-				Viewport* vp = vpPackage.viewports[i];
-				if (i == fromVpIdx)
+				if( i == from_vp_idx )
 					continue;
 				ImGui::SameLine();
-				if (ImGui::RadioButton((std::to_string(i) + "##2").c_str(), &toVpIdx, i))
+				if( ImGui::RadioButton((std::to_string(i) + "##2").c_str(), &to_vp_idx, i) )
 				{
 					log::pure("%s", i);
 				}
@@ -306,15 +309,20 @@ namespace lim
 			ImGui::SliderInt("agressiveness", &agressiveness, 5, 8);
 			static bool verbose = true;
 			ImGui::Checkbox("verbose", &verbose);
-			if (ImGui::Button("Simplify") || simplifyTrigger)
+			static double simpTime = 0.0;
+			if( ImGui::Button("Simplify") || simplify_trigger )
 			{
-				simplifyTrigger = false;
-				simplifyModel((float)pct / 100.f, selectedVersion, agressiveness, verbose);
+				log::pure("\nSimplifing %s..... . ... ... .. .. . .  .\n", fromMd.name.c_str());
+				simpTime = glfwGetTime();
+				simplify_trigger = false;
+				doSimplifyModel((float)pct / 100.f, selectedVersion, agressiveness, verbose);
+				simpTime = glfwGetTime()-simpTime;
+				log::pure("Done! %d => %d in %.3f sec. \n\n", fromMd.nr_vertices, toMd.nr_vertices, simpTime);
 			}
 
 			ImGui::SameLine();
-			ImGui::Text("target triangles = %d", static_cast<int>(fromModel->nr_triangles * pct));
-			ImGui::Text("simplified in %lf sec", simp_time);
+			ImGui::Text("target triangles = %d", (int)(fromMd.nr_triangles * pct));
+			ImGui::Text("simplified in %lf sec", simpTime);
 			ImGui::NewLine();
 
 			// baking
@@ -325,51 +333,43 @@ namespace lim
 
 			ImGui::Combo("texture resolution", &selectedTexSizeIdx, texSizeStrs, nrTexSize);
 
-			if (ImGui::Button("Bake normal map") || bakeTrigger)
+			if( ImGui::Button("Bake normal map") || bake_trigger )
 			{
-				bakeTrigger = false;
-				bakeNormalMap(texSizes[selectedTexSizeIdx]);
+				bake_trigger = false;
+				doBakeNormalMap(texSizes[selectedTexSizeIdx]);
 			}
 		}
 		ImGui::End();
 
-		if (ImGui::Begin("Viewing Options##simp"))
+		if( ImGui::Begin("Viewing Options##simp") )
 		{
 			ImGui::Text("<camera>");
 			static int focusedCameraIdx = 0;
 			static const char *vmode_strs[] = {"free", "pivot", "scroll"};
 			int viewMode = 0;
-			if (ImGui::Combo("mode", &viewMode, vmode_strs, sizeof(vmode_strs) / sizeof(char *)))
-			{
-				for (AutoCamera *cam : vpPackage.cameras)
-				{
-					cam->setViewMode(viewMode);
-				}
+			if( ImGui::Combo("mode", &viewMode, vmode_strs, sizeof(vmode_strs) / sizeof(char *)) ) {
+				viewports[last_focused_vp_idx]->camera.setViewMode(viewMode);
 			}
-			ImGui::Checkbox("use same camera", &isSameCamera);
-			ImGui::SliderFloat("move speed", &cameraMoveSpeed, 0.2f, 3.0f);
-			for (int i = 0; i < vpPackage.size; i++)
-			{ // for test
-				if (vpPackage.viewports[i]->focused && focusedCameraIdx != i)
-				{
-					focusedCameraIdx = i;
-				}
+			ImGui::Checkbox("use same camera", &is_same_camera);
+			static float cameraMoveSpeed = 4.0f;
+			if(ImGui::SliderFloat("move speed", &cameraMoveSpeed, 2.0f, 6.0f)) {
+				viewports[last_focused_vp_idx]->camera.move_free_spd = cameraMoveSpeed;
 			}
-			ImGui::Text("camera fov: %f", vpPackage.cameras[focusedCameraIdx]->fovy);
+			ImGui::Text("camera fov: %f", viewports[last_focused_vp_idx]->camera.fovy);
 			ImGui::Dummy(ImVec2(0.0f, 8.0f));
 			ImGui::Separator();
 			ImGui::Dummy(ImVec2(0.0f, 3.0f));
 
 			ImGui::Text("<shader>");
-			std::vector<const char *> shaderList;
-			for (Program *prog : programs)
+			std::vector<const char *> shaderList(programs.size());
+			for( Program *prog : programs )
 				shaderList.push_back(prog->name.c_str());
-			if (ImGui::Combo("type", &selectedProgIdx, shaderList.data(), shaderList.size()))
+			if( ImGui::Combo("type", &selected_prog_idx, shaderList.data(), shaderList.size()) )
 			{
-				ground.program = programs[selectedProgIdx];
-				for(Model* md : vpPackage.models)
+				ground.default_mat->prog = programs[selected_prog_idx];
+				for( Model* md : models )
 				{
-					md->program = programs[selectedProgIdx];
+					md->default_mat->prog = programs[selected_prog_idx];
 				}
 			}
 			ImGui::Dummy(ImVec2(0.0f, 8.0f));
@@ -378,45 +378,41 @@ namespace lim
 
 			ImGui::Text("<light>");
 			const float yawSpd = 360 * 0.001;
-			if (ImGui::DragFloat("light yaw", &light.yaw, yawSpd, -10, 370, "%.3f"))
+			if( ImGui::DragFloat("light yaw", &light.yaw, yawSpd, -10, 370, "%.3f") )
 				light.updateMembers();
 			const float pitchSpd = 70 * 0.001;
-			if (ImGui::DragFloat("light pitch", &light.pitch, pitchSpd, -100, 100, "%.3f"))
+			if( ImGui::DragFloat("light pitch", &light.pitch, pitchSpd, -100, 100, "%.3f") )
 				light.updateMembers();
 			ImGui::Text("pos %f %f %f", light.position.x, light.position.y, light.position.z);
 
 			static float bumpHeight = 100;
-			if (ImGui::SliderFloat("bumpHeight", &bumpHeight, 0.0, 300.0))
-			{
-				for (auto &md : vpPackage.models)
-				{
-					if (md == nullptr)
-						continue;
-					md->bumpHeight = bumpHeight;
+			if( ImGui::SliderFloat("bumpHeight", &bumpHeight, 0.0, 300.0) ) {
+				for( Model* md : models ) {
+					for( Material* mat : md->materials ) {
+						mat->bump_height = bumpHeight;
+					}
 				}
 			}
 			static float texDelta = 0.00001;
-			if (ImGui::SliderFloat("texDelta", &texDelta, 0.000001, 0.0001, "%f"))
-			{
-				for (auto &md : vpPackage.models)
-				{
-					if (md == nullptr)
-						continue;
-					md->texDelta = texDelta;
+			if( ImGui::SliderFloat("texDelta", &texDelta, 0.000001, 0.0001, "%f") ) {
+				for( Model* md : models ) {
+					for( Material* mat : md->materials ) {
+						mat->tex_delta = texDelta;
+					}
 				}
 			}
 		}
 		ImGui::End();
 
-		if (ImGui::Begin("Model Status##simp"))
+		if( ImGui::Begin("Model Status##simp") )
 		{
 			static ImGuiTableFlags flags = ImGuiTableFlags_ContextMenuInBody | ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Reorderable;
 
-			if (ImGui::BeginTable("attributes table", vpPackage.viewports.size() + 1, flags, {0, ImGui::GetTextLineHeightWithSpacing() * 9}))
+			if( ImGui::BeginTable("attributes table", nr_viewports + 1, flags, {0, ImGui::GetTextLineHeightWithSpacing() * 9}) )
 			{
 				ImGui::TableSetupScrollFreeze(1, 1);
 				ImGui::TableSetupColumn("attributes", ImGuiTableColumnFlags_NoHide);
-				for (Viewport *vp : vpPackage.viewports)
+				for( Viewport* vp : viewports )
 				{
 					ImGui::TableSetupColumn(vp->name.c_str());
 				}
@@ -424,13 +420,13 @@ namespace lim
 
 				int column = 0;
 				ImGui::TableNextRow();
-				if (ImGui::TableSetColumnIndex(column++))
+				if( ImGui::TableSetColumnIndex(column++) )
 					ImGui::Text("name");
-				for (Model *md : vpPackage.models)
+				for( Model* md : models )
 				{
-					if (ImGui::TableSetColumnIndex(column++))
+					if( ImGui::TableSetColumnIndex(column++) )
 					{
-						if (md == nullptr)
+						if( md->meshes.size()==0 )
 							ImGui::Text("");
 						else
 							ImGui::Text("%s", md->name.c_str());
@@ -438,13 +434,13 @@ namespace lim
 				}
 				column = 0;
 				ImGui::TableNextRow();
-				if (ImGui::TableSetColumnIndex(column++))
+				if( ImGui::TableSetColumnIndex(column++) )
 					ImGui::Text("#verticies");
-				for (Model *md : vpPackage.models)
+				for( Model* md : models )
 				{
-					if (ImGui::TableSetColumnIndex(column++))
+					if( ImGui::TableSetColumnIndex(column++) )
 					{
-						if (md == nullptr)
+						if( md->meshes.size()==0 )
 							ImGui::Text("");
 						else
 							ImGui::Text("%d", md->nr_vertices);
@@ -452,13 +448,13 @@ namespace lim
 				}
 				column = 0;
 				ImGui::TableNextRow();
-				if (ImGui::TableSetColumnIndex(column++))
+				if( ImGui::TableSetColumnIndex(column++) )
 					ImGui::Text("#triangles");
-				for (Model *md : vpPackage.models)
+				for( Model* md : models )
 				{
-					if (ImGui::TableSetColumnIndex(column++))
+					if( ImGui::TableSetColumnIndex(column++) )
 					{
-						if (md == nullptr)
+						if( md->meshes.size()==0 )
 							ImGui::Text("");
 						else
 							ImGui::Text("%d", md->nr_triangles);
@@ -466,42 +462,42 @@ namespace lim
 				}
 				column = 0;
 				ImGui::TableNextRow();
-				if (ImGui::TableSetColumnIndex(column++))
+				if( ImGui::TableSetColumnIndex(column++) )
 					ImGui::Text("boundary_x");
-				for (Model *md : vpPackage.models)
+				for( Model* md : models )
 				{
-					if (ImGui::TableSetColumnIndex(column++))
+					if( ImGui::TableSetColumnIndex(column++) )
 					{
-						if (md == nullptr)
+						if( md->meshes.size()==0 )
 							ImGui::Text("");
 						else
-							ImGui::Text("%f", md->getBoundarySize().x);
+							ImGui::Text("%f", md->boundary_size.x);
 					}
 				}
 				column = 0;
 				ImGui::TableNextRow();
-				if (ImGui::TableSetColumnIndex(column++))
+				if( ImGui::TableSetColumnIndex(column++) )
 					ImGui::Text("boundary_y");
-				for (Model *md : vpPackage.models)
+				for( Model* md : models )
 				{
-					if (ImGui::TableSetColumnIndex(column++))
+					if( ImGui::TableSetColumnIndex(column++) )
 					{
-						if (md == nullptr)
+						if( md->meshes.size()==0 )
 							ImGui::Text("");
 						else
-							ImGui::Text("%f", md->getBoundarySize().y);
+							ImGui::Text("%f", md->boundary_size.y);
 					}
 				}
 
 				column = 0;
 				ImGui::TableNextRow();
-				if (ImGui::TableSetColumnIndex(column++))
+				if( ImGui::TableSetColumnIndex(column++) )
 					ImGui::Text("#meshes");
-				for (Model *md : vpPackage.models)
+				for( Model* md : models )
 				{
-					if (ImGui::TableSetColumnIndex(column++))
+					if( ImGui::TableSetColumnIndex(column++) )
 					{
-						if (md == nullptr)
+						if( md->meshes.size()==0 )
 							ImGui::Text("");
 						else
 							ImGui::Text("%d", (int)md->meshes.size());
@@ -509,13 +505,13 @@ namespace lim
 				}
 				column = 0;
 				ImGui::TableNextRow();
-				if (ImGui::TableSetColumnIndex(column++))
+				if( ImGui::TableSetColumnIndex(column++) )
 					ImGui::Text("#textures");
-				for (Model *md : vpPackage.models)
+				for( Model* md : models )
 				{
-					if (ImGui::TableSetColumnIndex(column++))
+					if( ImGui::TableSetColumnIndex(column++) )
 					{
-						if (md == nullptr)
+						if( md->meshes.size()==0 )
 							ImGui::Text("");
 						else
 							ImGui::Text("%d", (int)md->textures_loaded.size());
@@ -535,27 +531,27 @@ namespace lim
 			data->DesiredSize.y = data->DesiredSize.x; });
 
 		// todo
-		if (MapBaker::bakedNormalMapPointer != nullptr)
-		{
-			if (ImGui::Begin("Baked Normal Map##simp"))
-			{
-				ImVec2 vMin = ImGui::GetWindowContentRegionMin();
-				ImVec2 vMax = ImGui::GetWindowContentRegionMax();
-				glm::vec2 rectSize{vMax.x - vMin.x, vMax.y - vMin.y};
-				// ImGui::Text("%f %f", rectSize.x, rectSize.y);
-				const float minLength = glm::min(rectSize.x, rectSize.y);
-				GLuint rtId = MapBaker::bakedNormalMapPointer->getRenderedTex();
-				ImGui::Image(INT2VOIDP(rtId), ImVec2{minLength, minLength}, ImVec2{0, 1}, ImVec2{1, 0});
-			}
-			ImGui::End();
-		}
+		// if( MapBaker::bakedNormalMapPointer != nullptr )
+		// {
+		// 	if( ImGui::Begin("Baked Normal Map##simp") )
+		// 	{
+		// 		ImVec2 vMin = ImGui::GetWindowContentRegionMin();
+		// 		ImVec2 vMax = ImGui::GetWindowContentRegionMax();
+		// 		glm::vec2 rectSize{vMax.x - vMin.x, vMax.y - vMin.y};
+		// 		// ImGui::Text("%f %f", rectSize.x, rectSize.y);
+		// 		const float minLength = glm::min(rectSize.x, rectSize.y);
+		// 		GLuint rtId = MapBaker::bakedNormalMapPointer->getRenderedTex();
+		// 		ImGui::Image(INT2VOIDP(rtId), ImVec2{minLength, minLength}, ImVec2{0, 1}, ImVec2{1, 0});
+		// 	}
+		// 	ImGui::End();
+		// }
 
 		ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), [](ImGuiSizeCallbackData *data)
 											{
 			data->DesiredSize.x = glm::max(data->DesiredSize.x, data->DesiredSize.y);
 			data->DesiredSize.y = data->DesiredSize.x; });
 
-		if (ImGui::Begin("shadowMap##simp") && light.shadow_enabled)
+		if( ImGui::Begin("shadowMap##simp") && light.shadow_enabled )
 		{
 			ImVec2 vMin = ImGui::GetWindowContentRegionMin();
 			ImVec2 vMax = ImGui::GetWindowContentRegionMax();
@@ -567,18 +563,19 @@ namespace lim
 		ImGui::End();
 		ImGui::PopStyleVar();
 	}
+
 	void AppSimplification::keyCallback(int key, int scancode, int action, int mods)
 	{
-		if ((GLFW_MOD_CONTROL == mods) && (GLFW_KEY_S == key))
+		if( (GLFW_MOD_CONTROL == mods) && (GLFW_KEY_S == key) )
 		{
-			simplifyTrigger = true;
-			bakeTrigger = true;
+			simplify_trigger = true;
+			bake_trigger = true;
 		}
-		if ((GLFW_MOD_CONTROL == mods) && (GLFW_KEY_E == key))
+		if( (GLFW_MOD_CONTROL == mods) && (GLFW_KEY_E == key) )
 		{
-			exportModel(3, lastFocusedVpIdx);
+			doExportModel(3, last_focused_vp_idx);
 		}
-		if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+		if( key == GLFW_KEY_ESCAPE && action == GLFW_PRESS )
 		{
 			glfwSetWindowShouldClose(window, GL_TRUE);
 		}
@@ -586,12 +583,18 @@ namespace lim
 	void AppSimplification::mouseBtnCallback(int button, int action, int mods)
 	{
 		// 이전에 선택된 viewport 저장
-		if (vpPackage.viewports[lastFocusedVpIdx]->hovered == false)
+		if( viewports[last_focused_vp_idx]->hovered == false )
 		{
-			for (int i = 0; i < vpPackage.size; i++)
+			for( int i = 0; i < nr_viewports; i++ )
 			{
-				if (vpPackage.viewports[i]->hovered)
-					lastFocusedVpIdx = i;
+				if( viewports[i]->hovered ) {
+					if( last_focused_vp_idx != i ) {
+						if( is_same_camera ) {
+							viewports[last_focused_vp_idx]->camera.copySettingTo(viewports[i]->camera);
+						}
+						last_focused_vp_idx = i;
+					}
+				}
 			}
 		}
 	}
@@ -605,16 +608,16 @@ namespace lim
 
 		gX = winX + xPos;
 		gY = winY + yPos;
-		for (int i = 0; i < vpPackage.size; i++)
+		for( int i = 0; i < nr_viewports; i++ )
 		{
-			if (vpPackage.viewports[i]->hovered)
+			if( viewports[i]->hovered )
 			{
 				selectedVpIdx = i;
 			}
 		}
-		if (selectedVpIdx >= 0)
+		if( selectedVpIdx >= 0 )
 		{
-			loadModel(paths[0], selectedVpIdx);
+			doLoadModel(paths[0], selectedVpIdx);
 		}
 		else
 		{

@@ -108,32 +108,28 @@ namespace lim
 		viewport = new ViewportWithCamera("viewport##hatching", new MsFramebuffer());
 		viewport->framebuffer->clear_color ={0.1f, 0.1f, 0.1f, 1.0f};
 
-		Model* tModel;
-		tModel = importModelFromFile("assets/models/dwarf/Dwarf_2_Low.obj", true, false);
-		tModel->default_mat = h_mat;
-		models.push_back(tModel);
+		models.push_back( importModelFromFile("assets/models/dwarf/Dwarf_2_Low.obj", true, false) );
+		models.back()->default_mat = h_mat;
 	
-		tModel = new Model("sphere");
-		tModel->root.meshes.push_back(AssetLib::get().sphere);
-		tModel->default_mat = h_mat;
-		models.push_back(tModel);
+		models.push_back( new Model("sphere") );
+		models.back()->root.meshes.push_back(AssetLib::get().sphere);
+		models.back()->default_mat = h_mat;
+		models.back()->updateNrAndBoundary();
 
-		tModel = importModelFromFile("assets/models/objs/bunny.obj", true, false);
-		tModel->default_mat = h_mat;
-		models.push_back(tModel);
+		models.push_back( importModelFromFile("assets/models/objs/bunny.obj", true, false) );
+		models.back()->default_mat = h_mat;
 
-		const float interModels = 3.5f;
-		//1-0
-		//2-0.5
-		//3-1
-		//4=1.5
-		//5=2
+		const float interModels = 2.f;
 		const float biasModels = -interModels*(models.size()-1)*0.5f;
 
 		for( int i = 0; i<models.size(); i++ ) {
-			models[i]->position ={biasModels+interModels*i, 0, 0};
+			models[i]->position ={biasModels+interModels*i, -models[i]->pivoted_scaled_bottom_height, 0};
 			models[i]->updateModelMat();
 		}
+
+		models.push_back( new Model("ground") );
+		models.back()->meshes.push_back( code_mesh::genPlane() );
+		models.back()->root.meshes.push_back(models.back()->meshes.back());
 
 		light = new Light();
 		light->distance = 10.f;

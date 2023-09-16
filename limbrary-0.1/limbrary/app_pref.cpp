@@ -32,7 +32,7 @@ namespace lim
 	{
 		recent_model_paths.clear();
 	}
-	void AppPref::save()
+	void AppPref::saveToFile()
 	{
 		Json ojson;
 		//*********************
@@ -57,7 +57,7 @@ namespace lim
 		//std::string temp = ojson.dump(2);
 		//log::pure("write %s\n %s\n", FILE_PATH, temp);
 	}
-	void AppPref::pushPathWithoutDup(const std::string_view path)
+	void AppPref::saveRecentModelPath(const std::string_view path)
 	{
 		// 절대경로를 상대경로로
 		std::filesystem::path ap(path.data());

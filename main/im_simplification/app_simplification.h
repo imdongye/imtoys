@@ -19,6 +19,7 @@
 #include <limbrary/model_view/light.h>
 #include <limbrary/model_view/model.h>
 #include <limbrary/model_view/viewport_with_camera.h>
+#include <limbrary/model_view/scene.h>
 
 
 namespace lim
@@ -31,36 +32,36 @@ namespace lim
 		inline static constexpr CStr APP_DISC =  "simplify and bake normal map";
 
 	private:
-		bool isSameCamera = false;
-		float cameraMoveSpeed = 1.6;
+		bool is_same_camera = false;
+
+		int selected_prog_idx = 0;
+		std::vector<Program *> programs;
+
+		int last_focused_vp_idx = 0;
+		bool simplify_trigger = false;
+		bool bake_trigger = false;
+		int from_vp_idx = 0;
+		int to_vp_idx = 1;
+		
 		Light light;
 		Model ground;
 
-		int selectedProgIdx = 0;
-		std::vector<Program *> programs;
-
-		int lastFocusedVpIdx = 0;
-		bool simplifyTrigger = false;
-		bool bakeTrigger = false;
-		int fromVpIdx = 0;
-		int toVpIdx = 1;
-		
+		int nr_viewports;
 		std::vector<ViewportWithCamera*> viewports;
 		std::vector<Model*> models;
+		std::vector<Scene> scenes;
 
-		float simp_time=0;
-
-		const char *exportPath = "im_simplification/result/";
+		const char *export_path = "im_simplification/result/";
 
 	public:
 		AppSimplification();
 		~AppSimplification();
 	private:
 		void addEmptyViewport();
-		void loadModel(std::string_view path, int vpIdx);
-		void exportModel(size_t pIndex, int vpIdx);
-		void simplifyModel(float lived_pct = 0.8f, int version = 0, int agressiveness = 7, bool verbose = true);
-		void bakeNormalMap();
+		void doLoadModel(std::string_view path, int vpIdx);
+		void doExportModel(size_t pIndex, int vpIdx);
+		void doSimplifyModel(float lived_pct = 0.8f, int version = 0, int agressiveness = 7, bool verbose = true);
+		void doBakeNormalMap(int texSize);
 
 	private:
 		virtual void update() override;

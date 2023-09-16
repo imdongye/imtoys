@@ -20,7 +20,7 @@
 
 namespace lim
 {
-	void bakeNormalMap(std::string_view exportPath, Model* original, Model* target, int texSize);
+	void bakeNormalMap(std::string_view exportPath, Model* to, Model* from, int texSize);
 }
 
 #endif

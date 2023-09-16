@@ -118,7 +118,7 @@ namespace
 
 		aiMesh* aiMs = new aiMesh();
 
-		GLuint idxOfMat = std::distance(src_md->materials.begin(), find(src_md->materials.begin(), src_md->materials.end(), ms.material));
+		GLuint idxOfMat = findIdx(src_md->materials, ms.material);
 		aiMs->mMaterialIndex = idxOfMat;
 
 		GLuint nrTemp = mesh->poss.size();
@@ -173,7 +173,7 @@ namespace
 		node->mNumMeshes = nrMeshes;
 		node->mMeshes = new unsigned int[nrMeshes];
 		for( size_t i=0; i<nrMeshes; i++ ) {
-			node->mMeshes[i] = std::distance(modelMeshes.begin(), std::find(modelMeshes.begin(), modelMeshes.end(), from.meshes[i]));
+			node->mMeshes[i] = findIdx(modelMeshes, from.meshes[i]);
 		}
 
 		const size_t nrChilds = from.childs.size();

@@ -26,8 +26,6 @@ namespace lim
 		inline static constexpr CStr APP_DIR  = "im_hdr";
 		inline static constexpr CStr APP_DISC = "loader/display";
 	private:
-		CStr exportPath = "result/";
-
 		std::vector<ColorAwareImage*> imgs;
 		std::vector<Program*> programs;
 		std::vector<Viewport*> viewports;

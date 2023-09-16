@@ -42,8 +42,8 @@ namespace lim
 	public:
 		static AppPref& get();
 		void clearData();
-		void save();
-		void pushPathWithoutDup(const std::string_view path);
+		void saveToFile();
+		void saveRecentModelPath(const std::string_view path);
 	};
 }
 

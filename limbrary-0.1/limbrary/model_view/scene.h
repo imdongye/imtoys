@@ -22,9 +22,8 @@
 
 namespace lim
 {
-	class Scene
+	struct Scene
 	{
-	public:
 		std::vector<Model*> models;
 		std::vector<Light*> lights;
 	};

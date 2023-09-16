@@ -1,9 +1,10 @@
 #include "app_gen_mesh.h"
 #include <stb_image.h>
 #include <limbrary/model_view/code_mesh.h>
+#include <limbrary/model_view/renderer.h>
 #include <glm/gtx/transform.hpp>
 #include <imgui.h>
-
+#include <limbrary/asset_lib.h>
 
 namespace lim
 {
@@ -14,29 +15,48 @@ namespace lim
 		// glPolygonMode(GL_FRONT, GL_LINE);
 		stbi_set_flip_vertically_on_load(true);
 
-		program = new Program("debugging", APP_DIR);
-		program->attatch("assets/shaders/mvp.vs").attatch("debug.fs").link();
-
 		viewport = new ViewportWithCamera("viewport##gen_mesh", new MsFramebuffer());
 
 		/* gen models */
-		models.push_back(new Model(code_mesh::genSphere(50, 25), "sphere"));
+		models.push_back(new Model("sphere"));
+		models.back()->meshes.push_back(code_mesh::genSphere(50, 25));
+		models.back()->root.meshes.push_back(models.back()->meshes.back());
 
-		models.push_back(new Model(code_mesh::genDonut(50, 25), "donut"));
-		models.push_back(new Model(code_mesh::genCapsule(50, 25), "capsule"));
+		models.push_back(new Model("donut"));
+		models.back()->meshes.push_back(code_mesh::genDonut(50, 25));
+		models.back()->root.meshes.push_back(models.back()->meshes.back());
 
-		models.push_back(new Model(code_mesh::genIcoSphere(0), "ico sphere"));
-		models.push_back(new Model(code_mesh::genIcoSphere(3), "ico sphere2"));
-		models.push_back(new Model(code_mesh::genCubeSphere(2), "cube sphere2"));
-		models.push_back(new Model(code_mesh::genCubeSphere(5), "cube sphere2"));
-		models.push_back(new Model(code_mesh::genCubeSphere2(5), "cube sphere2"));
-		// models.back()->meshes.back()->drawMode = GL_LINE_LOOP;
+		models.push_back(new Model("capsule"));
+		models.back()->meshes.push_back(code_mesh::genCapsule(50, 25));
+		models.back()->root.meshes.push_back(models.back()->meshes.back());
 
-		models.push_back(new Model(code_mesh::genQuad(), "quad"));
+		models.push_back(new Model("ico sphere"));
+		models.back()->meshes.push_back(code_mesh::genIcoSphere(0));
+		models.back()->root.meshes.push_back(models.back()->meshes.back());
 
-		models.push_back(new Model(code_mesh::genCube(), "cube"));
+		models.push_back(new Model("ico sphere2"));
+		models.back()->meshes.push_back(code_mesh::genIcoSphere(3));
+		models.back()->root.meshes.push_back(models.back()->meshes.back());
 
-		models.push_back(new Model(code_mesh::genCylinder(20), "cylinder"));
+		models.push_back(new Model("cube sphere"));
+		models.back()->meshes.push_back(code_mesh::genCubeSphere(2));
+		models.back()->root.meshes.push_back(models.back()->meshes.back());
+
+		models.push_back(new Model("cube sphere2"));
+		models.back()->meshes.push_back(code_mesh::genCubeSphere2(5));
+		models.back()->root.meshes.push_back(models.back()->meshes.back());
+
+		models.push_back(new Model("quad"));
+		models.back()->meshes.push_back(code_mesh::genQuad());
+		models.back()->root.meshes.push_back(models.back()->meshes.back());
+
+		models.push_back(new Model("cube"));
+		models.back()->meshes.push_back(code_mesh::genCube());
+		models.back()->root.meshes.push_back(models.back()->meshes.back());
+
+		models.push_back(new Model("cylinder"));
+		models.back()->meshes.push_back(code_mesh::genCylinder(20));
+		models.back()->root.meshes.push_back(models.back()->meshes.back());
 
 		models.push_back(importModelFromFile("assets/models/objs/spot.obj", true));
 
@@ -48,86 +68,64 @@ namespace lim
 		models[0]->position = {biasModels - interModels, 0, 0};
 		models[0]->updateModelMat();
 
-		for (int i = 1; i < models.size(); i++)
+		for( int i = 1; i < models.size(); i++ )
 		{
 			models[i]->position = {biasModels + interModels * i, 0, 0};
 			models[i]->updateModelMat();
 		}
 
-		models.push_back(new Model(code_mesh::genPlane(), "plane"));
+		models.push_back(new Model("plane"));
+		models.back()->meshes.push_back(code_mesh::genPlane());
+		models.back()->root.meshes.push_back(models.back()->meshes.back());
 		models.back()->position = glm::vec3(0, -3.5, 0);
 		models.back()->scale = glm::vec3(50.f);
 		models.back()->updateModelMat();
 
 		light = new Light();
 		light->distance = 10.f;
-		light_model = new Model(code_mesh::genSphere(8, 4), "sphere");
+		light_model = new Model("light model");
+		light_model->meshes.push_back(code_mesh::genSphere(8, 4));
+		light_model->root.meshes.push_back(models.back()->meshes.back());
 		light_model->position = light->position;
 		light_model->scale = glm::vec3(0.3f);
 		light_model->updateModelMat();
 
-		debugging_tex = new TexBase(GL_SRGB8);
+		scene.lights.push_back(light);
+		scene.models = models;
+
+		debugging_tex = new Texture();
+		debugging_tex->initFromImage("assets/images/uv_grid.jpg", GL_SRGB8);
 		debugging_tex->wrap_param = GL_REPEAT;
-		loadImageToTex("assets/images/uv_grid.jpg", *debugging_tex);
+
+		program = new Program("debugging", APP_DIR);
+		program->attatch("assets/shaders/mvp.vs").attatch("debug.fs").link();
+		program->use_hook = [this](const Program& prog) {
+			prog.setUniform("time", vs_t);
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, debugging_tex->tex_id);
+			prog.setUniform("uvgridTex", 0);
+		};
+		AssetLib::get().default_mat.prog = program;
 	}
 	AppGenMesh::~AppGenMesh()
 	{
 		delete program;
 		delete viewport;
-		for (Model *m : models)
-		{
-			delete m;
-		}
+		for(Model* md : models) 
+			delete md;
 		delete light;
 		delete light_model;
+		delete debugging_tex;
 	}
 
 	void AppGenMesh::update()
 	{
 		/* render to fbo in viewport */
-		viewport->framebuffer->bind();
-
-		Program &prog = *program;
-		prog.use();
-
-		// camera->printCameraState();
-		const Camera& camera = viewport->camera;
-		prog.setUniform("viewMat", camera.view_mat);
-		prog.setUniform("projMat", camera.proj_mat);
-		prog.setUniform("cameraPos", camera.position);
-
-		prog.setUniform("lightDir", light->direction);
-		prog.setUniform("lightColor", light->color);
-		prog.setUniform("lightInt", light->intensity);
-		prog.setUniform("lightPos", light->position);
-
-		prog.setUniform("time", vs_t);
-
-		glActiveTexture(GL_TEXTURE31);
-		glBindTexture(GL_TEXTURE_2D, debugging_tex->tex_id);
-		prog.setUniform("uvgridTex", 31);
-
-		prog.setUniform("modelMat", light_model->model_mat);
-		Mesh* mesh = light_model->meshes.back();
-		glBindVertexArray(mesh->VAO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->EBO);
-		glDrawElements(mesh->draw_mode, static_cast<GLuint>(mesh->indices.size()), GL_UNSIGNED_INT, 0);
-
-		for (Model *m : models)
-		{
-			Mesh* mesh = m->meshes.back();
-			prog.setUniform("modelMat", m->model_mat);
-			glBindVertexArray(mesh->VAO);
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->EBO);
-			glDrawElements(mesh->draw_mode, static_cast<GLuint>(mesh->indices.size()), GL_UNSIGNED_INT, 0);
-		}
-
-		viewport->framebuffer->unbind();
+		render(*viewport->framebuffer, viewport->camera, scene);
 
 		// clear backbuffer
 		glEnable(GL_DEPTH_TEST);
 		glDisable(GL_MULTISAMPLE);
-
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glViewport(0, 0, fb_width, fb_height);
 		glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
@@ -139,12 +137,13 @@ namespace lim
 	{
 		ImGui::DockSpaceOverViewport();
 
+
 		viewport->drawImGui();
+		
 
 		/* controller */
 		if (false && ImGui::Begin("controller##genMesh"))
 		{
-
 			ImGui::SliderFloat("vs_t", &vs_t, 0.f, 1.f);
 
 			ImGui::Text("<light>");

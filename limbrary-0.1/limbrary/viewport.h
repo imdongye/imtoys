@@ -57,6 +57,9 @@ namespace lim
 		bool dragging = false;
 		glm::ivec2 mouse_pos = {0,0};
 		Callbacks<void(int, int)> resize_callbacks;
+	private:
+		Viewport(const Viewport &) = delete;
+		Viewport &operator=(const Viewport &) = delete;
 	public:
 		Viewport(std::string_view _name, Framebuffer* createdFB);
 		virtual ~Viewport();

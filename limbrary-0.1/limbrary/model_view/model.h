@@ -29,6 +29,7 @@ TODO list:
 #include "camera.h"
 #include <assimp/scene.h>
 #include <assimp/cexport.h>
+#include <limits>
 
 namespace lim
 {
@@ -61,9 +62,9 @@ namespace lim
 
 		GLuint nr_vertices = 0;
 		GLuint nr_triangles = 0;
-		glm::vec3 boundary_max = glm::vec3(-1);
-		glm::vec3 boundary_min = glm::vec3(-1);
-		glm::vec3 boundary_size = glm::vec3(-1);
+		glm::vec3 boundary_max = glm::vec3(std::numeric_limits<float>::min());
+		glm::vec3 boundary_min = glm::vec3(std::numeric_limits<float>::max());
+		glm::vec3 boundary_size = glm::vec3(1);
 		float pivoted_scaled_bottom_height = 0;
 		
 	private:
@@ -91,6 +92,6 @@ namespace lim
 	// export model
 	int getNrExportFormats();
 	const aiExportFormatDesc *getExportFormatInfo(int idx);
-	void exportModelToFile(std::string_view exportDir, Model *model, size_t pIndex);
+	void exportModelToFile(std::string exportDir, Model *model, size_t pIndex);
 }
 #endif

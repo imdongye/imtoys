@@ -14,6 +14,7 @@
 #include <assimp/cimport.h>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+#include <GLFW/glfw3.h>
 
 using namespace lim;
 using namespace std;
@@ -21,7 +22,7 @@ using namespace glm;
 
 namespace
 {
-	Model* md = nullptr; // temp model
+	Model* rst = nullptr; // temp model
 	string md_dir;
 
 
@@ -43,7 +44,7 @@ namespace
 
 	Texture* loadTexture(string texPath, GLint internalFormat=GL_RGB8)
 	{
-		vector<Texture*>& loadedTestures = md->textures_loaded;
+		vector<Texture*>& loadedTestures = rst->textures_loaded;
 
 		// assimp가 뒤에오는 옵션을 읽지 않음 (ex: eye.png -bm 0.4) 그래서 아래와 같이 필터링한다.
 		texPath = texPath.substr(0, texPath.find_first_of(' '));
@@ -65,8 +66,8 @@ namespace
 
 	Material* convertMaterial(aiMaterial* aiMat)
 	{
-		Material* rst = new Material();
-		Material& mat = *rst;
+		Material* pMat = new Material();
+		Material& mat = *pMat;
 		aiColor3D temp3d;
 		aiColor4D temp4d;
 		aiString tempStr;
@@ -121,104 +122,106 @@ namespace
 			mat.bumpIsNormal = false;
 		}
 
-		return rst;
+		return pMat;
 	}
 
 	Mesh* convertMesh(aiMesh* aiMesh)
 	{
-		Mesh* mesh = new Mesh();
-		vec3& boundaryMax = md->boundary_max;
-		vec3& boundaryMin = md->boundary_min;
+		Mesh* pMs = new Mesh();
+		Mesh& mesh = *pMs;
+		vec3& boundaryMax = rst->boundary_max;
+		vec3& boundaryMin = rst->boundary_min;
 
-		const vector<Material*>& mats = md->materials;
+		const vector<Material*>& mats = rst->materials;
+
 		if( mats.size()>0 ) {
-			mesh->material = mats[aiMesh->mMaterialIndex];
+			mesh.material = mats[aiMesh->mMaterialIndex];
 		} else {
-			mesh->material = nullptr;
-			log::warn("no material in mesh");
+			mesh.material = nullptr;
 		}
 
-		mesh->poss.resize( aiMesh->mNumVertices );
-		if( md->nr_vertices == 0 ) {
-			md->boundary_max = toGLM( aiMesh->mVertices[0] );
-			md->boundary_min = toGLM( aiMesh->mVertices[0] );
-		}
+		mesh.poss.resize( aiMesh->mNumVertices );
 		for( GLuint i=0; i<aiMesh->mNumVertices; i++ ) {
-			mesh->poss[i] = toGLM( aiMesh->mVertices[i] );
-			vec3& p = mesh->poss[i];
+			mesh.poss[i] = toGLM( aiMesh->mVertices[i] );
+			vec3& p = mesh.poss[i];
 			// 요소들끼리의 min max
 			boundaryMax = glm::max(boundaryMax, p);
 			boundaryMin = glm::min(boundaryMin, p);
 		}
-		md->nr_vertices += mesh->poss.size();
+		rst->nr_vertices += mesh.poss.size();
 		
 		if( aiMesh->HasNormals() ) {
-			mesh->nors.resize( aiMesh->mNumVertices );
+			mesh.nors.resize( aiMesh->mNumVertices );
 			for( GLuint i=0; i<aiMesh->mNumVertices; i++ ) {
-				mesh->nors[i] = toGLM( aiMesh->mNormals[i] );
+				mesh.nors[i] = toGLM( aiMesh->mNormals[i] );
 			}
 		}
 
 		if( aiMesh->HasTextureCoords(0) ) {
-			mesh->uvs.resize( aiMesh->mNumVertices );
+			mesh.uvs.resize( aiMesh->mNumVertices );
 			for( GLuint i=0; i<aiMesh->mNumVertices; i++ ) {
 				// Todo: why aiVector3D
-				mesh->uvs[i] = {aiMesh->mTextureCoords[0][i].x, aiMesh->mTextureCoords[0][i].y};
+				mesh.uvs[i] = {aiMesh->mTextureCoords[0][i].x, aiMesh->mTextureCoords[0][i].y};
 			}
 		}
 
 		if( aiMesh->HasVertexColors(0) ) {
-			mesh->cols.resize( aiMesh->mNumVertices );
+			mesh.cols.resize( aiMesh->mNumVertices );
 			for( GLuint i=0; i<aiMesh->mNumVertices; i++ ) {
-				mesh->cols[i] = toGLM( aiMesh->mColors[0][i] );
+				mesh.cols[i] = toGLM( aiMesh->mColors[0][i] );
 			}
 		}
 
 		if( aiMesh->HasTangentsAndBitangents() ) {
-			mesh->cols.resize( aiMesh->mNumVertices );
+			mesh.tangents.resize( aiMesh->mNumVertices );
+			mesh.bitangents.resize( aiMesh->mNumVertices );
 			for( GLuint i=0; i<aiMesh->mNumVertices; i++ ) {
-				mesh->tangents[i] = toGLM( aiMesh->mTangents[i] );
-				mesh->bitangents[i] = toGLM( aiMesh->mBitangents[i] );
+				mesh.tangents[i] = toGLM( aiMesh->mTangents[i] );
+				mesh.bitangents[i] = toGLM( aiMesh->mBitangents[i] );
 			}
 		}
 
 		if( aiMesh->HasBones() ) {
-			mesh->bone_ids.resize( aiMesh->mNumVertices );
-			mesh->bending_factors.resize( aiMesh->mNumVertices );
+			//mesh.bone_ids.resize( aiMesh->mNumVertices );
+			//mesh.bending_factors.resize( aiMesh->mNumVertices );
 			// for( GLuint i=0; i<aiMesh->mNumVertices; i++ ) {
 			// 	for( GLuint j=0; j<Mesh::MAX_BONE_INFLUENCE; j++ ) {
-			// 		mesh->bone_ids[i] =
-			// 		mesh->bending_factors[i] =
+			// 		mesh.bone_ids[i] =
+			// 		mesh.bending_factors[i] =
 			// 	}
 			// }
 		}
 
+		int nrNotTriFace = 0;
 		if( aiMesh->HasFaces() ) {
-			mesh->tris.reserve( aiMesh->mNumFaces );
+			mesh.tris.reserve( aiMesh->mNumFaces );
 			for( GLuint i=0; i<aiMesh->mNumFaces; i++ ) {
 				const aiFace& face = aiMesh->mFaces[i];
 				if( face.mNumIndices !=3 ) {
-					log::err("mesh is not tri mesh");
+					nrNotTriFace++;
 					continue;
 				}
-				mesh->tris.push_back( uvec3(face.mIndices[0], face.mIndices[1], face.mIndices[2]));
+				mesh.tris.push_back( uvec3(face.mIndices[0], face.mIndices[1], face.mIndices[2]));
 			}
-			md->nr_triangles += mesh->tris.size();
+			rst->nr_triangles += mesh.tris.size();
 		}
-		mesh->initGL();
-		return mesh;
+		if( nrNotTriFace>0 ) {
+			log::err("find not tri face # %d\n", nrNotTriFace);
+		}
+
+		mesh.initGL();
+
+		return pMs;
 	}
 
-	void recursiveConvertTree(Model::Node& to, const aiNode* from) 
+	void recursiveConvertTree(const Model& md, Model::Node& to, const aiNode* from) 
 	{
-		const vector<Mesh*>& meshes = to.meshes;
-
 		to.transformation = toGLM(from->mTransformation);
 		for( size_t i=0; i<from->mNumMeshes; i++ )
-			to.meshes.push_back( meshes[from->mMeshes[i]] );
+			to.meshes.push_back( md.meshes[from->mMeshes[i]] );
 		for( size_t i=0; i< from->mNumChildren; i++ ) {
 			to.childs.push_back({});
-			recursiveConvertTree(to.childs.back(), from->mChildren[i]);
+			recursiveConvertTree(md, to.childs.back(), from->mChildren[i]);
 		}
 	}
 }
@@ -236,7 +239,19 @@ namespace lim
 			log::err("The specified model file extension is currently\n");
 			return nullptr;
 		}
+
+		rst = new Model();
+		rst->path = modelPath;
+		string& spath = rst->path;
+		const size_t lastSlashPos = spath.find_last_of("/\\");
+		const size_t dotPos = spath.find_last_of('.');
+		rst->name = spath.substr(lastSlashPos + 1, dotPos - lastSlashPos - 1);
+		md_dir = (lastSlashPos == 0) ? "" : spath.substr(0, lastSlashPos) + "/";
 		
+		log::pure("model loading : %s\n", rst->name.c_str());
+
+		double elapsedTime = glfwGetTime();
+
 		/* Assimp 설정 */
 		GLuint pFrags = 0;
 		pFrags |= aiProcess_Triangulate; // 다각형이 있다면 삼각형으로
@@ -250,47 +265,44 @@ namespace lim
 		pFrags |= aiProcessPreset_TargetRealtime_MaxQuality;
 		const aiScene* scene = aiImportFile(modelPath.data(), pFrags);
 
+		log::pure("[%s] read assimp in %.2lf\n", rst->name.c_str(), glfwGetTime()-elapsedTime);
 
-		md = new Model();
-		md->path = modelPath;
-		string& spath = md->path;
-		const size_t lastSlashPos = spath.find_last_of("/\\");
-		const size_t dotPos = spath.find_last_of('.');
-		md->name = spath.substr(lastSlashPos + 1, dotPos - lastSlashPos - 1);
-		md_dir = (lastSlashPos == 0) ? "" : spath.substr(0, lastSlashPos) + "/";
-
-		log::pure("model loading : %s\n", md->name.c_str());
 
 		if( !scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode ) {
 			log::err("[import assimp] %s\n", aiGetErrorString());
+			delete rst;
 			return nullptr;
 		}
 
+		elapsedTime = glfwGetTime();
+
 		/* import mats */
 		if( withMaterial ) {
-			md->materials.resize(scene->mNumMaterials);
+			rst->materials.resize(scene->mNumMaterials);
 			for( GLuint i=0; i<scene->mNumMaterials; i++ ) {
-				md->materials[i] = convertMaterial(scene->mMaterials[i]);
+				rst->materials[i] = convertMaterial(scene->mMaterials[i]);
 			}
 		}
 
+
 		/* import meshes */
-		md->meshes.resize(scene->mNumMeshes);
+		rst->meshes.resize(scene->mNumMeshes);
 		for( GLuint i=0; i<scene->mNumMeshes; i++ ) {
-			md->meshes[i] = convertMesh(scene->mMeshes[i]);
+			rst->meshes[i] = convertMesh(scene->mMeshes[i]);
 		}
 
 		/* set node tree structure */
-		recursiveConvertTree(md->root, scene->mRootNode);
+		recursiveConvertTree(*rst, rst->root, scene->mRootNode);
+		log::pure("[%s] convert lim::Model in %.2lf\n", rst->name.c_str(), glfwGetTime()-elapsedTime);
+		log::pure("[%s] #meshs %d, #mats %d, #verts %d, #tris %d\n", rst->name.c_str(), rst->meshes.size(), rst->materials.size(), rst->nr_vertices, rst->nr_triangles);
 
+
+		aiReleaseImport(scene);
 
 		if( normalizeAndPivot ) {
-			md->updateUnitScaleAndPivot();
-			md->updateModelMat();
+			rst->updateUnitScaleAndPivot();
+			rst->updateModelMat();
 		}
-		else {
-			aiReleaseImport(scene);
-		}
-		return md;
+		return rst;
 	}
 }

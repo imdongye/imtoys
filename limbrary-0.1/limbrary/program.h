@@ -32,6 +32,7 @@ namespace lim
 		std::string name;
 		std::string home_dir;
 		GLuint pid = 0;
+		std::function<void(const Program&)> use_hook = [](const Program& p){};
 
 	private:
 		GLuint vert_id;
@@ -56,7 +57,6 @@ namespace lim
 		Program& attatch(std::string path);
 		Program& link();
 		GLuint use() const;
-		std::function<void(const Program&)> use_hook;
 
 		// todo: bind
 		template <typename T>

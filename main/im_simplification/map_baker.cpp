@@ -58,22 +58,22 @@ namespace lim
         Framebuffer& targetNormalMap = *targetNormalMapPointer;
 
         // 노멀 맵을 사용하는 메쉬들을 찾아서 자료구조에 저장.
-        unordered_map<pair<Texture*, Texture*>, vector<pair<Mesh*, Mesh*>> > mergeByNormalMap;
+        unordered_map< int, vector<pair<Mesh*, Mesh*>> > mergeByNormalMap;
         for( int i=0; i<from->meshes.size(); i++ ) {
             Mesh* toMs = to->meshes[i];
             Mesh* fmMs = from->meshes[i];
-            if( fmMs->material==nullptr || fmMs->material->map_Bump==nullptr ) 
+            if( toMs->material==nullptr || toMs->material->map_Bump==nullptr ) 
                 continue;
-            auto texPair = make_pair(toMs->material->map_Bump, fmMs->material->map_Bump);
-            mergeByNormalMap[texPair].push_back( make_pair(toMs,fmMs) );
+            int bumpIdx = distance(to->textures_loaded.begin(), find(to->textures_loaded.begin(), to->textures_loaded.end(), toMs->material->map_Bump));
+            mergeByNormalMap[bumpIdx].push_back( make_pair(toMs,fmMs) );
         }
 
 
         GLubyte* fileData = new GLubyte[3 * texSize * texSize];
 
-        for( auto& [texPair, meshes] : mergeByNormalMap ) {
-            Texture* toBp = texPair.first;
-            Texture* fmBp = texPair.second;
+        for( auto& [bumpIdx, meshes] : mergeByNormalMap ) {
+            Texture* toBp = to->textures_loaded[bumpIdx];
+            Texture* fmBp = from->textures_loaded[bumpIdx];
 
             // from의 model space normal 가져오기
             targetNormalMap.bind();
@@ -119,7 +119,7 @@ namespace lim
 
 
         /* 새로운 노멀맵으로 로딩 */
-        for( Texture* tex : from->textures_loaded ) {
+        for( Texture* tex : to->textures_loaded ) {
             if( tex->tag == "map_Bump" ) {
                 tex->initFromImage(tex->path, GL_RGB8);
             }

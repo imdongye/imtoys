@@ -5,6 +5,7 @@
 #include <limbrary/program.h>
 #include <limbrary/model_view/model.h>
 #include <limbrary/model_view/viewport_with_camera.h>
+#include <limbrary/model_view/scene.h>
 
 namespace lim
 {
@@ -25,7 +26,8 @@ namespace lim
 		std::vector<Model*> models;
 		Light* light;
 		Model* light_model;
-		TexBase* debugging_tex;
+		Texture* debugging_tex;
+		Scene scene;
 
 	public:
 		AppGenMesh();

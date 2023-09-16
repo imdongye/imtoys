@@ -114,6 +114,7 @@ namespace lim
 	}
 	bool Texture::initFromImage(std::string_view _path, GLint internalFormat)
 	{
+		path = _path;
 		void* data;
 		deinitGL();
 
@@ -153,7 +154,6 @@ namespace lim
 		}
 
 		internal_format = internalFormat;
-		path = _path;
 		format = path.c_str()+path.rfind('.')+1;
 		name = std::string(path.c_str()+path.rfind('\\')+path.rfind('/')+2);
 		aspect_ratio = width/(float)height;
@@ -166,6 +166,7 @@ namespace lim
 
 	bool Texture::initFromImageAuto(std::string_view _path, bool convertLinear, int nrChannels, int bitPerChannel)
 	{
+		path = _path;
 		void *data;
 		deinitGL();
 
@@ -236,7 +237,6 @@ namespace lim
 			if(nrChannels==4&&bitPerChannel==32) internal_format = GL_RGBA32F;
 		}
 
-		path = _path;
 		format = path.c_str()+path.rfind('.')+1;
 		name = std::string(path.c_str()+path.rfind('\\')+path.rfind('/')+2);
 		aspect_ratio = width/(float)height;

@@ -20,6 +20,7 @@
 #include <glm/gtx/transform.hpp>
 #include <assimp/material.h>
 #include <limbrary/asset_lib.h>
+#include <limbrary/utils.h>
 #include <stack>
 
 using namespace lim;
@@ -29,19 +30,19 @@ namespace
 	void correctMatTexLink( Material& to, const Material& from, 
 		const std::vector<Texture*>& toTexs, const std::vector<Texture*>& fromTexs ) {
 		if( to.map_Kd ) {
-			to.map_Kd = toTexs[std::distance(fromTexs.begin(), std::find(fromTexs.begin(), fromTexs.end(), from.map_Kd))];
+			to.map_Kd = toTexs[findIdx(fromTexs, from.map_Kd)];
 		}
 		if( to.map_Ks ) {
-			to.map_Ks = toTexs[std::distance(fromTexs.begin(), std::find(fromTexs.begin(), fromTexs.end(), from.map_Ks))];
+			to.map_Ks = toTexs[findIdx(fromTexs, from.map_Ks)];
 		}
 		if( to.map_Ka ) {
-			to.map_Ka = toTexs[std::distance(fromTexs.begin(), std::find(fromTexs.begin(), fromTexs.end(), from.map_Ka))];
+			to.map_Ka = toTexs[findIdx(fromTexs, from.map_Ka)];
 		}
 		if( to.map_Ns ) {
-			to.map_Ns = toTexs[std::distance(fromTexs.begin(), std::find(fromTexs.begin(), fromTexs.end(), from.map_Ns))];
+			to.map_Ns = toTexs[findIdx(fromTexs, from.map_Ns)];
 		}
 		if( to.map_Bump ) {
-			to.map_Bump = toTexs[std::distance(fromTexs.begin(), std::find(fromTexs.begin(), fromTexs.end(), from.map_Bump))];
+			to.map_Bump = toTexs[findIdx(fromTexs, from.map_Bump)];
 		}
 	}
 }
@@ -51,7 +52,7 @@ namespace lim
 	Model::Model(std::string_view _name)
 		:name(_name)
 	{
-		default_mat = AssetLib::get().basic_mat;
+		default_mat = &AssetLib::get().default_mat;
 	}
 	Model::~Model()
 	{
@@ -96,7 +97,7 @@ namespace lim
 				dup.meshes.back()->material = nullptr;
 				continue;
 			}
-			int matIdx = std::distance(materials.begin(), std::find(materials.begin(), materials.end(), ms->material));
+			int matIdx = findIdx(materials, ms->material);
 			dup.meshes.back()->material = dup.materials[matIdx];
 		}
 
@@ -110,8 +111,7 @@ namespace lim
 			
 			copy->meshes.reserve(orig->meshes.size());
 			for(Mesh* mesh : orig->meshes) {
-				GLuint idxOfMesh = std::distance(meshes.begin(), std::find(meshes.begin(), meshes.end(), mesh));
-				copy->meshes.push_back(dup.meshes[idxOfMesh]);
+				copy->meshes.push_back(dup.meshes[findIdx(meshes, mesh)]);
 			}
 			copy->childs.reserve(orig->childs.size());
 			for(Node& oriChild : orig->childs) {

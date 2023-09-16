@@ -14,22 +14,20 @@ namespace
     Mesh* makeTransformedMesh(const Mesh& ori, const glm::mat4& modelMat)
     {
         Mesh* rst = new Mesh();
-        rst->indices = ori.indices;
+        rst->tris = ori.tris;
 
-        for( const n_mesh::Vertex& v : ori.vertices ) {
-            n_mesh::Vertex newV = v;
-            glm::vec4 hc = {v.p.x, v.p.y, v.p.z, 1};
-            newV.p = glm::vec3(modelMat*hc);
-
-            hc = {v.n.x, v.n.y, v.n.z, 0};
-            newV.n = glm::vec3(modelMat*hc);
-
-            newV.uv = v.uv;
-            
-            rst->vertices.push_back(newV);
+        for( const glm::vec3& p : ori.poss ) {
+            glm::vec4 hc = {p.x, p.y, p.z, 1};
+            rst->poss.push_back( glm::vec3(modelMat*hc) );
         }
-
-        rst->has_texture = false;
+        for( const glm::vec3& n : ori.nors ) {
+            glm::vec4 hc = {n.x, n.y, n.z, 0};
+            rst->nors.push_back( glm::vec3(modelMat*hc) );
+        }
+        for( const glm::vec2& uv : ori.uvs ) {
+            rst->uvs.push_back(uv);
+        }
+        rst->material = ori.material;
         rst->initGL();
 
         return rst;
@@ -183,29 +181,19 @@ namespace lim
 
         model = importModelFromFile("assets/models/objs/woody.obj", true);
 
-
-        dest = makeTransformedMesh(*model->meshes[0], model->model_mat);
-        dest->draw_mode = GL_POINTS;
-        dest->color = {1,1,1};
+        dest = makeTransformedMesh(*model->meshes[0], glm::mat4(1));
 
         glm::mat4 rigidMat = glm::translate(glm::vec3 {3,1, 0}) * glm::rotate(0.2f, glm::vec3 {0,0,1});
 
-        src = makeTransformedMesh(*dest, rigidMat); // todo : simplify 
-        src->draw_mode = GL_POINTS;
-        src->color = {0.6,1,0.7};
-        
-
-        delete model; model = nullptr;
-
-        /* initialize static shader uniforms before rendering */
-        GLuint pid = prog->use();
-        setUniform(pid, "ao", 1.0f);
+        src = makeTransformedMesh(*dest, rigidMat);
     }
     AppICP::~AppICP()
     {
-        delete camera;
         delete prog;
+        delete camera;
         delete model;
+        delete dest;
+        delete src;
     }
     void AppICP::update()
     {
@@ -223,17 +211,15 @@ namespace lim
         setUniform(pid, "projMat", camera->proj_mat);
 
         setUniform(pid, "modelMat", glm::mat4(1));
-        glBindVertexArray(dest->VAO);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, dest->EBO);
-        glDrawElements(dest->draw_mode, static_cast<GLuint>(dest->indices.size()), GL_UNSIGNED_INT, 0);
+        glBindVertexArray(dest->vert_array);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, dest->element_buf);
+        glDrawElements(GL_POINTS, dest->tris.size()*3, GL_UNSIGNED_INT, 0);
 		
 
         setUniform(pid, "modelMat", icp_mat);
-        glBindVertexArray(src->VAO);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, src->EBO);
-        glDrawElements(src->draw_mode, static_cast<GLuint>(src->indices.size()), GL_UNSIGNED_INT, 0);
-
-        //model->meshes[0]->draw(pid);
+        glBindVertexArray(src->vert_array);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, src->element_buf);
+        glDrawElements(GL_POINTS, dest->tris.size()*3, GL_UNSIGNED_INT, 0);
     }
     void AppICP::renderImGui()
     {
@@ -241,16 +227,17 @@ namespace lim
         //ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
         ImGui::Begin("icp tester##icp", &isoverlay);
         if( ImGui::Button("iterate") ) {
-            const int nr_verts = src->vertices.size();
+            const int nrPoss = src->poss.size();
             // 열벡터로 나열
-            Eigen::MatrixXd srcdata = Eigen::MatrixXd::Ones(3, nr_verts);
-            Eigen::MatrixXd dstdata = Eigen::MatrixXd::Ones(3, nr_verts);
+            Eigen::MatrixXd srcdata = Eigen::MatrixXd::Ones(3, nrPoss);
+            Eigen::MatrixXd dstdata = Eigen::MatrixXd::Ones(3, nrPoss);
 
-            for( int i=0; i<nr_verts; i++ ) {
-                glm::vec3 p = src->vertices[i].p;
+            for( int i=0; i<nrPoss; i++ ) {
+                glm::vec3 p;
+                p = src->poss[i];
                 srcdata.block<3,1>(0, i) << p.x, p.y, p.z;
 
-                p = dest->vertices[i].p;
+                p = dest->poss[i];
                 dstdata.block<3,1>(0, i) << p.x, p.y, p.z;
             }
 

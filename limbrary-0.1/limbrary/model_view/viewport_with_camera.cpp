@@ -60,6 +60,32 @@ namespace lim
 			// update pivot view mat??
 		}
 	}
+	void VpAutoCamera::copySettingTo(VpAutoCamera& cam)
+	{
+		cam.position = position;
+		cam.orientation = orientation;
+		cam.yaw = yaw;
+		cam.pitch = pitch;
+		cam.roll = roll;
+		cam.fovy = fovy;
+		cam.distance = distance;
+		cam.pivot = pivot;
+		cam.front = front;
+		cam.up = up;
+		cam.right = right;
+		cam.view_mat = view_mat;
+		cam.proj_mat = proj_mat;
+		cam.viewing_mode = viewing_mode;
+		cam.move_free_spd = move_free_spd;
+		cam.rot_free_spd = rot_free_spd;
+		cam.move_pivot_spd = move_pivot_spd;
+		cam.rot_pivot_spd = rot_pivot_spd;
+		cam.rot_pivot_scroll_spd = rot_pivot_scroll_spd;
+		cam.move_pivot_scroll_spd = move_pivot_scroll_spd;
+		cam.zoom_spd = zoom_spd;
+		cam.zoom_dist_spd = zoom_dist_spd;
+	}
+
 	void VpAutoCamera::keyCallback(int key, int scancode, int action, int mods)
 	{
 		if( vp->hovered && key == GLFW_KEY_TAB && action == GLFW_PRESS ) {
@@ -73,7 +99,7 @@ namespace lim
 	}
 	void VpAutoCamera::mouseBtnCallback(int button, int action, int mods)
 	{
-		if( vp && !vp->hovered ) return;
+		if( !vp->hovered ) return;
 
 		double xpos, ypos;
 		glfwGetCursorPos(window, &xpos, &ypos);
@@ -82,7 +108,7 @@ namespace lim
 	}
 	void VpAutoCamera::cursorPosCallback(double xpos, double ypos)
 	{
-		if( vp && !vp->dragging ) return;
+		if( !vp->dragging ) return;
 
 		float xoff = xpos - prev_mouse_x;
 		float yoff = prev_mouse_y - ypos;
@@ -111,7 +137,7 @@ namespace lim
 	}
 	void VpAutoCamera::scrollCallback(double xOff, double yOff)
 	{
-		if( vp && !vp->hovered ) return;
+		if( !vp->hovered ) return;
 
 		switch( viewing_mode ) {
 			case VM_PIVOT:
@@ -140,14 +166,14 @@ namespace lim
 	}
 	void VpAutoCamera::processInput(float dt)
 	{
-		if( vp && !vp->focused )return;
+		if( !vp->focused )return;
 
 		switch( viewing_mode ) {
 			case VM_FREE:
 			{
                 glm::vec3 dir(0);
-				float moveSpd =move_free_spd;
-				if( glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ) moveSpd = move_free_spd_fast;
+				float moveSpd = move_free_spd;
+				if( glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ) moveSpd *= 2.f;
 				if( glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS ) dir += front;
 				if( glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS ) dir -= front;
 				if( glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS ) dir -= right;

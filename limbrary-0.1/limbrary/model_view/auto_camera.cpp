@@ -164,8 +164,8 @@ namespace lim
 			case VM_FREE:
 			{
 				glm::vec3 dir(0);
-				float moveSpd =move_free_spd;
-				if( glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ) moveSpd = move_free_spd_fast;
+				float moveSpd = move_free_spd;
+				if( glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ) moveSpd *= 2.f;
 				if( glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS ) dir += front;
 				if( glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS ) dir -= front;
 				if( glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS ) dir -= right;

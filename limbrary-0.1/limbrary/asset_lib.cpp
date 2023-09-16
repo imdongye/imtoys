@@ -22,11 +22,10 @@ namespace lim
 		red_prog = new Program("red");
 		red_prog->attatch("quad.vs").attatch("red.fs").link();
 
-		basic_prog = new Program("defualt");
-		basic_prog->attatch("mvp.vs").attatch("red.fs").link();
+		default_prog = new Program("defualt");
+		default_prog->attatch("mvp.vs").attatch("red.fs").link();
 
-		basic_mat = new Material();
-		basic_mat->prog = basic_prog;
+		default_mat.prog = default_prog;
 
 
 		screen_quad = code_mesh::genQuad(false, false);
@@ -41,8 +40,7 @@ namespace lim
 		delete gray_to_quad_prog;
 		delete depth_prog;
 		delete red_prog;
-		delete basic_prog;
-		delete basic_mat;
+		delete default_prog;
 
 		delete screen_quad;
 		delete sphere;

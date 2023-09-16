@@ -127,7 +127,7 @@ namespace lim
 		ImGui_ImplGlfw_Shutdown();
 		ImGui::DestroyContext();
 
-		AppPref::get().save();
+		AppPref::get().saveToFile();
 		AssetLib::destroy();
 
 		glfwDestroyWindow(window);

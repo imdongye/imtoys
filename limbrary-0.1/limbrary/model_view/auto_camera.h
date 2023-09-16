@@ -31,9 +31,8 @@ namespace lim
 			VM_SCROLL
 		};
 		int viewing_mode = VM_FREE;
-	private:
+
 		float move_free_spd = 4.2f;
-		float move_free_spd_fast = 8.2f;
 		float rot_free_spd = 0.09f;
 
 		float move_pivot_spd = -0.003f;
@@ -44,12 +43,10 @@ namespace lim
 
 		float zoom_spd = 1;
 		float zoom_dist_spd = 1;
-
+	private:
 		double prev_mouse_x = 0;
 		double prev_mouse_y = 0;
-
-		AutoCamera(const AutoCamera&)=delete;
-		AutoCamera& operator=(const AutoCamera&) = delete;
+		
 	public:
 		AutoCamera(glm::vec3 _pos = {0,0,8}, glm::vec3 _focus = {0,0,0});
 		virtual ~AutoCamera();

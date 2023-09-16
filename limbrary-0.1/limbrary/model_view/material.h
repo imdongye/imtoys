@@ -14,9 +14,8 @@
 
 namespace lim
 {
-    class Material
+    struct Material
     {
-    public:
         glm::vec4 Kd = {0.27f, 0.79f, 0.69f, 0.f};  // {Kd, alpha}
         glm::vec4 Ks = {1.f, 1.f, 1.f, 100.f};      // {Ks, shininess[0, 128]}
         glm::vec3 Ka = {0.2f, 0.2f, 0.2f};          // ambient

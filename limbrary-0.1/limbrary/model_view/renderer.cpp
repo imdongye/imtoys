@@ -4,6 +4,10 @@
 
 using namespace std;
 
+namespace
+{
+}
+
 namespace lim
 {
     void render( const Framebuffer& fb, 
@@ -39,29 +43,31 @@ namespace lim
         stack<Model::Node*> nodeStack;
         const Program& depthProg = *AssetLib::get().depth_prog;
 
+        depthProg.use();
+
         for( Light* pLit : scn.lights) {
             const Light& lit = *pLit;
 
-            if( lit.shadow_enabled ) 
-            {
-                lit.map_Shadow.bind();
-                depthProg.use();
-
-                depthProg.setUniform("viewMat", lit.view_mat);
-                depthProg.setUniform("projMat", lit.proj_mat);
-
-                for( Model* pMd : scn.models ) {
-                    const Model& md = *pMd;
-                    depthProg.setUniform("modelMat", md.model_mat);
-
-                    for( Mesh* pMs : md.meshes ) {
-                        pMs->drawGL();
-                    }
-                }
-
-                lit.map_Shadow.unbind();
+            if( lit.shadow_enabled == false ) {
+                continue;
             }
+            lit.map_Shadow.bind();
+
+            depthProg.setUniform("viewMat", lit.view_mat);
+            depthProg.setUniform("projMat", lit.proj_mat);
+
+            for( Model* pMd : scn.models ) {
+                const Model& md = *pMd;
+                depthProg.setUniform("modelMat", md.model_mat);
+
+                for( Mesh* pMs : md.meshes ) {
+                    pMs->drawGL();
+                }
+            }
+
+            lit.map_Shadow.unbind();
         }
+
 
         fb.bind();
 
@@ -69,6 +75,7 @@ namespace lim
         Material* nextMat = nullptr;
         Program* curProg = nullptr;
         Program* nextProg = nullptr;
+
         for( Model* pMd : scn.models ) {
             const Model& md = *pMd;
             nextMat = md.default_mat;
@@ -84,13 +91,17 @@ namespace lim
 
                 for( Mesh* pMs : pNd->meshes ) {
                     const Mesh& ms = *pMs;
-                    const Program& prog = *nextProg;
                     int activeSlot = 0;
-                    nextMat = ms.material;
-                    nextProg = nextMat->prog;
+                    if( ms.material != nullptr ) {
+                        nextMat = ms.material;
+                        if( nextMat->prog != nullptr )
+                            nextProg = nextMat->prog;
+                    }
 
-                    if( nextProg && curProg != nextProg ) {
+                    if( curProg != nextProg ) {
+                        const Program& prog = *nextProg;
                         curProg = nextProg;
+                        
                         prog.use();
                         prog.setUniform("cameraPos", cam.position);
                         prog.setUniform("projMat", cam.proj_mat);
@@ -111,10 +122,12 @@ namespace lim
                                 glBindTexture(GL_TEXTURE_2D, lit.map_Shadow.color_tex);
                                 prog.setUniform("map_Shadow", activeSlot++);
                             }
+                            break;
                         }
                     }
 
-                    if( nextMat && curMat != nextMat ) {
+                    if(  curMat != nextMat ) {
+                        const Program& prog = *curProg;
                         const Material& mat = *nextMat;
                         curMat = nextMat;
 
@@ -155,6 +168,7 @@ namespace lim
                             }
                         }
                     }
+
                     ms.drawGL();
                 }
             }
