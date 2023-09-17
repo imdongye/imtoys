@@ -51,7 +51,7 @@ namespace lim
 		models.back()->root.meshes.push_back(models.back()->meshes.back());
 
 		models.push_back(new Model("cube sphere2"));
-		models.back()->meshes.push_back(code_mesh::genCubeSphere2(5));
+		models.back()->meshes.push_back(code_mesh::genCubeSphere2(5)); // 개망가짐
 		models.back()->root.meshes.push_back(models.back()->meshes.back());
 
 		models.push_back(new Model("quad"));
@@ -62,7 +62,7 @@ namespace lim
 		models.back()->meshes.push_back(code_mesh::genCube());
 		models.back()->root.meshes.push_back(models.back()->meshes.back());
 
-		models.push_back(new Model("cylinder"));
+		models.push_back(new Model("cylinder")); // 면이 뒤로 가고 아랫면이 윗꼭지랑 연결됨
 		models.back()->meshes.push_back(code_mesh::genCylinder(20));
 		models.back()->root.meshes.push_back(models.back()->meshes.back());
 
@@ -73,10 +73,7 @@ namespace lim
 		const float interModels = 3.5f;
 		const float biasModels = -interModels * models.size() / 2.f;
 
-		models[0]->position = {biasModels - interModels, 0, 0};
-		models[0]->updateModelMat();
-
-		for( int i = 1; i < models.size(); i++ )
+		for( int i = 0; i < models.size(); i++ )
 		{
 			models[i]->position = {biasModels + interModels * i, 0, 0};
 			models[i]->updateModelMat();

@@ -190,7 +190,7 @@ namespace lim::code_mesh
 					nors.push_back(normalize(pos));
 				}
 				if( genUvs ) {
-					uvs.push_back({ 2.f*slice/(float)nrSlices, 1.f - stack/(float)nrStacks });
+					uvs.push_back({ fract(2.f*slice/(float)nrSlices), 1.f - stack/(float)nrStacks });
 				}
 			}
 		}
@@ -324,9 +324,9 @@ namespace lim::code_mesh
 					uvs.push_back( (uv3+uv1)*0.5f );
 				}
 
-				tris.push_back({ copiedTris[j].x, newIdx+0, newIdx+0 });
-				tris.push_back({ copiedTris[j].y, newIdx+1, newIdx+1 });
-				tris.push_back({ copiedTris[j].z, newIdx+2, newIdx+2 });
+				tris.push_back({ copiedTris[j].x, newIdx+0, newIdx+2 });
+				tris.push_back({ copiedTris[j].y, newIdx+1, newIdx+0 });
+				tris.push_back({ copiedTris[j].z, newIdx+2, newIdx+1 });
 				tris.push_back({ newIdx+0,  newIdx+1, newIdx+2 });
 			}
 		}
@@ -418,7 +418,7 @@ namespace lim::code_mesh
 		for( int side=0; side<6; side++ ) {
 			const int nrCols = nrSlices + 1;
 			const int offset = poss.size();
-			const mat3 rotMat = mat3(cbNors[side], cbTans[side], cross(cbTans[side], cbTans[side]));
+			const mat3 rotMat = mat3(cbNors[side], cbTans[side], cross(cbNors[side], cbTans[side]));
 
 			for( int y=0; y<=nrSlices; y++ ) for(int x=0; x<=nrSlices; x++ ) {
 				vec3 nor = rotMat * facePoints[nrCols * y + x];
@@ -427,7 +427,7 @@ namespace lim::code_mesh
 				if( genUvs )  uvs.push_back({ x/(float)nrSlices, y/(float)nrSlices });
 			}
 
-			for( int y=0; y<=nrSlices; y++ ) {
+			for( int y=0; y<nrSlices; y++ ) {
 				const GLuint curRow = offset + y*nrCols;
 				const GLuint upRow = offset + (y+1)*nrCols;
 				for( int x=0; x<nrSlices; x++ ) {
@@ -454,8 +454,8 @@ namespace lim::code_mesh
 		poss.push_back({ 0, half,0 });
 		poss.push_back({ 0,-half,0 });
 		if( genNors ) {
-			poss.push_back({ 0, 1,0 });
-			poss.push_back({ 0,-1,0 });
+			nors.push_back({ 0, 1,0 });
+			nors.push_back({ 0,-1,0 });
 		}
 		if( genUvs ) {
 			uvs.push_back({ .5f, .5f });
@@ -469,7 +469,7 @@ namespace lim::code_mesh
 			float z = -radius*sin(theta);
 			vec3 pos;
 			vec3 sideNor = normalize(vec3(x, 0, z));
-			float sideU = 2.f * i / (float)nrSlices;
+			float sideU = fract( 2.f * i / (float)nrSlices );
 			vec2 circleUv = {x, -z};
 			circleUv = .5f * (circleUv + vec2(1));
 
@@ -500,7 +500,7 @@ namespace lim::code_mesh
 			tris.push_back({ 0,          2+nrCols*i,     2+nrCols*(i+1) });
 			tris.push_back({ 3+nrCols*i, 4+nrCols*i, 	 4+nrCols*(i+1) }); // upper
 			tris.push_back({ 3+nrCols*i, 4+nrCols*(i+1), 3+nrCols*(i+1) }); // lower
-			tris.push_back({ 0,          5+nrCols*i,     5+nrCols*(i+1) });
+			tris.push_back({ 1,          5+nrCols*(i+1), 5+nrCols*i 	});
 		}
 
 		rst->initGL();
@@ -522,7 +522,7 @@ namespace lim::code_mesh
 
 		// phi : angle form xy-plane [-pi/2, pi/2]
 		// theta : y-axis angle [0, 2pi]
-		for( int stack=0; stack<=nrStacks; stack++ )
+		for( int stack=0; stack<nrStacks; stack++ )
 		{
 			float phi = H_PI - F_PI * stack / (float)nrStacks;
 			float y = sin(phi);
@@ -534,9 +534,10 @@ namespace lim::code_mesh
 				float z = -rcos * sin(theta);
 				vec3 pos = {x, y, z};
 				vec3 nor = normalize(pos);
-				vec2 uv = { 2.f*slice/(float)nrSlices, 1.f-stack/(float)nrStacks };
+				vec2 uv = { fract(1.f*slice/(float)nrSlices), (1.f-stack/(float)(nrStacks-1)) };
 				pos.y += (stack<halfStacks)? halfSylinder : (-halfSylinder);
-				uv.y += (stack<halfStacks)? 0.5f : (-0.5f);
+				uv.y += (stack<halfStacks)? 0.5f : -0.5f;
+				uv.y = fract(uv.y);
 
 				poss.push_back(pos);
 				if( genNors ) nors.push_back(nor);
@@ -593,7 +594,7 @@ namespace lim::code_mesh
 
 				poss.push_back({ x,y,z });
 				if( genNors ) nors.push_back( normalize(poss.back()));
-				if( genUvs )  uvs.push_back({ 2.f*slice/(float)nrSlices, rv/(float)nrRingVerts });
+				if( genUvs )  uvs.push_back({ fract(2.f*slice/(float)nrSlices), rv/(float)nrRingVerts });
 			}
 		}
 
