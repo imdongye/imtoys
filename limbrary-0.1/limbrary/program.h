@@ -136,6 +136,10 @@ namespace lim
 	{
 		glUniform3iv(glGetUniformLocation(pid, vname.data()), 1, glm::value_ptr(v));
 	}
+	static inline void setUniform(GLuint pid, const std::string_view vname, const float v)
+	{
+		glUniform1f(glGetUniformLocation(pid, vname.data()), v);
+	}
 	static inline void setUniform(GLuint pid, const std::string_view vname, const glm::vec2 &v)
 	{
 		glUniform2fv(glGetUniformLocation(pid, vname.data()), 1, glm::value_ptr(v));

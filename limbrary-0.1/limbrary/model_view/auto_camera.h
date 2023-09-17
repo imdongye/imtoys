@@ -38,8 +38,8 @@ namespace lim
 		float move_pivot_spd = -0.003f;
 		float rot_pivot_spd = 0.003f;
 
-		float rot_pivot_scroll_spd = 0.045f;
-		float move_pivot_scroll_spd = -0.09f;
+		float rot_pivot_scroll_spd = 0.45f;
+		float move_pivot_scroll_spd = -0.9f;
 
 		float zoom_spd = 1;
 		float zoom_dist_spd = 1;
@@ -48,7 +48,7 @@ namespace lim
 		double prev_mouse_y = 0;
 		
 	public:
-		AutoCamera(glm::vec3 _pos = {0,0,8}, glm::vec3 _focus = {0,0,0});
+		AutoCamera(glm::vec3 _pos = {0,0,5}, glm::vec3 _focus = {0,0,0});
 		virtual ~AutoCamera();
 	public:
 		void setViewMode(int vm);

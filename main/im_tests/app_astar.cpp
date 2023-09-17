@@ -111,7 +111,7 @@ namespace lim
 		}
 		ImGui::SameLine();
 		if( path_finder->path.size() > 0)
-			ImGui::Text("path length: %d", path_finder->path.size());
+			ImGui::Text("path length: %d", (int)path_finder->path.size());
 		else
 			ImGui::Text("path not found");
 

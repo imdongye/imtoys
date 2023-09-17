@@ -24,6 +24,7 @@ namespace
 	void addModelViewer(const char* path) {
 		char* vpName = fmtStrToBuf("viewport%d##model_view", (int)viewports.size());
 		ViewportWithCamera* vp = new ViewportWithCamera(vpName, new RboFramebuffer());
+		vp->camera.viewing_mode = VpAutoCamera::VM_PIVOT;
 		viewports.push_back(vp);
 
 		Model* md = importModelFromFile(path, true);
@@ -65,10 +66,8 @@ namespace lim
 	{
 		for(auto vp : viewports)
 			delete vp;
-		viewports.clear();
 		for(auto md : models)
 			delete md;
-		models.clear();
 		delete program;
 		delete light;
 	}

@@ -38,17 +38,9 @@ namespace lim {
 		}
 		ImGui::Begin(name.c_str(), &window_opened, vpWinFlag);
 		
-
-		focused = ImGui::IsWindowFocused();
-		hovered = ImGui::IsWindowHovered();
-		dragging = !ImGui::IsItemHovered() && (ImGui::IsMouseDown(0)||ImGui::IsMouseDown(2));
-
-		ImVec2 imWinPos = ImGui::GetWindowPos();
-		ImVec2 imMousePos = ImGui::GetMousePos();
-		glm::ivec2 winPos ={imWinPos.x, imWinPos.y};
-		glm::ivec2 mousePos = {imMousePos.x, imMousePos.y};
-		mouse_pos = mousePos - winPos - glm::ivec2(0, ImGui::GetFrameHeight());
-		if( dragging ) ImGui::SetMouseCursor(7);
+		static bool isHoveredOnTitle, isWindowActivated = false;
+		isHoveredOnTitle = ImGui::IsItemHovered();
+		isWindowActivated = ImGui::IsItemActive();
 
 		// update size
 		auto contentSize = ImGui::GetContentRegionAvail();
@@ -56,9 +48,21 @@ namespace lim {
 			resize(contentSize.x, contentSize.y);
 		}
 
+		ImVec2 imWinPos = ImGui::GetWindowPos();
+		ImVec2 imMousePos = ImGui::GetMousePos();
+		glm::ivec2 winPos ={imWinPos.x, imWinPos.y};
+		glm::ivec2 mousePos = {imMousePos.x, imMousePos.y};
+		mouse_pos = mousePos - winPos - glm::ivec2(0, ImGui::GetFrameHeight());
+
 		GLuint texID = framebuffer->getRenderedTex();
-		if( texID!=0 )
+		if( texID!=0 ) {
 			ImGui::Image((void*)(intptr_t)texID, ImVec2{(float)width, (float)height}, ImVec2{0, 1}, ImVec2{1, 0});
+		}
+
+		focused = ImGui::IsWindowFocused();
+		hovered = ImGui::IsItemHovered();
+		dragging = isWindowActivated && !isHoveredOnTitle && (ImGui::IsMouseDown(0)||ImGui::IsMouseDown(2));
+		if( dragging ) ImGui::SetMouseCursor(7);
 
 		ImGui::End();
 		ImGui::PopStyleVar();

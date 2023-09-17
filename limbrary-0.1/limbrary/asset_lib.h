@@ -14,7 +14,7 @@ namespace lim
 {
 	class Program;
 	class Mesh;
-	class Material;
+	struct Material;
 
 	class AssetLib
 	{

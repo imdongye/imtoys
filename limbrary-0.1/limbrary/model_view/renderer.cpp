@@ -106,7 +106,6 @@ namespace lim
                         prog.setUniform("cameraPos", cam.position);
                         prog.setUniform("projMat", cam.proj_mat);
                         prog.setUniform("viewMat", cam.view_mat);
-                        prog.setUniform("modelMat", md.model_mat); // todo
 
                         /* Todo: 지금은 라이트 하나만 */
                         for( Light* pLit : scn.lights ) {
@@ -169,6 +168,7 @@ namespace lim
                         }
                     }
 
+                    curProg->setUniform("modelMat", md.model_mat); // todo
                     ms.drawGL();
                 }
             }

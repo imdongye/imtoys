@@ -22,12 +22,12 @@ namespace lim
 		// register callbacks
 		AppBase& app = *AppPref::get().app;
 		window = app.window;
+		app.key_callbacks[this] = [this](int key, int scancode, int action, int mods) {
+			keyCallback(key, scancode, action, mods);
+		};
         vp->resize_callbacks[this] = [this](int w, int h) {
             viewportSizeCallback(w, h);
         };
-		app.update_hooks[this] = [this](float dt) {
-			processInput(dt); 
-		};
 		app.mouse_btn_callbacks[this] = [this](int button, int action, int mods) {
 			mouseBtnCallback(button, action, mods);
 		};
@@ -37,11 +37,15 @@ namespace lim
 		app.scroll_callbacks[this] = [this](double xOff, double yOff) {
 			scrollCallback(xOff, yOff);
 		};
+		app.update_hooks[this] = [this](float dt) {
+			processInput(dt); 
+		};
 	}
 	VpAutoCamera::~VpAutoCamera()
 	{
 		// unregister callbacks
 		AppBase& app = *AppPref::get().app;
+		app.key_callbacks.erase(this);
         vp->resize_callbacks.erase(this);
 		app.update_hooks.erase(this);
 		app.mouse_btn_callbacks.erase(this);
@@ -137,7 +141,7 @@ namespace lim
 	}
 	void VpAutoCamera::scrollCallback(double xOff, double yOff)
 	{
-		if( !vp->hovered ) return;
+		if( !vp->hovered || vp->dragging ) return;
 
 		switch( viewing_mode ) {
 			case VM_PIVOT:
@@ -166,7 +170,7 @@ namespace lim
 	}
 	void VpAutoCamera::processInput(float dt)
 	{
-		if( !vp->focused )return;
+		if( !vp->focused || !vp->hovered )return;
 
 		switch( viewing_mode ) {
 			case VM_FREE:

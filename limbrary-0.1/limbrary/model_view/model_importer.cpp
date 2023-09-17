@@ -149,7 +149,7 @@ namespace
 			boundaryMin = glm::min(boundaryMin, p);
 		}
 		rst->nr_vertices += mesh.poss.size();
-		
+
 		if( aiMesh->HasNormals() ) {
 			mesh.nors.resize( aiMesh->mNumVertices );
 			for( GLuint i=0; i<aiMesh->mNumVertices; i++ ) {
@@ -206,7 +206,7 @@ namespace
 			rst->nr_triangles += mesh.tris.size();
 		}
 		if( nrNotTriFace>0 ) {
-			log::err("find not tri face # %d\n", nrNotTriFace);
+			log::err("find not tri face : nr %d\n", nrNotTriFace);
 		}
 
 		mesh.initGL();
@@ -228,7 +228,7 @@ namespace
 
 namespace lim
 {
-	Model *importModelFromFile(string_view modelPath, bool normalizeAndPivot, bool withMaterial)
+	Model *importModelFromFile(string_view modelPath, bool unitScaleAndPivot, bool withMaterial)
 	{
 		const char* extension = strrchr(modelPath.data(), '.');
 		if( !extension ) {
@@ -247,8 +247,6 @@ namespace lim
 		const size_t dotPos = spath.find_last_of('.');
 		rst->name = spath.substr(lastSlashPos + 1, dotPos - lastSlashPos - 1);
 		md_dir = (lastSlashPos == 0) ? "" : spath.substr(0, lastSlashPos) + "/";
-		
-		log::pure("model loading : %s\n", rst->name.c_str());
 
 		double elapsedTime = glfwGetTime();
 
@@ -290,18 +288,19 @@ namespace lim
 		for( GLuint i=0; i<scene->mNumMeshes; i++ ) {
 			rst->meshes[i] = convertMesh(scene->mMeshes[i]);
 		}
+		rst->boundary_size = rst->boundary_max - rst->boundary_min;
 
 		/* set node tree structure */
 		recursiveConvertTree(*rst, rst->root, scene->mRootNode);
 		log::pure("[%s] convert lim::Model in %.2lf\n", rst->name.c_str(), glfwGetTime()-elapsedTime);
 		log::pure("[%s] #meshs %d, #mats %d, #verts %d, #tris %d\n", rst->name.c_str(), rst->meshes.size(), rst->materials.size(), rst->nr_vertices, rst->nr_triangles);
+		log::pure("[%s] boundary size : %f, %f, %f\n\n", rst->name.c_str(), rst->boundary_size.x, rst->boundary_size.y, rst->boundary_size.z);
 
 
 		aiReleaseImport(scene);
 
-		if( normalizeAndPivot ) {
+		if( unitScaleAndPivot ) {
 			rst->updateUnitScaleAndPivot();
-			rst->updateModelMat();
 		}
 		return rst;
 	}

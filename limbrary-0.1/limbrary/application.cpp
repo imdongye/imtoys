@@ -1,15 +1,3 @@
-//
-//  for test simplification and normal map baking.
-//	2022-08-26 / im dong ye
-// 
-//	callback을 window data에 직접 추가할수도있고 가상함수는 기본으로 등록되어있어서 오버라이딩하기만 하면됨.
-//	상속한 앱에서 등록하는 코드가 없어서 깔끔함. 하지만 가상함수테이블에서 포인팅되는과정이 성능에 문제될수있다.
-//
-//	TODO list:
-//	1. crtp로 참조 줄이기, 
-//	2. glfw에서 함수 이름 스네이크/카멜 혼용 이유 찾기
-//  3. glfwSwapInterval(1); // vsync??
-//
 #include <limbrary/application.h>
 #include <limbrary/log.h>
 #include <limbrary/app_pref.h>
@@ -146,26 +134,21 @@ namespace lim
 			double currentTime = glfwGetTime();
 			delta_time = (float)(currentTime - lastTime);
 			lastTime = currentTime;
-
 			glfwPollEvents();
+
 			io.DisplaySize = ImVec2(fb_width, fb_height); // todo?
-
-
-			update();
-			for( auto& [_, cb] : update_hooks ) 
-				cb(delta_time);
-
-
 			ImGui_ImplOpenGL3_NewFrame();
 			ImGui_ImplGlfw_NewFrame();
 			ImGui::NewFrame();
 			//ImGuizmo::BeginFrame();
-
 			renderImGui();
-
 			draw_appselector();
-
 			ImGui::Render();
+
+			update();
+			for( auto& [_, cb] : update_hooks ) 
+				cb(delta_time);
+			
 			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 			if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
 			{

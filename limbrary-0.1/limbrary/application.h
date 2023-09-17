@@ -1,15 +1,17 @@
-//
-//  for test simplification and normal map baking.
-//	2022-08-26 / im dong ye
-// 
-//	callback을 window data에 직접 추가할수도있고 가상함수는 기본으로 등록되어있어서 오버라이딩하기만 하면됨.
-//	상속한 앱에서 등록하는 코드가 없어서 깔끔함. 하지만 가상함수테이블에서 포인팅되는과정이 성능에 문제될수있다.
-//
-//	TODO list:
-//	1. crtp로 참조 줄이기, 
-//	2. glfw에서 함수 이름 스네이크/카멜 혼용 이유 찾기
-//  3. glfwSwapInterval(1); // vsync??
-//
+/*
+
+2022-08-26 / im dong ye
+
+Callbacks는 포인터를 키로 한 헤쉬테이블 맵이다. glfw콜백이 불렸을때 등록된 함수들을 실행해준다.
+헤쉬테이블은 메모리 사용량이 많지만 프레임마다 전체탐색되기때문에 logN인 map(트리)대신 unordered_map을 사용했다.
+
+실행순서: 생성자 -> {renderImGui, update} -> 소멸자
+TODO list:
+1. crtp로 참조 줄이기, 
+2. glfw에서 함수 이름 스네이크/카멜 혼용 이유 찾기
+3. glfwSwapInterval(1); // vsync??
+
+*/
 
 #ifndef __application_h_
 #define __application_h_

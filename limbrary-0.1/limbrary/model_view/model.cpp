@@ -141,27 +141,29 @@ namespace lim
 	{
 		nr_vertices = 0;
 		nr_triangles = 0;
-		if( meshes.size()>0 && meshes[0]->poss.size()>0 ) {
-			boundary_max = meshes[0]->poss[0];
-			boundary_min = meshes[0]->poss[0];
-		}
-		else {
-			boundary_max = glm::vec3(-1);
-			boundary_min = glm::vec3(-1);
+		boundary_max = glm::vec3(std::numeric_limits<float>::min());
+		boundary_min = glm::vec3(std::numeric_limits<float>::max());
+		boundary_size = glm::vec3(0);
+
+		if( meshes.size()==0) {
 			log::err("there's no mesh when updateNrBoundary\n");
 			return;
 		}
 
 		for(Mesh* pMesh : meshes) {
 			const Mesh& m = *pMesh;
-			nr_vertices += m.poss.size();
 			for(glm::vec3 p : m.poss) {
 				boundary_max = glm::max(boundary_max, p);
 				boundary_min = glm::min(boundary_min, p);
 			}
+			nr_vertices += m.poss.size();
 			nr_triangles += m.tris.size();
 		}
 		boundary_size = boundary_max-boundary_min;
+	}
+	void Model::setPivot(const glm::vec3& pivot) 
+	{
+		pivot_mat = glm::translate(-pivot);
 	}
 	void Model::updateUnitScaleAndPivot()
 	{
@@ -174,11 +176,9 @@ namespace lim
 
 		setPivot(boundary_min + boundary_size*0.5f);
 
+		pivoted_scaled_bottom_height = scale.y*boundary_size.y*0.5f;
+
 		updateModelMat();
 	}
-	void Model::setPivot(const glm::vec3& pivot) 
-	{
-		pivot_mat = glm::translate(-pivot);
-		pivoted_scaled_bottom_height = -(scale.y*boundary_size.y*0.5f);
-	}
+	
 }

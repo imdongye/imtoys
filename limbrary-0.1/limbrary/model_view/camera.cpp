@@ -55,7 +55,7 @@ namespace lim
 		fovy = glm::clamp(fovy, MIN_FOVY, MAX_FOVY);
 	}
 
-	void Camera::updateFreeViewMat()
+	void Camera::updateFreeViewMat() // a. use yaw pitch pos
 	{
 		// roll-pitch-yaw
 		// fixed(world) basis => pre multiplication
@@ -71,7 +71,7 @@ namespace lim
 
 		view_mat = glm::lookAt(position, position + front, glm::vec3(0, 1, 0));
 	}
-	void Camera::updatePivotViewMat()
+	void Camera::updatePivotViewMat() // b. use pos and pivot
 	{
 		static glm::vec3 dir;
 

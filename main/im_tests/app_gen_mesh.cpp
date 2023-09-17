@@ -6,6 +6,14 @@
 #include <imgui.h>
 #include <limbrary/asset_lib.h>
 
+namespace
+{
+	void align(std::vector<float> v)
+	{
+
+	}
+}
+
 namespace lim
 {
 	AppGenMesh::AppGenMesh() : AppBase(1200, 780, APP_NAME)
@@ -58,9 +66,9 @@ namespace lim
 		models.back()->meshes.push_back(code_mesh::genCylinder(20));
 		models.back()->root.meshes.push_back(models.back()->meshes.back());
 
-		models.push_back(importModelFromFile("assets/models/objs/spot.obj", true));
+		models.push_back(importModelFromFile("assets/models/objs/spot.obj", true, false));
 
-		models.push_back(importModelFromFile("assets/models/objs/Wooden Crate.obj", true));
+		models.push_back(importModelFromFile("assets/models/objs/Wooden Crate.obj", true, false));
 
 		const float interModels = 3.5f;
 		const float biasModels = -interModels * models.size() / 2.f;

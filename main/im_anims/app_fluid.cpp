@@ -77,7 +77,7 @@ namespace lim
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, canvas->tex_id);
 		setUniform(pid, "tex", 0);
-		setUniform(pid, "gamma", 2.2);
+		setUniform(pid, "gamma", 2.2f);
 
 		glBindVertexArray(AssetLib::get().screen_quad->vert_array);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, AssetLib::get().screen_quad->element_buf);

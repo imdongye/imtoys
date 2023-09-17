@@ -62,15 +62,11 @@ namespace lim
 
 		GLuint nr_vertices = 0;
 		GLuint nr_triangles = 0;
-		glm::vec3 boundary_max = glm::vec3(std::numeric_limits<float>::min());
-		glm::vec3 boundary_min = glm::vec3(std::numeric_limits<float>::max());
 		glm::vec3 boundary_size = glm::vec3(1);
+		glm::vec3 boundary_min = glm::vec3(std::numeric_limits<float>::max());
+		glm::vec3 boundary_max = glm::vec3(std::numeric_limits<float>::min());
 		float pivoted_scaled_bottom_height = 0;
 		
-	private:
-		friend Model *importModelFromFile(std::string_view modelPath, bool normalizeAndPivot, bool withMaterial);
-		friend void exportModelToFile(std::string exportDir, Model *model, size_t pIndex);
-	
 	private:
 		// Disable Copying and Assignment
 		Model(Model const &) = delete;

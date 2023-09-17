@@ -87,7 +87,7 @@ namespace
     }
 
 
-    Matrix4d icp(const MatrixXd& src, const MatrixXd& dst, int max_iterations = 20, int tolerance = 0.001)
+    Matrix4d icp(const MatrixXd& src, const MatrixXd& dst, int max_iterations = 20, double tolerance = 0.001)
     {
         int row = src.rows();
         MatrixXd src4d = MatrixXd::Ones(3+1, row); // homogeneous src

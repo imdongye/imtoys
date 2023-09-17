@@ -123,13 +123,15 @@ namespace lim
 		const float biasModels = -interModels*(models.size()-1)*0.5f;
 
 		for( int i = 0; i<models.size(); i++ ) {
-			models[i]->position ={biasModels+interModels*i, -models[i]->pivoted_scaled_bottom_height, 0};
+			models[i]->position ={biasModels + interModels*i, models[i]->pivoted_scaled_bottom_height, 0};
 			models[i]->updateModelMat();
 		}
 
 		models.push_back( new Model("ground") );
 		models.back()->meshes.push_back( code_mesh::genPlane() );
 		models.back()->root.meshes.push_back(models.back()->meshes.back());
+		models.back()->scale = glm::vec3(20);
+		models.back()->updateModelMat();
 
 		light = new Light();
 		light->distance = 10.f;
