@@ -18,6 +18,7 @@ Todo:
 #define __auto_camera_h_
 
 #include "camera.h"
+#include "../viewport.h"
 
 namespace lim
 {
@@ -32,33 +33,49 @@ namespace lim
 		};
 		int viewing_mode = VM_FREE;
 
-		float move_free_spd = 4.2f;
-		float rot_free_spd = 0.09f;
+		float move_free_spd = 3.f/1.f; 	  // m/sec
+		float rot_free_spd = D_PI/1600.f; // r/px
 
-		float move_pivot_spd = -0.003f;
-		float rot_pivot_spd = 0.003f;
+		float move_pivot_spd = 1.f/400.f; // m/px
+		float rot_pivot_spd = D_PI/800.f; // r/px
 
-		float rot_pivot_scroll_spd = 0.45f;
-		float move_pivot_scroll_spd = -0.9f;
+		float move_pivot_scroll_spd = 1.f/100.f; // m/scrollOff
+		float rot_pivot_scroll_spd = D_PI/400.f; // r/scrollOff
 
-		float zoom_spd = 1;
+		float zoom_fovy_spd = 1;
 		float zoom_dist_spd = 1;
 	private:
 		double prev_mouse_x = 0;
 		double prev_mouse_y = 0;
 		
 	public:
-		AutoCamera(glm::vec3 _pos = {0,0,5}, glm::vec3 _focus = {0,0,0});
+		AutoCamera();
 		virtual ~AutoCamera();
 	public:
 		void setViewMode(int vm);
-	private:
+	protected:
 		void keyCallback(int key, int scancode, int action, int mods);
 		void viewportSizeCallback(int w, int h);
 		void mouseBtnCallback(int button, int action, int mods);
 		void cursorPosCallback(double xpos, double ypos);
 		void scrollCallback(double xOff, double yOff);
 		void processInput(float dt);
+	};
+
+	class WinAutoCamera : public AutoCamera
+	{
+	public:
+		WinAutoCamera();
+		virtual ~WinAutoCamera();
+	};
+	
+	class VpAutoCamera : public AutoCamera
+	{
+	public:
+		Viewport* vp;
+		VpAutoCamera(Viewport* vp);
+		virtual ~VpAutoCamera();
+		void copySettingTo(VpAutoCamera& cam);
 	};
 }
 

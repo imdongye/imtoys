@@ -24,7 +24,7 @@ namespace lim
 		stbi_set_flip_vertically_on_load(true);
 
 		viewport = new ViewportWithCamera("viewport##gen_mesh", new MsFramebuffer());
-
+		viewport->camera.move_free_spd = 4.f;
 		/* gen models */
 		models.push_back(new Model("sphere"));
 		models.back()->meshes.push_back(code_mesh::genSphere(50, 25));

@@ -177,7 +177,10 @@ namespace lim
         prog = new Program("icp", APP_DIR);
         prog->attatch("assets/shaders/mvp.vs").attatch("blue.fs").link();
 
-        camera = new AutoCamera(glm::vec3{0,1,5}, glm::vec3{0,1,0});
+        camera = new AutoCamera();
+        camera->position = {0,1,5};
+        camera->pivot = {0,1,0};
+        camera->updateFromPosAndPivot();
 
         model = importModelFromFile("assets/models/objs/woody.obj", true);
 

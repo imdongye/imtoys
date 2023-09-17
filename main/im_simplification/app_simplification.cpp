@@ -114,7 +114,7 @@ namespace lim
 
 		auto& vp = *viewports[vpIdx];
 		vp.camera.pivot = md.position;
-		vp.camera.updatePivotViewMat();
+		vp.camera.updateFromPosAndPivot();
 
 		AppPref::get().saveRecentModelPath(path.data());
 	}
@@ -150,7 +150,7 @@ namespace lim
 		toMd->name += "_"+std::to_string(pct)+"_pct";
 
 		viewports[to_vp_idx]->camera.pivot = toMd->position;
-		viewports[to_vp_idx]->camera.updatePivotViewMat();
+		viewports[to_vp_idx]->camera.updateFromPosAndPivot();
 	}
 	// From: https://stackoverflow.com/questions/62007672/png-saved-from-opengl-framebuffer-using-stbi-write-png-is-shifted-to-the-right
 	void AppSimplification::doBakeNormalMap(int texSize)

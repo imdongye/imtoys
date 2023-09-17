@@ -25,61 +25,22 @@ Todo:
 #define __viewport_with_camera_h_
 
 #include "../viewport.h"
-#include "camera.h"
+#include "auto_camera.h"
 
 
 namespace lim
 {
-    class VpAutoCamera : public Camera
-	{
-	public:
-		enum VIEWING_MODE
-		{
-			VM_FREE=0,
-			VM_PIVOT,
-			VM_SCROLL
-		};
-		int viewing_mode = VM_FREE;
-		Viewport* vp;
-
-		float move_free_spd = 4.2f;
-		float rot_free_spd = 0.16f;
-
-		float move_pivot_spd = -0.03f;
-		float rot_pivot_spd = 0.4f;
-
-		float rot_pivot_scroll_spd = 0.45f;
-		float move_pivot_scroll_spd = -0.9f;
-
-		float zoom_spd = 1;
-		float zoom_dist_spd = 1;
-
-	private:
-		double prev_mouse_x = 0;
-		double prev_mouse_y = 0;
-		
-	public:
-		VpAutoCamera(Viewport *_vp, glm::vec3 _pos = {0,0,5}, glm::vec3 _focus = {0,0,0});
-		virtual ~VpAutoCamera();
-	public:
-		void setViewMode(int vm);
-		void copySettingTo(VpAutoCamera& cam);
-	private:
-		void keyCallback(int key, int scancode, int action, int mods);
-		void viewportSizeCallback(int w, int h);
-		void mouseBtnCallback(int button, int action, int mods);
-		void cursorPosCallback(double xpos, double ypos);
-		void scrollCallback(double xOff, double yOff);
-		void processInput(float dt);
-	};
-
 	class ViewportWithCamera : public Viewport
 	{
 	public:
 		VpAutoCamera camera;
 	public:
-		ViewportWithCamera(std::string_view _name, Framebuffer* createdFB);
-		virtual ~ViewportWithCamera();
+		ViewportWithCamera(std::string_view _name, Framebuffer* createdFB)
+			:Viewport(_name, createdFB), camera(this)
+		{
+
+		}
+		virtual ~ViewportWithCamera() {}
 	};
 }
 

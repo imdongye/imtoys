@@ -66,8 +66,10 @@ namespace lim
 	{
 		for(auto vp : viewports)
 			delete vp;
+		viewports.clear();
 		for(auto md : models)
 			delete md;
+		models.clear();
 		delete program;
 		delete light;
 	}

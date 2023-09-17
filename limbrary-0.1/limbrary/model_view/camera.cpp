@@ -17,88 +17,76 @@
 
 #include <limbrary/model_view/camera.h>
 #include <glm/gtx/transform.hpp>
-#include <glm/gtx/extended_min_max.hpp>
 #include <limbrary/log.h>
+
+using namespace glm;
 
 namespace lim
 {
-	Camera::Camera(glm::vec3 _position, glm::vec3 _front, float _aspect)
+	Camera::Camera()
 	{
-		position = _position;
-		front = glm::normalize(_front);
-		aspect = _aspect;
-		updateOrientationFromFront();
-
-		updateFreeViewMat();
+		updateFromPosAndPivot();
 		updateProjMat();
+	}
+	Camera::~Camera()
+	{
+
 	}
 
 	void Camera::rotateCamera(float xoff, float yoff)
 	{
-		yaw += xoff;
-		pitch = glm::clamp(pitch + yoff, -89.f, 89.f);
+		vec3 rotated = rotate(yoff, right)*rotate(-xoff, up)*vec4(front,0);
+		pivot = distance*rotated + position;
+		updateFromPosAndPivot();
 	}
-	void Camera::shiftPos(float xoff, float yoff)
+	void Camera::rotateCameraFromPivot(float xoff, float yoff)
 	{
-		glm::vec3 shift = up * yoff + right * xoff;
-		pivot += shift;
-		position += shift;
+		vec3 toCam = -front;
+		vec3 rotated = rotate(-yoff, -right)*rotate(-xoff, global_up)*vec4(toCam,0);
+		if( abs(rotated.y)>0.9f )
+			return;
+		position = pivot + distance*rotated;
+		updateFromPosAndPivot();
+	}
+	void Camera::shiftPos(glm::vec3 off)
+	{
+		pivot += off;
+		position += off;
+		view_mat = lookAt(position, pivot, global_up);
+	}
+	void Camera::shiftPosFromPlane(float xoff, float yoff)
+	{
+		vec3 shift = global_up * yoff + right * xoff;
+		pivot -= shift;
+		position -= shift;
+		view_mat = lookAt(position, pivot, global_up);
 	}
 	void Camera::shiftDist(float offset)
 	{
-		distance = distance * glm::pow(1.01f, offset);
-		distance = glm::clamp(distance, MIN_DIST, MAX_DIST);
+		distance = distance * pow(1.01f, offset);
+		distance = clamp(distance, MIN_DIST, MAX_DIST);
+		position = -distance*front + pivot;
+		view_mat = lookAt(position, pivot, global_up);
 	}
 	void Camera::shiftZoom(float offset)
 	{
-		fovy = fovy * glm::pow(1.01f, offset);
-		fovy = glm::clamp(fovy, MIN_FOVY, MAX_FOVY);
+		fovy = fovy * pow(1.01f, offset);
+		fovy = clamp(fovy, MIN_FOVY, MAX_FOVY);
+		updateProjMat();
 	}
 
-	void Camera::updateFreeViewMat() // a. use yaw pitch pos
+	void Camera::updateFromPosAndPivot()
 	{
-		// roll-pitch-yaw
-		// fixed(world) basis => pre multiplication
-		// https://answers.opencv.org/question/161369/retrieve-yaw-pitch-roll-from-rvec/
-		glm::vec3 f;
-		f.x = cos(glm::radians(pitch)) * sin(glm::radians(yaw));
-		f.y = sin(glm::radians(pitch));
-		f.z = -cos(glm::radians(pitch)) * cos(glm::radians(yaw));
+		vec3 diff = pivot - position;
+		distance = length(diff);
 
-		front = glm::normalize(f);
-		right = glm::normalize(glm::cross(front, glm::vec3(0, 1, 0)));
-		up = glm::normalize(glm::cross(right, front));
-
-		view_mat = glm::lookAt(position, position + front, glm::vec3(0, 1, 0));
-	}
-	void Camera::updatePivotViewMat() // b. use pos and pivot
-	{
-		static glm::vec3 dir;
-
-		// -yaw to match obj ro
-		position = glm::vec3(glm::rotate(glm::radians(-yaw), glm::vec3(0, 1, 0)) * glm::rotate(glm::radians(pitch), glm::vec3(1, 0, 0)) * glm::vec4(0, 0, distance, 1)) + pivot;
-		position.y = glm::max(position.y, 0.0f);
-		view_mat = glm::lookAt(position, pivot, glm::vec3(0, 1, 0));
-
-		dir = pivot - position;
-		front = glm::normalize(dir);
-		right = glm::normalize(glm::cross(front, glm::vec3(0, 1, 0)));
-		up = glm::normalize(glm::cross(right, front));
+		front = normalize(diff);
+		right = normalize(cross(front,global_up));
+		up = normalize(cross(right, front));
+		view_mat = lookAt(position, pivot, global_up);
 	}
 	void Camera::updateProjMat()
 	{
-		proj_mat = glm::perspective(glm::radians(fovy), aspect, z_near, z_far);
-	}
-	void Camera::updateOrientationFromFront()
-	{
-		pitch = glm::degrees(asin(front.y));
-		// yaw = glm::degrees(acos(-front.z/cos(glm::radians(pitch))));
-		yaw = glm::degrees(asin(front.x / cos(glm::radians(pitch))));
-	}
-	void Camera::printCameraState()
-	{
-		log::pure("PitchYawRoll  : %f.2, %f.2, %f.2\n", pitch, yaw, roll);
-		log::pure("POS  : %f.2, %f.2, %f.2\n", position.x, position.y, position.z);
-		log::pure("DIST : %f\n", distance);
+		proj_mat = perspective(radians(fovy), aspect, z_near, z_far);
 	}
 }

@@ -31,40 +31,40 @@ namespace lim
 		const float MIN_DIST = 0.1f;
 	public:
 		// <editable camera options>
+		// if you edit then must call updateProjMat();
 		float aspect=1;
+		float fovy = 46.f; // 50mm, feild of view y axis dir
 		float z_near=0.1f;
 		float z_far=100;
 
-		glm::vec3 position;
-		float orientation;
-		float yaw, pitch, roll;
+		// if you edit then must call updateFromPosAndPivot();
+		// and updateViewMat();
+		glm::vec3 position = {0,0,5};
+		glm::vec3 pivot = {0,0,0};
 
-		float fovy = 46.f; // 50mm, feild of view y axis dir
-		/* for pivot view mode */
-		float distance;
-		glm::vec3 pivot= {0,0,0};
+		// <only read>
+		float distance = 5;
+		glm::vec3 front = {0,0,-1};
+		glm::vec3 right = {1,0,0};
+		glm::vec3 up = {0,1,0};
+		glm::vec3 global_up = {0,1,0};
 
-		// <result of inside update>
-		glm::vec3 front;
-		glm::vec3 up;
-		glm::vec3 right;
 		glm::mat4 view_mat;
 		glm::mat4 proj_mat;
 	public:
-		// free view (pos and dir)
-		Camera(glm::vec3 _position, glm::vec3 _front= {0,0,-1}, float _aspect=1);
-		virtual ~Camera() {}
+		Camera();
+		virtual ~Camera();
 	public:
+		void updateFromPosAndPivot();
+		void updateProjMat();
+
 		void rotateCamera(float xoff, float yoff);
-		void shiftPos(float xoff, float yoff);
+		void rotateCameraFromPivot(float xoff, float yoff);
+
+		void shiftPos(glm::vec3 off);
+		void shiftPosFromPlane(float xoff, float yoff);
 		void shiftDist(float offset);
 		void shiftZoom(float offset);
-	public:
-		void updateFreeViewMat();
-		void updatePivotViewMat();
-		void updateProjMat();
-		void updateOrientationFromFront();
-		void printCameraState();
 	};
 }
 #endif
