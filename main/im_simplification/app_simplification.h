@@ -46,7 +46,7 @@ namespace lim
 		Light light;
 		Model ground;
 
-		int nr_viewports;
+		int nr_viewports = 0;
 		std::vector<ViewportWithCamera*> viewports;
 		std::vector<Model*> models;
 		std::vector<Scene> scenes;

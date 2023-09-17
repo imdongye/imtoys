@@ -62,7 +62,7 @@ namespace lim
 			case VM_PIVOT:
 				if( glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS 
 					|| glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS ) {
-					shiftPosFromPlane(xoff * move_pivot_spd, yoff * move_pivot_spd);
+					shiftPosFromPlane(-xoff * move_pivot_spd, -yoff * move_pivot_spd);
 				}
 				else {
 					rotateCameraFromPivot(xoff * rot_pivot_spd, yoff * rot_pivot_spd);
@@ -88,7 +88,7 @@ namespace lim
 				break;
 			case VM_SCROLL:
 				if( glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ) {
-					shiftPosFromPlane(xOff * move_pivot_scroll_spd, yOff * -move_pivot_scroll_spd);
+					shiftPosFromPlane(-xOff * move_pivot_scroll_spd, yOff * move_pivot_scroll_spd);
 				}
 				else if( glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS ) {
 					shiftDist(yOff * 3.f);// todo

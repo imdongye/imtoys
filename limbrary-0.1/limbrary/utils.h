@@ -3,6 +3,7 @@
 
 #include <string>
 #include <functional>
+#include <unordered_map>
 #include <map>
 
 #define COMP_IMVEC2(X, Y) ((X).x==(Y).x)&&((X).y==(Y).y)

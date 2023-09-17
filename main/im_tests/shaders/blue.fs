@@ -7,5 +7,5 @@ in vec2 mUv;
 layout(location=0) out vec4 FragColor;
 
 void main() {
-	FragColor = vec4(0.3,0.35,1,1);
+	FragColor = vec4(0.3,1,0.2,1);
 }

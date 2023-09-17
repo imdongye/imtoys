@@ -57,8 +57,8 @@ namespace lim
 	void Camera::shiftPosFromPlane(float xoff, float yoff)
 	{
 		vec3 shift = global_up * yoff + right * xoff;
-		pivot -= shift;
-		position -= shift;
+		pivot += shift;
+		position += shift;
 		view_mat = lookAt(position, pivot, global_up);
 	}
 	void Camera::shiftDist(float offset)

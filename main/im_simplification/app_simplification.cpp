@@ -13,6 +13,7 @@
 #include <limbrary/model_view/code_mesh.h>
 #include <imgui.h>
 #include <limbrary/model_view/renderer.h>
+#include <limbrary/asset_lib.h>
 
 namespace lim
 {
@@ -45,20 +46,21 @@ namespace lim
 		programs.push_back(new Program("Shadowed", APP_DIR));
 		programs.back()->attatch("shadowed.vs").attatch("shadowed.fs").link();
 
+		AssetLib::get().default_mat.prog = programs[0];
+
 		ground.meshes.push_back(code_mesh::genPlane());
+		ground.materials.push_back(new Material());
+		ground.materials.back()->Kd = {0,1,0,1};
+		ground.meshes.back()->material = ground.materials.back();
 		ground.root.meshes.push_back(ground.meshes.back());
-		ground.materials.push_back({});
-		ground.materials.back()->prog = programs[0];
-		ground.default_mat = ground.materials.back();
-		ground.position = glm::vec3(0, 0, 0);
-		ground.scale = glm::vec3(100, 100, 1);
-		ground.orientation = glm::angleAxis(F_PI*0.5f, glm::vec3(1,0,0));
+
+		ground.position = {0, 0, 0};
+		ground.scale = {100, 1, 100};
 		ground.updateModelMat();
 
 		addEmptyViewport();
 		doLoadModel("assets/models/dwarf/Dwarf_2_Low.obj", 0);
 		addEmptyViewport();
-		doLoadModel("assets/models/dwarf/Dwarf_2_Low.obj", 1);
 	}
 	AppSimplification::~AppSimplification()
 	{
@@ -76,6 +78,7 @@ namespace lim
 	{
 		const char* vpName = fmtStrToBuf("viewport%d##simp", nr_viewports);
 		ViewportWithCamera* vp = new ViewportWithCamera(vpName, new MsFramebuffer);
+		vp->camera.shiftPosFromPlane(0,1.f);
 		vp->framebuffer->clear_color = {0, 0, 1, 1};
 		viewports.push_back(vp);
 
@@ -99,21 +102,22 @@ namespace lim
 
 		double elapsedTime = glfwGetTime();
 		models[vpIdx] = importModelFromFile(path.data(), true, true);
-		elapsedTime = glfwGetTime() - elapsedTime;
 		if( models[vpIdx]==nullptr ) {
 			return;
 		}
-		Model& md = *models[vpIdx];
+		elapsedTime = glfwGetTime() - elapsedTime;
 		log::pure("Done! in %.3f sec.  \n", elapsedTime);
 
-		md.default_mat->prog = programs[selected_prog_idx];
+		Model& md = *models[vpIdx];
+		md.position = {0,md.pivoted_scaled_bottom_height, 0};
+		md.updateModelMat();
 
 		Scene& scn = scenes[vpIdx];
-		
-		scn.models[1] = models[vpIdx];
+		scn.models[1] = models[vpIdx]; // 삭제된모델에서 교체
 
 		auto& vp = *viewports[vpIdx];
 		vp.camera.pivot = md.position;
+		vp.camera.position.y = md.position.y;
 		vp.camera.updateFromPosAndPivot();
 
 		AppPref::get().saveRecentModelPath(path.data());
@@ -167,8 +171,15 @@ namespace lim
 	{
 		if( is_same_camera )
 		{
-			for( int i=0; i<nr_viewports; i++ )
-				render(*viewports[i]->framebuffer, viewports[last_focused_vp_idx]->camera, scenes[i]);
+			Camera& cam = viewports[last_focused_vp_idx]->camera; 
+			float backupAspect = cam.aspect;
+			for( int i=0; i<nr_viewports; i++ ) {
+				cam.aspect = viewports[i]->camera.aspect;
+				cam.updateProjMat();
+				render(*viewports[i]->framebuffer, cam, scenes[i]);
+			}
+			cam.aspect = backupAspect;
+			cam.updateProjMat();
 		}
 		else
 		{
@@ -366,11 +377,7 @@ namespace lim
 				shaderList.push_back(prog->name.c_str());
 			if( ImGui::Combo("type", &selected_prog_idx, shaderList.data(), shaderList.size()) )
 			{
-				ground.default_mat->prog = programs[selected_prog_idx];
-				for( Model* md : models )
-				{
-					md->default_mat->prog = programs[selected_prog_idx];
-				}
+				AssetLib::get().default_mat.prog = programs[selected_prog_idx];
 			}
 			ImGui::Dummy(ImVec2(0.0f, 8.0f));
 			ImGui::Separator();

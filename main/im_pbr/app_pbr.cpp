@@ -24,6 +24,8 @@ namespace lim
 		
 		viewport = new ViewportWithCamera("viewport##pbr", new MsFramebuffer());
 		viewport->framebuffer->clear_color = {0.1f, 0.1f, 0.1f, 1.0f};
+		viewport->camera.move_free_spd = 6.f;
+		viewport->camera.shiftPos({0,0,10});
 
 		model = importModelFromFile("assets/models/objs/bunny.obj", true);
 		model->scale = model->scale*3.f;
