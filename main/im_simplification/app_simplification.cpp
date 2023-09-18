@@ -149,7 +149,7 @@ namespace lim
 		models[to_vp_idx] = toMd;
 		scenes[to_vp_idx].models[1] = toMd;
 
-		fqms::simplifyModel(toMd, lived_pct, version, agressiveness, verbose);
+		simplifyModel(*toMd, lived_pct, version, agressiveness, verbose);
 		int pct = 100.0 * toMd->nr_vertices / fromMd->nr_vertices;
 		toMd->name += "_"+std::to_string(pct)+"_pct";
 
