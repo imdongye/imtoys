@@ -161,6 +161,8 @@ namespace lim
 		initGL(data);
 		stbi_image_free(data);
 
+		log::pure("texture %s loaded\n", path.c_str());
+
 		return true;
 	}
 
@@ -189,7 +191,7 @@ namespace lim
 			src_bit_per_channel = 8;
 		}
 		if( !data ) {
-			log::err("texture failed to load at path: %s\n", path.data());
+			log::err("texture failed to load at path: %s\n", path.c_str());
 			return false;
 		}
 
@@ -223,18 +225,18 @@ namespace lim
 			if(nrChannels==4) internal_format = GL_SRGB8_ALPHA8;
 		}
 		else {
-			if(nrChannels==1&&bitPerChannel==8) internal_format = GL_R8;
-			if(nrChannels==2&&bitPerChannel==8) internal_format = GL_RG8;
-			if(nrChannels==3&&bitPerChannel==8) internal_format = GL_RGB8;
-			if(nrChannels==4&&bitPerChannel==8) internal_format = GL_RGBA8;
-			if(nrChannels==1&&bitPerChannel==16) internal_format = GL_R16F;
-			if(nrChannels==2&&bitPerChannel==16) internal_format = GL_RG16F;
-			if(nrChannels==3&&bitPerChannel==16) internal_format = GL_RGB16F;
-			if(nrChannels==4&&bitPerChannel==16) internal_format = GL_RGBA16F;
-			if(nrChannels==1&&bitPerChannel==32) internal_format = GL_R32F;
-			if(nrChannels==2&&bitPerChannel==32) internal_format = GL_RG32F;
-			if(nrChannels==3&&bitPerChannel==32) internal_format = GL_RGB32F;
-			if(nrChannels==4&&bitPerChannel==32) internal_format = GL_RGBA32F;
+			if(nrChannels==1&&bitPerChannel==8)  {internal_format = GL_R8; 		log::pure("texture %s loaded auto with GL_R8\n", path.c_str()); }
+			if(nrChannels==2&&bitPerChannel==8)  {internal_format = GL_RG8; 	log::pure("texture %s loaded auto with GL_RG8\n", path.c_str()); }
+			if(nrChannels==3&&bitPerChannel==8)  {internal_format = GL_RGB8; 	log::pure("texture %s loaded auto with GL_RGB8\n", path.c_str()); }
+			if(nrChannels==4&&bitPerChannel==8)  {internal_format = GL_RGBA8; 	log::pure("texture %s loaded auto with GL_RGBA8\n", path.c_str()); }
+			if(nrChannels==1&&bitPerChannel==16) {internal_format = GL_R16F; 	log::pure("texture %s loaded auto with GL_R16F\n", path.c_str()); }
+			if(nrChannels==2&&bitPerChannel==16) {internal_format = GL_RG16F; 	log::pure("texture %s loaded auto with GL_RG16F\n", path.c_str()); }
+			if(nrChannels==3&&bitPerChannel==16) {internal_format = GL_RGB16F; 	log::pure("texture %s loaded auto with GL_RGB16F\n", path.c_str()); }
+			if(nrChannels==4&&bitPerChannel==16) {internal_format = GL_RGBA16F; log::pure("texture %s loaded auto with GL_RGBA16F\n", path.c_str()); }
+			if(nrChannels==1&&bitPerChannel==32) {internal_format = GL_R32F; 	log::pure("texture %s loaded auto with GL_R32F\n", path.c_str()); }
+			if(nrChannels==2&&bitPerChannel==32) {internal_format = GL_RG32F; 	log::pure("texture %s loaded auto with GL_RG32F\n", path.c_str()); }
+			if(nrChannels==3&&bitPerChannel==32) {internal_format = GL_RGB32F; 	log::pure("texture %s loaded auto with GL_RGB32F\n", path.c_str()); }
+			if(nrChannels==4&&bitPerChannel==32) {internal_format = GL_RGBA32F; log::pure("texture %s loaded auto with GL_RGBA32F\n", path.c_str()); }
 		}
 
 		format = path.c_str()+path.rfind('.')+1;

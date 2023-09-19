@@ -35,7 +35,7 @@ namespace lim
 		bool is_same_camera = false;
 
 		int selected_prog_idx = 0;
-		std::vector<Program *> programs;
+		std::vector<Program*> programs;
 		std::vector<const char*> shader_names;
 
 		int last_focused_vp_idx = 0;
@@ -52,7 +52,7 @@ namespace lim
 		std::vector<Model*> models;
 		std::vector<Scene> scenes;
 
-		const char *export_path = "im_simplification/result/";
+		const char* export_path = "exports/simp_rst";
 
 	public:
 		AppSimplification();

@@ -3,7 +3,7 @@
 in vec3 wPos;
 in vec3 wNor;
 in vec2 mUv;
-layout(location=0) out vec4 FragColor;
+layout(location=0) out vec4 fragColor;
 
 uniform vec2 uvScale = vec2(1.f);
 uniform sampler2D uvgridTex;
@@ -31,5 +31,5 @@ void main() {
 	//outColor = vec3(mUv, 1.0);
 	//outColor = vec3(1);
 
-	FragColor = vec4(outColor,1);
+	fragColor = vec4(outColor,1);
 }

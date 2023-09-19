@@ -23,7 +23,6 @@ using namespace glm;
 namespace
 {
 	Model* rst = nullptr; // temp model
-	string md_dir;
 
 
 	inline vec3 toGLM( const aiVector3D& v ) {
@@ -48,7 +47,7 @@ namespace
 
 		// assimp가 뒤에오는 옵션을 읽지 않음 (ex: eye.png -bm 0.4) 그래서 아래와 같이 필터링한다.
 		texPath = texPath.substr(0, texPath.find_first_of(' '));
-		texPath = md_dir + texPath;
+		texPath = rst->path + "/" + texPath;
 
 		for( size_t i = 0; i < loadedTestures.size(); i++ ) {
 			if( texPath.compare(loadedTestures[i]->path)==0 ) {
@@ -58,7 +57,7 @@ namespace
 
 		// kd일때만 linear space변환
 		Texture* tex = new Texture();
-		tex->initFromImageAuto(texPath);
+		tex->initFromImage(texPath, internalFormat);
 		loadedTestures.push_back(tex);
 
 		return tex;
@@ -245,11 +244,11 @@ namespace lim
 
 		rst = new Model();
 		rst->path = modelPath;
-		string& spath = rst->path;
-		const size_t lastSlashPos = spath.find_last_of("/\\");
-		const size_t dotPos = spath.find_last_of('.');
-		rst->name = spath.substr(lastSlashPos + 1, dotPos - lastSlashPos - 1);
-		md_dir = (lastSlashPos == 0) ? "" : spath.substr(0, lastSlashPos) + "/";
+		string& path = rst->path;
+		const size_t lastSlashPos = path.find_last_of("/\\");
+		const size_t dotPos = path.find_last_of('.');
+		rst->name = path.substr(lastSlashPos + 1, dotPos - lastSlashPos - 1);
+		rst->path = (lastSlashPos == 0) ? "" : path.substr(0, lastSlashPos);
 
 		double elapsedTime = glfwGetTime();
 

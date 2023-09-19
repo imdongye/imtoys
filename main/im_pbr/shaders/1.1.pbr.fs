@@ -3,7 +3,7 @@ in vec2 TexCoords;
 in vec3 WorldPos;
 in vec3 Normal;
 
-layout(location=0) out vec4 FragColor;
+layout(location=0) out vec4 fragColor;
 
 // material parameters
 uniform float ao;
@@ -221,5 +221,5 @@ void main()
 
     color = color / (color + vec3(1.0)); // HDR tonemapping
     color = pow(color, vec3(1.0/2.2)); // gamma correct
-    FragColor = vec4(color, 1.0);
+    fragColor = vec4(color, 1.0);
 }

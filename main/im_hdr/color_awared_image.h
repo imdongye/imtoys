@@ -602,7 +602,7 @@ namespace lim
 			
 			if( refCount++==0 ) {
 				colorAwareDisplayProg = new Program("color aware display program");
-				colorAwareDisplayProg->attatch("quad.vs").attatch("im_hdr/shaders/rgb_to_pcs_to_display.fs").link();
+				colorAwareDisplayProg->attatch("canvas.vs").attatch("im_hdr/shaders/rgb_to_pcs_to_display.fs").link();
 			}
 			/* read meta data Exif
 			log::pure(R"(< Meta data >

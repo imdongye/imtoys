@@ -1,4 +1,4 @@
-#include "map_baker.h"
+#include "simplify.h"
 #include <limbrary/framebuffer.h>
 #include <limbrary/program.h>
 #include <filesystem>
@@ -51,7 +51,7 @@ namespace
 
 namespace lim
 {
-    void bakeNormalMap(std::string_view exportPath, Model* to, Model* from, int texSize)
+    void bakeNormalMap(Model* to, Model* from, int texSize)
     {
         namespace fs = std::filesystem;
         resourceInit(texSize);
@@ -114,12 +114,17 @@ namespace lim
             // 덮어쓴다.
             stbi_flip_vertically_on_write(true);
 
-            const size_t lastSlashPos = from->path.find_last_of("/\\");
-            std::string internalModelPath = fmMat->map_Bump->path.c_str() + lastSlashPos;
-            std::string modelDir = (lastSlashPos == 0) ? "" : from->path.substr(0, lastSlashPos) + "/"; // todo: check
+            std::string internalModelPath = fmMat->map_Bump->path.c_str() + from->path.size();
+            std::string texPath = to->path + internalModelPath;
+            const size_t lastSlashPos = texPath.find_last_of("/\\");
+            
+            fs::path createdPath(texPath.substr(0, lastSlashPos));
+            if (!std::filesystem::is_directory(createdPath))
+                fs::create_directories(createdPath);
 
-            std::string texPath = modelDir + internalModelPath;
             toMat->map_Bump->path = texPath;
+            toMat->map_Flags &= Material::MF_Bump;
+            toMat->map_Flags |= Material::MF_Nor;
             stbi_write_png(texPath.c_str(), texSize, texSize, 3, fileData, texSize * 3);
             log::pure("baked in %s\n\n", texPath.c_str());
         }

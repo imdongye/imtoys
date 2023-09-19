@@ -6,7 +6,6 @@
 
 #include "app_simplification.h"
 #include "simplify.h"
-#include "map_baker.h"
 #include <stb_image.h>
 #include <stb_sprintf.h>
 #include <limbrary/app_pref.h>
@@ -22,11 +21,11 @@ namespace lim
 	{
 		stbi_set_flip_vertically_on_load(true);
 
-		programs.push_back(new Program("Normal Dot View", APP_DIR));
-		programs.back()->attatch("assets/shaders/mvp.vs").attatch("ndv.fs").link();
+		programs.push_back(new Program("Normal Dot View"));
+		programs.back()->attatch("mvp.vs").attatch("ndv.fs").link();
 
-		programs.push_back(new Program("Normal Dot Light", APP_DIR));
-		programs.back()->attatch("assets/shaders/mvp.vs").attatch("ndl.fs").link();
+		programs.push_back(new Program("Normal Dot Light"));
+		programs.back()->attatch("mvp.vs").attatch("ndl.fs").link();
 
 		programs.push_back(new Program("Map View, my normal", APP_DIR));
 		programs.back()->attatch("uv_view.vs").attatch("wnor_out.fs").link();
@@ -42,7 +41,7 @@ namespace lim
 		for( Program* prog:programs )
 			shader_names.push_back(prog->name.c_str());
 
-		AssetLib::get().default_mat.prog = programs[0];
+		AssetLib::get().default_mat->prog = programs[0];
 
 		ground.meshes.push_back(code_mesh::genPlane());
 		ground.root.meshes.push_back(ground.meshes.back());
@@ -74,7 +73,7 @@ namespace lim
 	{
 		const char* vpName = fmtStrToBuf("viewport%d##simp", nr_viewports);
 		ViewportWithCamera* vp = new ViewportWithCamera(vpName, new MsFramebuffer);
-		vp->camera.shiftPosFromPlane(0,1.f);
+		vp->camera.shiftPos({1,1,0});
 		vp->framebuffer->clear_color = {0, 0, 1, 1};
 		viewports.push_back(vp);
 
@@ -130,7 +129,7 @@ namespace lim
 		double start = glfwGetTime();
 		log::pure("Exporting %s.. .. ...... ...  .... .. . .... . .\n", toModel->name.c_str());
 
-		exportModelToFile(export_path, toModel, pIndex);
+		exportModelToFile(toModel, pIndex);
 
 		log::pure("Done! in %.3f sec.  \n\n", glfwGetTime() - start);
 	}
@@ -148,6 +147,7 @@ namespace lim
 		simplifyModel(*toMd, lived_pct, version, agressiveness, verbose);
 		int pct = 100.0 * toMd->nr_vertices / fromMd->nr_vertices;
 		toMd->name += "_"+std::to_string(pct)+"_pct";
+		toMd->path = std::string(export_path)+"/"+toMd->name;
 
 		viewports[to_vp_idx]->camera.pivot = toMd->position;
 		viewports[to_vp_idx]->camera.updateFromPosAndPivot();
@@ -156,7 +156,7 @@ namespace lim
 	void AppSimplification::doBakeNormalMap(int texSize)
 	{
 		if( models[from_vp_idx] != nullptr && models[to_vp_idx] != nullptr )
-			bakeNormalMap(export_path, models[to_vp_idx], models[from_vp_idx], texSize);
+			bakeNormalMap(models[to_vp_idx], models[from_vp_idx], texSize);
 		else
 			log::err("You Must to simplify before baking\n");
 	}
@@ -370,7 +370,7 @@ namespace lim
 			ImGui::Text("<shader>");
 			if( ImGui::Combo("type", &selected_prog_idx, shader_names.data(), shader_names.size()) )
 			{
-				AssetLib::get().default_mat.prog = programs[selected_prog_idx];
+				AssetLib::get().default_mat->prog = programs[selected_prog_idx];
 			}
 			ImGui::Dummy(ImVec2(0.0f, 8.0f));
 			ImGui::Separator();

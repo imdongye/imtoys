@@ -11,22 +11,20 @@ namespace lim
 		log::pure("init AssetLib\n");
 
 		tex_to_quad_prog = new Program("texToQuad");
-		tex_to_quad_prog->attatch("quad.vs").attatch("tex_to_quad.fs").link();
+		tex_to_quad_prog->attatch("canvas.vs").attatch("canvas_color.fs").link();
 
 		gray_to_quad_prog = new Program("grayToQuad");
-		gray_to_quad_prog->attatch("quad.vs").attatch("gray_to_quad.fs").link();
+		gray_to_quad_prog->attatch("canvas.vs").attatch("canvas_gray.fs").link();
 	
 		depth_prog = new Program("depth");
 		depth_prog->attatch("mvp.vs").attatch("depth.fs").link();
 
-		red_prog = new Program("red");
-		red_prog->attatch("quad.vs").attatch("red.fs").link();
 
 		default_prog = new Program("defualt");
-		default_prog->attatch("mvp.vs").attatch("red.fs").link();
+		default_prog->attatch("mvp.vs").attatch("ndv.fs").link();
 
-		default_mat.prog = default_prog;
-
+		default_mat = new Material();
+		default_mat->prog = default_prog;
 
 		screen_quad = code_mesh::genQuad(false, false);
 		sphere = code_mesh::genSphere();
@@ -39,8 +37,9 @@ namespace lim
 		delete tex_to_quad_prog;
 		delete gray_to_quad_prog;
 		delete depth_prog;
-		delete red_prog;
+
 		delete default_prog;
+		delete default_mat;
 
 		delete screen_quad;
 		delete sphere;

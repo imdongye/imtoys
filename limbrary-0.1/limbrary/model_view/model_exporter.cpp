@@ -219,7 +219,7 @@ namespace lim
 	{
 		return nr_formats;
 	}
-	const aiExportFormatDesc *getExportFormatInfo(int idx)
+	const aiExportFormatDesc* getExportFormatInfo(int idx)
 	{
 		if (formats[0] == nullptr){
 			for (int i = 0; i < nr_formats; i++)
@@ -230,7 +230,7 @@ namespace lim
 		return formats[idx];
 	}
 
-	void exportModelToFile(std::string exportDir, Model *model, size_t pIndex)
+	void exportModelToFile(Model* model, size_t pIndex)
 	{
 		namespace fs = std::filesystem;
 		const aiExportFormatDesc *format = formats[pIndex];
@@ -240,18 +240,18 @@ namespace lim
 		md_dir = model->path.substr(0, lastSlashPos) + "/";
 
 		/* create path */
-		exportDir += "/"+model->name; // todo : test
-		fs::path createdPath(exportDir);
-		if (!std::filesystem::is_directory(createdPath))
-			fs::create_directories(createdPath);
-		std::string newModelPath = exportDir + model->name.c_str() +'.'+format->fileExtension;
+		std::string exportPath = model->path += "/"+model->name; // todo : test
+		fs::path createdPath(exportPath);
+		if( !std::filesystem::is_directory(exportPath) )
+			fs::create_directories(exportPath);
+		exportPath += "/"+ model->name +'.'+format->fileExtension;
 
 		/* export model */
 		rst_scene = makeScene(model);
 		
-		if( aiExportScene(rst_scene, format->id, newModelPath.data(), rst_scene->mFlags)!=AI_SUCCESS )
+		if( aiExportScene(rst_scene, format->id, exportPath.c_str(), rst_scene->mFlags)!=AI_SUCCESS )
 		{
-			log::err("failed export %s\n", newModelPath.data());
+			log::err("failed export %s\n", exportPath.data());
 		}
 		delete rst_scene;
 		rst_scene = nullptr;
@@ -261,10 +261,10 @@ namespace lim
 		for( Texture* tex : model->textures_loaded )
 		{
 			std::string internalPath = tex->path.data()+lastSlashPos;
-			std::string newTexPath = exportDir + internalPath;
+			std::string newTexPath = model->path + internalPath;
 
 			fs::path fromTexPath(tex->path);
-			fs::path toTexPath(newTexPath);
+			fs::path toTexPath(newTexPath); // todo: 디렉토리 없을때 에러?
 			fs::copy(fromTexPath, toTexPath, fs::copy_options::skip_existing);
 			log::pure("copied texture: %s to %s\n", fromTexPath.string().c_str(), toTexPath.string().c_str());
 		}

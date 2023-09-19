@@ -109,7 +109,7 @@ namespace lim
 			glBindTexture(GL_TEXTURE_2D, debugging_tex->tex_id);
 			prog.setUniform("uvgridTex", 0);
 		};
-		AssetLib::get().default_mat.prog = program;
+		AssetLib::get().default_mat->prog = program;
 	}
 	AppGenMesh::~AppGenMesh()
 	{

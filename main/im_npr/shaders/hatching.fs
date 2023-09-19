@@ -4,7 +4,7 @@ in vec3 wPos;
 in vec3 wNor;
 in vec2 mUv;
 
-layout(location=0) out vec4 FragColor;
+layout(location=0) out vec4 fragColor;
 
 uniform vec2 uvScale = vec2(1.f);
 uniform int nrTones = 6;
@@ -66,5 +66,5 @@ void main() {
 	//outColor = vec3(left/float(nrTones));
 	//outColor = vec3(coef);
 
-	FragColor = vec4(outColor,1);
+	fragColor = vec4(outColor,1);
 }

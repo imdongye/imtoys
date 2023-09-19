@@ -23,9 +23,9 @@ namespace lim
 		Program* tex_to_quad_prog;
 		Program* gray_to_quad_prog;
 		Program* depth_prog;
-		Program* red_prog;
+		
 		Program* default_prog;
-		Material default_mat;
+		Material* default_mat;
 		
 		Mesh* screen_quad; // only poss
 		Mesh* sphere;

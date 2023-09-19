@@ -53,7 +53,7 @@ namespace lim
 	Model::Model(std::string_view _name)
 		:name(_name)
 	{
-		default_mat = &AssetLib::get().default_mat;
+		default_mat = AssetLib::get().default_mat;
 	}
 	Model::~Model()
 	{

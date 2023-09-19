@@ -87,7 +87,7 @@ namespace lim
 
 	// export model
 	int getNrExportFormats();
-	const aiExportFormatDesc *getExportFormatInfo(int idx);
-	void exportModelToFile(std::string exportDir, Model *model, size_t pIndex);
+	const aiExportFormatDesc* getExportFormatInfo(int idx);
+	void exportModelToFile(Model* model, size_t pIndex);
 }
 #endif

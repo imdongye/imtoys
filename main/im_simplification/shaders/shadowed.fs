@@ -1,5 +1,5 @@
 #version 410 core
-out vec4 FragColor;
+layout(location=0) out vec4 fragColor;
 
 in vec3 wPos;
 in vec3 wNor;
@@ -92,5 +92,5 @@ void main(void)
 	outColor *= visibility;
 
     outColor = pow(outColor, vec3(1/gamma));
-    FragColor = vec4(outColor, 1);
+    fragColor = vec4(outColor, 1);
 }
