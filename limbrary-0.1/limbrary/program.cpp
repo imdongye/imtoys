@@ -89,7 +89,7 @@ namespace lim
 		glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
 		if( !success ) {
 			glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-			log::err("shader compile error in %s\n%s\n",path, infoLog);
+			log::err("shader compile error in %s\n%s\n",path.data(), infoLog);
 			//std::abort();
 			return false;
 		}

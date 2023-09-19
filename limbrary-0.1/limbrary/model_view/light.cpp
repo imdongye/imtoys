@@ -12,13 +12,13 @@
 #include <limbrary/model_view/light.h>
 #include <glm/gtx/transform.hpp>
 
+using namespace glm;
 
 namespace lim
 {
-	Light::Light(float _yaw, float _pitch, glm::vec3 _color, float _intensity, bool shadowEnabled)
+	Light::Light()
 	{
-		yaw=_yaw; pitch=_pitch; color=_color;
-		intensity=_intensity; shadow_enabled=shadowEnabled;
+		direction = normalize(position-pivot);
 
 		map_Shadow.clear_color = glm::vec4(1);
 		map_Shadow.resize(shadow_map_size, shadow_map_size);
@@ -29,23 +29,30 @@ namespace lim
 
 		const float halfW = ortho_width*0.5f;
 		const float halfH = ortho_height*0.5f;
-		proj_mat = glm::ortho(-halfW, halfW, -halfH, halfH, shadow_z_near, shadow_z_far);
-		updateMembers();
+		shadow_proj_mat = glm::ortho(-halfW, halfW, -halfH, halfH, shadow_z_near, shadow_z_far);
+		updateWithPivotAndPos();
 	}
 	Light::~Light()
 	{
 	}
-	void Light::updateMembers()
+	void Light::setRotate(float thetaDeg, float piDeg, float radius)
 	{
-		yaw = glm::mod(yaw, 360.f);
-		//const float minPitchDegree = 20;
-		pitch = glm::clamp(pitch, 20.f, 89.f);
-		position = glm::vec3(glm::rotate(glm::radians(yaw), glm::vec3(0, 1, 0))
-								* glm::rotate(glm::radians(-pitch), glm::vec3(1, 0, 0))
-								* glm::vec4(0, 0, distance, 1));
-		direction = glm::normalize(position);
+		vec3 diff = position-pivot;
+		float distance = (radius<0)?length(diff):radius;
 
-		view_mat = glm::lookAt(position, {0,0,0}, {0,1,0});
-		vp_mat = proj_mat * view_mat;
+		vec4 toLit = {0,1,0,0};
+		toLit = rotate(radians(thetaDeg), vec3{0,0,1}) * toLit;
+		toLit = rotate(radians(piDeg), vec3{0,1,0}) * toLit;
+
+		position = pivot+distance*vec3(toLit);
+		direction = normalize(position-pivot);
+		updateWithPivotAndPos();
 	}
+	void Light::updateWithPivotAndPos()
+	{
+		direction = normalize(position - pivot);
+		shadow_view_mat = lookAt(vec3(position), pivot, {0,1,0});
+		shadow_vp_mat = shadow_proj_mat * shadow_view_mat;
+	}
+
 }

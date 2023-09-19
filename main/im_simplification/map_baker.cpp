@@ -4,9 +4,10 @@
 #include <filesystem>
 #include <stb_image_write.h>
 #include <limbrary/model_view/mesh.h>
+#include <limbrary/utils.h>
 #include <unordered_map>
 #include <vector>
-
+#include <stack>
 using namespace std;
 
 namespace
@@ -30,10 +31,10 @@ namespace
             bakedNormalMapPointer->resize(texSize);
         }
         if( bakerProg==nullptr ) {
-            normalDrawProg = new lim::Program("normal to tex coord", "imsimplification/");
-            normalDrawProg->attatch("uv_view.vs").attatch("map_wnor.fs").link();
+            normalDrawProg = new lim::Program("normal to tex coord", "im_simplification/");
+            normalDrawProg->attatch("uv_view.vs").attatch("wnor_out.fs").link();
 
-            bakerProg = new lim::Program("normal map baker", "imsimplification/");
+            bakerProg = new lim::Program("normal map baker", "im_simplification/");
             bakerProg->attatch("uv_view.vs").attatch("bake_normal.fs").link();
         }
     }
@@ -64,16 +65,16 @@ namespace lim
             Mesh* fmMs = from->meshes[i];
             if( toMs->material==nullptr || toMs->material->map_Bump==nullptr ) 
                 continue;
-            int bumpIdx = distance(to->textures_loaded.begin(), find(to->textures_loaded.begin(), to->textures_loaded.end(), toMs->material->map_Bump));
-            mergeByNormalMap[bumpIdx].push_back( make_pair(toMs,fmMs) );
+            int bumpMatIdx = findIdx(to->materials, toMs->material);
+            mergeByNormalMap[bumpMatIdx].push_back( make_pair(toMs,fmMs) );
         }
 
 
         GLubyte* fileData = new GLubyte[3 * texSize * texSize];
 
-        for( auto& [bumpIdx, meshes] : mergeByNormalMap ) {
-            Texture* toBp = to->textures_loaded[bumpIdx];
-            Texture* fmBp = from->textures_loaded[bumpIdx];
+        for( auto& [bumpMatIdx, meshes] : mergeByNormalMap ) {
+            Material* toMat = to->materials[bumpMatIdx];
+            Material* fmMat = from->materials[bumpMatIdx];
 
             // from의 model space normal 가져오기
             targetNormalMap.bind();
@@ -87,10 +88,16 @@ namespace lim
             bakedNormalMap.bind();
             bakerProg->use();
 
-            // target normal 마지막 슬롯으로 넘기기
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, targetNormalMap.color_tex);
             bakerProg->setUniform("map_TargetNormal", 0);
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, fmMat->map_Bump->tex_id);
+            bakerProg->setUniform("map_Bump", 1);
+
+            bakerProg->setUniform("mapFlags", fmMat->map_Flags);
+            bakerProg->setUniform("texDelta", fmMat->texDelta);
+            bakerProg->setUniform("bumpHeight", fmMat->bumpHeight);
 
             // 원본의 노멀과 bumpmap, Target의 노멀으로 그린다.
             for( auto& [toMesh, fromMesh] : meshes ) {
@@ -108,11 +115,11 @@ namespace lim
             stbi_flip_vertically_on_write(true);
 
             const size_t lastSlashPos = from->path.find_last_of("/\\");
-            std::string internalModelPath = fmBp->path.c_str() + lastSlashPos;
+            std::string internalModelPath = fmMat->map_Bump->path.c_str() + lastSlashPos;
             std::string modelDir = (lastSlashPos == 0) ? "" : from->path.substr(0, lastSlashPos) + "/"; // todo: check
 
             std::string texPath = modelDir + internalModelPath;
-            toBp->path = texPath;
+            toMat->map_Bump->path = texPath;
             stbi_write_png(texPath.c_str(), texSize, texSize, 3, fileData, texSize * 3);
             log::pure("baked in %s\n\n", texPath.c_str());
         }

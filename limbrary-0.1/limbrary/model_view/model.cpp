@@ -3,7 +3,7 @@
 //  edit learnopengl code
 //
 // texture uniform sampler2d variable name rule
-// map_Kd0, map_Kd1 ...
+// map_Kd, map_Kd1 ...
 // 
 //  TODO list:
 //  1. export
@@ -27,8 +27,9 @@ using namespace lim;
 
 namespace
 {
-	void correctMatTexLink( Material& to, const Material& from, 
-		const std::vector<Texture*>& toTexs, const std::vector<Texture*>& fromTexs ) {
+	void correctMatTexLink( Material& to, const Material& from
+		, const std::vector<Texture*>& toTexs, const std::vector<Texture*>& fromTexs )
+	{
 		if( to.map_Kd ) {
 			to.map_Kd = toTexs[findIdx(fromTexs, from.map_Kd)];
 		}
@@ -145,19 +146,22 @@ namespace lim
 		boundary_min = glm::vec3(std::numeric_limits<float>::max());
 		boundary_size = glm::vec3(0);
 
-		if( meshes.size()==0) {
-			log::err("there's no mesh when updateNrBoundary\n");
-			return;
-		}
-
-		for(Mesh* pMesh : meshes) {
-			const Mesh& m = *pMesh;
-			for(glm::vec3 p : m.poss) {
-				boundary_max = glm::max(boundary_max, p);
-				boundary_min = glm::min(boundary_min, p);
+		std::stack<Node*> nds;
+		nds.push(&root);
+		while(nds.size()>0)
+		{
+			Node* cur = nds.top(); nds.pop();
+			for(Mesh* pMesh : cur->meshes) {
+				for(glm::vec3& p : pMesh->poss) {
+					boundary_max = glm::max(boundary_max, p);
+					boundary_min = glm::min(boundary_min, p);
+				}
+				nr_vertices += pMesh->poss.size();
+				nr_triangles += pMesh->tris.size();
 			}
-			nr_vertices += m.poss.size();
-			nr_triangles += m.tris.size();
+			for(Node& nd : cur->childs) {
+				nds.push(&nd);
+			}
 		}
 		boundary_size = boundary_max-boundary_min;
 	}

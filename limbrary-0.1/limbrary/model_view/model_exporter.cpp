@@ -101,11 +101,14 @@ namespace
 		
 		if( mat.map_Bump != nullptr ) {
 			tempStr = aiString(mat.map_Bump->path.data()+slashPos);
-			if( mat.bumpIsNormal ) {
+			if( mat.map_Flags & lim::Material::MF_Nor ) {
 				aiMat->AddProperty( &tempStr, AI_MATKEY_TEXTURE(aiTextureType_NORMALS, 0) );
 			}
-			else {
+			else if( mat.map_Flags & lim::Material::MF_Bump ) {
 				aiMat->AddProperty( &tempStr, AI_MATKEY_TEXTURE(aiTextureType_HEIGHT, 0) );
+			}
+			else {
+				log::err("map_Bump is not nullptr but flags not defined");
 			}
 		}
 

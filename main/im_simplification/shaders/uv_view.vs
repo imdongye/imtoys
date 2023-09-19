@@ -5,7 +5,7 @@ layout (location = 2) in vec2 aUv;
 
 out vec3 wPos;
 out vec3 wNor;
-out vec2 tUv;
+out vec2 mUv;
 
 uniform mat4 modelMat = mat4(1);
 uniform mat4 viewMat = mat4(1);
@@ -13,13 +13,10 @@ uniform mat4 projMat= mat4(1);
 
 void main()
 {
-    wPos = (modelMat * vec4(aPos, 1.0)).xyz;
+    wPos = (modelMat * vec4(aPos, 1)).xyz;
     wNor = (modelMat * vec4(aNor, 0)).xyz; // do not with nonuniform scale
-    tUv = aUv;
+    mUv = aUv;
 
-	vec4 nc;
-	nc.xy = tUv*2-1;
-	nc.z = 0;
-	nc.w = 1;
-    gl_Position = nc;
+	vec2 nc = mUv*2-1;
+    gl_Position = vec4(nc, 0, 1);
 }

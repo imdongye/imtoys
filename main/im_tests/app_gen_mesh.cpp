@@ -87,7 +87,6 @@ namespace lim
 		models.back()->updateModelMat();
 
 		light = new Light();
-		light->distance = 10.f;
 		light_model = new Model("light model");
 		light_model->meshes.push_back(code_mesh::genSphere(8, 4));
 		light_model->root.meshes.push_back(models.back()->meshes.back());
@@ -152,15 +151,14 @@ namespace lim
 			ImGui::SliderFloat("vs_t", &vs_t, 0.f, 1.f);
 
 			ImGui::Text("<light>");
-			const float yawSpd = 360 * 0.001;
-			const float pitchSpd = 80 * 0.001;
-			const float distSpd = 94 * 0.001;
-			bool isDraging = ImGui::SliderFloat("yaw", &light->yaw, 0, 360, "%.3f");
-			isDraging |= ImGui::SliderFloat("pitch", &light->pitch, 10, 90, "%.3f");
-			isDraging |= ImGui::SliderFloat("distance", &light->distance, 6, 100, "%.3f");
-			if (isDraging)
-			{
-				light->updateMembers();
+			const static float litThetaSpd = 70 * 0.001;
+			const static float litPiSpd = 360 * 0.001;
+			static float litTheta = 30.f;
+			static float litPi = 30.f;
+			if( ImGui::DragFloat("light yaw", &litPi, litPiSpd, 0, 360, "%.3f") ||
+				ImGui::DragFloat("light pitch", &litTheta, litThetaSpd, 0, 180, "%.3f") ) {
+
+				light->setRotate(litTheta, litPi);
 				light_model->position = light->position;
 				light_model->updateModelMat();
 			}

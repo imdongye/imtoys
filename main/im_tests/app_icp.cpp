@@ -175,7 +175,7 @@ namespace lim
         stbi_set_flip_vertically_on_load(true);
 
         prog = new Program("icp", APP_DIR);
-        prog->attatch("assets/shaders/mvp.vs").attatch("blue.fs").link();
+        prog->attatch("assets/shaders/mvp_points.vs").attatch("blue.fs").link();
 
         camera = new WinAutoCamera();
         camera->position = {0,0,5};
@@ -200,8 +200,8 @@ namespace lim
     }
     void AppICP::update()
     {
+        glEnable(GL_PROGRAM_POINT_SIZE);
 		glEnable(GL_DEPTH_TEST);
-
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glViewport(0, 0, fb_width, fb_height);
 		glClearColor(0.05f, 0.09f, 0.11f, 1.0f);

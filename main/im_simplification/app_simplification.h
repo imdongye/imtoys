@@ -36,6 +36,7 @@ namespace lim
 
 		int selected_prog_idx = 0;
 		std::vector<Program *> programs;
+		std::vector<const char*> shader_names;
 
 		int last_focused_vp_idx = 0;
 		bool simplify_trigger = false;

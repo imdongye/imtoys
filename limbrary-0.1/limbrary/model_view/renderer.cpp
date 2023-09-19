@@ -4,9 +4,6 @@
 
 using namespace std;
 
-namespace
-{
-}
 
 namespace lim
 {
@@ -24,10 +21,16 @@ namespace lim
         prog.setUniform("viewMat", cam.view_mat);
         prog.setUniform("modelMat", md.model_mat);
 
-        prog.setUniform("lightDir", lit.direction);
+        prog.setUniform("lightPos", lit.position);
         prog.setUniform("lightColor", lit.color);
         prog.setUniform("lightInt", lit.intensity);
-        prog.setUniform("lightPos", lit.position);
+        prog.setUniform("shadowEnabled", (lit.shadow_enabled)?1:0);
+        if( lit.shadow_enabled ) {
+            prog.setUniform("shadowVP", lit.shadow_vp_mat);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, lit.map_Shadow.color_tex);
+            prog.setUniform("map_Shadow", 0);
+        }
 
         for( Mesh* pMesh : md.meshes) {
             pMesh->drawGL();
@@ -53,8 +56,8 @@ namespace lim
             }
             lit.map_Shadow.bind();
 
-            depthProg.setUniform("viewMat", lit.view_mat);
-            depthProg.setUniform("projMat", lit.proj_mat);
+            depthProg.setUniform("viewMat", lit.shadow_view_mat);
+            depthProg.setUniform("projMat", lit.shadow_proj_mat);
 
             for( Model* pMd : scn.models ) {
                 const Model& md = *pMd;
@@ -104,19 +107,18 @@ namespace lim
                         
                         prog.use();
                         prog.setUniform("cameraPos", cam.position);
-                        prog.setUniform("projMat", cam.proj_mat);
                         prog.setUniform("viewMat", cam.view_mat);
+                        prog.setUniform("projMat", cam.proj_mat);
 
                         /* Todo: 지금은 라이트 하나만 */
                         for( Light* pLit : scn.lights ) {
                             const Light& lit = *pLit;
-                            prog.setUniform("lightDir", lit.direction);
+                            prog.setUniform("lightPos", lit.position);
                             prog.setUniform("lightColor", lit.color);
                             prog.setUniform("lightInt", lit.intensity);
-                            prog.setUniform("lightPos", lit.position);
                             prog.setUniform("shadowEnabled", (lit.shadow_enabled)?1:0);
                             if( lit.shadow_enabled ) {
-                                prog.setUniform("shadowVP", lit.vp_mat);
+                                prog.setUniform("shadowVP", lit.shadow_vp_mat);
                                 glActiveTexture(GL_TEXTURE0 + activeSlot);
                                 glBindTexture(GL_TEXTURE_2D, lit.map_Shadow.color_tex);
                                 prog.setUniform("map_Shadow", activeSlot++);
@@ -136,6 +138,8 @@ namespace lim
                         prog.setUniform("Ke", mat.Ke);
                         prog.setUniform("Tf", mat.Tf);
                         prog.setUniform("Ni", mat.Ni);
+
+                        prog.setUniform("map_Flags", mat.map_Flags);
 
                         if( mat.map_Kd ) {
                             glActiveTexture(GL_TEXTURE0 + activeSlot);
@@ -161,14 +165,15 @@ namespace lim
                             glActiveTexture(GL_TEXTURE0 + activeSlot);
 		                    glBindTexture(GL_TEXTURE_2D, mat.map_Bump->tex_id);
                             prog.setUniform("map_Bump", activeSlot++);
-                            if( !mat.bumpIsNormal ) {
-                                prog.setUniform("bumpHeight", mat.bump_height);
-                                prog.setUniform("texDelta", mat.tex_delta);
+
+                            if( mat.map_Flags & Material::MF_Bump ) {
+                                prog.setUniform("texDelta", mat.texDelta);
+                                prog.setUniform("bumpHeight", mat.bumpHeight);
                             }
                         }
                     }
 
-                    curProg->setUniform("modelMat", md.model_mat); // todo
+                    curProg->setUniform("modelMat", md.model_mat); // Todo: hirachi trnasformation
                     ms.drawGL();
                 }
             }

@@ -3,12 +3,12 @@ out vec4 FragColor;
 
 in vec3 wPos;
 in vec3 wNor;
-in vec2 tUv;
+in vec2 mUv;
 in vec4 shadowFragPos;
 
 /* light */
 uniform int shadowEnabled = -1;
-uniform vec3 lightDir = vec3(1,0,0);
+uniform vec3 lightPos = vec3(1,0,0);
 uniform vec3 lightColor = vec3(1);
 uniform float lightInt = 0.8;
 uniform sampler2D map_Shadow;
@@ -76,7 +76,7 @@ float shadowing()
 void main(void)
 {
 	vec3 N = normalize(wNor);
-	vec3 L = normalize(lightDir);
+	vec3 L = normalize(lightPos-wPos);
 	vec3 V = normalize(cameraPos - wPos);
 	vec3 R = 2*dot(N,L)*N-L;
 

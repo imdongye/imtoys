@@ -114,7 +114,7 @@ namespace lim
 		models.push_back( new Model("sphere") );
 		models.back()->root.meshes.push_back(AssetLib::get().sphere);
 		models.back()->default_mat = h_mat;
-		models.back()->updateNrAndBoundary();
+		models.back()->updateUnitScaleAndPivot();
 
 		models.push_back( importModelFromFile("assets/models/objs/bunny.obj", true, false) );
 		models.back()->default_mat = h_mat;
@@ -123,18 +123,18 @@ namespace lim
 		const float biasModels = -interModels*(models.size()-1)*0.5f;
 
 		for( int i = 0; i<models.size(); i++ ) {
-			models[i]->position ={biasModels + interModels*i, models[i]->pivoted_scaled_bottom_height, 0};
+			models[i]->position ={biasModels + interModels*i, 0, 0};
 			models[i]->updateModelMat();
 		}
 
-		models.push_back( new Model("ground") );
-		models.back()->meshes.push_back( code_mesh::genPlane() );
-		models.back()->root.meshes.push_back(models.back()->meshes.back());
-		models.back()->scale = glm::vec3(20);
-		models.back()->updateModelMat();
+		// models.push_back( new Model("ground") );
+		// models.back()->meshes.push_back( code_mesh::genPlane() );
+		// models.back()->root.meshes.push_back(models.back()->meshes.back());
+		// models.back()->scale = glm::vec3(20);
+		// models.back()->updateModelMat();
 
 		light = new Light();
-		light->distance = 10.f;
+		light->setRotate(30.f, 30.f, 10.f);
 		light_model = new Model("light model");
 		light_model->meshes.push_back(code_mesh::genSphere(8, 4));
 		light_model->root.meshes.push_back(light_model->meshes.back()); // delete sphere when delete model!
@@ -195,18 +195,20 @@ namespace lim
 		ImGui::Checkbox("is 6-way blending", &is6way);
 
 		ImGui::Text("<light>");
-		const float yawSpd = 360 * 0.001;
-		const float pitchSpd = 80 * 0.001;
-		const float distSpd = 94 * 0.001;
-		bool isDraging = ImGui::SliderFloat("yaw", &light->yaw, 0, 360, "%.3f");
-		isDraging |= ImGui::SliderFloat("pitch", &light->pitch, 10, 90, "%.3f");
-		isDraging |= ImGui::SliderFloat("distance", &light->distance, 6, 100, "%.3f");
-		if( isDraging ) {
-			light->updateMembers();
+		const static float litThetaSpd = 70 * 0.001;
+		const static float litPiSpd = 360 * 0.001;
+		static float litTheta = 30.f;
+		static float litPi = 30.f;
+		if( ImGui::DragFloat("light yaw", &litPi, litPiSpd, 0, 360, "%.3f") ||
+			ImGui::DragFloat("light pitch", &litTheta, litThetaSpd, 0, 180, "%.3f") ) {
+
+			light->setRotate(litTheta, litPi);
 			light_model->position = light->position;
 			light_model->updateModelMat();
 		}
 		ImGui::Text("pos %f %f %f", light->position.x, light->position.y, light->position.z);
+
+
 
 		ImGui::SliderInt("use fixed art map", &fixed_art_map_idx, -1, nr_tones-1);
 		

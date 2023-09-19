@@ -3,7 +3,7 @@ out vec4 FragColor;
 
 in vec3 wPos;
 in vec3 wNor;
-in vec2 tUv;
+in vec2 mUv;
 
 uniform vec3 cameraPos;
 uniform float gamma = 2.2;

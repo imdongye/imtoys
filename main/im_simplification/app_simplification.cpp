@@ -23,36 +23,32 @@ namespace lim
 		stbi_set_flip_vertically_on_load(true);
 
 		programs.push_back(new Program("Normal Dot View", APP_DIR));
-		programs.back()->attatch("pos_nor_uv.vs").attatch("ndv.fs").link();
+		programs.back()->attatch("assets/shaders/mvp.vs").attatch("ndv.fs").link();
 
 		programs.push_back(new Program("Normal Dot Light", APP_DIR));
-		programs.back()->attatch("pos_nor_uv.vs").attatch("ndl.fs").link();
-
-		programs.push_back(new Program("Map View, bump", APP_DIR));
-		programs.back()->attatch("uv_view.vs").attatch("map_view.fs").link();
+		programs.back()->attatch("assets/shaders/mvp.vs").attatch("ndl.fs").link();
 
 		programs.push_back(new Program("Map View, my normal", APP_DIR));
-		programs.back()->attatch("uv_view.vs").attatch("map_wnor.fs").link();
-
-		programs.push_back(new Program("Map View, my normal + map_bump", APP_DIR));
-		programs.back()->attatch("uv_view.vs").attatch("map_wnor_added_bump_map.fs").link();
+		programs.back()->attatch("uv_view.vs").attatch("wnor_out.fs").link();
 
 		programs.push_back(new Program("Auto Normal", APP_DIR));
-		programs.back()->attatch("pos_nor_uv.vs").attatch("auto_normal.fs").link();
+		programs.back()->attatch("assets/shaders/mvp.vs").attatch("bumped.fs").link();
 
-		programs.push_back(new Program("Uv", APP_DIR));
-		programs.back()->attatch("pos_nor_uv.vs").attatch("uv.fs").link();
+		programs.push_back(new Program("bitoper", APP_DIR));
+		programs.back()->attatch("assets/shaders/mvp.vs").attatch("bitoper.fs").link();
 
 		programs.push_back(new Program("Shadowed", APP_DIR));
 		programs.back()->attatch("shadowed.vs").attatch("shadowed.fs").link();
+		for( Program* prog:programs )
+			shader_names.push_back(prog->name.c_str());
 
 		AssetLib::get().default_mat.prog = programs[0];
 
 		ground.meshes.push_back(code_mesh::genPlane());
+		ground.root.meshes.push_back(ground.meshes.back());
 		ground.materials.push_back(new Material());
 		ground.materials.back()->Kd = {0,1,0,1};
 		ground.meshes.back()->material = ground.materials.back();
-		ground.root.meshes.push_back(ground.meshes.back());
 
 		ground.position = {0, 0, 0};
 		ground.scale = {100, 1, 100};
@@ -372,10 +368,7 @@ namespace lim
 			ImGui::Dummy(ImVec2(0.0f, 3.0f));
 
 			ImGui::Text("<shader>");
-			std::vector<const char *> shaderList(programs.size());
-			for( Program *prog : programs )
-				shaderList.push_back(prog->name.c_str());
-			if( ImGui::Combo("type", &selected_prog_idx, shaderList.data(), shaderList.size()) )
+			if( ImGui::Combo("type", &selected_prog_idx, shader_names.data(), shader_names.size()) )
 			{
 				AssetLib::get().default_mat.prog = programs[selected_prog_idx];
 			}
@@ -384,19 +377,22 @@ namespace lim
 			ImGui::Dummy(ImVec2(0.0f, 3.0f));
 
 			ImGui::Text("<light>");
-			const float yawSpd = 360 * 0.001;
-			if( ImGui::DragFloat("light yaw", &light.yaw, yawSpd, -10, 370, "%.3f") )
-				light.updateMembers();
-			const float pitchSpd = 70 * 0.001;
-			if( ImGui::DragFloat("light pitch", &light.pitch, pitchSpd, -100, 100, "%.3f") )
-				light.updateMembers();
+			const static float litThetaSpd = 70 * 0.001;
+			const static float litPiSpd = 360 * 0.001;
+			static float litTheta = 30.f;
+			static float litPi = 30.f;
+			if( ImGui::DragFloat("light yaw", &litPi, litPiSpd, 0, 360, "%.3f") ||
+				ImGui::DragFloat("light pitch", &litTheta, litThetaSpd, 0, 180, "%.3f") ) {
+
+				light.setRotate(litTheta, litPi);
+			}
 			ImGui::Text("pos %f %f %f", light.position.x, light.position.y, light.position.z);
 
 			static float bumpHeight = 100;
 			if( ImGui::SliderFloat("bumpHeight", &bumpHeight, 0.0, 300.0) ) {
 				for( Model* md : models ) {
 					for( Material* mat : md->materials ) {
-						mat->bump_height = bumpHeight;
+						mat->bumpHeight = bumpHeight;
 					}
 				}
 			}
@@ -404,7 +400,7 @@ namespace lim
 			if( ImGui::SliderFloat("texDelta", &texDelta, 0.000001, 0.0001, "%f") ) {
 				for( Model* md : models ) {
 					for( Material* mat : md->materials ) {
-						mat->tex_delta = texDelta;
+						mat->texDelta = texDelta;
 					}
 				}
 			}
