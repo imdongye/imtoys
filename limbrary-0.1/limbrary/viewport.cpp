@@ -1,7 +1,8 @@
 #include <limbrary/viewport.h>
 #include <imgui.h>
 
-namespace lim {
+namespace lim 
+{
 	Viewport::Viewport(std::string_view _name, Framebuffer* createdFB)
 		:name(_name)
 	{

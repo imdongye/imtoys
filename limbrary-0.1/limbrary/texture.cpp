@@ -15,20 +15,20 @@
 
 namespace
 {
-	void copyTexBaseProps(const lim::TexBase& from, lim::TexBase& to) {
-		to.name = from.name+"-copied";
-		to.width = from.width;
-		to.height = from.height;
-		to.aspect_ratio = from.aspect_ratio;
-		to.internal_format = from.internal_format;
-		to.mag_filter = from.mag_filter;
-		to.min_filter = from.min_filter;
-		to.mipmap_max_level = from.mipmap_max_level;
-		to.nr_channels = from.nr_channels;
-		to.src_bit_per_channel = from.src_bit_per_channel;
-		to.src_chanel_type = from.src_chanel_type;
-		to.src_format = from.src_format;
-		to.wrap_param = from.wrap_param;
+	void copyTexBaseProps(const lim::TexBase& src, lim::TexBase& dst) {
+		dst.name 				= src.name+"-copied";
+		dst.width 				= src.width;
+		dst.height 				= src.height;
+		dst.aspect_ratio 		= src.aspect_ratio;
+		dst.internal_format 	= src.internal_format;
+		dst.mag_filter 			= src.mag_filter;
+		dst.min_filter 			= src.min_filter;
+		dst.mipmap_max_level 	= src.mipmap_max_level;
+		dst.nr_channels 		= src.nr_channels;
+		dst.src_bit_per_channel	= src.src_bit_per_channel;
+		dst.src_chanel_type 	= src.src_chanel_type;
+		dst.src_format 			= src.src_format;
+		dst.wrap_param 			= src.wrap_param;
 	}
 	void setTexParam(const lim::TexBase& tex) {
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, tex.mag_filter);
@@ -75,41 +75,46 @@ namespace lim
 		glBindTexture(GL_TEXTURE_2D, tex_id);
 		setUniform(pid, shaderUniformName, (int)activeSlot);
 	}
-	TexBase* TexBase::clone()
-	{
-		TexBase* rst = new TexBase();
-		TexBase& tex = *rst;
-		
-		copyTexBaseProps(*rst, *this);
-
-		glGenTextures(1, &tex.tex_id);
-		glBindTexture(GL_TEXTURE_2D, tex.tex_id);
-		setTexParam(*this);
-
-		glCopyTexImage2D(GL_TEXTURE_2D, 0, internal_format, 0, 0, width, height, 0);
-
-		glGenerateMipmap(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, 0);
-		return rst;
-	}
+	
 	Texture* Texture::clone()
 	{
 		Texture* rst = new Texture();
-		Texture& tex = *rst;
+		Texture& dup = *rst;
 		
-		copyTexBaseProps(*rst, *this);
-		tex.path = path;
-		tex.format = tex.path.c_str()+(format-path.c_str());
-		tex.tag = tag;
+		copyTexBaseProps(dup, *this);
+		dup.path = path;
+		dup.format = dup.path.c_str()+(format-path.c_str());
+		dup.initFromImage(path, internal_format);
 
-		glGenTextures(1, &tex.tex_id);
-		glBindTexture(GL_TEXTURE_2D, tex.tex_id);
+	// From: https://jamssoft.tistory.com/235
+	// From2: https://stackoverflow.com/questions/23981016/best-method-to-copy-texture-to-texture
+	/* Todo: Fbo to Tex
+		GLuint srcFbo;
+		// Wrap destination texture to fbo
+		glGenBuffers( 1, &srcFbo );
+		glBindFramebuffer( GL_FRAMEBUFFER, srcFbo );
+		glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex_id, 0 );
+		glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+
+		glGenTextures(1, &dup.tex_id);
+		glBindTexture(GL_TEXTURE_2D, dup.tex_id);
 		setTexParam(*this);
 
-		glCopyTexImage2D(GL_TEXTURE_2D, 0, internal_format, 0, 0, width, height, 0);
+		// readBuffer[GL_READ_BUFFER] is automaticaly changed to GL_BACK on default framebuffer, and
+		// GL_COLOR_ATTACHMENT0 on non-zero framebuffer.
+		// so glReadBuffer call is not needed
+		//glReadBuffer( GL_FRONT );
+		glCopyTexImage2D( GL_TEXTURE_2D, 0, internal_format, 0, 0, width, height, 0 );
+		glGenerateMipmap( GL_TEXTURE_2D );
 
-		glGenerateMipmap(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, 0);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0 );
+		glBindTexture( GL_TEXTURE_2D, 0 );
+
+		if( srcFbo ) {
+			glDeleteFramebuffers( 1, &srcFbo );
+		}
+	*/
+
 		return rst;
 	}
 	bool Texture::initFromImage(std::string_view _path, GLint internalFormat)

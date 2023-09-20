@@ -79,7 +79,6 @@ void main(void)
 	}
 
 	vec4 albelo = ( (map_Flags&1) > 0 ) ? texture(map_Kd, mUv) : Kd;
-
 	float lambertian = max(0, dot(N, L));
 	vec3 diffuse = lightInt*lambertian*albelo.rgb;
 	vec3 ambient = Ka;
@@ -89,4 +88,6 @@ void main(void)
     outColor = pow(outColor, vec3(1/gamma));
 	outColor = texture(map_Kd, mUv).rgb;
     fragColor = vec4(outColor, 1);
+
+	fragColor = albelo;
 }

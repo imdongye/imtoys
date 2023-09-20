@@ -39,6 +39,7 @@ namespace lim
         fb.unbind();
     }
 
+    // node transformation 적용안함.
     void render( const Framebuffer& fb,
                  const Camera& cam,
                  const Scene& scn )
@@ -46,14 +47,15 @@ namespace lim
         stack<Model::Node*> nodeStack;
         const Program& depthProg = *AssetLib::get().depth_prog;
 
+        /* bake shadow map */
         depthProg.use();
-
         for( Light* pLit : scn.lights) {
             const Light& lit = *pLit;
 
             if( lit.shadow_enabled == false ) {
                 continue;
             }
+
             lit.map_Shadow.bind();
 
             depthProg.setUniform("viewMat", lit.shadow_view_mat);
@@ -71,13 +73,13 @@ namespace lim
             lit.map_Shadow.unbind();
         }
 
-
+        /* draw models */
         fb.bind();
-
         Material* curMat = nullptr;
         Material* nextMat = nullptr;
         Program* curProg = nullptr;
         Program* nextProg = nullptr;
+        int activeSlot = 0;
 
         for( Model* pMd : scn.models ) {
             const Model& md = *pMd;
@@ -85,6 +87,7 @@ namespace lim
             nextProg = md.default_mat->prog;
 
             nodeStack.push(&(pMd->root));
+
             while( nodeStack.size()>0 ) {
                 Model::Node* pNd = nodeStack.top();
                 nodeStack.pop();
@@ -94,7 +97,7 @@ namespace lim
 
                 for( Mesh* pMs : pNd->meshes ) {
                     const Mesh& ms = *pMs;
-                    int activeSlot = 0;
+
                     if( ms.material != nullptr ) {
                         nextMat = ms.material;
                         if( nextMat->prog != nullptr )
@@ -103,14 +106,13 @@ namespace lim
 
                     if( curProg != nextProg ) {
                         const Program& prog = *nextProg;
-                        curProg = nextProg;
-                        
+                        activeSlot = 0;
+
                         prog.use();
                         prog.setUniform("cameraPos", cam.position);
                         prog.setUniform("viewMat", cam.view_mat);
                         prog.setUniform("projMat", cam.proj_mat);
 
-                        /* Todo: 지금은 라이트 하나만 */
                         for( Light* pLit : scn.lights ) {
                             const Light& lit = *pLit;
                             prog.setUniform("lightPos", lit.position);
@@ -123,14 +125,46 @@ namespace lim
                                 glBindTexture(GL_TEXTURE_2D, lit.map_Shadow.color_tex);
                                 prog.setUniform("map_Shadow", activeSlot++);
                             }
-                            break;
+                            break; //  Todo: 지금은 라이트 하나만
                         }
                     }
 
-                    if(  curMat != nextMat ) {
-                        const Program& prog = *curProg;
+                    if(  curProg != nextProg || curMat != nextMat ) {
+                        const Program& prog = *nextProg;
                         const Material& mat = *nextMat;
-                        curMat = nextMat;
+                        
+                        int matRelativeActiveSlot = activeSlot;
+
+                        if( mat.map_Kd ) {
+                            glActiveTexture(GL_TEXTURE0 + matRelativeActiveSlot);
+		                    glBindTexture(GL_TEXTURE_2D, mat.map_Kd->tex_id);
+                            prog.setUniform("map_Kd", matRelativeActiveSlot++);
+                        }
+                        if( mat.map_Ks ) {
+                            glActiveTexture(GL_TEXTURE0 + matRelativeActiveSlot);
+		                    glBindTexture(GL_TEXTURE_2D, mat.map_Ks->tex_id);
+                            prog.setUniform("map_Ks", matRelativeActiveSlot++);
+                        }
+                        if( mat.map_Ka ) {
+                            glActiveTexture(GL_TEXTURE0 + matRelativeActiveSlot);
+		                    glBindTexture(GL_TEXTURE_2D, mat.map_Ka->tex_id);
+                            prog.setUniform("map_Ka", matRelativeActiveSlot++);
+                        }
+                        if( mat.map_Ns ) {
+                            glActiveTexture(GL_TEXTURE0 + matRelativeActiveSlot);
+		                    glBindTexture(GL_TEXTURE_2D, mat.map_Ns->tex_id);
+                            prog.setUniform("map_Ns", matRelativeActiveSlot++);
+                        }
+                        if( mat.map_Bump ) {
+                            glActiveTexture(GL_TEXTURE0 + matRelativeActiveSlot);
+		                    glBindTexture(GL_TEXTURE_2D, mat.map_Bump->tex_id);
+                            prog.setUniform("map_Bump", matRelativeActiveSlot++);
+
+                            if( mat.map_Flags & Material::MF_Bump ) {
+                                prog.setUniform("texDelta", mat.texDelta);
+                                prog.setUniform("bumpHeight", mat.bumpHeight);
+                            }
+                        }
 
                         prog.setUniform("Kd", mat.Kd);
                         prog.setUniform("Ks", mat.Ks);
@@ -138,39 +172,13 @@ namespace lim
                         prog.setUniform("Ke", mat.Ke);
                         prog.setUniform("Tf", mat.Tf);
                         prog.setUniform("Ni", mat.Ni);
-
                         prog.setUniform("map_Flags", mat.map_Flags);
 
-                        if( mat.map_Kd ) {
-                            glActiveTexture(GL_TEXTURE0 + activeSlot);
-		                    glBindTexture(GL_TEXTURE_2D, mat.map_Kd->tex_id);
-                            prog.setUniform("map_Kd", activeSlot++);
-                        }
-                        if( mat.map_Ks ) {
-                            glActiveTexture(GL_TEXTURE0 + activeSlot);
-		                    glBindTexture(GL_TEXTURE_2D, mat.map_Ks->tex_id);
-                            prog.setUniform("map_Ks", activeSlot++);
-                        }
-                        if( mat.map_Ka ) {
-                            glActiveTexture(GL_TEXTURE0 + activeSlot);
-		                    glBindTexture(GL_TEXTURE_2D, mat.map_Ka->tex_id);
-                            prog.setUniform("map_Ka", activeSlot++);
-                        }
-                        if( mat.map_Ns ) {
-                            glActiveTexture(GL_TEXTURE0 + activeSlot);
-		                    glBindTexture(GL_TEXTURE_2D, mat.map_Ns->tex_id);
-                            prog.setUniform("map_Ns", activeSlot++);
-                        }
-                        if( mat.map_Bump ) {
-                            glActiveTexture(GL_TEXTURE0 + activeSlot);
-		                    glBindTexture(GL_TEXTURE_2D, mat.map_Bump->tex_id);
-                            prog.setUniform("map_Bump", activeSlot++);
+                        curMat = nextMat;
+                    }
 
-                            if( mat.map_Flags & Material::MF_Bump ) {
-                                prog.setUniform("texDelta", mat.texDelta);
-                                prog.setUniform("bumpHeight", mat.bumpHeight);
-                            }
-                        }
+                    if( curProg != nextProg ) {
+                        curProg = nextProg;
                     }
 
                     curProg->setUniform("modelMat", md.model_mat); // Todo: hirachi trnasformation

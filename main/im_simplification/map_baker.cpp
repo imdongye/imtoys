@@ -51,7 +51,7 @@ namespace
 
 namespace lim
 {
-    void bakeNormalMap(Model* to, Model* from, int texSize)
+    void bakeNormalMap(Model* src, Model* dst, int texSize)
     {
         namespace fs = std::filesystem;
         resourceInit(texSize);
@@ -60,12 +60,12 @@ namespace lim
 
         // 노멀 맵을 사용하는 메쉬들을 찾아서 자료구조에 저장.
         unordered_map< int, vector<pair<Mesh*, Mesh*>> > mergeByNormalMap;
-        for( int i=0; i<from->meshes.size(); i++ ) {
-            Mesh* toMs = to->meshes[i];
-            Mesh* fmMs = from->meshes[i];
+        for( int i=0; i<src->meshes.size(); i++ ) {
+            Mesh* toMs = dst->meshes[i];
+            Mesh* fmMs = src->meshes[i];
             if( toMs->material==nullptr || toMs->material->map_Bump==nullptr ) 
                 continue;
-            int bumpMatIdx = findIdx(to->materials, toMs->material);
+            int bumpMatIdx = findIdx(dst->materials, toMs->material);
             mergeByNormalMap[bumpMatIdx].push_back( make_pair(toMs,fmMs) );
         }
 
@@ -73,8 +73,8 @@ namespace lim
         GLubyte* fileData = new GLubyte[3 * texSize * texSize];
 
         for( auto& [bumpMatIdx, meshes] : mergeByNormalMap ) {
-            Material* toMat = to->materials[bumpMatIdx];
-            Material* fmMat = from->materials[bumpMatIdx];
+            Material* toMat = dst->materials[bumpMatIdx];
+            Material* fmMat = src->materials[bumpMatIdx];
 
             // from의 model space normal 가져오기
             targetNormalMap.bind();
@@ -111,11 +111,15 @@ namespace lim
             glPixelStorei(GL_PACK_ALIGNMENT, 1);
             glReadPixels(0, 0, texSize, texSize, GL_RGB, GL_UNSIGNED_BYTE, fileData);
 
-            // 덮어쓴다.
+            // 새로운 노멀맵으로 텍스쳐 업데이트
+            toMat->map_Bump->initGL(fileData); // todo : test and fbo to tex로 최적화
+
+
+            // 덮어쓴다. 
             stbi_flip_vertically_on_write(true);
 
-            std::string internalModelPath = fmMat->map_Bump->path.c_str() + from->path.size();
-            std::string texPath = to->path + internalModelPath;
+            std::string internalModelPath = fmMat->map_Bump->path.c_str() + src->path.size();
+            std::string texPath = dst->path + internalModelPath;
             const size_t lastSlashPos = texPath.find_last_of("/\\");
             
             fs::path createdPath(texPath.substr(0, lastSlashPos));
@@ -128,16 +132,6 @@ namespace lim
             stbi_write_png(texPath.c_str(), texSize, texSize, 3, fileData, texSize * 3);
             log::pure("baked in %s\n\n", texPath.c_str());
         }
-
-
-        /* 새로운 노멀맵으로 로딩 */
-        for( Texture* tex : to->textures_loaded ) {
-            if( tex->tag == "map_Bump" ) {
-                tex->initFromImage(tex->path, GL_RGB8);
-            }
-        }
-
-        log::pure("reload normal map\n");
 
         resourceDeinit();
     }

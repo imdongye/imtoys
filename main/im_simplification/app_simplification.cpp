@@ -156,7 +156,7 @@ namespace lim
 	void AppSimplification::doBakeNormalMap(int texSize)
 	{
 		if( models[from_vp_idx] != nullptr && models[to_vp_idx] != nullptr )
-			bakeNormalMap(models[to_vp_idx], models[from_vp_idx], texSize);
+			bakeNormalMap(models[from_vp_idx], models[to_vp_idx], texSize);
 		else
 			log::err("You Must to simplify before baking\n");
 	}

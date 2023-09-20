@@ -48,14 +48,13 @@ namespace lim
 		void initGL(void* data = nullptr);
 		void deinitGL();
 		void bind(GLuint pid, GLuint activeSlot, const std::string_view shaderUniformName) const;
-		TexBase* clone();
+		// void clone() // srcTex를 FBO에 연결시켜서 glCopyTexImage
 	};
 	class Texture: public TexBase
 	{
 	public:
 		std::string path = "nopath/texture.png";
 		const char* format = path.c_str()+10;
-		std::string tag = "notag";
 	public:
 		Texture* clone();
 		bool initFromImage(std::string_view path, GLint internalFormat);

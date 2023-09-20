@@ -44,7 +44,7 @@ namespace lim
 		};
 	public:
 		std::string name = "nonamed model";
-		std::string path = "nopath";
+		std::string path = "nodir";
 
 		/* transformation */
 		glm::vec3 position = glm::vec3(0);
