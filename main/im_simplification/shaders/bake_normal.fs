@@ -7,9 +7,9 @@ in vec3 wNor;
 in vec2 mUv;
 
 /* texture */
+uniform int map_Flags = 0;
 uniform sampler2D map_Bump;
 uniform sampler2D map_TargetNormal;
-uniform int mapFlags = 0;
 uniform float texDelta = 0.0001;
 uniform float bumpHeight = 100;
 
@@ -33,11 +33,11 @@ void main(void)
 	N = normalize( wNor );
 	TBN = getTBN( N );
 	
-	if( (mapFlags & 1<<5) > 0 ) {
+	if( (map_Flags & 1<<5) > 0 ) {
 		vec3 tsNor = texture(map_Bump, mUv).rgb;
 		N = normalize(TBN*tsNor);
 	}
-	else {
+	else if( (map_Flags & 1<<4) > 0 ) {
 		float Bu = texture(map_Bump, mUv+vec2(texDelta,0)).r
 						- texture(map_Bump, mUv+vec2(-texDelta,0)).r;
 		float Bv = texture(map_Bump, mUv+vec2(0,texDelta)).r

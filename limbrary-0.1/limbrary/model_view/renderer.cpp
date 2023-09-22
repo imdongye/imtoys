@@ -4,6 +4,50 @@
 
 using namespace std;
 
+namespace
+{
+    void setMatUniform(const lim::Material& mat, const lim::Program& prog, int activeSlot)
+    {
+        if( mat.map_Kd ) {
+            glActiveTexture(GL_TEXTURE0 + activeSlot);
+            glBindTexture(GL_TEXTURE_2D, mat.map_Kd->tex_id);
+            prog.setUniform("map_Kd", activeSlot++);
+        }
+        if( mat.map_Ks ) {
+            glActiveTexture(GL_TEXTURE0 + activeSlot);
+            glBindTexture(GL_TEXTURE_2D, mat.map_Ks->tex_id);
+            prog.setUniform("map_Ks", activeSlot++);
+        }
+        if( mat.map_Ka ) {
+            glActiveTexture(GL_TEXTURE0 + activeSlot);
+            glBindTexture(GL_TEXTURE_2D, mat.map_Ka->tex_id);
+            prog.setUniform("map_Ka", activeSlot++);
+        }
+        if( mat.map_Ns ) {
+            glActiveTexture(GL_TEXTURE0 + activeSlot);
+            glBindTexture(GL_TEXTURE_2D, mat.map_Ns->tex_id);
+            prog.setUniform("map_Ns", activeSlot++);
+        }
+        if( mat.map_Bump ) {
+            glActiveTexture(GL_TEXTURE0 + activeSlot);
+            glBindTexture(GL_TEXTURE_2D, mat.map_Bump->tex_id);
+            prog.setUniform("map_Bump", activeSlot++);
+
+            if( mat.map_Flags & lim::Material::MF_Bump ) {
+                prog.setUniform("texDelta", mat.texDelta);
+                prog.setUniform("bumpHeight", mat.bumpHeight);
+            }
+        }
+
+        prog.setUniform("Kd", mat.Kd);
+        prog.setUniform("Ks", mat.Ks);
+        prog.setUniform("Ka", mat.Ka);
+        prog.setUniform("Ke", mat.Ke);
+        prog.setUniform("Tf", mat.Tf);
+        prog.setUniform("Ni", mat.Ni);
+        prog.setUniform("map_Flags", mat.map_Flags);
+    }
+}
 
 namespace lim
 {
@@ -14,6 +58,7 @@ namespace lim
         fb.bind();
         prog.use();
         for( const Mesh* ms : md.meshes ) {
+            setMatUniform(*ms->material, prog, 0);
             ms->drawGL();
         }
         fb.unbind();

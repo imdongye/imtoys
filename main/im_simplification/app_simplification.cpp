@@ -159,7 +159,7 @@ namespace lim
 	void AppSimplification::doBakeNormalMap(int texSize)
 	{
 		if( models[from_vp_idx] != nullptr && models[to_vp_idx] != nullptr )
-			bakeNormalMap(models[from_vp_idx], models[to_vp_idx], texSize);
+			bakeNormalMap( *models[from_vp_idx], *models[to_vp_idx], texSize );
 		else
 			log::err("You Must to simplify before baking\n");
 	}
@@ -189,7 +189,7 @@ namespace lim
 			Camera& cam = viewports[last_focused_vp_idx]->camera; 
 			float backupAspect = cam.aspect;
 			for( int i=0; i<nr_viewports; i++ ) {
-				cam.aspect = viewports[i]->camera.aspect;
+				cam.aspect = (i==last_focused_vp_idx)? backupAspect : viewports[i]->camera.aspect;
 				cam.updateProjMat();
 				render(*viewports[i]->framebuffer, cam, scenes[i]);
 			}
