@@ -39,7 +39,7 @@ namespace lim
 		Callbacks<void(int count, const char **paths)> dnd_callbacks;
 		Callbacks<void(float deltaTime)> update_hooks;
 		
-		float delta_time; // sec
+		double delta_time; // sec
 
 		// relative to ratina or window monitor setting
 		int win_width, win_height;

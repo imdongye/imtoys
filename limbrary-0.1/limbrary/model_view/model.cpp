@@ -81,14 +81,14 @@ namespace lim
 		dup.default_mat = default_mat;
 
 
-		dup.textures_loaded.reserve(textures_loaded.size());
-		dup.materials.reserve(materials.size());
-		for( Texture* tex : textures_loaded ) {
-			dup.textures_loaded.push_back( tex->clone() );
+		dup.textures_loaded.resize(textures_loaded.size());
+		for( int i=0; i<textures_loaded.size(); i++ ) {
+			dup.textures_loaded[i] = textures_loaded[i]->clone();
 		}
-		for( Material* mat : materials ) {
-			dup.materials.push_back( new Material(*mat) );
-			correctMatTexLink(*dup.materials.back(), *mat, dup.textures_loaded, textures_loaded);
+		dup.materials.resize(materials.size());
+		for( int i=0; i<materials.size(); i++ ) {
+			dup.materials[i] = new Material(*materials[i]);
+			correctMatTexLink(*dup.materials[i], *materials[i], dup.textures_loaded, textures_loaded);
 		}
 
 		dup.meshes.reserve(meshes.size());

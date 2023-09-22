@@ -10,6 +10,7 @@
 
 #include <limbrary/texture.h>
 #include <limbrary/program.h>
+#include <limbrary/asset_lib.h>
 #include <limbrary/log.h>
 #include <stb_image.h>
 
@@ -80,40 +81,20 @@ namespace lim
 	{
 		Texture* rst = new Texture();
 		Texture& dup = *rst;
+		GLuint dstFbo;
 		
 		copyTexBaseProps(dup, *this);
 		dup.path = path;
 		dup.format = dup.path.c_str()+(format-path.c_str());
 		dup.initFromImage(path, internal_format);
 
-	// From: https://jamssoft.tistory.com/235
-	// From2: https://stackoverflow.com/questions/23981016/best-method-to-copy-texture-to-texture
-	/* Todo: Fbo to Tex
-		GLuint srcFbo;
-		// Wrap destination texture to fbo
-		glGenBuffers( 1, &srcFbo );
-		glBindFramebuffer( GL_FRAMEBUFFER, srcFbo );
-		glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex_id, 0 );
-		glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+		// glGenBuffers( 1, &dstFbo );
+		// glBindFramebuffer( GL_FRAMEBUFFER, dstFbo );
+		// glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, dup.tex_id, 0 );
 
-		glGenTextures(1, &dup.tex_id);
-		glBindTexture(GL_TEXTURE_2D, dup.tex_id);
-		setTexParam(*this);
+		// drawTexToQuad(tex_id); // Todo: glCopyTexImage2d 속도비교
 
-		// readBuffer[GL_READ_BUFFER] is automaticaly changed to GL_BACK on default framebuffer, and
-		// GL_COLOR_ATTACHMENT0 on non-zero framebuffer.
-		// so glReadBuffer call is not needed
-		//glReadBuffer( GL_FRONT );
-		glCopyTexImage2D( GL_TEXTURE_2D, 0, internal_format, 0, 0, width, height, 0 );
-		glGenerateMipmap( GL_TEXTURE_2D );
-
-		glBindFramebuffer(GL_FRAMEBUFFER, 0 );
-		glBindTexture( GL_TEXTURE_2D, 0 );
-
-		if( srcFbo ) {
-			glDeleteFramebuffers( 1, &srcFbo );
-		}
-	*/
+		// glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 
 		return rst;
 	}
@@ -121,7 +102,6 @@ namespace lim
 	{
 		path = _path;
 		void* data;
-		deinitGL();
 
 		// hdr loading
 		if( stbi_is_hdr(path.data()) ) {
@@ -175,7 +155,6 @@ namespace lim
 	{
 		path = _path;
 		void *data;
-		deinitGL();
 
 		// hdr loading
 		if( stbi_is_hdr(path.data()) ) {
@@ -254,4 +233,17 @@ namespace lim
 		return true;
 	}
 	
+	void drawTexToQuad(GLuint texId) 
+	{
+		const Program& prog = *AssetLib::get().tex_to_quad_prog;
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texId);
+		prog.setUniform("tex", 0);
+		prog.setUniform("gamma", 2.2f);
+
+		glBindVertexArray(AssetLib::get().screen_quad->vert_array);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, AssetLib::get().screen_quad->element_buf);
+		glDrawElements(GL_TRIANGLES, 4, GL_UNSIGNED_INT, 0);
+	}
 }

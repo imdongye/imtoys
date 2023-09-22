@@ -32,8 +32,7 @@ namespace lim
 		float intensity = 1.f;
 		
 		glm::vec3 pivot = {0,0,0};
-		glm::vec3 position = {1,1,1};
-		glm::vec3 direction;
+		glm::vec3 position = {50,50,50};
 
 		TexFramebuffer map_Shadow;
 		glm::mat4 shadow_view_mat;

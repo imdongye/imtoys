@@ -27,9 +27,6 @@ namespace lim
 		programs.push_back(new Program("Normal Dot Light"));
 		programs.back()->attatch("mvp.vs").attatch("ndl.fs").link();
 
-		programs.push_back(new Program("Map View, my normal", APP_DIR));
-		programs.back()->attatch("uv_view.vs").attatch("wnor_out.fs").link();
-
 		programs.push_back(new Program("Auto Normal", APP_DIR));
 		programs.back()->attatch("assets/shaders/mvp.vs").attatch("bumped.fs").link();
 
@@ -38,19 +35,26 @@ namespace lim
 
 		programs.push_back(new Program("Shadowed", APP_DIR));
 		programs.back()->attatch("shadowed.vs").attatch("shadowed.fs").link();
+
+		programs.push_back(new Program("Map View, my normal", APP_DIR));
+		programs.back()->attatch("uv_view.vs").attatch("wnor_out.fs").link();
+
 		for( Program* prog:programs )
 			shader_names.push_back(prog->name.c_str());
 
 		AssetLib::get().default_mat->prog = programs[0];
 
-		ground.meshes.push_back(code_mesh::genPlane());
-		ground.root.meshes.push_back(ground.meshes.back());
+		ground.textures_loaded.push_back(new Texture());
+		ground.textures_loaded.back()->initFromImageAuto("assets/images/uv_grid.jpg");
 		ground.materials.push_back(new Material());
 		ground.materials.back()->Kd = {0,1,0,1};
+		ground.materials.back()->map_Kd = ground.textures_loaded.back();
+		ground.materials.back()->map_Flags |= Material::MF_Kd;
+		ground.meshes.push_back(code_mesh::genPlane());
 		ground.meshes.back()->material = ground.materials.back();
-
+		ground.root.meshes.push_back(ground.meshes.back());
 		ground.position = {0, 0, 0};
-		ground.scale = {100, 1, 100};
+		ground.scale = {10, 1, 10};
 		ground.updateModelMat();
 
 		addEmptyViewport();
@@ -73,8 +77,7 @@ namespace lim
 	{
 		const char* vpName = fmtStrToBuf("viewport%d##simp", nr_viewports);
 		ViewportWithCamera* vp = new ViewportWithCamera(vpName, new MsFramebuffer);
-		vp->camera.shiftPos({1,1,0});
-		vp->framebuffer->clear_color = {0, 0, 1, 1};
+		vp->camera.shiftPos({0,1,-1.6f});
 		viewports.push_back(vp);
 
 		Model* md = new Model();
@@ -165,6 +168,22 @@ namespace lim
 
 	void AppSimplification::update()
 	{
+		// clear backbuffer
+		glEnable(GL_DEPTH_TEST);
+		glDisable(GL_MULTISAMPLE);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glViewport(0, 0, fb_width, fb_height);
+		glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		if( selected_prog_idx==programs.size()-1 ) {
+			for( int i=0; i<nr_viewports; i++ ) {
+				render(*viewports[i]->framebuffer, *programs[selected_prog_idx], *models[i]);
+			}
+			return;
+		}
+
 		if( is_same_camera )
 		{
 			Camera& cam = viewports[last_focused_vp_idx]->camera; 
@@ -182,15 +201,6 @@ namespace lim
 			for( int i=0; i<nr_viewports; i++ )
 				render(*viewports[i]->framebuffer, viewports[i]->camera, scenes[i]);
 		}
-
-		// clear backbuffer
-		glEnable(GL_DEPTH_TEST);
-		glDisable(GL_MULTISAMPLE);
-
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glViewport(0, 0, fb_width, fb_height);
-		glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	}
 	void AppSimplification::renderImGui()
 	{
@@ -381,12 +391,13 @@ namespace lim
 			const static float litPiSpd = 360 * 0.001;
 			static float litTheta = 30.f;
 			static float litPi = 30.f;
-			if( ImGui::DragFloat("light yaw", &litPi, litPiSpd, 0, 360, "%.3f") ||
-				ImGui::DragFloat("light pitch", &litTheta, litThetaSpd, 0, 180, "%.3f") ) {
-
-				light.setRotate(litTheta, litPi);
+			static bool isLightDraged = false;
+			isLightDraged |= ImGui::DragFloat("light pitch", &litTheta, litThetaSpd, 0, 80, "%.3f");
+			isLightDraged |= ImGui::DragFloat("light yaw", &litPi, litPiSpd, -FLT_MAX, +FLT_MAX, "%.3f");
+			if( isLightDraged ) {
+				light.setRotate(litTheta, glm::fract(litPi/360.f)*360.f);
 			}
-			ImGui::Text("pos %f %f %f", light.position.x, light.position.y, light.position.z);
+			ImGui::Text("pos %.1f %.1f %.1f", light.position.x, light.position.y, light.position.z);
 
 			static float bumpHeight = 100;
 			if( ImGui::SliderFloat("bumpHeight", &bumpHeight, 0.0, 300.0) ) {
@@ -590,13 +601,14 @@ namespace lim
 		{
 			for( int i = 0; i < nr_viewports; i++ )
 			{
+				if( last_focused_vp_idx == i )
+					continue;
+
 				if( viewports[i]->hovered ) {
-					if( last_focused_vp_idx != i ) {
-						if( is_same_camera ) {
-							viewports[last_focused_vp_idx]->camera.copySettingTo(viewports[i]->camera);
-						}
-						last_focused_vp_idx = i;
+					if( is_same_camera ) {
+						viewports[last_focused_vp_idx]->camera.copySettingTo(viewports[i]->camera);
 					}
+					last_focused_vp_idx = i;
 				}
 			}
 		}

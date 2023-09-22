@@ -15,6 +15,7 @@ namespace lim
 	class Program;
 	class Mesh;
 	struct Material;
+	class TexBase;
 
 	class AssetLib
 	{
@@ -35,7 +36,6 @@ namespace lim
 		inline static AssetLib* instance = nullptr;
 		AssetLib();
 		~AssetLib();
-	private:
 		/* detete copy & copy asignment singleton obj */
 		AssetLib(const AssetLib&)=delete;
 		AssetLib&operator=(const AssetLib&)=delete;

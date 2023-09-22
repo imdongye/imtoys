@@ -79,7 +79,7 @@ namespace lim
 	void Framebuffer::unbind() const
 	{
 		glEnable(GL_DEPTH_TEST);
-		//glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 	/* ms framebuffer return intermidiate */
 	GLuint Framebuffer::getRenderedTex() const
@@ -243,6 +243,7 @@ namespace lim
 
 		glBlitFramebuffer(0, 0, width, height, 0, 0, width, height
 							, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 	GLuint MsFramebuffer::getRenderedTex() const
 	{

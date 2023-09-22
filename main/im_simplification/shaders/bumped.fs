@@ -50,6 +50,8 @@ mat3 getTBN( vec3 N ) {
 void main(void)
 {
 	vec3 N = normalize(wNor);
+	vec3 L = normalize(lightPos - wPos);
+	vec3 V = normalize(cameraPos - wPos);
 
 	if( (map_Flags&(3<<4)) > 0 ) // has bump
 	{
@@ -69,9 +71,8 @@ void main(void)
 		}
 		N = normalize(TBN*tNor);
 	}
-	vec3 L = normalize(lightPos - wPos);
-	vec3 V = normalize(cameraPos - wPos);
 	vec3 R = 2*dot(N,L)*N-L;
+	
 
 	if( shadowEnabled > 0 )
 	{
@@ -81,13 +82,10 @@ void main(void)
 	vec4 albelo = ( (map_Flags&1) > 0 ) ? texture(map_Kd, mUv) : Kd;
 	float lambertian = max(0, dot(N, L));
 	vec3 diffuse = lightInt*lambertian*albelo.rgb;
-	vec3 ambient = Ka;
+	vec3 ambient = albelo.rgb*0.2;//Ka;
 	vec3 specular = pow(max(0,dot(R,V)), Ks.a) * lambertian * vec3(1);
 	vec3 outColor = diffuse+ambient+specular;
 
     outColor = pow(outColor, vec3(1/gamma));
-	outColor = texture(map_Kd, mUv).rgb;
     fragColor = vec4(outColor, 1);
-
-	fragColor = albelo;
 }

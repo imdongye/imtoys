@@ -1,6 +1,5 @@
-//
-// todo: 노멀맵에서 범프맵을 만들때 적분을 못해서 미분값을 가지고 포아송 방정식(자코비, 가우스세이델)을 풀면된다.
 #version 410 core
+
 layout(location=0) out vec4 fragColor;
 
 in vec3 wPos;
@@ -49,14 +48,14 @@ mat3 getTBN( vec3 N ) {
 
 void main(void)
 {
-    fragColor = vec4(0);
+    fragColor = vec4(0,0,0,1);
     if( (map_Flags&(1<<4)) > 0 ) {
-	    fragColor += vec4(1,0,0,1); // bump
+	    fragColor += vec4(1,0,0,0); // bump
     }
     if( (map_Flags&(1<<5)) > 0 ) {
-	    fragColor += vec4(0,1,0,1); // nor
+	    fragColor += vec4(0,1,0,0); // nor
     }
 	if( (map_Flags&(1<<0)) > 0 ) {
-	    fragColor += vec4(0,0,1,1); // Kd
+	    fragColor += vec4(0,0,1,0); // Kd
     }
 }

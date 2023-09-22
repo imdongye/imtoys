@@ -7,6 +7,18 @@ using namespace std;
 
 namespace lim
 {
+    void render( const Framebuffer& fb,
+                 const Program& prog,
+                 const Model& md )
+    {
+        fb.bind();
+        prog.use();
+        for( const Mesh* ms : md.meshes ) {
+            ms->drawGL();
+        }
+        fb.unbind();
+    }
+    
     void render( const Framebuffer& fb, 
                  const Program& prog,
                  const Camera& cam,

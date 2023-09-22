@@ -15,6 +15,10 @@
 
 namespace lim
 {
+    void render( const Framebuffer& fb,
+                 const Program& prog,
+                 const Model& md );
+
     void render( const Framebuffer& fb, 
                  const Program& prog,
                  const Camera& cam,

@@ -50,6 +50,7 @@ namespace lim
 		void bind(GLuint pid, GLuint activeSlot, const std::string_view shaderUniformName) const;
 		// void clone() // srcTex를 FBO에 연결시켜서 glCopyTexImage
 	};
+
 	class Texture: public TexBase
 	{
 	public:
@@ -61,6 +62,8 @@ namespace lim
 		// nrChannels, bitPerChannel 0 is auto bit
 		bool initFromImageAuto(std::string_view path, bool convertLinear = false, int nrChannels = 0, int bitPerChannel = 0);
 	};
+
+	void drawTexToQuad(GLuint texId);
 }
 
 #endif

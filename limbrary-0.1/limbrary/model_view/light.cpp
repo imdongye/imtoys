@@ -18,8 +18,6 @@ namespace lim
 {
 	Light::Light()
 	{
-		direction = normalize(position-pivot);
-
 		map_Shadow.clear_color = glm::vec4(1);
 		map_Shadow.resize(shadow_map_size, shadow_map_size);
 
@@ -45,12 +43,10 @@ namespace lim
 		toLit = rotate(radians(piDeg), vec3{0,1,0}) * toLit;
 
 		position = pivot+distance*vec3(toLit);
-		direction = normalize(position-pivot);
 		updateWithPivotAndPos();
 	}
 	void Light::updateWithPivotAndPos()
 	{
-		direction = normalize(position - pivot);
 		shadow_view_mat = lookAt(vec3(position), pivot, {0,1,0});
 		shadow_vp_mat = shadow_proj_mat * shadow_view_mat;
 	}

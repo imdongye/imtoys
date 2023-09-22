@@ -242,7 +242,6 @@ namespace lim
 		log::pure("Maximum nr of vertex attributes supported: %d\n", nrAttributes);
 		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &nrTextureUnits);
 		log::pure("Maximum nr of texture slots supported: %d\n", nrTextureUnits);
-
 		log::pure("Current path is %s\n\n", std::filesystem::current_path().string().c_str());
 	}
 }

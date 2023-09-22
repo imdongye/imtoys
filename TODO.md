@@ -1,7 +1,4 @@
 # Todo Lists
 
-* refactor scene class structure
-* refactor viewport_pack
-* fix simplification multi camera
 * model loading speed
-* flickering when resize viewport
+* 노멀맵에서 범프맵을 만들때 적분을 못해서 미분값을 가지고 포아송 방정식(자코비, 가우스세이델)을 풀면된다.

@@ -72,7 +72,7 @@ namespace lim::code_mesh
 		const float start = -length / 2.f;
 		const float step = length / nrSlice;
 		const vec3 up = {0, 1, 0};
-		const float div = nrSlice + 1;
+		const float div = nrSlice;
 
 
 		for(int i = 0; i <= nrSlice; i++) for(int j = 0; j <= nrSlice; j++)
