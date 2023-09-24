@@ -63,7 +63,7 @@ namespace lim
 	public:
 		Viewport(std::string_view _name, Framebuffer* createdFB);
 		virtual ~Viewport();
-		void drawImGui();
+		bool drawImGui(); // return windowOpened
 		void resize(GLuint _width, GLuint _height);
 	};
 }

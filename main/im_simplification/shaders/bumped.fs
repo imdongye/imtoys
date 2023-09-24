@@ -40,11 +40,16 @@ uniform float texDelta = 0.00001;
 uniform float bumpHeight = 100;
 
 mat3 getTBN( vec3 N ) {
-	vec3 Q1 = dFdx(wPos), Q2 = dFdy(wPos);
-	vec2 st1 = dFdx(mUv), st2 = dFdy(mUv);
-	float D = st1.s*st2.t - st2.x*st1.t;
-	return mat3(normalize((Q1*st2.t - Q2*st1.t)*D),
-				normalize((-Q1*st2.s + Q2*st1.s)*D), N);
+	vec3 Qx = dFdx(wPos);
+	vec3 Qy = dFdy(wPos);
+	vec2 Tx = dFdx(mUv);
+	vec2 Ty = dFdy(mUv);
+	float D = Tx.x*Ty.y - Ty.x*Tx.y;
+	vec3 T = normalize(( Qx*Ty.y - Qy*Tx.y)*D);
+	vec3 B = normalize((-Qx*Ty.x + Qy*Tx.x)*D);
+	T = normalize(T -dot(T,N)*N); // Todo: gram schmidt말고 다른방법으로 에러 줄이기
+	B = cross(N, T);
+	return mat3(T, B, N);
 }
 
 void main(void)
@@ -56,20 +61,18 @@ void main(void)
 	if( (map_Flags&(3<<4)) > 0 ) // has bump
 	{
 		mat3 TBN = getTBN( N );
-		vec3 tNor; // tangent normal
-		/* bump map */
-		if( (map_Flags&(1<<4)) > 0 ) {
+		vec3 tsNor; // tangent normal
+		if( (map_Flags&(1<<4)) > 0 ) { // bump map
 			float Bu = texture(map_Bump, mUv+vec2(texDelta,0)).r
 						- texture(map_Bump, mUv+vec2(-texDelta,0)).r;
 			float Bv = texture(map_Bump, mUv+vec2(0,texDelta)).r
 						- texture(map_Bump, mUv+vec2(0,-texDelta)).r;
-			tNor = vec3(-Bu*bumpHeight, -Bv*bumpHeight, 1);
+			tsNor = vec3(-Bu*bumpHeight, -Bv*bumpHeight, 1);
 		}
-		/* normal map */
-		else {
-			tNor = texture(map_Bump, mUv).xyz*2-vec3(1);
+		else { // nor map
+			tsNor = texture(map_Bump, mUv).xyz*2.0-vec3(1);
 		}
-		N = normalize(TBN*tNor);
+		N = normalize(TBN*tsNor);
 	}
 	vec3 R = 2*dot(N,L)*N-L;
 	

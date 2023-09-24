@@ -79,8 +79,6 @@ namespace lim
 		dup.model_mat = model_mat;
 	
 		dup.default_mat = default_mat;
-
-
 		dup.textures_loaded.resize(textures_loaded.size());
 		for( int i=0; i<textures_loaded.size(); i++ ) {
 			dup.textures_loaded[i] = textures_loaded[i]->clone();
@@ -128,6 +126,7 @@ namespace lim
 		dup.boundary_min = boundary_min;
 		dup.boundary_size = boundary_size;
 		dup.pivoted_scaled_bottom_height = pivoted_scaled_bottom_height;
+		dup.ai_backup_flags = ai_backup_flags;
 		
 		return rst;
 	}

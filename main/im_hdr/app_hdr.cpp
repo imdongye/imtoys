@@ -65,7 +65,7 @@ namespace lim
 				viewports.erase(viewports.begin()+i);
 				i--;  continue;
 			}
-			imgs[i]->toFramebuffer(*viewports[i]->framebuffer);
+			imgs[i]->toFramebuffer(*viewports[i]->framebuffer); // todo
 			//texIDToFramebuffer(imgs[i]->tex_id, *viewports[i]->framebuffer, 1.f);
 		}
 
@@ -82,7 +82,6 @@ namespace lim
 	void AppHdr::renderImGui()
 	{
 		//ImGui::DockSpaceOverViewport();
-
 
 		for( int i = viewports.size()-1; i>=0; i-- ) {
 			viewports[i]->drawImGui();

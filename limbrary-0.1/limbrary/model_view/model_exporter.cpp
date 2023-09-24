@@ -14,7 +14,13 @@ edit from : https://github.com/assimp/assimp/issues/203
 #include <assimp/cexport.h>
 #include <assimp/Exporter.hpp>
 #include <assimp/scene.h>
+#include <assimp/LogStream.hpp>
+#include <assimp/Logger.hpp>
+#include <assimp/DefaultLogger.hpp>
 #include <filesystem>
+#include <stb_image_write.h>
+#include <GLFW/glfw3.h>
+
 
 
 using namespace lim;
@@ -24,12 +30,11 @@ namespace
 {
 	const int nr_formats = (int)aiGetExportFormatCount();
 
-	const aiExportFormatDesc *formats[32] = { nullptr, };
+	const aiExportFormatDesc* formats[32] = { nullptr, };
 
 	std::string md_dir;
 
 	Model* src_md = nullptr;
-	aiScene* rst_scene = nullptr;
 
 	inline aiVector3D toAiV( const vec3& v ) {
 		return { v.x, v.y, v.z };
@@ -47,6 +52,20 @@ namespace
 							m[3][0], m[3][1], m[3][2], m[3][3] );
 	}
 
+	class LimExportLogStream : public Assimp::LogStream
+	{
+	public:
+			LimExportLogStream()
+			{
+			}
+			~LimExportLogStream()
+			{
+			}
+			virtual void write(const char* message) override
+			{
+				//log::pure("%s", message);
+			}
+	};
 
 	aiMaterial* convertMaterial(Material* material)
 	{
@@ -81,26 +100,24 @@ namespace
 		aiMat->AddProperty(&temp3d, 1, AI_MATKEY_COLOR_TRANSPARENT);
 
 
-		const GLuint slashPos = md_dir.size(); // todo: test
-
 		if( mat.map_Kd != nullptr ) {
-			tempStr = aiString(mat.map_Kd->path.data()+slashPos);
+			tempStr = aiString(mat.map_Kd->path.data());
 			aiMat->AddProperty( &tempStr, AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE, 0) );
 		}
 		
 
 		if( mat.map_Ks != nullptr ) {
-			tempStr = aiString(mat.map_Ks->path.data()+slashPos);
+			tempStr = aiString(mat.map_Ks->path.data());
 			aiMat->AddProperty( &tempStr, AI_MATKEY_TEXTURE(aiTextureType_SPECULAR, 0) );
 		}
 
 		if( mat.map_Ka != nullptr ) {
-			tempStr = aiString(mat.map_Ka->path.data()+slashPos);
+			tempStr = aiString(mat.map_Ka->path.data());
 			aiMat->AddProperty( &tempStr, AI_MATKEY_TEXTURE(aiTextureType_AMBIENT, 0) );
 		}
 		
 		if( mat.map_Bump != nullptr ) {
-			tempStr = aiString(mat.map_Bump->path.data()+slashPos);
+			tempStr = aiString(mat.map_Bump->path.data());
 			if( mat.map_Flags & lim::Material::MF_Nor ) {
 				aiMat->AddProperty( &tempStr, AI_MATKEY_TEXTURE(aiTextureType_NORMALS, 0) );
 			}
@@ -120,6 +137,8 @@ namespace
 		const Mesh& ms = *mesh;
 
 		aiMesh* aiMs = new aiMesh();
+		// From: https://github.com/assimp/assimp/issues/203
+		aiMs->mPrimitiveTypes = aiPrimitiveType_TRIANGLE;
 
 		GLuint idxOfMat = findIdx(src_md->materials, ms.material);
 		aiMs->mMaterialIndex = idxOfMat;
@@ -166,31 +185,34 @@ namespace
 		return aiMs;
 	}
 
-	void recursiveConvertTree(aiNode* to, const Model::Node& from)
+	aiNode* recursiveConvertTree(const Model::Node& src)
 	{
 		aiNode* node = new aiNode();
 		std::vector<Mesh*>& modelMeshes = src_md->meshes;
-		node->mTransformation = toAi(from.transformation);
+		node->mTransformation = toAi(src.transformation);
 
-		const size_t nrMeshes = from.meshes.size();
+		const size_t nrMeshes = src.meshes.size();
 		node->mNumMeshes = nrMeshes;
 		node->mMeshes = new unsigned int[nrMeshes];
 		for( size_t i=0; i<nrMeshes; i++ ) {
-			node->mMeshes[i] = findIdx(modelMeshes, from.meshes[i]);
+			node->mMeshes[i] = findIdx(modelMeshes, src.meshes[i]);
 		}
 
-		const size_t nrChilds = from.childs.size();
+		const size_t nrChilds = src.childs.size();
 		node->mNumChildren = nrChilds;
 		node->mChildren = new aiNode*[nrChilds];
-		for( size_t i=0; i< from.childs.size(); i++ ) {
-			recursiveConvertTree(node->mChildren[i], from.childs[i]);
+		for( size_t i=0; i< src.childs.size(); i++ ) {
+			node->mChildren[i] = recursiveConvertTree(src.childs[i]);
 		}
+		return node;
 	}
 
 	aiScene* makeScene(Model* model)
 	{
 		const Model& md = *model;
 		aiScene *scene = new aiScene();
+
+		scene->mFlags = model->ai_backup_flags;
 
 		// only one marerial
 		const GLuint nrMats = md.materials.size();
@@ -207,7 +229,7 @@ namespace
 			scene->mMeshes[i] = convertMesh(md.meshes[i]);
 		}
 		
-		recursiveConvertTree(scene->mRootNode, md.root);
+		scene->mRootNode = recursiveConvertTree(md.root);
 
 		return scene;
 	}
@@ -230,43 +252,82 @@ namespace lim
 		return formats[idx];
 	}
 
-	void exportModelToFile(Model* model, size_t pIndex)
+	void exportModelToFile(Model* model, size_t pIndex, std::string_view exportPath)
 	{
 		namespace fs = std::filesystem;
 		const aiExportFormatDesc *format = formats[pIndex];
 		src_md = model;
+		md_dir = exportPath;
+		md_dir += "/"+src_md->name+"_"+format->fileExtension;
+		
+		size_t lastSlashPos = src_md->path.find_last_of("/\\");
+		for(Texture* tex : src_md->textures_loaded) {
+			tex->path = tex->path.c_str() + lastSlashPos+1;
+		}
 
-		const size_t lastSlashPos = model->path.find_last_of("/\\");
-		md_dir = model->path.substr(0, lastSlashPos) + "/";
+		fs::path createdDir(md_dir);
+		if( !std::filesystem::is_directory(createdDir) )
+			fs::create_directories(createdDir);
 
-		/* create path */
-		std::string exportPath = model->path += "/"+model->name; // todo : test
-		fs::path createdPath(exportPath);
-		if( !std::filesystem::is_directory(exportPath) )
-			fs::create_directories(exportPath);
-		exportPath += "/"+ model->name +'.'+format->fileExtension;
+		std::string mdPath = md_dir + "/" + model->name +'.'+format->fileExtension;
+		src_md->path = mdPath;
 
 		/* export model */
-		rst_scene = makeScene(model);
+		double elapsedTime = glfwGetTime();
+		aiScene* rstScene = makeScene(model);
+		log::pure("done! convert model for export in %.2f\n", glfwGetTime()-elapsedTime);
 		
-		if( aiExportScene(rst_scene, format->id, exportPath.c_str(), rst_scene->mFlags)!=AI_SUCCESS )
+		elapsedTime = glfwGetTime();
+		const GLuint severity = Assimp::Logger::Debugging|Assimp::Logger::Info|Assimp::Logger::Err|Assimp::Logger::Warn;
+		Assimp::DefaultLogger::create("", Assimp::Logger::VERBOSE, aiDefaultLogStream_STDOUT);
+		Assimp::DefaultLogger::get()->attachStream(new LimExportLogStream(), severity);
+
+		if( aiExportScene(rstScene, format->id, mdPath.c_str(), 0)!=AI_SUCCESS )
 		{
-			log::err("failed export %s\n", exportPath.data());
+			log::err("failed export %s\n\n", mdPath.c_str());
+			delete rstScene;
+			rstScene = nullptr;
+			Assimp::DefaultLogger::kill();
+			return;
 		}
-		delete rst_scene;
-		rst_scene = nullptr;
+		Assimp::DefaultLogger::kill();
+		delete rstScene;
+		rstScene = nullptr;
+		log::pure("done! export model in %.2f\n", glfwGetTime()-elapsedTime);
 
 
-		/* ctrl cv texture */
+		/* export texture */
+		elapsedTime = glfwGetTime();
 		for( Texture* tex : model->textures_loaded )
 		{
-			std::string internalPath = tex->path.data()+lastSlashPos;
-			std::string newTexPath = model->path + internalPath;
+			std::string newTexPath = md_dir + "/" +  tex->path;
+			tex->path = newTexPath;
+			size_t lastTexSlashPos = newTexPath.find_last_of("/\\");
+			std::string newTexDirStr = newTexPath.substr(0, lastTexSlashPos);
 
-			fs::path fromTexPath(tex->path);
-			fs::path toTexPath(newTexPath); // todo: 디렉토리 없을때 에러?
-			fs::copy(fromTexPath, toTexPath, fs::copy_options::skip_existing);
-			log::pure("copied texture: %s to %s\n", fromTexPath.string().c_str(), toTexPath.string().c_str());
+			fs::path newTexDir(newTexDirStr);
+			if( !std::filesystem::is_directory(newTexDir) )
+				fs::create_directories(newTexDir);
+
+
+			GLubyte* fileData = new GLubyte[3 * tex->width * tex->height ];
+			GLuint srcFbo;
+			glGenFramebuffers(1, &srcFbo);
+			glBindFramebuffer(GL_FRAMEBUFFER, srcFbo);
+			glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex->tex_id, 0 );
+
+			glPixelStorei(GL_PACK_ALIGNMENT, 1);
+            glReadPixels(0, 0,  tex->width, tex->height, GL_RGB, GL_UNSIGNED_BYTE, fileData);
+
+			stbi_flip_vertically_on_write(true);
+            stbi_write_png(newTexPath.c_str(), tex->width, tex->height, 3, fileData, tex->width * 3);
+
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			glDeleteFramebuffers(1, &srcFbo);
+			delete fileData;
+			// fs::copy(fromTexPath, toTexPath, fs::copy_options::skip_existing);
+			// log::pure("copied texture: %s to %s\n", fromTexPath.string().c_str(), toTexPath.string().c_str());
 		}
+		log::pure("done! export texture in %.2f\n\n", glfwGetTime()-elapsedTime);
 	}
 }

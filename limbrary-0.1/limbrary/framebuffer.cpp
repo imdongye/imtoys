@@ -62,7 +62,7 @@ namespace lim
 		if( width==square && height==square )
 			return false;
 		width = square; height = square;
-		aspect = width/(float)height;
+		aspect = 1.f;
 
 		initGL();
 		return true;
@@ -243,6 +243,8 @@ namespace lim
 
 		glBlitFramebuffer(0, 0, width, height, 0, 0, width, height
 							, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 	GLuint MsFramebuffer::getRenderedTex() const

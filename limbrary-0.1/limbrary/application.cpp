@@ -59,7 +59,8 @@ namespace lim
 
 		glfwMakeContextCurrent(window);
 		// default is 0 then make tearing so must 1 to buffer swap when all buffer is showen
-		glfwSwapInterval(1); // vsync
+		// 수직동기화 : 1
+		glfwSwapInterval(0); // vsync
 
 		if( !gladLoadGLLoader((GLADloadproc)glfwGetProcAddress) ) {
 			log::err("Failed to initialize GLAD\n");

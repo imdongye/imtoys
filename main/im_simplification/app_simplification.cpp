@@ -37,7 +37,10 @@ namespace lim
 		programs.back()->attatch("shadowed.vs").attatch("shadowed.fs").link();
 
 		programs.push_back(new Program("Map View, my normal", APP_DIR));
-		programs.back()->attatch("uv_view.vs").attatch("wnor_out.fs").link();
+		programs.back()->attatch("uv_view.vs").attatch("debug.fs").link();
+		programs.back()->use_hook = [](const Program& prog) {
+			prog.setUniform("gamma", 1.f);
+		};
 
 		for( Program* prog:programs )
 			shader_names.push_back(prog->name.c_str());
@@ -58,7 +61,7 @@ namespace lim
 		ground.updateModelMat();
 
 		addEmptyViewport();
-		doLoadModel("assets/models/dwarf/Dwarf_2_Low.obj", 0);
+		doImportModel("assets/models/dwarf/Dwarf_2_Low.obj", 0);
 		addEmptyViewport();
 	}
 	AppSimplification::~AppSimplification()
@@ -90,7 +93,32 @@ namespace lim
 		scn.lights.push_back(&light);
 		nr_viewports++;
 	}
-	void AppSimplification::doLoadModel(std::string_view path, int vpIdx)
+	void AppSimplification::subViewport(int vpIdx)
+	{
+		if( vpIdx<0||vpIdx>=nr_viewports ) {
+			log::err("wrong vpIdx for close\m");
+			return;
+		}
+		if( nr_viewports<=2 ) {
+			log::err("you must have two viewports\m");
+			viewports[vpIdx]->window_opened = true;
+			return;
+		}
+		nr_viewports--;
+		src_vp_idx = 0;
+		dst_vp_idx = 1;
+		last_focused_vp_idx = 0;
+		delete viewports[vpIdx];
+		delete models[vpIdx];
+
+		viewports.erase(viewports.begin()+vpIdx);
+		models.erase(models.begin()+vpIdx);
+		scenes.erase(scenes.begin()+vpIdx);
+		for( int i=vpIdx; i<nr_viewports; i++ ) {
+			viewports[i]->name = fmtStrToBuf("viewport%d##simp", i);
+		}
+	}
+	void AppSimplification::doImportModel(std::string_view path, int vpIdx)
 	{
 		if( vpIdx<0||vpIdx>=nr_viewports ) {
 			log::err("wrong vpIdx in load model");
@@ -98,13 +126,10 @@ namespace lim
 		}
 		delete models[vpIdx];
 
-		double elapsedTime = glfwGetTime();
 		models[vpIdx] = importModelFromFile(path.data(), true, true);
 		if( models[vpIdx]==nullptr ) {
 			return;
 		}
-		elapsedTime = glfwGetTime() - elapsedTime;
-		log::pure("Done! in %.3f sec.  \n", elapsedTime);
 
 		Model& md = *models[vpIdx];
 		md.position = {0,md.pivoted_scaled_bottom_height, 0};
@@ -129,37 +154,30 @@ namespace lim
 			return;
 		}
 
-		double start = glfwGetTime();
-		log::pure("Exporting %s.. .. ...... ...  .... .. . .... . .\n", toModel->name.c_str());
-
-		exportModelToFile(toModel, pIndex);
-
-		log::pure("Done! in %.3f sec.  \n\n", glfwGetTime() - start);
+		exportModelToFile(toModel, pIndex, export_path);
 	}
 	void AppSimplification::doSimplifyModel(float lived_pct, int version, int agressiveness, bool verbose)
 	{
-		Model* fromMd = models[from_vp_idx];
-		Model* toMd = models[to_vp_idx];
+		Model* srcMd = models[src_vp_idx];
+		Model* dstMd = models[dst_vp_idx];
 
-		if( toMd != nullptr )
-			delete toMd;
-		toMd = fromMd->clone();
-		models[to_vp_idx] = toMd;
-		scenes[to_vp_idx].models[1] = toMd;
+		if( dstMd != nullptr )
+			delete dstMd;
+		dstMd = srcMd->clone();
+		models[dst_vp_idx] = dstMd;
+		scenes[dst_vp_idx].models[1] = dstMd;
 
-		simplifyModel(*toMd, lived_pct, version, agressiveness, verbose);
-		int pct = 100.0 * toMd->nr_vertices / fromMd->nr_vertices;
-		toMd->name += "_"+std::to_string(pct)+"_pct";
-		toMd->path = std::string(export_path)+"/"+toMd->name;
+		simplifyModel(*dstMd, lived_pct, version, agressiveness, verbose);
+		int pct = 100.0 * dstMd->nr_vertices / srcMd->nr_vertices;
+		dstMd->name += "_"+std::to_string(pct)+"_pct";
 
-		viewports[to_vp_idx]->camera.pivot = toMd->position;
-		viewports[to_vp_idx]->camera.updateFromPosAndPivot();
+		viewports[dst_vp_idx]->camera.pivot = dstMd->position;
+		viewports[dst_vp_idx]->camera.updateFromPosAndPivot();
 	}
-	// From: https://stackoverflow.com/questions/62007672/png-saved-from-opengl-framebuffer-using-stbi-write-png-is-shifted-to-the-right
 	void AppSimplification::doBakeNormalMap(int texSize)
 	{
-		if( models[from_vp_idx] != nullptr && models[to_vp_idx] != nullptr )
-			bakeNormalMap( *models[from_vp_idx], *models[to_vp_idx], texSize );
+		if( models[src_vp_idx] != nullptr && models[dst_vp_idx] != nullptr )
+			bakeNormalMap( *models[src_vp_idx], *models[dst_vp_idx], texSize );
 		else
 			log::err("You Must to simplify before baking\n");
 	}
@@ -204,8 +222,8 @@ namespace lim
 	}
 	void AppSimplification::renderImGui()
 	{
-		const Model& fromMd = *models[from_vp_idx];
-		const Model& toMd = *models[to_vp_idx];
+		const Model& srcMd = *models[src_vp_idx];
+		const Model& dstMd = *models[dst_vp_idx];
 
 		ImGui::DockSpaceOverViewport();
 
@@ -225,7 +243,7 @@ namespace lim
 							{
 								if( ImGui::MenuItem((*iter).c_str()) )
 								{
-									doLoadModel((*iter), i);
+									doImportModel((*iter), i);
 									break;
 								}
 							}
@@ -285,7 +303,9 @@ namespace lim
 		// 실행후 겹쳤을때 그리는순서에 따라서 위로오는게 결정됨, 방금 생성한게 위에 오기하기위함.
 		for( int i=nr_viewports-1; i>=0; i-- )
 		{
-			viewports[i]->drawImGui();
+			if( viewports[i]->drawImGui() == false ) {
+				subViewport(i);
+			}
 		}
 
 		log::drawViewer("log viwer##simplification");
@@ -298,21 +318,21 @@ namespace lim
 				if( models[i]->meshes.size() == 0 )
 					continue;
 				ImGui::SameLine();
-				if( ImGui::RadioButton( fmtStrToBuf("%d##1", i), &from_vp_idx, i) && from_vp_idx == to_vp_idx ) {
-					to_vp_idx++;
-					to_vp_idx %= nr_viewports;
+				if( ImGui::RadioButton( fmtStrToBuf("%d##1", i), &src_vp_idx, i) && src_vp_idx == dst_vp_idx ) {
+					dst_vp_idx++;
+					dst_vp_idx %= nr_viewports;
 				}
 			}
 
 			ImGui::Text("to viewport:");
 			for( int i=0; i<nr_viewports; i++ )
 			{
-				if( i == from_vp_idx )
+				if( i == src_vp_idx )
 					continue;
 				ImGui::SameLine();
-				if( ImGui::RadioButton((std::to_string(i) + "##2").c_str(), &to_vp_idx, i) )
+				if( ImGui::RadioButton((std::to_string(i) + "##2").c_str(), &dst_vp_idx, i) )
 				{
-					log::pure("%s", i);
+					log::pure("%d", i);
 				}
 			}
 
@@ -329,16 +349,16 @@ namespace lim
 			static double simpTime = 0.0;
 			if( ImGui::Button("Simplify") || simplify_trigger )
 			{
-				log::pure("\nSimplifing %s..... . ... ... .. .. . .  .\n", fromMd.name.c_str());
+				log::pure("\nSimplifing %s..... . ... ... .. .. . .  .\n", srcMd.name.c_str());
 				simpTime = glfwGetTime();
 				simplify_trigger = false;
 				doSimplifyModel((float)pct / 100.f, selectedVersion, agressiveness, verbose);
 				simpTime = glfwGetTime()-simpTime;
-				log::pure("Done! %d => %d in %.3f sec. \n\n", fromMd.nr_vertices, toMd.nr_vertices, simpTime);
+				log::pure("Done! %d => %d in %.3f sec. \n\n", srcMd.nr_vertices, dstMd.nr_vertices, simpTime);
 			}
 
 			ImGui::SameLine();
-			ImGui::Text("target triangles = %d", (int)(fromMd.nr_triangles * pct));
+			ImGui::Text("target triangles = %d", (int)(srcMd.nr_triangles * pct));
 			ImGui::Text("simplified in %lf sec", simpTime);
 			ImGui::NewLine();
 
@@ -354,6 +374,10 @@ namespace lim
 			{
 				bake_trigger = false;
 				doBakeNormalMap(texSizes[selectedTexSizeIdx]);
+			}
+			if( ImGui::Button("BumpMap To Normal Map") )
+			{
+				convertBumpMapToNormalMap(*models[src_vp_idx]);
 			}
 		}
 		ImGui::End();
@@ -388,14 +412,14 @@ namespace lim
 
 			ImGui::Text("<light>");
 			const static float litThetaSpd = 70 * 0.001;
-			const static float litPiSpd = 360 * 0.001;
+			const static float litPhiSpd = 360 * 0.001;
 			static float litTheta = 30.f;
-			static float litPi = 30.f;
+			static float litPhi = 30.f;
 			static bool isLightDraged = false;
+			isLightDraged |= ImGui::DragFloat("light yaw", &litPhi, litPhiSpd, -FLT_MAX, +FLT_MAX, "%.3f");
 			isLightDraged |= ImGui::DragFloat("light pitch", &litTheta, litThetaSpd, 0, 80, "%.3f");
-			isLightDraged |= ImGui::DragFloat("light yaw", &litPi, litPiSpd, -FLT_MAX, +FLT_MAX, "%.3f");
 			if( isLightDraged ) {
-				light.setRotate(litTheta, glm::fract(litPi/360.f)*360.f);
+				light.setRotate(litTheta, glm::fract(litPhi/360.f)*360.f);
 			}
 			ImGui::Text("pos %.1f %.1f %.1f", light.position.x, light.position.y, light.position.z);
 
@@ -615,28 +639,7 @@ namespace lim
 	}
 	void AppSimplification::dndCallback(int count, const char **paths)
 	{
-		int selectedVpIdx = -1;
-		double xPos, yPos;
-		int winX, winY, gX, gY;
-		glfwGetCursorPos(window, &xPos, &yPos);
-		glfwGetWindowPos(window, &winX, &winY);
-
-		gX = winX + xPos;
-		gY = winY + yPos;
-		for( int i = 0; i < nr_viewports; i++ )
-		{
-			if( viewports[i]->hovered )
-			{
-				selectedVpIdx = i;
-			}
-		}
-		if( selectedVpIdx >= 0 )
-		{
-			doLoadModel(paths[0], selectedVpIdx);
-		}
-		else
-		{
-			log::err("you must drop to viewport\n");
-		}
+		addEmptyViewport();
+		doImportModel(paths[0], nr_viewports-1);
 	}
 }

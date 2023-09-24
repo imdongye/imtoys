@@ -16,6 +16,7 @@ namespace lim
 	class CanvasGray : public TexBase
 	{
 	public:
+		float clear_color = 0.01f;
 		std::vector<float> buf;
 
 	public:
@@ -36,16 +37,16 @@ namespace lim
 		virtual ~CanvasGray()
 		{
 		}
-		void clear(const float c)
+		void clear()
 		{
-			std::fill(buf.begin(), buf.end()-1, c);
+			std::fill(buf.begin(), buf.end()-1, clear_color);
 		}
 		void resize(int w, int h)
 		{
 			width = w;
 			height = h;
 			buf.resize(w * h);
-			clear(0.f);
+			clear();
 
 			initGL(buf.data());
 		}
@@ -65,6 +66,7 @@ namespace lim
 	class CanvasColor : public TexBase
 	{
 	public:
+		glm::vec3 clear_color = {0.f, 0.1f, 0.12f};
 		std::vector<glm::vec3> buf;
 	public:
 		CanvasColor(int w, int h) : TexBase()
@@ -82,18 +84,18 @@ namespace lim
 		virtual ~CanvasColor()
 		{
 		}
-		void clear(const glm::vec3 &c)
+		void clear()
 		{
 			// memset(M.data(), 0, width*height*sizeof(glm::vec3)); // max30.1fps
 			// std::fill_n(M.data(), width*height, c); // max26.9fps
-			std::fill(buf.begin(), buf.end() - 1, c); // max27fps
+			std::fill(buf.begin(), buf.end() - 1, clear_color); // max27fps
 		}
 		void resize(int w, int h)
 		{
 			width = w;
 			height = h;
 			buf.resize(w * h);
-			clear({0.f, 0.1f, 0.12f});
+			clear();
 			initGL(buf.data());
 		}
 		void update()

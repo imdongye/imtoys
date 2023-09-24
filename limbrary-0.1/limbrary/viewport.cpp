@@ -13,7 +13,7 @@ namespace lim
 	{
 		delete framebuffer;
 	}
-	void Viewport::drawImGui() // and resize framebuffer
+	bool Viewport::drawImGui() // and resize framebuffer
 	{
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
 		ImGui::SetNextWindowSize({(float)width, (float)height+ImGui::GetFrameHeight()}, (window_mode==WM_FIXED_SIZE)?ImGuiCond_Always:ImGuiCond_Once);
@@ -67,6 +67,8 @@ namespace lim
 
 		ImGui::End();
 		ImGui::PopStyleVar();
+		
+		return window_opened;
 	}
 	void Viewport::resize(GLuint _width, GLuint _height)
 	{

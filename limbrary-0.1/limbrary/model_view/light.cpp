@@ -33,14 +33,14 @@ namespace lim
 	Light::~Light()
 	{
 	}
-	void Light::setRotate(float thetaDeg, float piDeg, float radius)
+	void Light::setRotate(float thetaDeg, float phiDeg, float radius)
 	{
 		vec3 diff = position-pivot;
 		float distance = (radius<0)?length(diff):radius;
 
 		vec4 toLit = {0,1,0,0};
 		toLit = rotate(radians(thetaDeg), vec3{0,0,1}) * toLit;
-		toLit = rotate(radians(piDeg), vec3{0,1,0}) * toLit;
+		toLit = rotate(radians(phiDeg), vec3{0,1,0}) * toLit;
 
 		position = pivot+distance*vec3(toLit);
 		updateWithPivotAndPos();

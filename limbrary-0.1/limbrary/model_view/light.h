@@ -44,7 +44,7 @@ namespace lim
 		// theta=[0,180] up is origin
 		// pi=[0,360] clockwise 3pm origin 
 		// if radius<0 : maintain radius
-		void setRotate(float thetaDeg=30.f, float piDeg = 30.f, float radius = -1.f);
+		void setRotate(float thetaDeg=30.f, float phiDeg = 30.f, float radius = -1.f);
 		void updateWithPivotAndPos();
 	};
 }

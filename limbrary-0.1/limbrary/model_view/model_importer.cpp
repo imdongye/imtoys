@@ -14,6 +14,9 @@
 #include <assimp/cimport.h>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+#include <assimp/LogStream.hpp>
+#include <assimp/Logger.hpp>
+#include <assimp/DefaultLogger.hpp>
 #include <GLFW/glfw3.h>
 
 using namespace lim;
@@ -23,6 +26,7 @@ using namespace glm;
 namespace
 {
 	Model* rst = nullptr; // temp model
+	std::string model_dir;
 
 
 	inline vec3 toGLM( const aiVector3D& v ) {
@@ -41,13 +45,28 @@ namespace
 					m.a4, m.b4, m.c4, m.d4);
 	}
 
+	class LimImportLogStream : public Assimp::LogStream
+	{
+	public:
+			LimImportLogStream()
+			{
+			}
+			~LimImportLogStream()
+			{
+			}
+			virtual void write(const char* message) override
+			{
+				//log::pure("%s", message);
+			}
+	};
+
 	Texture* loadTexture(string texPath, GLint internalFormat=GL_RGB8)
 	{
 		vector<Texture*>& loadedTestures = rst->textures_loaded;
 
 		// assimp가 뒤에오는 옵션을 읽지 않음 (ex: eye.png -bm 0.4) 그래서 아래와 같이 필터링한다.
 		texPath = texPath.substr(0, texPath.find_first_of(' '));
-		texPath = rst->path + "/" + texPath;
+		texPath = model_dir + "/" + texPath;
 
 		for( size_t i = 0; i < loadedTestures.size(); i++ ) {
 			if( texPath.compare(loadedTestures[i]->path)==0 ) {
@@ -243,9 +262,7 @@ namespace lim
 		const size_t lastSlashPos = path.find_last_of("/\\");
 		const size_t dotPos = path.find_last_of('.');
 		rst->name = path.substr(lastSlashPos + 1, dotPos - lastSlashPos - 1);
-		rst->path = (lastSlashPos == 0) ? "" : path.substr(0, lastSlashPos);
-
-		double elapsedTime = glfwGetTime();
+		model_dir = (lastSlashPos == 0) ? "" : path.substr(0, lastSlashPos);
 
 		/* Assimp 설정 */
 		GLuint pFrags = 0;
@@ -258,27 +275,30 @@ namespace lim
 		// pFrags |= aiProcess_SplitLargeMeshes : 큰 mesh를 작은 sub mesh로 나눠줌
 		// pFrags |= aiProcess_OptimizeMeshes : mesh를 합쳐서 draw call을 줄인다. batching?
 		pFrags |= aiProcessPreset_TargetRealtime_MaxQuality;
+
+		double elapsedTime = glfwGetTime();
+		const GLuint severity = Assimp::Logger::Debugging|Assimp::Logger::Info|Assimp::Logger::Err|Assimp::Logger::Warn;
+		Assimp::DefaultLogger::create("", Assimp::Logger::VERBOSE, aiDefaultLogStream_STDOUT);
+		Assimp::DefaultLogger::get()->attachStream(new LimImportLogStream(), severity);
 		const aiScene* scene = aiImportFile(modelPath.data(), pFrags);
-
-		log::pure("[%s] read assimp in %.2lf\n", rst->name.c_str(), glfwGetTime()-elapsedTime);
-
-
 		if( !scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode ) {
-			log::err("[import assimp] %s\n", aiGetErrorString());
+			log::err("[import assimp] %s\n\n", aiGetErrorString());
 			delete rst;
+			Assimp::DefaultLogger::kill();
 			return nullptr;
 		}
-
-		elapsedTime = glfwGetTime();
+		Assimp::DefaultLogger::kill();
+		rst->ai_backup_flags = scene->mFlags;
+		log::pure("done! read file with assimp in %.2f\n", glfwGetTime()-elapsedTime);
 
 		/* import mats */
+		elapsedTime = glfwGetTime();
 		if( withMaterial ) {
 			rst->materials.resize(scene->mNumMaterials);
 			for( GLuint i=0; i<scene->mNumMaterials; i++ ) {
 				rst->materials[i] = convertMaterial(scene->mMaterials[i]);
 			}
 		}
-
 
 		/* import meshes */
 		rst->meshes.resize(scene->mNumMeshes);
@@ -291,8 +311,8 @@ namespace lim
 		recursiveConvertTree(*rst, rst->root, scene->mRootNode);
 		log::pure("[%s] convert lim::Model in %.2lf\n", rst->name.c_str(), glfwGetTime()-elapsedTime);
 		log::pure("[%s] #meshs %d, #mats %d, #verts %d, #tris %d\n", rst->name.c_str(), rst->meshes.size(), rst->materials.size(), rst->nr_vertices, rst->nr_triangles);
-		log::pure("[%s] boundary size : %f, %f, %f\n\n", rst->name.c_str(), rst->boundary_size.x, rst->boundary_size.y, rst->boundary_size.z);
-
+		log::pure("[%s] boundary size : %f, %f, %f\n", rst->name.c_str(), rst->boundary_size.x, rst->boundary_size.y, rst->boundary_size.z);
+		log::pure("done! read file with assimp in %.2f\n\n", glfwGetTime()-elapsedTime);
 
 		aiReleaseImport(scene);
 

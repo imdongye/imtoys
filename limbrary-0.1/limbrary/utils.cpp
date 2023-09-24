@@ -34,7 +34,7 @@ namespace lim {
 			ofile<<text;
 			ofile.close();
 		} catch( std::ifstream::failure& e ) {
-			log::err("fail read : %s, what? %s", path, e.what());
+			log::err("fail read : %s, what? %s\n", path, e.what());
 		}
 	}
 

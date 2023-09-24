@@ -38,6 +38,8 @@ namespace lim
 	void simplifyModel(lim::Model& model, float lived_pct = 0.8f, int version = 0, int agressiveness=7, bool verbose=true);
 
 	void bakeNormalMap(const Model& src, Model& dst, int texSize);
+
+	void convertBumpMapToNormalMap(Model& md);
 }
 
 #endif

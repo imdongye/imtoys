@@ -32,17 +32,17 @@ namespace lim
 		inline static constexpr CStr APP_DISC =  "simplify and bake normal map";
 
 	private:
-		bool is_same_camera = false;
+		bool is_same_camera = true;
 
 		int selected_prog_idx = 0;
 		std::vector<Program*> programs;
 		std::vector<const char*> shader_names;
 
-		int last_focused_vp_idx = 0;
 		bool simplify_trigger = false;
 		bool bake_trigger = false;
-		int from_vp_idx = 0;
-		int to_vp_idx = 1;
+		int src_vp_idx = 0;
+		int dst_vp_idx = 1;
+		int last_focused_vp_idx = 0;
 		
 		Light light;
 		Model ground;
@@ -59,7 +59,8 @@ namespace lim
 		~AppSimplification();
 	private:
 		void addEmptyViewport();
-		void doLoadModel(std::string_view path, int vpIdx);
+		void subViewport(int vpIdx);
+		void doImportModel(std::string_view path, int vpIdx);
 		void doExportModel(size_t pIndex, int vpIdx);
 		void doSimplifyModel(float lived_pct = 0.8f, int version = 0, int agressiveness = 7, bool verbose = true);
 		void doBakeNormalMap(int texSize);

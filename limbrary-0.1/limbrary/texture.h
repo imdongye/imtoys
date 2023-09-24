@@ -63,7 +63,9 @@ namespace lim
 		bool initFromImageAuto(std::string_view path, bool convertLinear = false, int nrChannels = 0, int bitPerChannel = 0);
 	};
 
-	void drawTexToQuad(GLuint texId);
+	void drawTexToQuad(GLuint texId, float gamma = 2.2f);
+	void copyTexToTex(GLuint srcTexId, TexBase& dstTex);
+	void copyTexToTex(const TexBase& srcTex, TexBase& dstTex);
 }
 
 #endif

@@ -13,95 +13,89 @@ namespace
 
 namespace lim
 {
-	AppFluid::AppFluid(): AppBase(1200, 780, APP_NAME)
+	AppFluid::AppFluid(): AppBase(1200, 780, APP_NAME), viewport("viewport##fluid", new Framebuffer)
 	{
 		stbi_set_flip_vertically_on_load(true);
 
-		//vp = new Viewport(new Framebuffer(),900, 600);
-		//fb = vp->framebuffer;
-		// 람다에서 전체 캡쳐를 해두어도 컴파일타임에 사용하는 변수만 복사 및 레퍼런싱한다.
-		//vp->resize_callback = [this](int w, int h) { canvas->resize(w, h); };
+		canvas = new CanvasColor(viewport.width, viewport.height);
 
-		canvas = new CanvasColor(fb_width, fb_height);
+		// 람다에서 전체 캡쳐를 해두어도 컴파일타임에 사용하는 변수만 복사 및 레퍼런싱한다.
+		viewport.resize_callbacks[this] = [this](int w, int h) { 
+			canvas->resize(w, h); 
+		};
 		points.push_back({0,0});
 	}
 	AppFluid::~AppFluid()
 	{
-		//delete vp;
 		delete canvas;
 	}
 	void AppFluid::update()
 	{
-		canvas->deinitGL();
-		points[0] = mouse_pos;
-		points[0].y = fb_height-1-points[0].y;
+		points[0].x = viewport.mouse_pos.x;
+		points[0].y = viewport.height-viewport.mouse_pos.y;
 
-		const float rad = 50.f;
+		const float radius = 50.f;
 		const float threshold = 0.5f;
 
-		for( int i=0; i<fb_height; i++ ) for( int j=0; j<fb_width; j++ ) {
-			glm::vec2 pos = {j, i};
+		canvas->clear();
+
+		for( int x=0; x<viewport.width; x++ ) for( int y=0; y<viewport.height; y++ ) {
+			glm::vec2 pix = {x, y};
 			float sum = 0.f;
 
 			for( auto& pt : points ) {
-				glm::vec2 dif = pt-pos;
-				float dd = glm::dot(dif, dif);
-				float rr = rad*rad;
+				glm::vec2 diff = pt-pix;
+				float pow_diff = glm::dot(diff, diff);
+				float pow_radius = radius*radius;
 
-				if( dd < rr ) {
-					sum += pow(1.f-pow(dd/rr, 2), 2);
+				if( pow_diff < pow_radius ) {
+					float pd_per_pr = pow_diff/pow_radius;
+					float inv_pow_pd_per_pr = 1.f-pd_per_pr*pd_per_pr;
+					float pow_inv = inv_pow_pd_per_pr*inv_pow_pd_per_pr;
+					sum += pow_inv;
 				}				
 			}
 
 			if( sum>threshold ) {
-				canvas->at(pos.x, pos.y) = glm::vec3(1.);
+				canvas->at(x, y) = glm::vec3(1.);
 			}
 		}
-
-		/*glBindTexture(GL_TEXTURE_2D, fb->color_tex);
-		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, fb->width, fb->height, GL_FLOAT, GL_RGB, canvas->M.data());
-		glBindTexture(GL_TEXTURE_2D, 0);*/
 
 		canvas->update();
 
 		glDisable(GL_DEPTH_TEST);
 		glDisable(GL_MULTISAMPLE);
+		viewport.framebuffer->bind();
+		
+		drawTexToQuad(canvas->tex_id);
+		viewport.framebuffer->unbind();
+
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glViewport(0, 0, fb_width, fb_height);
-		glClearColor(0.f, 0.f, 0.f, 0.f);
+		glClearColor(0.f, 0.1f, 0.12f, 1.f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		GLuint pid = AssetLib::get().tex_to_quad_prog->use(); //tex_to_gray_prog
-
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, canvas->tex_id);
-		setUniform(pid, "tex", 0);
-		setUniform(pid, "gamma", 2.2f);
-
-		glBindVertexArray(AssetLib::get().screen_quad->vert_array);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, AssetLib::get().screen_quad->element_buf);
-		glDrawElements(GL_TRIANGLES, 4, GL_UNSIGNED_INT, 0);
 	}
 	void AppFluid::renderImGui()
 	{
 		//ImGui::DockSpaceOverViewport();
 
-		if( ImGui::BeginMainMenuBar() ) {
-			if( ImGui::BeginMenu("File") ) {
-				ImGui::EndMenu();
-			}
-			if( ImGui::BeginMenu("Edit") ) {
-				if( ImGui::MenuItem("Undo", "CTRL+Z") ) {}
-				if( ImGui::MenuItem("Redo", "CTRL+Y", false, false) ) {}  // Disabled item
-				ImGui::Separator();
-				if( ImGui::MenuItem("Cut", "CTRL+X") ) {}
-				if( ImGui::MenuItem("Copy", "CTRL+C") ) {}
-				if( ImGui::MenuItem("Paste", "CTRL+V") ) {}
-				ImGui::EndMenu();
-			}
-			ImGui::EndMainMenuBar();
-		}
+		// if( ImGui::BeginMainMenuBar() ) {
+		// 	if( ImGui::BeginMenu("File") ) {
+		// 		ImGui::EndMenu();
+		// 	}
+		// 	if( ImGui::BeginMenu("Edit") ) {
+		// 		if( ImGui::MenuItem("Undo", "CTRL+Z") ) {}
+		// 		if( ImGui::MenuItem("Redo", "CTRL+Y", false, false) ) {}  // Disabled item
+		// 		ImGui::Separator();
+		// 		if( ImGui::MenuItem("Cut", "CTRL+X") ) {}
+		// 		if( ImGui::MenuItem("Copy", "CTRL+C") ) {}
+		// 		if( ImGui::MenuItem("Paste", "CTRL+V") ) {}
+		// 		ImGui::EndMenu();
+		// 	}
+		// 	ImGui::EndMainMenuBar();
+		// }
 
 		{
 			static bool pOpen = true;
@@ -123,26 +117,21 @@ namespace lim
 			ImGui::SetNextWindowBgAlpha(0.35f);
 			ImGui::Begin("Example: Simple overlay", &pOpen, window_flags);
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-			ImGui::Text("mouse pos : %4d, %4d", (int)mouse_pos.x, (int)mouse_pos.y);
+			ImGui::Text("mouse pos : %4d, %4d", (int)points[0].x, (int)points[0].x);
 			ImGui::End();
 		}
-		//vp->drawImGui();
+		viewport.drawImGui();
 	}
 	void AppFluid::framebufferSizeCallback(int w, int h)
 	{
-		canvas->resize(w, h);
 	}
 	void AppFluid::mouseBtnCallback(int button, int action, int mods)
 	{
 		if( glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
-			points.push_back({mouse_pos.x, fb_height-1-mouse_pos.y});
+			points.push_back({viewport.mouse_pos.x, viewport.height-viewport.mouse_pos.y});
 		}
 	}
 	void AppFluid::cursorPosCallback(double xPos, double yPos)
 	{
-		//if( !vp->dragging ) return;
-		if( glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS ) {
-			canvas->at(mouse_pos.x,fb_height-1-mouse_pos.y) = {0.5,1,0.5};
-		}
 	}
 }

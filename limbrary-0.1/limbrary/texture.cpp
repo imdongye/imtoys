@@ -17,7 +17,7 @@
 namespace
 {
 	void copyTexBaseProps(const lim::TexBase& src, lim::TexBase& dst) {
-		dst.name 				= src.name+"-copied";
+		dst.name 				= src.name;
 		dst.width 				= src.width;
 		dst.height 				= src.height;
 		dst.aspect_ratio 		= src.aspect_ratio;
@@ -81,20 +81,21 @@ namespace lim
 	{
 		Texture* rst = new Texture();
 		Texture& dup = *rst;
-		GLuint dstFbo;
 		
-		copyTexBaseProps(dup, *this);
+		copyTexBaseProps(*this, dup);
 		dup.path = path;
 		dup.format = dup.path.c_str()+(format-path.c_str());
-		dup.initFromImage(path, internal_format);
+		
+		dup.initGL();
 
-		// glGenBuffers( 1, &dstFbo );
-		// glBindFramebuffer( GL_FRAMEBUFFER, dstFbo );
-		// glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, dup.tex_id, 0 );
-
-		// drawTexToQuad(tex_id); // Todo: glCopyTexImage2d 속도비교
-
-		// glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+		GLuint srcFbo;
+		glGenFramebuffers( 1, &srcFbo );
+		glBindFramebuffer( GL_FRAMEBUFFER, srcFbo );
+		glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex_id, 0 );
+		glBindTexture(GL_TEXTURE_2D, dup.tex_id);
+		glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, width, height);
+		glGenerateMipmap(GL_TEXTURE_2D);
+		glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 
 		return rst;
 	}
@@ -233,17 +234,72 @@ namespace lim
 		return true;
 	}
 	
-	void drawTexToQuad(GLuint texId) 
+
+	
+	void drawTexToQuad(GLuint texId, float gamma) 
 	{
 		const Program& prog = *AssetLib::get().tex_to_quad_prog;
 
+		prog.use();
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texId);
 		prog.setUniform("tex", 0);
-		prog.setUniform("gamma", 2.2f);
+		prog.setUniform("gamma", gamma);
 
 		glBindVertexArray(AssetLib::get().screen_quad->vert_array);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, AssetLib::get().screen_quad->element_buf);
-		glDrawElements(GL_TRIANGLES, 4, GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+		glBindTexture(GL_TEXTURE_2D, 0);
+	}
+
+	void copyTexToTex(GLuint srcTexId, TexBase& dstTex) 
+	{
+		GLuint srcFbo = 0;
+		glGenFramebuffers(1, &srcFbo);
+		glBindFramebuffer(GL_FRAMEBUFFER, srcFbo);
+		glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, srcTexId, 0 );
+
+		glBindTexture(GL_TEXTURE_2D, dstTex.tex_id);
+		glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, dstTex.width, dstTex.height);
+		glGenerateMipmap(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, 0);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		glDeleteFramebuffers( 1, &srcFbo );
+	}
+	void copyTexToTex(const TexBase& srcTex, TexBase& dstTex) 
+	{
+		if(dstTex.tex_id==0) {
+			copyTexBaseProps(srcTex, dstTex);
+			dstTex.initGL();
+		}
+
+		GLuint srcFbo = 0;
+		glGenFramebuffers( 1, &srcFbo );
+		glBindFramebuffer( GL_FRAMEBUFFER, srcFbo );
+		glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, srcTex.tex_id, 0 );
+		glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+		GLuint dstFbo = 0;
+		glGenFramebuffers( 1, &dstFbo );
+		glBindFramebuffer( GL_FRAMEBUFFER, dstFbo );
+		glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, dstTex.tex_id, 0 );
+		glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, srcFbo);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dstFbo);
+		glBlitFramebuffer(0, 0, srcTex.width, srcTex.height, 0, 0, dstTex.width, dstTex.height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+		
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glDeleteFramebuffers(1, &srcFbo);
+		glDeleteFramebuffers(1, &dstFbo);
+
+		glBindTexture(GL_TEXTURE_2D, dstTex.tex_id);
+		glGenerateMipmap(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 }

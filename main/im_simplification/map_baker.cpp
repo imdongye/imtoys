@@ -16,98 +16,194 @@ namespace lim
 {
     void bakeNormalMap(const Model& src, Model& dst, int texSize)
     {
+        if(src.meshes.size() != dst.meshes.size()) {
+			log::err("not mached model in bake normal map\n\n");
+            return;
+        }
         namespace fs = std::filesystem;
-        Framebuffer targetNormalMap;
-        targetNormalMap.clear_color = glm::vec4(0.5, 0.5, 1, 1);
-        targetNormalMap.resize(texSize);
+        Framebuffer srcNormalMap;
+        srcNormalMap.clear_color = {0.5, 0.5, 1, 1};
+        srcNormalMap.resize(texSize);
 
-        Framebuffer bakedNormalMap;
-        bakedNormalMap.clear_color = glm::vec4(0.5, 0.5, 1, 1);
-        bakedNormalMap.resize(texSize);
+        Program normalDrawProg("normal to tex coord", "im_simplification");
+        normalDrawProg.attatch("uv_view.vs").attatch("baker_draw_ori_nor.fs").link();
 
-        Program normalDrawProg("normal to tex coord", "im_simplification/");
-        normalDrawProg.attatch("uv_view.vs").attatch("wnor_out.fs").link();
-
-        Program bakerProg("normal map baker", "im_simplification/");
-        bakerProg.attatch("uv_view.vs").attatch("bake_normal.fs").link();
+        Program bakerProg("normal map baker", "im_simplification");
+        bakerProg.attatch("uv_view.vs").attatch("baker_ori_nor_to_simp_ts.fs").link();
 
 
-
-        // 노멀 맵을 사용하는 메쉬들을 찾아서 자료구조에 저장.
+        // 노멀 맵을 사용하는 메쉬들을 찾아서 자료구조에 저장.  Todo: 사용안해도 저장
         unordered_map< int, vector<pair<Mesh*, Mesh*>> > mergeByNormalMap;
         for( int i=0; i<src.meshes.size(); i++ ) {
             Mesh* srcMs = src.meshes[i];
             Mesh* dstMs = dst.meshes[i];
-            if( dstMs->material==nullptr || dstMs->material->map_Bump==nullptr ) 
+            if( srcMs->material==nullptr || srcMs->material->map_Bump==nullptr ) 
                 continue;
-            int bumpMatIdx = findIdx(dst.materials, dstMs->material);
-            mergeByNormalMap[bumpMatIdx].push_back( make_pair(dstMs,srcMs) );
+            if( srcMs->uvs.size()<0 || dstMs->uvs.size()<0 ) {
+                log::err("no uvs in mesh when bakeNorMap\n\n");
+            }
+            int bumpMatIdx = findIdx(src.materials, srcMs->material);
+            mergeByNormalMap[bumpMatIdx].push_back( make_pair(srcMs, dstMs) );
         }
 
 
-        GLubyte* fileData = new GLubyte[3 * texSize * texSize];
 
         for( auto& [bumpMatIdx, meshes] : mergeByNormalMap ) {
             const Material& srcMat = *src.materials[bumpMatIdx];
             Material& dstMat = *dst.materials[bumpMatIdx];
 
-            /* src의 model space normal 텍스쳐로 가져오기 */
-            targetNormalMap.bind();
+            /* src의 world space normal bump맵 적용해서 텍스쳐로 가져오기 */
+            srcNormalMap.bind();
             normalDrawProg.use();
-            for( auto& [toMesh, fromMesh] : meshes ) {
-                fromMesh->drawGL();
-            }
-            targetNormalMap.unbind();
-
-
-            /* 맵 베이킹 시작 */
-            bakedNormalMap.bind();
-            bakerProg.use();
-
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, targetNormalMap.color_tex);
-            bakerProg.setUniform("map_TargetNormal", 0);
-
-            bakerProg.setUniform("map_Flags", srcMat.map_Flags);
+            normalDrawProg.setUniform("map_Flags", srcMat.map_Flags);
             if ( srcMat.map_Flags & (Material::MF_Bump|Material::MF_Nor) ) {
-                glActiveTexture(GL_TEXTURE1);
+                glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, srcMat.map_Bump->tex_id);
-                bakerProg.setUniform("map_Bump", 1);
-                bakerProg.setUniform("texDelta", srcMat.texDelta);
-                bakerProg.setUniform("bumpHeight", srcMat.bumpHeight);
+                normalDrawProg.setUniform("map_Bump", 0);
+                normalDrawProg.setUniform("texDelta", srcMat.texDelta);
+                normalDrawProg.setUniform("bumpHeight", srcMat.bumpHeight);
             }
             // 원본의 노멀과 bumpmap, Target의 노멀으로 그린다.
-            for( auto& [toMesh, fromMesh] : meshes ) {
-                toMesh->drawGL();
+            for( auto& [srcMs, dstMs] : meshes ) {
+                srcMs->drawGL();
             }
-            bakedNormalMap.unbind();
+            srcNormalMap.unbind();
 
-
-            /* png로 저장 */
-            glBindFramebuffer(GL_FRAMEBUFFER, bakedNormalMap.fbo);
-            glPixelStorei(GL_PACK_ALIGNMENT, 1);
-            glReadPixels(0, 0, texSize, texSize, GL_RGB, GL_UNSIGNED_BYTE, fileData);
-
-            // 새로운 노멀맵으로 텍스쳐 업데이트
-            dstMat.map_Bump->initGL(fileData); // todo : test and fbo to tex로 최적화
-
-            std::string internalModelPath = srcMat.map_Bump->path.c_str() + src.path.size();
-            std::string texPath = dst.path + internalModelPath;
-            const size_t lastSlashPos = texPath.find_last_of("/\\");
+            /* 맵 베이킹 시작 */
+            dstMat.map_Bump->width = texSize;
+            dstMat.map_Bump->height = texSize;
+            dstMat.map_Bump->internal_format = GL_RGB8;
+            dstMat.map_Bump->initGL();
+            GLuint srcFbo = 0;
+            glGenFramebuffers(1, &srcFbo);
+            glBindFramebuffer(GL_FRAMEBUFFER, srcFbo);
+            glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, dstMat.map_Bump->tex_id, 0 );
+            glViewport(0, 0, texSize, texSize);
+            glClearColor(0.5f, 0.5f, 1.f, 1.f);
+            glClear(GL_COLOR_BUFFER_BIT);
+            bakerProg.use();
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, srcNormalMap.color_tex);
+            bakerProg.setUniform("map_OriNormal", 0);
             
-            // 덮어쓴다. 
-            fs::path createdPath(texPath.substr(0, lastSlashPos));
-            if (!std::filesystem::is_directory(createdPath))
-                fs::create_directories(createdPath);
-            stbi_flip_vertically_on_write(true);
-            stbi_write_png(texPath.c_str(), texSize, texSize, 3, fileData, texSize * 3);
+            for( auto& [srcMs, dstMs] : meshes ) {
+                dstMs->drawGL();
+            }
 
-            dstMat.map_Bump->path = texPath;
+            glBindTexture(GL_TEXTURE_2D, dstMat.map_Bump->tex_id);
+            glGenerateMipmap(GL_TEXTURE_2D);
+            glBindTexture(GL_TEXTURE_2D, 0);
+
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            glDeleteFramebuffers(1, &srcFbo);
+
             dstMat.map_Flags &= ~Material::MF_Bump;
             dstMat.map_Flags |=  Material::MF_Nor;
             
-            log::pure("baked in %s\n\n", texPath.c_str());
+            log::pure("bake done  %s\n\n", dstMat.map_Bump->name.c_str());
+        }
+    }
+
+    void convertBumpMapToNormalMap(Model& md)
+    {
+        Program bumpToNorProg("bump to nor", "im_simplification");
+        bumpToNorProg.attatch("uv_view.vs").attatch("baker_bump_to_nor.fs").link();
+        unordered_map< int,  vector<Mesh*> > mergeByNormalMap;
+        for( int i=0; i<md.meshes.size(); i++ ) {
+            Mesh* ms = md.meshes[i];
+            if( ms->material==nullptr || (ms->material->map_Flags|Material::MF_Bump)==0 ) 
+                continue;
+            int bumpMatIdx = findIdx(md.materials, ms->material);
+            mergeByNormalMap[bumpMatIdx].push_back( ms );
         }
 
+        if( mergeByNormalMap.size()==0 ) {
+            log::err("there are no bumpmap in %s\n\n", md.name);
+            return;
+        }
+
+        GLuint norFbo;
+        glGenFramebuffers( 1, &norFbo );
+        glBindFramebuffer( GL_FRAMEBUFFER, norFbo );
+		glDisable(GL_DEPTH_TEST);
+
+
+        for( auto& [bumpMatIdx, meshes] : mergeByNormalMap ) {
+            Material& mat = *md.materials[bumpMatIdx];
+            GLuint norTex;
+            GLsizei norWidth = mat.map_Bump->width;
+            GLsizei norHeight = mat.map_Bump->height;
+            glGenTextures(1, &norTex);
+            glBindTexture(GL_TEXTURE_2D, norTex);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, norWidth, norHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+            glBindFramebuffer(GL_FRAMEBUFFER, norFbo);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, norTex, 0);
+            
+            /* draw to fb*/
+		    glViewport(0, 0, norWidth, norHeight);
+            glClearColor(0.5f, 0.5f, 1.f, 1.f);
+            glClear(GL_COLOR_BUFFER_BIT);
+            bumpToNorProg.use();
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, mat.map_Bump->tex_id);
+            bumpToNorProg.setUniform("map_Bump", 0);
+            bumpToNorProg.setUniform("map_Flags", mat.map_Flags);
+            bumpToNorProg.setUniform("texDelta", mat.texDelta);
+            bumpToNorProg.setUniform("bumpHeight", mat.bumpHeight);
+            for( Mesh* ms : meshes ) {
+                ms->drawGL();
+            }
+
+            glBindTexture(GL_TEXTURE_2D, norTex);
+            glGenerateMipmap(GL_TEXTURE_2D);
+
+            // 텍스쳐 복사 방법 3가지
+
+            // 1. [Tex->Fbo] framebuffer에 그리기
+            // mat.map_Bump->initGL();
+            // glBindFramebuffer(GL_FRAMEBUFFER, norFbo);
+            // glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mat.map_Bump->tex_id, 0);
+            // glViewport(0, 0, norWidth, norHeight);
+            // glClearColor(0.5f, 0.5f, 1.f, 1.f);
+            // glClear(GL_COLOR_BUFFER_BIT);
+            // drawTexToQuad(norTex, 1.f);
+            // glBindTexture(GL_TEXTURE_2D, mat.map_Bump->tex_id);
+            // glGenerateMipmap(GL_TEXTURE_2D);
+
+            // 2. [Fbo->Tex] framebuffer에서 복사하기 (크기 고정)
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, norFbo);
+            glBindTexture(GL_TEXTURE_2D, mat.map_Bump->tex_id);
+            glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, norWidth, norHeight);
+            //glCopyTexImage2D() // 복사하면서 생성
+            glGenerateMipmap(GL_TEXTURE_2D);
+		    glBindTexture(GL_TEXTURE_2D, 0);
+
+            // 3. [Fbo->Fbo] framebuffer에서 framebuffer로 복사하기
+            // GLuint oriFbo;
+            // glGenFramebuffers(1, &oriFbo);
+            // glBindFramebuffer(GL_FRAMEBUFFER, oriFbo);
+            // glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mat.map_Bump->tex_id, 0);
+            // glDrawBuffer(GL_COLOR_ATTACHMENT0);
+            // glBindFramebuffer(GL_READ_FRAMEBUFFER, norFbo);
+            // glBindFramebuffer(GL_DRAW_FRAMEBUFFER, oriFbo);
+            // glBlitFramebuffer(0, 0,  norWidth,  norHeight, 0, 0,  norWidth, norHeight,
+            //                   GL_COLOR_BUFFER_BIT, GL_NEAREST);
+            // glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+            // glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+            // glBindTexture(GL_TEXTURE_2D, mat.map_Bump->tex_id);
+            // glGenerateMipmap(GL_TEXTURE_2D);
+            // glDeleteFramebuffers(1, &oriFbo);
+
+
+            mat.map_Flags &= ~Material::MF_Bump;
+            mat.map_Flags |=  Material::MF_Nor;
+            
+            glDeleteTextures(1, &norTex);
+        }
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glDeleteFramebuffers( 1, &norFbo );
+        glEnable(GL_DEPTH_TEST);
+        log::pure("done convert bump map to normal map\n");
     }
 }

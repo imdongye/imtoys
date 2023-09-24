@@ -21,9 +21,7 @@ namespace lim
 		inline static constexpr const char *APP_DISC = "hello, world";
 
 	private:
-		Viewport *vp;
-		Framebuffer *fb;
-
+		Viewport viewport;
 		std::vector<glm::vec2> points;
 
 	public:

@@ -67,6 +67,7 @@ namespace lim
 		glm::vec3 boundary_max = glm::vec3(std::numeric_limits<float>::min());
 		float pivoted_scaled_bottom_height = 0;
 		
+		GLuint ai_backup_flags = 0;
 	private:
 		// Disable Copying and Assignment
 		Model(Model const &) = delete;
@@ -88,6 +89,6 @@ namespace lim
 	// export model
 	int getNrExportFormats();
 	const aiExportFormatDesc* getExportFormatInfo(int idx);
-	void exportModelToFile(Model* model, size_t pIndex);
+	void exportModelToFile(Model* model, size_t pIndex, std::string_view exportPath);
 }
 #endif
