@@ -16,7 +16,7 @@ namespace lim
 {
     void bakeNormalMap(const Model& src, Model& dst, int texSize)
     {
-        if(src.meshes.size() != dst.meshes.size()) {
+        if(src.my_meshes.size() != dst.my_meshes.size()) {
 			log::err("not mached model in bake normal map\n\n");
             return;
         }
@@ -34,9 +34,9 @@ namespace lim
 
         // 노멀 맵을 사용하는 메쉬들을 찾아서 자료구조에 저장.  Todo: 사용안해도 저장
         unordered_map< int, vector<pair<Mesh*, Mesh*>> > mergeByNormalMap;
-        for( int i=0; i<src.meshes.size(); i++ ) {
-            Mesh* srcMs = src.meshes[i];
-            Mesh* dstMs = dst.meshes[i];
+        for( int i=0; i<src.my_meshes.size(); i++ ) {
+            Mesh* srcMs = src.my_meshes[i];
+            Mesh* dstMs = dst.my_meshes[i];
             if( srcMs->material==nullptr || srcMs->material->map_Bump==nullptr ) 
                 continue;
             if( srcMs->uvs.size()<0 || dstMs->uvs.size()<0 ) {
@@ -109,8 +109,8 @@ namespace lim
         Program bumpToNorProg("bump to nor", "im_simplification");
         bumpToNorProg.attatch("uv_view.vs").attatch("baker_bump_to_nor.fs").link();
         unordered_map< int,  vector<Mesh*> > mergeByNormalMap;
-        for( int i=0; i<md.meshes.size(); i++ ) {
-            Mesh* ms = md.meshes[i];
+        for( int i=0; i<md.my_meshes.size(); i++ ) {
+            Mesh* ms = md.my_meshes[i];
             if( ms->material==nullptr || (ms->material->map_Flags|Material::MF_Bump)==0 ) 
                 continue;
             int bumpMatIdx = findIdx(md.materials, ms->material);

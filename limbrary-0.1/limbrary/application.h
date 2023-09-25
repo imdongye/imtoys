@@ -26,7 +26,7 @@ namespace lim
 	class AppBase
 	{
 	public:
-		inline static std::function<void()> draw_appselector = [](){};
+		inline static std::function<void()> _draw_appselector = [](){};
 	public:
 		GLFWwindow *window;
 		

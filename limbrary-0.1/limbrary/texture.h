@@ -56,7 +56,12 @@ namespace lim
 	public:
 		std::string path = "nopath/texture.png";
 		const char* format = path.c_str()+10;
+	private:
+		Texture(const Texture &) = delete;
+		Texture &operator=(const Texture &) = delete;
 	public:
+		Texture();
+		virtual ~Texture();
 		Texture* clone();
 		bool initFromImage(std::string_view path, GLint internalFormat);
 		// nrChannels, bitPerChannel 0 is auto bit

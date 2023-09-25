@@ -18,8 +18,8 @@ namespace lim
 {
 	AppGenMesh::AppGenMesh() : AppBase(1200, 780, APP_NAME)
 	{
-		glEnable(GL_CULL_FACE);
-		// glCullFace(GL_FRONT);
+		//glEnable(GL_CULL_FACE);
+		//glCullFace(GL_FRONT);
 		// glPolygonMode(GL_FRONT, GL_LINE);
 		stbi_set_flip_vertically_on_load(true);
 
@@ -27,44 +27,52 @@ namespace lim
 		viewport->camera.move_free_spd = 4.f;
 		/* gen models */
 		models.push_back(new Model("sphere"));
-		models.back()->meshes.push_back(code_mesh::genSphere(50, 25));
-		models.back()->root.meshes.push_back(models.back()->meshes.back());
+		models.back()->my_meshes.push_back(code_mesh::genSphere(50, 25));
+		models.back()->root.meshes.push_back(models.back()->my_meshes.back());
 
 		models.push_back(new Model("donut"));
-		models.back()->meshes.push_back(code_mesh::genDonut(50, 25));
-		models.back()->root.meshes.push_back(models.back()->meshes.back());
+		models.back()->my_meshes.push_back(code_mesh::genDonut(50, 25));
+		models.back()->root.meshes.push_back(models.back()->my_meshes.back());
 
 		models.push_back(new Model("capsule"));
-		models.back()->meshes.push_back(code_mesh::genCapsule(50, 25));
-		models.back()->root.meshes.push_back(models.back()->meshes.back());
+		models.back()->my_meshes.push_back(code_mesh::genCapsule(50, 25));
+		models.back()->root.meshes.push_back(models.back()->my_meshes.back());
 
 		models.push_back(new Model("ico sphere"));
-		models.back()->meshes.push_back(code_mesh::genIcoSphere(0));
-		models.back()->root.meshes.push_back(models.back()->meshes.back());
+		models.back()->my_meshes.push_back(code_mesh::genIcoSphere(0));
+		models.back()->root.meshes.push_back(models.back()->my_meshes.back());
 
 		models.push_back(new Model("ico sphere2"));
-		models.back()->meshes.push_back(code_mesh::genIcoSphere(3));
-		models.back()->root.meshes.push_back(models.back()->meshes.back());
+		models.back()->my_meshes.push_back(code_mesh::genIcoSphere(1)); // 구멍뭐지
+		models.back()->root.meshes.push_back(models.back()->my_meshes.back());
+
+		models.push_back(new Model("ico sphere2"));
+		models.back()->my_meshes.push_back(code_mesh::genIcoSphere(2));
+		models.back()->root.meshes.push_back(models.back()->my_meshes.back());
+
+		models.push_back(new Model("ico sphere2"));
+		models.back()->my_meshes.push_back(code_mesh::genIcoSphere(3));
+		models.back()->root.meshes.push_back(models.back()->my_meshes.back());
 
 		models.push_back(new Model("cube sphere"));
-		models.back()->meshes.push_back(code_mesh::genCubeSphere(2));
-		models.back()->root.meshes.push_back(models.back()->meshes.back());
+		models.back()->my_meshes.push_back(code_mesh::genCubeSphere(2));
+		models.back()->root.meshes.push_back(models.back()->my_meshes.back());
 
 		models.push_back(new Model("cube sphere2"));
-		models.back()->meshes.push_back(code_mesh::genCubeSphere2(5)); // 개망가짐
-		models.back()->root.meshes.push_back(models.back()->meshes.back());
+		models.back()->my_meshes.push_back(code_mesh::genCubeSphere2(5));
+		models.back()->root.meshes.push_back(models.back()->my_meshes.back());
 
 		models.push_back(new Model("quad"));
-		models.back()->meshes.push_back(code_mesh::genQuad());
-		models.back()->root.meshes.push_back(models.back()->meshes.back());
+		models.back()->my_meshes.push_back(code_mesh::genQuad());
+		models.back()->root.meshes.push_back(models.back()->my_meshes.back());
 
 		models.push_back(new Model("cube"));
-		models.back()->meshes.push_back(code_mesh::genCube());
-		models.back()->root.meshes.push_back(models.back()->meshes.back());
+		models.back()->my_meshes.push_back(code_mesh::genCube());
+		models.back()->root.meshes.push_back(models.back()->my_meshes.back());
 
-		models.push_back(new Model("cylinder")); // 면이 뒤로 가고 아랫면이 윗꼭지랑 연결됨
-		models.back()->meshes.push_back(code_mesh::genCylinder(20));
-		models.back()->root.meshes.push_back(models.back()->meshes.back());
+		models.push_back(new Model("cylinder"));
+		models.back()->my_meshes.push_back(code_mesh::genCylinder(20));
+		models.back()->root.meshes.push_back(models.back()->my_meshes.back());
 
 		models.push_back(importModelFromFile("assets/models/objs/spot.obj", true, false));
 
@@ -80,16 +88,16 @@ namespace lim
 		}
 
 		models.push_back(new Model("plane"));
-		models.back()->meshes.push_back(code_mesh::genPlane());
-		models.back()->root.meshes.push_back(models.back()->meshes.back());
+		models.back()->my_meshes.push_back(code_mesh::genPlane());
+		models.back()->root.meshes.push_back(models.back()->my_meshes.back());
 		models.back()->position = glm::vec3(0, -3.5, 0);
 		models.back()->scale = glm::vec3(50.f);
 		models.back()->updateModelMat();
 
 		light = new Light();
 		light_model = new Model("light model");
-		light_model->meshes.push_back(code_mesh::genSphere(8, 4));
-		light_model->root.meshes.push_back(models.back()->meshes.back());
+		light_model->my_meshes.push_back(code_mesh::genSphere(8, 4));
+		light_model->root.meshes.push_back(models.back()->my_meshes.back());
 		light_model->position = light->position;
 		light_model->scale = glm::vec3(0.3f);
 		light_model->updateModelMat();

@@ -28,13 +28,11 @@ using namespace glm;
 
 namespace
 {
-	const int nr_formats = (int)aiGetExportFormatCount();
+	const int _nr_formats = (int)aiGetExportFormatCount();
 
-	const aiExportFormatDesc* formats[32] = { nullptr, };
+	const aiExportFormatDesc* _formats[32] = { nullptr, };
 
-	std::string md_dir;
-
-	Model* src_md = nullptr;
+	Model* _src_md = nullptr;
 
 	inline aiVector3D toAiV( const vec3& v ) {
 		return { v.x, v.y, v.z };
@@ -140,7 +138,7 @@ namespace
 		// From: https://github.com/assimp/assimp/issues/203
 		aiMs->mPrimitiveTypes = aiPrimitiveType_TRIANGLE;
 
-		GLuint idxOfMat = findIdx(src_md->materials, ms.material);
+		GLuint idxOfMat = findIdx(_src_md->materials, ms.material);
 		aiMs->mMaterialIndex = idxOfMat;
 
 		GLuint nrTemp = mesh->poss.size();
@@ -188,7 +186,7 @@ namespace
 	aiNode* recursiveConvertTree(const Model::Node& src)
 	{
 		aiNode* node = new aiNode();
-		std::vector<Mesh*>& modelMeshes = src_md->meshes;
+		std::vector<Mesh*>& modelMeshes = _src_md->my_meshes;
 		node->mTransformation = toAi(src.transformation);
 
 		const size_t nrMeshes = src.meshes.size();
@@ -222,11 +220,11 @@ namespace
 			scene->mMaterials[i] = convertMaterial(md.materials[i]);
 		}
 		
-		const GLuint nrMeshes = md.meshes.size();
+		const GLuint nrMeshes = md.my_meshes.size();
 		scene->mNumMeshes = nrMeshes;
 		scene->mMeshes = new aiMesh*[nrMeshes];
 		for( int i=0; i<nrMeshes; i++ ) {
-			scene->mMeshes[i] = convertMesh(md.meshes[i]);
+			scene->mMeshes[i] = convertMesh(md.my_meshes[i]);
 		}
 		
 		scene->mRootNode = recursiveConvertTree(md.root);
@@ -239,29 +237,29 @@ namespace lim
 {
 	int getNrExportFormats()
 	{
-		return nr_formats;
+		return _nr_formats;
 	}
 	const aiExportFormatDesc* getExportFormatInfo(int idx)
 	{
-		if (formats[0] == nullptr){
-			for (int i = 0; i < nr_formats; i++)
-				formats[i] = aiGetExportFormatDescription(i);
+		if (_formats[0] == nullptr){
+			for (int i = 0; i < _nr_formats; i++)
+				_formats[i] = aiGetExportFormatDescription(i);
 		}
-		if (idx < 0 || idx >= nr_formats)
+		if (idx < 0 || idx >= _nr_formats)
 			return nullptr;
-		return formats[idx];
+		return _formats[idx];
 	}
 
 	void exportModelToFile(Model* model, size_t pIndex, std::string_view exportPath)
 	{
 		namespace fs = std::filesystem;
-		const aiExportFormatDesc *format = formats[pIndex];
-		src_md = model;
-		md_dir = exportPath;
-		md_dir += "/"+src_md->name+"_"+format->fileExtension;
+		const aiExportFormatDesc *format = _formats[pIndex];
+		_src_md = model;
+		std::string md_dir(exportPath);
+		md_dir += "/"+_src_md->name+"_"+format->fileExtension;
 		
-		size_t lastSlashPos = src_md->path.find_last_of("/\\");
-		for(Texture* tex : src_md->textures_loaded) {
+		size_t lastSlashPos = _src_md->path.find_last_of("/\\");
+		for(Texture* tex : _src_md->my_textures) {
 			tex->path = tex->path.c_str() + lastSlashPos+1;
 		}
 
@@ -270,7 +268,7 @@ namespace lim
 			fs::create_directories(createdDir);
 
 		std::string mdPath = md_dir + "/" + model->name +'.'+format->fileExtension;
-		src_md->path = mdPath;
+		_src_md->path = mdPath;
 
 		/* export model */
 		double elapsedTime = glfwGetTime();
@@ -298,7 +296,7 @@ namespace lim
 
 		/* export texture */
 		elapsedTime = glfwGetTime();
-		for( Texture* tex : model->textures_loaded )
+		for( Texture* tex : model->my_textures )
 		{
 			std::string newTexPath = md_dir + "/" +  tex->path;
 			tex->path = newTexPath;

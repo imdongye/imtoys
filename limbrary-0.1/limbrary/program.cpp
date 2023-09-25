@@ -4,11 +4,14 @@
 
 namespace lim
 {
-	
 	Program::Program(const char* _name, const char* homeDir)
-	: name(_name), home_dir(homeDir) {}
-	Program::~Program() { clear(); }
-	
+	: name(_name), home_dir(homeDir) 
+	{
+	}
+	Program::~Program() 
+	{
+		clear(); 
+	}
 	Program& Program::clear()
 	{
 		if( pid ) glDeleteProgram(pid);

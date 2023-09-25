@@ -57,8 +57,8 @@ namespace lim
 		Node root;
 		Material* default_mat;
 		std::vector<Material*> materials;
-		std::vector<Texture*> textures_loaded;
-		std::vector<Mesh*> meshes;
+		std::vector<Texture*> my_textures;
+		std::vector<Mesh*> my_meshes;
 
 		GLuint nr_vertices = 0;
 		GLuint nr_triangles = 0;
@@ -69,9 +69,8 @@ namespace lim
 		
 		GLuint ai_backup_flags = 0;
 	private:
-		// Disable Copying and Assignment
-		Model(Model const &) = delete;
-		Model& operator=(Model const &) = delete;
+		Model(const Model&) = delete;
+		Model& operator=(const Model&) = delete;
 
 	public:
 		Model(std::string_view name = "nonamed model");

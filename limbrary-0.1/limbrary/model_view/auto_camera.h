@@ -47,7 +47,9 @@ namespace lim
 	private:
 		double prev_mouse_x = 0;
 		double prev_mouse_y = 0;
-		
+	private:
+		AutoCamera(const AutoCamera&) = delete;
+		AutoCamera& operator=(const AutoCamera&) = delete;
 	public:
 		AutoCamera();
 		virtual ~AutoCamera();
@@ -64,6 +66,9 @@ namespace lim
 
 	class WinAutoCamera : public AutoCamera
 	{
+	private:
+		WinAutoCamera(const WinAutoCamera&) = delete;
+		WinAutoCamera& operator=(const WinAutoCamera&) = delete;
 	public:
 		WinAutoCamera();
 		virtual ~WinAutoCamera();
@@ -71,6 +76,9 @@ namespace lim
 	
 	class VpAutoCamera : public AutoCamera
 	{
+	private:
+		VpAutoCamera(const VpAutoCamera&) = delete;
+		VpAutoCamera& operator=(const VpAutoCamera&) = delete;
 	public:
 		Viewport* vp;
 		VpAutoCamera(Viewport* vp);

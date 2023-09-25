@@ -59,9 +59,9 @@ namespace lim
 	{
 		for( auto mat : materials )
 			delete mat;
-		for( auto tex : textures_loaded )
+		for( auto tex : my_textures )
 			delete tex;
-		for( auto mesh : meshes )
+		for( auto mesh : my_meshes )
 			delete mesh;
 	}
 	Model* Model::clone()
@@ -79,25 +79,25 @@ namespace lim
 		dup.model_mat = model_mat;
 	
 		dup.default_mat = default_mat;
-		dup.textures_loaded.resize(textures_loaded.size());
-		for( int i=0; i<textures_loaded.size(); i++ ) {
-			dup.textures_loaded[i] = textures_loaded[i]->clone();
+		dup.my_textures.resize(my_textures.size());
+		for( int i=0; i<my_textures.size(); i++ ) {
+			dup.my_textures[i] = my_textures[i]->clone();
 		}
 		dup.materials.resize(materials.size());
 		for( int i=0; i<materials.size(); i++ ) {
 			dup.materials[i] = new Material(*materials[i]);
-			correctMatTexLink(*dup.materials[i], *materials[i], dup.textures_loaded, textures_loaded);
+			correctMatTexLink(*dup.materials[i], *materials[i], dup.my_textures, my_textures);
 		}
 
-		dup.meshes.reserve(meshes.size());
-		for( Mesh* ms : meshes ) {
-			dup.meshes.push_back( ms->clone() );
+		dup.my_meshes.reserve(my_meshes.size());
+		for( Mesh* ms : my_meshes ) {
+			dup.my_meshes.push_back( ms->clone() );
 			if( ms->material == nullptr ) {
-				dup.meshes.back()->material = nullptr;
+				dup.my_meshes.back()->material = nullptr;
 				continue;
 			}
 			int matIdx = findIdx(materials, ms->material);
-			dup.meshes.back()->material = dup.materials[matIdx];
+			dup.my_meshes.back()->material = dup.materials[matIdx];
 		}
 
 		std::stack<Node*> origs;
@@ -110,7 +110,7 @@ namespace lim
 			
 			copy->meshes.reserve(orig->meshes.size());
 			for(Mesh* mesh : orig->meshes) {
-				copy->meshes.push_back(dup.meshes[findIdx(meshes, mesh)]);
+				copy->meshes.push_back(dup.my_meshes[findIdx(my_meshes, mesh)]);
 			}
 			copy->childs.reserve(orig->childs.size());
 			for(Node& oriChild : orig->childs) {

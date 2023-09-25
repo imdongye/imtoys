@@ -47,15 +47,15 @@ namespace lim
 
 		AssetLib::get().default_mat->prog = programs[0];
 
-		ground.textures_loaded.push_back(new Texture());
-		ground.textures_loaded.back()->initFromImageAuto("assets/images/uv_grid.jpg");
+		ground.my_textures.push_back(new Texture());
+		ground.my_textures.back()->initFromImageAuto("assets/images/uv_grid.jpg");
 		ground.materials.push_back(new Material());
 		ground.materials.back()->Kd = {0,1,0,1};
-		ground.materials.back()->map_Kd = ground.textures_loaded.back();
+		ground.materials.back()->map_Kd = ground.my_textures.back();
 		ground.materials.back()->map_Flags |= Material::MF_Kd;
-		ground.meshes.push_back(code_mesh::genPlane());
-		ground.meshes.back()->material = ground.materials.back();
-		ground.root.meshes.push_back(ground.meshes.back());
+		ground.my_meshes.push_back(code_mesh::genPlane());
+		ground.my_meshes.back()->material = ground.materials.back();
+		ground.root.meshes.push_back(ground.my_meshes.back());
 		ground.position = {0, 0, 0};
 		ground.scale = {10, 1, 10};
 		ground.updateModelMat();
@@ -96,11 +96,11 @@ namespace lim
 	void AppSimplification::subViewport(int vpIdx)
 	{
 		if( vpIdx<0||vpIdx>=nr_viewports ) {
-			log::err("wrong vpIdx for close\m");
+			log::err("wrong vpIdx for close\n");
 			return;
 		}
 		if( nr_viewports<=2 ) {
-			log::err("you must have two viewports\m");
+			log::err("you must have two viewports\n");
 			viewports[vpIdx]->window_opened = true;
 			return;
 		}
@@ -261,7 +261,7 @@ namespace lim
 					for( int i = 0; i < nr_viewports; i++ )
 					{
 						const Model& md = *models[i];
-						if( md.meshes.size()==0 )
+						if( md.my_meshes.size()==0 )
 							continue;
 
 						if( ImGui::BeginMenu(("Viewport" + std::to_string(i)).c_str()) )
@@ -315,7 +315,7 @@ namespace lim
 			ImGui::Text("From viewport:");
 			for( int i=0; i<nr_viewports; i++ )
 			{
-				if( models[i]->meshes.size() == 0 )
+				if( models[i]->my_meshes.size() == 0 )
 					continue;
 				ImGui::SameLine();
 				if( ImGui::RadioButton( fmtStrToBuf("%d##1", i), &src_vp_idx, i) && src_vp_idx == dst_vp_idx ) {
@@ -464,7 +464,7 @@ namespace lim
 				{
 					if( ImGui::TableSetColumnIndex(column++) )
 					{
-						if( md->meshes.size()==0 )
+						if( md->my_meshes.size()==0 )
 							ImGui::Text("");
 						else
 							ImGui::Text("%s", md->name.c_str());
@@ -478,7 +478,7 @@ namespace lim
 				{
 					if( ImGui::TableSetColumnIndex(column++) )
 					{
-						if( md->meshes.size()==0 )
+						if( md->my_meshes.size()==0 )
 							ImGui::Text("");
 						else
 							ImGui::Text("%d", md->nr_vertices);
@@ -492,7 +492,7 @@ namespace lim
 				{
 					if( ImGui::TableSetColumnIndex(column++) )
 					{
-						if( md->meshes.size()==0 )
+						if( md->my_meshes.size()==0 )
 							ImGui::Text("");
 						else
 							ImGui::Text("%d", md->nr_triangles);
@@ -506,7 +506,7 @@ namespace lim
 				{
 					if( ImGui::TableSetColumnIndex(column++) )
 					{
-						if( md->meshes.size()==0 )
+						if( md->my_meshes.size()==0 )
 							ImGui::Text("");
 						else
 							ImGui::Text("%f", md->boundary_size.x);
@@ -520,7 +520,7 @@ namespace lim
 				{
 					if( ImGui::TableSetColumnIndex(column++) )
 					{
-						if( md->meshes.size()==0 )
+						if( md->my_meshes.size()==0 )
 							ImGui::Text("");
 						else
 							ImGui::Text("%f", md->boundary_size.y);
@@ -535,10 +535,10 @@ namespace lim
 				{
 					if( ImGui::TableSetColumnIndex(column++) )
 					{
-						if( md->meshes.size()==0 )
+						if( md->my_meshes.size()==0 )
 							ImGui::Text("");
 						else
-							ImGui::Text("%d", (int)md->meshes.size());
+							ImGui::Text("%d", (int)md->my_meshes.size());
 					}
 				}
 				column = 0;
@@ -549,10 +549,10 @@ namespace lim
 				{
 					if( ImGui::TableSetColumnIndex(column++) )
 					{
-						if( md->meshes.size()==0 )
+						if( md->my_meshes.size()==0 )
 							ImGui::Text("");
 						else
-							ImGui::Text("%d", (int)md->textures_loaded.size());
+							ImGui::Text("%d", (int)md->my_textures.size());
 					}
 				}
 				ImGui::EndTable();

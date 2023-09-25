@@ -122,7 +122,7 @@ namespace lim
 		/* draw models */
 		setUniform(pid, "isGGX", true);
 		setUniform(pid, "model", model->model_mat);
-		for( const Mesh* mesh: model->meshes ) {
+		for( const Mesh* mesh: model->my_meshes ) {
 			mesh->drawGL();
 		}
 		

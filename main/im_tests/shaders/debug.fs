@@ -19,7 +19,7 @@ void main() {
 	vec3 FaceN = normalize(cross(dFdx(wPos), dFdy(wPos)));
 	vec3 N = normalize(wNor);
 	vec3 L = normalize(lightPos-wPos);
-	float lambertian = max(0,dot(N,L));
+	float lambertian = max(0,dot(FaceN,L));
 	vec2 scaledUv = uvScale * (mUv-vec2(.5f)) + vec2(.5f);
 	vec3 outColor = vec3(0);
 

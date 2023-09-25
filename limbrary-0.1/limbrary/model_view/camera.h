@@ -22,6 +22,7 @@
 
 namespace lim
 {
+	// copyable
 	class Camera
 	{
 	private:

@@ -2,14 +2,14 @@
 
 2023-09-05 / im dong ye
 
-usage:
+Usage:
 lim::log::pure("hello, world! %05d\n", 123);
 
-ref:
+Ref:
 ExampleAppLog in imgui_demo.cpp
 
-todo:
-1. err call back
+Todo:
+1. err callback
 2. ,comma operator 출력
 
 */

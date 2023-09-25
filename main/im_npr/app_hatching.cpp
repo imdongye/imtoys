@@ -136,8 +136,8 @@ namespace lim
 		light = new Light();
 		light->setRotate(30.f, 30.f, 10.f);
 		light_model = new Model("light model");
-		light_model->meshes.push_back(code_mesh::genSphere(8, 4));
-		light_model->root.meshes.push_back(light_model->meshes.back()); // delete sphere when delete model!
+		light_model->my_meshes.push_back(code_mesh::genSphere(8, 4));
+		light_model->root.meshes.push_back(light_model->my_meshes.back()); // delete sphere when delete model!
 		light_model->position = light->position;
 		light_model->scale = glm::vec3(0.3f);
 		light_model->updateModelMat();

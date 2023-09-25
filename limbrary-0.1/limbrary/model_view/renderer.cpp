@@ -57,7 +57,7 @@ namespace lim
     {
         fb.bind();
         prog.use();
-        for( const Mesh* ms : md.meshes ) {
+        for( const Mesh* ms : md.my_meshes ) {
             setMatUniform(*ms->material, prog, 0);
             ms->drawGL();
         }
@@ -89,7 +89,7 @@ namespace lim
             prog.setUniform("map_Shadow", 0);
         }
 
-        for( Mesh* pMesh : md.meshes) {
+        for( Mesh* pMesh : md.my_meshes) {
             pMesh->drawGL();
         }
 
@@ -122,7 +122,7 @@ namespace lim
                 const Model& md = *pMd;
                 depthProg.setUniform("modelMat", md.model_mat);
 
-                for( Mesh* pMs : md.meshes ) {
+                for( Mesh* pMs : md.my_meshes ) {
                     pMs->drawGL();
                 }
             }

@@ -38,6 +38,9 @@ namespace lim
 		glm::mat4 shadow_view_mat;
 		glm::mat4 shadow_proj_mat;
 		glm::mat4 shadow_vp_mat;
+	private:
+		Light(const Light&) = delete;
+		Light& operator=(const Light&) = delete;
 	public:
 		Light();
 		~Light();

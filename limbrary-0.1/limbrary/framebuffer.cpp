@@ -4,7 +4,6 @@
 
 namespace lim
 {
-
 	Framebuffer::Framebuffer(): clear_color({0.05f, 0.09f, 0.11f, 1.0f})
 	{
 		// todo

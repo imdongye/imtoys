@@ -1,17 +1,20 @@
-//
-//	2022-07-20 / im dong ye
-//	edit learnopengl code + toys.h by prof shin
-//
-//	기능:
-//	1. Auto Pathing 파일 이름만 있다면 설정해둔 home_dir에서 정해진 shader경로로 포맷에 맞춰 읽어온다.
-//	   경로로 입력되면 Auto Pathing하지 않는다.
-//	2. Chaining : shadowProgram.attatch("sp_shadow.vert").attatch("shadow.frag")
-//						 .attach("shadow.geom").link();
-//
-//	TODO list:
-//  1. bind with method ( 일단 gltools의 오버로딩된 bind함수 복붙 )
-//	2. include 기능 pre processor
-//
+/*
+
+2022-07-20 / im dong ye
+
+edit learnopengl code + toys.h by prof shin
+
+Note:
+1. Auto Pathing 파일 이름만 있다면 설정해둔 home_dir에서 정해진 shader경로로 포맷에 맞춰 읽어온다.
+   경로로 입력되면 Auto Pathing하지 않는다.
+2. Chaining : shadowProgram.attatch("sp_shadow.vert").attatch("shadow.frag")
+					 .attach("shadow.geom").link();
+
+Todo:
+1. bind with method ( 일단 gltools의 오버로딩된 bind함수 복붙 )
+2. include 기능 pre processor
+
+*/
 
 #ifndef __program_h_
 #define __program_h_

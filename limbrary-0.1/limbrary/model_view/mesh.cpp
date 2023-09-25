@@ -24,7 +24,6 @@ namespace lim
 {
 	Mesh::Mesh()
 	{
-
 	}
 	Mesh::~Mesh()
 	{

@@ -4,7 +4,6 @@
 
 viewport with auto_camera
 
-
 Note:
 * VpAutoCamera control setting is same as AutoCamera
   so you must edit code togather
@@ -34,11 +33,13 @@ namespace lim
 	{
 	public:
 		VpAutoCamera camera;
+	private:
+		ViewportWithCamera(const ViewportWithCamera&) = delete;
+		ViewportWithCamera& operator=(const ViewportWithCamera&) = delete;
 	public:
 		ViewportWithCamera(std::string_view _name, Framebuffer* createdFB)
 			:Viewport(_name, createdFB), camera(this)
 		{
-
 		}
 		virtual ~ViewportWithCamera() {}
 	};

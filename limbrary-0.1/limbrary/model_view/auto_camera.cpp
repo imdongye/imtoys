@@ -20,7 +20,7 @@ Todo:
 
 namespace
 {
-	GLFWwindow* window;
+	GLFWwindow* _win;
 }
 
 namespace lim
@@ -49,7 +49,7 @@ namespace lim
 	void AutoCamera::mouseBtnCallback(int button, int action, int mods)
 	{
 		double xpos, ypos;
-		glfwGetCursorPos(window, &xpos, &ypos);
+		glfwGetCursorPos(_win, &xpos, &ypos);
 		prev_mouse_x = xpos;
 		prev_mouse_y = ypos;
 	}
@@ -60,8 +60,8 @@ namespace lim
 
 		switch( viewing_mode ) {
 			case VM_PIVOT:
-				if( glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS 
-					|| glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS ) {
+				if( glfwGetKey(_win, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS 
+					|| glfwGetMouseButton(_win, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS ) {
 					shiftPosFromPlane(-xoff * move_pivot_spd, -yoff * move_pivot_spd);
 				}
 				else {
@@ -87,10 +87,10 @@ namespace lim
 				shiftZoom(yOff * 5.f);
 				break;
 			case VM_SCROLL:
-				if( glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ) {
+				if( glfwGetKey(_win, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ) {
 					shiftPosFromPlane(-xOff * move_pivot_scroll_spd, yOff * move_pivot_scroll_spd);
 				}
-				else if( glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS ) {
+				else if( glfwGetKey(_win, GLFW_KEY_LEFT_ALT) == GLFW_PRESS ) {
 					shiftDist(yOff * 3.f);// todo
 				}
 				else {
@@ -106,13 +106,13 @@ namespace lim
 			{
 				glm::vec3 dir(0);
 				float moveSpd = move_free_spd;
-				if( glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ) moveSpd *= 2.f;
-				if( glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS ) dir += front;
-				if( glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS ) dir -= front;
-				if( glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS ) dir -= right;
-				if( glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS ) dir += right;
-				if( glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS ) dir += glm::vec3(0, 1, 0);
-				if( glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS ) dir -= glm::vec3(0, 1, 0);
+				if( glfwGetKey(_win, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ) moveSpd *= 2.f;
+				if( glfwGetKey(_win, GLFW_KEY_W) == GLFW_PRESS ) dir += front;
+				if( glfwGetKey(_win, GLFW_KEY_S) == GLFW_PRESS ) dir -= front;
+				if( glfwGetKey(_win, GLFW_KEY_A) == GLFW_PRESS ) dir -= right;
+				if( glfwGetKey(_win, GLFW_KEY_D) == GLFW_PRESS ) dir += right;
+				if( glfwGetKey(_win, GLFW_KEY_E) == GLFW_PRESS ) dir += glm::vec3(0, 1, 0);
+				if( glfwGetKey(_win, GLFW_KEY_Q) == GLFW_PRESS ) dir -= glm::vec3(0, 1, 0);
 				shiftPos(moveSpd*dt*dir);
 				break;
 			}
@@ -127,7 +127,7 @@ namespace lim
 	WinAutoCamera::WinAutoCamera()
 	{
 		AppBase& app = *AppPref::get().app;
-		window = app.window;
+		_win = app.window;
 
 		aspect = app.win_width/(float)app.win_height;
 		updateProjMat();
@@ -145,8 +145,8 @@ namespace lim
 			mouseBtnCallback(button, action, mods);
 		};
 		app.cursor_pos_callbacks[this] = [this](double xPos, double yPos) {
-			if( !glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)
-			&& !glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) )
+			if( !glfwGetMouseButton(_win, GLFW_MOUSE_BUTTON_LEFT)
+			&& !glfwGetMouseButton(_win, GLFW_MOUSE_BUTTON_MIDDLE) )
 				return;
 			if( ImGui::GetIO().WantCaptureMouse )
 				return;
@@ -181,7 +181,7 @@ namespace lim
 
 		// register callbacks
 		AppBase& app = *AppPref::get().app;
-		window = app.window;
+		_win = app.window;
 		app.key_callbacks[this] = [this](int key, int scancode, int action, int mods) {
 			keyCallback(key, scancode, action, mods);
 		};

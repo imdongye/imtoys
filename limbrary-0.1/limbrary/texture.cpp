@@ -77,6 +77,15 @@ namespace lim
 		setUniform(pid, shaderUniformName, (int)activeSlot);
 	}
 	
+
+
+
+	Texture::Texture()
+	{
+	}
+	Texture::~Texture()
+	{
+	}
 	Texture* Texture::clone()
 	{
 		Texture* rst = new Texture();

@@ -25,8 +25,8 @@ using namespace glm;
 
 namespace
 {
-	Model* rst = nullptr; // temp model
-	std::string model_dir;
+	Model* _rst = nullptr; // temp model
+	std::string _model_dir;
 
 
 	inline vec3 toGLM( const aiVector3D& v ) {
@@ -62,11 +62,11 @@ namespace
 
 	Texture* loadTexture(string texPath, GLint internalFormat=GL_RGB8)
 	{
-		vector<Texture*>& loadedTestures = rst->textures_loaded;
+		vector<Texture*>& loadedTestures = _rst->my_textures;
 
 		// assimp가 뒤에오는 옵션을 읽지 않음 (ex: eye.png -bm 0.4) 그래서 아래와 같이 필터링한다.
 		texPath = texPath.substr(0, texPath.find_first_of(' '));
-		texPath = model_dir + "/" + texPath;
+		texPath = _model_dir + "/" + texPath;
 
 		for( size_t i = 0; i < loadedTestures.size(); i++ ) {
 			if( texPath.compare(loadedTestures[i]->path)==0 ) {
@@ -145,10 +145,10 @@ namespace
 	{
 		Mesh* pMs = new Mesh();
 		Mesh& mesh = *pMs;
-		vec3& boundaryMax = rst->boundary_max;
-		vec3& boundaryMin = rst->boundary_min;
+		vec3& boundaryMax = _rst->boundary_max;
+		vec3& boundaryMin = _rst->boundary_min;
 
-		const vector<Material*>& mats = rst->materials;
+		const vector<Material*>& mats = _rst->materials;
 
 		if( mats.size()>0 ) {
 			mesh.material = mats[aiMesh->mMaterialIndex];
@@ -164,7 +164,7 @@ namespace
 			boundaryMax = glm::max(boundaryMax, p);
 			boundaryMin = glm::min(boundaryMin, p);
 		}
-		rst->nr_vertices += mesh.poss.size();
+		_rst->nr_vertices += mesh.poss.size();
 
 		if( aiMesh->HasNormals() ) {
 			mesh.nors.resize( aiMesh->mNumVertices );
@@ -219,7 +219,7 @@ namespace
 				}
 				mesh.tris.push_back( uvec3(face.mIndices[0], face.mIndices[1], face.mIndices[2]));
 			}
-			rst->nr_triangles += mesh.tris.size();
+			_rst->nr_triangles += mesh.tris.size();
 		}
 		if( nrNotTriFace>0 ) {
 			log::err("find not tri face : nr %d\n", nrNotTriFace);
@@ -230,21 +230,21 @@ namespace
 		return pMs;
 	}
 
-	void recursiveConvertTree(const Model& md, Model::Node& to, const aiNode* from) 
+	void recursiveConvertTree(const Model& md, const aiNode* src, Model::Node& dst) 
 	{
-		to.transformation = toGLM(from->mTransformation);
-		for( size_t i=0; i<from->mNumMeshes; i++ )
-			to.meshes.push_back( md.meshes[from->mMeshes[i]] );
-		for( size_t i=0; i< from->mNumChildren; i++ ) {
-			to.childs.push_back({});
-			recursiveConvertTree(md, to.childs.back(), from->mChildren[i]);
+		dst.transformation = toGLM(src->mTransformation);
+		for( size_t i=0; i<src->mNumMeshes; i++ )
+			dst.meshes.push_back( md.my_meshes[src->mMeshes[i]] );
+		for( size_t i=0; i< src->mNumChildren; i++ ) {
+			dst.childs.push_back({});
+			recursiveConvertTree(md, src->mChildren[i], dst.childs.back());
 		}
 	}
 }
 
 namespace lim
 {
-	Model *importModelFromFile(string_view modelPath, bool unitScaleAndPivot, bool withMaterial)
+	Model* importModelFromFile(string_view modelPath, bool unitScaleAndPivot, bool withMaterial)
 	{
 		const char* extension = strrchr(modelPath.data(), '.');
 		if( !extension ) {
@@ -256,13 +256,13 @@ namespace lim
 			return nullptr;
 		}
 
-		rst = new Model();
-		rst->path = modelPath;
-		string& path = rst->path;
+		_rst = new Model();
+		_rst->path = modelPath;
+		string& path = _rst->path;
 		const size_t lastSlashPos = path.find_last_of("/\\");
 		const size_t dotPos = path.find_last_of('.');
-		rst->name = path.substr(lastSlashPos + 1, dotPos - lastSlashPos - 1);
-		model_dir = (lastSlashPos == 0) ? "" : path.substr(0, lastSlashPos);
+		_rst->name = path.substr(lastSlashPos + 1, dotPos - lastSlashPos - 1);
+		_model_dir = (lastSlashPos == 0) ? "" : path.substr(0, lastSlashPos);
 
 		/* Assimp 설정 */
 		GLuint pFrags = 0;
@@ -283,42 +283,42 @@ namespace lim
 		const aiScene* scene = aiImportFile(modelPath.data(), pFrags);
 		if( !scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode ) {
 			log::err("[import assimp] %s\n\n", aiGetErrorString());
-			delete rst;
+			delete _rst;
 			Assimp::DefaultLogger::kill();
 			return nullptr;
 		}
 		Assimp::DefaultLogger::kill();
-		rst->ai_backup_flags = scene->mFlags;
+		_rst->ai_backup_flags = scene->mFlags;
 		log::pure("done! read file with assimp in %.2f\n", glfwGetTime()-elapsedTime);
 
 		/* import mats */
 		elapsedTime = glfwGetTime();
 		if( withMaterial ) {
-			rst->materials.resize(scene->mNumMaterials);
+			_rst->materials.resize(scene->mNumMaterials);
 			for( GLuint i=0; i<scene->mNumMaterials; i++ ) {
-				rst->materials[i] = convertMaterial(scene->mMaterials[i]);
+				_rst->materials[i] = convertMaterial(scene->mMaterials[i]);
 			}
 		}
 
-		/* import meshes */
-		rst->meshes.resize(scene->mNumMeshes);
+		/* import my_meshes */
+		_rst->my_meshes.resize(scene->mNumMeshes);
 		for( GLuint i=0; i<scene->mNumMeshes; i++ ) {
-			rst->meshes[i] = convertMesh(scene->mMeshes[i]);
+			_rst->my_meshes[i] = convertMesh(scene->mMeshes[i]);
 		}
-		rst->boundary_size = rst->boundary_max - rst->boundary_min;
+		_rst->boundary_size = _rst->boundary_max - _rst->boundary_min;
 
 		/* set node tree structure */
-		recursiveConvertTree(*rst, rst->root, scene->mRootNode);
-		log::pure("[%s] convert lim::Model in %.2lf\n", rst->name.c_str(), glfwGetTime()-elapsedTime);
-		log::pure("[%s] #meshs %d, #mats %d, #verts %d, #tris %d\n", rst->name.c_str(), rst->meshes.size(), rst->materials.size(), rst->nr_vertices, rst->nr_triangles);
-		log::pure("[%s] boundary size : %f, %f, %f\n", rst->name.c_str(), rst->boundary_size.x, rst->boundary_size.y, rst->boundary_size.z);
+		recursiveConvertTree(*_rst, scene->mRootNode, _rst->root);
+		log::pure("[%s] convert lim::Model in %.2lf\n", _rst->name.c_str(), glfwGetTime()-elapsedTime);
+		log::pure("[%s] #meshs %d, #mats %d, #verts %d, #tris %d\n", _rst->name.c_str(), _rst->my_meshes.size(), _rst->materials.size(), _rst->nr_vertices, _rst->nr_triangles);
+		log::pure("[%s] boundary size : %f, %f, %f\n", _rst->name.c_str(), _rst->boundary_size.x, _rst->boundary_size.y, _rst->boundary_size.z);
 		log::pure("done! read file with assimp in %.2f\n\n", glfwGetTime()-elapsedTime);
 
 		aiReleaseImport(scene);
 
 		if( unitScaleAndPivot ) {
-			rst->updateUnitScaleAndPivot();
+			_rst->updateUnitScaleAndPivot();
 		}
-		return rst;
+		return _rst;
 	}
 }

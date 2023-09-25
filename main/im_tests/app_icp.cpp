@@ -184,7 +184,7 @@ namespace lim
 
         model = importModelFromFile("assets/models/objs/woody.obj", true);
 
-        dest = makeTransformedMesh(*model->meshes[0], model->model_mat);
+        dest = makeTransformedMesh(*model->my_meshes[0], model->model_mat);
 
         glm::mat4 rigidMat = glm::translate(glm::vec3 {3,1, 0}) * glm::rotate(0.2f, glm::vec3 {0,0,1});
 

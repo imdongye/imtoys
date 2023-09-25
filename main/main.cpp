@@ -92,7 +92,7 @@ int main(int, char **)
 	selectApp(0);
 
 	if(appNames.size()>1)
-		lim::AppBase::draw_appselector = drawAppSellector;
+		lim::AppBase::_draw_appselector = drawAppSellector;
 
 
 	while (appSelected)

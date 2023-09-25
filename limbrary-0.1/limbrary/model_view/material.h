@@ -2,6 +2,8 @@
 
 2023-09-07 / im dongye
 
+Note:
+Program과 Texture은 material에 종속되지 않음. 생명주기 따로 관리해줘야함.
 
 */
 

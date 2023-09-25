@@ -1,9 +1,12 @@
-//
-//  2022-07-20 / im dong ye
-//	shared vertex triangle mesh
-//
-//	todo :
-//	1. bumpmap normalmap확인
+/*
+
+2022-07-20 / im dong ye
+shared vertex triangle mesh
+
+Note:
+Material은 Mesh에 종속적이지 않음.
+
+*/
 
 #ifndef __mesh_h_
 #define __mesh_h_
@@ -38,7 +41,6 @@ namespace lim
 		static constexpr int MAX_BONE_INFLUENCE = 4;
 		std::vector<std::array<int, MAX_BONE_INFLUENCE>> bone_ids;
 		std::vector<std::array<float, MAX_BONE_INFLUENCE>> bending_factors;
-
 		GLuint bone_id_buf = 0;
 		GLuint bending_factor_buf = 0;
 
@@ -51,9 +53,8 @@ namespace lim
 
 	private:
 		// disable copying
-		Mesh(Mesh const &) = delete;
-		Mesh &operator=(Mesh const &) = delete;
-
+		Mesh(const Mesh&) = delete;
+		Mesh& operator=(const Mesh&) = delete;
 	public:
 		Mesh();
 		~Mesh();

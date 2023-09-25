@@ -266,11 +266,11 @@ namespace lim::code_mesh
 			if(genUvs) 	uvs.push_back({ uStep*(1+2*i), vStep });
 			botA += aStep;
 		}
-		tris.push_back({0, 10, 12});
-		tris.push_back({2, 12, 14});
-		tris.push_back({4, 14, 16});
-		tris.push_back({6, 16, 18});
-		tris.push_back({8, 18, 20});
+		tris.push_back({0,  10, 12});
+		tris.push_back({2,  12, 14});
+		tris.push_back({4,  14, 16});
+		tris.push_back({6,  16, 18});
+		tris.push_back({8,  18, 20});
 
 		tris.push_back({10, 11, 12});
 		tris.push_back({12, 13, 14});
@@ -284,21 +284,25 @@ namespace lim::code_mesh
 		tris.push_back({19, 18, 17});
 		tris.push_back({21, 20, 19});
 
-		tris.push_back({1, 13, 11});
-		tris.push_back({3, 15, 13});
-		tris.push_back({5, 17, 15});
-		tris.push_back({7, 19, 17});
-		tris.push_back({9, 21, 19});
+		tris.push_back({1,  13, 11});
+		tris.push_back({3,  15, 13});
+		tris.push_back({5,  17, 15});
+		tris.push_back({7,  19, 17});
+		tris.push_back({9,  21, 19});
 
+		// Todo : Subdivision 했을때 구멍이 점점 커지는데 원인을 도저히 못찾겠다.
 		for( int i=0; i<subdivision; i++ )
 		{
-			std::vector<uvec3> copiedTris = tris;
-			tris.clear();
-			for( int j=0; j<copiedTris.size(); j++ )
+			std::vector<uvec3> copiedTris = std::move(tris);// move?
+			tris = std::vector<uvec3>();
+			for( const uvec3& srcTri : copiedTris )
 			{
-				const vec3& p1 = poss[copiedTris[j].x];
-				const vec3& p2 = poss[copiedTris[j].y];
-				const vec3& p3 = poss[copiedTris[j].z];
+				const GLuint i1 = srcTri.x;
+				const GLuint i2 = srcTri.y;
+				const GLuint i3 = srcTri.z;
+				const vec3& p1 = poss[i1];
+				const vec3& p2 = poss[i2];
+				const vec3& p3 = poss[i3];
 
 				const GLuint newIdx = poss.size();
 
@@ -307,27 +311,25 @@ namespace lim::code_mesh
 				poss.push_back( normalize((p3+p1)*0.5f) );
 
 				if( genNors ) {
-					nors.push_back( poss[poss.size()-3]);
-					nors.push_back( poss[poss.size()-2]);
-					nors.push_back( poss[poss.size()-1]);
+					nors.push_back( poss[newIdx+0] );
+					nors.push_back( poss[newIdx+1] );
+					nors.push_back( poss[newIdx+2] );
 				}
-				poss[poss.size()-3] *= radius;
-				poss[poss.size()-2]	*= radius;
-				poss[poss.size()-1]	*= radius;
+				poss[newIdx+0] *= radius;
+				poss[newIdx+1] *= radius;
+				poss[newIdx+2] *= radius;
 
 				if( genUvs ) {
-					const vec2& uv1 = uvs[copiedTris[j].x];
-					const vec2& uv2 = uvs[copiedTris[j].y];
-					const vec2& uv3 = uvs[copiedTris[j].z];
-					uvs.push_back( (uv1+uv2)*0.5f );
-					uvs.push_back( (uv2+uv3)*0.5f );
-					uvs.push_back( (uv3+uv1)*0.5f );
+					uvs.push_back( (uvs[i1]+uvs[i2])*0.5f );
+					uvs.push_back( (uvs[i2]+uvs[i3])*0.5f );
+					uvs.push_back( (uvs[i3]+uvs[i1])*0.5f );
 				}
 
-				tris.push_back({ copiedTris[j].x, newIdx+0, newIdx+2 });
-				tris.push_back({ copiedTris[j].y, newIdx+1, newIdx+0 });
-				tris.push_back({ copiedTris[j].z, newIdx+2, newIdx+1 });
+				tris.push_back({ i1, newIdx+0, newIdx+2 });
+				tris.push_back({ i2, newIdx+1, newIdx+0 });
+				tris.push_back({ i3, newIdx+2, newIdx+1 });
 				tris.push_back({ newIdx+0,  newIdx+1, newIdx+2 });
+				//tris.push_back({ i1, i2, i3 });
 			}
 		}
 
@@ -524,7 +526,7 @@ namespace lim::code_mesh
 		// theta : y-axis angle [0, 2pi]
 		for( int stack=0; stack<nrStacks; stack++ )
 		{
-			float phi = H_PI - F_PI * stack / (float)nrStacks;
+			float phi = H_PI - F_PI * stack/(float)(nrStacks-1);
 			float y = sin(phi);
 			float rcos = radius * cos(phi);
 			for( int slice=0; slice<=nrSlices; slice++ )
@@ -569,7 +571,7 @@ namespace lim::code_mesh
 		return rst;
 	}
 
-	Mesh *genDonut(int nrSlices, int nrRingVerts, bool genNors, bool genUvs)
+	Mesh* genDonut(int nrSlices, int nrRingVerts, bool genNors, bool genUvs)
 	{
 		Mesh* rst = new Mesh();
 		std::vector<vec3>& 	poss = rst->poss;
