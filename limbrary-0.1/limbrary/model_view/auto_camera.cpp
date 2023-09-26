@@ -101,14 +101,16 @@ namespace lim
 	}
 	void AutoCamera::processInput(float dt)
 	{
+		glm::vec3 perallelFront = {front.x, 0.f, front.z};
+		perallelFront = glm::normalize(perallelFront);
 		switch( viewing_mode ) {
 			case VM_FREE:
 			{
 				glm::vec3 dir(0);
 				float moveSpd = move_free_spd;
 				if( glfwGetKey(_win, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ) moveSpd *= 2.f;
-				if( glfwGetKey(_win, GLFW_KEY_W) == GLFW_PRESS ) dir += front;
-				if( glfwGetKey(_win, GLFW_KEY_S) == GLFW_PRESS ) dir -= front;
+				if( glfwGetKey(_win, GLFW_KEY_W) == GLFW_PRESS ) dir += perallelFront;
+				if( glfwGetKey(_win, GLFW_KEY_S) == GLFW_PRESS ) dir -= perallelFront;
 				if( glfwGetKey(_win, GLFW_KEY_A) == GLFW_PRESS ) dir -= right;
 				if( glfwGetKey(_win, GLFW_KEY_D) == GLFW_PRESS ) dir += right;
 				if( glfwGetKey(_win, GLFW_KEY_E) == GLFW_PRESS ) dir += glm::vec3(0, 1, 0);

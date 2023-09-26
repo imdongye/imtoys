@@ -322,7 +322,7 @@ namespace lim
 
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 			glDeleteFramebuffers(1, &srcFbo);
-			delete fileData;
+			delete[] fileData;
 			// fs::copy(fromTexPath, toTexPath, fs::copy_options::skip_existing);
 			// log::pure("copied texture: %s to %s\n", fromTexPath.string().c_str(), toTexPath.string().c_str());
 		}

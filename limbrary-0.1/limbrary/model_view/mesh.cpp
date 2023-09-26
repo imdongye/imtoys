@@ -140,7 +140,7 @@ namespace lim
 		if( tris.size()>0 ){
 			glGenBuffers(1, &element_buf);
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, element_buf);
-			glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(tris[0])*tris.size(), tris.data(), GL_STATIC_DRAW);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uvec3)*tris.size(), tris.data(), GL_STATIC_DRAW);
 		}
 	}
 	void Mesh::print() const

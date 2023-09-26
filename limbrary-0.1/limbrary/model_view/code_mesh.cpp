@@ -290,10 +290,11 @@ namespace lim::code_mesh
 		tris.push_back({7,  19, 17});
 		tris.push_back({9,  21, 19});
 
-		// Todo : Subdivision 했을때 구멍이 점점 커지는데 원인을 도저히 못찾겠다.
+		// Todo : Subdivision 했을때 구멍이 점점 커지는데 원인을 도저히 못찾겠다.(Windows에서만)
+		// Todo : 중복되는 버텍스 없애기
 		for( int i=0; i<subdivision; i++ )
 		{
-			std::vector<uvec3> copiedTris = std::move(tris);// move?
+			std::vector<uvec3> copiedTris = std::move(tris);// move속도비교해보기
 			tris = std::vector<uvec3>();
 			for( const uvec3& srcTri : copiedTris )
 			{

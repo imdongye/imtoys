@@ -118,7 +118,7 @@ namespace lim
         }
 
         if( mergeByNormalMap.size()==0 ) {
-            log::err("there are no bumpmap in %s\n\n", md.name);
+            log::err("there are no bumpmap in %s\n\n", md.name.c_str());
             return;
         }
 
