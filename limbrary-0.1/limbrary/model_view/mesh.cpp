@@ -25,6 +25,41 @@ namespace lim
 	Mesh::Mesh()
 	{
 	}
+	Mesh::Mesh(Mesh&& src) noexcept
+	{
+		name = move(src.name);
+		material = src.material;
+		poss 			= move(src.poss);
+		nors 			= move(src.nors);
+		uvs 			= move(src.uvs);
+		cols 			= move(src.cols);
+		tangents 		= move(src.tangents);
+		bitangents 		= move(src.bitangents);
+		bone_ids 		= move(src.bone_ids);
+		bending_factors = move(src.bending_factors);
+		tris			= move(src.tris);
+
+		pos_buf = src.pos_buf;
+		nor_buf = src.nor_buf;
+		uv_buf  = src.uv_buf ;
+		color_buf = src.color_buf;
+		tangent_buf = src.tangent_buf;
+		bitangent_buf = src.bitangent_buf;
+		bone_id_buf = src.bone_id_buf;
+		bending_factor_buf = src.bending_factor_buf;
+		element_buf = src.element_buf;
+		vert_array = src.vert_array;
+		// 필요한가?
+		src.pos_buf = 0;
+		src.nor_buf = 0;
+		src.uv_buf  = 0;
+		src.color_buf = 0;
+		src.tangent_buf = 0;
+		src.bitangent_buf = 0;
+		src.bone_id_buf = 0;
+		src.bending_factor_buf = 0;
+		src.element_buf = 0;
+	}
 	Mesh::~Mesh()
 	{
 		deinitGL();

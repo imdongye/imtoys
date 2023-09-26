@@ -144,6 +144,8 @@ namespace lim
         ImGui::SameLine();
         filter.Draw("Filter", -100.0f);
 
+        ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+        
         ImGui::Separator();
 
         if (ImGui::BeginChild("scrolling", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar))

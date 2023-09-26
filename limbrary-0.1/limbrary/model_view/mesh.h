@@ -23,7 +23,10 @@ namespace lim
 	class Mesh
 	{
 	public:
+		static constexpr int MAX_BONE_INFLUENCE = 4;
+
 		std::string name = "unnamed mesh";
+		Material* material = nullptr;
 
 		std::vector<glm::vec3> poss;
 		std::vector<glm::vec3> nors;
@@ -31,25 +34,19 @@ namespace lim
 		std::vector<glm::vec2> cols;
 		std::vector<glm::vec2> tangents;
 		std::vector<glm::vec2> bitangents;
+		std::vector<std::array<int, MAX_BONE_INFLUENCE>> bone_ids;
+		std::vector<std::array<float, MAX_BONE_INFLUENCE>> bending_factors;
+		std::vector<glm::uvec3> tris;
 		GLuint pos_buf = 0;
 		GLuint nor_buf = 0;
 		GLuint uv_buf  = 0;
 		GLuint color_buf = 0;
 		GLuint tangent_buf = 0;
 		GLuint bitangent_buf = 0;
-
-		static constexpr int MAX_BONE_INFLUENCE = 4;
-		std::vector<std::array<int, MAX_BONE_INFLUENCE>> bone_ids;
-		std::vector<std::array<float, MAX_BONE_INFLUENCE>> bending_factors;
 		GLuint bone_id_buf = 0;
 		GLuint bending_factor_buf = 0;
-
-		std::vector<glm::uvec3> tris;
 		GLuint element_buf = 0;
-
 		GLuint vert_array = 0;
-
-		Material* material = nullptr;
 
 	private:
 		// disable copying
@@ -57,7 +54,8 @@ namespace lim
 		Mesh& operator=(const Mesh&) = delete;
 	public:
 		Mesh();
-		~Mesh();
+		Mesh(Mesh&& src) noexcept;
+		virtual ~Mesh();
 		void drawGL() const;
 		Mesh* clone();
 		void initGL();

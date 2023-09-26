@@ -8,6 +8,23 @@ namespace lim
 	: name(_name), home_dir(homeDir) 
 	{
 	}
+	Program::Program(Program&& src) noexcept
+	{
+		name = std::move(src.name);
+		home_dir = std::move(src.home_dir);
+		use_hook = src.use_hook;
+		uniform_location_cache = std::move(src.uniform_location_cache);
+		pid = src.pid;
+		vert_id = src.vert_id;
+		frag_id = src.frag_id;
+		geom_id = src.geom_id;
+		comp_id = src.comp_id;
+		src.pid = 0;
+		src.vert_id = 0;
+		src.frag_id = 0;
+		src.geom_id = 0;
+		src.comp_id = 0;
+	}
 	Program::~Program() 
 	{
 		clear(); 

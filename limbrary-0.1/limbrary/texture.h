@@ -43,6 +43,7 @@ namespace lim
 		TexBase &operator=(const TexBase &) = delete;
 	public:
 		TexBase();
+		TexBase(TexBase&& src) noexcept;
 		virtual ~TexBase();
 	public:
 		void initGL(void* data = nullptr);
@@ -61,6 +62,7 @@ namespace lim
 		Texture &operator=(const Texture &) = delete;
 	public:
 		Texture();
+		Texture(Texture&& src) noexcept;
 		virtual ~Texture();
 		Texture* clone();
 		bool initFromImage(std::string_view path, GLint internalFormat);

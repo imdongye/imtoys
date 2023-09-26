@@ -7,16 +7,31 @@ namespace lim
 		:name(_name)
 	{
 		framebuffer = createdFB;
-		framebuffer->resize(width, height);
+		framebuffer->resize(256, 256); // default size
+	}
+	Viewport::Viewport(Viewport&& src) noexcept
+	{
+		name = std::move(src.name);
+		window_mode = src.window_mode;
+		window_opened = src.window_opened;
+		hovered = src.hovered;
+		focused = src.focused;
+		dragging = src.dragging;
+		mouse_pos = src.mouse_pos;
+		resize_callbacks = std::move(src.resize_callbacks);
+		framebuffer= src.framebuffer;
+		src.framebuffer = nullptr;
 	}
 	Viewport::~Viewport()
 	{
-		delete framebuffer;
+		if( framebuffer )
+			delete framebuffer;
 	}
 	bool Viewport::drawImGui() // and resize framebuffer
 	{
+		Framebuffer& fb = *framebuffer;
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
-		ImGui::SetNextWindowSize({(float)width, (float)height+ImGui::GetFrameHeight()}, (window_mode==WM_FIXED_SIZE)?ImGuiCond_Always:ImGuiCond_Once);
+		ImGui::SetNextWindowSize({(float)fb.width, (float)fb.height+ImGui::GetFrameHeight()}, (window_mode==WM_FIXED_SIZE)?ImGuiCond_Always:ImGuiCond_Once);
 
 		ImGuiWindowFlags vpWinFlag = ImGuiWindowFlags_NoCollapse;
 		if( window_mode==WM_FIXED_RATIO ) {
@@ -24,8 +39,8 @@ namespace lim
 				Viewport& vp = *(Viewport*)(data->UserData);
 
 				float frameHeight = ImGui::GetFrameHeight();
-				float aspectedWidth = vp.aspect * (data->DesiredSize.y - frameHeight);
-				float aspectedHeight = data->DesiredSize.x / vp.aspect + frameHeight;
+				float aspectedWidth = vp.getAspect() * (data->DesiredSize.y - frameHeight);
+				float aspectedHeight = data->DesiredSize.x / vp.getAspect() + frameHeight;
 
 				if( data->DesiredSize.x <= aspectedWidth )
 					data->DesiredSize.x = aspectedWidth;
@@ -45,7 +60,7 @@ namespace lim
 
 		// update size
 		auto contentSize = ImGui::GetContentRegionAvail();
-		if( width!=contentSize.x || height !=contentSize.y ) {
+		if( fb.width!=contentSize.x || fb.height !=contentSize.y ) {
 			resize(contentSize.x, contentSize.y);
 		}
 
@@ -57,7 +72,7 @@ namespace lim
 
 		GLuint texID = framebuffer->getRenderedTex();
 		if( texID!=0 ) {
-			ImGui::Image((void*)(intptr_t)texID, ImVec2{(float)width, (float)height}, ImVec2{0, 1}, ImVec2{1, 0});
+			ImGui::Image((void*)(intptr_t)texID, ImVec2{(float)fb.width, (float)fb.height}, ImVec2{0, 1}, ImVec2{1, 0});
 		}
 
 		focused = ImGui::IsWindowFocused();
@@ -72,12 +87,21 @@ namespace lim
 	}
 	void Viewport::resize(GLuint _width, GLuint _height)
 	{
-		width = _width;
-		height = _height;
-		aspect = width/(float)height;
-		framebuffer->resize(width, height);
+		framebuffer->resize(_width, _height);
 		for( auto& [_,cb] : resize_callbacks ) {
-			cb(width, height);
+			cb(_width, _height);
 		}
+	}
+	const GLuint& Viewport::getWidth() const
+	{
+		return framebuffer->width;
+	}
+	const GLuint& Viewport::getHeight() const
+	{
+		return framebuffer->height;
+	}
+	const float& Viewport::getAspect() const
+	{
+		return framebuffer->aspect;
 	}
 }

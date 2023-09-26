@@ -21,15 +21,15 @@ namespace
 		dst.width 				= src.width;
 		dst.height 				= src.height;
 		dst.aspect_ratio 		= src.aspect_ratio;
+		dst.nr_channels 		= src.nr_channels;
 		dst.internal_format 	= src.internal_format;
+		dst.src_format 			= src.src_format;
+		dst.src_chanel_type 	= src.src_chanel_type;
+		dst.src_bit_per_channel	= src.src_bit_per_channel;
 		dst.mag_filter 			= src.mag_filter;
 		dst.min_filter 			= src.min_filter;
-		dst.mipmap_max_level 	= src.mipmap_max_level;
-		dst.nr_channels 		= src.nr_channels;
-		dst.src_bit_per_channel	= src.src_bit_per_channel;
-		dst.src_chanel_type 	= src.src_chanel_type;
-		dst.src_format 			= src.src_format;
 		dst.wrap_param 			= src.wrap_param;
+		dst.mipmap_max_level 	= src.mipmap_max_level;
 	}
 	void setTexParam(const lim::TexBase& tex) {
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, tex.mag_filter);
@@ -45,6 +45,12 @@ namespace lim
 {
 	TexBase::TexBase()
 	{
+	}
+	TexBase::TexBase(TexBase&& src) noexcept
+	{
+		copyTexBaseProps(src, *this);
+		tex_id = src.tex_id;
+		src.tex_id = 0;
 	}
 	TexBase::~TexBase()
 	{
@@ -82,6 +88,12 @@ namespace lim
 
 	Texture::Texture()
 	{
+	}
+	Texture::Texture(Texture&& src) noexcept
+		:TexBase(std::move(src))
+	{
+		path = std::move(src.path);
+		format = src.format;
 	}
 	Texture::~Texture()
 	{

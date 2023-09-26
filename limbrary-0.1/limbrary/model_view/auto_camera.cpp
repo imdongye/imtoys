@@ -178,7 +178,7 @@ namespace lim
 	{
         vp = _vp;
 		
-        aspect = vp->width/(float)vp->height;
+        aspect = vp->getAspect();
 		updateProjMat();
 
 		// register callbacks

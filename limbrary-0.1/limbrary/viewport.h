@@ -47,9 +47,6 @@ namespace lim
 	public:
 		std::string name;
 		Framebuffer* framebuffer;
-		GLuint width = 256;
-		GLuint height = 256;
-        float aspect = 1.f;
 		WindowMode window_mode = WM_FREE;
 		bool window_opened = true;
 		bool hovered = false;
@@ -62,9 +59,13 @@ namespace lim
 		Viewport &operator=(const Viewport &) = delete;
 	public:
 		Viewport(std::string_view _name, Framebuffer* createdFB);
+		Viewport(Viewport&& src) noexcept;
 		virtual ~Viewport();
 		bool drawImGui(); // return windowOpened
 		void resize(GLuint _width, GLuint _height);
+		const GLuint& getWidth() const;
+		const GLuint& getHeight() const;
+		const float& getAspect() const;
 	};
 }
 

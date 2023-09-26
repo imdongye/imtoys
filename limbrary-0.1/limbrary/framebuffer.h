@@ -40,6 +40,7 @@ namespace lim
 		Framebuffer& operator=(const Framebuffer&) = delete;
 	public:
 		Framebuffer();
+		Framebuffer(Framebuffer&& src) noexcept;
 		virtual ~Framebuffer();
 	protected:
 		void genGlFboColor();
@@ -63,6 +64,7 @@ namespace lim
 		TexFramebuffer& operator=(const TexFramebuffer&) = delete;
 	public:
 		TexFramebuffer();
+		TexFramebuffer(TexFramebuffer&& src) noexcept;
 		virtual ~TexFramebuffer() override;
 	protected:
 		void genGLDepthTex();
@@ -81,6 +83,7 @@ namespace lim
 		RboFramebuffer& operator=(const RboFramebuffer&) = delete;
 	public:
 		RboFramebuffer();
+		RboFramebuffer(RboFramebuffer&& src) noexcept;
 		virtual ~RboFramebuffer();
 	protected:
 		void genGLDepthRbo();
@@ -100,6 +103,7 @@ namespace lim
 		MsFramebuffer& operator=(const MsFramebuffer&) = delete;
 	public:
 		MsFramebuffer();
+		MsFramebuffer(MsFramebuffer&& src) noexcept;
 		virtual ~MsFramebuffer();
 	protected:
 		void genGLFboMs();

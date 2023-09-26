@@ -50,7 +50,8 @@ namespace lim
 		Program &operator=(const Program &) = delete;
 	public:
 		Program(const char *_name = "unnamed", const char *homeDir = "assets");
-		~Program();
+		Program(Program&& src) noexcept;
+		virtual ~Program();
 
 	public:
 		// chaining //

@@ -17,7 +17,7 @@ namespace lim
 	{
 		stbi_set_flip_vertically_on_load(true);
 
-		canvas = new CanvasColor(viewport.width, viewport.height);
+		canvas = new CanvasColor(viewport.getWidth(), viewport.getHeight());
 
 		// 람다에서 전체 캡쳐를 해두어도 컴파일타임에 사용하는 변수만 복사 및 레퍼런싱한다.
 		viewport.resize_callbacks[this] = [this](int w, int h) { 
@@ -32,14 +32,14 @@ namespace lim
 	void AppFluid::update()
 	{
 		points[0].x = viewport.mouse_pos.x;
-		points[0].y = viewport.height-viewport.mouse_pos.y;
+		points[0].y = viewport.getHeight()-viewport.mouse_pos.y;
 
 		const float radius = 50.f;
 		const float threshold = 0.5f;
 
 		canvas->clear();
 
-		for( int x=0; x<viewport.width; x++ ) for( int y=0; y<viewport.height; y++ ) {
+		for( int x=0; x<viewport.getWidth(); x++ ) for( int y=0; y<viewport.getHeight(); y++ ) {
 			glm::vec2 pix = {x, y};
 			float sum = 0.f;
 
@@ -128,7 +128,7 @@ namespace lim
 	void AppFluid::mouseBtnCallback(int button, int action, int mods)
 	{
 		if( glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
-			points.push_back({viewport.mouse_pos.x, viewport.height-viewport.mouse_pos.y});
+			points.push_back({viewport.mouse_pos.x, viewport.getHeight()-viewport.mouse_pos.y});
 		}
 	}
 	void AppFluid::cursorPosCallback(double xPos, double yPos)

@@ -4,12 +4,25 @@
 
 namespace lim
 {
-	Framebuffer::Framebuffer(): clear_color({0.05f, 0.09f, 0.11f, 1.0f})
+	Framebuffer::Framebuffer()
+		: clear_color({0.05f, 0.09f, 0.11f, 1.0f})
 	{
 		// todo
 		fbo = color_tex = 0;
 		width = height = 0;
 		aspect = 0.f;
+	}
+	Framebuffer::Framebuffer(Framebuffer&& src) noexcept
+	{
+		clear_color = src.clear_color;
+		width = src.width;
+		height = src.height;
+		aspect = src.aspect;
+
+		fbo = src.fbo;
+		color_tex = src.color_tex;
+		src.fbo = 0;
+		src.color_tex = 0;
 	}
 	Framebuffer::~Framebuffer() 
 	{
@@ -52,7 +65,6 @@ namespace lim
 			return false;
 		width = _width; height = _height;
 		aspect = width/(float)height;
-
 		initGL();
 		return true;
 	}
@@ -62,7 +74,6 @@ namespace lim
 			return false;
 		width = square; height = square;
 		aspect = 1.f;
-
 		initGL();
 		return true;
 	} 
@@ -90,6 +101,12 @@ namespace lim
 	TexFramebuffer::TexFramebuffer(): Framebuffer()
 	{
 		depth_tex = 0;
+	}
+	TexFramebuffer::TexFramebuffer(TexFramebuffer&& src) noexcept
+		:Framebuffer(std::move(src))
+	{
+		depth_tex = src.depth_tex;
+		src.depth_tex = 0;
 	}
 	TexFramebuffer::~TexFramebuffer()
 	{
@@ -139,6 +156,12 @@ namespace lim
 	{
 		depth_rbo = 0;
 	}
+	RboFramebuffer::RboFramebuffer(RboFramebuffer&& src) noexcept
+		: Framebuffer(std::move(src))
+	{
+		depth_rbo = src.depth_rbo;
+		src.depth_rbo = 0;
+	}
 	RboFramebuffer::~RboFramebuffer()
 	{
 		if( depth_rbo>0 ) { glDeleteRenderbuffers(1, &depth_rbo); depth_rbo=0; }
@@ -184,10 +207,14 @@ namespace lim
 	MsFramebuffer::MsFramebuffer(): RboFramebuffer(), intermediate_fb()
 	{
 	}
+	MsFramebuffer::MsFramebuffer(MsFramebuffer&& src) noexcept
+		: RboFramebuffer(std::move(src))
+		, intermediate_fb(std::move(src.intermediate_fb))
+	{
+	}
 	MsFramebuffer::~MsFramebuffer()
 	{
 	}
-
 	void MsFramebuffer::genGLFboMs()
 	{
 		if( fbo>0 ) { glDeleteFramebuffers(1, &fbo); fbo=0; }
