@@ -10,15 +10,16 @@ namespace lim
 		framebuffer->resize(256, 256); // default size
 	}
 	Viewport::Viewport(Viewport&& src) noexcept
+		: name(std::move(src.name))
+		, resize_callbacks(std::move(src.resize_callbacks))
 	{
-		name = std::move(src.name);
 		window_mode = src.window_mode;
 		window_opened = src.window_opened;
 		hovered = src.hovered;
 		focused = src.focused;
 		dragging = src.dragging;
 		mouse_pos = src.mouse_pos;
-		resize_callbacks = std::move(src.resize_callbacks);
+
 		framebuffer= src.framebuffer;
 		src.framebuffer = nullptr;
 	}
@@ -88,7 +89,7 @@ namespace lim
 	void Viewport::resize(GLuint _width, GLuint _height)
 	{
 		framebuffer->resize(_width, _height);
-		for( auto& [_,cb] : resize_callbacks ) {
+		for( auto& cb : resize_callbacks ) {
 			cb(_width, _height);
 		}
 	}

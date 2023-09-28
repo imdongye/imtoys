@@ -34,10 +34,6 @@ namespace lim
 		glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
 		window = glfwCreateWindow(win_width, win_height, title, NULL, NULL);
-		
-		glfwGetFramebufferSize(window, &fb_width, &fb_height);
-		aspect_ratio = fb_width/(float)fb_height;
-		pixel_ratio =  fb_width/(float)win_width;
 
 		if( window == NULL ) {
 			log::err("Failed to create GLFW window\n");
@@ -46,15 +42,11 @@ namespace lim
 		}
 
 		/* window setting */
-		// glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-		// glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+		applyWindowSetting();
 
-		int nrMonitors;
-		GLFWmonitor** monitors = glfwGetMonitors(&nrMonitors);
-		const GLFWvidmode* vidMode = glfwGetVideoMode(monitors[0]);
-
-		glfwSetWindowPos(window, (vidMode->width-win_width)/2, (vidMode->height-win_height)/2);
-		glfwShowWindow(window);
+		glfwGetFramebufferSize(window, &fb_width, &fb_height);
+		aspect_ratio = fb_width/(float)fb_height;
+		pixel_ratio =  fb_width/(float)win_width;
 
 
 		glfwMakeContextCurrent(window);
@@ -133,7 +125,6 @@ namespace lim
 			double currentTime = glfwGetTime();
 			delta_time = (float)(currentTime - lastTime);
 			lastTime = currentTime;
-			glfwPollEvents();
 
 			io.DisplaySize = ImVec2(fb_width, fb_height); // todo?
 			ImGui_ImplOpenGL3_NewFrame();
@@ -145,7 +136,7 @@ namespace lim
 			ImGui::Render();
 
 			update();
-			for( auto& [_, cb] : update_hooks ) 
+			for( auto& cb : update_hooks ) 
 				cb(delta_time);
 			
 			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -157,6 +148,7 @@ namespace lim
 				glfwMakeContextCurrent(backup_current_context);
 			}
 
+			glfwPollEvents();
 			glfwSwapBuffers(window);
 		}
 	}
@@ -193,33 +185,63 @@ namespace lim
 			app.win_width = width; app.win_height = height;
 			app.aspect_ratio = width/(float)height;
 			app.pixel_ratio = app.fb_width/(float)app.win_width;
-			for(auto& [_, cb] : app.win_size_callbacks ) cb(width, height);
+			for(auto& cb : app.win_size_callbacks ) cb(width, height);
 		});
 		glfwSetFramebufferSizeCallback(window, [](GLFWwindow *window, int width, int height) {
 			AppBase& app = *AppPref::get().app;
 			app.fb_width = width; app.fb_height = height;
-			for( auto& [_, cb] : app.framebuffer_size_callbacks ) cb(width, height);
+			for( auto& cb : app.framebuffer_size_callbacks ) cb(width, height);
 		});
 		glfwSetKeyCallback(window, [](GLFWwindow *window, int key, int scancode, int action, int mods) {
 			AppBase& app = *AppPref::get().app;
-			for( auto& [_, cb] : app.key_callbacks ) cb(key, scancode, action, mods);
+			for( auto& cb : app.key_callbacks ) cb(key, scancode, action, mods);
 		});
 		glfwSetMouseButtonCallback(window, [](GLFWwindow *window, int button, int action, int mods) {
 			AppBase& app = *AppPref::get().app;
-			for( auto& [_, cb] : app.mouse_btn_callbacks ) cb(button, action, mods);
+			for( auto& cb : app.mouse_btn_callbacks ) cb(button, action, mods);
 		});
 		glfwSetScrollCallback(window, [](GLFWwindow *window, double xOff, double yOff) {
 			AppBase& app = *AppPref::get().app;
-			for( auto& [_, cb] : app.scroll_callbacks) cb(xOff, yOff);
+			for( auto& cb : app.scroll_callbacks) cb(xOff, yOff);
 		});
 		glfwSetCursorPosCallback(window, [](GLFWwindow *window, double xPos, double yPos) {
 			AppBase& app = *AppPref::get().app;
-			for( auto& [_, cb] : app.cursor_pos_callbacks) cb(xPos, yPos);
+			for( auto& cb : app.cursor_pos_callbacks) cb(xPos, yPos);
 		});
 		glfwSetDropCallback(window, [](GLFWwindow *window, int count, const char **paths) {
 			AppBase& app = *AppPref::get().app;
-			for( auto& [_, cb] : app.dnd_callbacks ) cb(count, paths);
+			for( auto& cb : app.dnd_callbacks ) cb(count, paths);
 		});
+	}
+
+	void AppBase::applyWindowSetting()
+	{
+		// glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+		// glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+
+		GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+		// (해상도, 채널, 주사율)
+		const GLFWvidmode* vidMode = glfwGetVideoMode(monitor);
+
+		if(is_windowed)
+		{
+			if (is_borderless)
+			{
+				glfwSetWindowMonitor(window, nullptr, 0, 0,
+						vidMode->width, vidMode->height, vidMode->refreshRate);
+			}
+			else
+			{
+				glfwSetWindowPos(window, (vidMode->width-win_width)/2, (vidMode->height-win_height)/2);
+			}
+		}
+		else
+		{
+			glfwSetWindowMonitor(window, monitor, 0, 0, vidMode->width, vidMode->height, vidMode->refreshRate);
+		}
+
+		
+		glfwShowWindow(window);
 	}
 
 	void AppBase::printVersionAndStatus()

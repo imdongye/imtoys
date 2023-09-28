@@ -41,6 +41,10 @@ namespace lim
 			:Viewport(_name, createdFB), camera(this)
 		{
 		}
+		ViewportWithCamera(ViewportWithCamera&& src) noexcept
+			: Viewport(std::move(src)), camera(std::move(src.camera))
+		{
+		}
 		virtual ~ViewportWithCamera() {}
 	};
 }

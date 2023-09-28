@@ -20,11 +20,11 @@ namespace lim
 	class Light
 	{
 	public:
-		const int shadow_map_size = 1024;
-		const float shadow_z_near = 3;
-		const float shadow_z_far = 6;
-		const float ortho_width = 4;
-		const float ortho_height = 8;
+		int shadow_map_size = 1024;
+		float shadow_z_near = 3;
+		float shadow_z_far = 6;
+		float ortho_width = 4;
+		float ortho_height = 8;
 
 
 		bool shadow_enabled = false;
@@ -43,6 +43,7 @@ namespace lim
 		Light& operator=(const Light&) = delete;
 	public:
 		Light();
+		Light(Light&& src) noexcept;
 		~Light();
 		// theta=[0,180] up is origin
 		// pi=[0,360] clockwise 3pm origin 

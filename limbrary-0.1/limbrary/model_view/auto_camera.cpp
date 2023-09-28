@@ -126,6 +126,8 @@ namespace lim
 		}
 	}
 
+
+
 	WinAutoCamera::WinAutoCamera()
 	{
 		AppBase& app = *AppPref::get().app;
@@ -162,6 +164,17 @@ namespace lim
 		app.update_hooks[this] = [this](float dt) {
 			processInput(dt); 
 		};
+	}
+	WinAutoCamera::WinAutoCamera(WinAutoCamera&& src) noexcept
+		: AutoCamera(std::move(src))
+	{
+		AppBase& app = *AppPref::get().app;
+		app.key_callbacks.changeKey(&src, this);
+		app.framebuffer_size_callbacks.changeKey(&src, this);
+		app.mouse_btn_callbacks.changeKey(&src, this);
+		app.cursor_pos_callbacks.changeKey(&src, this);
+		app.scroll_callbacks.changeKey(&src, this);
+		app.update_hooks.changeKey(&src, this);
 	}
 	WinAutoCamera::~WinAutoCamera()
 	{
@@ -210,6 +223,20 @@ namespace lim
 				return;
 			processInput(dt); 
 		};
+	}
+	VpAutoCamera::VpAutoCamera(VpAutoCamera&& src) noexcept
+		: AutoCamera(std::move(src))
+	{
+		vp = src.vp;
+		src.vp = nullptr;
+
+		AppBase& app = *AppPref::get().app;
+		app.key_callbacks.changeKey(&src, this);
+		vp->resize_callbacks.changeKey(&src, this);
+		app.mouse_btn_callbacks.changeKey(&src, this);
+		app.cursor_pos_callbacks.changeKey(&src, this);
+		app.scroll_callbacks.changeKey(&src, this);
+		app.update_hooks.changeKey(&src, this);
 	}
 	VpAutoCamera::~VpAutoCamera()
 	{

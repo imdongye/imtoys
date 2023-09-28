@@ -6,7 +6,8 @@ Callbacks는 포인터를 키로 한 헤쉬테이블 맵이다. glfw콜백이 �
 헤쉬테이블은 메모리 사용량이 많지만 프레임마다 전체탐색되기때문에 logN인 map(트리)대신 unordered_map을 사용했다.
 
 실행순서: 생성자 -> {renderImGui, update} -> 소멸자
-TODO list:
+
+Todo:
 1. crtp로 참조 줄이기, 
 2. glfw에서 함수 이름 스네이크/카멜 혼용 이유 찾기
 3. glfwSwapInterval(1); // vsync??
@@ -30,16 +31,10 @@ namespace lim
 	public:
 		GLFWwindow *window;
 		
-		Callbacks<void(int width, int height)> win_size_callbacks;
-		Callbacks<void(int width, int height)> framebuffer_size_callbacks;
-		Callbacks<void(int key, int scancode, int action, int mods)> key_callbacks;
-		Callbacks<void(int button, int action, int mods)> mouse_btn_callbacks;
-		Callbacks<void(double xOff, double yOff)> scroll_callbacks;
-		Callbacks<void(double xPos, double yPos)> cursor_pos_callbacks;
-		Callbacks<void(int count, const char **paths)> dnd_callbacks;
-		Callbacks<void(float deltaTime)> update_hooks;
-		
 		double delta_time; // sec
+
+		bool is_windowed = true;
+		bool is_borderless = false;
 
 		// relative to ratina or window monitor setting
 		int win_width, win_height;
@@ -48,6 +43,15 @@ namespace lim
 		float aspect_ratio; // width/height;
 		float pixel_ratio;    // (DPI)
 		glm::vec2 mouse_pos;
+
+		Callbacks<void(int width, int height)> win_size_callbacks;
+		Callbacks<void(int width, int height)> framebuffer_size_callbacks;
+		Callbacks<void(int key, int scancode, int action, int mods)> key_callbacks;
+		Callbacks<void(int button, int action, int mods)> mouse_btn_callbacks;
+		Callbacks<void(double xOff, double yOff)> scroll_callbacks;
+		Callbacks<void(double xPos, double yPos)> cursor_pos_callbacks;
+		Callbacks<void(int count, const char **paths)> dnd_callbacks;
+		Callbacks<void(float deltaTime)> update_hooks;
 
 	protected:
 		virtual void update()=0;
@@ -64,9 +68,9 @@ namespace lim
 		/* destroy */
 		virtual ~AppBase();
 		void run();
+		void applyWindowSetting();
 	private:
 		void initGlfwCallbacks();
-
 		void printVersionAndStatus();
 	};
 }

@@ -22,6 +22,7 @@ Todo:
 
 namespace lim
 {
+	// copyable
 	class AutoCamera : public Camera
 	{
 	public:
@@ -47,9 +48,6 @@ namespace lim
 	private:
 		double prev_mouse_x = 0;
 		double prev_mouse_y = 0;
-	private:
-		AutoCamera(const AutoCamera&) = delete;
-		AutoCamera& operator=(const AutoCamera&) = delete;
 	public:
 		AutoCamera();
 		virtual ~AutoCamera();
@@ -71,6 +69,7 @@ namespace lim
 		WinAutoCamera& operator=(const WinAutoCamera&) = delete;
 	public:
 		WinAutoCamera();
+		WinAutoCamera(WinAutoCamera&& src) noexcept;
 		virtual ~WinAutoCamera();
 	};
 	
@@ -82,6 +81,7 @@ namespace lim
 	public:
 		Viewport* vp;
 		VpAutoCamera(Viewport* vp);
+		VpAutoCamera(VpAutoCamera&& src) noexcept;
 		virtual ~VpAutoCamera();
 		void copySettingTo(VpAutoCamera& cam);
 	};
