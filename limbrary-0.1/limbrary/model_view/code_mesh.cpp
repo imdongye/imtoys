@@ -17,6 +17,8 @@
 #include <vector>
 #include <memory>
 #include <glad/glad.h>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtc/random.hpp>
 
 using namespace lim;
 using namespace glm;
@@ -225,6 +227,7 @@ namespace lim::code_mesh
 		std::vector<vec3>& 	poss = rst->poss;
 		std::vector<vec3>& 	nors = rst->nors;
 		std::vector<vec2>& 	uvs  = rst->uvs;
+		std::vector<vec3>& 	cols = rst->cols;
 		std::vector<uvec3>& tris = rst->tris;
 
 		const float uStep = 1.f / 11.f;
@@ -236,6 +239,7 @@ namespace lim::code_mesh
 		{
 			poss.push_back({0, radius,0});
 			poss.push_back({0,-radius,0});
+
 			if( genNors ) {
 				nors.push_back({0, 1,0});
 				nors.push_back({0,-1,0});
@@ -290,26 +294,30 @@ namespace lim::code_mesh
 		tris.push_back({7,  19, 17});
 		tris.push_back({9,  21, 19});
 
-		// Todo : Subdivision 했을때 구멍이 점점 커지는데 원인을 도저히 못찾겠다.(Windows에서만)
 		// Todo : 중복되는 버텍스 없애기
 		for( int i=0; i<subdivision; i++ )
 		{
-			std::vector<uvec3> copiedTris = std::move(tris);// move속도비교해보기
+			std::vector<uvec3> copiedTris = std::move(tris); // Todo: move속도비교해보기
 			tris = std::vector<uvec3>();
+
 			for( const uvec3& srcTri : copiedTris )
 			{
 				const GLuint i1 = srcTri.x;
 				const GLuint i2 = srcTri.y;
 				const GLuint i3 = srcTri.z;
-				const vec3& p1 = poss[i1];
-				const vec3& p2 = poss[i2];
-				const vec3& p3 = poss[i3];
-
 				const GLuint newIdx = poss.size();
 
-				poss.push_back( normalize((p1+p2)*0.5f) );
-				poss.push_back( normalize((p2+p3)*0.5f) );
-				poss.push_back( normalize((p3+p1)*0.5f) );
+				// Todo: MSVC에서 레퍼런스 배열 -1.98 값으로 버그
+				// const vec3& p1 = poss[i1];
+				// const vec3& p2 = poss[i2];
+				// const vec3& p3 = poss[i3];
+				// poss.push_back( normalize( ( p1+p2 )*0.5f) );
+				// poss.push_back( normalize( ( p2+p3 )*0.5f) );
+				// poss.push_back( normalize( ( p3+p1 )*0.5f) );
+
+				poss.push_back( normalize( ( poss[i1]+poss[i2] )*0.5f) );
+				poss.push_back( normalize( ( poss[i2]+poss[i3] )*0.5f) );
+				poss.push_back( normalize( ( poss[i3]+poss[i1] )*0.5f) );
 
 				if( genNors ) {
 					nors.push_back( poss[newIdx+0] );
@@ -330,7 +338,6 @@ namespace lim::code_mesh
 				tris.push_back({ i2, newIdx+1, newIdx+0 });
 				tris.push_back({ i3, newIdx+2, newIdx+1 });
 				tris.push_back({ newIdx+0,  newIdx+1, newIdx+2 });
-				//tris.push_back({ i1, i2, i3 });
 			}
 		}
 

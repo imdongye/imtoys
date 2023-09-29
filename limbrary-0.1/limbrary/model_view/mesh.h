@@ -31,9 +31,9 @@ namespace lim
 		std::vector<glm::vec3> poss;
 		std::vector<glm::vec3> nors;
 		std::vector<glm::vec2> uvs;
-		std::vector<glm::vec2> cols;
-		std::vector<glm::vec2> tangents;
-		std::vector<glm::vec2> bitangents;
+		std::vector<glm::vec3> cols;
+		std::vector<glm::vec3> tangents;
+		std::vector<glm::vec3> bitangents;
 		std::vector<std::array<int, MAX_BONE_INFLUENCE>> bone_ids;
 		std::vector<std::array<float, MAX_BONE_INFLUENCE>> bending_factors;
 		std::vector<glm::uvec3> tris;
