@@ -30,38 +30,36 @@ using namespace std;
 
 
 static lim::AppBase *app;
-static bool appSelected = true;
-static char appSelectorName[64];
-static vector<function<lim::AppBase*()>> appConstructors;
-static vector<const char*> appNames;
-static vector<const char*> appDicripts;
+static bool _is_app_selected = true;
+static char _app_selector_name[64];
+static vector<function<lim::AppBase*()>> _app_constructors;
+static vector<const char*> _app_names;
+static vector<const char*> _app_descriptions;
+int _selected_app_idx;
 
 
-template <class App>
+template <typename TApp>
 static void pushAppData()
 {
-	appNames.push_back(App::APP_NAME);
-	appDicripts.push_back(App::APP_DISC);
-	appConstructors.push_back([](){ return new App(); });
+	_app_names.push_back(TApp::APP_NAME);
+	_app_descriptions.push_back(TApp::APP_DESCRIPTION);
+	_app_constructors.push_back([](){ return new TApp(); });
 }
-
 
 static void selectApp(int idx)
 {
-	appSelected = true;
-	lim::AppPref::get().selected_app_idx = idx;
-	lim::AppPref::get().selected_app_name = appNames[idx];
-	strcpy(appSelectorName, "AppSelector##");
-	strcat(appSelectorName, appNames[idx]);
+	_is_app_selected = true;
+	_selected_app_idx = idx;
+	strcpy(_app_selector_name, "AppSelector##");
+	strcat(_app_selector_name, _app_names[idx]);
 }
-
 
 static void drawAppSellector()
 {
-	ImGui::Begin(appSelectorName);
-	for (int i = 0; i < appNames.size(); i++)
+	ImGui::Begin(_app_selector_name);
+	for (int i = 0; i < _app_names.size(); i++)
 	{
-		if (ImGui::Button(appNames[i]))
+		if (ImGui::Button(_app_names[i]))
 		{
 			selectApp(i);
 			glfwSetWindowShouldClose(app->window, true);
@@ -69,7 +67,6 @@ static void drawAppSellector()
 	}
 	ImGui::End();
 }
-
 
 // rid unused variables warnings
 int main(int, char **)
@@ -91,16 +88,15 @@ int main(int, char **)
 
 	selectApp(0);
 
-	if(appNames.size()>1)
+	if(_app_names.size()>1)
 		lim::AppBase::_draw_appselector = drawAppSellector;
 
 
-	while (appSelected)
+	while (_is_app_selected)
 	{
-		appSelected = false;
-		int appIdx = lim::AppPref::get().selected_app_idx;
+		_is_app_selected = false;
 
-		app = appConstructors[appIdx]();
+		app = _app_constructors[_selected_app_idx]();
 
 		app->run();
 

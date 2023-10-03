@@ -18,7 +18,7 @@ namespace lim
 	public:
 		inline static constexpr CStr APP_NAME = "icp test app";
 		inline static constexpr CStr APP_DIR  = "im_tests";
-		inline static constexpr CStr APP_DISC = "icp is iterative closest point";
+		inline static constexpr CStr APP_DESCRIPTION = "icp is iterative closest point";
 	private:
 		AutoCamera* camera;
 		Program* prog;

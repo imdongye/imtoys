@@ -23,7 +23,7 @@ namespace lim
 	public:
         inline static constexpr CStr APP_NAME = "pbr tester";
 		inline static constexpr CStr APP_DIR  = "im_pbr";
-		inline static constexpr CStr APP_DISC = "ggx beckman";
+		inline static constexpr CStr APP_DESCRIPTION = "ggx beckman";
 	private:
 		Program prog;
         ViewportWithCamera viewport;

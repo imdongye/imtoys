@@ -32,16 +32,17 @@ namespace lim
 		AppBase* app;
 		const int MAX_RECENT_MP_SIZE = 10;
 		std::vector<std::string> recent_model_paths;
-		//todo: store last excute app idx
-		int selected_app_idx = 0;
-		std::string selected_app_name = "none";
 	private:
 		AppPref(const AppPref&)=delete;
 		AppPref& operator=(const AppPref&)=delete;
 		AppPref();
 		~AppPref();
+		inline static AppPref* instance = nullptr;
 	public:
+		static void create();
 		static AppPref& get();
+		static void destroy();
+
 		void clearData();
 		void saveToFile();
 		void saveRecentModelPath(const std::string_view path);

@@ -73,7 +73,7 @@ namespace lim
 		void run();
 		void applyWindowSetting();
 	private:
-		void initGlfwCallbacks();
+		void registerGlfwCallbacks();
 		void printVersionAndStatus();
 	};
 }

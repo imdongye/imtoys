@@ -12,6 +12,7 @@ namespace lim
 {
 	AppPref::AppPref()
 	{
+		log::pure("inti AppPref\n");
 		std::string text = readStrFromFile(FILE_PATH);
 		if( text.length()<1 ) {
 			log::err("length<1 so not make json\n");
@@ -26,11 +27,22 @@ namespace lim
 	{
 	}
 
+	void AppPref::create()
+	{
+		if( !instance )
+			instance = new AppPref();
+	}
 	AppPref& AppPref::get()
 	{
-		static AppPref app_pref;
-		return app_pref;
+		return *instance;
 	}
+	void AppPref::destroy()
+	{
+		if( instance )
+			delete instance;
+		instance = nullptr;
+	}
+
 	void AppPref::clearData()
 	{
 		recent_model_paths.clear();

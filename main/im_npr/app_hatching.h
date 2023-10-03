@@ -33,7 +33,7 @@ namespace lim
 	public:
 		inline static constexpr CStr APP_NAME = "real-time hatching";
 		inline static constexpr CStr APP_DIR  = "im_npr";
-		inline static constexpr CStr APP_DISC = "aplicate real-time hatching paper";
+		inline static constexpr CStr APP_DESCRIPTION = "aplicate real-time hatching paper";
 	private:
 		bool start_dragging = false;
 		

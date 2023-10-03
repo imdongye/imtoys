@@ -16,13 +16,13 @@ namespace lim
 	{
 		if(this == &src)
 			return *this;
-		Program::~Program();
+
+		deinitGL();
 
 		name = std::move(src.name);
 		home_dir = std::move(src.home_dir);
 		use_hook = std::move(src.use_hook);
-		// for( const auto [k, v] : src.uniform_location_cache )
-		// 	uniform_location_cache.insert(std::make_pair(k,v));
+		uniform_location_cache = std::move(src.uniform_location_cache);
 
 		pid = src.pid;
 		vert_id = src.vert_id;
@@ -163,11 +163,11 @@ namespace lim
 	// From: https://www.youtube.com/watch?v=nBB0LGSIm5Q
 	GLint Program::getUniformLocation(const std::string& vname) const
 	{
-		// if( uniform_location_cache.find(vname) != uniform_location_cache.end() ) {
-		// 	return uniform_location_cache[vname];
-		// }
+		if( uniform_location_cache.find(vname) != uniform_location_cache.end() ) {
+			return uniform_location_cache[vname];
+		}
 		GLint loc = glGetUniformLocation(pid, vname.c_str());
-		//uniform_location_cache[vname] = loc;
+		uniform_location_cache[vname] = loc;
 		//if(loc<0) log::err("missing...");
 		return loc;
 	}

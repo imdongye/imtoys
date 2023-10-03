@@ -17,7 +17,7 @@ namespace lim
 	public:
 		inline static constexpr CStr APP_NAME = "font";
 		inline static constexpr CStr APP_DIR  = "im_tests";
-		inline static constexpr CStr APP_DISC = "font rendering tester with nanovg";
+		inline static constexpr CStr APP_DESCRIPTION = "font rendering tester with nanovg";
 	private:
 		std::string vert_shader;
 		NVGcontext* vg = NULL;

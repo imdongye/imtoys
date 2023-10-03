@@ -42,7 +42,7 @@ namespace lim
 		GLuint frag_id = 0;
 		GLuint geom_id = 0;
 		GLuint comp_id = 0;
-		//mutable std::unordered_map<std::string, GLint> uniform_location_cache;
+		mutable std::unordered_map<std::string, GLint> uniform_location_cache;
 
 	private:
 		// Disable Copying and Assignment

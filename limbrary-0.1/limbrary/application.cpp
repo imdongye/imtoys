@@ -16,7 +16,6 @@ namespace lim
 	AppBase::AppBase(int winWidth, int winHeight, const char* title)
 		:win_width(winWidth), win_height(winHeight)
 	{
-		AppPref::get().app = this;
 		glfwSetErrorCallback([](int error, const char *description) {
 			log::err("Glfw Error %d: %s\n", error, description);
 		});
@@ -58,11 +57,15 @@ namespace lim
 			log::err("Failed to initialize GLAD\n");
 			std::exit(-1);
 		}
-
-		// register callback after glad initialization
-		initGlfwCallbacks();
-
 		printVersionAndStatus();
+
+
+		AppPref::create();
+		AppPref::get().app = this;
+		AssetLib::create();
+		// register callback after glad initialization
+		registerGlfwCallbacks();
+
 
 		// Setup Dear ImGui context
 		IMGUI_CHECKVERSION();
@@ -95,8 +98,6 @@ namespace lim
 		// Setup Platform/Renderer backends
 		ImGui_ImplGlfw_InitForOpenGL(window, true);
 		ImGui_ImplOpenGL3_Init("#version 410");
-
-		AssetLib::create();
 	}
 
 	AppBase::~AppBase()
@@ -107,6 +108,7 @@ namespace lim
 		ImGui::DestroyContext();
 
 		AppPref::get().saveToFile();
+		AppPref::destroy();
 		AssetLib::destroy();
 
 		glfwDestroyWindow(window);
@@ -148,12 +150,15 @@ namespace lim
 				glfwMakeContextCurrent(backup_current_context);
 			}
 
-			glfwPollEvents();
+			glFlush();
+			glFinish();
+
 			glfwSwapBuffers(window);
+			glfwPollEvents();
 		}
 	}
 
-	void AppBase::initGlfwCallbacks()
+	void AppBase::registerGlfwCallbacks()
 	{
 		glfwSetWindowUserPointer(window, this);
 

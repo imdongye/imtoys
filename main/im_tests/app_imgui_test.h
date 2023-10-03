@@ -15,7 +15,7 @@ namespace lim
 	public:
 		inline static constexpr CStr APP_NAME = "imgui_tester";
 		inline static constexpr CStr APP_DIR  = "im_tests";
-		inline static constexpr CStr APP_DISC = "limbrary imgui application";
+		inline static constexpr CStr APP_DESCRIPTION = "limbrary imgui application";
 	private:
 	public:
 		AppImGuiTest();

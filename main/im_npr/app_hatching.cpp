@@ -194,17 +194,16 @@ namespace lim
 
 		ImGui::Text("<light>");
 		const static float litThetaSpd = 70 * 0.001;
-		const static float litPiSpd = 360 * 0.001;
+		const static float litPhiSpd = 360 * 0.001;
 		static float litTheta = 30.f;
-		static float litPi = 30.f;
-		if( ImGui::DragFloat("light yaw", &litPi, litPiSpd, 0, 360, "%.3f") ||
-			ImGui::DragFloat("light pitch", &litTheta, litThetaSpd, 0, 180, "%.3f") ) {
-
-			light.setRotate(litTheta, litPi);
-			light_model.position = light.position;
-			light_model.updateModelMat();
+		static float litPhi = 30.f;
+		static bool isLightDraged = false;
+		isLightDraged |= ImGui::DragFloat("light yaw", &litPhi, litPhiSpd, -FLT_MAX, +FLT_MAX, "%.3f");
+		isLightDraged |= ImGui::DragFloat("light pitch", &litTheta, litThetaSpd, 0, 80, "%.3f");
+		if( isLightDraged ) {
+			light.setRotate(litTheta, glm::fract(litPhi/360.f)*360.f);
 		}
-		ImGui::Text("pos %f %f %f", light.position.x, light.position.y, light.position.z);
+		ImGui::Text("pos %.1f %.1f %.1f", light.position.x, light.position.y, light.position.z);
 
 		ImGui::SliderInt("use fixed art map", &fixed_art_map_idx, -1, nr_tones-1);
 		
