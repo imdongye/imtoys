@@ -11,27 +11,21 @@
 // 	3. 최소 최대 slice 예외처리
 //
 
-#include <limbrary/model_view/code_mesh.h>
+#include <limbrary/model_view/mesh_maked.h>
 #include <limbrary/texture.h>
 #include <limbrary/utils.h>
 #include <vector>
 #include <memory>
 #include <glad/glad.h>
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtc/random.hpp>
 
 using namespace lim;
 using namespace glm;
 
-namespace lim::code_mesh
+namespace lim
 {
-	Mesh* genQuad(bool genNors, bool genUvs)
+	MeshQuad::MeshQuad(bool genNors, bool genUvs)
 	{
-		Mesh* rst = new Mesh();
-		std::vector<vec3>& 	poss = rst->poss;
-		std::vector<vec3>& 	nors = rst->nors;
-		std::vector<vec2>& 	uvs  = rst->uvs;
-		std::vector<uvec3>& tris = rst->tris;
+		name = "quad";
 
 		const float half = 1.0f;
 		const vec3 front = {0, 0, 1};
@@ -58,26 +52,21 @@ namespace lim::code_mesh
 		tris.push_back({0,3,1});
 		tris.push_back({0,2,3});
 
-		rst->initGL();
-		return rst;
+		initGL();
 	}
 
-	Mesh* genPlane(int nrSlice, bool genNors, bool genUvs)
+	MeshPlane::MeshPlane(int nrSlices, bool genNors, bool genUvs)
 	{
-		Mesh* rst = new Mesh();
-		std::vector<vec3>& 	poss = rst->poss;
-		std::vector<vec3>& 	nors = rst->nors;
-		std::vector<vec2>& 	uvs  = rst->uvs;
-		std::vector<uvec3>& tris = rst->tris;
-
+		name = fmtStrToBuf("plane_s%d", nrSlices);
+		
 		const float length = 2.0f;
 		const float start = -length / 2.f;
-		const float step = length / nrSlice;
+		const float step = length / nrSlices;
 		const vec3 up = {0, 1, 0};
-		const float div = nrSlice;
+		const float div = nrSlices;
 
 
-		for(int i = 0; i <= nrSlice; i++) for(int j = 0; j <= nrSlice; j++)
+		for(int i = 0; i <= nrSlices; i++) for(int j = 0; j <= nrSlices; j++)
 		{
 			poss.push_back({start + step * j, 0, start + step * i});
 			if( genNors ) {
@@ -89,8 +78,8 @@ namespace lim::code_mesh
 		}
 
 
-		const int nrCols = nrSlice + 1;
-		for (int i = 0; i < nrSlice; i++) for (int j = 0; j < nrSlice; j++)
+		const int nrCols = nrSlices + 1;
+		for (int i = 0; i < nrSlices; i++) for (int j = 0; j < nrSlices; j++)
 		{
 			// 0-1
 			// |\|
@@ -107,18 +96,13 @@ namespace lim::code_mesh
 							ori + 1});
 		}
 		
-		rst->initGL();
-		return rst;
+		initGL();
 	}
 
-	Mesh* genCube(bool genNors, bool genUvs)
+	MeshCube::MeshCube(bool genNors, bool genUvs)
 	{
-		Mesh* rst = new Mesh();
-		std::vector<vec3>& 	poss = rst->poss;
-		std::vector<vec3>& 	nors = rst->nors;
-		std::vector<vec2>& 	uvs  = rst->uvs;
-		std::vector<uvec3>& tris = rst->tris;
-
+		name = "cube";
+		
 		const float half = 1.0f;
 		const vec3 cbNors[6] = {
 			{0, 1, 0}, {0, 0, 1}, {1, 0, 0}, {-1, 0, 0}, {0, 0, -1}, {0, -1, 0}};
@@ -158,20 +142,15 @@ namespace lim::code_mesh
 			tris.push_back({ 0+i*4, 2+i*4, 3+i*4 });
 		}
 
-		rst->initGL();
-		return rst;
+		initGL();
 	}
 
 	// From: http://www.songho.ca/opengl/gl_sphere.html
 	// texture coord가 다른 같은 위치의 vertex가 많음
-	Mesh* genSphere(const int nrSlices, const int nrStacks, bool genNors, bool genUvs)
+	MeshSphere::MeshSphere(int nrSlices, int nrStacks, bool genNors, bool genUvs)
 	{
-		Mesh* rst = new Mesh();
-		std::vector<vec3>& 	poss = rst->poss;
-		std::vector<vec3>& 	nors = rst->nors;
-		std::vector<vec2>& 	uvs  = rst->uvs;
-		std::vector<uvec3>& tris = rst->tris;
-
+		name = fmtStrToBuf("sphere_sl%d_st%d", nrSlices, nrStacks);
+		
 		const float radius = 1.f;
 
 		// phi : angle form xy-plane [-pi/2, pi/2]
@@ -216,20 +195,15 @@ namespace lim::code_mesh
 			}
 		}
 
-		rst->initGL();
-		return rst;
+		initGL();
 	}
 
 	// icosahedron, 20면체
-	Mesh* genIcoSphere(const int subdivision, bool genNors, bool genUvs)
+	MeshIcoSphere::MeshIcoSphere(int subdivision, bool genNors, bool genUvs)
 	{
-		Mesh* rst = new Mesh();
-		std::vector<vec3>& 	poss = rst->poss;
-		std::vector<vec3>& 	nors = rst->nors;
-		std::vector<vec2>& 	uvs  = rst->uvs;
-		std::vector<vec3>& 	cols = rst->cols;
-		std::vector<uvec3>& tris = rst->tris;
-
+		name = fmtStrToBuf("icosphere_s%d", subdivision);
+		
+		
 		const float uStep = 1.f / 11.f;
 		const float vStep = 1.f / 3.f;
 		const float radius = 1.f;
@@ -341,17 +315,12 @@ namespace lim::code_mesh
 			}
 		}
 
-		rst->initGL();
-		return rst;
+		initGL();
 	}
 
-	Mesh* genCubeSphere(const int nrSlices, bool genNors, bool genUvs)
+	MeshCubeSphere::MeshCubeSphere(int nrSlices, bool genNors, bool genUvs)
 	{
-		Mesh* rst = new Mesh();
-		std::vector<vec3>& 	poss = rst->poss;
-		std::vector<vec3>& 	nors = rst->nors;
-		std::vector<vec2>& 	uvs  = rst->uvs;
-		std::vector<uvec3>& tris = rst->tris;
+		name = fmtStrToBuf("cubesphere_s%d", nrSlices);
 
 		const float radius = 1.f;
 
@@ -359,8 +328,6 @@ namespace lim::code_mesh
 			{0, 1, 0}, {0, 0, 1}, {1, 0, 0}, {-1, 0, 0}, {0, 0, -1}, {0, -1, 0}};
 		const vec3 cbTans[6] = {
 			{1, 0, 0}, {1, 0, 0}, {0, 0, -1}, {0, 0, 1}, {-1, 0, 0}, {-1, 0, 0}};
-
-		
 
 		for (int side = 0; side < 6; side++)
 		{
@@ -393,19 +360,15 @@ namespace lim::code_mesh
 			}
 		}
 
-		rst->initGL();
-		return rst;
+		initGL();
 	}
 
 	// smooth
-	Mesh* genCubeSphere2(const int nrSlices, bool genNors, bool genUvs)
+	MeshCubeSphere2::MeshCubeSphere2(int nrSlices, bool genNors, bool genUvs)
 	{
-		Mesh* rst = new Mesh();
-		std::vector<vec3>& 	poss = rst->poss;
-		std::vector<vec3>& 	nors = rst->nors;
-		std::vector<vec2>& 	uvs  = rst->uvs;
-		std::vector<uvec3>& tris = rst->tris;
-
+		name = fmtStrToBuf("smoothcubesphere_s%d", nrSlices);
+		
+		
 		const float radius = 1.f;
 		const vec3 cbNors[6] = {
 			{0, 1, 0}, {0, 0, 1}, {1, 0, 0}, {-1, 0, 0}, {0, 0, -1}, {0, -1, 0}};
@@ -446,18 +409,14 @@ namespace lim::code_mesh
 				}
 			}
 		}
-		rst->initGL();
-		return rst;
+		
+		initGL();
 	}
 
-	Mesh* genCylinder(const int nrSlices, bool genNors, bool genUvs)
+	MeshCylinder::MeshCylinder(int nrSlices, bool genNors, bool genUvs)
 	{
-		Mesh* rst = new Mesh();
-		std::vector<vec3>& 	poss = rst->poss;
-		std::vector<vec3>& 	nors = rst->nors;
-		std::vector<vec2>& 	uvs  = rst->uvs;
-		std::vector<uvec3>& tris = rst->tris;
-
+		name = fmtStrToBuf("sylinder_s%d", nrSlices);
+		
 		const float radius = 1.f;
 		const float half = 1.f; // height
 
@@ -513,17 +472,12 @@ namespace lim::code_mesh
 			tris.push_back({ 1,          5+nrCols*(i+1), 5+nrCols*i 	});
 		}
 
-		rst->initGL();
-		return rst;
+		initGL();
 	}
 
-	Mesh* genCapsule(int nrSlices, int nrStacks, bool genNors, bool genUvs)
+	MeshCapsule::MeshCapsule(int nrSlices, int nrStacks, bool genNors, bool genUvs)
 	{
-		Mesh* rst = new Mesh();
-		std::vector<vec3>& 	poss = rst->poss;
-		std::vector<vec3>& 	nors = rst->nors;
-		std::vector<vec2>& 	uvs  = rst->uvs;
-		std::vector<uvec3>& tris = rst->tris;
+		name = fmtStrToBuf("capsule_sl%d_st", nrSlices, nrStacks);
 
 		const float radius = 1.f;
 		const float halfSylinder = 1.f; // height
@@ -574,19 +528,14 @@ namespace lim::code_mesh
 			}
 		}
 
-		rst->initGL();
-
-		return rst;
+		initGL();
 	}
 
-	Mesh* genDonut(int nrSlices, int nrRingVerts, bool genNors, bool genUvs)
+	MeshDonut::MeshDonut(int nrSlices, int nrRingVerts, bool genNors, bool genUvs)
 	{
-		Mesh* rst = new Mesh();
-		std::vector<vec3>& 	poss = rst->poss;
-		std::vector<vec3>& 	nors = rst->nors;
-		std::vector<vec2>& 	uvs  = rst->uvs;
-		std::vector<uvec3>& tris = rst->tris;
+		name = fmtStrToBuf("donut_s%d_r", nrSlices, nrRingVerts);
 
+		
 		const float ringRad = 1.f;
 		const float donutRad = 1.5f;
 
@@ -623,8 +572,6 @@ namespace lim::code_mesh
 			}
 		}
 
-		rst->initGL();
-
-		return rst;
+		initGL();
 	}
 }

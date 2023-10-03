@@ -172,9 +172,9 @@ namespace lim
 {
     AppICP::AppICP(): AppBase(1200, 780, APP_NAME)
     {
-        stbi_set_flip_vertically_on_load(true);
-
-        prog = new Program("icp", APP_DIR);
+        prog = new Program();
+        prog->name = "icp";
+        prog->home_dir = APP_DIR;
         prog->attatch("assets/shaders/mvp_points.vs").attatch("blue.fs").link();
 
         camera = new WinAutoCamera();
@@ -182,7 +182,8 @@ namespace lim
         camera->pivot = {0,0,0};
         camera->updateFromPosAndPivot();
 
-        model = importModelFromFile("assets/models/objs/woody.obj", true);
+        model = new Model();
+        model->importFromFile("assets/models/objs/woody.obj", true);
 
         dest = makeTransformedMesh(*model->my_meshes[0], model->model_mat);
 
@@ -207,19 +208,19 @@ namespace lim
 		glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        GLuint pid = prog->use();
+        prog->use();
 
-        setUniform(pid, "viewMat", camera->view_mat);
-        setUniform(pid, "cameraPos", camera->position);
-        setUniform(pid, "projMat", camera->proj_mat);
+        prog->bind("viewMat", camera->view_mat);
+        prog->bind("cameraPos", camera->position);
+        prog->bind("projMat", camera->proj_mat);
 
-        setUniform(pid, "modelMat", glm::mat4(1));
+        prog->bind("modelMat", glm::mat4(1));
         glBindVertexArray(dest->vert_array);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, dest->element_buf);
         glDrawElements(GL_POINTS, dest->tris.size()*3, GL_UNSIGNED_INT, 0);
 		
 
-        setUniform(pid, "modelMat", icp_mat);
+        prog->bind("modelMat", icp_mat);
         glBindVertexArray(src->vert_array);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, src->element_buf);
         glDrawElements(GL_POINTS, dest->tris.size()*3, GL_UNSIGNED_INT, 0);

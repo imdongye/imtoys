@@ -31,6 +31,7 @@ Todo:
 #include <glm/glm.hpp>
 #include <string>
 #include "utils.h"
+#include <imgui.h>
 
 
 namespace lim
@@ -45,8 +46,9 @@ namespace lim
 			WM_FIXED_SIZE,
 		};
 	public:
-		std::string name;
-		Framebuffer* framebuffer;
+		Framebuffer* framebuffer = nullptr;
+
+		std::string name = "nonamed";
 		WindowMode window_mode = WM_FREE;
 		bool window_opened = true;
 		bool hovered = false;
@@ -55,17 +57,20 @@ namespace lim
 		glm::ivec2 mouse_pos = {0,0};
 		Callbacks<void(int, int)> resize_callbacks;
 	private:
-		Viewport(const Viewport &) = delete;
-		Viewport &operator=(const Viewport &) = delete;
+		Viewport(const Viewport&) = delete;
+		Viewport& operator=(const Viewport&) = delete;
 	public:
 		Viewport(std::string_view _name, Framebuffer* createdFB);
 		Viewport(Viewport&& src) noexcept;
-		virtual ~Viewport();
-		bool drawImGui(); // return windowOpened
+		Viewport& operator=(Viewport&& src) noexcept;
+		virtual ~Viewport() noexcept;
+
+		bool drawImGui(); // and resize fb and return windowOpened
 		void resize(GLuint _width, GLuint _height);
 		const GLuint& getWidth() const;
 		const GLuint& getHeight() const;
 		const float& getAspect() const;
+		Framebuffer& getFb();
 	};
 }
 

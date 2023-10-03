@@ -7,7 +7,6 @@ namespace lim
 {
 	AppKinematics::AppKinematics(): AppBase(1200, 780, APP_NAME)
 	{
-		stbi_set_flip_vertically_on_load(true);
 		int x, y;
 		glfwGetWindowPos(window, &x, &y);
 		win_pos = {x,y};

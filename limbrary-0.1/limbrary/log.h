@@ -11,6 +11,8 @@ ExampleAppLog in imgui_demo.cpp
 Todo:
 1. err callback
 2. ,comma operator 출력
+3. 다른쓰레드에서 포메팅
+4. 가변길이 템플릿?
 
 */
 

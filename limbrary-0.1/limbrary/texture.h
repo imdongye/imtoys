@@ -17,6 +17,7 @@
 
 namespace lim
 {
+	// clone able
 	class TexBase
 	{
 	public:
@@ -39,17 +40,16 @@ namespace lim
 		GLint mipmap_max_level = 1000;
 
 	private:
-		TexBase(const TexBase &) = delete;
-		TexBase &operator=(const TexBase &) = delete;
+		TexBase& operator=(const TexBase&) = delete;
 	public:
 		TexBase();
+		TexBase(const TexBase& src);
 		TexBase(TexBase&& src) noexcept;
-		virtual ~TexBase();
+		TexBase& operator=(TexBase&& src) noexcept;
+		virtual ~TexBase() noexcept;
 	public:
 		void initGL(void* data = nullptr);
 		void deinitGL();
-		void bind(GLuint pid, GLuint activeSlot, const std::string_view shaderUniformName) const;
-		// void clone() // srcTex를 FBO에 연결시켜서 glCopyTexImage
 	};
 
 	class Texture: public TexBase
@@ -58,20 +58,22 @@ namespace lim
 		std::string path = "nopath/texture.png";
 		const char* format = path.c_str()+10;
 	private:
-		Texture(const Texture &) = delete;
 		Texture &operator=(const Texture &) = delete;
+		Texture &operator=(Texture&&) = delete;
 	public:
 		Texture();
+		Texture(const Texture& src);
 		Texture(Texture&& src) noexcept;
-		virtual ~Texture();
-		Texture* clone();
+		virtual ~Texture() noexcept;
 		bool initFromImage(std::string_view path, GLint internalFormat);
 		// nrChannels, bitPerChannel 0 is auto bit
 		bool initFromImageAuto(std::string_view path, bool convertLinear = false, int nrChannels = 0, int bitPerChannel = 0);
 	};
 
-	void drawTexToQuad(GLuint texId, float gamma = 2.2f);
-	void copyTexToTex(GLuint srcTexId, TexBase& dstTex);
+	void drawTexToQuad(const GLuint texId, float gamma = 2.2f);
+	// for same size
+	void copyTexToTex(const GLuint srcTexId, TexBase& dstTex);
+	// for diff size
 	void copyTexToTex(const TexBase& srcTex, TexBase& dstTex);
 }
 

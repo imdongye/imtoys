@@ -25,10 +25,14 @@ namespace lim
         srcNormalMap.clear_color = {0.5, 0.5, 1, 1};
         srcNormalMap.resize(texSize);
 
-        Program normalDrawProg("normal to tex coord", "im_simplification");
+        Program normalDrawProg;
+        normalDrawProg.name = "normal to tex coord";
+        normalDrawProg.home_dir = "im_simplification";
         normalDrawProg.attatch("uv_view.vs").attatch("baker_draw_ori_nor.fs").link();
 
-        Program bakerProg("normal map baker", "im_simplification");
+        Program bakerProg;
+        bakerProg.name = "normal map baker";
+        bakerProg.home_dir = "im_simplification";
         bakerProg.attatch("uv_view.vs").attatch("baker_ori_nor_to_simp_ts.fs").link();
 
 
@@ -42,26 +46,26 @@ namespace lim
             if( srcMs->uvs.size()<0 || dstMs->uvs.size()<0 ) {
                 log::err("no uvs in mesh when bakeNorMap\n\n");
             }
-            int bumpMatIdx = findIdx(src.materials, srcMs->material);
+            int bumpMatIdx = findIdx(src.my_materials, srcMs->material);
             mergeByNormalMap[bumpMatIdx].push_back( make_pair(srcMs, dstMs) );
         }
 
 
 
         for( auto& [bumpMatIdx, meshes] : mergeByNormalMap ) {
-            const Material& srcMat = *src.materials[bumpMatIdx];
-            Material& dstMat = *dst.materials[bumpMatIdx];
+            const Material& srcMat = *src.my_materials[bumpMatIdx];
+            Material& dstMat = *dst.my_materials[bumpMatIdx];
 
             /* src의 world space normal bump맵 적용해서 텍스쳐로 가져오기 */
             srcNormalMap.bind();
             normalDrawProg.use();
-            normalDrawProg.setUniform("map_Flags", srcMat.map_Flags);
+            normalDrawProg.bind("map_Flags", srcMat.map_Flags);
             if ( srcMat.map_Flags & (Material::MF_Bump|Material::MF_Nor) ) {
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, srcMat.map_Bump->tex_id);
-                normalDrawProg.setUniform("map_Bump", 0);
-                normalDrawProg.setUniform("texDelta", srcMat.texDelta);
-                normalDrawProg.setUniform("bumpHeight", srcMat.bumpHeight);
+                normalDrawProg.bind("map_Bump", 0);
+                normalDrawProg.bind("texDelta", srcMat.texDelta);
+                normalDrawProg.bind("bumpHeight", srcMat.bumpHeight);
             }
             // 원본의 노멀과 bumpmap, Target의 노멀으로 그린다.
             for( auto& [srcMs, dstMs] : meshes ) {
@@ -84,7 +88,7 @@ namespace lim
             bakerProg.use();
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, srcNormalMap.color_tex);
-            bakerProg.setUniform("map_OriNormal", 0);
+            bakerProg.bind("map_OriNormal", 0);
             
             for( auto& [srcMs, dstMs] : meshes ) {
                 dstMs->drawGL();
@@ -106,14 +110,16 @@ namespace lim
 
     void convertBumpMapToNormalMap(Model& md)
     {
-        Program bumpToNorProg("bump to nor", "im_simplification");
+        Program bumpToNorProg;
+        bumpToNorProg.name = "bump to nor";
+        bumpToNorProg.home_dir = "im_simplification";
         bumpToNorProg.attatch("uv_view.vs").attatch("baker_bump_to_nor.fs").link();
         unordered_map< int,  vector<Mesh*> > mergeByNormalMap;
         for( int i=0; i<md.my_meshes.size(); i++ ) {
             Mesh* ms = md.my_meshes[i];
             if( ms->material==nullptr || (ms->material->map_Flags|Material::MF_Bump)==0 ) 
                 continue;
-            int bumpMatIdx = findIdx(md.materials, ms->material);
+            int bumpMatIdx = findIdx(md.my_materials, ms->material);
             mergeByNormalMap[bumpMatIdx].push_back( ms );
         }
 
@@ -129,7 +135,7 @@ namespace lim
 
 
         for( auto& [bumpMatIdx, meshes] : mergeByNormalMap ) {
-            Material& mat = *md.materials[bumpMatIdx];
+            Material& mat = *md.my_materials[bumpMatIdx];
             GLuint norTex;
             GLsizei norWidth = mat.map_Bump->width;
             GLsizei norHeight = mat.map_Bump->height;
@@ -146,10 +152,10 @@ namespace lim
             bumpToNorProg.use();
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, mat.map_Bump->tex_id);
-            bumpToNorProg.setUniform("map_Bump", 0);
-            bumpToNorProg.setUniform("map_Flags", mat.map_Flags);
-            bumpToNorProg.setUniform("texDelta", mat.texDelta);
-            bumpToNorProg.setUniform("bumpHeight", mat.bumpHeight);
+            bumpToNorProg.bind("map_Bump", 0);
+            bumpToNorProg.bind("map_Flags", mat.map_Flags);
+            bumpToNorProg.bind("texDelta", mat.texDelta);
+            bumpToNorProg.bind("bumpHeight", mat.bumpHeight);
             for( Mesh* ms : meshes ) {
                 ms->drawGL();
             }

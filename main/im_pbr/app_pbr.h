@@ -11,7 +11,8 @@
 #define __app_pbr_h_
 
 #include <limbrary/application.h>
-#include <limbrary/model_view/viewport_with_camera.h>
+#include <limbrary/model_view/camera_auto.h>
+#include <limbrary/model_view/mesh_maked.h>
 #include <limbrary/program.h>
 #include <limbrary/model_view/model.h>
 
@@ -24,10 +25,10 @@ namespace lim
 		inline static constexpr CStr APP_DIR  = "im_pbr";
 		inline static constexpr CStr APP_DISC = "ggx beckman";
 	private:
-		Program* prog;
-        ViewportWithCamera* viewport;
-		Mesh* sphere;
-		Model* model;
+		Program prog;
+        ViewportWithCamera viewport;
+		MeshSphere sphere;
+		Model model;
 
 		int nr_rows    = 4;
 		int nr_cols = 4;

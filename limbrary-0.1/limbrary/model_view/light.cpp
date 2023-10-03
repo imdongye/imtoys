@@ -31,8 +31,14 @@ namespace lim
 		updateWithPivotAndPos();
 	}
 	Light::Light(Light&& src) noexcept
-		: map_Shadow(std::move(src.map_Shadow))
 	{
+		*this = std::move(src);
+	}
+	Light& Light::operator=(Light&& src) noexcept
+	{
+		if( this==&src )
+			return *this;
+		map_Shadow = std::move(src.map_Shadow);
 		shadow_map_size = src.shadow_map_size;
 		shadow_z_near = src.shadow_z_near;
 		shadow_z_far = src.shadow_z_far;
@@ -46,8 +52,9 @@ namespace lim
 		shadow_view_mat = src.shadow_view_mat;
 		shadow_proj_mat = src.shadow_proj_mat;
 		shadow_vp_mat = src.shadow_vp_mat;
+		return *this;
 	}
-	Light::~Light()
+	Light::~Light() noexcept
 	{
 	}
 	void Light::setRotate(float thetaDeg, float phiDeg, float radius)

@@ -44,6 +44,7 @@ namespace lim
 		float pixel_ratio;    // (DPI)
 		glm::vec2 mouse_pos;
 
+		Callbacks<void(float deltaTime)> update_hooks;
 		Callbacks<void(int width, int height)> win_size_callbacks;
 		Callbacks<void(int width, int height)> framebuffer_size_callbacks;
 		Callbacks<void(int key, int scancode, int action, int mods)> key_callbacks;
@@ -51,7 +52,6 @@ namespace lim
 		Callbacks<void(double xOff, double yOff)> scroll_callbacks;
 		Callbacks<void(double xPos, double yPos)> cursor_pos_callbacks;
 		Callbacks<void(int count, const char **paths)> dnd_callbacks;
-		Callbacks<void(float deltaTime)> update_hooks;
 
 	protected:
 		virtual void update()=0;
@@ -62,6 +62,9 @@ namespace lim
 		virtual void mouseBtnCallback(int button, int action, int mods) {};
 		virtual void scrollCallback(double xOff, double yOff) {};
 		virtual void dndCallback(int count, const char **paths) {};
+	private:
+		AppBase(const AppBase&) = delete;
+		AppBase& operator=(const AppBase&) = delete;
 	public:
 		/* init */
 		AppBase(int winWidth=1280, int winHeight=720, const char* title="nonamed");

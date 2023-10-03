@@ -33,6 +33,7 @@ TODO list:
 
 namespace lim
 {
+	// clone able
 	class Model
 	{
 	public:
@@ -55,8 +56,8 @@ namespace lim
 
 		/* render data */
 		Node root;
-		Material* default_mat;
-		std::vector<Material*> materials;
+		Material* default_material;
+		std::vector<Material*> my_materials;
 		std::vector<Texture*> my_textures;
 		std::vector<Mesh*> my_meshes;
 
@@ -69,25 +70,25 @@ namespace lim
 		
 		GLuint ai_backup_flags = 0;
 	private:
-		Model(const Model&) = delete;
 		Model& operator=(const Model&) = delete;
-
 	public:
-		Model(std::string_view name = "nonamed model");
-		~Model();
-		Model* clone();
+		Model(std::string_view name="nonamed");
+		Model(const Model& src);
+		Model(Model&& src) noexcept;
+		Model& operator=(Model&& src) noexcept;
+		~Model() noexcept;
+		
 		void updateModelMat();
 		void updateUnitScaleAndPivot();
 		void updateNrAndBoundary();
 		void setPivot(const glm::vec3& pivot);
+
+		bool importFromFile(std::string_view modelPath, bool unitScaleAndPivot = false, bool withMaterial = true);
+		bool exportToFile(size_t pIndex, std::string_view exportPath);
 	};
 
-	// import model
-	Model* importModelFromFile(std::string_view modelPath, bool unitScaleAndPivot = false, bool withMaterial = true);
-
-	// export model
+	// get export format data
 	int getNrExportFormats();
 	const aiExportFormatDesc* getExportFormatInfo(int idx);
-	void exportModelToFile(Model* model, size_t pIndex, std::string_view exportPath);
 }
 #endif

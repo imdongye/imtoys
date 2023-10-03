@@ -12,6 +12,7 @@ unordered_map은 헤쉬테이블로 메모리를 많이 차지 하지만 순회�
 #include <string>
 #include <functional>
 #include <vector>
+#include <glad/glad.h>
 #include <limbrary/log.h>
 
 #define COMP_IMVEC2(X, Y) ((X).x==(Y).x)&&((X).y==(Y).y)
@@ -44,36 +45,48 @@ namespace lim
 	inline typename std::vector<T>::iterator findIdxIt(const std::vector<T>& v, const T& value) {
 		return find(v.begin(), v.end(), value);
 	}
+	// 객체 배열에서 포인터로 인덱스를 찾는다.
+	// Todo: 포인터 산술연산 테스트
+	// Todo: function에 객체 포인터 있을것같은데
+	template <typename T>
+	GLuint findPtIdxInObjArr(const std::vector<T>& src, const T* target)
+	{
+		int idx=0;
+		for( ; idx<src.size(); idx++ ) {
+			if( &src[idx] == target ) {
+				return idx;
+			}
+		}
+		return -1;
+	}
 
 	//template <class Ftype>
 	//using Callbacks = std::map<const void*, std::function<Ftype>>;
+
 	template <typename Ftype>
 	class Callbacks {
 	public:
 		std::vector<const void*> keys;
 		std::vector<std::function<Ftype>> cbs;
 	private:
-		Callbacks(const Callbacks& src) = delete;
-		Callbacks& operator=(const Callbacks& src) = delete;
+		Callbacks(const Callbacks&) = delete;
+		Callbacks& operator=(const Callbacks&) = delete;
 	public:
-		Callbacks()
-		{
-		}
+		Callbacks(){}
 		Callbacks(Callbacks&& src) noexcept
-			: keys(std::move(src.keys))
-			, cbs(std::move(src.cbs))
 		{
+			*this = std::move(src);
 		}
-		~Callbacks()
+		Callbacks& operator=(Callbacks&& src) noexcept
 		{
+			if(this == &src)
+				return *this;
+			keys = std::move(keys);
+			cbs = std::move(cbs);
+			return *this;
 		}
-		typename std::vector<std::function<Ftype>>::iterator begin()
+		~Callbacks() noexcept
 		{
-			return cbs.begin();
-		}
-		typename std::vector<std::function<Ftype>>::iterator end()
-		{
-			return cbs.end();
 		}
 		typename std::function<Ftype>& operator[](const void* key)
 		{
@@ -89,7 +102,8 @@ namespace lim
 			cbs.push_back(std::function<Ftype>());
 			return cbs.back();
 		}
-		void erase(void* key) {
+		void erase(void* key) 
+		{
 			int idx = 0;
 			for( const void* k : keys ) {
 				if( k == key )
@@ -116,6 +130,14 @@ namespace lim
 				}
 			}
 			log::err("no key in callbacks\n\n");
+		}
+		typename std::vector<std::function<Ftype>>::iterator begin()
+		{
+			return cbs.begin();
+		}
+		typename std::vector<std::function<Ftype>>::iterator end()
+		{
+			return cbs.end();
 		}
 	};
 }

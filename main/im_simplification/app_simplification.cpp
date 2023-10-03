@@ -9,52 +9,53 @@
 #include <stb_image.h>
 #include <stb_sprintf.h>
 #include <limbrary/app_pref.h>
-#include <limbrary/model_view/code_mesh.h>
+#include <limbrary/model_view/mesh_maked.h>
 #include <imgui.h>
 #include <limbrary/model_view/renderer.h>
 #include <limbrary/asset_lib.h>
 
 namespace lim
 {
-	AppSimplification::AppSimplification() : AppBase(1200, 780, APP_NAME),
-		light(), ground("ground")
+	AppSimplification::AppSimplification() : AppBase(1200, 780, APP_NAME)
 	{
-		stbi_set_flip_vertically_on_load(true);
+		programs.emplace_back("Normal Dot View");
+		programs.back().attatch("mvp.vs").attatch("ndv.fs").link();
 
-		programs.push_back(new Program("Normal Dot View"));
-		programs.back()->attatch("mvp.vs").attatch("ndv.fs").link();
+		programs.emplace_back("Normal Dot Light");
+		programs.back().attatch("mvp.vs").attatch("ndl.fs").link();
 
-		programs.push_back(new Program("Normal Dot Light"));
-		programs.back()->attatch("mvp.vs").attatch("ndl.fs").link();
+		programs.emplace_back("Auto Normal");
+		programs.back().home_dir = APP_DIR;
+		programs.back().attatch("assets/shaders/mvp.vs").attatch("bumped.fs").link();
 
-		programs.push_back(new Program("Auto Normal", APP_DIR));
-		programs.back()->attatch("assets/shaders/mvp.vs").attatch("bumped.fs").link();
+		programs.emplace_back("Bitoper");
+		programs.back().home_dir = APP_DIR;
+		programs.back().attatch("assets/shaders/mvp.vs").attatch("bitoper.fs").link();
 
-		programs.push_back(new Program("bitoper", APP_DIR));
-		programs.back()->attatch("assets/shaders/mvp.vs").attatch("bitoper.fs").link();
+		programs.emplace_back("Shadowed");
+		programs.back().home_dir = APP_DIR;
+		programs.back().attatch("shadowed.vs").attatch("shadowed.fs").link();
 
-		programs.push_back(new Program("Shadowed", APP_DIR));
-		programs.back()->attatch("shadowed.vs").attatch("shadowed.fs").link();
-
-		programs.push_back(new Program("Map View, my normal", APP_DIR));
-		programs.back()->attatch("uv_view.vs").attatch("debug.fs").link();
-		programs.back()->use_hook = [](const Program& prog) {
-			prog.setUniform("gamma", 1.f);
+		programs.emplace_back("Map View, my normal");
+		programs.back().home_dir = APP_DIR;
+		programs.back().attatch("uv_view.vs").attatch("debug.fs").link();
+		programs.back().use_hook = [](const Program& prog) {
+			prog.bind("gamma", 1.f);
 		};
 
-		for( Program* prog:programs )
-			shader_names.push_back(prog->name.c_str());
+		for( const auto& prog : programs )
+			shader_names.push_back(prog.name.c_str());
 
-		AssetLib::get().default_mat->prog = programs[0];
+		AssetLib::get().default_material.prog = &programs[0];
 
 		ground.my_textures.push_back(new Texture());
 		ground.my_textures.back()->initFromImageAuto("assets/images/uv_grid.jpg");
-		ground.materials.push_back(new Material());
-		ground.materials.back()->Kd = {0,1,0,1};
-		ground.materials.back()->map_Kd = ground.my_textures.back();
-		ground.materials.back()->map_Flags |= Material::MF_Kd;
-		ground.my_meshes.push_back(code_mesh::genPlane());
-		ground.my_meshes.back()->material = ground.materials.back();
+		ground.my_materials.push_back(new Material());
+		ground.my_materials.back()->Kd = {0,1,0,1};
+		ground.my_materials.back()->map_Kd = ground.my_textures.back();
+		ground.my_materials.back()->map_Flags |= Material::MF_Kd;
+		ground.my_meshes.push_back(new MeshPlane());
+		ground.my_meshes.back()->material = ground.my_materials.back();
 		ground.root.meshes.push_back(ground.my_meshes.back());
 		ground.position = {0, 0, 0};
 		ground.scale = {10, 1, 10};
@@ -66,30 +67,19 @@ namespace lim
 	}
 	AppSimplification::~AppSimplification()
 	{
-		for( auto prog : programs ) {
-			delete prog;
-		}
-		for( auto vp : viewports ) {
-			delete vp;
-		}
-		for( auto md : models ) {
-			delete md;
-		}
 	}
 	void AppSimplification::addEmptyViewport()
 	{
 		const char* vpName = fmtStrToBuf("viewport%d##simp", nr_viewports);
-		ViewportWithCamera* vp = new ViewportWithCamera(vpName, new MsFramebuffer);
-		vp->camera.shiftPos({0,1,-1.6f});
-		viewports.push_back(vp);
+		viewports.emplace_back(vpName, new MsFramebuffer);
+		viewports.back().camera.shiftPos({0,1,-1.6f});
 
-		Model* md = new Model();
-		models.push_back(md);
+		models.push_back(new Model());
 
-		scenes.push_back({});
+		scenes.emplace_back();
 		Scene& scn = scenes.back();
 		scn.models.push_back(&ground);
-		scn.models.push_back(md); // scene의 두번째 모델이 타겟 모델
+		scn.models.push_back(models.back()); // scene의 두번째 모델이 타겟 모델
 		scn.lights.push_back(&light);
 		nr_viewports++;
 	}
@@ -101,21 +91,20 @@ namespace lim
 		}
 		if( nr_viewports<=2 ) {
 			log::err("you must have two viewports\n");
-			viewports[vpIdx]->window_opened = true;
+			viewports[vpIdx].window_opened = true;
 			return;
 		}
 		nr_viewports--;
 		src_vp_idx = 0;
 		dst_vp_idx = 1;
 		last_focused_vp_idx = 0;
-		delete viewports[vpIdx];
 		delete models[vpIdx];
 
 		viewports.erase(viewports.begin()+vpIdx);
 		models.erase(models.begin()+vpIdx);
 		scenes.erase(scenes.begin()+vpIdx);
 		for( int i=vpIdx; i<nr_viewports; i++ ) {
-			viewports[i]->name = fmtStrToBuf("viewport%d##simp", i);
+			viewports[i].name = fmtStrToBuf("viewport%d##simp", i);
 		}
 	}
 	void AppSimplification::doImportModel(std::string_view path, int vpIdx)
@@ -126,7 +115,8 @@ namespace lim
 		}
 		delete models[vpIdx];
 
-		models[vpIdx] = importModelFromFile(path.data(), true, true);
+		models[vpIdx] = new Model();
+		models[vpIdx]->importFromFile(path.data(), true, true);
 		if( models[vpIdx]==nullptr ) {
 			return;
 		}
@@ -138,7 +128,7 @@ namespace lim
 		Scene& scn = scenes[vpIdx];
 		scn.models[1] = models[vpIdx]; // 삭제된모델에서 교체
 
-		auto& vp = *viewports[vpIdx];
+		auto& vp = viewports[vpIdx];
 		vp.camera.pivot = md.position;
 		vp.camera.position.y = md.position.y;
 		vp.camera.updateFromPosAndPivot();
@@ -147,14 +137,11 @@ namespace lim
 	}
 	void AppSimplification::doExportModel(size_t pIndex, int vpIdx)
 	{
-		Model* toModel = models[vpIdx];
-
-		if( toModel == nullptr ) {
+		if(  models[vpIdx] == nullptr ) {
 			log::err("export\n");
 			return;
 		}
-
-		exportModelToFile(toModel, pIndex, export_path);
+		models[vpIdx]->exportToFile(pIndex, export_path);
 	}
 	void AppSimplification::doSimplifyModel(float lived_pct, int version, int agressiveness, bool verbose)
 	{
@@ -163,7 +150,7 @@ namespace lim
 
 		if( dstMd != nullptr )
 			delete dstMd;
-		dstMd = srcMd->clone();
+		dstMd = new Model(*srcMd);
 		models[dst_vp_idx] = dstMd;
 		scenes[dst_vp_idx].models[1] = dstMd;
 
@@ -171,8 +158,8 @@ namespace lim
 		int pct = 100.0 * dstMd->nr_vertices / srcMd->nr_vertices;
 		dstMd->name += "_"+std::to_string(pct)+"_pct";
 
-		viewports[dst_vp_idx]->camera.pivot = dstMd->position;
-		viewports[dst_vp_idx]->camera.updateFromPosAndPivot();
+		viewports[dst_vp_idx].camera.pivot = dstMd->position;
+		viewports[dst_vp_idx].camera.updateFromPosAndPivot();
 	}
 	void AppSimplification::doBakeNormalMap(int texSize)
 	{
@@ -195,21 +182,22 @@ namespace lim
 		glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		// uv_view일때
 		if( selected_prog_idx==programs.size()-1 ) {
 			for( int i=0; i<nr_viewports; i++ ) {
-				render(*viewports[i]->framebuffer, *programs[selected_prog_idx], *models[i]);
+				render(viewports[i].getFb(), programs[selected_prog_idx], *models[i]);
 			}
 			return;
 		}
 
 		if( is_same_camera )
 		{
-			Camera& cam = viewports[last_focused_vp_idx]->camera; 
+			Camera& cam = viewports[last_focused_vp_idx].camera; 
 			float backupAspect = cam.aspect;
 			for( int i=0; i<nr_viewports; i++ ) {
-				cam.aspect = (i==last_focused_vp_idx)? backupAspect : viewports[i]->camera.aspect;
+				cam.aspect = (i==last_focused_vp_idx)? backupAspect : viewports[i].camera.aspect;
 				cam.updateProjMat();
-				render(*viewports[i]->framebuffer, cam, scenes[i]);
+				render(viewports[i].getFb(), cam, scenes[i]);
 			}
 			cam.aspect = backupAspect;
 			cam.updateProjMat();
@@ -217,7 +205,7 @@ namespace lim
 		else
 		{
 			for( int i=0; i<nr_viewports; i++ )
-				render(*viewports[i]->framebuffer, viewports[i]->camera, scenes[i]);
+				render(viewports[i].getFb(), viewports[i].camera, scenes[i]);
 		}
 	}
 	void AppSimplification::renderImGui()
@@ -269,7 +257,7 @@ namespace lim
 							int nr_formats = getNrExportFormats();
 							for( size_t pIndex = 0; pIndex < nr_formats; pIndex++ )
 							{
-								const aiExportFormatDesc *format = getExportFormatInfo(pIndex);
+								const aiExportFormatDesc* format = getExportFormatInfo(pIndex);
 								if( ImGui::MenuItem(format->id) )
 								{
 									doExportModel(pIndex, i);
@@ -303,7 +291,7 @@ namespace lim
 		// 실행후 겹쳤을때 그리는순서에 따라서 위로오는게 결정됨, 방금 생성한게 위에 오기하기위함.
 		for( int i=nr_viewports-1; i>=0; i-- )
 		{
-			if( viewports[i]->drawImGui() == false ) {
+			if( viewports[i].drawImGui() == false ) {
 				subViewport(i);
 			}
 		}
@@ -389,14 +377,14 @@ namespace lim
 			static const char *vmode_strs[] = {"free", "pivot", "scroll"};
 			int viewMode = 0;
 			if( ImGui::Combo("mode", &viewMode, vmode_strs, sizeof(vmode_strs) / sizeof(char *)) ) {
-				viewports[last_focused_vp_idx]->camera.setViewMode(viewMode);
+				viewports[last_focused_vp_idx].camera.setViewMode(viewMode);
 			}
 			ImGui::Checkbox("use same camera", &is_same_camera);
 			static float cameraMoveSpeed = 4.0f;
 			if(ImGui::SliderFloat("move speed", &cameraMoveSpeed, 2.0f, 6.0f)) {
-				viewports[last_focused_vp_idx]->camera.move_free_spd = cameraMoveSpeed;
+				viewports[last_focused_vp_idx].camera.move_free_spd = cameraMoveSpeed;
 			}
-			ImGui::Text("camera fov: %f", viewports[last_focused_vp_idx]->camera.fovy);
+			ImGui::Text("camera fov: %f", viewports[last_focused_vp_idx].camera.fovy);
 			ImGui::Dummy(ImVec2(0.0f, 8.0f));
 			ImGui::Separator();
 			ImGui::Dummy(ImVec2(0.0f, 3.0f));
@@ -404,7 +392,7 @@ namespace lim
 			ImGui::Text("<shader>");
 			if( ImGui::Combo("type", &selected_prog_idx, shader_names.data(), shader_names.size()) )
 			{
-				AssetLib::get().default_mat->prog = programs[selected_prog_idx];
+				AssetLib::get().default_material.prog = &programs[selected_prog_idx];
 			}
 			ImGui::Dummy(ImVec2(0.0f, 8.0f));
 			ImGui::Separator();
@@ -426,7 +414,7 @@ namespace lim
 			static float bumpHeight = 100;
 			if( ImGui::SliderFloat("bumpHeight", &bumpHeight, 0.0, 300.0) ) {
 				for( Model* md : models ) {
-					for( Material* mat : md->materials ) {
+					for( Material* mat : md->my_materials ) {
 						mat->bumpHeight = bumpHeight;
 					}
 				}
@@ -434,7 +422,7 @@ namespace lim
 			static float texDelta = 0.00001;
 			if( ImGui::SliderFloat("texDelta", &texDelta, 0.000001, 0.0001, "%f") ) {
 				for( Model* md : models ) {
-					for( Material* mat : md->materials ) {
+					for( Material* mat : md->my_materials ) {
 						mat->texDelta = texDelta;
 					}
 				}
@@ -450,9 +438,9 @@ namespace lim
 			{
 				ImGui::TableSetupScrollFreeze(1, 1);
 				ImGui::TableSetupColumn("attributes", ImGuiTableColumnFlags_NoHide);
-				for( Viewport* vp : viewports )
+				for( const Viewport& vp : viewports )
 				{
-					ImGui::TableSetupColumn(vp->name.c_str());
+					ImGui::TableSetupColumn(vp.name.c_str());
 				}
 				ImGui::TableHeadersRow();
 
@@ -460,7 +448,7 @@ namespace lim
 				ImGui::TableNextRow();
 				if( ImGui::TableSetColumnIndex(column++) )
 					ImGui::Text("name");
-				for( Model* md : models )
+				for( const Model* md : models )
 				{
 					if( ImGui::TableSetColumnIndex(column++) )
 					{
@@ -474,7 +462,7 @@ namespace lim
 				ImGui::TableNextRow();
 				if( ImGui::TableSetColumnIndex(column++) )
 					ImGui::Text("#verticies");
-				for( Model* md : models )
+				for( const Model* md : models )
 				{
 					if( ImGui::TableSetColumnIndex(column++) )
 					{
@@ -488,7 +476,7 @@ namespace lim
 				ImGui::TableNextRow();
 				if( ImGui::TableSetColumnIndex(column++) )
 					ImGui::Text("#triangles");
-				for( Model* md : models )
+				for( const Model* md : models )
 				{
 					if( ImGui::TableSetColumnIndex(column++) )
 					{
@@ -502,7 +490,7 @@ namespace lim
 				ImGui::TableNextRow();
 				if( ImGui::TableSetColumnIndex(column++) )
 					ImGui::Text("boundary_x");
-				for( Model* md : models )
+				for( const Model* md : models )
 				{
 					if( ImGui::TableSetColumnIndex(column++) )
 					{
@@ -516,7 +504,7 @@ namespace lim
 				ImGui::TableNextRow();
 				if( ImGui::TableSetColumnIndex(column++) )
 					ImGui::Text("boundary_y");
-				for( Model* md : models )
+				for( const Model* md : models )
 				{
 					if( ImGui::TableSetColumnIndex(column++) )
 					{
@@ -531,7 +519,7 @@ namespace lim
 				ImGui::TableNextRow();
 				if( ImGui::TableSetColumnIndex(column++) )
 					ImGui::Text("#meshes");
-				for( Model* md : models )
+				for( const Model* md : models )
 				{
 					if( ImGui::TableSetColumnIndex(column++) )
 					{
@@ -545,7 +533,7 @@ namespace lim
 				ImGui::TableNextRow();
 				if( ImGui::TableSetColumnIndex(column++) )
 					ImGui::Text("#textures");
-				for( Model* md : models )
+				for( const Model* md : models )
 				{
 					if( ImGui::TableSetColumnIndex(column++) )
 					{
@@ -563,12 +551,12 @@ namespace lim
 		/* show texture */
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
 
-		ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), [](ImGuiSizeCallbackData *data)
-											{
-			data->DesiredSize.x = glm::max(data->DesiredSize.x, data->DesiredSize.y);
-			data->DesiredSize.y = data->DesiredSize.x; });
 
-		// todo
+		// Todo
+		// ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), [](ImGuiSizeCallbackData* data) {
+		// 	data->DesiredSize.x = glm::max(data->DesiredSize.x, data->DesiredSize.y);
+		// 	data->DesiredSize.y = data->DesiredSize.x; 
+		// });
 		// if( MapBaker::bakedNormalMapPointer != nullptr )
 		// {
 		// 	if( ImGui::Begin("Baked Normal Map##simp") )
@@ -578,16 +566,16 @@ namespace lim
 		// 		glm::vec2 rectSize{vMax.x - vMin.x, vMax.y - vMin.y};
 		// 		// ImGui::Text("%f %f", rectSize.x, rectSize.y);
 		// 		const float minLength = glm::min(rectSize.x, rectSize.y);
-		// 		GLuint rtId = MapBaker::bakedNormalMapPointer->getRenderedTex();
+		// 		GLuint rtId = MapBaker::bakedNormalMapPointer.getRenderedTex();
 		// 		ImGui::Image(INT2VOIDP(rtId), ImVec2{minLength, minLength}, ImVec2{0, 1}, ImVec2{1, 0});
 		// 	}
 		// 	ImGui::End();
 		// }
 
-		ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), [](ImGuiSizeCallbackData *data)
-											{
+		ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), [](ImGuiSizeCallbackData* data) {
 			data->DesiredSize.x = glm::max(data->DesiredSize.x, data->DesiredSize.y);
-			data->DesiredSize.y = data->DesiredSize.x; });
+			data->DesiredSize.y = data->DesiredSize.x; 
+		});
 
 		if( ImGui::Begin("shadowMap##simp") && light.shadow_enabled )
 		{
@@ -621,16 +609,16 @@ namespace lim
 	void AppSimplification::mouseBtnCallback(int button, int action, int mods)
 	{
 		// 이전에 선택된 viewport 저장
-		if( viewports[last_focused_vp_idx]->hovered == false )
+		if( viewports[last_focused_vp_idx].hovered == false )
 		{
 			for( int i = 0; i < nr_viewports; i++ )
 			{
 				if( last_focused_vp_idx == i )
 					continue;
 
-				if( viewports[i]->hovered ) {
+				if( viewports[i].hovered ) {
 					if( is_same_camera ) {
-						viewports[last_focused_vp_idx]->camera.copySettingTo(viewports[i]->camera);
+						viewports[last_focused_vp_idx].camera.copySettingTo(viewports[i].camera);
 					}
 					last_focused_vp_idx = i;
 				}

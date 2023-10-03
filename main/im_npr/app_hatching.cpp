@@ -13,7 +13,7 @@
 #include <stb_image.h>
 #include <limbrary/log.h>
 #include <imgui.h>
-#include <limbrary/model_view/code_mesh.h>
+#include <limbrary/model_view/mesh_maked.h>
 #include <limbrary/asset_lib.h>
 #include <limbrary/model_view/renderer.h>
 
@@ -75,20 +75,24 @@ namespace lim
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 	}
 
+
+
+
 	AppHatching::AppHatching(): AppBase(1200, 780, APP_NAME)
+		, viewport("viewport##hatching", new MsFramebuffer())
 	{
 		glEnable(GL_CULL_FACE);
 		//glCullFace(GL_FRONT);
 		//glPolygonMode(GL_FRONT, GL_LINE);
-		stbi_set_flip_vertically_on_load(true);
 
-		h_prog = new Program("hatching prog", APP_DIR);
-		h_prog->attatch("hatching.vs").attatch("hatching.fs").link();
-		h_prog->use_hook = [this](const Program& prog) 
+		h_prog.name = "hatching prog";
+		h_prog.home_dir = APP_DIR;
+		h_prog.attatch("hatching.vs").attatch("hatching.fs").link();
+		h_prog.use_hook = [this](const Program& prog) 
 		{
-			prog.setUniform("uvScale", uv_scale);
-			prog.setUniform("fixedArtMapIdx", fixed_art_map_idx);
-			prog.setUniform("is6way", is6way);
+			prog.bind("uvScale", uv_scale);
+			prog.bind("fixedArtMapIdx", fixed_art_map_idx);
+			prog.bind("is6way", is6way);
 
 
 			/* texture binding */
@@ -99,48 +103,47 @@ namespace lim
 				glBindTexture(GL_TEXTURE_2D, am.tex_id);
 			}
 			int tam[6] = {5,4,3,2,1,0};
-			prog.setUniform("tam", tam, nr_tones);
+			prog.bind("tam", nr_tones, tam);
 		};
 
-		h_mat = new Material();
-		h_mat->prog = h_prog;
+		h_mat.prog = &h_prog;
+		viewport.getFb().clear_color ={0.1f, 0.1f, 0.1f, 1.0f};
 
-		viewport = new ViewportWithCamera("viewport##hatching", new MsFramebuffer());
-		viewport->framebuffer->clear_color ={0.1f, 0.1f, 0.1f, 1.0f};
-
-		models.push_back( importModelFromFile("assets/models/dwarf/Dwarf_2_Low.obj", true, false) );
-		models.back()->default_mat = h_mat;
+		models.push_back({});
+		models.back().importFromFile("assets/models/dwarf/Dwarf_2_Low.obj", true, false);
+		models.back().default_material = &h_mat;
 	
-		models.push_back( new Model("sphere") );
-		models.back()->root.meshes.push_back(AssetLib::get().sphere);
-		models.back()->default_mat = h_mat;
-		models.back()->updateUnitScaleAndPivot();
+		models.push_back( {} );
+		models.back().name = "sphere";
+		models.back().root.meshes.push_back(&AssetLib::get().sphere);
+		models.back().default_material = &h_mat;
+		models.back().updateUnitScaleAndPivot();
 
-		models.push_back( importModelFromFile("assets/models/objs/bunny.obj", true, false) );
-		models.back()->default_mat = h_mat;
+		models.push_back({});
+		models.back().importFromFile("assets/models/dwarf/Dwarf_2_Low.obj", true, false);
+		models.back().default_material = &h_mat;
 
 		const float interModels = 2.f;
 		const float biasModels = -interModels*(models.size()-1)*0.5f;
 
 		for( int i = 0; i<models.size(); i++ ) {
-			models[i]->position ={biasModels + interModels*i, 0, 0};
-			models[i]->updateModelMat();
+			models[i].position ={biasModels + interModels*i, 0, 0};
+			models[i].updateModelMat();
 		}
 
 		// models.push_back( new Model("ground") );
-		// models.back()->meshes.push_back( code_mesh::genPlane() );
-		// models.back()->root.meshes.push_back(models.back()->meshes.back());
-		// models.back()->scale = glm::vec3(20);
-		// models.back()->updateModelMat();
+		// models.back().meshes.push_back( mesh_maked::genPlane() );
+		// models.back().root.meshes.push_back(models.back().meshes.back());
+		// models.back().scale = glm::vec3(20);
+		// models.back().updateModelMat();
 
-		light = new Light();
-		light->setRotate(30.f, 30.f, 10.f);
-		light_model = new Model("light model");
-		light_model->my_meshes.push_back(code_mesh::genSphere(8, 4));
-		light_model->root.meshes.push_back(light_model->my_meshes.back()); // delete sphere when delete model!
-		light_model->position = light->position;
-		light_model->scale = glm::vec3(0.3f);
-		light_model->updateModelMat();
+		light.setRotate(30.f, 30.f, 10.f);
+		light_model.name = "light";
+		light_model.my_meshes.push_back(new MeshSphere(8, 4));
+		light_model.root.meshes.push_back(light_model.my_meshes.back()); // delete sphere when delete model!
+		light_model.position = light.position;
+		light_model.scale = glm::vec3(0.3f);
+		light_model.updateModelMat();
 
 		const std::string basename = "assets/images/TAM/default.bmp";
 		for( int tone=0; tone<nr_tones; tone++ ) {
@@ -149,28 +152,19 @@ namespace lim
 			tam.push_back(new ArtMap(filename, 0));
 		}
 
-		scene.lights.push_back(light);
-		scene.models = models;
+		scene.lights.push_back(&light);
+		for(const auto& md: models) {
+			scene.models.push_back(&md);
+		}
 	}
 	AppHatching::~AppHatching()
 	{
-		delete h_mat;
-		delete h_prog;
-		delete viewport;
-		for( Model* m : models )
-			delete m;
-		delete light;
-		delete light_model;
 		for( ArtMap* t : tam ) {
 			delete t;
 		}
 	}
 	void AppHatching::update()
 	{
-		/* render to fbo in viewport */
-
-		render(*viewport->framebuffer, viewport->camera, scene);
-		
 		// clear backbuffer
 		glEnable(GL_DEPTH_TEST);
 		glDisable(GL_MULTISAMPLE);
@@ -179,12 +173,16 @@ namespace lim
 		glViewport(0, 0, fb_width, fb_height);
 		glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		/* render to fbo in viewport */
+
+		render(viewport.getFb(), viewport.camera, scene);
 	}
 	void AppHatching::renderImGui()
 	{
 		ImGui::DockSpaceOverViewport();
 
-		viewport->drawImGui();
+		viewport.drawImGui();
 
 		/* controller */
 		ImGui::Begin("controller##hatching");
@@ -202,13 +200,11 @@ namespace lim
 		if( ImGui::DragFloat("light yaw", &litPi, litPiSpd, 0, 360, "%.3f") ||
 			ImGui::DragFloat("light pitch", &litTheta, litThetaSpd, 0, 180, "%.3f") ) {
 
-			light->setRotate(litTheta, litPi);
-			light_model->position = light->position;
-			light_model->updateModelMat();
+			light.setRotate(litTheta, litPi);
+			light_model.position = light.position;
+			light_model.updateModelMat();
 		}
-		ImGui::Text("pos %f %f %f", light->position.x, light->position.y, light->position.z);
-
-
+		ImGui::Text("pos %f %f %f", light.position.x, light.position.y, light.position.z);
 
 		ImGui::SliderInt("use fixed art map", &fixed_art_map_idx, -1, nr_tones-1);
 		
@@ -216,7 +212,7 @@ namespace lim
 
 		/* state view */
 		ImGui::Begin("state##hatching");
-		ImGui::Text("fovy: %f", viewport->camera.fovy);
+		ImGui::Text("fovy: %f", viewport.camera.fovy);
 		ImGui::End();
 	}
 }

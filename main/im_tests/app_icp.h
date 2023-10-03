@@ -7,7 +7,7 @@
 #define __app_icp_h_
 
 #include <limbrary/application.h>
-#include <limbrary/model_view/auto_camera.h>
+#include <limbrary/model_view/camera_auto.h>
 #include <limbrary/program.h>
 #include <limbrary/model_view/model.h>
 

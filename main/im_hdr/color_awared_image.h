@@ -644,22 +644,22 @@ RAW bit :)");
 		{
 			fb.bind();
 
-			GLuint pid = colorAwareDisplayProg->use();
+			const Program& prog = colorAwareDisplayProg->use();
 
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, tex_id);
 
-			setUniform(pid, "tex", 0);
-			setUniform(pid, "nrChannels", nr_channels);
+			prog.bind("tex", 0);
+			prog.bind("nrChannels", nr_channels);
 			
-			setUniform(pid, "inputGamma", profile.gamma);
-			setUniform(pid, "outputGamma", output_gamma);
+			prog.bind("inputGamma", profile.gamma);
+			prog.bind("outputGamma", output_gamma);
 
-			setUniform(pid, "RGB2PCS", RGB2PCS);
-			setUniform(pid, "chromaticAdaptation", chromatic_adaptation);
-			setUniform(pid, "PCS2RGB", PCS2RGB);
+			prog.bind("RGB2PCS", RGB2PCS);
+			prog.bind("chromaticAdaptation", chromatic_adaptation);
+			prog.bind("PCS2RGB", PCS2RGB);
 
-			AssetLib::get().screen_quad->drawGL();
+			AssetLib::get().screen_quad.drawGL();
 
 			fb.unbind();
 		}

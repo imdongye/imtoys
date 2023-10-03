@@ -6,24 +6,37 @@ namespace lim
 	Viewport::Viewport(std::string_view _name, Framebuffer* createdFB)
 		:name(_name)
 	{
+		if( createdFB==nullptr )
+			return;
 		framebuffer = createdFB;
 		framebuffer->resize(256, 256); // default size
 	}
 	Viewport::Viewport(Viewport&& src) noexcept
-		: name(std::move(src.name))
-		, resize_callbacks(std::move(src.resize_callbacks))
 	{
+		*this = std::move(src);
+	}
+	Viewport& Viewport::operator=(Viewport&& src) noexcept
+	{
+		if(this == &src)
+			return *this;
+		if( framebuffer )
+			delete framebuffer;
+		framebuffer= src.framebuffer;
+		src.framebuffer = nullptr;
+
+		name = std::move(src.name);
+
+		resize_callbacks = std::move(src.resize_callbacks);
+
 		window_mode = src.window_mode;
 		window_opened = src.window_opened;
 		hovered = src.hovered;
 		focused = src.focused;
 		dragging = src.dragging;
 		mouse_pos = src.mouse_pos;
-
-		framebuffer= src.framebuffer;
-		src.framebuffer = nullptr;
+		return *this; 
 	}
-	Viewport::~Viewport()
+	Viewport::~Viewport() noexcept
 	{
 		if( framebuffer )
 			delete framebuffer;
@@ -104,5 +117,9 @@ namespace lim
 	const float& Viewport::getAspect() const
 	{
 		return framebuffer->aspect;
+	}
+	Framebuffer& Viewport::getFb()
+	{
+		return *framebuffer;
 	}
 }

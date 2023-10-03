@@ -12,7 +12,7 @@ namespace lim
 {
 	AppHdr::AppHdr(): AppBase(1400, 780, APP_NAME)
 	{
-		stbi_set_flip_vertically_on_load(true);
+		
 
 		addImage("assets/images/italy-P3.jpg");
 	}
@@ -38,7 +38,7 @@ namespace lim
 		vpName = std::string(imgs.back()->name)+std::string(" - color awared");
 		vp = new Viewport(vpName, new Framebuffer());
 		vp->resize(vpWidth, vpHeight);
-		vp->framebuffer->clear_color = {1,1,1,1};
+		vp->getFb().clear_color = {1,1,1,1};
 		vp->window_mode = Viewport::WM_FIXED_RATIO;
 		viewports.push_back(vp);
 
@@ -65,8 +65,8 @@ namespace lim
 				viewports.erase(viewports.begin()+i);
 				i--;  continue;
 			}
-			imgs[i]->toFramebuffer(*viewports[i]->framebuffer); // todo
-			//texIDToFramebuffer(imgs[i]->tex_id, *viewports[i]->framebuffer, 1.f);
+			imgs[i]->toFramebuffer(viewports[i]->getFb()); // todo
+			//texIDToFramebuffer(imgs[i]->tex_id, *viewports[i]->getFb(), 1.f);
 		}
 
 		// clear backbuffer

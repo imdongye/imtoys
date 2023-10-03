@@ -22,6 +22,9 @@ namespace lim
 		// log::pureln("read %s\n %s", FILE_PATH, ijson.dump(2));
 		recent_model_paths = ijson["recentModelPaths"];
 	}
+	AppPref::~AppPref()
+	{
+	}
 
 	AppPref& AppPref::get()
 	{

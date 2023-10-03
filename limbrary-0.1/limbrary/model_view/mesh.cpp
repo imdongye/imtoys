@@ -25,8 +25,32 @@ namespace lim
 	Mesh::Mesh()
 	{
 	}
+	Mesh::Mesh(const Mesh& src)
+	{
+		name = src.name+"-clone";
+		poss = src.poss;
+		nors = src.nors;
+		uvs = src.uvs;
+		cols = src.cols;
+		tangents = src.tangents;
+		bitangents = src.bitangents;
+		bone_ids = src.bone_ids;
+		bending_factors = src.bending_factors;
+		tris = src.tris;
+		initGL();
+
+		material = src.material;
+	}
 	Mesh::Mesh(Mesh&& src) noexcept
 	{
+		*this = std::move(src);
+	}
+	Mesh& Mesh::operator=(Mesh&& src) noexcept
+	{
+		if( this == &src ) 
+			return *this;
+		Mesh::~Mesh();
+
 		name = move(src.name);
 		material = src.material;
 		poss 			= move(src.poss);
@@ -59,51 +83,11 @@ namespace lim
 		src.bone_id_buf = 0;
 		src.bending_factor_buf = 0;
 		src.element_buf = 0;
+		return *this;
 	}
-	Mesh::~Mesh()
+	Mesh::~Mesh() noexcept
 	{
 		deinitGL();
-	}
-	void Mesh::drawGL() const
-	{
-		glBindVertexArray(vert_array);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, element_buf);
-		glDrawElements(GL_TRIANGLES, tris.size()*3, GL_UNSIGNED_INT, 0);
-	}
-	Mesh* Mesh::clone()
-	{
-		Mesh* copy = new Mesh();
-		copy->name = name+"-copied";
-		copy->poss = poss;
-		copy->nors = nors;
-		copy->uvs = uvs;
-		copy->cols = cols;
-		copy->tangents = tangents;
-		copy->bitangents = bitangents;
-		copy->bone_ids = bone_ids;
-		copy->bending_factors = bending_factors;
-		copy->tris = tris;
-		initGL();
-
-		copy->material = material;
-		
-		return copy;
-	}
-	void Mesh::deinitGL()
-	{
-		deleteGLBuf(pos_buf);
-		deleteGLBuf(nor_buf);
-		deleteGLBuf(uv_buf);
-		deleteGLBuf(tangent_buf);
-		deleteGLBuf(bitangent_buf);
-		deleteGLBuf(color_buf);
-		deleteGLBuf(bone_id_buf);
-		deleteGLBuf(bending_factor_buf);
-		deleteGLBuf(element_buf);
-		if( vert_array>0 ){
-			glDeleteVertexArrays(1, &vert_array);
-			vert_array = 0;
-		}
 	}
 	// upload VRAM
 	void Mesh::initGL()
@@ -177,6 +161,28 @@ namespace lim
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, element_buf);
 			glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uvec3)*tris.size(), tris.data(), GL_STATIC_DRAW);
 		}
+	}
+	void Mesh::deinitGL()
+	{
+		deleteGLBuf(pos_buf);
+		deleteGLBuf(nor_buf);
+		deleteGLBuf(uv_buf);
+		deleteGLBuf(tangent_buf);
+		deleteGLBuf(bitangent_buf);
+		deleteGLBuf(color_buf);
+		deleteGLBuf(bone_id_buf);
+		deleteGLBuf(bending_factor_buf);
+		deleteGLBuf(element_buf);
+		if( vert_array>0 ){
+			glDeleteVertexArrays(1, &vert_array);
+			vert_array = 0;
+		}
+	}
+	void Mesh::drawGL() const
+	{
+		glBindVertexArray(vert_array);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, element_buf);
+		glDrawElements(GL_TRIANGLES, tris.size()*3, GL_UNSIGNED_INT, 0);
 	}
 	void Mesh::print() const
 	{

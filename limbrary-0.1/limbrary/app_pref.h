@@ -36,9 +36,10 @@ namespace lim
 		int selected_app_idx = 0;
 		std::string selected_app_name = "none";
 	private:
-		AppPref();
 		AppPref(const AppPref&)=delete;
 		AppPref& operator=(const AppPref&)=delete;
+		AppPref();
+		~AppPref();
 	public:
 		static AppPref& get();
 		void clearData();

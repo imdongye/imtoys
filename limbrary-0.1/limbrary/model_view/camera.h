@@ -54,7 +54,9 @@ namespace lim
 		glm::mat4 proj_mat;
 	public:
 		Camera();
-		virtual ~Camera();
+		Camera(Camera&& src) noexcept;
+		Camera& operator=(Camera&& src) noexcept;
+		virtual ~Camera() noexcept;
 	public:
 		void updateFromPosAndPivot();
 		void updateProjMat();

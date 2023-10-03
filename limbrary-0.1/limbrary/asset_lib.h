@@ -9,8 +9,8 @@
 
 #include <glad/glad.h>
 #include "program.h"
-#include "model_view/mesh.h"
 #include "model_view/material.h"
+#include "model_view/mesh_maked.h"
 
 namespace lim
 {
@@ -23,24 +23,24 @@ namespace lim
 	{
 	public:
 		//****** property ******//
-		Program* tex_to_quad_prog;
-		Program* gray_to_quad_prog;
-		Program* depth_prog;
+		Program tex_to_quad_prog;
+		Program depth_prog;
 		
-		Program* default_prog;
-		Material* default_mat;
+		Program default_prog;
+		Material default_material;
 		
-		Mesh* screen_quad; // only poss
-		Mesh* sphere;
-		Mesh* cube;
+		MeshQuad screen_quad; // only poss
+		MeshSphere sphere;
+		MeshCube cube;
 
 	private:
-		inline static AssetLib* instance = nullptr;
 		AssetLib(const AssetLib&)=delete;
 		AssetLib& operator=(const AssetLib&)=delete;
 		AssetLib();
 		~AssetLib();
+		inline static AssetLib* instance = nullptr;
 	public:
+		static void create();
 		static AssetLib& get();
 		static void destroy();
 	};

@@ -18,7 +18,7 @@
 #include <limbrary/program.h>
 #include <limbrary/model_view/light.h>
 #include <limbrary/model_view/model.h>
-#include <limbrary/model_view/viewport_with_camera.h>
+#include <limbrary/model_view/camera_auto.h>
 #include <limbrary/model_view/scene.h>
 
 
@@ -35,7 +35,7 @@ namespace lim
 		bool is_same_camera = true;
 
 		int selected_prog_idx = 0;
-		std::vector<Program*> programs;
+		std::vector<Program> programs;
 		std::vector<const char*> shader_names;
 
 		bool simplify_trigger = false;
@@ -48,7 +48,8 @@ namespace lim
 		Model ground;
 
 		int nr_viewports = 0;
-		std::vector<ViewportWithCamera*> viewports;
+		std::vector<ViewportWithCamera> viewports;
+		// scene에서 주소값을 사용하기때문에 
 		std::vector<Model*> models;
 		std::vector<Scene> scenes;
 

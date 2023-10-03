@@ -13,6 +13,9 @@ From : https://learnopengl.com/Advanced-OpenGL/Anti-Aliasing
 glTexImage는 텍스쳐 크기를 동적으로 바꿀수있다고 명세되어있지만 문제가 있다고함.
 => 그냥 del후 gen해서 다시 bind 해주자.
 
+Note:
+you must use after resize
+
 Todo:
 1. 생성
 2. bind등 매 frame에 실행되는 민감한함수들 v table에 참조로 성능안좋아질거같은데 최적화 필요함.
@@ -31,44 +34,48 @@ namespace lim
 	class Framebuffer
 	{
 	public:
-		GLuint fbo, color_tex;
-		glm::vec4 clear_color;
-		GLuint width, height;
-		float aspect;
+		GLuint fbo = 0;
+		GLuint color_tex = 0;
+		glm::vec4 clear_color = {0.05f, 0.09f, 0.11f, 1.0f};
+		GLuint width = 0;
+		GLuint height = 0;
+		float aspect = 1.f;
 	private:
 		Framebuffer(const Framebuffer&) = delete;
 		Framebuffer& operator=(const Framebuffer&) = delete;
 	public:
 		Framebuffer();
 		Framebuffer(Framebuffer&& src) noexcept;
-		virtual ~Framebuffer();
+		Framebuffer& operator=(Framebuffer&& src) noexcept;
+		virtual ~Framebuffer() noexcept;
 	protected:
-		void genGlFboColor();
 		virtual void initGL();
+		void genGlFboColor();
 	public:
-		bool resize(GLuint _width, GLuint _height);
-		bool resize(GLuint square);
 		virtual void bind() const;
 		virtual void unbind() const;
 		/* ms framebuffer return intermidiate */
 		virtual GLuint getRenderedTex() const;
+		bool resize(GLuint _width, GLuint _height);
+		bool resize(GLuint square);
 	};
 
 	// depth_tex 샘플링 가능, 성능저하
 	class TexFramebuffer: public Framebuffer
 	{
 	public:
-		GLuint depth_tex;
+		GLuint depth_tex = 0;
 	private:
 		TexFramebuffer(const TexFramebuffer&) = delete;
 		TexFramebuffer& operator=(const TexFramebuffer&) = delete;
 	public:
 		TexFramebuffer();
 		TexFramebuffer(TexFramebuffer&& src) noexcept;
-		virtual ~TexFramebuffer() override;
+		TexFramebuffer& operator=(TexFramebuffer&& src) noexcept;
+		virtual ~TexFramebuffer() noexcept override;
 	protected:
-		void genGLDepthTex();
 		virtual void initGL() override;
+		void genGLDepthTex();
 	public:
 		virtual void bind() const override;
 	};
@@ -77,17 +84,18 @@ namespace lim
 	class RboFramebuffer: public Framebuffer
 	{
 	public:
-		GLuint depth_rbo;
+		GLuint depth_rbo = 0;
 	private:
 		RboFramebuffer(const RboFramebuffer&) = delete;
 		RboFramebuffer& operator=(const RboFramebuffer&) = delete;
 	public:
 		RboFramebuffer();
 		RboFramebuffer(RboFramebuffer&& src) noexcept;
-		virtual ~RboFramebuffer();
+		RboFramebuffer& operator=(RboFramebuffer&& src) noexcept;
+		virtual ~RboFramebuffer() noexcept override;
 	protected:
-		void genGLDepthRbo();
 		virtual void initGL() override;
+		void genGLDepthRbo();
 	public:
 		virtual void bind() const override;
 	};
@@ -95,19 +103,20 @@ namespace lim
 	// 멀티셈플링으로 안티엘리어싱됨
 	class MsFramebuffer: public RboFramebuffer
 	{
-	public:
-		const int samples = 8;
+	private:
+		int samples = 8;
 		Framebuffer intermediate_fb;
 	private:
 		MsFramebuffer(const MsFramebuffer&) = delete;
 		MsFramebuffer& operator=(const MsFramebuffer&) = delete;
 	public:
-		MsFramebuffer();
+		MsFramebuffer(int samples = 8);
 		MsFramebuffer(MsFramebuffer&& src) noexcept;
-		virtual ~MsFramebuffer();
+		MsFramebuffer& operator=(MsFramebuffer&& src) noexcept;
+		virtual ~MsFramebuffer() noexcept override;
 	protected:
-		void genGLFboMs();
 		virtual void initGL() override;
+		void genGLFboMs();
 	public:
 		virtual void bind() const override;
 		virtual void unbind() const override;

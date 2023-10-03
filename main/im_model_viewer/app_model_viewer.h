@@ -7,6 +7,10 @@
 #define __app_model_viewer_h_
 
 #include <limbrary/application.h>
+#include <limbrary/model_view/camera_auto.h>
+#include <limbrary/model_view/model.h>
+#include <limbrary/program.h>
+#include <limbrary/model_view/light.h>
 
 namespace lim
 {
@@ -16,10 +20,18 @@ namespace lim
 		inline static constexpr CStr APP_NAME = "model viewer";
 		inline static constexpr CStr APP_DIR  = "im_model_viewer";
 		inline static constexpr CStr APP_DISC = "model viewer for test materials";
+	private:
+		std::vector<ViewportWithCamera> viewports;
+		std::vector<Model> models;
+		Program program;
+		Light light;
 	public:
 		AppModelViewer();
 		~AppModelViewer();
 	private:
+		void addModelViewer(const char* path);
+		void drawModelsToViewports();
+
 		virtual void update() override;
 		virtual void renderImGui() override;
 		virtual void keyCallback(int key, int scancode, int action, int mods) override;

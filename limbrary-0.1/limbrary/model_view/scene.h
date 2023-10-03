@@ -20,8 +20,8 @@ namespace lim
 	// Copyable
 	struct Scene
 	{
-		std::vector<Model*> models;
-		std::vector<Light*> lights;
+		std::vector<const Model*> models;
+		std::vector<const Light*> lights;
 	};
 }
 #endif

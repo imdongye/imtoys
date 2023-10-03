@@ -96,7 +96,7 @@ namespace lim
 		ImGui_ImplGlfw_InitForOpenGL(window, true);
 		ImGui_ImplOpenGL3_Init("#version 410");
 
-		AssetLib::get();
+		AssetLib::create();
 	}
 
 	AppBase::~AppBase()

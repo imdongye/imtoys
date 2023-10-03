@@ -11,7 +11,7 @@
 
 #include <limbrary/application.h>
 #include <limbrary/program.h>
-#include <limbrary/model_view/viewport_with_camera.h>
+#include <limbrary/model_view/camera_auto.h>
 #include <limbrary/model_view/model.h>
 #include <glad/glad.h>
 #include <limbrary/model_view/scene.h>
@@ -37,13 +37,13 @@ namespace lim
 	private:
 		bool start_dragging = false;
 		
-		Material* h_mat;
-		Program* h_prog;
+		Material h_mat;
+		Program h_prog;
 
-		ViewportWithCamera* viewport;
-		std::vector<Model*> models;
-		Light* light;
-		Model* light_model;
+		ViewportWithCamera viewport;
+		std::vector<Model> models;
+		Light light;
+		Model light_model;
 		Scene scene;
 	private:
 		static constexpr GLint nr_tones = 6;

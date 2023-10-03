@@ -32,7 +32,7 @@ namespace
 
 	const aiExportFormatDesc* _formats[32] = { nullptr, };
 
-	Model* _src_md = nullptr;
+	const Model* _src_md = nullptr;
 
 	inline aiVector3D toAiV( const vec3& v ) {
 		return { v.x, v.y, v.z };
@@ -65,61 +65,60 @@ namespace
 			}
 	};
 
-	aiMaterial* convertMaterial(Material* material)
+	aiMaterial* convertMaterial(const Material& src)
 	{
-		const Material& mat = *material;
 		aiMaterial* aiMat = new aiMaterial();
 		aiColor3D temp3d;
 		aiColor4D temp4d;
 		aiString tempStr;
 		float tempFloat;
 
-		temp4d = toAiC(mat.Kd);
+		temp4d = toAiC(src.Kd);
 		aiMat->AddProperty(&temp4d, 1, AI_MATKEY_COLOR_DIFFUSE);
 
-		tempFloat = mat.Kd.a;
+		tempFloat = src.Kd.a;
 		aiMat->AddProperty(&tempFloat, 1, AI_MATKEY_OPACITY);
 
-		temp4d = toAiC(mat.Ks);
+		temp4d = toAiC(src.Ks);
 		aiMat->AddProperty(&temp4d, 1, AI_MATKEY_COLOR_SPECULAR);
 
-		tempFloat = mat.Ks.a;
+		tempFloat = src.Ks.a;
 		aiMat->AddProperty(&tempFloat, 1, AI_MATKEY_SHININESS);
 
 		// AI_MATKEY_SHININESS_STRENGTH
 
-		temp3d = toAiC(mat.Ka);
+		temp3d = toAiC(src.Ka);
 		aiMat->AddProperty(&temp3d, 1, AI_MATKEY_COLOR_AMBIENT);
 		
-		temp3d = toAiC(mat.Ke);
+		temp3d = toAiC(src.Ke);
 		aiMat->AddProperty(&temp3d, 1, AI_MATKEY_COLOR_EMISSIVE);
 
-		temp3d = toAiC(mat.Tf);
+		temp3d = toAiC(src.Tf);
 		aiMat->AddProperty(&temp3d, 1, AI_MATKEY_COLOR_TRANSPARENT);
 
 
-		if( mat.map_Kd != nullptr ) {
-			tempStr = aiString(mat.map_Kd->path.data());
+		if( src.map_Kd != nullptr ) {
+			tempStr = aiString(src.map_Kd->path.data());
 			aiMat->AddProperty( &tempStr, AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE, 0) );
 		}
 		
 
-		if( mat.map_Ks != nullptr ) {
-			tempStr = aiString(mat.map_Ks->path.data());
+		if( src.map_Ks != nullptr ) {
+			tempStr = aiString(src.map_Ks->path.data());
 			aiMat->AddProperty( &tempStr, AI_MATKEY_TEXTURE(aiTextureType_SPECULAR, 0) );
 		}
 
-		if( mat.map_Ka != nullptr ) {
-			tempStr = aiString(mat.map_Ka->path.data());
+		if( src.map_Ka != nullptr ) {
+			tempStr = aiString(src.map_Ka->path.data());
 			aiMat->AddProperty( &tempStr, AI_MATKEY_TEXTURE(aiTextureType_AMBIENT, 0) );
 		}
 		
-		if( mat.map_Bump != nullptr ) {
-			tempStr = aiString(mat.map_Bump->path.data());
-			if( mat.map_Flags & lim::Material::MF_Nor ) {
+		if( src.map_Bump != nullptr ) {
+			tempStr = aiString(src.map_Bump->path.data());
+			if( src.map_Flags & lim::Material::MF_Nor ) {
 				aiMat->AddProperty( &tempStr, AI_MATKEY_TEXTURE(aiTextureType_NORMALS, 0) );
 			}
-			else if( mat.map_Flags & lim::Material::MF_Bump ) {
+			else if( src.map_Flags & lim::Material::MF_Bump ) {
 				aiMat->AddProperty( &tempStr, AI_MATKEY_TEXTURE(aiTextureType_HEIGHT, 0) );
 			}
 			else {
@@ -130,43 +129,41 @@ namespace
 		return aiMat;
 	}
 
-	aiMesh* convertMesh(Mesh* mesh) 
+	aiMesh* convertMesh(const Mesh& src) 
 	{
-		const Mesh& ms = *mesh;
-
 		aiMesh* aiMs = new aiMesh();
 		// From: https://github.com/assimp/assimp/issues/203
 		aiMs->mPrimitiveTypes = aiPrimitiveType_TRIANGLE;
 
-		GLuint idxOfMat = findIdx(_src_md->materials, ms.material);
+		GLuint idxOfMat = findIdx(_src_md->my_materials, src.material);
 		aiMs->mMaterialIndex = idxOfMat;
 
-		GLuint nrTemp = mesh->poss.size();
+		GLuint nrTemp = src.poss.size();
 		aiMs->mNumVertices = nrTemp;
 		if( nrTemp>0 ) {
 			aiMs->mVertices = new aiVector3D[nrTemp];
 			for( int i=0; i<nrTemp; i++ ) {
-				aiMs->mVertices[i] = toAiV(ms.poss[i]);
+				aiMs->mVertices[i] = toAiV(src.poss[i]);
 			}
 		}
 
-		nrTemp = mesh->nors.size();
+		nrTemp = src.nors.size();
 		if( nrTemp>0 ) {
 			aiMs->mNormals = new aiVector3D[nrTemp];
 			for( int i=0; i<nrTemp; i++ ) {
-				aiMs->mNormals[i] = toAiV(ms.nors[i]);
+				aiMs->mNormals[i] = toAiV(src.nors[i]);
 			}
 		}
 
-		nrTemp = mesh->uvs.size();
+		nrTemp = src.uvs.size();
 		if( nrTemp>0 ) {
 			aiMs->mTextureCoords[0] = new aiVector3D[nrTemp];
 			for( int i=0; i<nrTemp; i++ ) {
-				aiMs->mTextureCoords[0][i] = {ms.uvs[i].x, ms.uvs[i].y, 0.f};
+				aiMs->mTextureCoords[0][i] = {src.uvs[i].x, src.uvs[i].y, 0.f};
 			}
 		}
 		
-		nrTemp = mesh->tris.size();
+		nrTemp = src.tris.size();
 		if( nrTemp>0 ) {
 			aiMs->mNumFaces = nrTemp;
 			aiMs->mFaces = new aiFace[nrTemp];
@@ -175,7 +172,7 @@ namespace
 				face.mNumIndices = 3;
 				face.mIndices = new unsigned int[3];
 				for( int j=0; j<3; j++ ) {
-					face.mIndices[j] = ms.tris[i][j];
+					face.mIndices[j] = src.tris[i][j];
 				}
 			}
 		}
@@ -186,7 +183,7 @@ namespace
 	aiNode* recursiveConvertTree(const Model::Node& src)
 	{
 		aiNode* node = new aiNode();
-		std::vector<Mesh*>& modelMeshes = _src_md->my_meshes;
+		const std::vector<Mesh*>& modelMeshes = _src_md->my_meshes;
 		node->mTransformation = toAi(src.transformation);
 
 		const size_t nrMeshes = src.meshes.size();
@@ -205,26 +202,25 @@ namespace
 		return node;
 	}
 
-	aiScene* makeScene(Model* model)
+	aiScene* makeScene(const Model& md)
 	{
-		const Model& md = *model;
 		aiScene *scene = new aiScene();
 
-		scene->mFlags = model->ai_backup_flags;
+		scene->mFlags = md.ai_backup_flags;
 
 		// only one marerial
-		const GLuint nrMats = md.materials.size();
+		const GLuint nrMats = md.my_materials.size();
 		scene->mNumMaterials = nrMats;
 		scene->mMaterials = new aiMaterial*[nrMats];
 		for( int i = 0; i<nrMats; i++ ) {
-			scene->mMaterials[i] = convertMaterial(md.materials[i]);
+			scene->mMaterials[i] = convertMaterial(*md.my_materials[i]);
 		}
 		
 		const GLuint nrMeshes = md.my_meshes.size();
 		scene->mNumMeshes = nrMeshes;
 		scene->mMeshes = new aiMesh*[nrMeshes];
 		for( int i=0; i<nrMeshes; i++ ) {
-			scene->mMeshes[i] = convertMesh(md.my_meshes[i]);
+			scene->mMeshes[i] = convertMesh(*md.my_meshes[i]);
 		}
 		
 		scene->mRootNode = recursiveConvertTree(md.root);
@@ -241,7 +237,7 @@ namespace lim
 	}
 	const aiExportFormatDesc* getExportFormatInfo(int idx)
 	{
-		if (_formats[0] == nullptr){
+		if (_formats[0] == nullptr) {
 			for (int i = 0; i < _nr_formats; i++)
 				_formats[i] = aiGetExportFormatDescription(i);
 		}
@@ -250,34 +246,30 @@ namespace lim
 		return _formats[idx];
 	}
 
-	void exportModelToFile(Model* model, size_t pIndex, std::string_view exportPath)
+	bool Model::exportToFile(size_t pIndex, std::string_view exportPath)
 	{
 		namespace fs = std::filesystem;
 		const aiExportFormatDesc *format = _formats[pIndex];
-		_src_md = model;
+		_src_md = this;
 		std::string md_dir(exportPath);
-		md_dir += "/"+_src_md->name+"_"+format->fileExtension;
-		
-		size_t lastSlashPos = _src_md->path.find_last_of("/\\");
-		for(Texture* tex : _src_md->my_textures) {
-			tex->path = tex->path.c_str() + lastSlashPos+1;
-		}
+		md_dir += "/"+name+"_"+format->fileExtension;
 
 		fs::path createdDir(md_dir);
 		if( !std::filesystem::is_directory(createdDir) )
 			fs::create_directories(createdDir);
 
-		std::string mdPath = md_dir + "/" + model->name +'.'+format->fileExtension;
-		_src_md->path = mdPath;
+		size_t lastSlashPosInOriMdPath = path.find_last_of("/\\");
+		std::string mdPath = md_dir + "/" + name +'.'+format->fileExtension;
+		path = mdPath;
 
 		/* export model */
 		double elapsedTime = glfwGetTime();
-		aiScene* rstScene = makeScene(model);
+		aiScene* rstScene = makeScene(*this);
 		log::pure("done! convert model for export in %.2f\n", glfwGetTime()-elapsedTime);
 		
 		elapsedTime = glfwGetTime();
 		const GLuint severity = Assimp::Logger::Debugging|Assimp::Logger::Info|Assimp::Logger::Err|Assimp::Logger::Warn;
-		Assimp::DefaultLogger::create("", Assimp::Logger::VERBOSE, aiDefaultLogStream_STDOUT);
+		Assimp::DefaultLogger::create("", Assimp::Logger::VERBOSE);
 		Assimp::DefaultLogger::get()->attachStream(new LimExportLogStream(), severity);
 
 		if( aiExportScene(rstScene, format->id, mdPath.c_str(), 0)!=AI_SUCCESS )
@@ -286,7 +278,7 @@ namespace lim
 			delete rstScene;
 			rstScene = nullptr;
 			Assimp::DefaultLogger::kill();
-			return;
+			return false;
 		}
 		Assimp::DefaultLogger::kill();
 		delete rstScene;
@@ -296,10 +288,12 @@ namespace lim
 
 		/* export texture */
 		elapsedTime = glfwGetTime();
-		for( Texture* tex : model->my_textures )
+		for( Texture* tex : my_textures )
 		{
-			std::string newTexPath = md_dir + "/" +  tex->path;
+			std::string newTexPath = tex->path.c_str() + lastSlashPosInOriMdPath+1;
+			newTexPath = md_dir + "/" +  newTexPath;
 			tex->path = newTexPath;
+
 			size_t lastTexSlashPos = newTexPath.find_last_of("/\\");
 			std::string newTexDirStr = newTexPath.substr(0, lastTexSlashPos);
 
@@ -326,6 +320,8 @@ namespace lim
 			// fs::copy(fromTexPath, toTexPath, fs::copy_options::skip_existing);
 			// log::pure("copied texture: %s to %s\n", fromTexPath.string().c_str(), toTexPath.string().c_str());
 		}
+
 		log::pure("done! export texture in %.2f\n\n", glfwGetTime()-elapsedTime);
+		return true;
 	}
 }

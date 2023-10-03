@@ -12,7 +12,7 @@ Todo:
 
 */
 
-#include <limbrary/model_view/auto_camera.h>
+#include <limbrary/model_view/camera_auto.h>
 #include <limbrary/app_pref.h>
 #include <limbrary/application.h>
 #include <imgui.h>
@@ -28,7 +28,30 @@ namespace lim
 	AutoCamera::AutoCamera()
 	{
 	}
-	AutoCamera::~AutoCamera()
+	AutoCamera::AutoCamera(AutoCamera&& src) noexcept
+	{
+		*this = std::move(src);
+	}
+	AutoCamera& AutoCamera::operator=(AutoCamera&& src) noexcept
+	{
+		if( this==&src )
+			return *this;
+		Camera::operator=(std::move(src));
+
+		viewing_mode = src.viewing_mode;
+		move_free_spd = src.move_free_spd;
+		rot_free_spd = src.rot_free_spd;
+		move_pivot_spd = src.move_pivot_spd;
+		rot_pivot_spd = src.rot_pivot_spd;
+		move_pivot_scroll_spd = src.move_pivot_scroll_spd;
+		rot_pivot_scroll_spd = src.rot_pivot_scroll_spd;
+		zoom_fovy_spd = src.zoom_fovy_spd;
+		zoom_dist_spd = src.zoom_dist_spd;
+		prev_mouse_x = src.prev_mouse_x;
+		prev_mouse_y = src.prev_mouse_y;
+		return *this;
+	}
+	AutoCamera::~AutoCamera() noexcept
 	{
 	}
 	void AutoCamera::setViewMode(int vm)
@@ -130,6 +153,35 @@ namespace lim
 
 	WinAutoCamera::WinAutoCamera()
 	{
+		registerCallbacks();
+	}
+	WinAutoCamera::WinAutoCamera(WinAutoCamera&& src) noexcept
+		: AutoCamera(std::move(src))
+	{
+		registerCallbacks();
+	}
+	WinAutoCamera& WinAutoCamera::operator=(WinAutoCamera&& src) noexcept
+	{
+		if( this==&src )
+			return *this;
+		WinAutoCamera::~WinAutoCamera();
+		AutoCamera::operator=(std::move(src));
+
+		registerCallbacks();
+		return *this;
+	}
+	WinAutoCamera::~WinAutoCamera() noexcept
+	{
+		// unregister callbacks
+		AppBase& app = *AppPref::get().app;
+		app.framebuffer_size_callbacks.erase(this);
+		app.update_hooks.erase(this);
+		app.mouse_btn_callbacks.erase(this);
+		app.cursor_pos_callbacks.erase(this);
+		app.scroll_callbacks.erase(this);
+	}
+	void WinAutoCamera::registerCallbacks()
+	{
 		AppBase& app = *AppPref::get().app;
 		_win = app.window;
 
@@ -165,31 +217,67 @@ namespace lim
 			processInput(dt); 
 		};
 	}
-	WinAutoCamera::WinAutoCamera(WinAutoCamera&& src) noexcept
-		: AutoCamera(std::move(src))
+
+
+
+
+	VpAutoCamera::VpAutoCamera()
 	{
-		AppBase& app = *AppPref::get().app;
-		app.key_callbacks.changeKey(&src, this);
-		app.framebuffer_size_callbacks.changeKey(&src, this);
-		app.mouse_btn_callbacks.changeKey(&src, this);
-		app.cursor_pos_callbacks.changeKey(&src, this);
-		app.scroll_callbacks.changeKey(&src, this);
-		app.update_hooks.changeKey(&src, this);
 	}
-	WinAutoCamera::~WinAutoCamera()
+	VpAutoCamera::VpAutoCamera(VpAutoCamera&& src) noexcept
+		:AutoCamera(std::move(src))
 	{
+		registerCallbacks(src.vp);
+	}
+	VpAutoCamera& VpAutoCamera::operator=(VpAutoCamera&& src) noexcept
+	{
+		if( this==&src )
+			return *this;
+		VpAutoCamera::~VpAutoCamera();
+		AutoCamera::operator=(std::move(src));
+
+		registerCallbacks(src.vp);
+		return *this;
+	}
+	VpAutoCamera::~VpAutoCamera() noexcept
+	{
+		if( vp==nullptr )
+			return;
 		// unregister callbacks
 		AppBase& app = *AppPref::get().app;
-		app.framebuffer_size_callbacks.erase(this);
+		app.key_callbacks.erase(this);
+        vp->resize_callbacks.erase(this);
 		app.update_hooks.erase(this);
 		app.mouse_btn_callbacks.erase(this);
 		app.cursor_pos_callbacks.erase(this);
 		app.scroll_callbacks.erase(this);
 	}
-
-	VpAutoCamera::VpAutoCamera(Viewport* _vp)
+	void VpAutoCamera::copySettingTo(VpAutoCamera& cam)
 	{
-        vp = _vp;
+		cam.position = position;
+		cam.fovy = fovy;
+		cam.distance = distance;
+		cam.pivot = pivot;
+		cam.front = front;
+		cam.up = up;
+		cam.right = right;
+		cam.view_mat = view_mat;
+		cam.proj_mat = proj_mat;
+		cam.viewing_mode = viewing_mode;
+		cam.move_free_spd = move_free_spd;
+		cam.rot_free_spd = rot_free_spd;
+		cam.move_pivot_spd = move_pivot_spd;
+		cam.rot_pivot_spd = rot_pivot_spd;
+		cam.rot_pivot_scroll_spd = rot_pivot_scroll_spd;
+		cam.move_pivot_scroll_spd = move_pivot_scroll_spd;
+		cam.zoom_fovy_spd = zoom_fovy_spd;
+		cam.zoom_dist_spd = zoom_dist_spd;
+	}
+	void VpAutoCamera::registerCallbacks(Viewport* _vp)
+	{
+		vp = _vp;
+		if( vp == nullptr )
+			return;
 		
         aspect = vp->getAspect();
 		updateProjMat();
@@ -224,50 +312,30 @@ namespace lim
 			processInput(dt); 
 		};
 	}
-	VpAutoCamera::VpAutoCamera(VpAutoCamera&& src) noexcept
-		: AutoCamera(std::move(src))
-	{
-		vp = src.vp;
-		src.vp = nullptr;
 
-		AppBase& app = *AppPref::get().app;
-		app.key_callbacks.changeKey(&src, this);
-		vp->resize_callbacks.changeKey(&src, this);
-		app.mouse_btn_callbacks.changeKey(&src, this);
-		app.cursor_pos_callbacks.changeKey(&src, this);
-		app.scroll_callbacks.changeKey(&src, this);
-		app.update_hooks.changeKey(&src, this);
-	}
-	VpAutoCamera::~VpAutoCamera()
+	ViewportWithCamera::ViewportWithCamera(std::string_view _name, Framebuffer* createdFB)
+			: Viewport(_name, createdFB)
 	{
-		// unregister callbacks
-		AppBase& app = *AppPref::get().app;
-		app.key_callbacks.erase(this);
-        vp->resize_callbacks.erase(this);
-		app.update_hooks.erase(this);
-		app.mouse_btn_callbacks.erase(this);
-		app.cursor_pos_callbacks.erase(this);
-		app.scroll_callbacks.erase(this);
+		camera.registerCallbacks(this);
 	}
-	void VpAutoCamera::copySettingTo(VpAutoCamera& cam)
+	ViewportWithCamera::ViewportWithCamera(ViewportWithCamera&& src) noexcept
+		: Viewport(std::move(src))
+		, camera()
 	{
-		cam.position = position;
-		cam.fovy = fovy;
-		cam.distance = distance;
-		cam.pivot = pivot;
-		cam.front = front;
-		cam.up = up;
-		cam.right = right;
-		cam.view_mat = view_mat;
-		cam.proj_mat = proj_mat;
-		cam.viewing_mode = viewing_mode;
-		cam.move_free_spd = move_free_spd;
-		cam.rot_free_spd = rot_free_spd;
-		cam.move_pivot_spd = move_pivot_spd;
-		cam.rot_pivot_spd = rot_pivot_spd;
-		cam.rot_pivot_scroll_spd = rot_pivot_scroll_spd;
-		cam.move_pivot_scroll_spd = move_pivot_scroll_spd;
-		cam.zoom_fovy_spd = zoom_fovy_spd;
-		cam.zoom_dist_spd = zoom_dist_spd;
+		camera.AutoCamera::operator=(std::move(src.camera));
+		camera.registerCallbacks(this);
+	}
+	ViewportWithCamera& ViewportWithCamera::operator=(ViewportWithCamera&& src) noexcept
+	{
+		if( this==&src )
+			return *this;
+		Viewport::operator=(std::move(src));
+
+		camera.AutoCamera::operator=(std::move(src.camera));
+		camera.registerCallbacks(this);
+		return *this;
+	}
+	ViewportWithCamera::~ViewportWithCamera() noexcept
+	{
 	}
 }

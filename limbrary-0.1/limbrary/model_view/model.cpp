@@ -27,23 +27,23 @@ using namespace lim;
 
 namespace
 {
-	void correctMatTexLink( Material& to, const Material& from
-		, const std::vector<Texture*>& toTexs, const std::vector<Texture*>& fromTexs )
+	void correctMatTexLink( const Material& src,  Material& dst
+		, const std::vector<Texture*>& srcTexs, std::vector<Texture*>& dstTexs )
 	{
-		if( to.map_Kd ) {
-			to.map_Kd = toTexs[findIdx(fromTexs, from.map_Kd)];
+		if( dst.map_Kd ) {
+			dst.map_Kd = dstTexs[findIdx(srcTexs, src.map_Kd)];
 		}
-		if( to.map_Ks ) {
-			to.map_Ks = toTexs[findIdx(fromTexs, from.map_Ks)];
+		if( dst.map_Ks ) {
+			dst.map_Ks = dstTexs[findIdx(srcTexs, src.map_Ks)];
 		}
-		if( to.map_Ka ) {
-			to.map_Ka = toTexs[findIdx(fromTexs, from.map_Ka)];
+		if( dst.map_Ka ) {
+			dst.map_Ka = dstTexs[findIdx(srcTexs, src.map_Ka)];
 		}
-		if( to.map_Ns ) {
-			to.map_Ns = toTexs[findIdx(fromTexs, from.map_Ns)];
+		if( dst.map_Ns ) {
+			dst.map_Ns = dstTexs[findIdx(srcTexs, src.map_Ns)];
 		}
-		if( to.map_Bump ) {
-			to.map_Bump = toTexs[findIdx(fromTexs, from.map_Bump)];
+		if( dst.map_Bump ) {
+			dst.map_Bump = dstTexs[findIdx(srcTexs, src.map_Bump)];
 		}
 	}
 }
@@ -51,85 +51,116 @@ namespace
 namespace lim
 {
 	Model::Model(std::string_view _name)
-		:name(_name)
+		: name(_name)
 	{
-		default_mat = AssetLib::get().default_mat;
+		default_material = &AssetLib::get().default_material;
 	}
-	Model::~Model()
+	Model::Model(const Model& src)
 	{
-		for( auto mat : materials )
-			delete mat;
-		for( auto tex : my_textures )
-			delete tex;
-		for( auto mesh : my_meshes )
-			delete mesh;
-	}
-	Model* Model::clone()
-	{
-		Model* rst = new Model();
-		Model& dup = *rst;
+		log::warn("Model is copied\n\n");
+		name = src.name;
+		path = src.path;
 
-		dup.name = name;
-		dup.path = path;
+		position = src.position;
+		orientation = src.orientation;
+		scale = src.scale;
+		pivot_mat = src.pivot_mat;
+		model_mat = src.model_mat;
+		default_material = src.default_material;
 
-		dup.position = position;
-		dup.orientation = orientation;
-		dup.scale = scale;
-		dup.pivot_mat = pivot_mat;
-		dup.model_mat = model_mat;
-	
-		dup.default_mat = default_mat;
-		dup.my_textures.resize(my_textures.size());
-		for( int i=0; i<my_textures.size(); i++ ) {
-			dup.my_textures[i] = my_textures[i]->clone();
-		}
-		dup.materials.resize(materials.size());
-		for( int i=0; i<materials.size(); i++ ) {
-			dup.materials[i] = new Material(*materials[i]);
-			correctMatTexLink(*dup.materials[i], *materials[i], dup.my_textures, my_textures);
+		my_textures.reserve(src.my_textures.size());
+		for( Texture* srcTex : src.my_textures ) {
+			my_textures.push_back( new Texture(*srcTex) ); // lvalue clone with copy consturctor
 		}
 
-		dup.my_meshes.reserve(my_meshes.size());
-		for( Mesh* ms : my_meshes ) {
-			dup.my_meshes.push_back( ms->clone() );
-			if( ms->material == nullptr ) {
-				dup.my_meshes.back()->material = nullptr;
+		my_materials.reserve(src.my_materials.size());
+		for( int i=0; i<src.my_materials.size(); i++ ) {
+			my_materials.push_back( new Material(*src.my_materials[i]) ); // lvalue clone with copy consturctor
+			correctMatTexLink( *src.my_materials[i], *my_materials[i], src.my_textures, my_textures);
+		}
+
+		my_meshes.reserve(src.my_meshes.size());
+		for( Mesh* srcMs : src.my_meshes ) {
+			my_meshes.push_back( new Mesh(*srcMs) ); // lvalue clone with copy consturctor
+			if( srcMs->material == nullptr ) {
 				continue;
 			}
-			int matIdx = findIdx(materials, ms->material);
-			dup.my_meshes.back()->material = dup.materials[matIdx];
+			int matIdx = findIdx(src.my_materials, srcMs->material);
+			my_meshes.back()->material = my_materials[matIdx];
 		}
 
-		std::stack<Node*> origs;
-		std::stack<Node*> copys;
-		origs.push(&root);
-		copys.push(&dup.root);
-		while( origs.size()>0 ) {
-			Node* orig = origs.top(); origs.pop();
-			Node* copy = copys.top(); copys.pop();
+		std::stack<const Node*> srcN;
+		std::stack<Node*> dstN;
+		srcN.push(&src.root);
+		dstN.push(&root);
+		while( srcN.size()>0 ) {
+			const Node* orig = srcN.top(); srcN.pop();
+			Node* copy = dstN.top(); dstN.pop();
 			
 			copy->meshes.reserve(orig->meshes.size());
 			for(Mesh* mesh : orig->meshes) {
-				copy->meshes.push_back(dup.my_meshes[findIdx(my_meshes, mesh)]);
+				copy->meshes.push_back(my_meshes[findIdx(src.my_meshes, mesh)]);
 			}
 			copy->childs.reserve(orig->childs.size());
-			for(Node& oriChild : orig->childs) {
-				origs.push(&oriChild);
+			for(const Node& oriChild : orig->childs) {
+				srcN.push(&oriChild);
 				copy->childs.push_back({});
-				copys.push(&copy->childs.back());
+				dstN.push(&copy->childs.back());
 			}
 		}
 
-		dup.nr_vertices = nr_vertices;
-		dup.nr_triangles = nr_triangles;
-		dup.boundary_max = boundary_max;
-		dup.boundary_min = boundary_min;
-		dup.boundary_size = boundary_size;
-		dup.pivoted_scaled_bottom_height = pivoted_scaled_bottom_height;
-		dup.ai_backup_flags = ai_backup_flags;
-		
-		return rst;
+		nr_vertices = src.nr_vertices;
+		nr_triangles = src.nr_triangles;
+		boundary_max = src.boundary_max;
+		boundary_min = src.boundary_min;
+		boundary_size = src.boundary_size;
+		pivoted_scaled_bottom_height = src.pivoted_scaled_bottom_height;
+		ai_backup_flags = src.ai_backup_flags;
 	}
+	Model::Model(Model&& src) noexcept
+	{
+		*this = std::move(src);
+	}
+	Model& Model::operator=(Model&& src) noexcept
+	{
+		if( this==&src )
+			return *this;
+		Model::~Model();
+
+		name = src.name;
+		path = src.path;
+		position = src.position;
+		scale = src.scale;
+		pivot_mat = src.pivot_mat;
+		model_mat = src.model_mat;
+		
+		root = src.root;
+		default_material = src.default_material;
+		my_materials = std::move(src.my_materials);
+		my_textures = std::move(src.my_textures);
+		my_meshes = std::move(src.my_meshes);
+
+		nr_vertices = src.nr_vertices;
+		nr_triangles = src.nr_triangles;
+		boundary_size = src.boundary_size;
+		boundary_min = src.boundary_min;
+		boundary_max = src.boundary_max;
+		pivoted_scaled_bottom_height = src.pivoted_scaled_bottom_height;
+
+		ai_backup_flags = src.ai_backup_flags;
+		return *this;
+	}
+	Model::~Model() noexcept
+	{
+		for( Material* mat : my_materials )
+			delete mat;
+		for( Texture* tex : my_textures )
+			delete tex;
+		for( Mesh* ms : my_meshes )
+			delete ms;
+	}
+
+
 	void Model::updateModelMat()
 	{
 		glm::mat4 translateMat = glm::translate(position);
@@ -183,5 +214,4 @@ namespace lim
 
 		updateModelMat();
 	}
-	
 }

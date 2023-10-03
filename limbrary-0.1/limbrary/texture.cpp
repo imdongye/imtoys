@@ -46,13 +46,27 @@ namespace lim
 	TexBase::TexBase()
 	{
 	}
-	TexBase::TexBase(TexBase&& src) noexcept
+	TexBase::TexBase(const TexBase& src)
 	{
 		copyTexBaseProps(src, *this);
+		initGL();
+
+		copyTexToTex(src.tex_id, *this);
+	}
+	TexBase::TexBase(TexBase&& src) noexcept
+	{
+		*this = std::move(src);
+	}
+	TexBase& TexBase::operator=(TexBase&& src) noexcept
+	{
+		if(this == &src)
+			return *this;
+		copyTexBaseProps(src, *this);
+		deinitGL();
 		tex_id = src.tex_id;
 		src.tex_id = 0;
 	}
-	TexBase::~TexBase()
+	TexBase::~TexBase() noexcept
 	{
 		deinitGL();
 	}
@@ -76,18 +90,17 @@ namespace lim
 		glGenerateMipmap(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
-	void TexBase::bind(GLuint pid, GLuint activeSlot, const std::string_view shaderUniformName) const
-	{
-		glActiveTexture(GL_TEXTURE0 + activeSlot);
-		glBindTexture(GL_TEXTURE_2D, tex_id);
-		setUniform(pid, shaderUniformName, (int)activeSlot);
-	}
-	
 
 
 
 	Texture::Texture()
 	{
+	}
+	Texture::Texture(const Texture& src)
+		: TexBase(src)
+	{
+		path = src.path;
+		format = src.path.c_str()+(src.format-src.path.c_str());
 	}
 	Texture::Texture(Texture&& src) noexcept
 		:TexBase(std::move(src))
@@ -98,32 +111,12 @@ namespace lim
 	Texture::~Texture()
 	{
 	}
-	Texture* Texture::clone()
-	{
-		Texture* rst = new Texture();
-		Texture& dup = *rst;
-		
-		copyTexBaseProps(*this, dup);
-		dup.path = path;
-		dup.format = dup.path.c_str()+(format-path.c_str());
-		
-		dup.initGL();
-
-		GLuint srcFbo;
-		glGenFramebuffers( 1, &srcFbo );
-		glBindFramebuffer( GL_FRAMEBUFFER, srcFbo );
-		glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex_id, 0 );
-		glBindTexture(GL_TEXTURE_2D, dup.tex_id);
-		glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, width, height);
-		glGenerateMipmap(GL_TEXTURE_2D);
-		glBindFramebuffer( GL_FRAMEBUFFER, 0 );
-
-		return rst;
-	}
 	bool Texture::initFromImage(std::string_view _path, GLint internalFormat)
 	{
 		path = _path;
 		void* data;
+
+		stbi_set_flip_vertically_on_load(true);
 
 		// hdr loading
 		if( stbi_is_hdr(path.data()) ) {
@@ -177,6 +170,8 @@ namespace lim
 	{
 		path = _path;
 		void *data;
+
+		stbi_set_flip_vertically_on_load(true);
 
 		// hdr loading
 		if( stbi_is_hdr(path.data()) ) {
@@ -257,24 +252,24 @@ namespace lim
 	
 
 	
-	void drawTexToQuad(GLuint texId, float gamma) 
+	void drawTexToQuad(const GLuint texId, float gamma) 
 	{
-		const Program& prog = *AssetLib::get().tex_to_quad_prog;
+		const Program& prog = AssetLib::get().tex_to_quad_prog;
 
 		prog.use();
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texId);
-		prog.setUniform("tex", 0);
-		prog.setUniform("gamma", gamma);
+		prog.bind("tex", 0);
+		prog.bind("gamma", gamma);
 
-		glBindVertexArray(AssetLib::get().screen_quad->vert_array);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, AssetLib::get().screen_quad->element_buf);
+		glBindVertexArray(AssetLib::get().screen_quad.vert_array);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, AssetLib::get().screen_quad.element_buf);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
-	void copyTexToTex(GLuint srcTexId, TexBase& dstTex) 
+	void copyTexToTex(const GLuint srcTexId, TexBase& dstTex) 
 	{
 		GLuint srcFbo = 0;
 		glGenFramebuffers(1, &srcFbo);

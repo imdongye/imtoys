@@ -15,8 +15,6 @@ namespace lim
 {
 	AppFluid::AppFluid(): AppBase(1200, 780, APP_NAME), viewport("viewport##fluid", new Framebuffer)
 	{
-		stbi_set_flip_vertically_on_load(true);
-
 		canvas = new CanvasColor(viewport.getWidth(), viewport.getHeight());
 
 		// 람다에서 전체 캡쳐를 해두어도 컴파일타임에 사용하는 변수만 복사 및 레퍼런싱한다.
@@ -65,10 +63,10 @@ namespace lim
 
 		glDisable(GL_DEPTH_TEST);
 		glDisable(GL_MULTISAMPLE);
-		viewport.framebuffer->bind();
+		viewport.getFb().bind();
 		
 		drawTexToQuad(canvas->tex_id);
-		viewport.framebuffer->unbind();
+		viewport.getFb().unbind();
 
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);

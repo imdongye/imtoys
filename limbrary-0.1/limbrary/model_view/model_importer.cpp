@@ -25,7 +25,7 @@ using namespace glm;
 
 namespace
 {
-	Model* _rst = nullptr; // temp model
+	Model* _rst_md = nullptr; // temp model
 	std::string _model_dir;
 
 
@@ -62,30 +62,28 @@ namespace
 
 	Texture* loadTexture(string texPath, GLint internalFormat=GL_RGB8)
 	{
-		vector<Texture*>& loadedTestures = _rst->my_textures;
+		std::vector<Texture*>& loadedTexs = _rst_md->my_textures; 
 
 		// assimp가 뒤에오는 옵션을 읽지 않음 (ex: eye.png -bm 0.4) 그래서 아래와 같이 필터링한다.
 		texPath = texPath.substr(0, texPath.find_first_of(' '));
 		texPath = _model_dir + "/" + texPath;
 
-		for( size_t i = 0; i < loadedTestures.size(); i++ ) {
-			if( texPath.compare(loadedTestures[i]->path)==0 ) {
-				return loadedTestures[i];
+		for( size_t i = 0; i < loadedTexs.size(); i++ ) {
+			if( texPath.compare(loadedTexs[i]->path)==0 ) {
+				return loadedTexs[i];
 			}
 		}
 
-		// kd일때만 linear space변환
-		Texture* tex = new Texture();
-		tex->initFromImage(texPath, internalFormat);
-		loadedTestures.push_back(tex);
+		loadedTexs.push_back(new Texture());
+		loadedTexs.back()->initFromImage(texPath, internalFormat);
 
-		return tex;
+		return loadedTexs.back();
 	}
 
 	Material* convertMaterial(aiMaterial* aiMat)
 	{
-		Material* pMat = new Material();
-		Material& mat = *pMat;
+		Material* rst = new Material();
+		Material& mat = *rst;
 		aiColor3D temp3d;
 		aiColor4D temp4d;
 		aiString tempStr;
@@ -119,11 +117,11 @@ namespace
 		}
 		if( aiMat->GetTexture(aiTextureType_DIFFUSE, 0, &tempStr) == AI_SUCCESS ) {
 			mat.map_Flags |= Material::MF_Kd;
-			mat.map_Kd = loadTexture(tempStr.C_Str(), GL_SRGB8);
+			mat.map_Kd = loadTexture(tempStr.C_Str(), GL_SRGB8); // kd일때만 linear space변환
 		}
 		if( aiMat->GetTexture(aiTextureType_SPECULAR, 0, &tempStr) == AI_SUCCESS ) {
 			mat.map_Flags |= Material::MF_Ks;
-			mat.map_Ks = loadTexture(tempStr.C_Str(), GL_SRGB8);
+			mat.map_Ks = loadTexture(tempStr.C_Str(), GL_SRGB8); // Todo: Ka Ks map 에서도 해야하나?
 		}
 		if( aiMat->GetTexture(aiTextureType_AMBIENT, 0, &tempStr) == AI_SUCCESS ) {
 			mat.map_Flags |= Material::MF_Ka;
@@ -138,130 +136,130 @@ namespace
 			mat.map_Bump = loadTexture(tempStr.C_Str(), GL_RGB8);
 		}
 
-		return pMat;
+		return rst;
 	}
 
-	Mesh* convertMesh(aiMesh* aiMesh)
+	Mesh* convertMesh(const aiMesh* aiMesh)
 	{
-		Mesh* pMs = new Mesh();
-		Mesh& mesh = *pMs;
-		vec3& boundaryMax = _rst->boundary_max;
-		vec3& boundaryMin = _rst->boundary_min;
+		Mesh* rst = new Mesh();
+		Mesh& ms = *rst;
+		vec3& boundaryMax = _rst_md->boundary_max;
+		vec3& boundaryMin = _rst_md->boundary_min;
+		
+		ms.name = aiMesh->mName.C_Str();
+		
 
-		const vector<Material*>& mats = _rst->materials;
-
-		if( mats.size()>0 ) {
-			mesh.material = mats[aiMesh->mMaterialIndex];
+		if( _rst_md->my_materials.size()>0 ) {
+			ms.material = _rst_md->my_materials[aiMesh->mMaterialIndex];
 		} else {
-			mesh.material = nullptr;
+			ms.material = nullptr;
 		}
 
-		mesh.poss.resize( aiMesh->mNumVertices );
+		ms.poss.resize( aiMesh->mNumVertices );
 		for( GLuint i=0; i<aiMesh->mNumVertices; i++ ) {
-			mesh.poss[i] = toGLM( aiMesh->mVertices[i] );
-			vec3& p = mesh.poss[i];
+			ms.poss[i] = toGLM( aiMesh->mVertices[i] );
+			vec3& p = ms.poss[i];
 			// 요소들끼리의 min max
 			boundaryMax = glm::max(boundaryMax, p);
 			boundaryMin = glm::min(boundaryMin, p);
 		}
-		_rst->nr_vertices += mesh.poss.size();
+		_rst_md->nr_vertices += ms.poss.size();
 
 		if( aiMesh->HasNormals() ) {
-			mesh.nors.resize( aiMesh->mNumVertices );
+			ms.nors.resize( aiMesh->mNumVertices );
 			for( GLuint i=0; i<aiMesh->mNumVertices; i++ ) {
-				mesh.nors[i] = toGLM( aiMesh->mNormals[i] );
+				ms.nors[i] = toGLM( aiMesh->mNormals[i] );
 			}
 		}
 
 		if( aiMesh->HasTextureCoords(0) ) {
-			mesh.uvs.resize( aiMesh->mNumVertices );
+			ms.uvs.resize( aiMesh->mNumVertices );
 			for( GLuint i=0; i<aiMesh->mNumVertices; i++ ) {
-				// Todo: why aiVector3D
-				mesh.uvs[i] = {aiMesh->mTextureCoords[0][i].x, aiMesh->mTextureCoords[0][i].y};
+				// 2차원 uv좌표만 허용
+				ms.uvs[i] = {aiMesh->mTextureCoords[0][i].x, aiMesh->mTextureCoords[0][i].y};
 			}
 		}
 
 		if( aiMesh->HasVertexColors(0) ) {
-			mesh.cols.resize( aiMesh->mNumVertices );
+			ms.cols.resize( aiMesh->mNumVertices );
 			for( GLuint i=0; i<aiMesh->mNumVertices; i++ ) {
-				mesh.cols[i] = toGLM( aiMesh->mColors[0][i] );
+				ms.cols[i] = toGLM( aiMesh->mColors[0][i] );
 			}
 		}
 
 		if( aiMesh->HasTangentsAndBitangents() ) {
-			mesh.tangents.resize( aiMesh->mNumVertices );
-			mesh.bitangents.resize( aiMesh->mNumVertices );
+			ms.tangents.resize( aiMesh->mNumVertices );
+			ms.bitangents.resize( aiMesh->mNumVertices );
 			for( GLuint i=0; i<aiMesh->mNumVertices; i++ ) {
-				mesh.tangents[i] = toGLM( aiMesh->mTangents[i] );
-				mesh.bitangents[i] = toGLM( aiMesh->mBitangents[i] );
+				ms.tangents[i] = toGLM( aiMesh->mTangents[i] );
+				ms.bitangents[i] = toGLM( aiMesh->mBitangents[i] );
 			}
 		}
 
 		if( aiMesh->HasBones() ) {
-			//mesh.bone_ids.resize( aiMesh->mNumVertices );
-			//mesh.bending_factors.resize( aiMesh->mNumVertices );
+			//ms.bone_ids.resize( aiMesh->mNumVertices );
+			//ms.bending_factors.resize( aiMesh->mNumVertices );
 			// for( GLuint i=0; i<aiMesh->mNumVertices; i++ ) {
 			// 	for( GLuint j=0; j<Mesh::MAX_BONE_INFLUENCE; j++ ) {
-			// 		mesh.bone_ids[i] =
-			// 		mesh.bending_factors[i] =
+			// 		ms.bone_ids[i] =
+			// 		ms.bending_factors[i] =
 			// 	}
 			// }
 		}
 
 		int nrNotTriFace = 0;
 		if( aiMesh->HasFaces() ) {
-			mesh.tris.reserve( aiMesh->mNumFaces );
+			ms.tris.reserve( aiMesh->mNumFaces );
 			for( GLuint i=0; i<aiMesh->mNumFaces; i++ ) {
 				const aiFace& face = aiMesh->mFaces[i];
 				if( face.mNumIndices !=3 ) {
 					nrNotTriFace++;
 					continue;
 				}
-				mesh.tris.push_back( uvec3(face.mIndices[0], face.mIndices[1], face.mIndices[2]));
+				ms.tris.push_back( uvec3(face.mIndices[0], face.mIndices[1], face.mIndices[2]));
 			}
-			_rst->nr_triangles += mesh.tris.size();
+			_rst_md->nr_triangles += ms.tris.size();
 		}
 		if( nrNotTriFace>0 ) {
 			log::err("find not tri face : nr %d\n", nrNotTriFace);
 		}
 
-		mesh.initGL();
+		ms.initGL();
 
-		return pMs;
+		return rst;
 	}
 
-	void recursiveConvertTree(const Model& md, const aiNode* src, Model::Node& dst) 
+	void recursiveConvertTree(const aiNode* src, Model::Node& dst) 
 	{
 		dst.transformation = toGLM(src->mTransformation);
 		for( size_t i=0; i<src->mNumMeshes; i++ )
-			dst.meshes.push_back( md.my_meshes[src->mMeshes[i]] );
+			dst.meshes.push_back( _rst_md->my_meshes[src->mMeshes[i]] );
 		for( size_t i=0; i< src->mNumChildren; i++ ) {
 			dst.childs.push_back({});
-			recursiveConvertTree(md, src->mChildren[i], dst.childs.back());
+			recursiveConvertTree( src->mChildren[i], dst.childs.back());
 		}
 	}
 }
 
 namespace lim
 {
-	Model* importModelFromFile(string_view modelPath, bool unitScaleAndPivot, bool withMaterial)
+	bool Model::importFromFile(string_view modelPath, bool unitScaleAndPivot, bool withMaterial)
 	{
 		const char* extension = strrchr(modelPath.data(), '.');
 		if( !extension ) {
 			log::err("Please provide a file with a valid extension\n");
-			return nullptr;
+			return false;
 		}
 		if ( aiIsExtensionSupported(extension) == AI_FALSE ) {
 			log::err("The specified model file extension is currently\n");
-			return nullptr;
+			return false;
 		}
 
-		_rst = new Model();
-		_rst->path = modelPath;
-		string& path = _rst->path;
+		_rst_md = this;
+		path = modelPath;
 		const size_t lastSlashPos = path.find_last_of("/\\");
 		const size_t dotPos = path.find_last_of('.');
-		_rst->name = path.substr(lastSlashPos + 1, dotPos - lastSlashPos - 1);
+		name = path.substr(lastSlashPos + 1, dotPos - lastSlashPos - 1);
 		_model_dir = (lastSlashPos == 0) ? "" : path.substr(0, lastSlashPos);
 
 		/* Assimp 설정 */
@@ -278,47 +276,46 @@ namespace lim
 
 		double elapsedTime = glfwGetTime();
 		const GLuint severity = Assimp::Logger::Debugging|Assimp::Logger::Info|Assimp::Logger::Err|Assimp::Logger::Warn;
-		Assimp::DefaultLogger::create("", Assimp::Logger::VERBOSE, aiDefaultLogStream_STDOUT);
+		Assimp::DefaultLogger::create("", Assimp::Logger::VERBOSE);
 		Assimp::DefaultLogger::get()->attachStream(new LimImportLogStream(), severity);
 		const aiScene* scene = aiImportFile(modelPath.data(), pFrags);
 		if( !scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode ) {
 			log::err("[import assimp] %s\n\n", aiGetErrorString());
-			delete _rst;
 			Assimp::DefaultLogger::kill();
-			return nullptr;
+			return false;
 		}
 		Assimp::DefaultLogger::kill();
-		_rst->ai_backup_flags = scene->mFlags;
+		ai_backup_flags = scene->mFlags;
 		log::pure("done! read file with assimp in %.2f\n", glfwGetTime()-elapsedTime);
 
 		/* import mats */
 		elapsedTime = glfwGetTime();
 		if( withMaterial ) {
-			_rst->materials.resize(scene->mNumMaterials);
+			my_materials.reserve(scene->mNumMaterials);
 			for( GLuint i=0; i<scene->mNumMaterials; i++ ) {
-				_rst->materials[i] = convertMaterial(scene->mMaterials[i]);
+				my_materials.push_back(convertMaterial(scene->mMaterials[i]));
 			}
 		}
 
 		/* import my_meshes */
-		_rst->my_meshes.resize(scene->mNumMeshes);
+		my_meshes.reserve(scene->mNumMeshes);
 		for( GLuint i=0; i<scene->mNumMeshes; i++ ) {
-			_rst->my_meshes[i] = convertMesh(scene->mMeshes[i]);
+			my_meshes.push_back(convertMesh(scene->mMeshes[i]));
 		}
-		_rst->boundary_size = _rst->boundary_max - _rst->boundary_min;
+		boundary_size = boundary_max - boundary_min;
 
 		/* set node tree structure */
-		recursiveConvertTree(*_rst, scene->mRootNode, _rst->root);
-		log::pure("[%s] convert lim::Model in %.2lf\n", _rst->name.c_str(), glfwGetTime()-elapsedTime);
-		log::pure("[%s] #meshs %d, #mats %d, #verts %d, #tris %d\n", _rst->name.c_str(), _rst->my_meshes.size(), _rst->materials.size(), _rst->nr_vertices, _rst->nr_triangles);
-		log::pure("[%s] boundary size : %f, %f, %f\n", _rst->name.c_str(), _rst->boundary_size.x, _rst->boundary_size.y, _rst->boundary_size.z);
+		recursiveConvertTree(scene->mRootNode, root);
+		log::pure("[%s] convert lim::Model in %.2lf\n", name.c_str(), glfwGetTime()-elapsedTime);
+		log::pure("[%s] #meshs %d, #mats %d, #verts %d, #tris %d\n", name.c_str(), my_meshes.size(), my_materials.size(), nr_vertices, nr_triangles);
+		log::pure("[%s] boundary size : %f, %f, %f\n", name.c_str(), boundary_size.x, boundary_size.y, boundary_size.z);
 		log::pure("done! read file with assimp in %.2f\n\n", glfwGetTime()-elapsedTime);
 
 		aiReleaseImport(scene);
 
 		if( unitScaleAndPivot ) {
-			_rst->updateUnitScaleAndPivot();
+			updateUnitScaleAndPivot();
 		}
-		return _rst;
+		return true;
 	}
 }

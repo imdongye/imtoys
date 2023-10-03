@@ -3,6 +3,7 @@
         "cwd": "${workspaceFolder}/main",
         "console": "integratedTerminal",
     },
+    //"cmake.generator": "Xcode"
     "files.associations": {
         "__bit_reference": "cpp",
         "__bits": "cpp",
@@ -110,5 +111,4 @@
         "xtree": "cpp",
         "xutility": "cpp"
     },
-    //"cmake.generator": "Xcode"
 }

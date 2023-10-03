@@ -1,6 +1,6 @@
 #include "app_gen_mesh.h"
 #include <stb_image.h>
-#include <limbrary/model_view/code_mesh.h>
+#include <limbrary/model_view/mesh_maked.h>
 #include <limbrary/model_view/renderer.h>
 #include <glm/gtx/transform.hpp>
 #include <imgui.h>
@@ -21,62 +21,62 @@ namespace lim
 		//glEnable(GL_CULL_FACE);
 		//glCullFace(GL_FRONT);
 		// glPolygonMode(GL_FRONT, GL_LINE);
-		stbi_set_flip_vertically_on_load(true);
-
 		viewport = new ViewportWithCamera("viewport##gen_mesh", new MsFramebuffer());
 		viewport->camera.move_free_spd = 4.f;
 		/* gen models */
 		models.push_back(new Model("sphere"));
-		models.back()->my_meshes.push_back(code_mesh::genSphere(50, 25));
+		models.back()->my_meshes.push_back(new MeshSphere(50, 25));
 		models.back()->root.meshes.push_back(models.back()->my_meshes.back());
 
 		models.push_back(new Model("donut"));
-		models.back()->my_meshes.push_back(code_mesh::genDonut(50, 25));
+		models.back()->my_meshes.push_back(new MeshDonut(50, 25));
 		models.back()->root.meshes.push_back(models.back()->my_meshes.back());
 
 		models.push_back(new Model("capsule"));
-		models.back()->my_meshes.push_back(code_mesh::genCapsule(50, 25));
+		models.back()->my_meshes.push_back(new MeshCapsule(50, 25));
 		models.back()->root.meshes.push_back(models.back()->my_meshes.back());
 
 		models.push_back(new Model("ico sphere"));
-		models.back()->my_meshes.push_back(code_mesh::genIcoSphere(0));
+		models.back()->my_meshes.push_back(new MeshIcoSphere(0));
 		models.back()->root.meshes.push_back(models.back()->my_meshes.back());
 
 		models.push_back(new Model("ico sphere2"));
-		models.back()->my_meshes.push_back(code_mesh::genIcoSphere(1)); // 구멍뭐지
+		models.back()->my_meshes.push_back(new MeshIcoSphere(1)); // 구멍뭐지
 		models.back()->root.meshes.push_back(models.back()->my_meshes.back());
 
 		models.push_back(new Model("ico sphere2"));
-		models.back()->my_meshes.push_back(code_mesh::genIcoSphere(2));
+		models.back()->my_meshes.push_back(new MeshIcoSphere(2));
 		models.back()->root.meshes.push_back(models.back()->my_meshes.back());
 
 		models.push_back(new Model("ico sphere2"));
-		models.back()->my_meshes.push_back(code_mesh::genIcoSphere(3));
+		models.back()->my_meshes.push_back(new MeshIcoSphere(3));
 		models.back()->root.meshes.push_back(models.back()->my_meshes.back());
 
 		models.push_back(new Model("cube sphere"));
-		models.back()->my_meshes.push_back(code_mesh::genCubeSphere(2));
+		models.back()->my_meshes.push_back(new MeshCubeSphere(2));
 		models.back()->root.meshes.push_back(models.back()->my_meshes.back());
 
 		models.push_back(new Model("cube sphere2"));
-		models.back()->my_meshes.push_back(code_mesh::genCubeSphere2(5));
+		models.back()->my_meshes.push_back(new MeshCubeSphere2(5));
 		models.back()->root.meshes.push_back(models.back()->my_meshes.back());
 
 		models.push_back(new Model("quad"));
-		models.back()->my_meshes.push_back(code_mesh::genQuad());
+		models.back()->my_meshes.push_back(new MeshQuad());
 		models.back()->root.meshes.push_back(models.back()->my_meshes.back());
 
 		models.push_back(new Model("cube"));
-		models.back()->my_meshes.push_back(code_mesh::genCube());
+		models.back()->my_meshes.push_back(new MeshCube());
 		models.back()->root.meshes.push_back(models.back()->my_meshes.back());
 
 		models.push_back(new Model("cylinder"));
-		models.back()->my_meshes.push_back(code_mesh::genCylinder(20));
+		models.back()->my_meshes.push_back(new MeshCylinder(20));
 		models.back()->root.meshes.push_back(models.back()->my_meshes.back());
 
-		models.push_back(importModelFromFile("assets/models/objs/spot.obj", true, false));
+		models.push_back(new Model());
+		models.back()->importFromFile("assets/models/objs/spot.obj", true, false);
 
-		models.push_back(importModelFromFile("assets/models/objs/Wooden Crate.obj", true, false));
+		models.push_back(new Model());
+		models.back()->importFromFile("assets/models/objs/Wooden Crate.obj", true, false);
 
 		const float interModels = 3.5f;
 		const float biasModels = -interModels * models.size() / 2.f;
@@ -88,7 +88,7 @@ namespace lim
 		}
 
 		models.push_back(new Model("plane"));
-		models.back()->my_meshes.push_back(code_mesh::genPlane());
+		models.back()->my_meshes.push_back(new MeshPlane());
 		models.back()->root.meshes.push_back(models.back()->my_meshes.back());
 		models.back()->position = glm::vec3(0, -3.5, 0);
 		models.back()->scale = glm::vec3(50.f);
@@ -96,28 +96,32 @@ namespace lim
 
 		light = new Light();
 		light_model = new Model("light model");
-		light_model->my_meshes.push_back(code_mesh::genSphere(8, 4));
+		light_model->my_meshes.push_back(new MeshSphere(8, 4));
 		light_model->root.meshes.push_back(models.back()->my_meshes.back());
 		light_model->position = light->position;
 		light_model->scale = glm::vec3(0.3f);
 		light_model->updateModelMat();
 
 		scene.lights.push_back(light);
-		scene.models = models;
+		for(const Model* md : models) {
+			scene.models.push_back(md);
+		}
 
 		debugging_tex = new Texture();
 		debugging_tex->initFromImage("assets/images/uv_grid.jpg", GL_SRGB8);
 		debugging_tex->wrap_param = GL_REPEAT;
 
-		program = new Program("debugging", APP_DIR);
+		program = new Program();
+		program->name = "debugging";
+		program->home_dir = APP_DIR;
 		program->attatch("assets/shaders/mvp.vs").attatch("debug.fs").link();
 		program->use_hook = [this](const Program& prog) {
-			prog.setUniform("time", vs_t);
+			prog.bind("time", vs_t);
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, debugging_tex->tex_id);
-			prog.setUniform("uvgridTex", 0);
+			prog.bind("uvgridTex", 0);
 		};
-		AssetLib::get().default_mat->prog = program;
+		AssetLib::get().default_material.prog = program;
 	}
 	AppGenMesh::~AppGenMesh()
 	{
@@ -133,7 +137,7 @@ namespace lim
 	void AppGenMesh::update()
 	{
 		/* render to fbo in viewport */
-		render(*viewport->framebuffer, viewport->camera, scene);
+		render(viewport->getFb(), viewport->camera, scene);
 
 		// clear backbuffer
 		glEnable(GL_DEPTH_TEST);

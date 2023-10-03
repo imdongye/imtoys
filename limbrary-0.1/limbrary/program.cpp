@@ -4,32 +4,39 @@
 
 namespace lim
 {
-	Program::Program(const char* _name, const char* homeDir)
-	: name(_name), home_dir(homeDir) 
+	Program::Program(std::string_view _name)
+		: name(_name)
 	{
 	}
 	Program::Program(Program&& src) noexcept
 	{
+		*this=std::move(src);
+	}
+	Program& Program::operator=(Program&& src) noexcept
+	{
+		if(this == &src)
+			return *this;
+		Program::~Program();
+
 		name = std::move(src.name);
 		home_dir = std::move(src.home_dir);
-		use_hook = src.use_hook;
-		uniform_location_cache = std::move(src.uniform_location_cache);
+		use_hook = std::move(src.use_hook);
+		// for( const auto [k, v] : src.uniform_location_cache )
+		// 	uniform_location_cache.insert(std::make_pair(k,v));
+
 		pid = src.pid;
 		vert_id = src.vert_id;
 		frag_id = src.frag_id;
 		geom_id = src.geom_id;
 		comp_id = src.comp_id;
-		src.pid = 0;
-		src.vert_id = 0;
-		src.frag_id = 0;
-		src.geom_id = 0;
-		src.comp_id = 0;
+		src.pid = src.vert_id =src.frag_id = src.geom_id = src.comp_id = 0;
+		return *this;
 	}
-	Program::~Program() 
+	Program::~Program() noexcept
 	{
-		clear(); 
+		deinitGL(); 
 	}
-	Program& Program::clear()
+	Program& Program::deinitGL()
 	{
 		if( pid ) glDeleteProgram(pid);
 		if( vert_id ) glDeleteShader(vert_id);
@@ -42,11 +49,6 @@ namespace lim
 	Program& Program::operator+=(const char* path)
 	{
 		return attatch(path);
-	}
-	Program& Program::setHomeDir(std::string_view dir)
-	{
-		home_dir = dir;
-		return *this;
 	}
 	Program& Program::attatch(std::string path)
 	{
@@ -91,16 +93,6 @@ namespace lim
 		log::pure("[program %s] linking success\n\n", name.c_str());
 		return *this;
 	}
-	GLuint Program::use() const
-	{
-		if( pid==0 ) {
-			log::pure("program is not linked\n");
-		}
-		glUseProgram(pid);
-		use_hook(*this);
-		return pid;
-	}
-
 	bool Program::checkCompileErrors(GLuint shader, std::string_view path)
 	{
 		GLint success;
@@ -156,15 +148,27 @@ namespace lim
 
 		return std::make_tuple(0, "none");
 	}
-	// From: https://www.youtube.com/watch?v=nBB0LGSIm5Q
-	GLint Program::getUniformLocation(const std::string_view _name) const
+
+
+	const Program& Program::use() const
 	{
-		std::string sname(_name);
-		if( uniform_location_cache.find(sname) != uniform_location_cache.end() ) {
-			return uniform_location_cache[sname];
+		if( pid==0 ) {
+			log::err("program is not linked\n");
 		}
-		GLint loc = glGetUniformLocation(pid, sname.c_str());
-		uniform_location_cache[sname] = loc;
+		glUseProgram(pid);
+		use_hook(*this);
+		return *this;
+	}
+
+	// From: https://www.youtube.com/watch?v=nBB0LGSIm5Q
+	GLint Program::getUniformLocation(const std::string& vname) const
+	{
+		// if( uniform_location_cache.find(vname) != uniform_location_cache.end() ) {
+		// 	return uniform_location_cache[vname];
+		// }
+		GLint loc = glGetUniformLocation(pid, vname.c_str());
+		//uniform_location_cache[vname] = loc;
+		//if(loc<0) log::err("missing...");
 		return loc;
 	}
 }

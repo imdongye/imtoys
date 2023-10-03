@@ -20,6 +20,7 @@ Material은 Mesh에 종속적이지 않음.
 
 namespace lim
 {
+	// clone able
 	class Mesh
 	{
 	public:
@@ -49,15 +50,16 @@ namespace lim
 		GLuint vert_array = 0;
 
 	private:
-		// disable copying
-		Mesh(const Mesh&) = delete;
 		Mesh& operator=(const Mesh&) = delete;
 	public:
 		Mesh();
+		Mesh(const Mesh& src);
 		Mesh(Mesh&& src) noexcept;
-		virtual ~Mesh();
+		Mesh& operator=(Mesh&& src) noexcept;
+		virtual ~Mesh() noexcept;
+		
 		void drawGL() const;
-		Mesh* clone();
+		Mesh clone();
 		void initGL();
 		void deinitGL();
 		void print() const;

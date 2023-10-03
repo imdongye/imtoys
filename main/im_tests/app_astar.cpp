@@ -15,7 +15,7 @@ namespace lim
 		, width(18), height(18)
 	{
 		path_finder = new PathFinder(width, height);
-		stbi_set_flip_vertically_on_load(true);
+		
 		draw_mode = PathFinder::NS_WALL;
 
 		state_colors[PathFinder::NS_ROAD] = ImColor(0.2f, 0.2f, 0.2f); // gray not filled

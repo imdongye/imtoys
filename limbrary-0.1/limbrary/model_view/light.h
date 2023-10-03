@@ -44,7 +44,8 @@ namespace lim
 	public:
 		Light();
 		Light(Light&& src) noexcept;
-		~Light();
+		Light& operator=(Light&& src) noexcept;
+		~Light() noexcept;
 		// theta=[0,180] up is origin
 		// pi=[0,360] clockwise 3pm origin 
 		// if radius<0 : maintain radius
