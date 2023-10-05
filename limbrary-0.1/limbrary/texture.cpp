@@ -55,16 +55,20 @@ namespace lim
 	}
 	TexBase::TexBase(TexBase&& src) noexcept
 	{
-		*this = std::move(src);
+		copyTexBaseProps(src, *this);
+		tex_id = src.tex_id;
+		src.tex_id = 0;
 	}
 	TexBase& TexBase::operator=(TexBase&& src) noexcept
 	{
 		if(this == &src)
 			return *this;
-		copyTexBaseProps(src, *this);
 		deinitGL();
+
+		copyTexBaseProps(src, *this);
 		tex_id = src.tex_id;
 		src.tex_id = 0;
+		return *this;
 	}
 	TexBase::~TexBase() noexcept
 	{
@@ -100,15 +104,24 @@ namespace lim
 		: TexBase(src)
 	{
 		path = src.path;
-		format = src.path.c_str()+(src.format-src.path.c_str());
+		format = path.c_str()+(src.format-src.path.c_str());
 	}
 	Texture::Texture(Texture&& src) noexcept
 		:TexBase(std::move(src))
 	{
 		path = std::move(src.path);
-		format = src.format;
+		format = path.c_str()+(src.format-src.path.c_str());
 	}
-	Texture::~Texture()
+	Texture& Texture::operator=(Texture&& src) noexcept
+	{
+		if(this == &src)
+			return *this;
+		TexBase::operator=(std::move(src));
+		path = std::move(src.path);
+		format = path.c_str()+(src.format-src.path.c_str());
+		return *this;
+	}
+	Texture::~Texture() noexcept
 	{
 	}
 	bool Texture::initFromImage(std::string_view _path, GLint internalFormat)

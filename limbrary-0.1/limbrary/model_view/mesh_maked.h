@@ -1,13 +1,14 @@
-//
-//	for generate mesh of general shape
-//  2023-01-17 / im dong ye
-//
-//	uv : upper left
-//	st : down left
-//
-//	todo :
-//	1. bumpmap normalmap확인
-//	2. https://modoocode.com/129
+/*
+
+2023-01-17 / im dong ye
+for generate mesh of general shape
+
+uv : upper left
+st : down left
+todo :
+2. https://modoocode.com/129
+
+*/
 
 #ifndef __mesh_maked_
 #define __mesh_maked_

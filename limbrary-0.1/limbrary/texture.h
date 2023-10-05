@@ -59,12 +59,13 @@ namespace lim
 		const char* format = path.c_str()+10;
 	private:
 		Texture &operator=(const Texture &) = delete;
-		Texture &operator=(Texture&&) = delete;
 	public:
 		Texture();
 		Texture(const Texture& src);
 		Texture(Texture&& src) noexcept;
+		Texture& operator=(Texture&& src) noexcept;
 		virtual ~Texture() noexcept;
+
 		bool initFromImage(std::string_view path, GLint internalFormat);
 		// nrChannels, bitPerChannel 0 is auto bit
 		bool initFromImageAuto(std::string_view path, bool convertLinear = false, int nrChannels = 0, int bitPerChannel = 0);
