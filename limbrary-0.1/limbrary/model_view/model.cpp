@@ -125,10 +125,10 @@ namespace lim
 	{
 		if( this==&src )
 			return *this;
-		Model::~Model();
+		releaseResource();
 
-		name = src.name;
-		path = src.path;
+		name = std::move(src.name);
+		path = std::move(src.path);
 		position = src.position;
 		scale = src.scale;
 		pivot_mat = src.pivot_mat;
@@ -151,6 +151,10 @@ namespace lim
 		return *this;
 	}
 	Model::~Model() noexcept
+	{
+		releaseResource();
+	}
+	void Model::releaseResource()
 	{
 		for( Material* mat : my_materials )
 			delete mat;

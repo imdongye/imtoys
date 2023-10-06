@@ -49,10 +49,10 @@ namespace lim
 	{
 		if( this == &src ) 
 			return *this;
-		Mesh::~Mesh();
+		deinitGL();
 
-		name = move(src.name);
-		material = src.material;
+		name 			= move(src.name);
+		material 		= move(src.material);
 		poss 			= move(src.poss);
 		nors 			= move(src.nors);
 		uvs 			= move(src.uvs);

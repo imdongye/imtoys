@@ -78,6 +78,7 @@ namespace lim
 		Model(Model&& src) noexcept;
 		Model& operator=(Model&& src) noexcept;
 		~Model() noexcept;
+		void releaseResource();
 		
 		void updateModelMat();
 		void updateUnitScaleAndPivot();
