@@ -86,7 +86,8 @@ namespace lim
 	private:
 		WinAutoCamera(const WinAutoCamera&) = delete;
 		WinAutoCamera& operator=(const WinAutoCamera&) = delete;
-		void registerCallbacks();
+		void initCallbacks();
+		void deinitCallbacks();
 	public:
 		WinAutoCamera();
 		WinAutoCamera(WinAutoCamera&& src) noexcept;
@@ -102,13 +103,15 @@ namespace lim
 		VpAutoCamera(const VpAutoCamera&) = delete;
 		VpAutoCamera& operator=(const VpAutoCamera&) = delete;
 	public:
-		VpAutoCamera();
+		VpAutoCamera(Viewport* vp=nullptr);
 		VpAutoCamera(VpAutoCamera&& src) noexcept;
 		VpAutoCamera& operator=(VpAutoCamera&& src) noexcept;
 		virtual ~VpAutoCamera() noexcept;
 
 		void copySettingTo(VpAutoCamera& cam);
-		void registerCallbacks(Viewport* vp);
+		void initCallbacks(Viewport* vp);
+		void deinitCallbacks();
+		friend class ViewportWithCamera;
 	};
 
 

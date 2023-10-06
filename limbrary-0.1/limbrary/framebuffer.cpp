@@ -68,6 +68,7 @@ namespace lim
 
 		if( color_tex>0 ) { glDeleteTextures(1, &color_tex); color_tex=0; }
 		glGenTextures(1, &color_tex);
+		
 		glBindTexture(GL_TEXTURE_2D, color_tex);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -233,8 +234,8 @@ namespace lim
 		glGenRenderbuffers(1, &depth_rbo);
 		glBindRenderbuffer(GL_RENDERBUFFER, depth_rbo);
 		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
-		glBindRenderbuffer(GL_RENDERBUFFER, 0);
 		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rbo);
+		glBindRenderbuffer(GL_RENDERBUFFER, 0);
 	}
 	void RboFramebuffer::bind() const
 	{

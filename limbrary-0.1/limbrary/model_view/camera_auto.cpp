@@ -153,26 +153,31 @@ namespace lim
 
 	WinAutoCamera::WinAutoCamera()
 	{
-		registerCallbacks();
+		initCallbacks();
 	}
 	WinAutoCamera::WinAutoCamera(WinAutoCamera&& src) noexcept
 		: AutoCamera(std::move(src))
 	{
-		registerCallbacks();
+		src.deinitCallbacks();
+		initCallbacks();
 	}
 	WinAutoCamera& WinAutoCamera::operator=(WinAutoCamera&& src) noexcept
 	{
 		if( this==&src )
 			return *this;
-		WinAutoCamera::~WinAutoCamera();
+		deinitCallbacks();
+		src.deinitCallbacks();
 		AutoCamera::operator=(std::move(src));
 
-		registerCallbacks();
+		initCallbacks();
 		return *this;
 	}
 	WinAutoCamera::~WinAutoCamera() noexcept
 	{
-		// unregister callbacks
+		deinitCallbacks();
+	}
+	void WinAutoCamera::deinitCallbacks()
+	{
 		AppBase& app = *AppPref::get().app;
 		app.framebuffer_size_callbacks.erase(this);
 		app.update_hooks.erase(this);
@@ -180,7 +185,7 @@ namespace lim
 		app.cursor_pos_callbacks.erase(this);
 		app.scroll_callbacks.erase(this);
 	}
-	void WinAutoCamera::registerCallbacks()
+	void WinAutoCamera::initCallbacks()
 	{
 		AppBase& app = *AppPref::get().app;
 		_win = app.window;
@@ -221,60 +226,49 @@ namespace lim
 
 
 
-	VpAutoCamera::VpAutoCamera()
+	VpAutoCamera::VpAutoCamera(Viewport* _vp)
 	{
+		initCallbacks(_vp);
 	}
 	VpAutoCamera::VpAutoCamera(VpAutoCamera&& src) noexcept
 		:AutoCamera(std::move(src))
 	{
-		registerCallbacks(src.vp);
+		src.deinitCallbacks();
+		initCallbacks(src.vp);
 	}
 	VpAutoCamera& VpAutoCamera::operator=(VpAutoCamera&& src) noexcept
 	{
 		if( this==&src )
 			return *this;
-		VpAutoCamera::~VpAutoCamera();
+
+		deinitCallbacks();
 		AutoCamera::operator=(std::move(src));
 
-		registerCallbacks(src.vp);
+		src.deinitCallbacks();
+		initCallbacks(src.vp);
 		return *this;
 	}
 	VpAutoCamera::~VpAutoCamera() noexcept
 	{
 		if( vp==nullptr )
 			return;
-		// unregister callbacks
+		deinitCallbacks();
+	}
+	void VpAutoCamera::deinitCallbacks()
+	{
 		AppBase& app = *AppPref::get().app;
-		app.key_callbacks.erase(this);
+
         vp->resize_callbacks.erase(this);
+		app.key_callbacks.erase(this);
 		app.update_hooks.erase(this);
 		app.mouse_btn_callbacks.erase(this);
 		app.cursor_pos_callbacks.erase(this);
 		app.scroll_callbacks.erase(this);
 	}
-	void VpAutoCamera::copySettingTo(VpAutoCamera& cam)
+	void VpAutoCamera::initCallbacks(Viewport* _vp)
 	{
-		cam.position = position;
-		cam.fovy = fovy;
-		cam.distance = distance;
-		cam.pivot = pivot;
-		cam.front = front;
-		cam.up = up;
-		cam.right = right;
-		cam.view_mat = view_mat;
-		cam.proj_mat = proj_mat;
-		cam.viewing_mode = viewing_mode;
-		cam.move_free_spd = move_free_spd;
-		cam.rot_free_spd = rot_free_spd;
-		cam.move_pivot_spd = move_pivot_spd;
-		cam.rot_pivot_spd = rot_pivot_spd;
-		cam.rot_pivot_scroll_spd = rot_pivot_scroll_spd;
-		cam.move_pivot_scroll_spd = move_pivot_scroll_spd;
-		cam.zoom_fovy_spd = zoom_fovy_spd;
-		cam.zoom_dist_spd = zoom_dist_spd;
-	}
-	void VpAutoCamera::registerCallbacks(Viewport* _vp)
-	{
+		if( vp )
+			deinitCallbacks();
 		vp = _vp;
 		if( vp == nullptr )
 			return;
@@ -312,18 +306,40 @@ namespace lim
 			processInput(dt); 
 		};
 	}
+	void VpAutoCamera::copySettingTo(VpAutoCamera& cam)
+	{
+		cam.position = position;
+		cam.fovy = fovy;
+		cam.distance = distance;
+		cam.pivot = pivot;
+		cam.front = front;
+		cam.up = up;
+		cam.right = right;
+		cam.view_mat = view_mat;
+		cam.proj_mat = proj_mat;
+		cam.viewing_mode = viewing_mode;
+		cam.move_free_spd = move_free_spd;
+		cam.rot_free_spd = rot_free_spd;
+		cam.move_pivot_spd = move_pivot_spd;
+		cam.rot_pivot_spd = rot_pivot_spd;
+		cam.rot_pivot_scroll_spd = rot_pivot_scroll_spd;
+		cam.move_pivot_scroll_spd = move_pivot_scroll_spd;
+		cam.zoom_fovy_spd = zoom_fovy_spd;
+		cam.zoom_dist_spd = zoom_dist_spd;
+	}
+
 
 	ViewportWithCamera::ViewportWithCamera(std::string_view _name, Framebuffer* createdFB)
-			: Viewport(_name, createdFB)
+			: Viewport(_name, createdFB), camera(this)
 	{
-		camera.registerCallbacks(this);
 	}
 	ViewportWithCamera::ViewportWithCamera(ViewportWithCamera&& src) noexcept
 		: Viewport(std::move(src))
-		, camera()
 	{
-		camera.AutoCamera::operator=(std::move(src.camera));
-		camera.registerCallbacks(this);
+		src.camera.deinitCallbacks();
+		src.camera.vp = nullptr;
+		camera.operator=(std::move(src.camera));
+		camera.initCallbacks(this);
 	}
 	ViewportWithCamera& ViewportWithCamera::operator=(ViewportWithCamera&& src) noexcept
 	{
@@ -331,8 +347,11 @@ namespace lim
 			return *this;
 		Viewport::operator=(std::move(src));
 
-		camera.AutoCamera::operator=(std::move(src.camera));
-		camera.registerCallbacks(this);
+		camera.deinitCallbacks();
+		src.camera.deinitCallbacks();
+		src.camera.vp = nullptr;
+		camera.operator=(std::move(src.camera));
+		camera.initCallbacks(this);
 		return *this;
 	}
 	ViewportWithCamera::~ViewportWithCamera() noexcept

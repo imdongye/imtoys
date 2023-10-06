@@ -78,7 +78,7 @@ namespace lim
 	protected:
 		void genGLDepthTex();
 		virtual void initGL() override;
-		virtual void deinitGL();
+		virtual void deinitGL() override;
 	public:
 		virtual void bind() const override;
 	};
@@ -99,7 +99,7 @@ namespace lim
 	protected:
 		void genGLDepthRbo();
 		virtual void initGL() override;
-		virtual void deinitGL();
+		virtual void deinitGL() override;
 	public:
 		virtual void bind() const override;
 	};

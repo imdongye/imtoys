@@ -27,8 +27,6 @@ namespace lim
 
 	void AppModelViewer::addModelViewer(string path) 
 	{
-		size_t dotPos = path.rfind('.');
-		size_t lastSlashPos = path.find_last_of("/\\");
 		if( filesystem::is_directory(path) ) {
 			bool isModel = false;
 			for( const auto & entry : std::filesystem::directory_iterator(path) ) {
@@ -51,6 +49,7 @@ namespace lim
 
 		char* vpName = fmtStrToBuf("viewport%d##model_view", (int)viewports.size());
 		viewports.emplace_back(vpName, new RboFramebuffer());
+		//viewports.back().resize()
 		viewports.back().camera.viewing_mode = VpAutoCamera::VM_PIVOT;
 
 		models.push_back({});

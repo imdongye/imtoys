@@ -13,7 +13,19 @@ namespace lim
 	}
 	Viewport::Viewport(Viewport&& src) noexcept
 	{
-		*this = std::move(src);
+		framebuffer = src.framebuffer;
+		src.framebuffer = nullptr;
+
+		name = std::move(src.name);
+
+		resize_callbacks = std::move(src.resize_callbacks);
+
+		window_mode = src.window_mode;
+		window_opened = src.window_opened;
+		hovered = src.hovered;
+		focused = src.focused;
+		dragging = src.dragging;
+		mouse_pos = src.mouse_pos;
 	}
 	Viewport& Viewport::operator=(Viewport&& src) noexcept
 	{
@@ -21,7 +33,7 @@ namespace lim
 			return *this;
 		if( framebuffer )
 			delete framebuffer;
-		framebuffer= src.framebuffer;
+		framebuffer = src.framebuffer;
 		src.framebuffer = nullptr;
 
 		name = std::move(src.name);
