@@ -87,7 +87,8 @@ namespace lim
 		// update size
 		auto contentSize = ImGui::GetContentRegionAvail();
 		if( fb.width!=contentSize.x || fb.height !=contentSize.y ) {
-			resize(contentSize.x, contentSize.y);
+			if(contentSize.x>10&&contentSize.y>10) // This is sometimes negative
+				resize(contentSize.x, contentSize.y);
 		}
 
 		ImVec2 imWinPos = ImGui::GetWindowPos();
