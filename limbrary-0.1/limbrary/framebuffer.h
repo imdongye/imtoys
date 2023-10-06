@@ -20,6 +20,7 @@ Todo:
 1. 생성
 2. bind등 매 frame에 실행되는 민감한함수들 v table에 참조로 성능안좋아질거같은데 최적화 필요함.
 3. 부모 deinit 중복 호출 문제
+4. GL_DEPTH_STENCIL_ATTACHMENT 24+8
 
 */
 
@@ -50,7 +51,7 @@ namespace lim
 		Framebuffer& operator=(Framebuffer&& src) noexcept;
 		virtual ~Framebuffer() noexcept;
 	protected:
-		void genGlFboColor();
+		void genGLFbAndColor();
 		virtual void initGL();
 		virtual void deinitGL();
 	public:
@@ -63,18 +64,18 @@ namespace lim
 	};
 
 	// depth_tex 샘플링 가능, 성능저하
-	class TexFramebuffer: public Framebuffer
+	class FramebufferTexDepth: public Framebuffer
 	{
 	public:
 		GLuint depth_tex = 0;
 	private:
-		TexFramebuffer(const TexFramebuffer&) = delete;
-		TexFramebuffer& operator=(const TexFramebuffer&) = delete;
+		FramebufferTexDepth(const FramebufferTexDepth&) = delete;
+		FramebufferTexDepth& operator=(const FramebufferTexDepth&) = delete;
 	public:
-		TexFramebuffer();
-		TexFramebuffer(TexFramebuffer&& src) noexcept;
-		TexFramebuffer& operator=(TexFramebuffer&& src) noexcept;
-		virtual ~TexFramebuffer() noexcept override;
+		FramebufferTexDepth();
+		FramebufferTexDepth(FramebufferTexDepth&& src) noexcept;
+		FramebufferTexDepth& operator=(FramebufferTexDepth&& src) noexcept;
+		virtual ~FramebufferTexDepth() noexcept override;
 	protected:
 		void genGLDepthTex();
 		virtual void initGL() override;
@@ -84,18 +85,18 @@ namespace lim
 	};
 
 	// depth_rbo 샘플링 불가능, 성능향상
-	class RboFramebuffer: public Framebuffer
+	class FramebufferRbDepth: public Framebuffer
 	{
 	public:
 		GLuint depth_rbo = 0;
 	private:
-		RboFramebuffer(const RboFramebuffer&) = delete;
-		RboFramebuffer& operator=(const RboFramebuffer&) = delete;
+		FramebufferRbDepth(const FramebufferRbDepth&) = delete;
+		FramebufferRbDepth& operator=(const FramebufferRbDepth&) = delete;
 	public:
-		RboFramebuffer();
-		RboFramebuffer(RboFramebuffer&& src) noexcept;
-		RboFramebuffer& operator=(RboFramebuffer&& src) noexcept;
-		virtual ~RboFramebuffer() noexcept override;
+		FramebufferRbDepth();
+		FramebufferRbDepth(FramebufferRbDepth&& src) noexcept;
+		FramebufferRbDepth& operator=(FramebufferRbDepth&& src) noexcept;
+		virtual ~FramebufferRbDepth() noexcept override;
 	protected:
 		void genGLDepthRbo();
 		virtual void initGL() override;
@@ -105,19 +106,19 @@ namespace lim
 	};
 
 	// 멀티셈플링으로 안티엘리어싱됨
-	class MsFramebuffer: public RboFramebuffer
+	class FramebufferMs: public FramebufferRbDepth
 	{
 	private:
 		int samples = 8;
 		Framebuffer intermediate_fb;
 	private:
-		MsFramebuffer(const MsFramebuffer&) = delete;
-		MsFramebuffer& operator=(const MsFramebuffer&) = delete;
+		FramebufferMs(const FramebufferMs&) = delete;
+		FramebufferMs& operator=(const FramebufferMs&) = delete;
 	public:
-		MsFramebuffer(int samples = 8);
-		MsFramebuffer(MsFramebuffer&& src) noexcept;
-		MsFramebuffer& operator=(MsFramebuffer&& src) noexcept;
-		virtual ~MsFramebuffer() noexcept override;
+		FramebufferMs(int samples = 8);
+		FramebufferMs(FramebufferMs&& src) noexcept;
+		FramebufferMs& operator=(FramebufferMs&& src) noexcept;
+		virtual ~FramebufferMs() noexcept override;
 	protected:
 		void genGLFboMs();
 		virtual void initGL() override;

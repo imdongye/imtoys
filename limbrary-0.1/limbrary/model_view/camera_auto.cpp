@@ -165,9 +165,10 @@ namespace lim
 	{
 		if( this==&src )
 			return *this;
+		AutoCamera::operator=(std::move(src));
+
 		deinitCallbacks();
 		src.deinitCallbacks();
-		AutoCamera::operator=(std::move(src));
 
 		initCallbacks();
 		return *this;
@@ -178,6 +179,8 @@ namespace lim
 	}
 	void WinAutoCamera::deinitCallbacks()
 	{
+		if(isInited==false)
+			return;
 		AppBase& app = *AppPref::get().app;
 		app.framebuffer_size_callbacks.erase(this);
 		app.update_hooks.erase(this);
@@ -187,6 +190,10 @@ namespace lim
 	}
 	void WinAutoCamera::initCallbacks()
 	{
+		if(isInited)
+			deinitCallbacks();
+		isInited = true;
+
 		AppBase& app = *AppPref::get().app;
 		_win = app.window;
 
@@ -240,22 +247,22 @@ namespace lim
 	{
 		if( this==&src )
 			return *this;
-
-		deinitCallbacks();
 		AutoCamera::operator=(std::move(src));
 
+		deinitCallbacks();
 		src.deinitCallbacks();
+		
 		initCallbacks(src.vp);
 		return *this;
 	}
 	VpAutoCamera::~VpAutoCamera() noexcept
 	{
-		if( vp==nullptr )
-			return;
 		deinitCallbacks();
 	}
 	void VpAutoCamera::deinitCallbacks()
 	{
+		if( vp==nullptr )
+			return;
 		AppBase& app = *AppPref::get().app;
 
         vp->resize_callbacks.erase(this);
@@ -330,7 +337,7 @@ namespace lim
 
 
 	ViewportWithCamera::ViewportWithCamera(std::string_view _name, Framebuffer* createdFB)
-			: Viewport(_name, createdFB), camera(this)
+		: Viewport(_name, createdFB), camera(this)
 	{
 	}
 	ViewportWithCamera::ViewportWithCamera(ViewportWithCamera&& src) noexcept

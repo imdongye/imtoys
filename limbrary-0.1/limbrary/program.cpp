@@ -78,7 +78,7 @@ namespace lim
 			return *this;
 		}
 		glAttachShader(pid, sid);
-		log::pure("[program %s] attch %s success\n", name.c_str(), path.c_str());
+		log::pure("%s prog : attch %s success\n", name.c_str(), path.c_str());
 
 		return *this;
 	}
@@ -90,7 +90,7 @@ namespace lim
 			pid = 0;
 			return *this;
 		}
-		log::pure("[program %s] linking success\n\n", name.c_str());
+		log::pure("%s prog : linking success\n\n", name.c_str());
 		return *this;
 	}
 	bool Program::checkCompileErrors(GLuint shader, std::string_view path)

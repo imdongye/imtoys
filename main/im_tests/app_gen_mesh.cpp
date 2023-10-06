@@ -21,7 +21,7 @@ namespace lim
 		//glEnable(GL_CULL_FACE);
 		//glCullFace(GL_FRONT);
 		// glPolygonMode(GL_FRONT, GL_LINE);
-		viewport = new ViewportWithCamera("viewport##gen_mesh", new MsFramebuffer());
+		viewport = new ViewportWithCamera("viewport##gen_mesh", new FramebufferMs());
 		viewport->camera.move_free_spd = 4.f;
 		/* gen models */
 		models.push_back(new Model("sphere"));

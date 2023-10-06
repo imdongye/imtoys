@@ -283,12 +283,13 @@ namespace lim
 		pFrags |= aiProcessPreset_TargetRealtime_MaxQuality;
 
 		double elapsedTime = glfwGetTime();
+		log::pure("%s model loading..\n", name.c_str());
 		const GLuint severity = Assimp::Logger::Debugging|Assimp::Logger::Info|Assimp::Logger::Err|Assimp::Logger::Warn;
 		Assimp::DefaultLogger::create("", Assimp::Logger::VERBOSE);
 		Assimp::DefaultLogger::get()->attachStream(new LimImportLogStream(), severity);
 		const aiScene* scene = aiImportFile(modelPath.data(), pFrags);
 		if( !scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode ) {
-			log::err("[import assimp] %s\n\n", aiGetErrorString());
+			log::err("assimp_importer: %s\n\n", aiGetErrorString());
 			Assimp::DefaultLogger::kill();
 			return false;
 		}
@@ -314,10 +315,9 @@ namespace lim
 
 		/* set node tree structure */
 		recursiveConvertTree(scene->mRootNode, root);
-		log::pure("[%s] convert lim::Model in %.2lf\n", name.c_str(), glfwGetTime()-elapsedTime);
-		log::pure("[%s] #meshs %d, #mats %d, #verts %d, #tris %d\n", name.c_str(), my_meshes.size(), my_materials.size(), nr_vertices, nr_triangles);
-		log::pure("[%s] boundary size : %f, %f, %f\n", name.c_str(), boundary_size.x, boundary_size.y, boundary_size.z);
-		log::pure("done! read file with assimp in %.2f\n\n", glfwGetTime()-elapsedTime);
+		log::pure("#meshs %d, #mats %d, #verts %d, #tris %d\n", name.c_str(), my_meshes.size(), my_materials.size(), nr_vertices, nr_triangles);
+		log::pure("boundary size : %f, %f, %f\n", name.c_str(), boundary_size.x, boundary_size.y, boundary_size.z);
+		log::pure("done! convert aiScene in %.2f\n\n", glfwGetTime()-elapsedTime);
 
 		aiReleaseImport(scene);
 

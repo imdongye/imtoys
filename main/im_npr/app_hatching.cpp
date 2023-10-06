@@ -79,7 +79,7 @@ namespace lim
 
 
 	AppHatching::AppHatching(): AppBase(1200, 780, APP_NAME)
-		, viewport("viewport##hatching", new MsFramebuffer())
+		, viewport("viewport##hatching", new FramebufferMs())
 	{
 		glEnable(GL_CULL_FACE);
 		//glCullFace(GL_FRONT);

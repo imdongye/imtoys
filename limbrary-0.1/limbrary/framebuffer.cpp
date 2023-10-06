@@ -47,7 +47,7 @@ namespace lim
 	}
 	void Framebuffer::initGL()
 	{
-		Framebuffer::genGlFboColor();
+		Framebuffer::genGLFbAndColor();
 
 		/* bind fbo */
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
@@ -61,20 +61,21 @@ namespace lim
 			log::err("Framebuffer is not completed!! (%d)\n", status);
 
 	}
-	void Framebuffer::genGlFboColor()
+	void Framebuffer::genGLFbAndColor()
 	{
 		if( fbo>0 ) { glDeleteFramebuffers(1, &fbo); fbo=0; }
 		glGenFramebuffers(1, &fbo);
 
 		if( color_tex>0 ) { glDeleteTextures(1, &color_tex); color_tex=0; }
 		glGenTextures(1, &color_tex);
-		
+
 		glBindTexture(GL_TEXTURE_2D, color_tex);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 	bool Framebuffer::resize(GLuint _width, GLuint _height)
 	{
@@ -111,16 +112,16 @@ namespace lim
 
 
 	
-	TexFramebuffer::TexFramebuffer(): Framebuffer()
+	FramebufferTexDepth::FramebufferTexDepth(): Framebuffer()
 	{
 	}
-	TexFramebuffer::TexFramebuffer(TexFramebuffer&& src) noexcept
+	FramebufferTexDepth::FramebufferTexDepth(FramebufferTexDepth&& src) noexcept
 		: Framebuffer(std::move(src))
 	{
 		depth_tex = src.depth_tex;
 		src.depth_tex = 0;
 	}
-	TexFramebuffer& TexFramebuffer::operator=(TexFramebuffer&& src) noexcept
+	FramebufferTexDepth& FramebufferTexDepth::operator=(FramebufferTexDepth&& src) noexcept
 	{
 		if( this==&src )
 			return *this;
@@ -132,19 +133,19 @@ namespace lim
 		src.depth_tex = 0;
 		return *this;
 	}
-	void TexFramebuffer::deinitGL()
+	void FramebufferTexDepth::deinitGL()
 	{
 		Framebuffer::deinitGL();
 		if( depth_tex>0 ) { glDeleteTextures(1, &depth_tex); depth_tex = 0; }
 	}
-	TexFramebuffer::~TexFramebuffer() noexcept
+	FramebufferTexDepth::~FramebufferTexDepth() noexcept
 	{
 		deinitGL();
 	}
-	void TexFramebuffer::initGL()
+	void FramebufferTexDepth::initGL()
 	{
-		Framebuffer::genGlFboColor();
-		TexFramebuffer::genGLDepthTex();
+		Framebuffer::genGLFbAndColor();
+		FramebufferTexDepth::genGLDepthTex();
 
 		/* bind fbo */
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
@@ -158,7 +159,7 @@ namespace lim
 		if( status !=GL_FRAMEBUFFER_COMPLETE )
 			log::err("TexFramebuffer is not completed!! (%d)\n", status);
 	}
-	void TexFramebuffer::genGLDepthTex()
+	void FramebufferTexDepth::genGLDepthTex()
 	{
 		if( depth_tex>0 ) { glDeleteTextures(1, &depth_tex); depth_tex = 0; }
 		glGenTextures(1, &depth_tex);
@@ -167,9 +168,10 @@ namespace lim
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+		glBindTexture(GL_TEXTURE_2D, 0);
 	}
-	void TexFramebuffer::bind() const
+	void FramebufferTexDepth::bind() const
 	{
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		glViewport(0, 0, width, height);
@@ -181,16 +183,16 @@ namespace lim
 	}
 
 
-	RboFramebuffer::RboFramebuffer(): Framebuffer()
+	FramebufferRbDepth::FramebufferRbDepth(): Framebuffer()
 	{
 	}
-	RboFramebuffer::RboFramebuffer(RboFramebuffer&& src) noexcept
+	FramebufferRbDepth::FramebufferRbDepth(FramebufferRbDepth&& src) noexcept
 		: Framebuffer(std::move(src))
 	{
 		depth_rbo = src.depth_rbo;
 		src.depth_rbo = 0;
 	}
-	RboFramebuffer& RboFramebuffer::operator=(RboFramebuffer&& src) noexcept
+	FramebufferRbDepth& FramebufferRbDepth::operator=(FramebufferRbDepth&& src) noexcept
 	{
 		if( this==&src )
 			return *this;
@@ -202,19 +204,19 @@ namespace lim
 		src.depth_rbo = 0;
 		return *this;
 	}
-	void RboFramebuffer::deinitGL()
+	void FramebufferRbDepth::deinitGL()
 	{
 		Framebuffer::deinitGL();
 		if( depth_rbo>0 ) { glDeleteRenderbuffers(1, &depth_rbo); depth_rbo=0; }
 	}
-	RboFramebuffer::~RboFramebuffer() noexcept
+	FramebufferRbDepth::~FramebufferRbDepth() noexcept
 	{
 		deinitGL();
 	}
-	void RboFramebuffer::initGL()
+	void FramebufferRbDepth::initGL()
 	{
-		Framebuffer::genGlFboColor();
-		RboFramebuffer::genGLDepthRbo();
+		Framebuffer::genGLFbAndColor();
+		FramebufferRbDepth::genGLDepthRbo();
 
 		/* bind fbo */
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
@@ -225,19 +227,18 @@ namespace lim
 		glDrawBuffers(1, drawBuffers.data());
 
 		GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-		if( status !=GL_FRAMEBUFFER_COMPLETE )
+		if( status != GL_FRAMEBUFFER_COMPLETE )
 			log::err("RboFramebuffer is not completed!! (%d)\n", status);
 	}
-	void RboFramebuffer::genGLDepthRbo()
+	void FramebufferRbDepth::genGLDepthRbo()
 	{
 		if( depth_rbo>0 ) { glDeleteRenderbuffers(1, &depth_rbo); depth_rbo=0; }
 		glGenRenderbuffers(1, &depth_rbo);
 		glBindRenderbuffer(GL_RENDERBUFFER, depth_rbo);
 		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rbo);
 		glBindRenderbuffer(GL_RENDERBUFFER, 0);
 	}
-	void RboFramebuffer::bind() const
+	void FramebufferRbDepth::bind() const
 	{
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		glViewport(0, 0, width, height);
@@ -249,32 +250,32 @@ namespace lim
 	}
 
 
-	MsFramebuffer::MsFramebuffer(int _samples): RboFramebuffer(), intermediate_fb()
+	FramebufferMs::FramebufferMs(int _samples): FramebufferRbDepth(), intermediate_fb()
 	{
 		samples = _samples;
 	}
-	MsFramebuffer::MsFramebuffer(MsFramebuffer&& src) noexcept
-		: RboFramebuffer(std::move(src))
+	FramebufferMs::FramebufferMs(FramebufferMs&& src) noexcept
+		: FramebufferRbDepth(std::move(src))
 	{
 		intermediate_fb = std::move(src.intermediate_fb);
 	}
-	MsFramebuffer& MsFramebuffer::operator=(MsFramebuffer&& src) noexcept
+	FramebufferMs& FramebufferMs::operator=(FramebufferMs&& src) noexcept
 	{
 		if( this==&src )
 			return *this;
-		RboFramebuffer::operator=(std::move(src));
+		FramebufferRbDepth::operator=(std::move(src));
 
 		intermediate_fb = std::move(src.intermediate_fb);
 		return *this;
 	}
-	MsFramebuffer::~MsFramebuffer() noexcept
+	FramebufferMs::~FramebufferMs() noexcept
 	{
 	}
-	void MsFramebuffer::initGL()
+	void FramebufferMs::initGL()
 	{
 		intermediate_fb.resize(width, height);
 
-		MsFramebuffer::genGLFboMs();
+		FramebufferMs::genGLFboMs();
 
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, color_tex, 0);
@@ -287,7 +288,7 @@ namespace lim
 		if( status !=GL_FRAMEBUFFER_COMPLETE )
 			log::err("MsFramebuffer is not completed!! (%d)\n", status);
 	}
-	void MsFramebuffer::genGLFboMs()
+	void FramebufferMs::genGLFboMs()
 	{
 		if( fbo>0 ) { glDeleteFramebuffers(1, &fbo); fbo=0; }
 		glGenFramebuffers(1, &fbo);
@@ -304,7 +305,7 @@ namespace lim
 		glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, GL_DEPTH_COMPONENT, width, height);
 		glBindRenderbuffer(GL_RENDERBUFFER, 0);
 	}
-	void MsFramebuffer::bind() const
+	void FramebufferMs::bind() const
 	{
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		glViewport(0, 0, width, height);
@@ -314,7 +315,7 @@ namespace lim
 		glEnable(GL_MULTISAMPLE);
 		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 	}
-	void MsFramebuffer::unbind() const
+	void FramebufferMs::unbind() const
 	{
 		/* msaa framebuffer은 일반 texture을 가진 frame버퍼에 blit 복사 해야함 */
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
@@ -328,7 +329,7 @@ namespace lim
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
-	GLuint MsFramebuffer::getRenderedTex() const
+	GLuint FramebufferMs::getRenderedTex() const
 	{
 		return intermediate_fb.color_tex;
 	}

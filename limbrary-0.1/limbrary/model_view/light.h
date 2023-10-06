@@ -34,7 +34,7 @@ namespace lim
 		glm::vec3 pivot = {0,0,0};
 		glm::vec3 position = {50,50,50};
 
-		TexFramebuffer map_Shadow;
+		FramebufferTexDepth map_Shadow;
 		glm::mat4 shadow_view_mat;
 		glm::mat4 shadow_proj_mat;
 		glm::mat4 shadow_vp_mat;

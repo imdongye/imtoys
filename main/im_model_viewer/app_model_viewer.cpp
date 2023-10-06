@@ -46,14 +46,15 @@ namespace lim
 				return;
 			}
 		}
+		Model md;
+		if( md.importFromFile(path, true)==false )
+			return;
 
 		char* vpName = fmtStrToBuf("viewport%d##model_view", (int)viewports.size());
-		viewports.emplace_back(vpName, new RboFramebuffer());
+		viewports.emplace_back(vpName, new FramebufferRbDepth());
 		//viewports.back().resize()
 		viewports.back().camera.viewing_mode = VpAutoCamera::VM_PIVOT;
-
-		models.push_back({});
-		models.back().importFromFile(path, true);
+		models.push_back(std::move(md));
 	}
 	
 	void AppModelViewer::drawModelsToViewports()

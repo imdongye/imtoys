@@ -8,7 +8,7 @@
 namespace lim
 {
 	AppPbr::AppPbr(): AppBase(1200, 780, APP_NAME)
-		, viewport("viewport##pbr", new MsFramebuffer())
+		, viewport("viewport##pbr", new FramebufferMs())
 		, sphere(50, 25)
 	{
 		

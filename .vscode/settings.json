@@ -1,14 +1,16 @@
 {
+    //"cmake.generator": "Xcode"
+
     "cmake.debugConfig": {
         "cwd": "${workspaceFolder}/main",
         "console": "integratedTerminal",
+        //"externalConsole": true,
     },
-    //"cmake.generator": "Xcode"
 
-    "glsllint.glslangValidatorPath": "B:\\Programs\\glslang-master-windows-Release\\bin\\glslangValidator.exe",
+    //"glsllint.glslangValidatorPath": "B:\\Programs\\glslang-master-windows-Release\\bin\\glslangValidator.exe",
     "glsllint.additionalStageAssociations": {
         ".fs": "frag",
-        ".vs": "vert"
+        ".vs": "vert",
     },
     "material-icon-theme.files.associations": {
         "*.fs": "Shader",

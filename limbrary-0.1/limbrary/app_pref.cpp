@@ -12,7 +12,7 @@ namespace lim
 {
 	AppPref::AppPref()
 	{
-		log::pure("inti AppPref\n");
+		log::pure("init AppPref\n");
 		std::string text = readStrFromFile(FILE_PATH);
 		if( text.length()<1 ) {
 			log::err("length<1 so not make json\n");

@@ -71,7 +71,7 @@ namespace lim
 	void AppSimplification::addEmptyViewport()
 	{
 		const char* vpName = fmtStrToBuf("viewport%d##simp", nr_viewports);
-		viewports.emplace_back(vpName, new MsFramebuffer);
+		viewports.emplace_back(vpName, new FramebufferMs);
 		viewports.back().camera.shiftPos({0,1,-1.6f});
 
 		models.push_back(new Model());

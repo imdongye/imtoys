@@ -88,6 +88,7 @@ namespace lim
 		WinAutoCamera& operator=(const WinAutoCamera&) = delete;
 		void initCallbacks();
 		void deinitCallbacks();
+		bool isInited = false;
 	public:
 		WinAutoCamera();
 		WinAutoCamera(WinAutoCamera&& src) noexcept;
