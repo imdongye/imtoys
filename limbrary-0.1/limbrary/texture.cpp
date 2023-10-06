@@ -168,13 +168,13 @@ namespace lim
 
 		internal_format = internalFormat;
 		format = path.c_str()+path.rfind('.')+1;
-		name = std::string(path.c_str()+path.rfind('\\')+path.rfind('/')+2);
+		name = std::string(path.c_str()+path.find_last_of("/\\")+2);
 		aspect_ratio = width/(float)height;
 
 		initGL(data);
 		stbi_image_free(data);
 
-		log::pure("texture %s loaded\n", path.c_str());
+		log::pure("texture %s loaded\n", path.c_str()+path.find_last_of("/\\")+1);
 
 		return true;
 	}
@@ -254,11 +254,13 @@ namespace lim
 		}
 
 		format = path.c_str()+path.rfind('.')+1;
-		name = std::string(path.c_str()+path.rfind('\\')+path.rfind('/')+2);
+		name = std::string(path.c_str()+path.find_last_of("/\\")+2);
 		aspect_ratio = width/(float)height;
 
 		initGL(data);
 		stbi_image_free(data);
+
+		log::pure("texture %s loaded auto\n", path.c_str()+path.find_last_of("/\\")+1);
 
 		return true;
 	}

@@ -13,7 +13,7 @@ namespace lim
 		color_tex = src.color_tex;
 		src.fbo = 0;
 		src.color_tex = 0;
-		
+
 		clear_color = src.clear_color;
 		width = src.width;
 		height = src.height;
@@ -23,7 +23,7 @@ namespace lim
 	{
 		if( this==&src )
 			return *this;
-		Framebuffer::~Framebuffer();
+		deinitGL();
 
 		fbo = src.fbo;
 		color_tex = src.color_tex;
@@ -36,10 +36,14 @@ namespace lim
 		aspect = src.aspect;
 		return *this;
 	}
-	Framebuffer::~Framebuffer() noexcept
+	void Framebuffer::deinitGL()
 	{
 		if( fbo>0 ) 	  { glDeleteFramebuffers(1, &fbo); fbo=0; }
 		if( color_tex>0 ) { glDeleteTextures(1, &color_tex); color_tex=0; }
+	}
+	Framebuffer::~Framebuffer() noexcept
+	{
+		deinitGL();
 	}
 	void Framebuffer::initGL()
 	{
@@ -108,7 +112,6 @@ namespace lim
 	
 	TexFramebuffer::TexFramebuffer(): Framebuffer()
 	{
-		depth_tex = 0;
 	}
 	TexFramebuffer::TexFramebuffer(TexFramebuffer&& src) noexcept
 		: Framebuffer(std::move(src))
@@ -120,16 +123,22 @@ namespace lim
 	{
 		if( this==&src )
 			return *this;
-		TexFramebuffer::~TexFramebuffer();
+		deinitGL();
+
 		Framebuffer::operator=(std::move(src));
 
 		depth_tex = src.depth_tex;
 		src.depth_tex = 0;
 		return *this;
 	}
+	void TexFramebuffer::deinitGL()
+	{
+		Framebuffer::deinitGL();
+		if( depth_tex>0 ) { glDeleteTextures(1, &depth_tex); depth_tex = 0; }
+	}
 	TexFramebuffer::~TexFramebuffer() noexcept
 	{
-		if( depth_tex>0 ) { glDeleteTextures(1, &depth_tex); depth_tex = 0; }
+		deinitGL();
 	}
 	void TexFramebuffer::initGL()
 	{
@@ -173,7 +182,6 @@ namespace lim
 
 	RboFramebuffer::RboFramebuffer(): Framebuffer()
 	{
-		depth_rbo = 0;
 	}
 	RboFramebuffer::RboFramebuffer(RboFramebuffer&& src) noexcept
 		: Framebuffer(std::move(src))
@@ -185,16 +193,22 @@ namespace lim
 	{
 		if( this==&src )
 			return *this;
-		RboFramebuffer::~RboFramebuffer();
+		deinitGL();
+
 		Framebuffer::operator=(std::move(src));
 
 		depth_rbo = src.depth_rbo;
 		src.depth_rbo = 0;
 		return *this;
 	}
+	void RboFramebuffer::deinitGL()
+	{
+		Framebuffer::deinitGL();
+		if( depth_rbo>0 ) { glDeleteRenderbuffers(1, &depth_rbo); depth_rbo=0; }
+	}
 	RboFramebuffer::~RboFramebuffer() noexcept
 	{
-		if( depth_rbo>0 ) { glDeleteRenderbuffers(1, &depth_rbo); depth_rbo=0; }
+		deinitGL();
 	}
 	void RboFramebuffer::initGL()
 	{
@@ -239,6 +253,7 @@ namespace lim
 		samples = _samples;
 	}
 	MsFramebuffer::MsFramebuffer(MsFramebuffer&& src) noexcept
+		: RboFramebuffer(std::move(src))
 	{
 		intermediate_fb = std::move(src.intermediate_fb);
 	}

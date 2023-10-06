@@ -1,6 +1,7 @@
 #include "app_model_viewer.h"
 #include <imgui.h>
 #include <limbrary/model_view/renderer.h>
+#include <filesystem>
 
 using namespace lim;
 using namespace std;
@@ -11,12 +12,12 @@ namespace lim
 {
 	AppModelViewer::AppModelViewer() : AppBase(1200, 780, APP_NAME)
 	{
-		// viewports.reserve(5);
-		// models.reserve(5);
+		viewports.reserve(5);
+		models.reserve(5);
 
 		program.name = "model_view";
 		program.home_dir = APP_DIR;
-		program.attatch("assets/shaders/mvp.vs").attatch("debug.fs").link();
+		program.attatch("mvp.vs").attatch("debug.fs").link();
 
 		addModelViewer("assets/models/objs/spot.obj");
 	}
@@ -24,14 +25,38 @@ namespace lim
 	{
 	}
 
-	void AppModelViewer::addModelViewer(const char* path) 
+	void AppModelViewer::addModelViewer(string path) 
 	{
+		size_t dotPos = path.rfind('.');
+		size_t lastSlashPos = path.find_last_of("/\\");
+		if( filesystem::is_directory(path) ) {
+			bool isModel = false;
+			for( const auto & entry : std::filesystem::directory_iterator(path) ) {
+				string fm = entry.path().extension().string();
+				for( int i=0; i<getNrImportFormats(); i++ ) {
+					if(strIsSame( getImportFormat(i), fm.c_str()+1 )) {
+						path = entry.path().string();
+						isModel = true;
+						break;
+					}
+				}
+				if(isModel)
+					break;
+			}
+			if(!isModel) {
+				log::err("no model in %s\n", path.c_str());
+				return;
+			}
+		}
+
 		char* vpName = fmtStrToBuf("viewport%d##model_view", (int)viewports.size());
 		viewports.emplace_back(vpName, new RboFramebuffer());
 		viewports.back().camera.viewing_mode = VpAutoCamera::VM_PIVOT;
+
 		models.push_back({});
 		models.back().importFromFile(path, true);
 	}
+	
 	void AppModelViewer::drawModelsToViewports()
 	{
 		for(int i=0; i<viewports.size(); i++ ) {
@@ -44,6 +69,7 @@ namespace lim
 			render(viewports[i].getFb(), program, viewports[i].camera, models[i], light);
 		}
 	}
+
 
 	void AppModelViewer::update() 	
 	{

@@ -19,6 +19,7 @@ you must use after resize
 Todo:
 1. 생성
 2. bind등 매 frame에 실행되는 민감한함수들 v table에 참조로 성능안좋아질거같은데 최적화 필요함.
+3. 부모 deinit 중복 호출 문제
 
 */
 
@@ -49,8 +50,9 @@ namespace lim
 		Framebuffer& operator=(Framebuffer&& src) noexcept;
 		virtual ~Framebuffer() noexcept;
 	protected:
-		virtual void initGL();
 		void genGlFboColor();
+		virtual void initGL();
+		virtual void deinitGL();
 	public:
 		virtual void bind() const;
 		virtual void unbind() const;
@@ -74,8 +76,9 @@ namespace lim
 		TexFramebuffer& operator=(TexFramebuffer&& src) noexcept;
 		virtual ~TexFramebuffer() noexcept override;
 	protected:
-		virtual void initGL() override;
 		void genGLDepthTex();
+		virtual void initGL() override;
+		virtual void deinitGL();
 	public:
 		virtual void bind() const override;
 	};
@@ -94,8 +97,9 @@ namespace lim
 		RboFramebuffer& operator=(RboFramebuffer&& src) noexcept;
 		virtual ~RboFramebuffer() noexcept override;
 	protected:
-		virtual void initGL() override;
 		void genGLDepthRbo();
+		virtual void initGL() override;
+		virtual void deinitGL();
 	public:
 		virtual void bind() const override;
 	};
@@ -115,8 +119,8 @@ namespace lim
 		MsFramebuffer& operator=(MsFramebuffer&& src) noexcept;
 		virtual ~MsFramebuffer() noexcept override;
 	protected:
-		virtual void initGL() override;
 		void genGLFboMs();
+		virtual void initGL() override;
 	public:
 		virtual void bind() const override;
 		virtual void unbind() const override;

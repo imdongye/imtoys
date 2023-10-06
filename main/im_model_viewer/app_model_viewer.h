@@ -29,7 +29,7 @@ namespace lim
 		AppModelViewer();
 		~AppModelViewer();
 	private:
-		void addModelViewer(const char* path);
+		void addModelViewer(std::string path);
 		void drawModelsToViewports();
 
 		virtual void update() override;

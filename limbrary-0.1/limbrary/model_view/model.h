@@ -29,6 +29,7 @@ TODO list:
 #include "camera.h"
 #include <assimp/scene.h>
 #include <assimp/cexport.h>
+#include <assimp/cimport.h>
 #include <limits>
 
 namespace lim
@@ -87,7 +88,9 @@ namespace lim
 		bool exportToFile(size_t pIndex, std::string_view exportPath);
 	};
 
-	// get export format data
+	// get format data
+	int getNrImportFormats();
+	const char* getImportFormat(int idx);
 	int getNrExportFormats();
 	const aiExportFormatDesc* getExportFormatInfo(int idx);
 }

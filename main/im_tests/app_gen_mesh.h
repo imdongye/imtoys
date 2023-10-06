@@ -5,7 +5,7 @@
 #include <limbrary/program.h>
 #include <limbrary/model_view/model.h>
 #include <limbrary/model_view/camera_auto.h>
-#include <limbrary/model_view/scene.h>
+#include <limbrary/model_view/renderer.h>
 
 namespace lim
 {

@@ -4,6 +4,21 @@
         "console": "integratedTerminal",
     },
     //"cmake.generator": "Xcode"
+
+    "glsllint.glslangValidatorPath": "B:\\Programs\\glslang-master-windows-Release\\bin\\glslangValidator.exe",
+    "glsllint.additionalStageAssociations": {
+        ".fs": "frag",
+        ".vs": "vert"
+    },
+    "material-icon-theme.files.associations": {
+        "*.fs": "Shader",
+        "*.vs": "Shader",
+        "*.vert": "Shader",
+        "*.frag": "Shader",
+    },
+
+
+
     "files.associations": {
         "__bit_reference": "cpp",
         "__bits": "cpp",

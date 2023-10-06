@@ -24,7 +24,7 @@ set(CMAKE_C_STANDARD 99)
 # global variables
 set(sln_name imtoys)
 set(exe_name imtoys_exe)
-set(working_dir ${CMAKE_SOURCE_DIR}/main)
+set(working_dir "${CMAKE_SOURCE_DIR}/main")
 
 
 project(
@@ -61,7 +61,7 @@ option(ASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT OFF)
 option(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT OFF)
     set(ASSIMP_BUILD_OBJ_EXPORTER ON CACHE BOOL "" FORCE)
     set(ASSIMP_BUILD_FBX_EXPORTER ON CACHE BOOL "" FORCE)
-    set(ASSIMP_BUILD_GLTF_EXPORTER ON CACHE BOOL "" FORCE)
+    # set(ASSIMP_BUILD_GLTF_EXPORTER ON CACHE BOOL "" FORCE)
 add_subdirectory(vendor/assimp)
 option(BUILD_SHARED_LIBS OFF)
 
@@ -265,11 +265,11 @@ set_target_properties(others PROPERTIES FOLDER "vendor")
 if(CMAKE_GENERATOR MATCHES "Visual Studio*")
     set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${exe_name})
     # From: https://stackoverflow.com/questions/41864259/how-to-set-working-directory-for-visual-studio-2017-rc-cmake-project
-    set_target_properties(${exe_name} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${working_dir}")
+    set_target_properties(${exe_name} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY ${working_dir})
 endif()
 if(CMAKE_GENERATOR MATCHES "Xcode")
     set_target_properties(${exe_name} PROPERTIES 
                     XCODE_GENERATE_SCHEME TRUE
-                    XCODE_SCHEME_WORKING_DIRECTORY "${working_dir}")
+                    XCODE_SCHEME_WORKING_DIRECTORY ${working_dir})
     # 시작 schema 설정 못찾음
 endif()

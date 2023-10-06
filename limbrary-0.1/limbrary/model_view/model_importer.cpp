@@ -28,6 +28,9 @@ namespace
 	Model* _rst_md = nullptr; // temp model
 	std::string _model_dir;
 
+	const int _nr_formats = (int)aiGetImportFormatCount();
+	const char* _formats[32] = { nullptr, };
+
 
 	inline vec3 toGLM( const aiVector3D& v ) {
 		return { v.x, v.y, v.z };
@@ -116,22 +119,27 @@ namespace
 			mat.Tf = toGLM(temp3d);
 		}
 		if( aiMat->GetTexture(aiTextureType_DIFFUSE, 0, &tempStr) == AI_SUCCESS ) {
+			log::pure("map_Kd ");
 			mat.map_Flags |= Material::MF_Kd;
 			mat.map_Kd = loadTexture(tempStr.C_Str(), GL_SRGB8); // kd일때만 linear space변환
 		}
 		if( aiMat->GetTexture(aiTextureType_SPECULAR, 0, &tempStr) == AI_SUCCESS ) {
+			log::pure("map_Ks ");
 			mat.map_Flags |= Material::MF_Ks;
 			mat.map_Ks = loadTexture(tempStr.C_Str(), GL_SRGB8); // Todo: Ka Ks map 에서도 해야하나?
 		}
 		if( aiMat->GetTexture(aiTextureType_AMBIENT, 0, &tempStr) == AI_SUCCESS ) {
+			log::pure("map_Ka ");
 			mat.map_Flags |= Material::MF_Ka;
 			mat.map_Ka = loadTexture(tempStr.C_Str(), GL_SRGB8);
 		}
 		if( aiMat->GetTexture(aiTextureType_NORMALS, 0, &tempStr) == AI_SUCCESS ) {
+			log::pure("map_Nor ");
            	mat.map_Flags |= Material::MF_Nor;
 			mat.map_Bump = loadTexture(tempStr.C_Str(), GL_RGB8);
 		}
 		if( aiMat->GetTexture(aiTextureType_HEIGHT, 0, &tempStr) == AI_SUCCESS ) {
+			log::pure("map_Height ");
            	mat.map_Flags |= Material::MF_Bump;
 			mat.map_Bump = loadTexture(tempStr.C_Str(), GL_RGB8);
 		}
@@ -317,5 +325,20 @@ namespace lim
 			updateUnitScaleAndPivot();
 		}
 		return true;
+	}
+
+	int getNrImportFormats()
+	{
+		return _nr_formats;
+	}
+	const char* getImportFormat(int idx)
+	{
+		if (_formats[0] == nullptr) {
+			for (int i = 0; i < _nr_formats; i++)
+				_formats[i] = aiGetImportFormatDescription(i)->mFileExtensions;
+		}
+		if (idx < 0 || idx >= _nr_formats)
+			return nullptr;
+		return _formats[idx];
 	}
 }

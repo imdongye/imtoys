@@ -14,6 +14,7 @@ unordered_map은 헤쉬테이블로 메모리를 많이 차지 하지만 순회�
 #include <vector>
 #include <glad/glad.h>
 #include <limbrary/log.h>
+#include <algorithm>
 
 #define COMP_IMVEC2(X, Y) ((X).x==(Y).x)&&((X).y==(Y).y)
 #define INT2VOIDP(i) (void*)(uintptr_t)(i)
@@ -34,7 +35,7 @@ namespace lim
 	char* fmtStrToBuf(const char* format, ...);
 
 	template <typename T>
-	int findIdx(const std::vector<T>& v, const T& value) {
+	inline int findIdx(const std::vector<T>& v, const T& value) {
 		auto it = find(v.begin(), v.end(), value);
 		if (it != v.end()) {
 			return std::distance(v.begin(), it);
@@ -45,24 +46,19 @@ namespace lim
 	inline typename std::vector<T>::iterator findIdxIt(const std::vector<T>& v, const T& value) {
 		return find(v.begin(), v.end(), value);
 	}
-	// 객체 배열에서 포인터로 인덱스를 찾는다.
-	// Todo: 포인터 산술연산 테스트
-	// Todo: function에 객체 포인터 있을것같은데
-	template <typename T>
-	GLuint findPtIdxInObjArr(const std::vector<T>& src, const T* target)
-	{
-		int idx=0;
-		for( ; idx<src.size(); idx++ ) {
-			if( &src[idx] == target ) {
-				return idx;
-			}
-		}
-		return -1;
+	inline std::string strTolower( std::string_view str ) {
+		std::string a(str);
+		std::transform( a.begin(), a.end(), a.begin(), [](auto c) { return std::tolower(c); });
+		return a;
 	}
+	inline bool strIsSame( std::string_view a, std::string_view b ) {
+		return strTolower(a)==strTolower(b);
+	}
+
+
 
 	//template <class Ftype>
 	//using Callbacks = std::map<const void*, std::function<Ftype>>;
-
 	template <typename Ftype>
 	class Callbacks {
 	public:

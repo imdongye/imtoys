@@ -10,8 +10,8 @@ todo :
 
 */
 
-#ifndef __mesh_maked_
-#define __mesh_maked_
+#ifndef __mesh_maked_h_
+#define __mesh_maked_h_
 
 #include "mesh.h"
 
