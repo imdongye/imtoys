@@ -248,10 +248,9 @@ namespace lim
 		if( this==&src )
 			return *this;
 		AutoCamera::operator=(std::move(src));
-
 		deinitCallbacks();
+
 		src.deinitCallbacks();
-		
 		initCallbacks(src.vp);
 		return *this;
 	}
@@ -263,9 +262,10 @@ namespace lim
 	{
 		if( vp==nullptr )
 			return;
-		AppBase& app = *AppPref::get().app;
 
         vp->resize_callbacks.erase(this);
+		vp = nullptr;
+		AppBase& app = *AppPref::get().app;
 		app.key_callbacks.erase(this);
 		app.update_hooks.erase(this);
 		app.mouse_btn_callbacks.erase(this);
@@ -344,7 +344,6 @@ namespace lim
 		: Viewport(std::move(src))
 	{
 		src.camera.deinitCallbacks();
-		src.camera.vp = nullptr;
 		camera.operator=(std::move(src.camera));
 		camera.initCallbacks(this);
 	}
@@ -352,11 +351,10 @@ namespace lim
 	{
 		if( this==&src )
 			return *this;
+		camera.deinitCallbacks();
 		Viewport::operator=(std::move(src));
 
-		camera.deinitCallbacks();
 		src.camera.deinitCallbacks();
-		src.camera.vp = nullptr;
 		camera.operator=(std::move(src.camera));
 		camera.initCallbacks(this);
 		return *this;

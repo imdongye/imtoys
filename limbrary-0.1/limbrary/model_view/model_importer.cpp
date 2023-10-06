@@ -315,7 +315,7 @@ namespace lim
 
 		/* set node tree structure */
 		recursiveConvertTree(scene->mRootNode, root);
-		log::pure("#meshs %d, #mats %d, #verts %d, #tris %d\n", name.c_str(), my_meshes.size(), my_materials.size(), nr_vertices, nr_triangles);
+		log::pure("#meshs %d, #mats %d, #verts %d, #tris %d\n", my_meshes.size(), my_materials.size(), nr_vertices, nr_triangles);
 		log::pure("boundary size : %f, %f, %f\n", name.c_str(), boundary_size.x, boundary_size.y, boundary_size.z);
 		log::pure("done! convert aiScene in %.2f\n\n", glfwGetTime()-elapsedTime);
 

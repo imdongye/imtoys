@@ -25,6 +25,7 @@ namespace lim
 	}
 	AppPref::~AppPref()
 	{
+		log::pure("delete AppPref\n");
 	}
 
 	void AppPref::create()
