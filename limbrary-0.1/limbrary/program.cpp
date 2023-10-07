@@ -18,15 +18,15 @@ namespace
 		}
 		return true;
 	}
-	bool checkLinkingErrors(GLuint shader)
+	bool checkLinkingErrors(GLuint pid)
 	{
 		GLint success = 0;
 		GLchar infoLog[1024];
 
-		glGetProgramiv(shader, GL_LINK_STATUS, &success);
+		glGetProgramiv(pid, GL_LINK_STATUS, &success);
 		if( !success ) {
-			glGetProgramInfoLog(shader, 1024, NULL, infoLog);
-			lim::log::err("shader linking error\n%s\n",infoLog);
+			glGetProgramInfoLog(pid, 1024, NULL, infoLog);
+			lim::log::err("program linking error\n%s\n",infoLog);
 
 			std::abort();
 			return false;
@@ -72,14 +72,12 @@ namespace lim
 		name = std::move(src.name);
 		home_dir = std::move(src.home_dir);
 		use_hook = std::move(src.use_hook);
-		uniform_location_cache = std::move(src.uniform_location_cache);
 
 		pid = src.pid;
-		vert_id = src.vert_id;
-		frag_id = src.frag_id;
-		geom_id = src.geom_id;
-		comp_id = src.comp_id;
-		src.pid = src.vert_id =src.frag_id = src.geom_id = src.comp_id = 0;
+		src.pid = 0;
+		shaders = std::move(src.shaders);
+		uniform_location_cache = std::move(src.uniform_location_cache);
+		
 		return *this;
 	}
 	Program::~Program() noexcept
@@ -88,22 +86,40 @@ namespace lim
 	}
 	Program& Program::deinitGL()
 	{
-		if( pid ) glDeleteProgram(pid);
-		if( vert_id ) glDeleteShader(vert_id);
-		if( frag_id ) glDeleteShader(frag_id);
-		if( geom_id ) glDeleteShader(geom_id);
-		if( comp_id ) glDeleteShader(comp_id);
-		pid = vert_id = frag_id = geom_id = comp_id = 0;
+		if( pid ) { glDeleteProgram(pid); pid = 0; }
+		for(auto& shader : shaders)
+			shader.deinitGL();
 		return *this;
 	}
+
+
+	void Program::Shader::deinitGL()
+	{
+		if(sid) { glDeleteShader(sid); sid = 0; }
+	}
+	void Program::Shader::createAndCompile()
+	{
+		if(sid) { glDeleteShader(sid); }
+		sid = glCreateShader(type);
+		std::string strSrc = readStrFromFile(path);
+		const GLchar* src = strSrc.c_str();
+		glShaderSource(sid, 1, &src, nullptr);
+		glCompileShader(sid);
+		if( !checkCompileErrors(sid, path) ) {
+			deinitGL();
+			std::exit(EXIT_FAILURE);
+			return;
+		}
+		log::pure("%s compiled\n", path.c_str());
+	}
+
+
 	Program& Program::operator+=(const char* path)
 	{
 		return attatch(path);
 	}
 	Program& Program::attatch(std::string path)
 	{
-		if( pid==0 ) pid = glCreateProgram();
-
 		// 파일이름만 들어왔을때 home_dir 상대경로로 설정
 		if( path.find('/')==std::string::npos && path.find('\\')==std::string::npos ) {
 			path = home_dir+"/shaders/"+path;
@@ -112,60 +128,52 @@ namespace lim
 		GLenum type = getType(path);
 		if(type==0)
 			return*this;
-		GLuint sid = glCreateShader(type);
-		std::string strSrc = readStrFromFile(path);
-		const GLchar* src = strSrc.c_str();
-		glShaderSource(sid, 1, &src, nullptr);
-		glCompileShader(sid);
-		if( !checkCompileErrors(sid, path) ) {
-			glDeleteShader(sid);
-			return *this;
+
+		bool isExist = false;
+		for(auto& shader : shaders) {
+			if(shader.type==type) {
+				shader.path = path;
+				isExist = true;
+			}
 		}
-
-		glAttachShader(pid, sid);
-		log::pure("%s prog : atatched %s\n", name.c_str(), path.c_str());
-
-		switch (type)
-		{
-		case GL_VERTEX_SHADER:
-			vert_id = sid;
-			vert_path = path;
-			break;
-		case GL_FRAGMENT_SHADER:
-			frag_id = sid;
-			frag_path = path;
-			break;
-		case GL_GEOMETRY_SHADER:
-			geom_id = sid;
-			geom_path = path;
-			break;
-		case GL_COMPUTE_SHADER:
-			comp_id = sid;
-			comp_path = path;
-			break;
+		if(!isExist) {
+			shaders.push_back({0, type, path});
 		}
-
 		return *this;
 	}
 	Program& Program::link()
 	{
+		log::pure("%s : initializing\n", name.c_str());
+
+		if( pid ) { glDeleteProgram(pid); }
+		pid = glCreateProgram();
+
+		for(auto& shader : shaders) {
+			shader.createAndCompile();
+			glAttachShader(pid, shader.sid);
+		}
 		glLinkProgram(pid);
+		for(auto& shader : shaders) {
+			glDetachShader(pid, shader.sid);
+			shader.deinitGL(); // 
+		}
 		if( !checkLinkingErrors(pid) ) {
+			deinitGL();
+			std::exit(EXIT_FAILURE);
 			return *this;
 		}
-		log::pure("%s prog: linked\n\n", name.c_str());
+		log::pure("%s : linked\n\n", name.c_str());
 		return *this;
 	}
 	const Program& Program::use() const
 	{
-		if( pid==0 ) {
+		if( pid==0 ) { // todo
 			log::err("program is not linked\n");
 		}
 		glUseProgram(pid);
 		use_hook(*this);
 		return *this;
 	}
-
 	// From: https://www.youtube.com/watch?v=nBB0LGSIm5Q
 	GLint Program::getUniformLocation(const std::string& vname) const
 	{
@@ -177,55 +185,30 @@ namespace lim
 		//if(loc<0) log::err("missing...");
 		return loc;
 	}
-		
+	
+	// type : GL_VERTEX_SHADER, GL_FRAGMENT_SHADER ...
 	Program& Program::reload(GLenum type)
 	{
-		GLuint* curSid;
-		const char* path;
-		switch (type)
-		{
-		case GL_VERTEX_SHADER:
-			curSid = &vert_id;
-			path = vert_path.c_str();
-			break;
-		case GL_FRAGMENT_SHADER:
-			curSid = &frag_id;
-			path = frag_path.c_str();
-			break;
-		case GL_GEOMETRY_SHADER:
-			curSid = &geom_id;
-			path = geom_path.c_str();
-			break;
-#ifndef __APPLE__
-		case GL_COMPUTE_SHADER:
-			curSid = &comp_id;
-			path = comp_path.c_str();
-			break;
-#endif
-		default:
-			log::err("can't reload that type\n");
-			return *this;
-		}
+		log::pure("%s : reloading\n", name.c_str());
+		uniform_location_cache.clear();
+		if( pid ) { glDeleteProgram(pid); }
+		pid = glCreateProgram();
 
-		GLuint oldSid = *curSid;
-		glDetachShader(pid, oldSid);
-		
-		GLuint newSid = glCreateShader(type);
-		std::string strSrc = readStrFromFile(path);
-		const GLchar* src = strSrc.c_str();
-		glShaderSource(newSid, 1, &src, nullptr);
-		glCompileShader(newSid);
-		if( !checkCompileErrors(newSid, path) ) {
-			return *this;
+		for(auto& shader : shaders) {
+			shader.createAndCompile();
+			glAttachShader(pid, shader.sid);
 		}
-		glAttachShader(pid, newSid);
 		glLinkProgram(pid);
+		for(auto& shader : shaders) {
+			glDetachShader(pid, shader.sid);
+			shader.deinitGL();
+		}
 		if( !checkLinkingErrors(pid) ) {
+			deinitGL();
+			std::exit(EXIT_FAILURE);
 			return *this;
 		}
-		glDeleteShader(oldSid);
-		*curSid = newSid;
-		log::pure("%s prog: reload at %s\n", name.c_str(), path);
+		log::pure("%s : linked\n\n", name.c_str());
 		return *this;
 	}
 }

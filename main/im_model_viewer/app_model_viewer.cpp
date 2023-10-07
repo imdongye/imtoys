@@ -9,7 +9,6 @@ using namespace glm;
 
 namespace
 {
-	bool _reload_trigger = false;
 }
 
 namespace lim
@@ -24,13 +23,6 @@ namespace lim
 		program.attatch("mvp.vs").attatch("debug.fs").link();
 
 		addModelViewer("assets/models/objs/spot.obj");
-
-		loop_end_hooks[this] = [this](float dt) {
-			if(_reload_trigger) {
-				_reload_trigger = false;
-				program.reload(GL_FRAGMENT_SHADER);
-			}
-		};
 	}
 	AppModelViewer::~AppModelViewer()
 	{
@@ -101,7 +93,12 @@ namespace lim
 		ImGui::Begin("controller##model_viewer");
 		ImGui::Text("hi");
 		if(ImGui::Button("reload .fs")) {
-			_reload_trigger = true;
+			// Program newProg;
+			// newProg.name = "model_view";
+			// newProg.home_dir = APP_DIR;
+			// newProg.attatch("mvp.vs").attatch("debug.fs").link();
+
+			program.reload(GL_FRAGMENT_SHADER);
 		}
 		ImGui::End();
 

@@ -4,15 +4,18 @@
 
 edit learnopengl code + toys.h by prof shin
 
-Note:
+Usage:
 1. Auto Pathing 파일 이름만 있다면 설정해둔 home_dir에서 정해진 shader경로로 포맷에 맞춰 읽어온다.
    경로로 입력되면 Auto Pathing하지 않는다.
 2. Chaining : shadowProgram.attatch("sp_shadow.vert").attatch("shadow.frag")
 					 .attach("shadow.geom").link();
+3. Reload : prog = std::move(newProg);
+
+Note:
+glDeleteShader은 모든 Progrma에 detach 되어야만 동작함.
 
 Todo:
-1. bind with method ( 일단 gltools의 오버로딩된 bind함수 복붙 )
-2. include 기능 pre processor
+1. include 기능 pre processor
 
 */
 
@@ -37,15 +40,15 @@ namespace lim
 		std::function<void(const Program&)> use_hook = [](const Program& p){};
 
 	private:
+		struct Shader {
+			GLuint sid = 0;
+			GLenum type = 0;
+			std::string path;
+			void createAndCompile();
+			void deinitGL();
+		};
+		std::vector<Shader> shaders;
 		GLuint pid = 0;
-		GLuint vert_id = 0;
-		GLuint frag_id = 0;
-		GLuint geom_id = 0;
-		GLuint comp_id = 0;
-		std::string vert_path;
-		std::string frag_path;
-		std::string geom_path;
-		std::string comp_path;
 		mutable std::unordered_map<std::string, GLint> uniform_location_cache;
 
 	private:
