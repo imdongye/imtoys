@@ -90,9 +90,9 @@ namespace lim
 		h_prog.attatch("hatching.vs").attatch("hatching.fs").link();
 		h_prog.use_hook = [this](const Program& prog) 
 		{
-			prog.bind("uvScale", uv_scale);
-			prog.bind("fixedArtMapIdx", fixed_art_map_idx);
-			prog.bind("is6way", is6way);
+			prog.setUniform("uvScale", uv_scale);
+			prog.setUniform("fixedArtMapIdx", fixed_art_map_idx);
+			prog.setUniform("is6way", is6way);
 
 
 			/* texture binding */
@@ -103,7 +103,7 @@ namespace lim
 				glBindTexture(GL_TEXTURE_2D, am.tex_id);
 			}
 			int tam[6] = {5,4,3,2,1,0};
-			prog.bind("tam", nr_tones, tam);
+			prog.setUniform("tam", nr_tones, tam);
 		};
 
 		h_mat.prog = &h_prog;

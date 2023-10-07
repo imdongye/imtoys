@@ -40,7 +40,7 @@ namespace lim
 		programs.back().home_dir = APP_DIR;
 		programs.back().attatch("uv_view.vs").attatch("debug.fs").link();
 		programs.back().use_hook = [](const Program& prog) {
-			prog.bind("gamma", 1.f);
+			prog.setUniform("gamma", 1.f);
 		};
 
 		for( const auto& prog : programs )

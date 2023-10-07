@@ -55,7 +55,7 @@ namespace lim
 	{
 		default_material = &AssetLib::get().default_material;
 	}
-	Model::Model(const Model& src)
+	Model::Model(const Model& src) 
 	{
 		log::warn("Model is copied\n\n");
 		name = src.name;

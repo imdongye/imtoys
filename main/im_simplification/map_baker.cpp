@@ -20,7 +20,6 @@ namespace lim
 			log::err("not mached model in bake normal map\n\n");
             return;
         }
-        namespace fs = std::filesystem;
         Framebuffer srcNormalMap;
         srcNormalMap.clear_color = {0.5, 0.5, 1, 1};
         srcNormalMap.resize(texSize);
@@ -59,13 +58,13 @@ namespace lim
             /* src의 world space normal bump맵 적용해서 텍스쳐로 가져오기 */
             srcNormalMap.bind();
             normalDrawProg.use();
-            normalDrawProg.bind("map_Flags", srcMat.map_Flags);
+            normalDrawProg.setUniform("map_Flags", srcMat.map_Flags);
             if ( srcMat.map_Flags & (Material::MF_Bump|Material::MF_Nor) ) {
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, srcMat.map_Bump->tex_id);
-                normalDrawProg.bind("map_Bump", 0);
-                normalDrawProg.bind("texDelta", srcMat.texDelta);
-                normalDrawProg.bind("bumpHeight", srcMat.bumpHeight);
+                normalDrawProg.setUniform("map_Bump", 0);
+                normalDrawProg.setUniform("texDelta", srcMat.texDelta);
+                normalDrawProg.setUniform("bumpHeight", srcMat.bumpHeight);
             }
             // 원본의 노멀과 bumpmap, Target의 노멀으로 그린다.
             for( auto& [srcMs, dstMs] : meshes ) {
@@ -88,7 +87,7 @@ namespace lim
             bakerProg.use();
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, srcNormalMap.color_tex);
-            bakerProg.bind("map_OriNormal", 0);
+            bakerProg.setUniform("map_OriNormal", 0);
             
             for( auto& [srcMs, dstMs] : meshes ) {
                 dstMs->drawGL();
@@ -152,10 +151,10 @@ namespace lim
             bumpToNorProg.use();
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, mat.map_Bump->tex_id);
-            bumpToNorProg.bind("map_Bump", 0);
-            bumpToNorProg.bind("map_Flags", mat.map_Flags);
-            bumpToNorProg.bind("texDelta", mat.texDelta);
-            bumpToNorProg.bind("bumpHeight", mat.bumpHeight);
+            bumpToNorProg.setUniform("map_Bump", 0);
+            bumpToNorProg.setUniform("map_Flags", mat.map_Flags);
+            bumpToNorProg.setUniform("texDelta", mat.texDelta);
+            bumpToNorProg.setUniform("bumpHeight", mat.bumpHeight);
             for( Mesh* ms : meshes ) {
                 ms->drawGL();
             }

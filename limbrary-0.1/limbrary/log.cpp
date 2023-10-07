@@ -148,7 +148,9 @@ namespace lim
         
         ImGui::Separator();
 
-        if (ImGui::BeginChild("scrolling", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar))
+        ImGuiWindowFlags scrolViewFlags = 0;
+        //scrolViewFlags |= ImGuiWindowFlags_HorizontalScrollbar;
+        if(ImGui::BeginChild("scrolling", ImVec2(0, 0), false, scrolViewFlags))
         {
             if (doClear)
                 log::clear();
@@ -185,7 +187,7 @@ namespace lim
             }
             ImGui::PopStyleVar();
 
-            if (is_auto_scroll_on && ImGui::GetScrollY() >= ImGui::GetScrollMaxY())
+            if(is_auto_scroll_on && ImGui::GetScrollY() >= ImGui::GetScrollMaxY())
                 ImGui::SetScrollHereY(1.0f);
         }
         ImGui::EndChild();

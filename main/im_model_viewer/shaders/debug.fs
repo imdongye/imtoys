@@ -26,6 +26,7 @@ void main() {
 	vec4 albelo = ( (map_Flags&1) > 0 ) ? texture(map_Kd, mUv) : Kd;
 	
     vec3 outColor = albelo.rgb*0.5+albelo.rgb*vec3(ndv*0.5);
+	//outColor = vec3(1.f);
 
 	fragColor = vec4(outColor,1);
 }

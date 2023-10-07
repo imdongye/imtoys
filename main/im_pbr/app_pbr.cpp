@@ -37,7 +37,7 @@ namespace lim
 		model.updateModelMat();
 
 		/* initialize static shader uniforms before rendering */
-		prog.use().bind("ao", 1.0f);
+		prog.use().setUniform("ao", 1.0f);
 	}
 	AppPbr::~AppPbr()
 	{
@@ -59,24 +59,24 @@ namespace lim
 
 		prog.use();
 
-		prog.bind("beckmannGamma", beckmannGamma);
+		prog.setUniform("beckmannGamma", beckmannGamma);
 		const Camera& cam = viewport.camera;
-		prog.bind("view", cam.view_mat);
-		prog.bind("camPos", cam.position);
-		prog.bind("projection", cam.proj_mat);
+		prog.setUniform("view", cam.view_mat);
+		prog.setUniform("camPos", cam.position);
+		prog.setUniform("projection", cam.proj_mat);
 
 		glm::vec3 lightPos = light_position + glm::vec3(sin(glfwGetTime() * 2.0) * 5.0, 0.0, 0.0);
 		if(!movedLight) lightPos = light_position;
-		prog.bind("lightPosition", lightPos);
-		prog.bind("lightColor", light_color);
+		prog.setUniform("lightPosition", lightPos);
+		prog.setUniform("lightColor", light_color);
 
 		glm::mat4 modelMat;
 
 		///* draw light */
 		modelMat = glm::translate(glm::mat4(1), lightPos);
 		modelMat = glm::scale(modelMat, glm::vec3(0.5f));
-		prog.bind("model", modelMat);
-		prog.bind("Kd", glm::vec3(1,1,1));
+		prog.setUniform("model", modelMat);
+		prog.setUniform("Kd", glm::vec3(1,1,1));
 		sphere.drawGL();
 
 
@@ -84,51 +84,51 @@ namespace lim
 		glm::vec2 pivot = {(nr_cols-1)*spacing*0.5f, (nr_rows-1)*spacing*0.5f};
 
 		for( int row = 0; row < nr_rows; ++row ) {
-			prog.bind("metallic", row/(float)nr_rows);
-			prog.bind("isGGX", (row%2==0));
+			prog.setUniform("metallic", row/(float)nr_rows);
+			prog.setUniform("isGGX", (row%2==0));
 
 			for( int col = 0; col < nr_cols; ++col ) {
 				if( row<2 ) {
 					// under 0.05 to error
-					prog.bind("roughness", glm::clamp( col/(float)nr_cols, 0.05f, 1.0f));
-					prog.bind("albedo", albedo);
-					prog.bind("metallic", 0.f);
+					prog.setUniform("roughness", glm::clamp( col/(float)nr_cols, 0.05f, 1.0f));
+					prog.setUniform("albedo", albedo);
+					prog.setUniform("metallic", 0.f);
 				}
 				else {
-					prog.bind("roughness", glm::clamp( 1/(float)nr_cols, 0.05f, 1.0f));
-					prog.bind("albedo", metal_colors[col]);
-					prog.bind("metallic", 1.f);
+					prog.setUniform("roughness", glm::clamp( 1/(float)nr_cols, 0.05f, 1.0f));
+					prog.setUniform("albedo", metal_colors[col]);
+					prog.setUniform("metallic", 1.f);
 				}
 
 				modelMat = glm::translate(glm::mat4(1.0f), glm::vec3( col*spacing-pivot.x, pivot.y-row*spacing, 0.0f ));
-				prog.bind("model", modelMat);
+				prog.setUniform("model", modelMat);
 
 				sphere.drawGL();
 			}
 		}
 
-		prog.bind("albedo", metal_colors[0]);
-		prog.bind("metallic", metallic);
-		prog.bind("roughness", roughness);
+		prog.setUniform("albedo", metal_colors[0]);
+		prog.setUniform("metallic", metallic);
+		prog.setUniform("roughness", roughness);
 
 		///* draw two test shpere */
-		prog.bind("isGGX", true);
+		prog.setUniform("isGGX", true);
 		modelMat = glm::translate(glm::mat4(1), glm::vec3(spacing*3, spacing, 0));
 		modelMat *= glm::scale(glm::vec3(2.f));
-		prog.bind("model", modelMat);
+		prog.setUniform("model", modelMat);
 		sphere.drawGL();
 
 
-		prog.bind("isGGX", false);
+		prog.setUniform("isGGX", false);
 		modelMat = glm::translate(glm::mat4(1), glm::vec3(spacing*3, -spacing, 0));
 		modelMat *= glm::scale(glm::vec3(2.f));
-		prog.bind("model", modelMat);
+		prog.setUniform("model", modelMat);
 		sphere.drawGL();
 
 
 		/* draw models */
-		prog.bind("isGGX", true);
-		prog.bind("model", model.model_mat);
+		prog.setUniform("isGGX", true);
+		prog.setUniform("model", model.model_mat);
 		for( const Mesh* mesh: model.my_meshes ) {
 			mesh->drawGL();
 		}

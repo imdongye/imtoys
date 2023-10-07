@@ -33,9 +33,6 @@ namespace lim
 		
 		double delta_time; // sec
 
-		bool is_windowed = true;
-		bool is_borderless = false;
-
 		// relative to ratina or window monitor setting
 		int win_width, win_height;
 		// real pixel coordinate
@@ -44,14 +41,15 @@ namespace lim
 		float pixel_ratio;    // (DPI)
 		glm::vec2 mouse_pos;
 
-		Callbacks<void(float deltaTime)> update_hooks;
-		Callbacks<void(int width, int height)> win_size_callbacks;
-		Callbacks<void(int width, int height)> framebuffer_size_callbacks;
+		Callbacks<void(float deltaTime)> 							 update_hooks;
+		Callbacks<void(float deltaTime)> 							 loop_end_hooks;
+		Callbacks<void(int width, int height)> 						 win_size_callbacks;
+		Callbacks<void(int width, int height)> 						 framebuffer_size_callbacks;
 		Callbacks<void(int key, int scancode, int action, int mods)> key_callbacks;
-		Callbacks<void(int button, int action, int mods)> mouse_btn_callbacks;
-		Callbacks<void(double xOff, double yOff)> scroll_callbacks;
-		Callbacks<void(double xPos, double yPos)> cursor_pos_callbacks;
-		Callbacks<void(int count, const char **paths)> dnd_callbacks;
+		Callbacks<void(int button, int action, int mods)>			 mouse_btn_callbacks;
+		Callbacks<void(double xOff, double yOff)>					 scroll_callbacks;
+		Callbacks<void(double xPos, double yPos)>					 cursor_pos_callbacks;
+		Callbacks<void(int count, const char **paths)>				 dnd_callbacks;
 
 	protected:
 		virtual void update()=0;
@@ -71,10 +69,6 @@ namespace lim
 		/* destroy */
 		virtual ~AppBase();
 		void run();
-		void applyWindowSetting();
-	private:
-		void registerGlfwCallbacks();
-		void printVersionAndStatus();
 	};
 }
 

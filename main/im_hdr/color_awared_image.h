@@ -649,15 +649,15 @@ RAW bit :)");
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, tex_id);
 
-			prog.bind("tex", 0);
-			prog.bind("nrChannels", nr_channels);
+			prog.setUniform("tex", 0);
+			prog.setUniform("nrChannels", nr_channels);
 			
-			prog.bind("inputGamma", profile.gamma);
-			prog.bind("outputGamma", output_gamma);
+			prog.setUniform("inputGamma", profile.gamma);
+			prog.setUniform("outputGamma", output_gamma);
 
-			prog.bind("RGB2PCS", RGB2PCS);
-			prog.bind("chromaticAdaptation", chromatic_adaptation);
-			prog.bind("PCS2RGB", PCS2RGB);
+			prog.setUniform("RGB2PCS", RGB2PCS);
+			prog.setUniform("chromaticAdaptation", chromatic_adaptation);
+			prog.setUniform("PCS2RGB", PCS2RGB);
 
 			AssetLib::get().screen_quad.drawGL();
 

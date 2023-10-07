@@ -168,7 +168,7 @@ namespace lim
 
 		internal_format = internalFormat;
 		format = path.c_str()+path.rfind('.')+1;
-		name = std::string(path.c_str()+path.find_last_of("/\\")+2);
+		name = std::string(path.c_str()+path.find_last_of("/\\")+1);
 		aspect_ratio = width/(float)height;
 
 		initGL(data);
@@ -274,8 +274,8 @@ namespace lim
 		prog.use();
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texId);
-		prog.bind("tex", 0);
-		prog.bind("gamma", gamma);
+		prog.setUniform("tex", 0);
+		prog.setUniform("gamma", gamma);
 
 		glBindVertexArray(AssetLib::get().screen_quad.vert_array);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, AssetLib::get().screen_quad.element_buf);

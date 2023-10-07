@@ -210,17 +210,17 @@ namespace lim
 
         prog->use();
 
-        prog->bind("viewMat", camera->view_mat);
-        prog->bind("cameraPos", camera->position);
-        prog->bind("projMat", camera->proj_mat);
+        prog->setUniform("viewMat", camera->view_mat);
+        prog->setUniform("cameraPos", camera->position);
+        prog->setUniform("projMat", camera->proj_mat);
 
-        prog->bind("modelMat", glm::mat4(1));
+        prog->setUniform("modelMat", glm::mat4(1));
         glBindVertexArray(dest->vert_array);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, dest->element_buf);
         glDrawElements(GL_POINTS, dest->tris.size()*3, GL_UNSIGNED_INT, 0);
 		
 
-        prog->bind("modelMat", icp_mat);
+        prog->setUniform("modelMat", icp_mat);
         glBindVertexArray(src->vert_array);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, src->element_buf);
         glDrawElements(GL_POINTS, dest->tris.size()*3, GL_UNSIGNED_INT, 0);

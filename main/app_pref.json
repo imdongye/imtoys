@@ -5,7 +5,7 @@
         "assets/models/gltf_samples/Avocado/glTF-Quantized/Avocado.gltf",
         "assets/models/gltf_samples/Buggy/glTF/Buggy.gltf",
         "exports/simp_rst/Dwarf_2_Low_glb/Dwarf_2_Low.glb",
-        "assets/models/dwarf/Dwarf_2_Low.obj",
-        "assets/models/gltf_samples/WaterBottle/glTF/WaterBottle.gltf"
+        "assets/models/gltf_samples/WaterBottle/glTF/WaterBottle.gltf",
+        "assets/models/dwarf/Dwarf_2_Low.obj"
     ]
 }

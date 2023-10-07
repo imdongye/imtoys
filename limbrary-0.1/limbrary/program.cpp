@@ -2,6 +2,56 @@
 #include <limbrary/log.h>
 #include <limbrary/utils.h>
 
+namespace
+{
+	bool checkCompileErrors(GLuint shader, std::string_view path)
+	{
+		GLint success;
+		GLchar infoLog[1024];
+
+		glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+		if( !success ) {
+			glGetShaderInfoLog(shader, 1024, NULL, infoLog);
+			lim::log::err("shader compile error in %s\n%s\n",path.data(), infoLog);
+			//std::abort();
+			return false;
+		}
+		return true;
+	}
+	bool checkLinkingErrors(GLuint shader)
+	{
+		GLint success = 0;
+		GLchar infoLog[1024];
+
+		glGetProgramiv(shader, GL_LINK_STATUS, &success);
+		if( !success ) {
+			glGetProgramInfoLog(shader, 1024, NULL, infoLog);
+			lim::log::err("shader linking error\n%s\n",infoLog);
+
+			std::abort();
+			return false;
+		}
+		return true;
+	}
+	GLenum getType(std::string_view path)
+	{
+		size_t index = path.rfind(".");
+		std::string_view ext = path.substr(index + 1);
+		if( ext=="vert"||ext=="vs" )
+			return GL_VERTEX_SHADER;
+		else if( ext=="frag"||ext=="fs" )
+			return GL_FRAGMENT_SHADER;
+		else if( ext=="geom"||ext=="gs" )
+			return GL_GEOMETRY_SHADER;
+#ifndef __APPLE__
+		else if( ext=="comp"||ext=="cs" )
+			return GL_COMPUTE_SHADER;
+#endif
+		lim::log::err("%s extension is not supported.\n", ext.data());
+		return 0;
+	}
+}
+
 namespace lim
 {
 	Program::Program(std::string_view _name)
@@ -54,102 +104,58 @@ namespace lim
 	{
 		if( pid==0 ) pid = glCreateProgram();
 
-		auto [sid, type] = createShaderAuto(path);
-
-		if( sid==0 ) {
-			log::err("%s extension is not supported.\n", type);
-			return *this;
-		}
-		// AUTO PATHING : 파일이름만 들어오면 homedir경로로
+		// 파일이름만 들어왔을때 home_dir 상대경로로 설정
 		if( path.find('/')==std::string::npos && path.find('\\')==std::string::npos ) {
-			// todo: 임시 객체 줄이기 최적화
 			path = home_dir+"/shaders/"+path;
 		}
 
-		// load text
-		std::string scode = readStrFromFile(path);
-
-		// compile
-		const GLchar* ccode = scode.c_str();
-		glShaderSource(sid, 1, &ccode, nullptr);
+		GLenum type = getType(path);
+		if(type==0)
+			return*this;
+		GLuint sid = glCreateShader(type);
+		std::string strSrc = readStrFromFile(path);
+		const GLchar* src = strSrc.c_str();
+		glShaderSource(sid, 1, &src, nullptr);
 		glCompileShader(sid);
 		if( !checkCompileErrors(sid, path) ) {
-			sid = 0;
+			glDeleteShader(sid);
 			return *this;
 		}
+
 		glAttachShader(pid, sid);
-		log::pure("%s prog : attch %s success\n", name.c_str(), path.c_str());
+		log::pure("%s prog : atatched %s\n", name.c_str(), path.c_str());
+
+		switch (type)
+		{
+		case GL_VERTEX_SHADER:
+			vert_id = sid;
+			vert_path = path;
+			break;
+		case GL_FRAGMENT_SHADER:
+			frag_id = sid;
+			frag_path = path;
+			break;
+		case GL_GEOMETRY_SHADER:
+			geom_id = sid;
+			geom_path = path;
+			break;
+		case GL_COMPUTE_SHADER:
+			comp_id = sid;
+			comp_path = path;
+			break;
+		}
 
 		return *this;
 	}
 	Program& Program::link()
 	{
 		glLinkProgram(pid);
-		glUseProgram (pid);
 		if( !checkLinkingErrors(pid) ) {
-			pid = 0;
 			return *this;
 		}
-		log::pure("%s prog : linking success\n\n", name.c_str());
+		log::pure("%s prog: linked\n\n", name.c_str());
 		return *this;
 	}
-	bool Program::checkCompileErrors(GLuint shader, std::string_view path)
-	{
-		GLint success;
-		GLchar infoLog[1024];
-
-		glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-		if( !success ) {
-			glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-			log::err("shader compile error in %s\n%s\n",path.data(), infoLog);
-			//std::abort();
-			return false;
-		}
-		return true;
-	}
-	bool Program::checkLinkingErrors(GLuint shader)
-	{
-		GLint success = 0;
-		GLchar infoLog[1024];
-
-		glGetProgramiv(shader, GL_LINK_STATUS, &success);
-		if( !success ) {
-			glGetProgramInfoLog(shader, 1024, NULL, infoLog);
-			log::err("shader linking error\n%s\n",infoLog);
-
-			std::abort();
-			return false;
-		}
-		return true;
-	}
-	// string_view는 char* char[]을 받아도 string으로 임시객체를 만들지 않고 포인터를 사용함
-	std::tuple<int, const char*> Program::createShaderAuto(const std::string_view filename)
-	{
-		size_t index = filename.rfind(".");
-		std::string_view ext = filename.substr(index + 1);
-		if( ext=="vert"||ext=="vs" ) {
-			vert_id = glCreateShader(GL_VERTEX_SHADER);
-			return std::make_tuple(vert_id, "vertex");
-		}
-		else if( ext=="frag"||ext=="fs" ) {
-			frag_id = glCreateShader(GL_FRAGMENT_SHADER);
-			return std::make_tuple(frag_id, "fragment");
-		}
-		else if( ext=="geom"||ext=="gs" ) {
-			geom_id = glCreateShader(GL_GEOMETRY_SHADER);
-			return std::make_tuple(geom_id, "geometry");
-		}
-		else if( ext=="comp"||ext=="cs" ) {
-#ifndef __APPLE__
-			comp_id = glCreateShader(GL_COMPUTE_SHADER);
-#endif
-			return std::make_tuple(comp_id, "compute");
-		}
-
-		return std::make_tuple(0, "none");
-	}
-
-
 	const Program& Program::use() const
 	{
 		if( pid==0 ) {
@@ -170,5 +176,56 @@ namespace lim
 		uniform_location_cache[vname] = loc;
 		//if(loc<0) log::err("missing...");
 		return loc;
+	}
+		
+	Program& Program::reload(GLenum type)
+	{
+		GLuint* curSid;
+		const char* path;
+		switch (type)
+		{
+		case GL_VERTEX_SHADER:
+			curSid = &vert_id;
+			path = vert_path.c_str();
+			break;
+		case GL_FRAGMENT_SHADER:
+			curSid = &frag_id;
+			path = frag_path.c_str();
+			break;
+		case GL_GEOMETRY_SHADER:
+			curSid = &geom_id;
+			path = geom_path.c_str();
+			break;
+#ifndef __APPLE__
+		case GL_COMPUTE_SHADER:
+			curSid = &comp_id;
+			path = comp_path.c_str();
+			break;
+#endif
+		default:
+			log::err("can't reload that type\n");
+			return *this;
+		}
+
+		GLuint oldSid = *curSid;
+		glDetachShader(pid, oldSid);
+		
+		GLuint newSid = glCreateShader(type);
+		std::string strSrc = readStrFromFile(path);
+		const GLchar* src = strSrc.c_str();
+		glShaderSource(newSid, 1, &src, nullptr);
+		glCompileShader(newSid);
+		if( !checkCompileErrors(newSid, path) ) {
+			return *this;
+		}
+		glAttachShader(pid, newSid);
+		glLinkProgram(pid);
+		if( !checkLinkingErrors(pid) ) {
+			return *this;
+		}
+		glDeleteShader(oldSid);
+		*curSid = newSid;
+		log::pure("%s prog: reload at %s\n", name.c_str(), path);
+		return *this;
 	}
 }

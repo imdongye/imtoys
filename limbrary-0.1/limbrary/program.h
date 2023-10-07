@@ -42,6 +42,10 @@ namespace lim
 		GLuint frag_id = 0;
 		GLuint geom_id = 0;
 		GLuint comp_id = 0;
+		std::string vert_path;
+		std::string frag_path;
+		std::string geom_path;
+		std::string comp_path;
 		mutable std::unordered_map<std::string, GLint> uniform_location_cache;
 
 	private:
@@ -59,58 +63,55 @@ namespace lim
 		Program& operator+=(const char *path);
 		Program& attatch(std::string path);
 		Program& link();
+		// type : GL_VERTEX_SHADER, GL_FRAGMENT_SHADER ...
+		Program& reload(GLenum type);
 
 		const Program& use() const;
 
 	private:
-		static bool checkCompileErrors(GLuint shader, std::string_view path);
-		static bool checkLinkingErrors(GLuint shader);
-		// string_view는 char* char[]을 받아도 string으로 임시객체를 만들지 않고 포인터를 사용함
-		std::tuple<int, const char *> createShaderAuto(const std::string_view filename);
-
 		GLint getUniformLocation(const std::string& vname) const;
 	public:
-		inline const Program& bind(const std::string& vname, const int v) const {
+		inline const Program& setUniform(const std::string& vname, const int v) const {
 			glUniform1i(getUniformLocation(vname), v);
 			return *this;
 		}
-		inline const Program& bind(const std::string& vname, int n, const int v[]) const {
+		inline const Program& setUniform(const std::string& vname, int n, const int v[]) const {
 			glUniform1iv(getUniformLocation(vname), n, (GLint*)v);
 			return *this;
 		}
-		inline const Program& bind(const std::string& vname, const glm::ivec2& v) const {
+		inline const Program& setUniform(const std::string& vname, const glm::ivec2& v) const {
 			glUniform2iv(getUniformLocation(vname), 1, glm::value_ptr(v));
 			return *this;
 		}
-		inline const Program& bind(const std::string& vname, const glm::ivec3& v) const {
+		inline const Program& setUniform(const std::string& vname, const glm::ivec3& v) const {
 			glUniform3iv(getUniformLocation(vname), 1, glm::value_ptr(v));
 			return *this;
 		}
-		inline const Program& bind(const std::string& vname, const float v) const {
+		inline const Program& setUniform(const std::string& vname, const float v) const {
 			glUniform1f(getUniformLocation(vname), v);
 			return *this;
 		}
-		inline const Program& bind(const std::string& vname, const glm::vec2& v) const {
+		inline const Program& setUniform(const std::string& vname, const glm::vec2& v) const {
 			glUniform2fv(getUniformLocation(vname), 1, glm::value_ptr(v));
 			return *this;
 		}
-		inline const Program& bind(const std::string& vname, const glm::vec3& v) const {
+		inline const Program& setUniform(const std::string& vname, const glm::vec3& v) const {
 			glUniform3fv(getUniformLocation(vname), 1, glm::value_ptr(v));
 			return *this;
 		}
-		inline const Program& bind(const std::string& vname, const glm::vec4& v) const {
+		inline const Program& setUniform(const std::string& vname, const glm::vec4& v) const {
 			glUniform4fv(getUniformLocation(vname), 1, glm::value_ptr(v));
 			return *this;
 		}
-		inline const Program& bind(const std::string& vname, int n, const glm::vec3 *v) const {
+		inline const Program& setUniform(const std::string& vname, int n, const glm::vec3 *v) const {
 			glUniform3fv(getUniformLocation(vname), n, (GLfloat*)v);
 			return *this;
 		}
-		inline const Program& bind(const std::string& vname, const glm::mat3& v) const {
+		inline const Program& setUniform(const std::string& vname, const glm::mat3& v) const {
 			glUniformMatrix3fv(getUniformLocation(vname), 1, 0, glm::value_ptr(v));
 			return *this;
 		}
-		inline const Program& bind(const std::string& vname, const glm::mat4& v) const {
+		inline const Program& setUniform(const std::string& vname, const glm::mat4& v) const {
 			glUniformMatrix4fv(getUniformLocation(vname), 1, 0, glm::value_ptr(v));
 			return *this;
 		}
