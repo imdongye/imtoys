@@ -1,7 +1,6 @@
 #include "app_model_viewer.h"
 #include <imgui.h>
 #include <limbrary/model_view/renderer.h>
-#include <filesystem>
 
 using namespace lim;
 using namespace std;
@@ -13,12 +12,11 @@ namespace
 
 namespace lim
 {
-	AppModelViewer::AppModelViewer() : AppBase(1200, 780, APP_NAME)
+	AppModelViewer::AppModelViewer() : AppBase(780, 780, APP_NAME, false)
 	{
 		viewports.reserve(5);
 		models.reserve(5);
 
-		program.name = "model_view";
 		program.home_dir = APP_DIR;
 		program.attatch("mvp.vs").attatch("debug.fs").link();
 
@@ -30,32 +28,12 @@ namespace lim
 
 	void AppModelViewer::addModelViewer(string path) 
 	{
-		if( filesystem::is_directory(path) ) {
-			bool isModel = false;
-			for( const auto & entry : std::filesystem::directory_iterator(path) ) {
-				string fm = entry.path().extension().string();
-				for( int i=0; i<getNrImportFormats(); i++ ) {
-					if(strIsSame( getImportFormat(i), fm.c_str()+1 )) {
-						path = entry.path().string();
-						isModel = true;
-						break;
-					}
-				}
-				if(isModel)
-					break;
-			}
-			if(!isModel) {
-				log::err("no model in %s\n", path.c_str());
-				return;
-			}
-		}
 		Model md;
-		if( md.importFromFile(path, true)==false )
+		if( md.importFromFile(findModelInDirectory(path), true)==false )
 			return;
 
-		char* vpName = fmtStrToBuf("viewport%d##model_view", (int)viewports.size());
-		viewports.emplace_back(vpName, new FramebufferRbDepth());
-		//viewports.back().resize()
+		char* vpName = fmtStrToBuf("%s##model_view", md.name.c_str());
+		viewports.emplace_back(vpName, new FramebufferMs(8));
 		viewports.back().camera.viewing_mode = VpAutoCamera::VM_PIVOT;
 		models.push_back(std::move(md));
 	}
@@ -91,13 +69,9 @@ namespace lim
 		log::drawViewer("logger##model_viewer");
 
 		ImGui::Begin("controller##model_viewer");
-		ImGui::Text("hi");
+		ImGui::Text("%.1f FPS", ImGui::GetIO().Framerate);
+        
 		if(ImGui::Button("reload .fs")) {
-			// Program newProg;
-			// newProg.name = "model_view";
-			// newProg.home_dir = APP_DIR;
-			// newProg.attatch("mvp.vs").attatch("debug.fs").link();
-
 			program.reload(GL_FRAGMENT_SHADER);
 		}
 		ImGui::End();
@@ -108,6 +82,10 @@ namespace lim
 	}
 	void AppModelViewer::keyCallback(int key, int scancode, int action, int mods)
 	{
+		// glFinish후 호출돼서 여기서 프로그램 리로드 해도됨.
+		if( ( GLFW_MOD_CONTROL == mods ) && ( 'R' == key ) ) {
+			program.reload(GL_FRAGMENT_SHADER);
+		}
 	}
 	void AppModelViewer::cursorPosCallback(double xPos, double yPos)
 	{

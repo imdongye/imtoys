@@ -65,7 +65,7 @@ namespace lim
 		AppBase& operator=(const AppBase&) = delete;
 	public:
 		/* init */
-		AppBase(int winWidth=1280, int winHeight=720, const char* title="nonamed");
+		AppBase(int winWidth=1280, int winHeight=720, const char* title="nonamed", bool vsync=true);
 		/* destroy */
 		virtual ~AppBase();
 		void run();

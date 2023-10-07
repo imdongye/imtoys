@@ -116,7 +116,7 @@ namespace lim
 		void changeKey(const void* src, const void* dst)
 		{
 			if( src == dst ) {
-				log::err("same key in callbacks\n\n");
+				log::err("same key input in callbacks\n\n");
 				return;
 			}
 			for( auto& key : keys ) {

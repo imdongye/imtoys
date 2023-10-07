@@ -35,8 +35,8 @@ namespace
 	}
 	GLenum getType(std::string_view path)
 	{
-		size_t index = path.rfind(".");
-		std::string_view ext = path.substr(index + 1);
+		size_t idx = path.rfind(".");
+		std::string_view ext = path.substr(idx+1);
 		if( ext=="vert"||ext=="vs" )
 			return GL_VERTEX_SHADER;
 		else if( ext=="frag"||ext=="fs" )
@@ -74,7 +74,7 @@ namespace lim
 		use_hook = std::move(src.use_hook);
 
 		pid = src.pid;
-		src.pid = 0;
+		src.pid = 0;// 바뀌는지 todo
 		shaders = std::move(src.shaders);
 		uniform_location_cache = std::move(src.uniform_location_cache);
 		
@@ -86,17 +86,15 @@ namespace lim
 	}
 	Program& Program::deinitGL()
 	{
-		if( pid ) { glDeleteProgram(pid); pid = 0; }
-		for(auto& shader : shaders)
+		for(auto& shader : shaders) {
+			glDetachShader(pid, shader.sid);
 			shader.deinitGL();
+		}
+		if( pid ) { glDeleteProgram(pid); pid = 0; }
 		return *this;
 	}
 
 
-	void Program::Shader::deinitGL()
-	{
-		if(sid) { glDeleteShader(sid); sid = 0; }
-	}
 	void Program::Shader::createAndCompile()
 	{
 		if(sid) { glDeleteShader(sid); }
@@ -107,10 +105,13 @@ namespace lim
 		glCompileShader(sid);
 		if( !checkCompileErrors(sid, path) ) {
 			deinitGL();
-			std::exit(EXIT_FAILURE);
 			return;
 		}
 		log::pure("%s compiled\n", path.c_str());
+	}
+	void Program::Shader::deinitGL()
+	{
+		if(sid) { glDeleteShader(sid); sid = 0; }
 	}
 
 
@@ -133,33 +134,36 @@ namespace lim
 		for(auto& shader : shaders) {
 			if(shader.type==type) {
 				shader.path = path;
+				shader.createAndCompile();
 				isExist = true;
 			}
 		}
 		if(!isExist) {
 			shaders.push_back({0, type, path});
+			shaders.back().createAndCompile();
 		}
+
 		return *this;
 	}
 	Program& Program::link()
 	{
-		log::pure("%s : initializing\n", name.c_str());
-
-		if( pid ) { glDeleteProgram(pid); }
+		if( pid ) { glDeleteProgram(pid); pid = 0; }
 		pid = glCreateProgram();
 
 		for(auto& shader : shaders) {
-			shader.createAndCompile();
 			glAttachShader(pid, shader.sid);
 		}
 		glLinkProgram(pid);
-		for(auto& shader : shaders) {
-			glDetachShader(pid, shader.sid);
-			shader.deinitGL(); // 
+		if( !reloadable ) {
+			for(auto& shader : shaders) {
+				glDetachShader(pid, shader.sid);
+				shader.deinitGL();
+			}
+			shaders.clear();
+			shaders.shrink_to_fit();
 		}
 		if( !checkLinkingErrors(pid) ) {
-			deinitGL();
-			std::exit(EXIT_FAILURE);
+			if( pid ) { glDeleteProgram(pid); pid = 0; }
 			return *this;
 		}
 		log::pure("%s : linked\n\n", name.c_str());
@@ -185,30 +189,33 @@ namespace lim
 		//if(loc<0) log::err("missing...");
 		return loc;
 	}
-	
-	// type : GL_VERTEX_SHADER, GL_FRAGMENT_SHADER ...
-	Program& Program::reload(GLenum type)
+
+	ProgramReloadable::ProgramReloadable(std::string_view _name)
+		: Program(_name)
 	{
-		log::pure("%s : reloading\n", name.c_str());
+		reloadable = true;
+	}
+	ProgramReloadable::ProgramReloadable(ProgramReloadable&& src)
+		: Program(std::move(src))
+	{
+		reloadable = true;
+	}
+	void ProgramReloadable::reload(GLenum type)
+	{
 		uniform_location_cache.clear();
-		if( pid ) { glDeleteProgram(pid); }
-		pid = glCreateProgram();
 
 		for(auto& shader : shaders) {
-			shader.createAndCompile();
-			glAttachShader(pid, shader.sid);
+			if( shader.type == type ) {
+				glDetachShader(pid, shader.sid);
+				shader.createAndCompile();
+				glAttachShader(pid, shader.sid);
+			}
 		}
 		glLinkProgram(pid);
-		for(auto& shader : shaders) {
-			glDetachShader(pid, shader.sid);
-			shader.deinitGL();
-		}
 		if( !checkLinkingErrors(pid) ) {
-			deinitGL();
-			std::exit(EXIT_FAILURE);
-			return *this;
+			if( pid ) { glDeleteProgram(pid); pid = 0; }
+			return;
 		}
-		log::pure("%s : linked\n\n", name.c_str());
-		return *this;
+		log::pure("%s : reloaded\n\n", name.c_str());
 	}
 }

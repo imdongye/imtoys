@@ -13,7 +13,7 @@
 
 namespace lim
 {
-	AppBase::AppBase(int winWidth, int winHeight, const char* title)
+	AppBase::AppBase(int winWidth, int winHeight, const char* title, bool vsync)
 		:win_width(winWidth), win_height(winHeight)
 	{
 		glfwSetErrorCallback([](int error, const char *description) {
@@ -54,9 +54,7 @@ namespace lim
 		pixel_ratio =  fb_width/(float)win_width;
 
 		glfwMakeContextCurrent(window);
-		// default is 0 then make tearing so must 1 to buffer swap when all buffer is showen
-		// 수직동기화 : 1
-		glfwSwapInterval(0); // vsync
+		glfwSwapInterval((vsync)?1:0);
 
 		if( !gladLoadGLLoader((GLADloadproc)glfwGetProcAddress) )
 		{

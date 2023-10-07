@@ -11,6 +11,7 @@
 #include <limbrary/model_view/model.h>
 #include <limbrary/texture.h>
 #include <limbrary/log.h>
+#include <limbrary/utils.h>
 #include <assimp/cimport.h>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
@@ -18,6 +19,7 @@
 #include <assimp/Logger.hpp>
 #include <assimp/DefaultLogger.hpp>
 #include <GLFW/glfw3.h>
+#include <filesystem>
 
 using namespace lim;
 using namespace std;
@@ -140,7 +142,7 @@ namespace
 		}
 		if( aiMat->GetTexture(aiTextureType_HEIGHT, 0, &tempStr) == AI_SUCCESS ) {
 			log::pure("map_Height ");
-           	mat.map_Flags |= Material::MF_Bump;
+           	mat.map_Flags |= Material::MF_Height;
 			mat.map_Bump = loadTexture(tempStr.C_Str(), GL_RGB8);
 		}
 
@@ -340,5 +342,21 @@ namespace lim
 		if (idx < 0 || idx >= _nr_formats)
 			return nullptr;
 		return _formats[idx];
+	}
+	std::string findModelInDirectory(std::string_view _path)
+	{
+		filesystem::path fpath(_path);  
+		if( filesystem::is_directory(fpath) ) {
+			for( const auto & entry : std::filesystem::directory_iterator(fpath) ) {
+				string fm = entry.path().extension().string();
+				for( int i=0; i<getNrImportFormats(); i++ ) {
+					if(strIsSame( getImportFormat(i), fm.c_str()+1 )) {
+						std::string rst = entry.path().string();
+						return rst;
+					}
+				}
+			}
+		}
+		return std::string(_path);
 	}
 }

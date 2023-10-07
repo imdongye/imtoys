@@ -52,7 +52,7 @@ namespace lim
 		int viewing_mode = VM_FREE;
 
 		float move_free_spd = 3.f/1.f; 	  // m/sec
-		float rot_free_spd = D_PI/1600.f; // r/px
+		float rot_free_spd = D_PI/1900.f; // r/px
 
 		float move_pivot_spd = 1.f/400.f; // m/px
 		float rot_pivot_spd = D_PI/800.f; // r/px

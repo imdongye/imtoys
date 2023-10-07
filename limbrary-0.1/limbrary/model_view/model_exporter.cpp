@@ -118,7 +118,7 @@ namespace
 			if( src.map_Flags & lim::Material::MF_Nor ) {
 				aiMat->AddProperty( &tempStr, AI_MATKEY_TEXTURE(aiTextureType_NORMALS, 0) );
 			}
-			else if( src.map_Flags & lim::Material::MF_Bump ) {
+			else if( src.map_Flags & lim::Material::MF_Height ) {
 				aiMat->AddProperty( &tempStr, AI_MATKEY_TEXTURE(aiTextureType_HEIGHT, 0) );
 			}
 			else {

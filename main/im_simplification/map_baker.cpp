@@ -59,7 +59,7 @@ namespace lim
             srcNormalMap.bind();
             normalDrawProg.use();
             normalDrawProg.setUniform("map_Flags", srcMat.map_Flags);
-            if ( srcMat.map_Flags & (Material::MF_Bump|Material::MF_Nor) ) {
+            if ( srcMat.map_Flags & (Material::MF_Height|Material::MF_Nor) ) {
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, srcMat.map_Bump->tex_id);
                 normalDrawProg.setUniform("map_Bump", 0);
@@ -100,7 +100,7 @@ namespace lim
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
             glDeleteFramebuffers(1, &srcFbo);
 
-            dstMat.map_Flags &= ~Material::MF_Bump;
+            dstMat.map_Flags &= ~Material::MF_Height;
             dstMat.map_Flags |=  Material::MF_Nor;
             
             log::pure("bake done  %s\n\n", dstMat.map_Bump->name.c_str());
@@ -116,7 +116,7 @@ namespace lim
         unordered_map< int,  vector<Mesh*> > mergeByNormalMap;
         for( int i=0; i<md.my_meshes.size(); i++ ) {
             Mesh* ms = md.my_meshes[i];
-            if( ms->material==nullptr || (ms->material->map_Flags|Material::MF_Bump)==0 ) 
+            if( ms->material==nullptr || (ms->material->map_Flags|Material::MF_Height)==0 ) 
                 continue;
             int bumpMatIdx = findIdx(md.my_materials, ms->material);
             mergeByNormalMap[bumpMatIdx].push_back( ms );
@@ -200,7 +200,7 @@ namespace lim
             // glDeleteFramebuffers(1, &oriFbo);
 
 
-            mat.map_Flags &= ~Material::MF_Bump;
+            mat.map_Flags &= ~Material::MF_Height;
             mat.map_Flags |=  Material::MF_Nor;
             
             glDeleteTextures(1, &norTex);

@@ -23,7 +23,7 @@ namespace lim
 	private:
 		std::vector<ViewportWithCamera> viewports;
 		std::vector<Model> models;
-		Program program;
+		ProgramReloadable program;
 		Light light;
 	public:
 		AppModelViewer();

@@ -20,12 +20,12 @@ namespace lim
     struct Material
     {
         enum MapFlags{
-            MF_Kd   = 1<<0, // 1
-            MF_Ks   = 1<<1, // 2
-            MF_Ka   = 1<<2, // 4
-            MF_Ns   = 1<<3, // 8
-            MF_Bump = 1<<4, // 16
-            MF_Nor  = 1<<5, // 32
+            MF_Kd    = 1<<0, // 1
+            MF_Ks    = 1<<1, // 2
+            MF_Ka    = 1<<2, // 4
+            MF_Ns    = 1<<3, // 8
+            MF_Height= 1<<4, // 16
+            MF_Nor   = 1<<5, // 32
         };
 
         glm::vec4 Kd = {0.27f, 0.79f, 0.69f, 0.f};  // {Kd, alpha}
@@ -40,7 +40,7 @@ namespace lim
         Texture* map_Ks = nullptr;
         Texture* map_Ka = nullptr;
         Texture* map_Ns = nullptr;
-        Texture* map_Bump = nullptr; // MF_Bump, MF_Nor 로 노멀맵인지 height맵인지 구분
+        Texture* map_Bump = nullptr; // MF_Height, MF_Nor 로 노멀맵인지 height맵인지 구분
 
         float bumpHeight = 100;
         float texDelta = 0.00001f;

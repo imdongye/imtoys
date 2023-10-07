@@ -47,7 +47,7 @@ namespace
             glBindTexture(GL_TEXTURE_2D, mat.map_Bump->tex_id);
             prog.setUniform("map_Bump", activeSlot++);
 
-            if( mat.map_Flags & Material::MF_Bump ) {
+            if( mat.map_Flags & Material::MF_Height ) {
                 prog.setUniform("texDelta", mat.texDelta);
                 prog.setUniform("bumpHeight", mat.bumpHeight);
             }
