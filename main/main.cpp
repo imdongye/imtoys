@@ -25,6 +25,7 @@
 #include "im_anims/app_kinematics.h"
 #include "im_anims/app_fluid.h"
 #include "im_model_viewer/app_model_viewer.h"
+#include "im_shadertoy/app_shadertoy.h"
 
 using namespace std;
 
@@ -85,6 +86,7 @@ int main(int, char **)
 	pushAppData<lim::AppKinematics>();
 	pushAppData<lim::AppFluid>();
 	pushAppData<lim::AppModelViewer>();
+	pushAppData<lim::AppShaderToy>();
 
 	selectApp(0);
 

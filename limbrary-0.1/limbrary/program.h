@@ -28,8 +28,8 @@ Todo:
 #include <unordered_map>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <limbrary/log.h>
 #include <functional>
+#include <limbrary/texture.h>
 
 namespace lim
 {
@@ -121,6 +121,12 @@ namespace lim
 			glUniformMatrix4fv(getUniformLocation(vname), 1, 0, glm::value_ptr(v));
 			return *this;
 		}
+		inline const Program& setUniform(const std::string& vname, const TexBase& tex, int activeSlot) const {
+			glActiveTexture(GL_TEXTURE0 + activeSlot);
+            glBindTexture(GL_TEXTURE_2D, tex.tex_id);
+           	setUniform(vname, activeSlot);
+			return *this;
+		}
 	};
 
 	class ProgramReloadable: public Program
@@ -128,6 +134,7 @@ namespace lim
 	public:
 		ProgramReloadable(std::string_view name="nonamed");
 		ProgramReloadable(ProgramReloadable&& src);
+		ProgramReloadable& operator=(ProgramReloadable&& src) noexcept;
 		// type : GL_VERTEX_SHADER, GL_FRAGMENT_SHADER ...
 		void reload(GLenum type);
 	};

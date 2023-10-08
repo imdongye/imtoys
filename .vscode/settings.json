@@ -7,18 +7,20 @@
         //"externalConsole": true,
     },
 
-    //"glsllint.glslangValidatorPath": "B:\\Programs\\glslang-master-windows-Release\\bin\\glslangValidator.exe",
-    "glsllint.additionalStageAssociations": {
-        ".fs": "frag",
-        ".vs": "vert",
-    },
+    /* paste to global setting */
+    // "glsllint.glslangValidatorPath": "B:\\Programs\\glslang-master-windows-Release\\bin\\glslangValidator.exe",
+    // "glsllint.linkShader": false,
+    // "glsllint.useIncludeDirOfFile": false,
+    // "glsllint.additionalStageAssociations": {
+    //     ".glsl": "glsl",
+    // },
     "material-icon-theme.files.associations": {
         "*.fs": "Shader",
         "*.vs": "Shader",
         "*.vert": "Shader",
         "*.frag": "Shader",
+        "*.glsl": "Shader",
     },
-
 
 
     "files.associations": {

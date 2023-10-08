@@ -99,9 +99,12 @@ namespace lim
 	{
 		if(sid) { glDeleteShader(sid); }
 		sid = glCreateShader(type);
-		std::string strSrc = readStrFromFile(path);
-		const GLchar* src = strSrc.c_str();
-		glShaderSource(sid, 1, &src, nullptr);
+		std::string source = readStrFromFile(path);
+		if(source.size()<1) {
+			return;
+		}
+		const GLchar* pSource = source.c_str();
+		glShaderSource(sid, 1, &pSource, nullptr);
 		glCompileShader(sid);
 		if( !checkCompileErrors(sid, path) ) {
 			deinitGL();
@@ -199,6 +202,15 @@ namespace lim
 		: Program(std::move(src))
 	{
 		reloadable = true;
+	}
+	ProgramReloadable& ProgramReloadable::operator=(ProgramReloadable&& src) noexcept
+	{
+		if(this == &src)
+			return *this;
+		Program::operator=(std::move(src));
+		deinitGL();
+		reloadable = true;
+		return *this;
 	}
 	void ProgramReloadable::reload(GLenum type)
 	{

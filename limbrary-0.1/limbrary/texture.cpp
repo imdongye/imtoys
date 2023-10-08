@@ -277,9 +277,7 @@ namespace lim
 		prog.setUniform("tex", 0);
 		prog.setUniform("gamma", gamma);
 
-		glBindVertexArray(AssetLib::get().screen_quad.vert_array);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, AssetLib::get().screen_quad.element_buf);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		AssetLib::get().screen_quad.drawGL();
 
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
