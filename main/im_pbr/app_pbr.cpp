@@ -30,7 +30,8 @@ namespace lim
 
 		viewport.getFb().clear_color = {0.1f, 0.1f, 0.1f, 1.0f};
 		viewport.camera.move_free_spd = 6.f;
-		viewport.camera.shiftPos({0,0,10});
+		viewport.camera.shift({0,0,10});
+		viewport.camera.updateViewMat();
 
 		model.scale = model.scale*3.f;
 		model.position = glm::vec3(15, 0, 0);

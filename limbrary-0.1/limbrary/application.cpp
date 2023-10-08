@@ -23,15 +23,18 @@ namespace lim
 		if( !glfwInit() ) std::exit(-1);
 
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1); // mac support 4.1
 		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-		//glfwWindowHint(GLFW_SAMPLES, 4); // MSAA
-	#ifdef __APPLE__
+	#ifdef WIN32
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+	#else //__APPLE__
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1); // mac support 4.1
 		glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+		glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_FALSE);
 	#endif
+		//glfwWindowHint(GLFW_SAMPLES, 4); // MSAA
+
 		// (1) invisible setting before creating for move center
 		glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-
 		window = glfwCreateWindow(win_width, win_height, title, NULL, NULL);
 
 		if( !window )
@@ -80,10 +83,10 @@ namespace lim
 			log::pure("GLSL Version         : %s\n", glslVersion);
 			int nrAttributes, nrTextureUnits;
 			glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &nrAttributes);
-			log::pure("Maximum nr of vertex attributes supported: %d\n", nrAttributes);
+			log::pure("#Vertex Attributes   : %d\n", nrAttributes);
 			glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &nrTextureUnits);
-			log::pure("Maximum nr of texture slots supported: %d\n", nrTextureUnits);
-			log::pure("Current path is %s\n\n", std::filesystem::current_path().string().c_str());
+			log::pure("#Texture Slots       : %d\n", nrTextureUnits);
+			log::pure("Current Path : %s\n\n", std::filesystem::current_path().string().c_str());
 		}
 
 		// init singleton

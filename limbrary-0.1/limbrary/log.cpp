@@ -19,7 +19,7 @@ namespace
     vector<int> line_offsets = {0};
     ImGuiTextFilter filter;
     
-    bool is_auto_scroll_on = true;
+    bool is_auto_scroll_on = false;
     bool is_time_stamp_on = false;
 
     void appendHead(string_view level)

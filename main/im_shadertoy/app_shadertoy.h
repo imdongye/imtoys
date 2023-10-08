@@ -1,7 +1,9 @@
-//
-//  framework template
-//	2022-11-14 / im dong ye
-//
+/*
+
+offline shadertoy
+2022-11-14 / im dong ye
+
+*/
 
 #ifndef __app_shadertoy_h_
 #define __app_shadertoy_h_
@@ -16,8 +18,9 @@ namespace lim
 {
 	class ProgramShaderToy : public ProgramReloadable
 	{
-	public:
+	private:
 		std::string glsl_path;
+		void makeMergedFragmentShader();
 	public:
 		ProgramShaderToy(std::string_view glslPath="im_shadertoy/shaders/debug.glsl");
 		void reload(const char* glslPath = nullptr);

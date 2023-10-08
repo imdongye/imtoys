@@ -46,8 +46,6 @@ namespace lim
 			WM_FIXED_SIZE,
 		};
 	public:
-		Framebuffer* framebuffer = nullptr;
-
 		std::string name = "nonamed";
 		WindowMode window_mode = WM_FREE;
 		bool window_opened = true;
@@ -57,6 +55,7 @@ namespace lim
 		glm::ivec2 mouse_pos = {0,0};
 		Callbacks<void(int, int)> resize_callbacks;
 	private:
+		Framebuffer* framebuffer = nullptr;
 		Viewport(const Viewport&) = delete;
 		Viewport& operator=(const Viewport&) = delete;
 	public:
@@ -67,10 +66,10 @@ namespace lim
 
 		bool drawImGui(); // and resize fb and return windowOpened
 		void resize(GLuint _width, GLuint _height);
+		Framebuffer& getFb();
 		const GLuint& getWidth() const;
 		const GLuint& getHeight() const;
 		const float& getAspect() const;
-		Framebuffer& getFb();
 	};
 }
 

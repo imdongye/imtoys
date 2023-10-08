@@ -38,8 +38,7 @@ namespace lim
 		float z_near=0.1f;
 		float z_far=100;
 
-		// if you edit then must call updateFromPosAndPivot();
-		// and updateViewMat();
+		// if you edit then must call updateViewMat();
 		glm::vec3 position = {0,0,5};
 		glm::vec3 pivot = {0,0,0};
 
@@ -58,16 +57,17 @@ namespace lim
 		Camera& operator=(Camera&& src) noexcept;
 		virtual ~Camera() noexcept;
 	public:
-		void updateFromPosAndPivot();
+		// with pos and pivot
+		void updateViewMat();
 		void updateProjMat();
 
 		void rotateCamera(float xoff, float yoff);
 		void rotateCameraFromPivot(float xoff, float yoff);
 
-		void shiftPos(glm::vec3 off);
-		void shiftPosFromPlane(float xoff, float yoff);
-		void shiftDist(float offset);
-		void shiftZoom(float offset);
+		void shift(glm::vec3 off);
+		void shiftOnTangentPlane(float xoff, float yoff);
+		void zoomDist(float offset);
+		void zoomFovy(float offset);
 	};
 }
 #endif

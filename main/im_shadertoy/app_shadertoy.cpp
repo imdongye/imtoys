@@ -6,41 +6,11 @@
 using namespace std;
 using namespace glm;
 
-namespace
-{
-	void makeToyFragCode(std::string_view path)
-	{
-		ifstream top("im_shadertoy/temp/top.glsl");
-		ifstream code(path.data());
-		ifstream bottom("im_shadertoy/temp/bottom.glsl");
-		ofstream temp("im_shadertoy/temp/temp.fs");
-
-		temp<<top.rdbuf()<<code.rdbuf()<<bottom.rdbuf();
-	}
-}\
-namespace lim
-{
-	ProgramShaderToy::ProgramShaderToy(std::string_view glslPath)
-		: ProgramReloadable("toy"), glsl_path(glslPath)
-	{
-		makeToyFragCode(glsl_path);
-		attatch("canvas.vs").attatch("im_shadertoy/temp/temp.fs").link();
-	}
-	void ProgramShaderToy::reload(const char* glslPath)
-	{
-		if(glslPath != nullptr) {
-			glsl_path = glslPath;
-		}
-		makeToyFragCode(glsl_path);
-		ProgramReloadable::reload(GL_FRAGMENT_SHADER);
-	}
-}
-
 namespace lim
 {
 	AppShaderToy::AppShaderToy() : AppBase(780, 780, APP_NAME, true)
 		, viewport("viewport##shadertoy", new Framebuffer())
-		, program("im_shadertoy/shaders/debug.glsl")
+		, program("im_shadertoy/shaders/hextile.glsl")
 	{
 		iChannel0.wrap_param = GL_REPEAT;
 		iChannel0.initFromImageAuto("assets/images/uv_grid.jpg", true);
@@ -57,7 +27,7 @@ namespace lim
 		glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		viewport.framebuffer->bind();
+		viewport.getFb().bind();
 		program.use();
 
 		vec3 iResolution = {viewport.getWidth(), viewport.getHeight(), 0};
@@ -97,7 +67,7 @@ namespace lim
 
 		 
 		AssetLib::get().screen_quad.drawGL();
-		viewport.framebuffer->unbind();
+		viewport.getFb().unbind();
 	}
 
 	void AppShaderToy::renderImGui()
@@ -126,5 +96,41 @@ namespace lim
 	void AppShaderToy::dndCallback(int count, const char **paths)
 	{
 		program.reload(paths[0]);
+	}
+}
+
+
+namespace lim
+{
+	ProgramShaderToy::ProgramShaderToy(std::string_view glslPath)
+		: ProgramReloadable("toy"), glsl_path(glslPath)
+	{
+		makeMergedFragmentShader();
+		attatch("canvas.vs").attatch("im_shadertoy/temp/temp.fs").link();
+	}
+	void ProgramShaderToy::reload(const char* glslPath)
+	{
+		if(glslPath != nullptr) {
+			glsl_path = glslPath;
+		}
+		makeMergedFragmentShader();
+		ProgramReloadable::reload(GL_FRAGMENT_SHADER);
+	}
+	void ProgramShaderToy::makeMergedFragmentShader()
+	{
+		ifstream top("im_shadertoy/temp/top.glsl");
+		ifstream code(glsl_path.data());
+		if(!code.is_open()) {
+			log::err("no path: %s", glsl_path.data());
+			top.close();
+		}
+		ifstream bottom("im_shadertoy/temp/bottom.glsl");
+		ofstream temp("im_shadertoy/temp/temp.fs");
+
+		temp<<top.rdbuf()<<code.rdbuf()<<bottom.rdbuf();
+		top.close();
+		code.close();
+		bottom.close();
+		temp.close();
 	}
 }

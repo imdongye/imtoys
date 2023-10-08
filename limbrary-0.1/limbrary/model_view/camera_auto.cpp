@@ -67,7 +67,6 @@ namespace lim
 	void AutoCamera::viewportSizeCallback(int w, int h)
 	{
 		aspect = w/(float)h;
-		updateProjMat();
 	}
 	void AutoCamera::mouseBtnCallback(int button, int action, int mods)
 	{
@@ -85,7 +84,7 @@ namespace lim
 			case VM_PIVOT:
 				if( glfwGetKey(_win, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS 
 					|| glfwGetMouseButton(_win, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS ) {
-					shiftPosFromPlane(-xoff * move_pivot_spd, -yoff * move_pivot_spd);
+					shiftOnTangentPlane(-xoff * move_pivot_spd, -yoff * move_pivot_spd);
 				}
 				else {
 					rotateCameraFromPivot(xoff * rot_pivot_spd, yoff * rot_pivot_spd);
@@ -104,17 +103,17 @@ namespace lim
 	{
 		switch( viewing_mode ) {
 			case VM_PIVOT:
-				shiftDist(yOff * 3.f);
+				zoomDist(yOff * 3.f);
 				break;
 			case VM_FREE:
-				shiftZoom(yOff * 5.f);
+				zoomFovy(yOff * 5.f);
 				break;
 			case VM_SCROLL:
 				if( glfwGetKey(_win, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ) {
-					shiftPosFromPlane(-xOff * move_pivot_scroll_spd, yOff * move_pivot_scroll_spd);
+					shiftOnTangentPlane(-xOff * move_pivot_scroll_spd, yOff * move_pivot_scroll_spd);
 				}
 				else if( glfwGetKey(_win, GLFW_KEY_LEFT_ALT) == GLFW_PRESS ) {
-					shiftDist(yOff * 3.f);// todo
+					zoomDist(yOff * 3.f);// todo
 				}
 				else {
 					rotateCameraFromPivot(xOff * rot_pivot_scroll_spd, yOff * -rot_pivot_scroll_spd);
@@ -127,8 +126,7 @@ namespace lim
 		glm::vec3 perallelFront = {front.x, 0.f, front.z};
 		perallelFront = glm::normalize(perallelFront);
 		switch( viewing_mode ) {
-			case VM_FREE:
-			{
+			case VM_FREE: {
 				glm::vec3 dir(0);
 				float moveSpd = move_free_spd;
 				if( glfwGetKey(_win, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ) moveSpd *= 2.f;
@@ -138,15 +136,16 @@ namespace lim
 				if( glfwGetKey(_win, GLFW_KEY_D) == GLFW_PRESS ) dir += right;
 				if( glfwGetKey(_win, GLFW_KEY_E) == GLFW_PRESS ) dir += glm::vec3(0, 1, 0);
 				if( glfwGetKey(_win, GLFW_KEY_Q) == GLFW_PRESS ) dir -= glm::vec3(0, 1, 0);
-				shiftPos(moveSpd*dt*dir);
-				break;
-			}
+				shift(moveSpd*dt*dir);
+			} break;
 			case VM_PIVOT:
 			case VM_SCROLL:
 			{
 				break;
 			}
 		}
+		updateViewMat();
+		updateProjMat();
 	}
 
 

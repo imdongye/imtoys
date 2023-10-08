@@ -25,7 +25,7 @@ namespace lim
 {
 	Camera::Camera()
 	{
-		updateFromPosAndPivot();
+		updateViewMat();
 		updateProjMat();
 	}
 	Camera::Camera(Camera&& src) noexcept
@@ -60,50 +60,45 @@ namespace lim
 	{
 		vec3 rotated = rotate(yoff, right)*rotate(-xoff, up)*vec4(front,0);
 		pivot = distance*rotated + position;
-		updateFromPosAndPivot();
+		updateViewMat();
 	}
 	void Camera::rotateCameraFromPivot(float xoff, float yoff)
 	{
-		vec3 toCam = -front;
-		vec3 rotated = rotate(-yoff, -right)*rotate(-xoff, global_up)*vec4(toCam,0);
+		vec3 rotated = rotate(-yoff, -right)*rotate(-xoff, global_up)*vec4(-front,0);
 		if( abs(rotated.y)>0.9f )
 			return;
 		position = pivot + distance*rotated;
-		updateFromPosAndPivot();
+		updateViewMat();
 	}
-	void Camera::shiftPos(glm::vec3 off)
+	void Camera::shift(glm::vec3 off)
 	{
 		pivot += off;
 		position += off;
-		view_mat = lookAt(position, pivot, global_up);
 	}
-	void Camera::shiftPosFromPlane(float xoff, float yoff)
+	void Camera::shiftOnTangentPlane(float xoff, float yoff)
 	{
-		vec3 shift = global_up * yoff + right * xoff;
+		vec3 shift = global_up*yoff + right*xoff;
 		pivot += shift;
 		position += shift;
 		view_mat = lookAt(position, pivot, global_up);
 	}
-	void Camera::shiftDist(float offset)
+	void Camera::zoomDist(float offset)
 	{
 		distance = distance * pow(1.01f, offset);
 		distance = clamp(distance, MIN_DIST, MAX_DIST);
-		position = -distance*front + pivot;
-		view_mat = lookAt(position, pivot, global_up);
+		position = -distance*front+pivot;
 	}
-	void Camera::shiftZoom(float offset)
+	void Camera::zoomFovy(float offset)
 	{
 		fovy = fovy * pow(1.01f, offset);
 		fovy = clamp(fovy, MIN_FOVY, MAX_FOVY);
-		updateProjMat();
 	}
 
-	void Camera::updateFromPosAndPivot()
+	void Camera::updateViewMat()
 	{
 		vec3 diff = pivot - position;
 		distance = length(diff);
-
-		front = normalize(diff);
+		front = diff/distance;
 		right = normalize(cross(front,global_up));
 		up = normalize(cross(right, front));
 		view_mat = lookAt(position, pivot, global_up);

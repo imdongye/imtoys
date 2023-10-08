@@ -180,7 +180,7 @@ namespace lim
         camera = new WinAutoCamera();
         camera->position = {0,0,5};
         camera->pivot = {0,0,0};
-        camera->updateFromPosAndPivot();
+        camera->updateViewMat();
 
         model = new Model();
         model->importFromFile("assets/models/objs/woody.obj", true);

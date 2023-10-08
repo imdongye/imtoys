@@ -72,7 +72,8 @@ namespace lim
 	{
 		const char* vpName = fmtStrToBuf("viewport%d##simp", nr_viewports);
 		viewports.emplace_back(vpName, new FramebufferMs);
-		viewports.back().camera.shiftPos({0,1,-1.6f});
+		viewports.back().camera.shift({0,1,-1.6f});
+		viewports.back().camera.updateViewMat();
 
 		models.push_back(new Model());
 
@@ -131,7 +132,7 @@ namespace lim
 		auto& vp = viewports[vpIdx];
 		vp.camera.pivot = md.position;
 		vp.camera.position.y = md.position.y;
-		vp.camera.updateFromPosAndPivot();
+		vp.camera.updateViewMat();
 
 		AppPref::get().saveRecentModelPath(path.data());
 	}
@@ -159,7 +160,7 @@ namespace lim
 		dstMd->name += "_"+std::to_string(pct)+"_pct";
 
 		viewports[dst_vp_idx].camera.pivot = dstMd->position;
-		viewports[dst_vp_idx].camera.updateFromPosAndPivot();
+		viewports[dst_vp_idx].camera.updateViewMat();
 	}
 	void AppSimplification::doBakeNormalMap(int texSize)
 	{
