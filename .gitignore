@@ -14,7 +14,7 @@
 *private/
 *todo/
 *result/
-#main/imgui.ini
+main/imgui.ini
 main/assets/models
 main/assets/fonts
 main/assets/images

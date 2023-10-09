@@ -67,6 +67,7 @@ namespace lim
 	void AutoCamera::viewportSizeCallback(int w, int h)
 	{
 		aspect = w/(float)h;
+		updateProjMat();
 	}
 	void AutoCamera::mouseBtnCallback(int button, int action, int mods)
 	{
@@ -107,6 +108,7 @@ namespace lim
 				break;
 			case VM_FREE:
 				zoomFovy(yOff * 5.f);
+				updateProjMat();
 				break;
 			case VM_SCROLL:
 				if( glfwGetKey(_win, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ) {
@@ -145,7 +147,6 @@ namespace lim
 			}
 		}
 		updateViewMat();
-		updateProjMat();
 	}
 
 
