@@ -38,8 +38,6 @@ namespace lim
 		bending_factors = src.bending_factors;
 		tris = src.tris;
 		initGL();
-
-		material = src.material;
 	}
 	Mesh::Mesh(Mesh&& src) noexcept
 	{
@@ -52,7 +50,6 @@ namespace lim
 		deinitGL();
 
 		name 			= move(src.name);
-		material 		= move(src.material);
 		poss 			= move(src.poss);
 		nors 			= move(src.nors);
 		uvs 			= move(src.uvs);
@@ -93,7 +90,8 @@ namespace lim
 	void Mesh::initGL()
 	{
 		if( poss.size()==0 ){
-			log::err("no verts in mesh");
+			log::err("no verts in mesh\n\n");
+			std::exit(-1);
 			return;
 		}
 		deinitGL();
@@ -164,15 +162,15 @@ namespace lim
 	}
 	void Mesh::deinitGL()
 	{
-		deleteGLBuf(pos_buf);
-		deleteGLBuf(nor_buf);
-		deleteGLBuf(uv_buf);
-		deleteGLBuf(tangent_buf);
-		deleteGLBuf(bitangent_buf);
-		deleteGLBuf(color_buf);
-		deleteGLBuf(bone_id_buf);
-		deleteGLBuf(bending_factor_buf);
-		deleteGLBuf(element_buf);
+		deleteGLBuf(pos_buf); 				//poss.clear();
+		deleteGLBuf(nor_buf);				//nors.clear();
+		deleteGLBuf(uv_buf);				//uvs.clear();
+		deleteGLBuf(tangent_buf);			//tangents.clear();
+		deleteGLBuf(bitangent_buf);			//bitangents.clear();
+		deleteGLBuf(color_buf);				//cols.clear();
+		deleteGLBuf(bone_id_buf);			//bone_ids.clear();
+		deleteGLBuf(bending_factor_buf);	//bending_factors.clear();
+		deleteGLBuf(element_buf);			//tris.clear();
 		if( vert_array>0 ){
 			glDeleteVertexArrays(1, &vert_array);
 			vert_array = 0;

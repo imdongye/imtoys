@@ -15,9 +15,11 @@
 *todo/
 *result/
 main/imgui.ini
+main/app_pref.json
 main/assets/models
 main/assets/fonts
 main/assets/images
 main/assets.*
 main/imhdr/images
 main/exports/*
+main/imgui.ini

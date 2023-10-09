@@ -36,18 +36,19 @@ namespace lim
 
 
         // 노멀 맵을 사용하는 메쉬들을 찾아서 자료구조에 저장.  Todo: 사용안해도 저장
-        unordered_map< int, vector<pair<Mesh*, Mesh*>> > mergeByNormalMap;
-        for( int i=0; i<src.my_meshes.size(); i++ ) {
-            Mesh* srcMs = src.my_meshes[i];
-            Mesh* dstMs = dst.my_meshes[i];
-            if( srcMs->material==nullptr || srcMs->material->map_Bump==nullptr ) 
-                continue;
-            if( srcMs->uvs.size()<0 || dstMs->uvs.size()<0 ) {
+        unordered_map< int, vector<pair<const Mesh*, const Mesh*>> > mergeByNormalMap;
+        src.root.treversal([&](const Mesh* srcMs, const Material* srcMat) {
+            if( srcMat==nullptr || srcMat->map_Bump==nullptr ) 
+                return;
+            if( srcMs->uvs.size()==0 ) {
                 log::err("no uvs in mesh when bakeNorMap\n\n");
+                return;
             }
-            int bumpMatIdx = findIdx(src.my_materials, srcMs->material);
+            int bumpMatIdx = findIdx(src.my_materials, (Material*)srcMat);
+            const Mesh* dstMs = dst.my_meshes[ findIdx(src.my_meshes, (Mesh*)srcMs) ];
+
             mergeByNormalMap[bumpMatIdx].push_back( make_pair(srcMs, dstMs) );
-        }
+        });
 
 
 
@@ -113,14 +114,22 @@ namespace lim
         bumpToNorProg.name = "bump to nor";
         bumpToNorProg.home_dir = "im_simplification";
         bumpToNorProg.attatch("uv_view.vs").attatch("baker_bump_to_nor.fs").link();
-        unordered_map< int,  vector<Mesh*> > mergeByNormalMap;
-        for( int i=0; i<md.my_meshes.size(); i++ ) {
-            Mesh* ms = md.my_meshes[i];
-            if( ms->material==nullptr || (ms->material->map_Flags|Material::MF_Height)==0 ) 
-                continue;
-            int bumpMatIdx = findIdx(md.my_materials, ms->material);
+
+        unordered_map< int,  vector<const Mesh*> > mergeByNormalMap;
+
+        md.root.treversal([&](const Mesh* ms, const Material* mat) {
+            if( mat==nullptr || (mat->map_Flags|Material::MF_Height)==0 ) 
+                return;
+            if( ms->uvs.size()==0 ) {
+                log::err("no uvs in mesh when bakeNorMap\n\n");
+                return;
+            }
+            int bumpMatIdx = findIdx(md.my_materials, (Material*)mat);
+            const Mesh* dstMs = md.my_meshes[ findIdx(md.my_meshes, (Mesh*)ms) ];
+
             mergeByNormalMap[bumpMatIdx].push_back( ms );
-        }
+        });
+
 
         if( mergeByNormalMap.size()==0 ) {
             log::err("there are no bumpmap in %s\n\n", md.name.c_str());
@@ -155,7 +164,7 @@ namespace lim
             bumpToNorProg.setUniform("map_Flags", mat.map_Flags);
             bumpToNorProg.setUniform("texDelta", mat.texDelta);
             bumpToNorProg.setUniform("bumpHeight", mat.bumpHeight);
-            for( Mesh* ms : meshes ) {
+            for( const Mesh* ms : meshes ) {
                 ms->drawGL();
             }
 

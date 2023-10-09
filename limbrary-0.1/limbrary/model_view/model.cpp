@@ -82,30 +82,26 @@ namespace lim
 		my_meshes.reserve(src.my_meshes.size());
 		for( Mesh* srcMs : src.my_meshes ) {
 			my_meshes.push_back( new Mesh(*srcMs) ); // lvalue clone with copy consturctor
-			if( srcMs->material == nullptr ) {
-				continue;
-			}
-			int matIdx = findIdx(src.my_materials, srcMs->material);
-			my_meshes.back()->material = my_materials[matIdx];
 		}
 
-		std::stack<const Node*> srcN;
-		std::stack<Node*> dstN;
-		srcN.push(&src.root);
-		dstN.push(&root);
-		while( srcN.size()>0 ) {
-			const Node* orig = srcN.top(); srcN.pop();
-			Node* copy = dstN.top(); dstN.pop();
+		std::stack<const Node*> srcNs;
+		std::stack<Node*> dstNs;
+		srcNs.push(&src.root);
+		dstNs.push(&root);
+		while( srcNs.size()>0 ) {
+			const Node* srcN = srcNs.top(); srcNs.pop();
+			Node* dstN = dstNs.top(); dstNs.pop();
 			
-			copy->meshes.reserve(orig->meshes.size());
-			for(Mesh* mesh : orig->meshes) {
-				copy->meshes.push_back(my_meshes[findIdx(src.my_meshes, mesh)]);
+			for( int i=0; i<srcN->getNrMesh(); i++ ) {
+				auto [ms, mat] = srcN->getMesh(i);
+				dstN->addMesh(my_meshes[findIdx(src.my_meshes, (Mesh*)ms)]
+							, my_materials[findIdx(src.my_materials, (Material*)mat)]);
 			}
-			copy->childs.reserve(orig->childs.size());
-			for(const Node& oriChild : orig->childs) {
-				srcN.push(&oriChild);
-				copy->childs.push_back({});
-				dstN.push(&copy->childs.back());
+			dstN->childs.reserve(srcN->childs.size());
+			for(const Node& oriChild : srcN->childs) {
+				srcNs.push(&oriChild);
+				dstN->childs.push_back({});
+				dstNs.push(&dstN->childs.back());
 			}
 		}
 
@@ -180,21 +176,23 @@ namespace lim
 		boundary_min = glm::vec3(std::numeric_limits<float>::max());
 		boundary_size = glm::vec3(0);
 
-		std::stack<Node*> nds;
-		nds.push(&root);
-		while(nds.size()>0)
+		std::stack<const Node*> nodeStack;
+		nodeStack.push(&root);
+		while(nodeStack.size()>0)
 		{
-			Node* cur = nds.top(); nds.pop();
-			for(Mesh* pMesh : cur->meshes) {
-				for(glm::vec3& p : pMesh->poss) {
+			const Node& cur = *nodeStack.top(); nodeStack.pop();
+			for( int i=0; i<cur.getNrMesh(); i++) {
+				auto [ms, _] = cur.getMesh(i);
+				for(const glm::vec3& p : ms->poss) {
+					// Todo : transformation
 					boundary_max = glm::max(boundary_max, p);
 					boundary_min = glm::min(boundary_min, p);
 				}
-				nr_vertices += pMesh->poss.size();
-				nr_triangles += pMesh->tris.size();
+				nr_vertices += ms->poss.size();
+				nr_triangles += ms->tris.size();
 			}
-			for(Node& nd : cur->childs) {
-				nds.push(&nd);
+			for(const Node& nd : cur.childs) {
+				nodeStack.push(&nd);
 			}
 		}
 		boundary_size = boundary_max-boundary_min;

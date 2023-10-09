@@ -27,7 +27,6 @@ namespace lim
 		static constexpr int MAX_BONE_INFLUENCE = 4;
 
 		std::string name = "unnamed mesh";
-		Material* material = nullptr;
 
 		std::vector<glm::vec3> poss;
 		std::vector<glm::vec3> nors;
@@ -53,13 +52,12 @@ namespace lim
 		Mesh& operator=(const Mesh&) = delete;
 	public:
 		Mesh();
-		Mesh(const Mesh& src);
+		Mesh(const Mesh& src); // clone
 		Mesh(Mesh&& src) noexcept;
 		Mesh& operator=(Mesh&& src) noexcept;
 		virtual ~Mesh() noexcept;
 		
 		void drawGL() const;
-		Mesh clone();
 		void initGL();
 		void deinitGL();
 		void print() const;

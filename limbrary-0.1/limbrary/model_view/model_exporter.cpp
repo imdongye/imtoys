@@ -20,6 +20,7 @@ edit from : https://github.com/assimp/assimp/issues/203
 #include <filesystem>
 #include <stb_image_write.h>
 #include <GLFW/glfw3.h>
+#include <stack>
 
 
 
@@ -129,14 +130,17 @@ namespace
 		return aiMat;
 	}
 
-	aiMesh* convertMesh(const Mesh& src) 
+	aiMesh* convertMesh(const Mesh& src, const Material* srcMat) 
 	{
 		aiMesh* aiMs = new aiMesh();
 		// From: https://github.com/assimp/assimp/issues/203
 		aiMs->mPrimitiveTypes = aiPrimitiveType_TRIANGLE;
-
-		GLuint idxOfMat = findIdx(_src_md->my_materials, src.material);
-		aiMs->mMaterialIndex = idxOfMat;
+		if(srcMat) {
+			GLuint idxOfMat = findIdx(_src_md->my_materials, (Material*)srcMat);
+			aiMs->mMaterialIndex = idxOfMat;
+		} else {
+			aiMs->mMaterialIndex = 0;
+		}
 
 		GLuint nrTemp = src.poss.size();
 		aiMs->mNumVertices = nrTemp;
@@ -180,17 +184,18 @@ namespace
 		return aiMs;
 	}
 
+	std::vector<std::pair<const Mesh*, const Material*>> _index_cache; // Todo: 임시
 	aiNode* recursiveConvertTree(const Model::Node& src)
 	{
 		aiNode* node = new aiNode();
-		const std::vector<Mesh*>& modelMeshes = _src_md->my_meshes;
 		node->mTransformation = toAi(src.transformation);
 
-		const size_t nrMeshes = src.meshes.size();
+		const int nrMeshes = src.getNrMesh();
 		node->mNumMeshes = nrMeshes;
 		node->mMeshes = new unsigned int[nrMeshes];
-		for( size_t i=0; i<nrMeshes; i++ ) {
-			node->mMeshes[i] = findIdx(modelMeshes, src.meshes[i]);
+		for( int i=0; i<nrMeshes; i++ ) {
+			auto [ms, mat] = src.getMesh(i);
+			node->mMeshes[i] = findIdx(_index_cache, std::make_pair(ms, mat));
 		}
 
 		const size_t nrChilds = src.childs.size();
@@ -200,6 +205,27 @@ namespace
 			node->mChildren[i] = recursiveConvertTree(src.childs[i]);
 		}
 		return node;
+	}
+
+	std::vector<const Material*> findMatsOfMesh(const Mesh* pMesh, const Model::Node& root) 
+	{
+		std::vector<const Material*> rst;
+		std::stack<const Model::Node*> nodeStack;
+        nodeStack.push( &root );
+		while(nodeStack.size()>0) {
+			const Model::Node& node = *nodeStack.top();
+			nodeStack.pop();
+			for(int i=0; i<node.getNrMesh(); i++) {
+				auto [ms, mat] = node.getMesh(i);
+				if(pMesh==ms) {
+					rst.push_back(mat);
+				}
+			}
+			for(const Model::Node& child: node.childs) {
+				nodeStack.push(&child);
+			}
+		}
+		return rst;
 	}
 
 	aiScene* makeScene(const Model& md)
@@ -215,16 +241,21 @@ namespace
 		for( int i = 0; i<nrMats; i++ ) {
 			scene->mMaterials[i] = convertMaterial(*md.my_materials[i]);
 		}
-		
+		GLuint nrAiMeshes = 0;
 		const GLuint nrMeshes = md.my_meshes.size();
 		scene->mNumMeshes = nrMeshes;
 		scene->mMeshes = new aiMesh*[nrMeshes];
+		_index_cache.clear();
 		for( int i=0; i<nrMeshes; i++ ) {
-			scene->mMeshes[i] = convertMesh(*md.my_meshes[i]);
+			std::vector<const Material*> mats = findMatsOfMesh(md.my_meshes[i], md.root);
+			for( const Material* mat : mats ) {
+				_index_cache.push_back(std::make_pair(md.my_meshes[i], mat));
+				scene->mMeshes[nrAiMeshes++] = convertMesh(*md.my_meshes[i], mat);
+			}
 		}
 		
 		scene->mRootNode = recursiveConvertTree(md.root);
-
+		_index_cache.clear();
 		return scene;
 	}
 };
@@ -261,10 +292,14 @@ namespace lim
 		size_t lastSlashPosInOriMdPath = path.find_last_of("/\\");
 		std::string mdPath = md_dir + "/" + name +'.'+format->fileExtension;
 		path = mdPath;
+		// export할때 모델의 상대 경로로 임시 변경
+		for( Texture* tex : my_textures ) {
+			tex->path = tex->path.c_str() + lastSlashPosInOriMdPath+1;
+		}
 
 		/* export model */
 		double elapsedTime = glfwGetTime();
-		aiScene* rstScene = makeScene(*this);
+		aiScene* scene = makeScene(*this);
 		log::pure("done! convert model for export in %.2f\n", glfwGetTime()-elapsedTime);
 		
 		elapsedTime = glfwGetTime();
@@ -272,17 +307,17 @@ namespace lim
 		Assimp::DefaultLogger::create("", Assimp::Logger::VERBOSE);
 		Assimp::DefaultLogger::get()->attachStream(new LimExportLogStream(), severity);
 
-		if( aiExportScene(rstScene, format->id, mdPath.c_str(), 0)!=AI_SUCCESS )
+		if( aiExportScene(scene, format->id, mdPath.c_str(), 0)!=AI_SUCCESS )
 		{
 			log::err("failed export %s\n\n", mdPath.c_str());
-			delete rstScene;
-			rstScene = nullptr;
+			delete scene;
+			scene = nullptr;
 			Assimp::DefaultLogger::kill();
 			return false;
 		}
 		Assimp::DefaultLogger::kill();
-		delete rstScene;
-		rstScene = nullptr;
+		delete scene;
+		scene = nullptr;
 		log::pure("done! export model in %.2f\n", glfwGetTime()-elapsedTime);
 
 
@@ -290,8 +325,7 @@ namespace lim
 		elapsedTime = glfwGetTime();
 		for( Texture* tex : my_textures )
 		{
-			std::string newTexPath = tex->path.c_str() + lastSlashPosInOriMdPath+1;
-			newTexPath = md_dir + "/" +  newTexPath;
+			std::string newTexPath = md_dir + "/" + tex->path.c_str();
 			tex->path = newTexPath;
 
 			size_t lastTexSlashPos = newTexPath.find_last_of("/\\");

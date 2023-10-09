@@ -55,8 +55,7 @@ namespace lim
 		ground.my_materials.back()->map_Kd = ground.my_textures.back();
 		ground.my_materials.back()->map_Flags |= Material::MF_Kd;
 		ground.my_meshes.push_back(new MeshPlane());
-		ground.my_meshes.back()->material = ground.my_materials.back();
-		ground.root.meshes.push_back(ground.my_meshes.back());
+		ground.root.addMesh(ground.my_meshes.back(), ground.my_materials.back());
 		ground.position = {0, 0, 0};
 		ground.scale = {10, 1, 10};
 		ground.updateModelMat();
@@ -319,10 +318,7 @@ namespace lim
 				if( i == src_vp_idx )
 					continue;
 				ImGui::SameLine();
-				if( ImGui::RadioButton((std::to_string(i) + "##2").c_str(), &dst_vp_idx, i) )
-				{
-					log::pure("%d", i);
-				}
+				ImGui::RadioButton((std::to_string(i) + "##2").c_str(), &dst_vp_idx, i);
 			}
 
 			// simplification

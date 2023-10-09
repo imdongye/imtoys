@@ -27,7 +27,6 @@ namespace
         for( const glm::vec2& uv : ori.uvs ) {
             rst->uvs.push_back(uv);
         }
-        rst->material = ori.material;
         rst->initGL();
 
         return rst;

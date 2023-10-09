@@ -40,7 +40,30 @@ namespace lim
 	public:
 		struct Node
 		{
+		private:
+			int nr_meshes=0;
 			std::vector<Mesh*> meshes;
+			std::vector<Material*> mats;
+		public:
+			void addMesh(Mesh* ms, Material* mat = nullptr) {
+				meshes.push_back(ms);
+				mats.push_back(mat);
+				nr_meshes++;
+			}
+			std::pair<const Mesh*, const Material*> getMesh(int idx) const {
+				return std::make_pair(meshes[idx], mats[idx]);
+			}
+			int getNrMesh() const {
+				return nr_meshes;
+			}
+			void treversal(std::function<void(const Mesh* ms, const Material* mat)> callback) const {
+				for( int i=0; i<nr_meshes; i++ ) {
+					callback(meshes[i], mats[i]);
+				}
+				for( const Model::Node& child : childs ) {
+					child.treversal(callback);
+				}
+			}
 			std::vector<Node> childs;
 			glm::mat4 transformation = glm::mat4(1);
 		};
@@ -58,6 +81,8 @@ namespace lim
 		/* render data */
 		Node root;
 		Material* default_material;
+		
+		/* delete when model deleted */
 		std::vector<Material*> my_materials;
 		std::vector<Texture*> my_textures;
 		std::vector<Mesh*> my_meshes;

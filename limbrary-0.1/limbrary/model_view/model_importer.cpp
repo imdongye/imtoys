@@ -28,6 +28,7 @@ using namespace glm;
 namespace
 {
 	Model* _rst_md = nullptr; // temp model
+	const aiScene* _scene;
 	std::string _model_dir;
 
 	const int _nr_formats = (int)aiGetImportFormatCount();
@@ -149,25 +150,18 @@ namespace
 		return rst;
 	}
 
-	Mesh* convertMesh(const aiMesh* aiMesh)
+	Mesh* convertMesh(const aiMesh* aiMs)
 	{
 		Mesh* rst = new Mesh();
 		Mesh& ms = *rst;
 		vec3& boundaryMax = _rst_md->boundary_max;
 		vec3& boundaryMin = _rst_md->boundary_min;
 		
-		ms.name = aiMesh->mName.C_Str();
-		
+		ms.name = aiMs->mName.C_Str();
 
-		if( _rst_md->my_materials.size()>0 ) {
-			ms.material = _rst_md->my_materials[aiMesh->mMaterialIndex];
-		} else {
-			ms.material = nullptr;
-		}
-
-		ms.poss.resize( aiMesh->mNumVertices );
-		for( GLuint i=0; i<aiMesh->mNumVertices; i++ ) {
-			ms.poss[i] = toGLM( aiMesh->mVertices[i] );
+		ms.poss.resize( aiMs->mNumVertices );
+		for( GLuint i=0; i<aiMs->mNumVertices; i++ ) {
+			ms.poss[i] = toGLM( aiMs->mVertices[i] );
 			vec3& p = ms.poss[i];
 			// 요소들끼리의 min max
 			boundaryMax = glm::max(boundaryMax, p);
@@ -175,41 +169,41 @@ namespace
 		}
 		_rst_md->nr_vertices += ms.poss.size();
 
-		if( aiMesh->HasNormals() ) {
-			ms.nors.resize( aiMesh->mNumVertices );
-			for( GLuint i=0; i<aiMesh->mNumVertices; i++ ) {
-				ms.nors[i] = toGLM( aiMesh->mNormals[i] );
+		if( aiMs->HasNormals() ) {
+			ms.nors.resize( aiMs->mNumVertices );
+			for( GLuint i=0; i<aiMs->mNumVertices; i++ ) {
+				ms.nors[i] = toGLM( aiMs->mNormals[i] );
 			}
 		}
 
-		if( aiMesh->HasTextureCoords(0) ) {
-			ms.uvs.resize( aiMesh->mNumVertices );
-			for( GLuint i=0; i<aiMesh->mNumVertices; i++ ) {
+		if( aiMs->HasTextureCoords(0) ) {
+			ms.uvs.resize( aiMs->mNumVertices );
+			for( GLuint i=0; i<aiMs->mNumVertices; i++ ) {
 				// 2차원 uv좌표만 허용
-				ms.uvs[i] = {aiMesh->mTextureCoords[0][i].x, aiMesh->mTextureCoords[0][i].y};
+				ms.uvs[i] = {aiMs->mTextureCoords[0][i].x, aiMs->mTextureCoords[0][i].y};
 			}
 		}
 
-		if( aiMesh->HasVertexColors(0) ) {
-			ms.cols.resize( aiMesh->mNumVertices );
-			for( GLuint i=0; i<aiMesh->mNumVertices; i++ ) {
-				ms.cols[i] = toGLM( aiMesh->mColors[0][i] );
+		if( aiMs->HasVertexColors(0) ) {
+			ms.cols.resize( aiMs->mNumVertices );
+			for( GLuint i=0; i<aiMs->mNumVertices; i++ ) {
+				ms.cols[i] = toGLM( aiMs->mColors[0][i] );
 			}
 		}
 
-		if( aiMesh->HasTangentsAndBitangents() ) {
-			ms.tangents.resize( aiMesh->mNumVertices );
-			ms.bitangents.resize( aiMesh->mNumVertices );
-			for( GLuint i=0; i<aiMesh->mNumVertices; i++ ) {
-				ms.tangents[i] = toGLM( aiMesh->mTangents[i] );
-				ms.bitangents[i] = toGLM( aiMesh->mBitangents[i] );
+		if( aiMs->HasTangentsAndBitangents() ) {
+			ms.tangents.resize( aiMs->mNumVertices );
+			ms.bitangents.resize( aiMs->mNumVertices );
+			for( GLuint i=0; i<aiMs->mNumVertices; i++ ) {
+				ms.tangents[i] = toGLM( aiMs->mTangents[i] );
+				ms.bitangents[i] = toGLM( aiMs->mBitangents[i] );
 			}
 		}
 
-		if( aiMesh->HasBones() ) {
-			//ms.bone_ids.resize( aiMesh->mNumVertices );
-			//ms.bending_factors.resize( aiMesh->mNumVertices );
-			// for( GLuint i=0; i<aiMesh->mNumVertices; i++ ) {
+		if( aiMs->HasBones() ) {
+			//ms.bone_ids.resize( aiMs->mNumVertices );
+			//ms.bending_factors.resize( aiMs->mNumVertices );
+			// for( GLuint i=0; i<aiMs->mNumVertices; i++ ) {
 			// 	for( GLuint j=0; j<Mesh::MAX_BONE_INFLUENCE; j++ ) {
 			// 		ms.bone_ids[i] =
 			// 		ms.bending_factors[i] =
@@ -218,10 +212,10 @@ namespace
 		}
 
 		int nrNotTriFace = 0;
-		if( aiMesh->HasFaces() ) {
-			ms.tris.reserve( aiMesh->mNumFaces );
-			for( GLuint i=0; i<aiMesh->mNumFaces; i++ ) {
-				const aiFace& face = aiMesh->mFaces[i];
+		if( aiMs->HasFaces() ) {
+			ms.tris.reserve( aiMs->mNumFaces );
+			for( GLuint i=0; i<aiMs->mNumFaces; i++ ) {
+				const aiFace& face = aiMs->mFaces[i];
 				if( face.mNumIndices !=3 ) {
 					nrNotTriFace++;
 					continue;
@@ -242,8 +236,15 @@ namespace
 	void recursiveConvertTree(const aiNode* src, Model::Node& dst) 
 	{
 		dst.transformation = toGLM(src->mTransformation);
-		for( size_t i=0; i<src->mNumMeshes; i++ )
-			dst.meshes.push_back( _rst_md->my_meshes[src->mMeshes[i]] );
+		for( size_t i=0; i<src->mNumMeshes; i++ ) {
+			Material* mat = nullptr;
+			if( _rst_md->my_materials.size()>0 ) {
+				const aiMesh* aiMs = _scene->mMeshes[src->mMeshes[i]];
+				mat = _rst_md->my_materials[aiMs->mMaterialIndex];
+			}
+			dst.addMesh(_rst_md->my_meshes[src->mMeshes[i]], mat);
+		}
+
 		for( size_t i=0; i< src->mNumChildren; i++ ) {
 			dst.childs.push_back({});
 			recursiveConvertTree( src->mChildren[i], dst.childs.back());
@@ -289,39 +290,39 @@ namespace lim
 		const GLuint severity = Assimp::Logger::Debugging|Assimp::Logger::Info|Assimp::Logger::Err|Assimp::Logger::Warn;
 		Assimp::DefaultLogger::create("", Assimp::Logger::VERBOSE);
 		Assimp::DefaultLogger::get()->attachStream(new LimImportLogStream(), severity);
-		const aiScene* scene = aiImportFile(modelPath.data(), pFrags);
-		if( !scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode ) {
+		_scene = aiImportFile(modelPath.data(), pFrags);
+		if( !_scene || _scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !_scene->mRootNode ) {
 			log::err("assimp_importer: %s\n\n", aiGetErrorString());
 			Assimp::DefaultLogger::kill();
 			return false;
 		}
 		Assimp::DefaultLogger::kill();
-		ai_backup_flags = scene->mFlags;
+		ai_backup_flags = _scene->mFlags;
 		log::pure("done! read file with assimp in %.2f\n", glfwGetTime()-elapsedTime);
 
 		/* import mats */
 		elapsedTime = glfwGetTime();
 		if( withMaterial ) {
-			my_materials.reserve(scene->mNumMaterials);
-			for( GLuint i=0; i<scene->mNumMaterials; i++ ) {
-				my_materials.push_back(convertMaterial(scene->mMaterials[i]));
+			my_materials.reserve(_scene->mNumMaterials);
+			for( GLuint i=0; i<_scene->mNumMaterials; i++ ) {
+				my_materials.push_back(convertMaterial(_scene->mMaterials[i]));
 			}
 		}
 
 		/* import my_meshes */
-		my_meshes.reserve(scene->mNumMeshes);
-		for( GLuint i=0; i<scene->mNumMeshes; i++ ) {
-			my_meshes.push_back(convertMesh(scene->mMeshes[i]));
+		my_meshes.reserve(_scene->mNumMeshes);
+		for( GLuint i=0; i<_scene->mNumMeshes; i++ ) {
+			my_meshes.push_back(convertMesh(_scene->mMeshes[i]));
 		}
 		boundary_size = boundary_max - boundary_min;
 
 		/* set node tree structure */
-		recursiveConvertTree(scene->mRootNode, root);
+		recursiveConvertTree(_scene->mRootNode, root);
 		log::pure("#meshs %d, #mats %d, #verts %d, #tris %d\n", my_meshes.size(), my_materials.size(), nr_vertices, nr_triangles);
 		log::pure("boundary size : %f, %f, %f\n", name.c_str(), boundary_size.x, boundary_size.y, boundary_size.z);
 		log::pure("done! convert aiScene in %.2f\n\n", glfwGetTime()-elapsedTime);
 
-		aiReleaseImport(scene);
+		aiReleaseImport(_scene);
 
 		if( unitScaleAndPivot ) {
 			updateUnitScaleAndPivot();

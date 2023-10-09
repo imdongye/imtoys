@@ -7,7 +7,7 @@ using namespace lim;
 
 namespace
 {
-    inline void bindLightToProg(const Program& prog, const Light& lit, int& activeSlot)
+    inline int bindLightToProg(const Program& prog, const Light& lit, int activeSlot)
     {
         prog.setUniform("lightPos", lit.position);
         prog.setUniform("lightColor", lit.color);
@@ -19,8 +19,9 @@ namespace
             glBindTexture(GL_TEXTURE_2D, lit.map_Shadow.color_tex);
             prog.setUniform("map_Shadow", activeSlot++);
         }
+        return activeSlot; // return next texture slot
     }
-    inline void bindMatToProg(const Program& prog, const Material& mat, int& activeSlot)
+    inline int bindMatToProg(const Program& prog, const Material& mat, int activeSlot)
     {
         if( mat.map_Kd ) {
             glActiveTexture(GL_TEXTURE0 + activeSlot);
@@ -60,6 +61,7 @@ namespace
         prog.setUniform("Tf", mat.Tf);
         prog.setUniform("Ni", mat.Ni);
         prog.setUniform("map_Flags", mat.map_Flags);
+        return activeSlot;
     }
 
     inline void bakeShadowMap(const std::vector<const Light*> lits, const std::vector<const Model*>& mds)
@@ -101,10 +103,27 @@ namespace lim
     {
         fb.bind();
         prog.use();
-        for( const Mesh* ms : md.my_meshes ) {
-            int activeSlot = 0;
-            bindMatToProg(prog, *ms->material, activeSlot);
-            ms->drawGL();
+
+        const Material* curMat = md.default_material;
+
+        stack<const Model::Node*> nodeStack;
+        nodeStack.push( &(md.root) );
+        while( nodeStack.size()>0 ) {
+            const Model::Node& node = *nodeStack.top();
+            nodeStack.pop();
+            for( const Model::Node& child : node.childs ) {
+                nodeStack.push(&child);
+            }
+
+            for( int i=0; i<node.getNrMesh(); i++ ) {
+                auto [ms, mat] = node.getMesh(i);
+                if( mat!=nullptr ) {
+                    curMat = mat;
+                }
+                bindMatToProg(prog, *curMat, 0);
+                prog.setUniform("modelMat", md.model_mat);
+                ms->drawGL();
+            }
         }
         fb.unbind();
     }
@@ -125,30 +144,28 @@ namespace lim
         prog.setUniform("viewMat", cam.view_mat);
         prog.setUniform("modelMat", md.model_mat);
 
-        int activeSlot = 0;
-        bindLightToProg(prog, lit, activeSlot);
+        int activeSlot = bindLightToProg(prog, lit, 0);
+
+        const Material* curMat = md.default_material;
 
         stack<const Model::Node*> nodeStack;
         nodeStack.push( &(md.root) );
 
-        const Material* curMat = md.default_material;
-
         while( nodeStack.size()>0 ) {
-            const Model::Node* pNd = nodeStack.top();
+            const Model::Node& node = *nodeStack.top();
             nodeStack.pop();
-            for( const Model::Node& child : pNd->childs ) {
+            for( const Model::Node& child : node.childs ) {
                 nodeStack.push(&child);
             }
 
-            for( const Mesh* pMs : pNd->meshes ) {
-                const Mesh& ms = *pMs;
-                if( ms.material!=nullptr ) {
-                    curMat = ms.material;
+            for( int i=0; i<node.getNrMesh(); i++ ) {
+                auto [ms, mat] = node.getMesh(i);
+                if( mat!=nullptr ) {
+                    curMat = mat;
                 }
-
                 bindMatToProg(prog, *curMat, activeSlot);
                 prog.setUniform("modelMat", md.model_mat);
-                ms.drawGL();
+                ms->drawGL();
             }
         }
 
@@ -164,10 +181,10 @@ namespace lim
 
         /* draw models */
         fb.bind();
-        Material* curMat = nullptr;
-        Material* nextMat = nullptr;
-        Program* curProg = nullptr;
-        Program* nextProg = nullptr;
+        const Material* curMat = nullptr;
+        const Material* nextMat = nullptr;
+        const Program* curProg = nullptr;
+        const Program* nextProg = nullptr;
         int activeSlot = 0;
 
         for( const Model* pMd : scn.models ) {
@@ -179,17 +196,17 @@ namespace lim
             nodeStack.push( &(pMd->root) );
 
             while( nodeStack.size()>0 ) {
-                const Model::Node* pNd = nodeStack.top();
+                const Model::Node& node = *nodeStack.top();
                 nodeStack.pop();
-                for( const Model::Node& child : pNd->childs ) {
+                for( const Model::Node& child : node.childs ) {
                     nodeStack.push(&child);
                 }
 
-                for( const Mesh* pMs : pNd->meshes ) {
-                    const Mesh& ms = *pMs;
+                for( int i=0; i<node.getNrMesh(); i++ ) {
+                    auto [ms, mat] = node.getMesh(i);
 
-                    if( ms.material != nullptr ) {
-                        nextMat = ms.material;
+                    if( mat != nullptr ) {
+                        nextMat = mat;
                         if( nextMat->prog != nullptr )
                             nextProg = nextMat->prog;
                     }
@@ -204,17 +221,14 @@ namespace lim
                         prog.setUniform("projMat", cam.proj_mat);
 
                         for( const Light* pLit : scn.lights ) {
-                           bindLightToProg(prog, *pLit, activeSlot);
+                            activeSlot = bindLightToProg(prog, *pLit, activeSlot);
                             break; //  Todo: 지금은 라이트 하나만
                         }
                     }
 
                     if(  curProg != nextProg || curMat != nextMat )
                     {
-                        int matRelativeActiveSlot = activeSlot;
-
-                        bindMatToProg(*nextProg, *nextMat, matRelativeActiveSlot);
-
+                        bindMatToProg(*nextProg, *nextMat, activeSlot);
                         curMat = nextMat;
                     }
 
@@ -223,7 +237,7 @@ namespace lim
                     }
 
                     curProg->setUniform("modelMat", md.model_mat); // Todo: hirachi trnasformation
-                    ms.drawGL();
+                    ms->drawGL();
                 }
             }
         }

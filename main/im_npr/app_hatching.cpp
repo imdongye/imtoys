@@ -115,7 +115,7 @@ namespace lim
 	
 		models.push_back( {} );
 		models.back().name = "sphere";
-		models.back().root.meshes.push_back(&AssetLib::get().sphere);
+		models.back().root.addMesh(&AssetLib::get().sphere);
 		models.back().default_material = &h_mat;
 		models.back().updateUnitScaleAndPivot();
 
@@ -140,7 +140,7 @@ namespace lim
 		light.setRotate(30.f, 30.f, 10.f);
 		light_model.name = "light";
 		light_model.my_meshes.push_back(new MeshSphere(8, 4));
-		light_model.root.meshes.push_back(light_model.my_meshes.back()); // delete sphere when delete model!
+		light_model.root.addMesh(light_model.my_meshes.back()); // delete sphere when delete model!
 		light_model.position = light.position;
 		light_model.scale = glm::vec3(0.3f);
 		light_model.updateModelMat();
