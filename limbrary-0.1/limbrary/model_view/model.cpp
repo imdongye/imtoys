@@ -113,7 +113,7 @@ namespace lim
 		pivoted_scaled_bottom_height = src.pivoted_scaled_bottom_height;
 		ai_backup_flags = src.ai_backup_flags;
 	}
-	Model::Model(Model&& src) noexcept
+	Model::Model(Model&& src, bool makeRef) noexcept
 	{
 		*this = std::move(src);
 	}

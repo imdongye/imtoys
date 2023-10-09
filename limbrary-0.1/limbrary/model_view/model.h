@@ -100,7 +100,7 @@ namespace lim
 	public:
 		Model(std::string_view name="nonamed");
 		Model(const Model& src);
-		Model(Model&& src) noexcept;
+		Model(Model&& src, bool makeRef=false) noexcept;
 		Model& operator=(Model&& src) noexcept;
 		~Model() noexcept;
 		void releaseResource();
