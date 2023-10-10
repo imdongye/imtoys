@@ -46,7 +46,7 @@ namespace lim
 			GLuint sid = 0;
 			GLenum type = 0;
 			std::string path;
-			void createAndCompile();
+			bool createAndCompile();
 			void deinitGL();
 		};
 		bool reloadable = false;

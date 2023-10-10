@@ -64,7 +64,7 @@ namespace
         return activeSlot;
     }
 
-    inline void bakeShadowMap(const std::vector<const Light*> lits, const std::vector<const Model*>& mds)
+    inline void bakeShadowMap(const std::vector<const Light*>& lits, const std::vector<const Model*>& mds)
     {
         const Program& depthProg = AssetLib::get().depth_prog;
 
@@ -243,5 +243,59 @@ namespace lim
         }
 
         fb.unbind();
+    }
+}
+
+
+
+namespace lim
+{
+    void Scene::deleteOwn() {
+        for( const Model* md: my_mds ){
+            delete md;
+        }
+        my_mds.clear();
+    }
+    Scene::Scene()
+    {    
+    }
+    Scene::Scene(Scene&& src) noexcept
+        : my_mds(std::move(src.my_mds))
+        , models(std::move(src.models))
+        , lights(std::move(src.lights))
+    {
+    }
+    Scene& Scene::operator=(Scene&& src) noexcept {
+        if(this==&src)
+            return *this;
+        deleteOwn();
+        models = std::move(src.models);
+        my_mds = std::move(src.my_mds);
+        lights = std::move(src.lights);
+        return *this;
+    }
+    Scene::~Scene() noexcept {
+        deleteOwn();
+    }
+    void Scene::addModel( const Model* md, bool deleteWhenScnDeleted ) {
+        models.push_back(md);
+        if(deleteWhenScnDeleted)
+            my_mds.push_back(md);
+    }
+    void Scene::subModel( const Model* md ) {
+        auto it = std::find(models.begin(), models.end(), md);
+        if (it != models.end())
+            models.erase(it);
+        it = std::find(my_mds.begin(), my_mds.end(), md);
+        if (it != my_mds.end())
+            my_mds.erase(it);
+    }
+    void Scene::addLight( const Light* lit ) {
+        lights.push_back(lit);
+    }
+    void Scene::subLight( const Light* lit ) {
+        auto it = std::find(lights.begin(), lights.end(), lit);
+        if (it != lights.end())
+            lights.erase(it);
     }
 }

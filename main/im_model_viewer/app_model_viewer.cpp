@@ -1,6 +1,7 @@
 #include "app_model_viewer.h"
 #include <imgui.h>
 #include <limbrary/model_view/renderer.h>
+#include <limbrary/asset_lib.h>
 
 using namespace lim;
 using namespace std;
@@ -15,10 +16,12 @@ namespace lim
 	AppModelViewer::AppModelViewer() : AppBase(780, 780, APP_NAME, false)
 	{
 		viewports.reserve(5);
-		models.reserve(5);
+		scenes.reserve(5);
 
 		program.home_dir = APP_DIR;
 		program.attatch("mvp.vs").attatch("debug.fs").link();
+
+		AssetLib::get().default_material.prog = &program;
 
 		addModelViewer("assets/models/objs/spot.obj");
 	}
@@ -28,26 +31,34 @@ namespace lim
 
 	void AppModelViewer::addModelViewer(string path) 
 	{
-		Model md;
-		if( md.importFromFile(findModelInDirectory(path), true)==false )
+		Model* md = new Model();
+		if( md->importFromFile(findModelInDirectory(path), true)==false )
 			return;
+		Model* refMd = new Model(*md, true);
+		refMd->position += vec3(1,0,0);
+		refMd->updateModelMat();
 
-		char* vpName = fmtStrToBuf("%s##model_view", md.name.c_str());
+		Scene scn;
+		scn.addLight(&light);
+		scn.addModel(md, true);
+		scn.addModel(refMd, true);
+		scenes.emplace_back(std::move(scn));
+
+		char* vpName = fmtStrToBuf("%s##model_view", md->name.c_str());
 		viewports.emplace_back(vpName, new FramebufferMs(8));
 		viewports.back().camera.viewing_mode = VpAutoCamera::VM_PIVOT;
-		models.push_back(std::move(md));
 	}
 	
 	void AppModelViewer::drawModelsToViewports()
 	{
 		for(int i=0; i<viewports.size(); i++ ) {
 			if( !viewports[i].window_opened ) {
-				models.erase(models.begin()+i);
+				scenes.erase(scenes.begin()+i);
 				viewports.erase(viewports.begin()+i);
 				i--;
 				continue;
 			}
-			render(viewports[i].getFb(), program, viewports[i].camera, models[i], light);
+			render(viewports[i].getFb(), viewports[i].camera, scenes[i]);
 		}
 	}
 

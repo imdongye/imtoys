@@ -90,27 +90,30 @@ namespace lim
 			glDetachShader(pid, shader.sid);
 			shader.deinitGL();
 		}
+		shaders.clear();
 		if( pid ) { glDeleteProgram(pid); pid = 0; }
+		uniform_location_cache.clear();
 		return *this;
 	}
 
 
-	void Program::Shader::createAndCompile()
+	bool Program::Shader::createAndCompile()
 	{
-		if(sid) { glDeleteShader(sid); }
-		sid = glCreateShader(type);
 		std::string source = readStrFromFile(path);
 		if(source.size()<1) {
-			return;
+			return false;
 		}
+		deinitGL();
+		sid = glCreateShader(type);
 		const GLchar* pSource = source.c_str();
 		glShaderSource(sid, 1, &pSource, nullptr);
 		glCompileShader(sid);
 		if( !checkCompileErrors(sid, path) ) {
 			deinitGL();
-			return;
+			return false;
 		}
 		log::pure("%s compiled\n", path.c_str());
+		return true;
 	}
 	void Program::Shader::deinitGL()
 	{
@@ -193,6 +196,7 @@ namespace lim
 		return loc;
 	}
 
+
 	ProgramReloadable::ProgramReloadable(std::string_view _name)
 		: Program(_name)
 	{
@@ -207,22 +211,26 @@ namespace lim
 	{
 		if(this == &src)
 			return *this;
-		Program::operator=(std::move(src));
 		deinitGL();
+		Program::operator=(std::move(src));
 		reloadable = true;
 		return *this;
 	}
 	void ProgramReloadable::reload(GLenum type)
 	{
-		uniform_location_cache.clear();
-
 		for(auto& shader : shaders) {
 			if( shader.type == type ) {
-				glDetachShader(pid, shader.sid);
-				shader.createAndCompile();
-				glAttachShader(pid, shader.sid);
+				if(shader.sid!=0)
+					glDetachShader(pid, shader.sid);
+				if( shader.createAndCompile() ) {
+					glAttachShader(pid, shader.sid);
+					break;
+				}
+				return;
 			}
 		}
+
+		uniform_location_cache.clear();
 		glLinkProgram(pid);
 		if( !checkLinkingErrors(pid) ) {
 			if( pid ) { glDeleteProgram(pid); pid = 0; }

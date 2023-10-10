@@ -42,10 +42,10 @@ namespace lim
 		{
 		private:
 			int nr_meshes=0;
-			std::vector<Mesh*> meshes;
-			std::vector<Material*> mats;
+			std::vector<const Mesh*> meshes;
+			std::vector<const Material*> mats;
 		public:
-			void addMesh(Mesh* ms, Material* mat = nullptr) {
+			void addMesh(const Mesh* ms, const Material* mat = nullptr) {
 				meshes.push_back(ms);
 				mats.push_back(mat);
 				nr_meshes++;
@@ -87,20 +87,20 @@ namespace lim
 		std::vector<Texture*> my_textures;
 		std::vector<Mesh*> my_meshes;
 
+		/* infos */
 		GLuint nr_vertices = 0;
 		GLuint nr_triangles = 0;
 		glm::vec3 boundary_size = glm::vec3(1);
 		glm::vec3 boundary_min = glm::vec3(std::numeric_limits<float>::max());
 		glm::vec3 boundary_max = glm::vec3(std::numeric_limits<float>::min());
 		float pivoted_scaled_bottom_height = 0;
-		
 		GLuint ai_backup_flags = 0;
 	private:
 		Model& operator=(const Model&) = delete;
 	public:
 		Model(std::string_view name="nonamed");
-		Model(const Model& src);
-		Model(Model&& src, bool makeRef=false) noexcept;
+		Model(const Model& src, bool makeRef=false);
+		Model(Model&& src) noexcept;
 		Model& operator=(Model&& src) noexcept;
 		~Model() noexcept;
 		void releaseResource();

@@ -21,12 +21,13 @@ namespace lim
 
 	class AssetLib
 	{
+	private:
+		Program default_prog;
 	public:
 		//****** property ******//
 		Program tex_to_quad_prog;
 		Program depth_prog;
 		
-		Program default_prog;
 		Material default_material;
 		
 		MeshQuad screen_quad; // only poss

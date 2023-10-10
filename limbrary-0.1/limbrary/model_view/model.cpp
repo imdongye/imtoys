@@ -55,7 +55,7 @@ namespace lim
 	{
 		default_material = &AssetLib::get().default_material;
 	}
-	Model::Model(const Model& src) 
+	Model::Model(const Model& src, bool makeRef) 
 	{
 		log::warn("Model is copied\n\n");
 		name = src.name;
@@ -68,43 +68,6 @@ namespace lim
 		model_mat = src.model_mat;
 		default_material = src.default_material;
 
-		my_textures.reserve(src.my_textures.size());
-		for( Texture* srcTex : src.my_textures ) {
-			my_textures.push_back( new Texture(*srcTex) ); // lvalue clone with copy consturctor
-		}
-
-		my_materials.reserve(src.my_materials.size());
-		for( int i=0; i<src.my_materials.size(); i++ ) {
-			my_materials.push_back( new Material(*src.my_materials[i]) ); // lvalue clone with copy consturctor
-			correctMatTexLink( *src.my_materials[i], *my_materials[i], src.my_textures, my_textures);
-		}
-
-		my_meshes.reserve(src.my_meshes.size());
-		for( Mesh* srcMs : src.my_meshes ) {
-			my_meshes.push_back( new Mesh(*srcMs) ); // lvalue clone with copy consturctor
-		}
-
-		std::stack<const Node*> srcNs;
-		std::stack<Node*> dstNs;
-		srcNs.push(&src.root);
-		dstNs.push(&root);
-		while( srcNs.size()>0 ) {
-			const Node* srcN = srcNs.top(); srcNs.pop();
-			Node* dstN = dstNs.top(); dstNs.pop();
-			
-			for( int i=0; i<srcN->getNrMesh(); i++ ) {
-				auto [ms, mat] = srcN->getMesh(i);
-				dstN->addMesh(my_meshes[findIdx(src.my_meshes, (Mesh*)ms)]
-							, my_materials[findIdx(src.my_materials, (Material*)mat)]);
-			}
-			dstN->childs.reserve(srcN->childs.size());
-			for(const Node& oriChild : srcN->childs) {
-				srcNs.push(&oriChild);
-				dstN->childs.push_back({});
-				dstNs.push(&dstN->childs.back());
-			}
-		}
-
 		nr_vertices = src.nr_vertices;
 		nr_triangles = src.nr_triangles;
 		boundary_max = src.boundary_max;
@@ -112,8 +75,71 @@ namespace lim
 		boundary_size = src.boundary_size;
 		pivoted_scaled_bottom_height = src.pivoted_scaled_bottom_height;
 		ai_backup_flags = src.ai_backup_flags;
+
+		
+		if( makeRef ) 
+		{
+			std::stack<const Node*> srcNs;
+			std::stack<Node*> dstNs;
+			srcNs.push(&src.root);
+			dstNs.push(&root);
+			while( srcNs.size()>0 ) {
+				const Node* srcN = srcNs.top(); srcNs.pop();
+				Node* dstN = dstNs.top(); dstNs.pop();
+				
+				for( int i=0; i<srcN->getNrMesh(); i++ ) {
+					auto [ms, mat] = srcN->getMesh(i);
+					dstN->addMesh(ms, mat);
+				}
+				dstN->childs.reserve(srcN->childs.size());
+				for(const Node& oriChild : srcN->childs) {
+					srcNs.push(&oriChild);
+					dstN->childs.push_back({});
+					dstNs.push(&dstN->childs.back());
+				}
+			}
+		}
+		else // clone
+		{
+			my_textures.reserve(src.my_textures.size());
+			for( Texture* srcTex : src.my_textures ) {
+				my_textures.push_back( new Texture(*srcTex) ); // lvalue clone with copy consturctor
+			}
+
+			my_materials.reserve(src.my_materials.size());
+			for( int i=0; i<src.my_materials.size(); i++ ) {
+				my_materials.push_back( new Material(*src.my_materials[i]) ); // lvalue clone with copy consturctor
+				correctMatTexLink( *src.my_materials[i], *my_materials[i], src.my_textures, my_textures);
+			}
+
+			my_meshes.reserve(src.my_meshes.size());
+			for( Mesh* srcMs : src.my_meshes ) {
+				my_meshes.push_back( new Mesh(*srcMs) ); // lvalue clone with copy consturctor
+			}
+
+			std::stack<const Node*> srcNs;
+			std::stack<Node*> dstNs;
+			srcNs.push(&src.root);
+			dstNs.push(&root);
+			while( srcNs.size()>0 ) {
+				const Node* srcN = srcNs.top(); srcNs.pop();
+				Node* dstN = dstNs.top(); dstNs.pop();
+				
+				for( int i=0; i<srcN->getNrMesh(); i++ ) {
+					auto [ms, mat] = srcN->getMesh(i);
+					dstN->addMesh(my_meshes[findIdx(src.my_meshes, (Mesh*)ms)]
+								, my_materials[findIdx(src.my_materials, (Material*)mat)]);
+				}
+				dstN->childs.reserve(srcN->childs.size());
+				for(const Node& oriChild : srcN->childs) {
+					srcNs.push(&oriChild);
+					dstN->childs.push_back({});
+					dstNs.push(&dstN->childs.back());
+				}
+			}
+		}
 	}
-	Model::Model(Model&& src, bool makeRef) noexcept
+	Model::Model(Model&& src) noexcept
 	{
 		*this = std::move(src);
 	}
@@ -131,7 +157,7 @@ namespace lim
 		model_mat = src.model_mat;
 		
 		root = src.root;
-		default_material = src.default_material;
+		default_material = std::move(src.default_material);
 		my_materials = std::move(src.my_materials);
 		my_textures = std::move(src.my_textures);
 		my_meshes = std::move(src.my_meshes);

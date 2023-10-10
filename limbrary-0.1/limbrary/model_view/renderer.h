@@ -22,11 +22,26 @@ Todo:
 
 namespace lim
 {
-    // Copyable
-	struct Scene
+	class Scene
 	{
+    private:
+		std::vector<const Model*> my_mds;
+        void deleteOwn();
+    public:
 		std::vector<const Model*> models;
 		std::vector<const Light*> lights;
+    private:
+		Scene(const Scene&) = delete;
+		Scene& operator=(const Scene&) = delete;
+	public:
+		Scene();
+		Scene(Scene&& src) noexcept;
+		Scene& operator=(Scene&& src) noexcept;
+        ~Scene() noexcept;
+        void addModel( const Model* md, bool deleteWhenScnDeleted = false );
+        void subModel( const Model* md );
+        void addLight( const Light* lit );
+        void subLight( const Light* lit );
 	};
 
     void render( const Framebuffer& fb,

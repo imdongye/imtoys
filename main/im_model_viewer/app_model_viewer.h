@@ -8,9 +8,8 @@
 
 #include <limbrary/application.h>
 #include <limbrary/model_view/camera_auto.h>
-#include <limbrary/model_view/model.h>
 #include <limbrary/program.h>
-#include <limbrary/model_view/light.h>
+#include <limbrary/model_view/renderer.h>
 
 namespace lim
 {
@@ -22,7 +21,8 @@ namespace lim
 		inline static constexpr CStr APP_DESCRIPTION = "model viewer for test materials";
 	private:
 		std::vector<ViewportWithCamera> viewports;
-		std::vector<Model> models;
+		std::vector<Scene> scenes;
+
 		ProgramReloadable program;
 		Light light;
 	public:
