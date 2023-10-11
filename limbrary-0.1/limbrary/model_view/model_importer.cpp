@@ -137,12 +137,12 @@ namespace
 			mat.map_Ka = loadTexture(tempStr.C_Str(), GL_SRGB8);
 		}
 		if( aiMat->GetTexture(aiTextureType_NORMALS, 0, &tempStr) == AI_SUCCESS ) {
-			log::pure("map_Nor ");
+			log::pure("map_Bump(Nor) ");
            	mat.map_Flags |= Material::MF_Nor;
 			mat.map_Bump = loadTexture(tempStr.C_Str(), GL_RGB8);
 		}
 		if( aiMat->GetTexture(aiTextureType_HEIGHT, 0, &tempStr) == AI_SUCCESS ) {
-			log::pure("map_Height ");
+			log::pure("map_Bump(Height) ");
            	mat.map_Flags |= Material::MF_Height;
 			mat.map_Bump = loadTexture(tempStr.C_Str(), GL_RGB8);
 		}

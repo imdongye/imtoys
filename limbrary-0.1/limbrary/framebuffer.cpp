@@ -82,6 +82,8 @@ namespace lim
 		width = _width; height = _height;
 		aspect = width/(float)height;
 		initGL();
+		glFlush();
+		glFinish();
 		return true;
 	}
 	bool Framebuffer::resize(GLuint square)

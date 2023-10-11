@@ -57,7 +57,6 @@ namespace lim
 	}
 	Model::Model(const Model& src, bool makeRef) 
 	{
-		log::warn("Model is copied\n\n");
 		name = src.name;
 		path = src.path;
 
@@ -101,6 +100,7 @@ namespace lim
 		}
 		else // clone
 		{
+			log::warn("Model is copied\n\n");
 			my_textures.reserve(src.my_textures.size());
 			for( Texture* srcTex : src.my_textures ) {
 				my_textures.push_back( new Texture(*srcTex) ); // lvalue clone with copy consturctor

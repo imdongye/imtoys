@@ -31,7 +31,6 @@ Todo:
 #include <glm/glm.hpp>
 #include <string>
 #include "utils.h"
-#include <imgui.h>
 
 
 namespace lim
@@ -52,7 +51,9 @@ namespace lim
 		bool hovered = false;
 		bool focused = false;
 		bool dragging = false;
-		glm::ivec2 mouse_pos = {0,0};
+		glm::vec2 mouse_pos = {0,0};
+		glm::vec2 mouse_off = {0,0};
+		glm::vec2 mouse_wheel_off = {0,0};
 		Callbacks<void(int, int)> resize_callbacks;
 	private:
 		Framebuffer* framebuffer = nullptr;

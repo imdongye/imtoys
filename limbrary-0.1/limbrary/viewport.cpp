@@ -1,4 +1,5 @@
 #include <limbrary/viewport.h>
+#define IMGUI_DEFINE_MATH_OPERATORS
 #include <imgui.h>
 
 namespace lim 
@@ -90,13 +91,8 @@ namespace lim
 			if(contentSize.x>10&&contentSize.y>10) // This is sometimes negative
 				resize(contentSize.x, contentSize.y);
 		}
-
-		ImVec2 imWinPos = ImGui::GetWindowPos();
-		ImVec2 imMousePos = ImGui::GetMousePos();
-		glm::ivec2 winPos ={imWinPos.x, imWinPos.y};
-		glm::ivec2 mousePos = {imMousePos.x, imMousePos.y};
-		mouse_pos = mousePos - winPos - glm::ivec2(0, ImGui::GetFrameHeight());
-
+		
+		SetItemuse
 		GLuint texID = framebuffer->getRenderedTex();
 		if( texID!=0 ) {
 			ImGui::Image((void*)(intptr_t)texID, ImVec2{(float)fb.width, (float)fb.height}, ImVec2{0, 1}, ImVec2{1, 0});
@@ -106,6 +102,14 @@ namespace lim
 		hovered = ImGui::IsItemHovered();
 		dragging = isWindowActivated && !isHoveredOnTitle && (ImGui::IsMouseDown(0)||ImGui::IsMouseDown(2));
 		if( dragging ) ImGui::SetMouseCursor(7);
+
+		static glm::vec2 prevMousePos;
+		prevMousePos = mouse_pos;
+		ImVec2 imMousePos = ImGui::GetMousePos() - ImGui::GetWindowPos() - ImVec2(0, ImGui::GetFrameHeight());
+		mouse_pos = {imMousePos.x, imMousePos.y};
+		mouse_off = mouse_pos - prevMousePos;
+
+		mouse_wheel_off = {ImGui::GetIO().MouseWheelH, ImGui::GetIO().MouseWheel};
 
 		ImGui::End();
 		ImGui::PopStyleVar();

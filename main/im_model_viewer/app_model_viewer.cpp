@@ -34,14 +34,10 @@ namespace lim
 		Model* md = new Model();
 		if( md->importFromFile(findModelInDirectory(path), true)==false )
 			return;
-		Model* refMd = new Model(*md, true);
-		refMd->position += vec3(1,0,0);
-		refMd->updateModelMat();
 
 		Scene scn;
 		scn.addLight(&light);
 		scn.addModel(md, true);
-		scn.addModel(refMd, true);
 		scenes.emplace_back(std::move(scn));
 
 		char* vpName = fmtStrToBuf("%s##model_view", md->name.c_str());
@@ -81,7 +77,9 @@ namespace lim
 
 		ImGui::Begin("controller##model_viewer");
 		ImGui::Text("%.1f FPS", ImGui::GetIO().Framerate);
-        
+		const Viewport& vp = viewports[0];
+        ImGui::Text("%.0f %.0f %f %f", vp.mouse_pos.x, vp.mouse_pos.y, vp.mouse_wheel_off.x, vp.mouse_wheel_off.y);
+
 		if(ImGui::Button("reload .fs")) {
 			program.reload(GL_FRAGMENT_SHADER);
 		}

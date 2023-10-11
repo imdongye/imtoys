@@ -49,6 +49,7 @@ namespace lim
 			VM_PIVOT,
 			VM_SCROLL
 		};
+		bool is_viewing_mode_key_down = false;
 		int viewing_mode = VM_FREE;
 
 		float move_free_spd = 3.f/1.f; 	  // m/sec
@@ -73,10 +74,8 @@ namespace lim
 	public:
 		void setViewMode(int vm);
 	protected:
-		void keyCallback(int key, int scancode, int action, int mods);
 		void viewportSizeCallback(int w, int h);
-		void mouseBtnCallback(int button, int action, int mods);
-		void cursorPosCallback(double xpos, double ypos);
+		void cursorPosCallback(double xpos, double ypos, bool isDragging);
 		void scrollCallback(double xOff, double yOff);
 		void processInput(float dt);
 	};

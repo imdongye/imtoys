@@ -58,28 +58,20 @@ namespace lim
 	{
 		viewing_mode = vm%3;
 	}
-	void AutoCamera::keyCallback(int key, int scancode, int action, int mods)
-	{
-		if( key == GLFW_KEY_TAB && action == GLFW_PRESS ) {
-			setViewMode(viewing_mode+1);
-		}
-	}
 	void AutoCamera::viewportSizeCallback(int w, int h)
 	{
 		aspect = w/(float)h;
 		updateProjMat();
 	}
-	void AutoCamera::mouseBtnCallback(int button, int action, int mods)
-	{
-		double xpos, ypos;
-		glfwGetCursorPos(_win, &xpos, &ypos);
-		prev_mouse_x = xpos;
-		prev_mouse_y = ypos;
-	}
-	void AutoCamera::cursorPosCallback(double xpos, double ypos)
+	void AutoCamera::cursorPosCallback(double xpos, double ypos, bool isDragging)
 	{
 		float xoff = xpos - prev_mouse_x;
 		float yoff = prev_mouse_y - ypos;
+		prev_mouse_x = xpos;
+		prev_mouse_y = ypos;
+
+		if(!isDragging)
+			return;
 
 		switch( viewing_mode ) {
 			case VM_PIVOT:
@@ -97,8 +89,6 @@ namespace lim
 			case VM_SCROLL:
 				break;
 		}
-		prev_mouse_x = xpos;
-		prev_mouse_y = ypos;
 	}
 	void AutoCamera::scrollCallback(double xOff, double yOff)
 	{
@@ -125,6 +115,12 @@ namespace lim
 	}
 	void AutoCamera::processInput(float dt)
 	{
+		bool newIsDown = glfwGetKey(_win, GLFW_KEY_A) == GLFW_PRESS;
+		if( newIsDown==true && is_viewing_mode_key_down==false ) {
+			setViewMode(viewing_mode+1);
+		}
+		is_viewing_mode_key_down = newIsDown;
+		
 		glm::vec3 perallelFront = {front.x, 0.f, front.z};
 		perallelFront = glm::normalize(perallelFront);
 		switch( viewing_mode ) {
@@ -182,11 +178,11 @@ namespace lim
 		if(isInited==false)
 			return;
 		AppBase& app = *AppPref::get().app;
+		app.key_callbacks.erase(this);
 		app.framebuffer_size_callbacks.erase(this);
-		app.update_hooks.erase(this);
-		app.mouse_btn_callbacks.erase(this);
 		app.cursor_pos_callbacks.erase(this);
 		app.scroll_callbacks.erase(this);
+		app.update_hooks.erase(this);
 	}
 	void WinAutoCamera::initCallbacks()
 	{
@@ -201,24 +197,14 @@ namespace lim
 		updateProjMat();
 
 		// register callbacks
-		app.key_callbacks[this] = [this](int key, int scancode, int action, int mods) {
-			keyCallback(key, scancode, action, mods);
-		};
 		app.framebuffer_size_callbacks[this] = [this](int w, int h) {
 			viewportSizeCallback(w, h);
 		};
-		app.mouse_btn_callbacks[this] = [this](int button, int action, int mods) {
-			if( ImGui::GetIO().WantCaptureMouse )
-				return;
-			mouseBtnCallback(button, action, mods);
-		};
 		app.cursor_pos_callbacks[this] = [this](double xPos, double yPos) {
-			if( !glfwGetMouseButton(_win, GLFW_MOUSE_BUTTON_LEFT)
-			&& !glfwGetMouseButton(_win, GLFW_MOUSE_BUTTON_MIDDLE) )
-				return;
-			if( ImGui::GetIO().WantCaptureMouse )
-				return;
-			cursorPosCallback(xPos, yPos);
+			bool isDragging = glfwGetMouseButton(_win, GLFW_MOUSE_BUTTON_LEFT)==GLFW_PRESS;
+			isDragging 	   |= glfwGetMouseButton(_win, GLFW_MOUSE_BUTTON_MIDDLE)==GLFW_PRESS;
+			isDragging 	   &= !ImGui::GetIO().WantCaptureMouse;
+			cursorPosCallback(xPos, yPos, isDragging);
 		};
 		app.scroll_callbacks[this] = [this](double xOff, double yOff) {
 			if( ImGui::GetIO().WantCaptureMouse )
@@ -263,14 +249,10 @@ namespace lim
 		if( vp==nullptr )
 			return;
 
+		AppBase& app = *AppPref::get().app;
+		app.update_hooks.erase(this);
         vp->resize_callbacks.erase(this);
 		vp = nullptr;
-		AppBase& app = *AppPref::get().app;
-		app.key_callbacks.erase(this);
-		app.update_hooks.erase(this);
-		app.mouse_btn_callbacks.erase(this);
-		app.cursor_pos_callbacks.erase(this);
-		app.scroll_callbacks.erase(this);
 	}
 	void VpAutoCamera::initCallbacks(Viewport* _vp)
 	{
@@ -286,31 +268,18 @@ namespace lim
 		// register callbacks
 		AppBase& app = *AppPref::get().app;
 		_win = app.window;
-		app.key_callbacks[this] = [this](int key, int scancode, int action, int mods) {
-			keyCallback(key, scancode, action, mods);
-		};
+		
         vp->resize_callbacks[this] = [this](int w, int h) {
             viewportSizeCallback(w, h);
         };
-		app.mouse_btn_callbacks[this] = [this](int button, int action, int mods) {
-			if( !vp->hovered )
-				return;
-			mouseBtnCallback(button, action, mods);
-		};
-		app.cursor_pos_callbacks[this] = [this](double xPos, double yPos) {
-			if( !vp->dragging )
-				return;
-			cursorPosCallback(xPos, yPos);
-		};
-		app.scroll_callbacks[this] = [this](double xOff, double yOff) {
-			if( !vp->hovered )
-				return;
-			scrollCallback(xOff, yOff);
-		};
 		app.update_hooks[this] = [this](float dt) {
-			if( !vp->focused )
-				return;
-			processInput(dt); 
+			if( vp->hovered ) {
+				processInput(dt); 
+			}
+			if( vp->hovered && vp->mouse_wheel_off.x+vp->mouse_wheel_off.y > 0.00001) {
+				scrollCallback(vp->mouse_wheel_off.x, vp->mouse_wheel_off.y);
+			}
+			cursorPosCallback(vp->mouse_pos.x, vp->mouse_pos.y, vp->dragging);
 		};
 	}
 	void VpAutoCamera::copySettingTo(VpAutoCamera& cam)

@@ -174,7 +174,7 @@ namespace lim
 		initGL(data);
 		stbi_image_free(data);
 
-		log::pure("texture %s loaded\n", path.c_str()+path.find_last_of("/\\")+1);
+		log::pure("%s(%dx%dx%d) loaded\n", name.c_str(), width, height, nr_channels);
 
 		return true;
 	}
@@ -260,7 +260,7 @@ namespace lim
 		initGL(data);
 		stbi_image_free(data);
 
-		log::pure("texture %s loaded auto\n", path.c_str()+path.find_last_of("/\\")+1);
+		log::pure("%s(%dx%dx%d) auto loaded\n", name.c_str(), width, height, nr_channels);
 
 		return true;
 	}
