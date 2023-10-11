@@ -42,7 +42,7 @@ namespace lim
 
 		char* vpName = fmtStrToBuf("%s##model_view", md->name.c_str());
 		viewports.emplace_back(vpName, new FramebufferMs(8));
-		viewports.back().camera.viewing_mode = VpAutoCamera::VM_PIVOT;
+		viewports.back().camera.viewing_mode = CameraManVp::VM_PIVOT;
 	}
 	
 	void AppModelViewer::drawModelsToViewports()
@@ -77,8 +77,6 @@ namespace lim
 
 		ImGui::Begin("controller##model_viewer");
 		ImGui::Text("%.1f FPS", ImGui::GetIO().Framerate);
-		const Viewport& vp = viewports[0];
-        ImGui::Text("%.0f %.0f %f %f", vp.mouse_pos.x, vp.mouse_pos.y, vp.mouse_wheel_off.x, vp.mouse_wheel_off.y);
 
 		if(ImGui::Button("reload .fs")) {
 			program.reload(GL_FRAGMENT_SHADER);

@@ -176,7 +176,7 @@ namespace lim
         prog->home_dir = APP_DIR;
         prog->attatch("assets/shaders/mvp_points.vs").attatch("blue.fs").link();
 
-        camera = new WinAutoCamera();
+        camera = new CameraManWin();
         camera->position = {0,0,5};
         camera->pivot = {0,0,0};
         camera->updateViewMat();

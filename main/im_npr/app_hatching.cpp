@@ -107,7 +107,7 @@ namespace lim
 		};
 
 		h_mat.prog = &h_prog;
-		viewport.getFb().clear_color ={0.1f, 0.1f, 0.1f, 1.0f};
+		viewport.setClearColor({0.1f, 0.1f, 0.1f, 1.0f});
 
 		models.push_back({});
 		models.back().importFromFile("assets/models/dwarf/Dwarf_2_Low.obj", true, false);

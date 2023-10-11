@@ -1,6 +1,7 @@
 #include <limbrary/viewport.h>
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include <imgui.h>
+#include <imgui_internal.h>
 
 namespace lim 
 {
@@ -14,39 +15,31 @@ namespace lim
 	}
 	Viewport::Viewport(Viewport&& src) noexcept
 	{
-		framebuffer = src.framebuffer;
-		src.framebuffer = nullptr;
-
-		name = std::move(src.name);
-
-		resize_callbacks = std::move(src.resize_callbacks);
-
-		window_mode = src.window_mode;
-		window_opened = src.window_opened;
-		hovered = src.hovered;
-		focused = src.focused;
-		dragging = src.dragging;
-		mouse_pos = src.mouse_pos;
+		*this = std::move(src);
 	}
 	Viewport& Viewport::operator=(Viewport&& src) noexcept
 	{
 		if(this == &src)
 			return *this;
+
+		name 			 = std::move(src.name);
+		window_mode 	 = src.window_mode;
+		window_opened	 = src.window_opened;
+		hovered 		 = src.hovered;
+		focused 		 = src.focused;
+		dragging 		 = src.dragging;
+		mouse_pos 		 = src.mouse_pos;
+		is_mouse_wheeled = src.is_mouse_wheeled;
+		mouse_wheel_off  = src.mouse_wheel_off;
+
+		resize_callbacks = std::move(src.resize_callbacks);
+		update_callbacks = std::move(src.update_callbacks);
+
 		if( framebuffer )
 			delete framebuffer;
 		framebuffer = src.framebuffer;
 		src.framebuffer = nullptr;
 
-		name = std::move(src.name);
-
-		resize_callbacks = std::move(src.resize_callbacks);
-
-		window_mode = src.window_mode;
-		window_opened = src.window_opened;
-		hovered = src.hovered;
-		focused = src.focused;
-		dragging = src.dragging;
-		mouse_pos = src.mouse_pos;
 		return *this; 
 	}
 	Viewport::~Viewport() noexcept
@@ -91,29 +84,32 @@ namespace lim
 			if(contentSize.x>10&&contentSize.y>10) // This is sometimes negative
 				resize(contentSize.x, contentSize.y);
 		}
-		
-		SetItemuse
+
+		ImGui::SetItemKeyOwner(ImGuiKey_MouseWheelY);
+		ImGui::SetItemKeyOwner(ImGuiKey_MouseWheelX);
 		GLuint texID = framebuffer->getRenderedTex();
 		if( texID!=0 ) {
 			ImGui::Image((void*)(intptr_t)texID, ImVec2{(float)fb.width, (float)fb.height}, ImVec2{0, 1}, ImVec2{1, 0});
 		}
-
+	
 		focused = ImGui::IsWindowFocused();
 		hovered = ImGui::IsItemHovered();
 		dragging = isWindowActivated && !isHoveredOnTitle && (ImGui::IsMouseDown(0)||ImGui::IsMouseDown(2));
 		if( dragging ) ImGui::SetMouseCursor(7);
 
-		static glm::vec2 prevMousePos;
-		prevMousePos = mouse_pos;
 		ImVec2 imMousePos = ImGui::GetMousePos() - ImGui::GetWindowPos() - ImVec2(0, ImGui::GetFrameHeight());
 		mouse_pos = {imMousePos.x, imMousePos.y};
-		mouse_off = mouse_pos - prevMousePos;
 
-		mouse_wheel_off = {ImGui::GetIO().MouseWheelH, ImGui::GetIO().MouseWheel};
-
+		ImGuiIO io = ImGui::GetIO();
+		is_mouse_wheeled =  hovered&&(io.MouseWheel||io.MouseWheelH);
+		mouse_wheel_off = {io.MouseWheelH, io.MouseWheel};
+		
 		ImGui::End();
 		ImGui::PopStyleVar();
-		
+
+		for( auto& cb : update_callbacks ) {
+			cb(ImGui::GetIO().DeltaTime);
+		}
 		return window_opened;
 	}
 	void Viewport::resize(GLuint _width, GLuint _height)
@@ -122,6 +118,14 @@ namespace lim
 		for( auto& cb : resize_callbacks ) {
 			cb(_width, _height);
 		}
+	}
+	const Framebuffer& Viewport::getFb()
+	{
+		return *framebuffer;
+	}
+	void Viewport::setClearColor(glm::vec4 color)
+	{
+		framebuffer->clear_color = color;
 	}
 	const GLuint& Viewport::getWidth() const
 	{
@@ -134,9 +138,5 @@ namespace lim
 	const float& Viewport::getAspect() const
 	{
 		return framebuffer->aspect;
-	}
-	Framebuffer& Viewport::getFb()
-	{
-		return *framebuffer;
 	}
 }

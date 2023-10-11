@@ -11,7 +11,7 @@
 #define __app_pbr_h_
 
 #include <limbrary/application.h>
-#include <limbrary/model_view/camera_auto.h>
+#include <limbrary/model_view/camera_man.h>
 #include <limbrary/model_view/mesh_maked.h>
 #include <limbrary/program.h>
 #include <limbrary/model_view/model.h>

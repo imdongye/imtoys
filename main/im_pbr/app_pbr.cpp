@@ -28,7 +28,7 @@ namespace lim
 		prog.home_dir = APP_DIR;
 		prog.attatch("1.1.pbr.vs").attatch("1.1.pbr.fs").link();
 
-		viewport.getFb().clear_color = {0.1f, 0.1f, 0.1f, 1.0f};
+		viewport.setClearColor({0.1f, 0.1f, 0.1f, 1.0f});
 		viewport.camera.move_free_spd = 6.f;
 		viewport.camera.shift({0,0,10});
 		viewport.camera.updateViewMat();

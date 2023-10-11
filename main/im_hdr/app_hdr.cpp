@@ -38,7 +38,7 @@ namespace lim
 		vpName = std::string(imgs.back()->name)+std::string(" - color awared");
 		vp = new Viewport(vpName, new Framebuffer());
 		vp->resize(vpWidth, vpHeight);
-		vp->getFb().clear_color = {1,1,1,1};
+		vp->setClearColor({1,1,1,1});
 		vp->window_mode = Viewport::WM_FIXED_RATIO;
 		viewports.push_back(vp);
 

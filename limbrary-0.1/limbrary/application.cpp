@@ -210,20 +210,21 @@ namespace lim
 	void AppBase::run()
 	{
 		ImGuiIO& io = ImGui::GetIO();
-		double lastTime=glfwGetTime();
 
 		while( !glfwWindowShouldClose(window) ) {
-			double currentTime = glfwGetTime();
-			delta_time = (float)(currentTime - lastTime);
-			lastTime = currentTime;
+			delta_time = io.DeltaTime;
 
-			io.DisplaySize = ImVec2(fb_width, fb_height); // todo?
+			glfwPollEvents();
+
 			ImGui_ImplOpenGL3_NewFrame();
 			ImGui_ImplGlfw_NewFrame();
 			ImGui::NewFrame();
+			
 			//ImGuizmo::BeginFrame();
+
 			renderImGui();
 			_draw_appselector();
+			
 			ImGui::Render();
 
 			update();
@@ -243,7 +244,6 @@ namespace lim
 			glFinish();
 
 			glfwSwapBuffers(window);
-			glfwPollEvents();
 			for( auto& cb : loop_end_hooks ) 
 				cb(delta_time);
 		}

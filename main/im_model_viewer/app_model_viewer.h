@@ -7,7 +7,7 @@
 #define __app_model_viewer_h_
 
 #include <limbrary/application.h>
-#include <limbrary/model_view/camera_auto.h>
+#include <limbrary/model_view/camera_man.h>
 #include <limbrary/program.h>
 #include <limbrary/model_view/renderer.h>
 

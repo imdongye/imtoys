@@ -7,7 +7,7 @@
 #define __app_icp_h_
 
 #include <limbrary/application.h>
-#include <limbrary/model_view/camera_auto.h>
+#include <limbrary/model_view/camera_man.h>
 #include <limbrary/program.h>
 #include <limbrary/model_view/model.h>
 
@@ -20,7 +20,7 @@ namespace lim
 		inline static constexpr CStr APP_DIR  = "im_tests";
 		inline static constexpr CStr APP_DESCRIPTION = "icp is iterative closest point";
 	private:
-		AutoCamera* camera;
+		CameraCtrlData* camera;
 		Program* prog;
 		Model* model;
 		Mesh *src, *dest;

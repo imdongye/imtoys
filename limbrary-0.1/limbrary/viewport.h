@@ -52,9 +52,10 @@ namespace lim
 		bool focused = false;
 		bool dragging = false;
 		glm::vec2 mouse_pos = {0,0};
-		glm::vec2 mouse_off = {0,0};
+		bool is_mouse_wheeled = false;
 		glm::vec2 mouse_wheel_off = {0,0};
 		Callbacks<void(int, int)> resize_callbacks;
+		Callbacks<void(float dt)> update_callbacks;
 	private:
 		Framebuffer* framebuffer = nullptr;
 		Viewport(const Viewport&) = delete;
@@ -67,7 +68,8 @@ namespace lim
 
 		bool drawImGui(); // and resize fb and return windowOpened
 		void resize(GLuint _width, GLuint _height);
-		Framebuffer& getFb();
+		const Framebuffer& getFb();
+		void setClearColor(glm::vec4 color);
 		const GLuint& getWidth() const;
 		const GLuint& getHeight() const;
 		const float& getAspect() const;

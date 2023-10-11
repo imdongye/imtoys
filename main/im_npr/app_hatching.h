@@ -11,7 +11,7 @@
 
 #include <limbrary/application.h>
 #include <limbrary/program.h>
-#include <limbrary/model_view/camera_auto.h>
+#include <limbrary/model_view/camera_man.h>
 #include <limbrary/model_view/model.h>
 #include <glad/glad.h>
 #include <limbrary/model_view/renderer.h>

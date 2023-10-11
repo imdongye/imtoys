@@ -5,17 +5,18 @@
 3가지 모드로 윈도우와 상호작용하는 카메라
 
 Note:
-* VpAutoCamera control setting is same as AutoCamera
+* CameraManVp control setting is same as AutoCamera
   so you must edit code togather
+* Viewport AutoCamera는 Viewport delete하기전에 delete해야함.
 
 Todo:
 1. 화면 크기 비례해서 드레그 속도 조절
 
 
-viewport with camera_auto
+viewport with camera_man
 
 Note:
-* VpAutoCamera control setting is same as AutoCamera
+* CameraManVp control setting is same as AutoCamera
   so you must edit code togather
 
 Todo:
@@ -31,16 +32,17 @@ Todo:
 
 */
 
-#ifndef __camera_auto_h_
-#define __camera_auto_h_
+#ifndef __camera_man_h_
+#define __camera_man_h_
 
 #include "camera.h"
+#include "../application.h"
 #include "../viewport.h"
 
 namespace lim
 {
 	// copyable
-	class AutoCamera : public Camera
+	class CameraCtrlData : public Camera
 	{
 	public:
 		enum VIEWING_MODE
@@ -49,7 +51,6 @@ namespace lim
 			VM_PIVOT,
 			VM_SCROLL
 		};
-		bool is_viewing_mode_key_down = false;
 		int viewing_mode = VM_FREE;
 
 		float move_free_spd = 3.f/1.f; 	  // m/sec
@@ -63,52 +64,48 @@ namespace lim
 
 		float zoom_fovy_spd = 1;
 		float zoom_dist_spd = 1;
-	private:
-		double prev_mouse_x = 0;
-		double prev_mouse_y = 0;
+
+		float prev_mouse_x = 0;
+		float prev_mouse_y = 0;
+		
 	public:
-		AutoCamera();
-		AutoCamera(AutoCamera&& src) noexcept;
-		AutoCamera& operator=(AutoCamera&& src) noexcept;
-		virtual ~AutoCamera() noexcept;
-	public:
+		CameraCtrlData();
+		CameraCtrlData(CameraCtrlData&& src) noexcept;
+		CameraCtrlData& operator=(CameraCtrlData&& src) noexcept;
+		virtual ~CameraCtrlData() noexcept;
 		void setViewMode(int vm);
-	protected:
-		void viewportSizeCallback(int w, int h);
-		void cursorPosCallback(double xpos, double ypos, bool isDragging);
-		void scrollCallback(double xOff, double yOff);
-		void processInput(float dt);
 	};
 
-	class WinAutoCamera : public AutoCamera
+	class CameraManWin : public CameraCtrlData
 	{
 	private:
-		WinAutoCamera(const WinAutoCamera&) = delete;
-		WinAutoCamera& operator=(const WinAutoCamera&) = delete;
+		AppBase* app = nullptr;
+	private:
+		CameraManWin(const CameraManWin&) = delete;
+		CameraManWin& operator=(const CameraManWin&) = delete;
 		void initCallbacks();
 		void deinitCallbacks();
-		bool isInited = false;
 	public:
-		WinAutoCamera();
-		WinAutoCamera(WinAutoCamera&& src) noexcept;
-		WinAutoCamera& operator=(WinAutoCamera&& src) noexcept;
-		virtual ~WinAutoCamera() noexcept;
+		CameraManWin();
+		CameraManWin(CameraManWin&& src) noexcept;
+		CameraManWin& operator=(CameraManWin&& src) noexcept;
+		virtual ~CameraManWin() noexcept;
 	};
 	
-	class VpAutoCamera : public AutoCamera
+	class CameraManVp : public CameraCtrlData
 	{
 	private:
 		Viewport* vp = nullptr;
 	private:
-		VpAutoCamera(const VpAutoCamera&) = delete;
-		VpAutoCamera& operator=(const VpAutoCamera&) = delete;
+		CameraManVp(const CameraManVp&) = delete;
+		CameraManVp& operator=(const CameraManVp&) = delete;
 	public:
-		VpAutoCamera(Viewport* vp=nullptr);
-		VpAutoCamera(VpAutoCamera&& src) noexcept;
-		VpAutoCamera& operator=(VpAutoCamera&& src) noexcept;
-		virtual ~VpAutoCamera() noexcept;
+		CameraManVp(Viewport* vp=nullptr);
+		CameraManVp(CameraManVp&& src) noexcept;
+		CameraManVp& operator=(CameraManVp&& src) noexcept;
+		virtual ~CameraManVp() noexcept;
 
-		void copySettingTo(VpAutoCamera& cam);
+		void copySettingTo(CameraManVp& cam);
 		void initCallbacks(Viewport* vp);
 		void deinitCallbacks();
 		friend class ViewportWithCamera;
@@ -119,7 +116,7 @@ namespace lim
 	class ViewportWithCamera : public Viewport
 	{
 	public:
-		VpAutoCamera camera;
+		CameraManVp camera;
 	private:
 		ViewportWithCamera(const ViewportWithCamera&) = delete;
 		ViewportWithCamera& operator=(const ViewportWithCamera&) = delete;
