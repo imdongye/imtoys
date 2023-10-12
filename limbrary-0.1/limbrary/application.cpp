@@ -113,7 +113,10 @@ namespace lim
 				scrollCallback(xOff, yOff); 
 			};
 			cursor_pos_callbacks[this] = [this](double x, double y) {
+				static glm::vec2 prevPos;
 				mouse_pos = {x,y};
+				mouse_off = mouse_pos - prevPos;
+				prevPos = mouse_pos;
 				cursorPosCallback(x, y); 
 			};
 			dnd_callbacks[this] = [this](int count, const char **path) {

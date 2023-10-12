@@ -25,11 +25,6 @@ namespace lim
 	// copyable
 	class Camera
 	{
-	private:
-		const float MAX_FOVY = 120.f;
-		const float MIN_FOVY = 20.f;
-		const float MAX_DIST = 17.f;
-		const float MIN_DIST = 0.1f;
 	public:
 		// <editable camera options>
 		// if you edit then must call updateProjMat();
@@ -41,12 +36,6 @@ namespace lim
 		// if you edit then must call updateViewMat();
 		glm::vec3 position = {0,0,5};
 		glm::vec3 pivot = {0,0,0};
-
-		// <only read>
-		float distance = 5;
-		glm::vec3 front = {0,0,-1};
-		glm::vec3 right = {1,0,0};
-		glm::vec3 up = {0,1,0};
 		glm::vec3 global_up = {0,1,0};
 
 		glm::mat4 view_mat;
@@ -60,14 +49,6 @@ namespace lim
 		// with pos and pivot
 		void updateViewMat();
 		void updateProjMat();
-
-		void rotateCamera(float xoff, float yoff);
-		void rotateCameraFromPivot(float xoff, float yoff);
-
-		void shift(glm::vec3 off);
-		void shiftOnTangentPlane(float xoff, float yoff);
-		void zoomDist(float offset);
-		void zoomFovy(float offset);
 	};
 }
 #endif

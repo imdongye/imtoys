@@ -40,6 +40,7 @@ namespace lim
 		float aspect_ratio; // width/height;
 		float pixel_ratio;    // (DPI)
 		glm::vec2 mouse_pos;
+		glm::vec2 mouse_off;
 
 		Callbacks<void(float deltaTime)> 							 update_hooks;
 		Callbacks<void(float deltaTime)> 							 loop_end_hooks;
@@ -50,7 +51,6 @@ namespace lim
 		Callbacks<void(double xOff, double yOff)>					 scroll_callbacks;
 		Callbacks<void(double xPos, double yPos)>					 cursor_pos_callbacks;
 		Callbacks<void(int count, const char **paths)>				 dnd_callbacks;
-
 	protected:
 		virtual void update()=0;
 		virtual void renderImGui()=0;

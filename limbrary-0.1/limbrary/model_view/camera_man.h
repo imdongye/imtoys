@@ -45,6 +45,11 @@ namespace lim
 	class CameraCtrlData : public Camera
 	{
 	public:
+		const float MAX_FOVY = 120.f;
+		const float MIN_FOVY = 20.f;
+		const float MAX_DIST = 17.f;
+		const float MIN_DIST = 0.1f;
+
 		enum VIEWING_MODE
 		{
 			VM_FREE=0,
@@ -64,9 +69,6 @@ namespace lim
 
 		float zoom_fovy_spd = 1;
 		float zoom_dist_spd = 1;
-
-		float prev_mouse_x = 0;
-		float prev_mouse_y = 0;
 		
 	public:
 		CameraCtrlData();
@@ -80,16 +82,23 @@ namespace lim
 	{
 	private:
 		AppBase* app = nullptr;
+		bool is_scrolled = false;
+		glm::vec2 scroll_off = {0,0};
 	private:
 		CameraManWin(const CameraManWin&) = delete;
 		CameraManWin& operator=(const CameraManWin&) = delete;
-		void initCallbacks();
-		void deinitCallbacks();
 	public:
 		CameraManWin();
 		CameraManWin(CameraManWin&& src) noexcept;
 		CameraManWin& operator=(CameraManWin&& src) noexcept;
 		virtual ~CameraManWin() noexcept;
+	private:
+		void updateFreeMode(float dt);
+		void updatePivotMode(float dt);
+		void updateScrollMode(float dt);
+	private:
+		void initCallbacks();
+		void deinitCallbacks();
 	};
 	
 	class CameraManVp : public CameraCtrlData
@@ -104,11 +113,14 @@ namespace lim
 		CameraManVp(CameraManVp&& src) noexcept;
 		CameraManVp& operator=(CameraManVp&& src) noexcept;
 		virtual ~CameraManVp() noexcept;
-
-		void copySettingTo(CameraManVp& cam);
+	private:
+		void updateFreeMode(float dt);
+		void updatePivotMode(float dt);
+		void updateScrollMode(float dt);
+	public:
 		void initCallbacks(Viewport* vp);
 		void deinitCallbacks();
-		friend class ViewportWithCamera;
+		void copySettingTo(CameraManVp& cam);
 	};
 
 

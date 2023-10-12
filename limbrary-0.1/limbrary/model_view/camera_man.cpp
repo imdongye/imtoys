@@ -4,6 +4,8 @@
 #include <imgui.h>
 #include <limbrary/log.h>
 
+using namespace glm;
+
 namespace lim
 {
 	CameraCtrlData::CameraCtrlData()
@@ -70,9 +72,8 @@ namespace lim
 	{
 		if(app==nullptr)
 			return;
-		app->key_callbacks.erase(this);
 		app->framebuffer_size_callbacks.erase(this);
-		app->cursor_pos_callbacks.erase(this);
+		app->key_callbacks.erase(this);
 		app->scroll_callbacks.erase(this);
 		app->update_hooks.erase(this);
 	}
@@ -96,87 +97,165 @@ namespace lim
 				setViewMode(viewing_mode+1);
 			}
 		};
-		app->cursor_pos_callbacks[this] = [this](double xPos, double yPos) {
-			bool isDragging = glfwGetMouseButton(app->window, GLFW_MOUSE_BUTTON_LEFT)==GLFW_PRESS;
-			isDragging 	   |= glfwGetMouseButton(app->window, GLFW_MOUSE_BUTTON_MIDDLE)==GLFW_PRESS;
-			isDragging 	   &= !ImGui::GetIO().WantCaptureMouse;
-			
-			float xoff = xPos - prev_mouse_x;
-			float yoff = prev_mouse_y - yPos;
-			prev_mouse_x = xPos;
-			prev_mouse_y = yPos;
-
-			if(!isDragging)
-				return;
-
-			switch( viewing_mode ) {
-				case VM_PIVOT:
-					if( glfwGetKey(app->window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS 
-						|| glfwGetMouseButton(app->window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS ) {
-						shiftOnTangentPlane(-xoff*move_pivot_spd, -yoff*move_pivot_spd);
-					}
-					else {
-						rotateCameraFromPivot(xoff*rot_pivot_spd, yoff*rot_pivot_spd);
-					}
-					break;
-				case VM_FREE:
-					rotateCamera(xoff*rot_free_spd, yoff*rot_free_spd);
-					break;
-				case VM_SCROLL:
-					break;
-			}
-		};
 		app->scroll_callbacks[this] = [this](double xOff, double yOff) {
 			if( ImGui::GetIO().WantCaptureMouse )
 				return;
-			switch( viewing_mode ) {
-				case VM_PIVOT:
-					zoomDist(yOff * 3.f);
-					break;
-				case VM_FREE:
-					zoomFovy(yOff * 5.f);
-					updateProjMat();
-					break;
-				case VM_SCROLL:
-					if( glfwGetKey(app->window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ) {
-						shiftOnTangentPlane(-xOff*move_pivot_scroll_spd, yOff*move_pivot_scroll_spd);
-					}
-					else if( glfwGetKey(app->window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS ) {
-						zoomDist(yOff*3.f);// todo
-					}
-					else {
-						rotateCameraFromPivot(xOff*rot_pivot_scroll_spd, -yOff*rot_pivot_scroll_spd);
-					}
-					break;
-			}
+			scroll_off = {xOff, yOff};
 		};
 		app->update_hooks[this] = [this](float dt) {
-			glm::vec3 perallelFront = {front.x, 0.f, front.z};
-			perallelFront = glm::normalize(perallelFront);
+			is_scrolled = scroll_off.x||scroll_off.y;
 
 			switch( viewing_mode ) {
-				case VM_FREE: {
-					glm::vec3 dir(0);
-					float moveSpd = move_free_spd;
-					if( glfwGetKey(app->window, GLFW_KEY_LEFT_SHIFT) ) moveSpd *= 2.f;
-					if( glfwGetKey(app->window, GLFW_KEY_W) ) dir += perallelFront;
-					if( glfwGetKey(app->window, GLFW_KEY_S) ) dir -= perallelFront;
-					if( glfwGetKey(app->window, GLFW_KEY_A) ) dir -= right;
-					if( glfwGetKey(app->window, GLFW_KEY_D) ) dir += right;
-					if( glfwGetKey(app->window, GLFW_KEY_E) ) dir += glm::vec3(0, 1, 0);
-					if( glfwGetKey(app->window, GLFW_KEY_Q) ) dir -= glm::vec3(0, 1, 0);
-					shift(moveSpd*dt*dir); // Todo: normalize and priority dirction
-					break;
-				} 
-				case VM_PIVOT:
-				case VM_SCROLL:
-				{
-					break;
-				}
+				case VM_PIVOT:  updatePivotMode(dt); break;
+				case VM_FREE:   updateFreeMode(dt); break;
+				case VM_SCROLL:	updateScrollMode(dt); break;
 			}
-			// viewmat is always update
-			updateViewMat();
+
+			scroll_off = {0,0};
 		};
+	}
+	void CameraManWin::updateFreeMode(float dt)
+	{
+		const vec3 diff = pivot - position;
+		const vec3 front = normalize(diff);
+		const vec3 right = normalize(cross(front, global_up));
+		const vec3 up    = normalize(cross(right, front));
+		const bool isDragging = glfwGetMouseButton(app->window, GLFW_MOUSE_BUTTON_LEFT)==GLFW_PRESS
+					    	  | glfwGetMouseButton(app->window, GLFW_MOUSE_BUTTON_MIDDLE)==GLFW_PRESS
+				 	          | !ImGui::GetIO().WantCaptureMouse;
+
+		// zoom
+		if( is_scrolled ) {
+			fovy = fovy * pow(1.01f, scroll_off.y);
+			fovy = clamp(fovy, MIN_FOVY, MAX_FOVY);
+			updateProjMat();
+		}
+
+		// move
+		const vec3 perallelFront = normalize(vec3{front.x, 0.f, front.z});
+		vec3 dir(0);
+		float moveSpd = move_free_spd;
+		if( ImGui::IsKeyDown(ImGuiKey_LeftShift) ) moveSpd *= 2.f;
+		if( ImGui::IsKeyDown(ImGuiKey_W) ) dir += perallelFront;
+		if( ImGui::IsKeyDown(ImGuiKey_S) ) dir -= perallelFront;
+		if( ImGui::IsKeyDown(ImGuiKey_A) ) dir -= right;
+		if( ImGui::IsKeyDown(ImGuiKey_D) ) dir += right;
+		if( ImGui::IsKeyDown(ImGuiKey_E) ) dir += vec3(0, 1, 0);
+		if( ImGui::IsKeyDown(ImGuiKey_Q) ) dir -= vec3(0, 1, 0);
+		vec3 step = moveSpd * dt * dir;
+		position += step;
+		pivot += step;
+
+		// rotate
+		if( isDragging && ImGui::IsMouseDown(0) ) {
+			vec2 step = rot_free_spd * AppPref::get().app->mouse_off;
+			vec3 rotated = rotate(step.y, right) * rotate(-step.x, up)*vec4(diff, 0);
+			pivot = rotated + position;
+		}
+
+		updateViewMat();
+	}
+	void CameraManWin::updatePivotMode(float dt)
+	{
+		const bool isDragging = glfwGetMouseButton(app->window, GLFW_MOUSE_BUTTON_LEFT)==GLFW_PRESS
+					    	  | glfwGetMouseButton(app->window, GLFW_MOUSE_BUTTON_MIDDLE)==GLFW_PRESS
+				 	          | !ImGui::GetIO().WantCaptureMouse;
+		// zoom
+		if( is_scrolled ) {
+			const vec2 step = zoom_dist_spd * scroll_off;
+			const vec3 diff = position - pivot;
+			float distance = length(diff);
+			float newDist = distance * pow(1.01f, step.y);
+			newDist = clamp(newDist, MIN_DIST, MAX_DIST);
+			position = newDist/distance * diff + pivot;
+		}
+
+		if( isDragging ) {
+			const vec3 diff = pivot - position;
+			const vec3 front = normalize(diff);
+			const vec3 right = normalize(cross(front, global_up));
+			const vec3 up    = normalize(cross(right, front));
+			const vec2 off = AppPref::get().app->mouse_off;
+
+			// move tangent plane
+			if( ImGui::IsMouseDown(2) || ImGui::IsKeyDown(ImGuiKey_LeftShift) ) {
+				const vec3 step = move_pivot_spd * vec3(right*off.x + global_up*off.y); // todo up
+				pivot += step;
+				position += step;
+			}
+
+			// rotate
+			else if( ImGui::IsMouseDown(0) ) {
+				const vec2 step = off * rot_pivot_spd;
+				const vec3 rotated = rotate(-step.x, global_up)*rotate(-step.y, -right)*vec4(-diff,0);
+				if( abs(rotated.y) < length(rotated)*0.9f )
+					position = pivot + rotated;
+			}
+		}
+
+		if( is_scrolled||isDragging ) {
+			updateViewMat();
+		}
+	}
+	void CameraManWin::updateScrollMode(float dt)
+	{
+		if( is_scrolled ) {
+			const vec3 diff = pivot - position;
+			const vec3 front = normalize(diff);
+			const vec3 right = normalize(cross(front, global_up));
+			const vec3 up    = normalize(cross(right, front));
+			const vec2 off = scroll_off;
+
+			// move tangent plane
+			if( ImGui::IsKeyDown(ImGuiKey_LeftShift) ) {
+				const vec3 step = move_pivot_spd * vec3(right*off.x + global_up*off.y); // todo up
+				pivot += step;
+				position += step;
+			}
+			// zoom
+			else if( ImGui::IsKeyDown(ImGuiKey_LeftAlt) ) {
+				const vec2 step = zoom_dist_spd * off;
+				const vec3 diff = position - pivot;
+				float distance = length(diff);
+				float newDist = distance * pow(1.01f, step.y);
+				newDist = clamp(newDist, MIN_DIST, MAX_DIST);
+				position = newDist/distance * diff + pivot;
+			}
+			// rotate
+			else {
+				const vec2 step = off * rot_pivot_scroll_spd;
+				const vec3 rotated = glm::rotate(-step.x, global_up)*rotate(-step.y, -right)*vec4(-diff,0);
+				if( abs(rotated.y) < length(rotated)*0.9f )
+					position = pivot + rotated;
+			}
+		}
+
+		if( is_dragging ) {
+			const vec3 diff = pivot - position;
+			const vec3 front = normalize(diff);
+			const vec3 right = normalize(cross(front, global_up));
+			const vec3 up    = normalize(cross(right, front));
+			const vec2 off = AppPref::get().app->mouse_off;
+
+			// move tangent plane
+			if( ImGui::IsMouseDown(2) || ImGui::IsKeyDown(ImGuiKey_LeftShift) ) {
+				const vec3 step = move_pivot_spd * vec3(right*off.x + global_up*off.y); // todo up
+				pivot += step;
+				position += step;
+			}
+
+			// rotate
+			if( ImGui::IsMouseDown(0) ) {
+				const vec2 step = off * rot_pivot_spd;
+				const vec3 rotated = rotate(-step.x, global_up)*rotate(-step.y, -right)*vec4(-diff,0);
+				if( abs(rotated.y) < length(rotated)*0.9f )
+					position = pivot + rotated;
+			}
+		}
+
+		if( vp->is_scrolled||vp->dragging ) {
+			updateViewMat();
+		}
 	}
 
 
@@ -196,8 +275,9 @@ namespace lim
 	{
 		if( this==&src )
 			return *this;
-		CameraCtrlData::operator=(std::move(src));
 		deinitCallbacks();
+
+		CameraCtrlData::operator=(std::move(src));
 
 		src.deinitCallbacks();
 		initCallbacks(src.vp);
@@ -231,86 +311,14 @@ namespace lim
 			updateProjMat();
         };
 		vp->update_callbacks[this] = [this](float dt) {
-
-			// key callback
 			if( ImGui::IsKeyPressed(ImGuiKey_Tab, false) ) {
 				setViewMode(viewing_mode+1);
 			}
 
-			// cursor pos callback
-			if( vp->dragging && (ImGui::IsMouseDown(0)||ImGui::IsMouseDown(2)) ) {
-				float xoff = vp->mouse_pos.x - prev_mouse_x;
-				float yoff = prev_mouse_y - vp->mouse_pos.y;
-
-				switch( viewing_mode ) {
-					case VM_PIVOT:
-						if( ImGui::IsKeyDown(ImGuiKey_LeftShift) && ImGui::IsMouseDown(2) ) {
-							shiftOnTangentPlane(-xoff*move_pivot_spd, -yoff*move_pivot_spd);
-						}
-						else {
-							rotateCameraFromPivot(xoff*rot_pivot_spd, yoff*rot_pivot_spd);
-						}
-						break;
-					case VM_FREE:
-						rotateCamera(xoff*rot_free_spd, yoff*rot_free_spd);
-						break;
-					case VM_SCROLL:
-						break;
-				}
-			}
-			prev_mouse_x = vp->mouse_pos.x;
-			prev_mouse_y = vp->mouse_pos.y;
-
-			// scroll callback
-			if( vp->is_mouse_wheeled ) {
-				float xOff = vp->mouse_wheel_off.x;
-				float yOff = vp->mouse_wheel_off.y;
-				switch( viewing_mode ) {
-					case VM_PIVOT:
-						zoomDist(yOff * 3.f);
-						break;
-					case VM_FREE:
-						zoomFovy(yOff * 5.f);
-						updateProjMat();
-						break;
-					case VM_SCROLL:
-						if( ImGui::IsKeyDown(ImGuiKey_LeftShift) ) {
-							shiftOnTangentPlane(-xOff*move_pivot_scroll_spd, yOff*move_pivot_scroll_spd);
-						}
-						else if( ImGui::IsKeyDown(ImGuiKey_LeftAlt) ) {
-							zoomDist(yOff*3.f);// todo
-						}
-						else {
-							rotateCameraFromPivot(xOff*rot_pivot_scroll_spd, -yOff*rot_pivot_scroll_spd);
-						}
-						break;
-				}
-			}
-
-			// process 
-			if( vp->focused ) {
-				glm::vec3 perallelFront = {front.x, 0.f, front.z};
-				perallelFront = glm::normalize(perallelFront);
-
-				switch( viewing_mode ) {
-					case VM_FREE: {
-						glm::vec3 dir(0);
-						float moveSpd = move_free_spd;
-						if( ImGui::IsKeyDown(ImGuiKey_LeftShift) ) moveSpd *= 2.f;
-						if( ImGui::IsKeyDown(ImGuiKey_W) ) dir += perallelFront;
-						if( ImGui::IsKeyDown(ImGuiKey_S) ) dir -= perallelFront;
-						if( ImGui::IsKeyDown(ImGuiKey_A) ) dir -= right;
-						if( ImGui::IsKeyDown(ImGuiKey_D) ) dir += right;
-						if( ImGui::IsKeyDown(ImGuiKey_E) ) dir += glm::vec3(0, 1, 0);
-						if( ImGui::IsKeyDown(ImGuiKey_Q) ) dir -= glm::vec3(0, 1, 0);
-						shift(moveSpd*dt*dir);
-						break;
-					}
-					case VM_PIVOT:
-					case VM_SCROLL:
-						break;
-				}
-				updateViewMat();
+			switch( viewing_mode ) {
+				case VM_PIVOT:  updatePivotMode(dt); break;
+				case VM_FREE:   updateFreeMode(dt); break;
+				case VM_SCROLL:	updateScrollMode(dt); break;
 			}
 		};
 	}
@@ -318,11 +326,6 @@ namespace lim
 	{
 		cam.position = position;
 		cam.fovy = fovy;
-		cam.distance = distance;
-		cam.pivot = pivot;
-		cam.front = front;
-		cam.up = up;
-		cam.right = right;
 		cam.view_mat = view_mat;
 		cam.proj_mat = proj_mat;
 		cam.viewing_mode = viewing_mode;
@@ -334,6 +337,145 @@ namespace lim
 		cam.move_pivot_scroll_spd = move_pivot_scroll_spd;
 		cam.zoom_fovy_spd = zoom_fovy_spd;
 		cam.zoom_dist_spd = zoom_dist_spd;
+	}
+	void CameraManVp::updateFreeMode(float dt)
+	{
+		// zoom
+		if( vp->is_scrolled ) {
+			fovy = fovy * pow(1.01f, vp->scroll_off.y);
+			fovy = clamp(fovy, MIN_FOVY, MAX_FOVY);
+			updateProjMat();
+		}
+		if( vp->focused ) {
+			const vec3 diff = pivot - position;
+			const vec3 front = normalize(diff);
+			const vec3 right = normalize(cross(front, global_up));
+			const vec3 up    = normalize(cross(right, front));
+
+			// move
+			if( vp->focused ) {
+				const vec3 perallelFront = normalize(vec3{front.x, 0.f, front.z});
+				vec3 dir(0);
+				float moveSpd = move_free_spd;
+				if( ImGui::IsKeyDown(ImGuiKey_LeftShift) ) moveSpd *= 2.f;
+				if( ImGui::IsKeyDown(ImGuiKey_W) ) dir += perallelFront;
+				if( ImGui::IsKeyDown(ImGuiKey_S) ) dir -= perallelFront;
+				if( ImGui::IsKeyDown(ImGuiKey_A) ) dir -= right;
+				if( ImGui::IsKeyDown(ImGuiKey_D) ) dir += right;
+				if( ImGui::IsKeyDown(ImGuiKey_E) ) dir += vec3(0, 1, 0);
+				if( ImGui::IsKeyDown(ImGuiKey_Q) ) dir -= vec3(0, 1, 0);
+				vec3 step = moveSpd * dt * dir;
+				position += step;
+				pivot += step;
+			}
+
+			// rotate
+			if( vp->dragging && ImGui::IsMouseDown(0) ) {
+				vec2 step = rot_free_spd * AppPref::get().app->mouse_off;
+				vec3 rotated = rotate(step.y, right) * rotate(-step.x, up)*vec4(diff, 0);
+				pivot = rotated + position;
+			}
+			updateViewMat();
+		}
+	}
+	void CameraManVp::updatePivotMode(float dt)
+	{
+		// zoom
+		if( vp->is_scrolled ) {
+			const vec2 step = zoom_dist_spd * vp->scroll_off;
+			const vec3 diff = position - pivot;
+			float distance = length(diff);
+			float newDist = distance * pow(1.01f, step.y);
+			newDist = clamp(newDist, MIN_DIST, MAX_DIST);
+			position = newDist/distance * diff + pivot;
+		}
+
+		if( vp->dragging ) {
+			const vec3 diff = pivot - position;
+			const vec3 front = normalize(diff);
+			const vec3 right = normalize(cross(front, global_up));
+			const vec3 up    = normalize(cross(right, front));
+			const vec2 off = AppPref::get().app->mouse_off;
+
+			// move tangent plane
+			if( ImGui::IsMouseDown(2) || ImGui::IsKeyDown(ImGuiKey_LeftShift) ) {
+				const vec3 step = move_pivot_spd * vec3(right*off.x + global_up*off.y); // todo up
+				pivot += step;
+				position += step;
+			}
+
+			// rotate
+			else if( ImGui::IsMouseDown(0) ) {
+				const vec2 step = off * rot_pivot_spd;
+				const vec3 rotated = rotate(-step.x, global_up)*rotate(-step.y, -right)*vec4(-diff,0);
+				if( abs(rotated.y) < length(rotated)*0.9f )
+					position = pivot + rotated;
+			}
+		}
+
+		if( vp->is_scrolled||vp->dragging ) {
+			updateViewMat();
+		}
+	}
+	void CameraManVp::updateScrollMode(float dt)
+	{
+		if( vp->is_scrolled ) {
+			const vec3 diff = pivot - position;
+			const vec3 front = normalize(diff);
+			const vec3 right = normalize(cross(front, global_up));
+			const vec3 up    = normalize(cross(right, front));
+			const vec2 off = vp->scroll_off;
+
+			// move tangent plane
+			if( ImGui::IsKeyDown(ImGuiKey_LeftShift) ) {
+				const vec3 step = move_pivot_spd * vec3(right*off.x + global_up*off.y); // todo up
+				pivot += step;
+				position += step;
+			}
+			// zoom
+			else if( ImGui::IsKeyDown(ImGuiKey_LeftAlt) ) {
+				const vec2 step = zoom_dist_spd * off;
+				const vec3 diff = position - pivot;
+				float distance = length(diff);
+				float newDist = distance * pow(1.01f, step.y);
+				newDist = clamp(newDist, MIN_DIST, MAX_DIST);
+				position = newDist/distance * diff + pivot;
+			}
+			// rotate
+			else {
+				const vec2 step = off * rot_pivot_scroll_spd;
+				const vec3 rotated = rotate(-step.x, global_up)*rotate(-step.y, -right)*vec4(-diff,0);
+				if( abs(rotated.y) < length(rotated)*0.9f )
+					position = pivot + rotated;
+			}
+		}
+
+		if( vp->dragging ) {
+			const vec3 diff = pivot - position;
+			const vec3 front = normalize(diff);
+			const vec3 right = normalize(cross(front, global_up));
+			const vec3 up    = normalize(cross(right, front));
+			const vec2 off = AppPref::get().app->mouse_off;
+
+			// move tangent plane
+			if( ImGui::IsMouseDown(2) || ImGui::IsKeyDown(ImGuiKey_LeftShift) ) {
+				const vec3 step = move_pivot_spd * vec3(right*off.x + global_up*off.y); // todo up
+				pivot += step;
+				position += step;
+			}
+
+			// rotate
+			if( ImGui::IsMouseDown(0) ) {
+				const vec2 step = off * rot_pivot_spd;
+				const vec3 rotated = rotate(-step.x, global_up)*rotate(-step.y, -right)*vec4(-diff,0);
+				if( abs(rotated.y) < length(rotated)*0.9f )
+					position = pivot + rotated;
+			}
+		}
+
+		if( vp->is_scrolled||vp->dragging ) {
+			updateViewMat();
+		}
 	}
 
 

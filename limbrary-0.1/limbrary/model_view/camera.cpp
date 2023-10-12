@@ -42,10 +42,6 @@ namespace lim
 		z_far = src.z_far;
 		position = src.position;
 		pivot = src.pivot;
-		distance = src.distance;
-		front = src.front;
-		right = src.right;
-		up = src.up;
 		global_up = src.global_up;
 		view_mat = src.view_mat;
 		proj_mat = src.proj_mat;
@@ -54,53 +50,8 @@ namespace lim
 	Camera::~Camera() noexcept
 	{
 	}
-	
-
-	void Camera::rotateCamera(float xoff, float yoff)
-	{
-		vec3 rotated = rotate(yoff, right)*rotate(-xoff, up)*vec4(front,0);
-		pivot = distance*rotated + position;
-		updateViewMat();
-	}
-	void Camera::rotateCameraFromPivot(float xoff, float yoff)
-	{
-		vec3 rotated = rotate(-yoff, -right)*rotate(-xoff, global_up)*vec4(-front,0);
-		if( abs(rotated.y)>0.9f )
-			return;
-		position = pivot + distance*rotated;
-		updateViewMat();
-	}
-	void Camera::shift(glm::vec3 off)
-	{
-		pivot += off;
-		position += off;
-	}
-	void Camera::shiftOnTangentPlane(float xoff, float yoff)
-	{
-		vec3 shift = global_up*yoff + right*xoff;
-		pivot += shift;
-		position += shift;
-		view_mat = lookAt(position, pivot, global_up);
-	}
-	void Camera::zoomDist(float offset)
-	{
-		distance = distance * pow(1.01f, offset);
-		distance = clamp(distance, MIN_DIST, MAX_DIST);
-		position = -distance*front+pivot;
-	}
-	void Camera::zoomFovy(float offset)
-	{
-		fovy = fovy * pow(1.01f, offset);
-		fovy = clamp(fovy, MIN_FOVY, MAX_FOVY);
-	}
-
 	void Camera::updateViewMat()
 	{
-		vec3 diff = pivot - position;
-		distance = length(diff);
-		front = diff/distance;
-		right = normalize(cross(front,global_up));
-		up = normalize(cross(right, front));
 		view_mat = lookAt(position, pivot, global_up);
 	}
 	void Camera::updateProjMat()

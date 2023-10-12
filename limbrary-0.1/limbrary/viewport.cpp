@@ -29,8 +29,8 @@ namespace lim
 		focused 		 = src.focused;
 		dragging 		 = src.dragging;
 		mouse_pos 		 = src.mouse_pos;
-		is_mouse_wheeled = src.is_mouse_wheeled;
-		mouse_wheel_off  = src.mouse_wheel_off;
+		is_scrolled = src.is_scrolled;
+		scroll_off  = src.scroll_off;
 
 		resize_callbacks = std::move(src.resize_callbacks);
 		update_callbacks = std::move(src.update_callbacks);
@@ -94,15 +94,15 @@ namespace lim
 	
 		focused = ImGui::IsWindowFocused();
 		hovered = ImGui::IsItemHovered();
-		dragging = isWindowActivated && !isHoveredOnTitle && (ImGui::IsMouseDown(0)||ImGui::IsMouseDown(2));
+		dragging = isWindowActivated && !isHoveredOnTitle && ImGui::IsAnyMouseDown();
 		if( dragging ) ImGui::SetMouseCursor(7);
 
 		ImVec2 imMousePos = ImGui::GetMousePos() - ImGui::GetWindowPos() - ImVec2(0, ImGui::GetFrameHeight());
 		mouse_pos = {imMousePos.x, imMousePos.y};
 
 		ImGuiIO io = ImGui::GetIO();
-		is_mouse_wheeled =  hovered&&(io.MouseWheel||io.MouseWheelH);
-		mouse_wheel_off = {io.MouseWheelH, io.MouseWheel};
+		is_scrolled =  hovered&&(io.MouseWheel||io.MouseWheelH);
+		scroll_off = {io.MouseWheelH, io.MouseWheel};
 		
 		ImGui::End();
 		ImGui::PopStyleVar();
