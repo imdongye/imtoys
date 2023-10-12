@@ -20,7 +20,7 @@ namespace lim
 		inline static constexpr CStr APP_DIR  = "im_tests";
 		inline static constexpr CStr APP_DESCRIPTION = "icp is iterative closest point";
 	private:
-		CameraCtrlData* camera;
+		CameraController* camera;
 		Program* prog;
 		Model* model;
 		Mesh *src, *dest;

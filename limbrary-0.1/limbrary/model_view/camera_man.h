@@ -42,7 +42,7 @@ Todo:
 namespace lim
 {
 	// copyable
-	class CameraCtrlData : public Camera
+	class CameraController : public Camera
 	{
 	public:
 		const float MAX_FOVY = 120.f;
@@ -50,40 +50,56 @@ namespace lim
 		const float MAX_DIST = 17.f;
 		const float MIN_DIST = 0.1f;
 
-		enum VIEWING_MODE
-		{
+		float spd_free_move = 2.5f/1.f;    // m/sec
+		float spd_free_rot = D_PI/1900.f;  // r/px
+
+		float spd_pivot_move = 1.f/120.f;  // m/px
+		float spd_pivot_rot = D_PI/1000.f; // r/px
+
+		float spd_scroll_move = 1.f/100.f; // m/scrollOff
+		float spd_scroll_rot = D_PI/400.f; // r/scrollOff
+
+		float spd_zoom_fovy = 1;
+		float spd_zoom_dist = 6.f;
+
+		enum VIEWING_MODE {
 			VM_FREE=0,
 			VM_PIVOT,
 			VM_SCROLL
 		};
+	protected:
 		int viewing_mode = VM_FREE;
 
-		float move_free_spd = 3.f/1.f; 	  // m/sec
-		float rot_free_spd = D_PI/1900.f; // r/px
-
-		float move_pivot_spd = 1.f/400.f; // m/px
-		float rot_pivot_spd = D_PI/800.f; // r/px
-
-		float move_pivot_scroll_spd = 1.f/100.f; // m/scrollOff
-		float rot_pivot_scroll_spd = D_PI/400.f; // r/scrollOff
-
-		float zoom_fovy_spd = 1;
-		float zoom_dist_spd = 1;
-		
+		enum INPUT_STATUS {
+			IST_NONE     = 1<<0,
+			IST_SCROLLED = 1<<1,
+			IST_FOCUSED  = 1<<2,
+			IST_DRAGGED  = 1<<3
+		};
+		int input_status = IST_NONE;
+		glm::vec2 scroll_off = {0,0};
+		glm::vec2 mouse_off = {0,0};
+	private:
+		// for a and b key simultaneous input
+		bool is_left = false;
+		bool prev_is_left = false;
 	public:
-		CameraCtrlData();
-		CameraCtrlData(CameraCtrlData&& src) noexcept;
-		CameraCtrlData& operator=(CameraCtrlData&& src) noexcept;
-		virtual ~CameraCtrlData() noexcept;
+		CameraController();
+		CameraController(CameraController&& src) noexcept;
+		CameraController& operator=(CameraController&& src) noexcept;
+		virtual ~CameraController() noexcept;
 		void setViewMode(int vm);
+		void updateFromInput();
+	private:
+		void updateFreeMode();
+		void updatePivotMode();
+		void updateScrollMode();
 	};
 
-	class CameraManWin : public CameraCtrlData
+	class CameraManWin : public CameraController
 	{
 	private:
 		AppBase* app = nullptr;
-		bool is_scrolled = false;
-		glm::vec2 scroll_off = {0,0};
 	private:
 		CameraManWin(const CameraManWin&) = delete;
 		CameraManWin& operator=(const CameraManWin&) = delete;
@@ -93,15 +109,11 @@ namespace lim
 		CameraManWin& operator=(CameraManWin&& src) noexcept;
 		virtual ~CameraManWin() noexcept;
 	private:
-		void updateFreeMode(float dt);
-		void updatePivotMode(float dt);
-		void updateScrollMode(float dt);
-	private:
 		void initCallbacks();
 		void deinitCallbacks();
 	};
 	
-	class CameraManVp : public CameraCtrlData
+	class CameraManVp : public CameraController
 	{
 	private:
 		Viewport* vp = nullptr;
@@ -113,14 +125,10 @@ namespace lim
 		CameraManVp(CameraManVp&& src) noexcept;
 		CameraManVp& operator=(CameraManVp&& src) noexcept;
 		virtual ~CameraManVp() noexcept;
-	private:
-		void updateFreeMode(float dt);
-		void updatePivotMode(float dt);
-		void updateScrollMode(float dt);
 	public:
 		void initCallbacks(Viewport* vp);
 		void deinitCallbacks();
-		void copySettingTo(CameraManVp& cam);
+		void copySettingTo(CameraManVp& dst);
 	};
 
 

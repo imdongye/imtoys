@@ -42,13 +42,13 @@ namespace lim
 
 		char* vpName = fmtStrToBuf("%s##model_view", md->name.c_str());
 		viewports.emplace_back(vpName, new FramebufferMs(8));
-		viewports.back().camera.viewing_mode = CameraManVp::VM_PIVOT;
+		viewports.back().camera.setViewMode(CameraManVp::VM_PIVOT);
 	}
 	
 	void AppModelViewer::drawModelsToViewports()
 	{
 		for(int i=0; i<viewports.size(); i++ ) {
-			if( !viewports[i].window_opened ) {
+			if( !viewports[i].is_opened ) {
 				scenes.erase(scenes.begin()+i);
 				viewports.erase(viewports.begin()+i);
 				i--;
@@ -76,10 +76,12 @@ namespace lim
 		log::drawViewer("logger##model_viewer");
 
 		ImGui::Begin("controller##model_viewer");
-		ImGui::Text("%.1f FPS", ImGui::GetIO().Framerate);
+		{
+			ImGui::Text("%.1f FPS", ImGui::GetIO().Framerate);
 
-		if(ImGui::Button("reload .fs")) {
-			program.reload(GL_FRAGMENT_SHADER);
+			if(ImGui::Button("reload .fs")) {
+				program.reload(GL_FRAGMENT_SHADER);
+			}
 		}
 		ImGui::End();
 

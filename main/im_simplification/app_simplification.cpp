@@ -71,7 +71,7 @@ namespace lim
 	{
 		const char* vpName = fmtStrToBuf("viewport%d##simp", nr_viewports);
 		viewports.emplace_back(vpName, new FramebufferMs);
-		viewports.back().camera.shift({0,1,-1.6f});
+		viewports.back().camera.moveShift({0,1,-1.6f});
 		viewports.back().camera.updateViewMat();
 
 		models.push_back(new Model());
@@ -91,7 +91,7 @@ namespace lim
 		}
 		if( nr_viewports<=2 ) {
 			log::err("you must have two viewports\n");
-			viewports[vpIdx].window_opened = true;
+			viewports[vpIdx].is_opened = true;
 			return;
 		}
 		nr_viewports--;
@@ -379,7 +379,7 @@ namespace lim
 			ImGui::Checkbox("use same camera", &is_same_camera);
 			static float cameraMoveSpeed = 4.0f;
 			if(ImGui::SliderFloat("move speed", &cameraMoveSpeed, 2.0f, 6.0f)) {
-				viewports[last_focused_vp_idx].camera.move_free_spd = cameraMoveSpeed;
+				viewports[last_focused_vp_idx].camera.spd_free_move = cameraMoveSpeed;
 			}
 			ImGui::Text("camera fov: %f", viewports[last_focused_vp_idx].camera.fovy);
 			ImGui::Dummy(ImVec2(0.0f, 8.0f));
@@ -606,14 +606,14 @@ namespace lim
 	void AppSimplification::mouseBtnCallback(int button, int action, int mods)
 	{
 		// 이전에 선택된 viewport 저장
-		if( viewports[last_focused_vp_idx].hovered == false )
+		if( viewports[last_focused_vp_idx].is_hovered == false )
 		{
 			for( int i = 0; i < nr_viewports; i++ )
 			{
 				if( last_focused_vp_idx == i )
 					continue;
 
-				if( viewports[i].hovered ) {
+				if( viewports[i].is_hovered ) {
 					if( is_same_camera ) {
 						viewports[last_focused_vp_idx].camera.copySettingTo(viewports[i].camera);
 					}

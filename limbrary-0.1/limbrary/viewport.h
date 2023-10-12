@@ -47,16 +47,18 @@ namespace lim
 	public:
 		std::string name = "nonamed";
 		WindowMode window_mode = WM_FREE;
-		bool window_opened = true;
-		bool hovered = false;
-		bool focused = false;
-		bool dragging = false;
-		glm::vec2 mouse_pos = {0,0};
+		bool is_opened = true;
+		bool is_hovered = false;
+		bool is_focused = false;
+		bool is_dragged = false;
 		bool is_scrolled = false;
+		glm::vec2 mouse_pos = {0,0};
+		glm::vec2 mouse_off = {0,0};
 		glm::vec2 scroll_off = {0,0};
 		Callbacks<void(int, int)> resize_callbacks;
 		Callbacks<void(float dt)> update_callbacks;
 	private:
+		glm::vec2 prev_mouse_pos = {0,0};
 		Framebuffer* framebuffer = nullptr;
 		Viewport(const Viewport&) = delete;
 		Viewport& operator=(const Viewport&) = delete;

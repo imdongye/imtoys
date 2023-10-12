@@ -22,7 +22,7 @@ namespace lim
 		//glCullFace(GL_FRONT);
 		// glPolygonMode(GL_FRONT, GL_LINE);
 		viewport = new ViewportWithCamera("viewport##gen_mesh", new FramebufferMs());
-		viewport->camera.move_free_spd = 4.f;
+		viewport->camera.spd_free_move = 4.f;
 		/* gen models */
 		models.push_back(new Model("sphere"));
 		models.back()->my_meshes.push_back(new MeshSphere(50, 25));
@@ -184,7 +184,6 @@ namespace lim
 		{
 			static float rad = F_PI;
 			ImGui::SliderAngle("rad", &rad);
-			ImGui::Text("%d", viewport->camera.viewing_mode);
 			ImGui::End();
 		}
 	}

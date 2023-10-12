@@ -50,6 +50,10 @@ namespace lim
 	Camera::~Camera() noexcept
 	{
 	}
+	void Camera::moveShift(const glm::vec3& off) {
+		position += off;
+		pivot += off;
+	}
 	void Camera::updateViewMat()
 	{
 		view_mat = lookAt(position, pivot, global_up);

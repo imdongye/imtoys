@@ -59,7 +59,7 @@ namespace lim
 	void AppHdr::update()
 	{
 		for( int i=0; i<imgs.size(); i++ ) {
-			if( viewports[i]->window_opened == false ) {
+			if( viewports[i]->is_opened == false ) {
 				delete imgs[i]; delete viewports[i];
 				imgs.erase(imgs.begin()+i);
 				viewports.erase(viewports.begin()+i);
@@ -92,7 +92,7 @@ namespace lim
 		for( int i=0; i<imgs.size(); i++ ) {
 			Viewport& vp = *viewports[i];
 			ColorAwareImage& img = *imgs[i];
-			if( vp.focused ) {
+			if( vp.is_focused ) {
 				ImGui::Text("%s", img.name.c_str());
 				ImGui::Text("%s", img.profile.name.c_str());
 				break;

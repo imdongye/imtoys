@@ -24,10 +24,10 @@ namespace lim
 
 		name 			 = std::move(src.name);
 		window_mode 	 = src.window_mode;
-		window_opened	 = src.window_opened;
-		hovered 		 = src.hovered;
-		focused 		 = src.focused;
-		dragging 		 = src.dragging;
+		is_opened	 = src.is_opened;
+		is_hovered 		 = src.is_hovered;
+		is_focused 		 = src.is_focused;
+		is_dragged 		 = src.is_dragged;
 		mouse_pos 		 = src.mouse_pos;
 		is_scrolled = src.is_scrolled;
 		scroll_off  = src.scroll_off;
@@ -72,11 +72,11 @@ namespace lim
 		else if( window_mode==WM_FIXED_SIZE ) {
 			vpWinFlag |= ImGuiWindowFlags_NoResize;
 		}
-		ImGui::Begin(name.c_str(), &window_opened, vpWinFlag);
+		ImGui::Begin(name.c_str(), &is_opened, vpWinFlag);
 		
-		static bool isHoveredOnTitle, isWindowActivated = false;
-		isHoveredOnTitle = ImGui::IsItemHovered();
-		isWindowActivated = ImGui::IsItemActive();
+		// for ignore draging
+		bool isHoveredOnTitle = ImGui::IsItemHovered(); // when move window
+		bool isWindowActivated = ImGui::IsItemActive(); // when resize window
 
 		// update size
 		auto contentSize = ImGui::GetContentRegionAvail();
@@ -92,16 +92,20 @@ namespace lim
 			ImGui::Image((void*)(intptr_t)texID, ImVec2{(float)fb.width, (float)fb.height}, ImVec2{0, 1}, ImVec2{1, 0});
 		}
 	
-		focused = ImGui::IsWindowFocused();
-		hovered = ImGui::IsItemHovered();
-		dragging = isWindowActivated && !isHoveredOnTitle && ImGui::IsAnyMouseDown();
-		if( dragging ) ImGui::SetMouseCursor(7);
+		is_focused = ImGui::IsWindowFocused();
+		is_hovered = ImGui::IsItemHovered();
+		is_dragged = isWindowActivated && !isHoveredOnTitle && ImGui::IsMouseDown(0);
+		is_dragged |= (is_hovered||is_focused)&&(ImGui::IsMouseDown(1)||ImGui::IsMouseDown(2));
+		if( is_dragged ) ImGui::SetMouseCursor(7);
 
+		prev_mouse_pos = mouse_pos;
 		ImVec2 imMousePos = ImGui::GetMousePos() - ImGui::GetWindowPos() - ImVec2(0, ImGui::GetFrameHeight());
 		mouse_pos = {imMousePos.x, imMousePos.y};
+		mouse_off = mouse_pos - prev_mouse_pos;
+		prev_mouse_pos = mouse_pos;
 
 		ImGuiIO io = ImGui::GetIO();
-		is_scrolled =  hovered&&(io.MouseWheel||io.MouseWheelH);
+		is_scrolled =  is_hovered&&(io.MouseWheel||io.MouseWheelH);
 		scroll_off = {io.MouseWheelH, io.MouseWheel};
 		
 		ImGui::End();
@@ -110,7 +114,7 @@ namespace lim
 		for( auto& cb : update_callbacks ) {
 			cb(ImGui::GetIO().DeltaTime);
 		}
-		return window_opened;
+		return is_opened;
 	}
 	void Viewport::resize(GLuint _width, GLuint _height)
 	{

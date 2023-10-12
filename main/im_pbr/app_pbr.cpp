@@ -29,8 +29,8 @@ namespace lim
 		prog.attatch("1.1.pbr.vs").attatch("1.1.pbr.fs").link();
 
 		viewport.setClearColor({0.1f, 0.1f, 0.1f, 1.0f});
-		viewport.camera.move_free_spd = 6.f;
-		viewport.camera.shift({0,0,10});
+		viewport.camera.spd_free_move = 6.f;
+		viewport.camera.moveShift({0,0,10});
 		viewport.camera.updateViewMat();
 
 		model.scale = model.scale*3.f;
@@ -144,7 +144,7 @@ namespace lim
 		viewport.drawImGui();
 
 		ImGui::Begin("state##impbr");
-		ImGui::Text((viewport.dragging)?"dragging":"not dragging");
+		ImGui::Text((viewport.is_dragged)?"is_dragged":"not is_dragged");
 		ImGui::Checkbox("moved light:", &movedLight);
 		ImGui::ColorPicker3("albedo", (float*)&albedo);
 		ImGui::SliderFloat("roughness", &roughness, 0.f, 1.f);

@@ -32,7 +32,7 @@ namespace lim
 		float fovy = 46.f; // 50mm, feild of view y axis dir
 		float z_near=0.1f;
 		float z_far=100;
-
+		
 		// if you edit then must call updateViewMat();
 		glm::vec3 position = {0,0,5};
 		glm::vec3 pivot = {0,0,0};
@@ -46,6 +46,7 @@ namespace lim
 		Camera& operator=(Camera&& src) noexcept;
 		virtual ~Camera() noexcept;
 	public:
+		void moveShift(const glm::vec3& off);
 		// with pos and pivot
 		void updateViewMat();
 		void updateProjMat();
