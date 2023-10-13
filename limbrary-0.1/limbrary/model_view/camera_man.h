@@ -58,10 +58,14 @@ namespace lim
 
 		float spd_scroll_move = 1.f/100.f; // m/scrollOff
 		float spd_scroll_rot = D_PI/400.f; // r/scrollOff
-
+	#ifdef WIN32
 		float spd_zoom_fovy = 1;
 		float spd_zoom_dist = 6.f;
-
+	#else
+		float spd_zoom_fovy = 1;
+		float spd_zoom_dist = 3.5f;
+	#endif
+	
 		enum VIEWING_MODE {
 			VM_FREE=0,
 			VM_PIVOT,

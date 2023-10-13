@@ -150,14 +150,13 @@ namespace lim
 			}
 			// move tangent plane
 			else if( ImGui::IsKeyDown(ImGuiKey_LeftShift) ) {
-				const vec3 step = spd_pivot_move * vec3(right*off.x + global_up*off.y); // todo up
-				pivot += step;
-				position += step;
+				const vec3 step = spd_pivot_move * vec3(-right*off.x + up*off.y); // todo up
+				moveShift(step);
 			}
 			// rotate
 			else {
 				const vec2 step = off * spd_scroll_rot;
-				const vec3 rotated = rotate(-step.x, global_up)*rotate(-step.y, -right)*vec4(-diff,0);
+				const vec3 rotated = rotate(-step.x, global_up)*rotate(step.y, -right)*vec4(-diff,0);
 				if( abs(rotated.y) < length(rotated)*0.9f )
 					position = pivot + rotated;
 			}

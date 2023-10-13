@@ -27,16 +27,12 @@
 #include "im_model_viewer/app_model_viewer.h"
 #include "im_shadertoy/app_shadertoy.h"
 
-using namespace std;
+static int _selected_app_idx;
+static const char* const _app_selector_name = "AppSelector";
 
-
-static lim::AppBase *app;
-static bool _is_app_selected = true;
-static char _app_selector_name[64];
-static vector<function<lim::AppBase*()>> _app_constructors;
-static vector<const char*> _app_names;
-static vector<const char*> _app_descriptions;
-int _selected_app_idx;
+static std::vector<std::function<lim::AppBase*()>> _app_constructors;
+static std::vector<const char*> _app_names;
+static std::vector<const char*> _app_descriptions;
 
 
 template <typename TApp>
@@ -47,26 +43,56 @@ static void pushAppData()
 	_app_constructors.push_back([](){ return new TApp(); });
 }
 
-static void selectApp(int idx)
-{
-	_is_app_selected = true;
-	_selected_app_idx = idx;
-	strcpy(_app_selector_name, "AppSelector##");
-	strcat(_app_selector_name, _app_names[idx]);
-}
-
 static void drawAppSellector()
 {
-	ImGui::Begin(_app_selector_name);
-	for (int i = 0; i < _app_names.size(); i++)
-	{
-		if (ImGui::Button(_app_names[i]))
-		{
-			selectApp(i);
-			glfwSetWindowShouldClose(app->window, true);
+	static bool isSelectorOpened = false;
+	if( ImGui::IsKeyPressed(ImGuiKey_F1, false) ) {
+		if( !isSelectorOpened ) {
+			isSelectorOpened = true;
+			ImGui::OpenPopup(_app_selector_name);
+		}
+		else {
+			isSelectorOpened = false;
 		}
 	}
-	ImGui::End();
+
+	if( ImGui::BeginPopupModal(_app_selector_name, &isSelectorOpened, ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoResize) ) {
+		for( int i = 0; i<_app_names.size(); i++ ) {
+			if( ImGui::Button(_app_names[i]) ) {
+				_selected_app_idx = i;
+				glfwSetWindowShouldClose(lim::AppPref::get().app->window, true);
+			}
+		}
+		ImGui::EndPopup();
+	}
+
+	// frame rate debugger
+	static bool isFpsOpened = false;
+	if( ImGui::IsKeyPressed(ImGuiKey_F2, false) )
+		isFpsOpened = !isFpsOpened;
+    if( isFpsOpened ) {
+		ImGuiIO& io = ImGui::GetIO();
+		ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoMove;
+
+		const float PAD = 10.0f;
+		const ImGuiViewport* viewport = ImGui::GetMainViewport();
+		ImVec2 workPos = viewport->WorkPos;
+		ImVec2 windowPos = {workPos.x+PAD, workPos.y+PAD+PAD};
+		ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always);
+		ImGui::SetNextWindowViewport(viewport->ID);
+
+		ImGui::SetNextWindowBgAlpha(0.35f); // Transparent background
+		if( ImGui::Begin("Example: Simple overlay", &isFpsOpened, window_flags) )
+		{
+			ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+			ImGui::Separator();
+			if( ImGui::IsMousePosValid() )
+				ImGui::Text("Mouse Position: (%.1f,%.1f)", io.MousePos.x, io.MousePos.y);
+			else
+				ImGui::Text("Mouse Position: <invalid>");
+		}
+		ImGui::End();
+	}
 }
 
 // rid unused variables warnings
@@ -88,17 +114,15 @@ int main(int, char **)
 	pushAppData<lim::AppModelViewer>();
 	pushAppData<lim::AppShaderToy>();
 
-	selectApp(0);
+	_selected_app_idx = 0;
 
 	if(_app_names.size()>1)
 		lim::AppBase::_draw_appselector = drawAppSellector;
 
-
-	while (_is_app_selected)
+	while (_selected_app_idx>=0)
 	{
-		_is_app_selected = false;
-
-		app = _app_constructors[_selected_app_idx]();
+		lim::AppBase* app = _app_constructors[_selected_app_idx]();
+		_selected_app_idx = -1;
 
 		app->run();
 
