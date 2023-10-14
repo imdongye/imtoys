@@ -27,20 +27,23 @@ namespace lim
 	class AppBase
 	{
 	public:
-		inline static std::function<void()> _draw_appselector = [](){};
+		inline static std::function<void()> draw_appselector = [](){};
 	public:
 		GLFWwindow *window;
 		
-		double delta_time; // sec
+		float delta_time = 0.; // sec
 
 		// relative to ratina or window monitor setting
-		int win_width, win_height;
+		int win_width = 0;
+		int win_height = 0;
 		// real pixel coordinate
-		int fb_width, fb_height;
-		float aspect_ratio; // width/height;
-		float pixel_ratio;    // (DPI)
-		glm::vec2 mouse_pos;
-		glm::vec2 mouse_off;
+		int fb_width = 0;
+		int fb_height = 0;
+		float aspect_ratio = 1.f; // width/height;
+		float pixel_ratio = 1.f;    // (DPI)
+		int refresh_rate = 60;
+		glm::vec2 mouse_pos = {0,0};
+		glm::vec2 mouse_off = {0,0};
 
 		Callbacks<void(float deltaTime)> 							 update_hooks;
 		Callbacks<void(float deltaTime)> 							 loop_end_hooks;

@@ -3,11 +3,13 @@
 #include <glad/glad.h>
 #include <limbrary/log.h>
 #include <imgui.h>
+#include <implot.h>
 #include <glm/glm.hpp>
 
 namespace
 {
 	bool show_demo_window = true;
+	bool show_plot_window = true;
 	bool show_another_window = true;
 	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 }
@@ -35,6 +37,8 @@ namespace lim
 		// 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
         if (show_demo_window)
             ImGui::ShowDemoWindow(&show_demo_window);
+		if (show_plot_window)
+            ImPlot::ShowDemoWindow(&show_plot_window);
 
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
         {

@@ -1,14 +1,81 @@
 #include <limbrary/application.h>
 #include <limbrary/log.h>
-#include <limbrary/app_pref.h>
+#include <limbrary/app_prefs.h>
 #include <limbrary/asset_lib.h>
 #include <limbrary/viewport.h>
 #include <glad/glad.h>
 #include <iostream>
 #include <filesystem>
 #include <imgui.h>
+#include <implot.h>
 #include <backend/imgui_impl_glfw.h>
 #include <backend/imgui_impl_opengl3.h>
+#include <algorithm>
+
+namespace
+{
+	double _refresh_time = 0.0;
+	glm::vec2 _fps_graph_data[110] = {};
+
+	void _drawProfilerFps() {
+		static bool isFpsOpened = false;
+		if( ImGui::IsKeyPressed(ImGuiKey_F2, false) )
+			isFpsOpened = !isFpsOpened;
+		if( isFpsOpened ) {
+			ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoMove;
+			const float PAD = 10.0f;
+			const ImGuiViewport* viewport = ImGui::GetMainViewport();
+			ImVec2 workPos = viewport->WorkPos;
+			ImVec2 windowPos = {workPos.x+PAD, workPos.y+PAD+PAD*1.8f};
+
+			
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
+			ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always);
+			ImGui::SetNextWindowViewport(viewport->ID);
+
+			ImGui::SetNextWindowBgAlpha(0.35f); // Transparent background
+			if( ImGui::Begin("debug overlay", &isFpsOpened, window_flags) )
+			{
+				static int fpsGraphOffset = 0;
+				const int refreshRate = lim::AssetLib::get().app->refresh_rate;
+				const float framerate = ImGui::GetIO().Framerate;
+				float time = ImGui::GetTime();
+				if( _refresh_time == 0.0 )
+					_refresh_time = time;
+				while( _refresh_time < time )
+				{
+					_fps_graph_data[fpsGraphOffset] = {time, refreshRate};
+					fpsGraphOffset = (fpsGraphOffset + 1) % IM_ARRAYSIZE(_fps_graph_data);
+					_refresh_time += 1.0f / (float)refreshRate;
+				}
+
+				const int mid = refreshRate;
+				const int pad = mid/4;
+				const char* fpsStr = lim::fmtStrToBuf("%.3f ms/frame, %.2fFPS", 1000.0f/framerate, framerate);
+				ImGui::PlotHistogram("##FPS", &_fps_graph_data[0].y, IM_ARRAYSIZE(_fps_graph_data), fpsGraphOffset, fpsStr, mid-pad, mid+pad, ImVec2(0, 40.0f), 8);
+
+				// static float history = 10.0f;
+				// static ImPlotAxisFlags flags = ImPlotAxisFlags_NoTickLabels;
+				// if (ImPlot::BeginPlot("##Scrolling", ImVec2(-1,150))) {
+				// 	ImPlot::SetupAxes(nullptr, nullptr, flags, flags);
+				// 	ImPlot::SetupAxisLimits(ImAxis_X1, time-history, time, ImGuiCond_Always);
+				// 	ImPlot::SetupAxisLimits(ImAxis_Y1,0,1);
+				// 	ImPlot::SetNextFillStyle(IMPLOT_AUTO_COL,0.5f);
+				// 	ImPlot::PlotShaded("Mouse X", &fpsGraphData[0].x, &fpsGraphData[0].y,  IM_ARRAYSIZE(fpsGraphData), -INFINITY, 0, fpsGraphOffset, 2 * sizeof(float));
+				// 	//ImPlot::PlotLine("Mouse Y", &sdata2.Data[0].x, &sdata2.Data[0].y, sdata2.Data.size(), 0, sdata2.Offset, 2*sizeof(float));
+				// 	ImPlot::EndPlot();
+				// }
+			}
+			ImGui::PopStyleVar();
+			ImGui::End();
+		}
+	}
+	void _resetProfiler()
+	{
+		_refresh_time = 0.0;
+		std::fill_n(_fps_graph_data, IM_ARRAYSIZE(_fps_graph_data), glm::vec2(0));
+	}
+}
 
 
 namespace lim
@@ -48,6 +115,7 @@ namespace lim
 		{
 			GLFWmonitor* monitor = glfwGetPrimaryMonitor();
 			const GLFWvidmode* vidMode = glfwGetVideoMode(monitor);
+			refresh_rate = vidMode->refreshRate;
 			glfwSetWindowPos(window, (vidMode->width-win_width)/2, (vidMode->height-win_height)/2);
 			glfwShowWindow(window);
 		}
@@ -90,9 +158,8 @@ namespace lim
 		}
 
 		// init singleton
-		AppPref::create();
-		AppPref::get().app = this;
-		AssetLib::create();
+		AppPrefs::create();
+		AssetLib::create(this);
 
 		// register callback after glad initialization
 		{
@@ -121,36 +188,31 @@ namespace lim
 			};
 
 			glfwSetWindowSizeCallback(window, [](GLFWwindow *window, int width, int height) {
-				AppBase& app = *AppPref::get().app;
+				AppBase& app = *AssetLib::get().app;
 				app.win_width = width; app.win_height = height;
 				app.aspect_ratio = width/(float)height;
 				app.pixel_ratio = app.fb_width/(float)app.win_width;
 				for(auto& cb : app.win_size_callbacks ) cb(width, height);
 			});
 			glfwSetFramebufferSizeCallback(window, [](GLFWwindow *window, int width, int height) {
-				AppBase& app = *AppPref::get().app;
+				AppBase& app = *AssetLib::get().app;
 				app.fb_width = width; app.fb_height = height;
 				for( auto& cb : app.framebuffer_size_callbacks ) cb(width, height);
 			});
 			glfwSetKeyCallback(window, [](GLFWwindow *window, int key, int scancode, int action, int mods) {
-				AppBase& app = *AppPref::get().app;
-				for( auto& cb : app.key_callbacks ) cb(key, scancode, action, mods);
+				for( auto& cb : AssetLib::get().app->key_callbacks ) cb(key, scancode, action, mods);
 			});
 			glfwSetMouseButtonCallback(window, [](GLFWwindow *window, int button, int action, int mods) {
-				AppBase& app = *AppPref::get().app;
-				for( auto& cb : app.mouse_btn_callbacks ) cb(button, action, mods);
+				for( auto& cb : AssetLib::get().app->mouse_btn_callbacks ) cb(button, action, mods);
 			});
 			glfwSetScrollCallback(window, [](GLFWwindow *window, double xOff, double yOff) {
-				AppBase& app = *AppPref::get().app;
-				for( auto& cb : app.scroll_callbacks) cb(xOff, yOff);
+				for( auto& cb : AssetLib::get().app->scroll_callbacks) cb(xOff, yOff);
 			});
 			glfwSetCursorPosCallback(window, [](GLFWwindow *window, double xPos, double yPos) {
-				AppBase& app = *AppPref::get().app;
-				for( auto& cb : app.cursor_pos_callbacks) cb(xPos, yPos);
+				for( auto& cb : AssetLib::get().app->cursor_pos_callbacks) cb(xPos, yPos);
 			});
 			glfwSetDropCallback(window, [](GLFWwindow *window, int count, const char **paths) {
-				AppBase& app = *AppPref::get().app;
-				for( auto& cb : app.dnd_callbacks ) cb(count, paths);
+				for( auto& cb : AssetLib::get().app->dnd_callbacks ) cb(count, paths);
 			});
 		}
 
@@ -158,6 +220,7 @@ namespace lim
 		{ 	
 			IMGUI_CHECKVERSION();
 			ImGui::CreateContext();
+			ImPlot::CreateContext();
 			ImGuiIO& io = ImGui::GetIO(); (void)io;
 			io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
 			//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
@@ -194,11 +257,14 @@ namespace lim
 		// Cleanup
 		ImGui_ImplOpenGL3_Shutdown();
 		ImGui_ImplGlfw_Shutdown();
+		ImPlot::DestroyContext();
 		ImGui::DestroyContext();
 
-		AppPref::get().saveToFile();
-		AppPref::destroy();
+		AppPrefs::get().saveToFile();
+		AppPrefs::destroy();
 		AssetLib::destroy();
+
+		_resetProfiler();
 
 		glfwDestroyWindow(window);
 		glfwTerminate();
@@ -227,7 +293,8 @@ namespace lim
 			//ImGuizmo::BeginFrame();
 
 			renderImGui();
-			_draw_appselector();
+			draw_appselector();
+			_drawProfilerFps();
 			
 			ImGui::Render();
 

@@ -1,4 +1,4 @@
-#include <limbrary/app_pref.h>
+#include <limbrary/app_prefs.h>
 #include <limbrary/utils.h>
 #include <limbrary/log.h>
 #include <fstream>
@@ -10,9 +10,9 @@ using Json = nlohmann::json;
 
 namespace lim
 {
-	AppPref::AppPref()
+	AppPrefs::AppPrefs()
 	{
-		log::pure("init AppPref\n");
+		log::pure("init AppPrefs\n");
 		std::string text = readStrFromFile(FILE_PATH);
 		if( text.length()<1 ) {
 			log::err("length<1 so not make json\n");
@@ -23,32 +23,32 @@ namespace lim
 		// log::pureln("read %s\n %s", FILE_PATH, ijson.dump(2));
 		recent_model_paths = ijson["recentModelPaths"];
 	}
-	AppPref::~AppPref()
+	AppPrefs::~AppPrefs()
 	{
-		log::pure("delete AppPref\n");
+		log::pure("delete AppPrefs\n");
 	}
 
-	void AppPref::create()
+	void AppPrefs::create()
 	{
 		if( !instance )
-			instance = new AppPref();
+			instance = new AppPrefs();
 	}
-	AppPref& AppPref::get()
+	AppPrefs& AppPrefs::get()
 	{
 		return *instance;
 	}
-	void AppPref::destroy()
+	void AppPrefs::destroy()
 	{
 		if( instance )
 			delete instance;
 		instance = nullptr;
 	}
 
-	void AppPref::clearData()
+	void AppPrefs::clearData()
 	{
 		recent_model_paths.clear();
 	}
-	void AppPref::saveToFile()
+	void AppPrefs::saveToFile()
 	{
 		Json ojson;
 		//*********************
@@ -73,7 +73,7 @@ namespace lim
 		//std::string temp = ojson.dump(2);
 		//log::pure("write %s\n %s\n", FILE_PATH, temp);
 	}
-	void AppPref::saveRecentModelPath(const std::string_view path)
+	void AppPrefs::saveRecentModelPath(const std::string_view path)
 	{
 		// 절대경로를 상대경로로
 		std::filesystem::path ap(path.data());

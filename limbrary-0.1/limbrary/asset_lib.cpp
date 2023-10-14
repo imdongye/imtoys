@@ -26,10 +26,11 @@ namespace lim
 	{
 		log::pure("delete AssetLib\n");
 	}
-	void AssetLib::create()
+	void AssetLib::create(AppBase* _app)
 	{
 		if( !instance )
 			instance = new AssetLib();
+		instance->app = _app;
 	}
 	AssetLib& AssetLib::get()
 	{

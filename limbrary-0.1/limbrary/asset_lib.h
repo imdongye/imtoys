@@ -14,6 +14,7 @@
 
 namespace lim
 {
+	class AppBase;
 	class Program;
 	class Mesh;
 	struct Material;
@@ -25,6 +26,8 @@ namespace lim
 		Program default_prog;
 	public:
 		//****** property ******//
+		AppBase* app;
+
 		Program tex_to_quad_prog;
 		Program depth_prog;
 		
@@ -35,13 +38,13 @@ namespace lim
 		MeshCube cube;
 
 	private:
+		inline static AssetLib* instance = nullptr;
 		AssetLib(const AssetLib&)=delete;
 		AssetLib& operator=(const AssetLib&)=delete;
 		AssetLib();
 		~AssetLib();
-		inline static AssetLib* instance = nullptr;
 	public:
-		static void create();
+		static void create(AppBase* app);
 		static AssetLib& get();
 		static void destroy();
 	};

@@ -1,5 +1,5 @@
 #include <limbrary/model_view/camera_man.h>
-#include <limbrary/app_pref.h>
+#include <limbrary/asset_lib.h>
 #include <limbrary/application.h>
 #include <imgui.h>
 #include <limbrary/log.h>
@@ -220,7 +220,7 @@ namespace lim
 		if(app)
 			deinitCallbacks();
 
-		app = AppPref::get().app;
+		app = AssetLib::get().app;
 
 		aspect = app->win_width/(float)app->win_height;
 		updateProjMat();
@@ -247,7 +247,7 @@ namespace lim
 			if( (!ImGui::GetIO().WantCaptureMouse) && (!ImGui::GetIO().WantCaptureKeyboard) ) {
 				input_status |= IST_FOCUSED;
 			}
-			mouse_off = AppPref::get().app->mouse_off;
+			mouse_off = AssetLib::get().app->mouse_off;
 			updateFromInput();
 			scroll_off = {0,0};
 		};

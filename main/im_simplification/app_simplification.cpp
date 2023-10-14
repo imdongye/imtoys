@@ -8,7 +8,7 @@
 #include "simplify.h"
 #include <stb_image.h>
 #include <stb_sprintf.h>
-#include <limbrary/app_pref.h>
+#include <limbrary/app_prefs.h>
 #include <limbrary/model_view/mesh_maked.h>
 #include <imgui.h>
 #include <limbrary/model_view/renderer.h>
@@ -133,7 +133,7 @@ namespace lim
 		vp.camera.position.y = md.position.y;
 		vp.camera.updateViewMat();
 
-		AppPref::get().saveRecentModelPath(path.data());
+		AppPrefs::get().saveRecentModelPath(path.data());
 	}
 	void AppSimplification::doExportModel(size_t pIndex, int vpIdx)
 	{
@@ -226,8 +226,8 @@ namespace lim
 						if( ImGui::BeginMenu(("Viewport" + std::to_string(i)).c_str())) 
 						{
 							typename std::vector<std::string>::reverse_iterator iter;
-							for( iter = AppPref::get().recent_model_paths.rbegin();
-									iter != AppPref::get().recent_model_paths.rend(); iter++ )
+							for( iter = AppPrefs::get().recent_model_paths.rbegin();
+									iter != AppPrefs::get().recent_model_paths.rend(); iter++ )
 							{
 								if( ImGui::MenuItem((*iter).c_str()) )
 								{
@@ -237,7 +237,7 @@ namespace lim
 							}
 							if(ImGui::MenuItem("Clear Recent") )
 							{
-								AppPref::get().clearData();
+								AppPrefs::get().clearData();
 							}
 							ImGui::EndMenu();
 						}

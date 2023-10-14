@@ -5,7 +5,7 @@ imitated PlayerPref in unity
 c++11 singleton pettern
 
 Usage : 
-1. AppPref::get()
+1. AppPrefs::get()
 
 Todo:
 1. 파일관련 최적화 https://modoocode.com/306
@@ -22,25 +22,23 @@ Todo:
 
 namespace lim
 {
-	class AppBase;
 	// singleton
-	class AppPref
+	class AppPrefs
 	{
 	private:
 		const char* FILE_PATH = "app_pref.json";
 	public:
-		AppBase* app;
 		const int MAX_RECENT_MP_SIZE = 10;
 		std::vector<std::string> recent_model_paths;
 	private:
-		AppPref(const AppPref&)=delete;
-		AppPref& operator=(const AppPref&)=delete;
-		AppPref();
-		~AppPref();
-		inline static AppPref* instance = nullptr;
+		AppPrefs(const AppPrefs&)=delete;
+		AppPrefs& operator=(const AppPrefs&)=delete;
+		AppPrefs();
+		~AppPrefs();
+		inline static AppPrefs* instance = nullptr;
 	public:
 		static void create();
-		static AppPref& get();
+		static AppPrefs& get();
 		static void destroy();
 
 		void clearData();
