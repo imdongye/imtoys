@@ -88,7 +88,9 @@ namespace lim
 		h_prog.name = "hatching prog";
 		h_prog.home_dir = APP_DIR;
 		h_prog.attatch("hatching.vs").attatch("hatching.fs").link();
-		h_prog.use_hook = [this](const Program& prog) 
+
+		h_mat.prog = &h_prog;
+		h_mat.set_program = [this](const Program& prog) 
 		{
 			prog.setUniform("uvScale", uv_scale);
 			prog.setUniform("fixedArtMapIdx", fixed_art_map_idx);
@@ -105,8 +107,7 @@ namespace lim
 			int tam[6] = {5,4,3,2,1,0};
 			prog.setUniform("tam", nr_tones, tam);
 		};
-
-		h_mat.prog = &h_prog;
+		
 		viewport.setClearColor({0.1f, 0.1f, 0.1f, 1.0f});
 
 		models.push_back({});

@@ -39,9 +39,6 @@ namespace lim
 		programs.emplace_back("Map View, my normal");
 		programs.back().home_dir = APP_DIR;
 		programs.back().attatch("uv_view.vs").attatch("debug.fs").link();
-		programs.back().use_hook = [](const Program& prog) {
-			prog.setUniform("gamma", 1.f);
-		};
 
 		for( const auto& prog : programs )
 			shader_names.push_back(prog.name.c_str());

@@ -115,13 +115,13 @@ namespace lim
 		program->name = "debugging";
 		program->home_dir = APP_DIR;
 		program->attatch("assets/shaders/mvp.vs").attatch("debug.fs").link();
-		program->use_hook = [this](const Program& prog) {
+		AssetLib::get().default_material.prog = program;
+		AssetLib::get().default_material.set_program = [this](const Program& prog) {
 			prog.setUniform("time", vs_t);
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, debugging_tex->tex_id);
 			prog.setUniform("uvgridTex", 0);
 		};
-		AssetLib::get().default_material.prog = program;
 	}
 	AppGenMesh::~AppGenMesh()
 	{

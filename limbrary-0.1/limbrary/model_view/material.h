@@ -46,6 +46,7 @@ namespace lim
         float texDelta = 0.00001f;
 
         Program* prog = nullptr;
+		std::function<void(const Program&)> set_program = [](const Program& p){};
     };
 }
 #endif

@@ -39,7 +39,6 @@ namespace lim
 	public:
 		std::string name = "nonamed";
 		std::string home_dir = "assets";
-		std::function<void(const Program&)> use_hook = [](const Program& p){};
 
 	protected:
 		struct Shader {
@@ -70,9 +69,6 @@ namespace lim
 		Program& operator+=(const char *path);
 		Program& attatch(std::string path);
 		Program& link();
-		// type : GL_VERTEX_SHADER, GL_FRAGMENT_SHADER ...
-		Program& reload(GLenum type);
-
 		const Program& use() const;
 
 	private:

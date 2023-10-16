@@ -71,7 +71,6 @@ namespace lim
 
 		name = std::move(src.name);
 		home_dir = std::move(src.home_dir);
-		use_hook = std::move(src.use_hook);
 
 		pid = src.pid;
 		src.pid = 0;// 바뀌는지 todo
@@ -181,7 +180,6 @@ namespace lim
 			log::err("program is not linked\n");
 		}
 		glUseProgram(pid);
-		use_hook(*this);
 		return *this;
 	}
 	// From: https://www.youtube.com/watch?v=nBB0LGSIm5Q

@@ -23,6 +23,8 @@ namespace
     }
     inline int bindMatToProg(const Program& prog, const Material& mat, int activeSlot)
     {
+        mat.set_program(prog);
+        
         if( mat.map_Kd ) {
             glActiveTexture(GL_TEXTURE0 + activeSlot);
             glBindTexture(GL_TEXTURE_2D, mat.map_Kd->tex_id);
