@@ -122,7 +122,7 @@ add_dependencies(${lib_name} glfw stb)
 ### glm (header only) ###
 set(lib_name "glm")
 set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/glm-0.9.9.8")
-file(GLOB_RECURSE lib_files CONFIGURE_DEPENDS "${lib_dir}/*.*")
+file(GLOB_RECURSE lib_files "${lib_dir}/*.*")
 add_library(${lib_name} INTERFACE ${lib_files})
 source_group(TREE "${lib_dir}/glm" FILES ${lib_files})
 target_include_directories(${lib_name} INTERFACE  ${lib_dir})
@@ -131,7 +131,7 @@ target_compile_definitions(${lib_name} INTERFACE GLM_FORCE_SILENT_WARNINGS)
 ### eigen (header only) ###
 set(lib_name "eigen")
 set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/eigen-3.4.0")
-file(GLOB_RECURSE lib_files CONFIGURE_DEPENDS "${lib_dir}/*")
+file(GLOB_RECURSE lib_files "${lib_dir}/*")
 add_library(${lib_name} INTERFACE ${lib_files})
 source_group(TREE "${lib_dir}/Eigen" FILES ${lib_files})
 target_include_directories(${lib_name} INTERFACE  ${lib_dir})
@@ -139,7 +139,7 @@ target_include_directories(${lib_name} INTERFACE  ${lib_dir})
 ### others (header only) ###
 set(lib_name "others")
 set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/others")
-file(GLOB_RECURSE lib_files CONFIGURE_DEPENDS "${lib_dir}/*.*")
+file(GLOB_RECURSE lib_files "${lib_dir}/*.*")
 add_library(${lib_name} INTERFACE ${lib_files})
 source_group(TREE ${lib_dir} FILES ${lib_files})
 target_include_directories(${lib_name} INTERFACE  ${lib_dir})
@@ -161,6 +161,7 @@ set(dep_libs
     stb
 )
 file(GLOB_RECURSE lib_files CONFIGURE_DEPENDS "${lib_dir}/*.*")
+#file(GLOB_RECURSE lib_files "${lib_dir}/*.*")
 add_library(${lib_name} STATIC ${lib_files})
 source_group(TREE "${lib_dir}" FILES ${lib_files})
 target_include_directories(${lib_name} PUBLIC ${lib_dir})
@@ -200,11 +201,12 @@ endif()
 ### assets ###
 # 배포할땐 직접 복붙하기로 하자.
 file(GLOB_RECURSE asset_files CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/main/assets/*.*)
+#file(GLOB_RECURSE asset_files ${CMAKE_SOURCE_DIR}/main/assets/*.*)
 add_custom_target(assets ALL SOURCES ${asset_files})
 source_group(TREE "${CMAKE_SOURCE_DIR}/main/assets" FILES ${asset_files})
 
 ### main proj ###
-file(GLOB_RECURSE main_files CONFIGURE_DEPENDS 
+file(GLOB_RECURSE main_files #CONFIGURE_DEPENDS 
     ${CMAKE_SOURCE_DIR}/main/*.cpp
     ${CMAKE_SOURCE_DIR}/main/*.h 
     ${CMAKE_SOURCE_DIR}/main/*.hpp
@@ -235,7 +237,7 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Cla
 endif()
 target_compile_definitions(${exe_name} 
     PRIVATE
-        WINDOW_NAME="opengl template window"
+        WINDOW_NAME="imtoys template"
         WINDOW_WIDTH=600
         WINDOW_HEIGHT=400
 )

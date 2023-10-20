@@ -17,6 +17,7 @@ void main()
 	wPos = vec3(modelMat*vec4(aPos, 1.f));
 	//wNor = mat3(modelMat)*aNor;
 	wNor = vec3(modelMat*vec4(aNor, 0.f));
+	wNor = normalize(wNor);
 	mUv = aUv;
 
 	gl_Position = projMat*viewMat*vec4(wPos,1.f);

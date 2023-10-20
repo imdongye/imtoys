@@ -90,7 +90,7 @@ namespace lim
 		h_prog.attatch("hatching.vs").attatch("hatching.fs").link();
 
 		h_mat.prog = &h_prog;
-		h_mat.set_program = [this](const Program& prog) 
+		h_mat.set_prog = [this](const Program& prog) 
 		{
 			prog.setUniform("uvScale", uv_scale);
 			prog.setUniform("fixedArtMapIdx", fixed_art_map_idx);

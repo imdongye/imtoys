@@ -23,7 +23,22 @@ namespace
     }
     inline int bindMatToProg(const Program& prog, const Material& mat, int activeSlot)
     {
-        mat.set_program(prog);
+        mat.set_prog(prog);
+
+        prog.setUniform("Kd", mat.Kd);
+        prog.setUniform("Ks", mat.Ks);
+        prog.setUniform("Ka", mat.Ka);
+        prog.setUniform("Ke", mat.Ke);
+        prog.setUniform("Tf", mat.Tf);
+
+        prog.setUniform("d", mat.d);
+        prog.setUniform("Tr", mat.Tr);
+        prog.setUniform("Ns", mat.Ns);
+        prog.setUniform("Ni", mat.Ni);
+        prog.setUniform("roughness", mat.roughness);
+
+
+        prog.setUniform("map_Flags", mat.map_Flags);
         
         if( mat.map_Kd ) {
             glActiveTexture(GL_TEXTURE0 + activeSlot);
@@ -55,14 +70,6 @@ namespace
                 prog.setUniform("bumpHeight", mat.bumpHeight);
             }
         }
-
-        prog.setUniform("Kd", mat.Kd);
-        prog.setUniform("Ks", mat.Ks);
-        prog.setUniform("Ka", mat.Ka);
-        prog.setUniform("Ke", mat.Ke);
-        prog.setUniform("Tf", mat.Tf);
-        prog.setUniform("Ni", mat.Ni);
-        prog.setUniform("map_Flags", mat.map_Flags);
         return activeSlot;
     }
 
@@ -252,12 +259,6 @@ namespace lim
 
 namespace lim
 {
-    void Scene::deleteOwn() {
-        for( const Model* md: my_mds ){
-            delete md;
-        }
-        my_mds.clear();
-    }
     Scene::Scene()
     {    
     }
@@ -270,34 +271,19 @@ namespace lim
     Scene& Scene::operator=(Scene&& src) noexcept {
         if(this==&src)
             return *this;
-        deleteOwn();
+        for( const Model* md: my_mds ){
+            delete md;
+        }
+        my_mds.clear();
         models = std::move(src.models);
         my_mds = std::move(src.my_mds);
         lights = std::move(src.lights);
         return *this;
     }
     Scene::~Scene() noexcept {
-        deleteOwn();
-    }
-    void Scene::addModel( const Model* md, bool deleteWhenScnDeleted ) {
-        models.push_back(md);
-        if(deleteWhenScnDeleted)
-            my_mds.push_back(md);
-    }
-    void Scene::subModel( const Model* md ) {
-        auto it = std::find(models.begin(), models.end(), md);
-        if (it != models.end())
-            models.erase(it);
-        it = std::find(my_mds.begin(), my_mds.end(), md);
-        if (it != my_mds.end())
-            my_mds.erase(it);
-    }
-    void Scene::addLight( const Light* lit ) {
-        lights.push_back(lit);
-    }
-    void Scene::subLight( const Light* lit ) {
-        auto it = std::find(lights.begin(), lights.end(), lit);
-        if (it != lights.end())
-            lights.erase(it);
+        for( const Model* md: my_mds ){
+            delete md;
+        }
+        my_mds.clear();
     }
 }

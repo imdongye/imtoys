@@ -97,20 +97,14 @@ namespace
 
 		mat.prog = nullptr;
 
-		if( aiMat->Get(AI_MATKEY_COLOR_DIFFUSE, temp4d) == AI_SUCCESS ) {
-			mat.Kd = toGLM(temp4d);
+		if( aiMat->Get(AI_MATKEY_COLOR_DIFFUSE, temp3d) == AI_SUCCESS ) {
+			mat.Kd = toGLM(temp3d);
 		}
-		if( aiMat->Get(AI_MATKEY_OPACITY, tempFloat) == AI_SUCCESS ) {
-			mat.Kd.a = tempFloat; // todo
-		}
-		if( aiMat->Get(AI_MATKEY_COLOR_SPECULAR, temp4d) == AI_SUCCESS ) {
-			mat.Ks = toGLM(temp4d);
-		}
-		if( aiMat->Get(AI_MATKEY_SHININESS, tempFloat) == AI_SUCCESS ) {
-			mat.Ks.a = tempFloat;
+		if( aiMat->Get(AI_MATKEY_COLOR_SPECULAR, temp3d) == AI_SUCCESS ) {
+			mat.Ks = toGLM(temp3d);
 		}
 		if( aiMat->Get(AI_MATKEY_SHININESS_STRENGTH, tempFloat ) != AI_SUCCESS ) {
-			mat.Ks = vec4( vec3( mat.Ks )*tempFloat, mat.Ks.a );
+			mat.Ks *= tempFloat;
 		}
 		if( aiMat->Get(AI_MATKEY_COLOR_AMBIENT, temp3d) == AI_SUCCESS ) {
 			mat.Ka = toGLM(temp3d);
@@ -121,6 +115,21 @@ namespace
 		if( aiMat->Get(AI_MATKEY_COLOR_TRANSPARENT, temp3d) == AI_SUCCESS ) {
 			mat.Tf = toGLM(temp3d);
 		}
+		if( aiMat->Get(AI_MATKEY_OPACITY, tempFloat) == AI_SUCCESS ) {
+			mat.d = tempFloat;
+			mat.Tr = 1.f-tempFloat;
+		}
+		if( aiMat->Get(AI_MATKEY_SHININESS, tempFloat) == AI_SUCCESS ) {
+			mat.Ns = tempFloat;
+		}
+		if( aiMat->Get(AI_MATKEY_REFRACTI, tempFloat) == AI_SUCCESS ) {
+			mat.Ni = tempFloat;
+		}
+		if( aiMat->Get(AI_MATKEY_ROUGHNESS_FACTOR, tempFloat) == AI_SUCCESS ) {
+			mat.roughness = tempFloat;
+		}
+
+		mat.map_Flags = Material::MF_None;
 		if( aiMat->GetTexture(aiTextureType_DIFFUSE, 0, &tempStr) == AI_SUCCESS ) {
 			log::pure("map_Kd ");
 			mat.map_Flags |= Material::MF_Kd;
