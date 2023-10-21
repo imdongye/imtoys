@@ -63,7 +63,7 @@ namespace lim
 		float distance = (radius<0)?length(diff):radius;
 
 		vec4 toLit = {0,1,0,0};
-		toLit = rotate(radians(thetaDeg), vec3{0,0,1}) * toLit;
+		toLit = rotate(radians(thetaDeg), vec3{0,0,-1}) * toLit;
 		toLit = rotate(radians(phiDeg), vec3{0,1,0}) * toLit;
 
 		position = pivot+distance*vec3(toLit);

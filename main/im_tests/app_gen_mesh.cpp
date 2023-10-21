@@ -26,51 +26,51 @@ namespace lim
 		/* gen models */
 		models.push_back(new Model("sphere"));
 		models.back()->my_meshes.push_back(new MeshSphere(50, 25));
-		models.back()->root.addMesh(models.back()->my_meshes.back());
+		models.back()->root.addMeshWithMat(models.back()->my_meshes.back());
 
 		models.push_back(new Model("donut"));
 		models.back()->my_meshes.push_back(new MeshDonut(50, 25));
-		models.back()->root.addMesh(models.back()->my_meshes.back());
+		models.back()->root.addMeshWithMat(models.back()->my_meshes.back());
 
 		models.push_back(new Model("capsule"));
 		models.back()->my_meshes.push_back(new MeshCapsule(50, 25));
-		models.back()->root.addMesh(models.back()->my_meshes.back());
+		models.back()->root.addMeshWithMat(models.back()->my_meshes.back());
 
 		models.push_back(new Model("ico sphere"));
 		models.back()->my_meshes.push_back(new MeshIcoSphere(0));
-		models.back()->root.addMesh(models.back()->my_meshes.back());
+		models.back()->root.addMeshWithMat(models.back()->my_meshes.back());
 
 		models.push_back(new Model("ico sphere2"));
 		models.back()->my_meshes.push_back(new MeshIcoSphere(1)); // 구멍뭐지
-		models.back()->root.addMesh(models.back()->my_meshes.back());
+		models.back()->root.addMeshWithMat(models.back()->my_meshes.back());
 
 		models.push_back(new Model("ico sphere2"));
 		models.back()->my_meshes.push_back(new MeshIcoSphere(2));
-		models.back()->root.addMesh(models.back()->my_meshes.back());
+		models.back()->root.addMeshWithMat(models.back()->my_meshes.back());
 
 		models.push_back(new Model("ico sphere2"));
 		models.back()->my_meshes.push_back(new MeshIcoSphere(3));
-		models.back()->root.addMesh(models.back()->my_meshes.back());
+		models.back()->root.addMeshWithMat(models.back()->my_meshes.back());
 
 		models.push_back(new Model("cube sphere"));
 		models.back()->my_meshes.push_back(new MeshCubeSphere(2));
-		models.back()->root.addMesh(models.back()->my_meshes.back());
+		models.back()->root.addMeshWithMat(models.back()->my_meshes.back());
 
 		models.push_back(new Model("cube sphere2"));
 		models.back()->my_meshes.push_back(new MeshCubeSphere2(5));
-		models.back()->root.addMesh(models.back()->my_meshes.back());
+		models.back()->root.addMeshWithMat(models.back()->my_meshes.back());
 
 		models.push_back(new Model("quad"));
 		models.back()->my_meshes.push_back(new MeshQuad());
-		models.back()->root.addMesh(models.back()->my_meshes.back());
+		models.back()->root.addMeshWithMat(models.back()->my_meshes.back());
 
 		models.push_back(new Model("cube"));
 		models.back()->my_meshes.push_back(new MeshCube());
-		models.back()->root.addMesh(models.back()->my_meshes.back());
+		models.back()->root.addMeshWithMat(models.back()->my_meshes.back());
 
 		models.push_back(new Model("cylinder"));
 		models.back()->my_meshes.push_back(new MeshCylinder(20));
-		models.back()->root.addMesh(models.back()->my_meshes.back());
+		models.back()->root.addMeshWithMat(models.back()->my_meshes.back());
 
 		models.push_back(new Model());
 		models.back()->importFromFile("assets/models/objs/spot.obj", true, false);
@@ -89,7 +89,7 @@ namespace lim
 
 		models.push_back(new Model("plane"));
 		models.back()->my_meshes.push_back(new MeshPlane());
-		models.back()->root.addMesh(models.back()->my_meshes.back());
+		models.back()->root.addMeshWithMat(models.back()->my_meshes.back());
 		models.back()->position = glm::vec3(0, -3.5, 0);
 		models.back()->scale = glm::vec3(50.f);
 		models.back()->updateModelMat();
@@ -97,7 +97,7 @@ namespace lim
 		light = new Light();
 		light_model = new Model("light model");
 		light_model->my_meshes.push_back(new MeshSphere(8, 4));
-		light_model->root.addMesh(models.back()->my_meshes.back());
+		light_model->root.addMeshWithMat(models.back()->my_meshes.back());
 		light_model->position = light->position;
 		light_model->scale = glm::vec3(0.3f);
 		light_model->updateModelMat();

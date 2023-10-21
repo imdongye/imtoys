@@ -29,7 +29,7 @@ namespace lim
 
 		bool shadow_enabled = false;
 		glm::vec3 color = {1,1,1};
-		float intensity = 1.f;
+		float intensity = 9.f;
 		
 		glm::vec3 pivot = {0,0,0};
 		glm::vec3 position = {50,50,50};

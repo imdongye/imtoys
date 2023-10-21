@@ -3,6 +3,9 @@
 2023-09-11 / im dong ye
 edit learnopengl code
 
+Note:
+default_mat을 수정한다면 program 과 set_prog는 반드시 지정해줘야함.
+
 TODO list:
 1. Transfrom.h
 2. rigging
@@ -45,7 +48,7 @@ namespace lim
 			std::vector<const Mesh*> meshes;
 			std::vector<const Material*> mats;
 		public:
-			void addMesh(const Mesh* ms, const Material* mat = nullptr) {
+			void addMeshWithMat(const Mesh* ms, const Material* mat = nullptr) {
 				meshes.push_back(ms);
 				mats.push_back(mat);
 				nr_meshes++;

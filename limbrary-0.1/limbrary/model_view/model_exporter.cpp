@@ -74,19 +74,11 @@ namespace
 		aiString tempStr;
 		float tempFloat;
 
-		temp4d = toAiC(src.Kd);
-		aiMat->AddProperty(&temp4d, 1, AI_MATKEY_COLOR_DIFFUSE);
+		temp3d = toAiC(src.Kd);
+		aiMat->AddProperty(&temp3d, 1, AI_MATKEY_COLOR_DIFFUSE);
 
-		tempFloat = src.Kd.a;
-		aiMat->AddProperty(&tempFloat, 1, AI_MATKEY_OPACITY);
-
-		temp4d = toAiC(src.Ks);
-		aiMat->AddProperty(&temp4d, 1, AI_MATKEY_COLOR_SPECULAR);
-
-		tempFloat = src.Ks.a;
-		aiMat->AddProperty(&tempFloat, 1, AI_MATKEY_SHININESS);
-
-		// AI_MATKEY_SHININESS_STRENGTH
+		temp3d = toAiC(src.Ks);
+		aiMat->AddProperty(&temp3d, 1, AI_MATKEY_COLOR_SPECULAR);
 
 		temp3d = toAiC(src.Ka);
 		aiMat->AddProperty(&temp3d, 1, AI_MATKEY_COLOR_AMBIENT);
@@ -97,6 +89,19 @@ namespace
 		temp3d = toAiC(src.Tf);
 		aiMat->AddProperty(&temp3d, 1, AI_MATKEY_COLOR_TRANSPARENT);
 
+		tempFloat = src.d;
+		aiMat->AddProperty(&tempFloat, 1, AI_MATKEY_OPACITY);
+
+		tempFloat = src.Ns;
+		aiMat->AddProperty(&tempFloat, 1, AI_MATKEY_SHININESS);
+
+		tempFloat = src.Ni;
+		aiMat->AddProperty(&tempFloat, 1, AI_MATKEY_REFRACTI);
+
+		tempFloat = src.roughness;
+		aiMat->AddProperty(&tempFloat, 1, AI_MATKEY_ROUGHNESS_FACTOR);
+
+		// AI_MATKEY_SHININESS_STRENGTH
 
 		if( src.map_Kd != nullptr ) {
 			tempStr = aiString(src.map_Kd->path.data());

@@ -1,5 +1,6 @@
 #include <limbrary/model_view/renderer.h>
 #include <limbrary/asset_lib.h>
+#include <limbrary/log.h>
 #include <stack>
 
 using namespace std;
@@ -23,8 +24,6 @@ namespace
     }
     inline int bindMatToProg(const Program& prog, const Material& mat, int activeSlot)
     {
-        mat.set_prog(prog);
-
         prog.setUniform("Kd", mat.Kd);
         prog.setUniform("Ks", mat.Ks);
         prog.setUniform("Ka", mat.Ka);
@@ -194,12 +193,14 @@ namespace lim
         const Material* nextMat = nullptr;
         const Program* curProg = nullptr;
         const Program* nextProg = nullptr;
+        std::function<void(const Program&)> curSetProg;
         int activeSlot = 0;
 
         for( const Model* pMd : scn.models ) {
             const Model& md = *pMd;
             nextMat = md.default_material;
             nextProg = md.default_material->prog;
+            curSetProg = md.default_material->set_prog;
 
             stack<const Model::Node*> nodeStack;
             nodeStack.push( &(pMd->root) );
@@ -218,6 +219,8 @@ namespace lim
                         nextMat = mat;
                         if( nextMat->prog != nullptr )
                             nextProg = nextMat->prog;
+                        if( nextMat->set_prog )
+                            curSetProg = nextMat->set_prog;
                     }
 
                     if( curProg != nextProg ) {
@@ -235,8 +238,8 @@ namespace lim
                         }
                     }
 
-                    if(  curProg != nextProg || curMat != nextMat )
-                    {
+                    if(  curProg != nextProg || curMat != nextMat ) {
+                        curSetProg(*nextProg);
                         bindMatToProg(*nextProg, *nextMat, activeSlot);
                         curMat = nextMat;
                     }

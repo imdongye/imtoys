@@ -116,7 +116,7 @@ namespace lim
 	
 		models.push_back( {} );
 		models.back().name = "sphere";
-		models.back().root.addMesh(&AssetLib::get().sphere);
+		models.back().root.addMeshWithMat(&AssetLib::get().sphere);
 		models.back().default_material = &h_mat;
 		models.back().updateUnitScaleAndPivot();
 
@@ -141,7 +141,7 @@ namespace lim
 		light.setRotate(30.f, 30.f, 10.f);
 		light_model.name = "light";
 		light_model.my_meshes.push_back(new MeshSphere(8, 4));
-		light_model.root.addMesh(light_model.my_meshes.back()); // delete sphere when delete model!
+		light_model.root.addMeshWithMat(light_model.my_meshes.back()); // delete sphere when delete model!
 		light_model.position = light.position;
 		light_model.scale = glm::vec3(0.3f);
 		light_model.updateModelMat();
@@ -203,6 +203,8 @@ namespace lim
 		isLightDraged |= ImGui::DragFloat("light pitch", &litTheta, litThetaSpd, 0, 80, "%.3f");
 		if( isLightDraged ) {
 			light.setRotate(litTheta, glm::fract(litPhi/360.f)*360.f);
+			light_model.position = light.position;
+			light_model.updateModelMat();
 		}
 		ImGui::Text("pos %.1f %.1f %.1f", light.position.x, light.position.y, light.position.z);
 

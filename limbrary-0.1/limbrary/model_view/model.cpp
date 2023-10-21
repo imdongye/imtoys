@@ -88,7 +88,7 @@ namespace lim
 				
 				for( int i=0; i<srcN->getNrMesh(); i++ ) {
 					auto [ms, mat] = srcN->getMesh(i);
-					dstN->addMesh(ms, mat);
+					dstN->addMeshWithMat(ms, mat);
 				}
 				dstN->childs.reserve(srcN->childs.size());
 				for(const Node& oriChild : srcN->childs) {
@@ -127,7 +127,7 @@ namespace lim
 				
 				for( int i=0; i<srcN->getNrMesh(); i++ ) {
 					auto [ms, mat] = srcN->getMesh(i);
-					dstN->addMesh(my_meshes[findIdx(src.my_meshes, (Mesh*)ms)]
+					dstN->addMeshWithMat(my_meshes[findIdx(src.my_meshes, (Mesh*)ms)]
 								, my_materials[findIdx(src.my_materials, (Material*)mat)]);
 				}
 				dstN->childs.reserve(srcN->childs.size());
@@ -234,7 +234,8 @@ namespace lim
 		}
 		constexpr float unit_length = 2.f;
 		float max_axis_length = glm::max(glm::max(boundary_size.x, boundary_size.y), boundary_size.z);
-		scale = glm::vec3(unit_length/max_axis_length);
+		float min_axis_length = glm::min(glm::min(boundary_size.x, boundary_size.y), boundary_size.z);
+		scale = glm::vec3(unit_length/min_axis_length);
 
 		setPivot(boundary_min + boundary_size*0.5f);
 

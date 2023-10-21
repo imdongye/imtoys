@@ -121,6 +121,7 @@ namespace
 		}
 		if( aiMat->Get(AI_MATKEY_SHININESS, tempFloat) == AI_SUCCESS ) {
 			mat.Ns = tempFloat;
+			mat.Ns = 100.f;
 		}
 		if( aiMat->Get(AI_MATKEY_REFRACTI, tempFloat) == AI_SUCCESS ) {
 			mat.Ni = tempFloat;
@@ -251,7 +252,7 @@ namespace
 				const aiMesh* aiMs = _scene->mMeshes[src->mMeshes[i]];
 				mat = _rst_md->my_materials[aiMs->mMaterialIndex];
 			}
-			dst.addMesh(_rst_md->my_meshes[src->mMeshes[i]], mat);
+			dst.addMeshWithMat(_rst_md->my_meshes[src->mMeshes[i]], mat);
 		}
 
 		for( size_t i=0; i< src->mNumChildren; i++ ) {
@@ -358,9 +359,10 @@ namespace lim
 		filesystem::path fpath(_path);  
 		if( filesystem::is_directory(fpath) ) {
 			for( const auto & entry : std::filesystem::directory_iterator(fpath) ) {
-				string fm = entry.path().extension().string();
+				string fm = entry.path().extension().string().c_str()+1;
 				for( int i=0; i<getNrImportFormats(); i++ ) {
-					if(strIsSame( getImportFormat(i), fm.c_str()+1 )) {
+					std::string importFm = getImportFormat(i);
+					if(importFm.find(fm)!=std::string::npos) {
 						std::string rst = entry.path().string();
 						return rst;
 					}

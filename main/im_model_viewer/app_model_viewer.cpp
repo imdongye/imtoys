@@ -10,27 +10,24 @@ using namespace glm;
 namespace
 {
 	struct BrdfTestInfo {
-		int D = 0;
-		int G = 0;
-		int F = 0;
+		std::string ctrlName = "##modelview";
+		int model_idx = 0;
+		int D_idx = 0;
+		int G_idx = 0;
+		int F_idx = 0;
+        float shininess = 100.f; // shininess
+        float refIdx    = 1.45f; // index of refraction
+        float roughness = 0.3f;  // brdf param
 	};
 	std::vector<BrdfTestInfo> brdfTestInfos;
 
 	function<void(const Program&)> makeSetProg(BrdfTestInfo tInfo) {
-		return [=](const Program& prog) {
-			prog.setUniform("D", tInfo.D);
-			prog.setUniform("G", tInfo.G);
-			prog.setUniform("F", tInfo.F);
+		return [tInfo](const Program& prog) {
+			prog.setUniform("model_idx", tInfo.model_idx);
+			prog.setUniform("D_idx", tInfo.D_idx);
+			prog.setUniform("G_idx", tInfo.G_idx);
+			prog.setUniform("F_idx", tInfo.F_idx);
 		};
-	}
-
-	void drawModelInfoGUI(Model& md, BrdfTestInfo& tInfo) {
-		ImGui::Begin(md.name.c_str());
-		ImGui::SliderInt("D", &tInfo.D, 0, 3);
-		ImGui::SliderInt("G", &tInfo.G, 0, 3);
-		ImGui::SliderInt("F", &tInfo.G, 0, 3);
-		ImGui::End();
-		md.default_material->set_prog = makeSetProg(tInfo);
 	}
 }
 
@@ -44,11 +41,20 @@ namespace lim
 		scenes.reserve(5);
 
 		program.home_dir = APP_DIR;
-		program.attatch("mvp.vs").attatch("debug.fs").link();
+		program.attatch("mvp.vs").attatch("brdf.fs").link();
+
+		light.setRotate(35.f, -35.f, 5.f);
+		light.intensity = 15.f;
+		light_model.name = "light";
+		light_model.my_meshes.push_back(new MeshSphere(8, 4));
+		light_model.root.addMeshWithMat(light_model.my_meshes.back()); // delete sphere when delete model!
+		light_model.position = light.position;
+		light_model.scale = glm::vec3(0.3f);
+		light_model.updateModelMat();
 
 		AssetLib::get().default_material.prog = &program;
 
-		addModelViewer("assets/models/objs/spot.obj");
+		addModelViewer("assets/models/objs/bunny.obj");
 	}
 	AppModelViewer::~AppModelViewer()
 	{
@@ -66,11 +72,12 @@ namespace lim
 		md->default_material->prog = &program;
 
 		brdfTestInfos.push_back({});
+		brdfTestInfos.back().ctrlName = md->name+" ctrl ##modelviewer";
 		md->default_material->set_prog = makeSetProg(brdfTestInfos.back());
-
 
 		Scene scn;
 		scn.lights.push_back(&light);
+		scn.models.push_back(&light_model);
 		scn.models.push_back(md);
 		scn.my_mds.push_back(md); // 0번째
 		scenes.emplace_back(std::move(scn));
@@ -115,15 +122,87 @@ namespace lim
 
 		log::drawViewer("logger##model_viewer");
 
-		for(int i=0; i<scenes.size(); i++) {
-			drawModelInfoGUI(*scenes[i].my_mds[0], brdfTestInfos[i]);
+		// draw common ctrl
+		{
+			ImGui::Begin("common ctrl##model_viewer");
+			static float litTheta = 90.f-glm::degrees(glm::acos(glm::dot(glm::normalize(light.position), glm::normalize(vec3(light.position.x, 0, light.position.z)))));
+			const static float litThetaSpd = 70 * 0.001;
+			static float litPhi = 90.f-glm::degrees(glm::atan(light.position.x,-light.position.z));
+			const static float litPhiSpd = 360 * 0.001;
+			static float litDist = glm::length(light.position);
+			const static float litDistSpd = 45.f * 0.001;
+			static bool isLightDraged = false;
+
+			ImGui::Text("<light>");
+			isLightDraged |= ImGui::DragFloat("pitch", &litTheta, litThetaSpd, 0, 80, "%.3f");
+			isLightDraged |= ImGui::DragFloat("yaw", &litPhi, litPhiSpd, -FLT_MAX, +FLT_MAX, "%.3f");
+			isLightDraged |= ImGui::DragFloat("dist", &litDist, litDistSpd, 5.f, 50.f, "%.3f");
+			if( isLightDraged ) {
+				light.setRotate(litTheta, glm::fract(litPhi/360.f)*360.f, litDist);
+				light_model.position = light.position;
+				light_model.updateModelMat();
+			}
+			ImGui::Text("pos: %.1f %.1f %.1f", light.position.x, light.position.y, light.position.z);
+			ImGui::SliderFloat("intencity", &light.intensity, 0.5f, 60.f, "%.1f");
+
+			if( ImGui::Button("relead shader") ) {
+				program.reload(GL_FRAGMENT_SHADER);
+			}
+			ImGui::End();
+		}
+
+		for(int i=0; i<scenes.size(); i++) 
+		{
+			// draw model ctrl
+			{
+				Model& md = *scenes[i].my_mds[0]; 
+				BrdfTestInfo& tInfo = brdfTestInfos[i];
+
+				ImGui::Begin(tInfo.ctrlName.c_str());
+
+				bool isInfoChanged = false;
+				static const char* modelStrs[]={"Phong", "BlinnPhong", "CookTorrance"};
+
+				if( ImGui::Combo("Model", &tInfo.model_idx, modelStrs, IM_ARRAYSIZE(modelStrs)) ) {
+					isInfoChanged = true; 
+				}
+				if( tInfo.model_idx==2 ) {
+					static const char* dStrs[]={"BlinnPhong", "GGX"};
+					if( ImGui::Combo("D", &tInfo.D_idx, dStrs, IM_ARRAYSIZE(dStrs)) ) { isInfoChanged = true; }
+					static const char* gStrs[]={"CookTorrance"};
+					if( ImGui::Combo("G", &tInfo.G_idx, gStrs, IM_ARRAYSIZE(gStrs)) ) { isInfoChanged = true; }
+					static const char* fStrs[]={"Schlick"};
+					if( ImGui::Combo("F", &tInfo.F_idx, fStrs, IM_ARRAYSIZE(fStrs)) ) { isInfoChanged = true; }
+				}
+				if( isInfoChanged ) {
+					md.default_material->set_prog = makeSetProg(tInfo);
+				}
+				if( ImGui::SliderFloat("shininess", &tInfo.shininess, 0, 1000) ) {
+					for(Material* mat : md.my_materials) {
+						mat->Ns = tInfo.shininess;
+					}
+				}
+				if( ImGui::SliderFloat("ref idx", &tInfo.refIdx, 0, 3) ) {
+					for(Material* mat : md.my_materials) {
+						mat->Ni = tInfo.refIdx;
+					}
+				}
+				if( ImGui::SliderFloat("roughness", &tInfo.roughness, 0.001, 1) ) {
+					for(Material* mat : md.my_materials) {
+						mat->roughness = tInfo.roughness;
+					}
+				}
+				ImGui::End();
+			}
+
+			// /draw model view
 			viewports[i].drawImGui();
 		}
 	}
 	void AppModelViewer::keyCallback(int key, int scancode, int action, int mods)
 	{
 		// glFinish후 호출돼서 여기서 프로그램 리로드 해도됨.
-		if( ( GLFW_MOD_CONTROL == mods ) && ( 'R' == key ) ) {
+		if( action==GLFW_PRESS && GLFW_MOD_CONTROL== mods && key=='R' ) {
 			program.reload(GL_FRAGMENT_SHADER);
 		}
 	}

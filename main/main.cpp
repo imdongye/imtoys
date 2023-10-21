@@ -58,9 +58,7 @@ static void drawAppSellector()
 			}
 		}
 		ImGui::EndPopup();
-	}
-
-	
+	}	
 }
 
 
@@ -76,6 +74,7 @@ static void pushAppData()
 
 int main()
 {
+	pushAppData<lim::AppModelViewer>();
 	pushAppData<lim::AppTemplate>();
 	pushAppData<lim::AppImGuiTest>();
 	pushAppData<lim::AppICP>();
@@ -89,7 +88,6 @@ int main()
 	pushAppData<lim::AppNano>();
 	pushAppData<lim::AppKinematics>();
 	pushAppData<lim::AppFluid>();
-	pushAppData<lim::AppModelViewer>();
 	pushAppData<lim::AppShaderToy>();
 
 	_selected_app_idx = 0;

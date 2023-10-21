@@ -48,11 +48,11 @@ namespace lim
 		ground.my_textures.push_back(new Texture());
 		ground.my_textures.back()->initFromImageAuto("assets/images/uv_grid.jpg");
 		ground.my_materials.push_back(new Material());
-		ground.my_materials.back()->Kd = {0,1,0,1};
+		ground.my_materials.back()->Kd = {0,1,0};
 		ground.my_materials.back()->map_Kd = ground.my_textures.back();
 		ground.my_materials.back()->map_Flags |= Material::MF_Kd;
 		ground.my_meshes.push_back(new MeshPlane());
-		ground.root.addMesh(ground.my_meshes.back(), ground.my_materials.back());
+		ground.root.addMeshWithMat(ground.my_meshes.back(), ground.my_materials.back());
 		ground.position = {0, 0, 0};
 		ground.scale = {10, 1, 10};
 		ground.updateModelMat();

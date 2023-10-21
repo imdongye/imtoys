@@ -1,42 +1,46 @@
 #version 410 core
-
-layout(location=0) out vec4 fragColor;
+out vec4 FragColor;
 
 in vec3 wPos;
 in vec3 wNor;
 in vec2 mUv;
 
-/* global const */
-const float gamma = 2.2f;
-
-/* camera */
+uniform vec3 lightPos;
+uniform vec3 lightColor;
+uniform float lightInt;
 uniform vec3 cameraPos;
-uniform mat4 viewPat;
-uniform mat4 projMat;
 
-/* light */
-uniform vec3 lightPos = vec3(1,1,0);
-uniform vec3 lightColor = vec3(1);
-uniform float lightInt = 0.8;
-uniform int shadowEnabled = 0;
-uniform mat4 shadowVP = mat4(1);
-uniform sampler2D map_Shadow;
-
-/* matarial */
-uniform vec4 Kd;
-uniform vec4 Ks;
+uniform vec3 Kd;
+uniform vec3 Ks;
 uniform vec3 Ka;
 uniform vec3 Ke;
 uniform vec3 Tf;
+
+uniform float d;
+uniform float Tr;
+uniform float Ns;
 uniform float Ni;
+uniform float roughness;
+
 uniform int map_Flags;
+
 uniform sampler2D map_Kd;
 uniform sampler2D map_Ks;
 uniform sampler2D map_Ka;
 uniform sampler2D map_Ns;
 uniform sampler2D map_Bump;
-uniform float texDelta = 0.00001;
-uniform float bumpHeight = 100;
+uniform float texDelta;
+uniform float bumpHeight;
+
+const float PI = 3.1415926535;
+const int MF_None   = 0;
+const int MF_Kd     = 1<<0;
+const int MF_Ks     = 1<<1;
+const int MF_Ka     = 1<<2;
+const int MF_Ns     = 1<<3;
+const int MF_Height = 1<<4;
+const int MF_Nor    = 1<<5;
+
 
 mat3 getTBN( vec3 N ) {
 	vec3 Q1 = dFdx(wPos), Q2 = dFdy(wPos);
@@ -48,14 +52,14 @@ mat3 getTBN( vec3 N ) {
 
 void main(void)
 {
-    fragColor = vec4(0,0,0,1);
+    FragColor = vec4(0,0,0,1);
     if( (map_Flags&(1<<4)) > 0 ) {
-	    fragColor += vec4(1,0,0,0); // bump
+	    FragColor += vec4(1,0,0,0); // bump
     }
     if( (map_Flags&(1<<5)) > 0 ) {
-	    fragColor += vec4(0,1,0,0); // nor
+	    FragColor += vec4(0,1,0,0); // nor
     }
 	if( (map_Flags&(1<<0)) > 0 ) {
-	    fragColor += vec4(0,0,1,0); // Kd
+	    FragColor += vec4(0,0,1,0); // Kd
     }
 }

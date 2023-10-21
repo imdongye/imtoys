@@ -25,6 +25,8 @@ namespace lim
 
 		ProgramReloadable program;
 		Light light;
+		Model light_model;
+
 	public:
 		AppModelViewer();
 		~AppModelViewer();

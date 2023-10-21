@@ -21,6 +21,7 @@ namespace lim
 		default_prog.name = "defualt";
 		default_prog.attatch("mvp.vs").attatch("ndv.fs").link();
 		default_material.prog = &default_prog;
+		default_material.set_prog = [](const Program&){};
 	}
 	AssetLib::~AssetLib()
 	{

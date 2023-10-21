@@ -36,10 +36,10 @@ namespace lim
         glm::vec3 Ka = {0.2f, 0.2f, 0.2f};    // ambient
         glm::vec3 Ke = {0.f, 0.f, 0.f};       // emission
         glm::vec3 Tf = {0.f, 0.f, 0.f};       // transmission
-        float d = 1.f;                        // non-transparency
-        float Tr = 0.f;                       // transparency
-        float Ns = 100.f;                     // shininess
-        float Ni     = 1.45f;                 // index of refraction
+        float d         = 1.f;                // opacity non-transparency
+        float Tr        = 0.f;                // transparency
+        float Ns        = 100.f;              // shininess
+        float Ni        = 1.45f;              // index of refraction
         float roughness = 0.3f;               // brdf param
 
         int map_Flags = 0;
@@ -53,7 +53,7 @@ namespace lim
         float texDelta = 0.00001f;
 
         Program* prog = nullptr;
-		std::function<void(const Program&)> set_prog = [](const Program& p){};
+		std::function<void(const Program&)> set_prog;
     };
 }
 #endif

@@ -70,3 +70,4 @@ OpenGL ID 가 들어가거나 삭제해야할 객체포인터를 맴버로 가�
 
 작성방법 : https://learn.microsoft.com/en-us/cpp/cpp/move-constructors-and-move-assignment-operators-cpp?view=msvc-170&redirectedfrom=MSDN
 
+https://en.wikipedia.org/wiki/Fail-fast

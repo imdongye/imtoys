@@ -55,6 +55,7 @@ namespace lim
 {
     void log::pure(const char* fmt, ...)
     {
+        appendHead("");
         int start = buf.size();
         va_list args;
         va_start(args, fmt);
