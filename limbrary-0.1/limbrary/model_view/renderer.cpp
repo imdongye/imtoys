@@ -6,6 +6,65 @@
 using namespace std;
 using namespace lim;
 
+
+namespace lim
+{
+    void Scene::addModel(const Model* md)
+    {
+        models.push_back(md);
+    }
+    void Scene::addLight(const Light* lit)
+    {
+        lights.push_back(lit);
+    }
+    void Scene::addOwnModel(Model* md)
+    {
+        models.push_back(md);
+        my_mds.push_back(md);
+    }
+    void Scene::addOwnLight(Light* lit)
+    {
+        lights.push_back(lit);
+        my_lits.push_back(lit);
+    }
+    Scene::Scene()
+    {    
+    }
+    Scene::Scene(Scene&& src) noexcept
+        : my_mds(std::move(src.my_mds))
+        , models(std::move(src.models))
+        , lights(std::move(src.lights))
+    {
+    }
+    Scene& Scene::operator=(Scene&& src) noexcept {
+        if(this==&src)
+            return *this;
+        for( const Model* md: my_mds ){
+            delete md;
+        }
+        my_mds.clear();
+        for( const Light* lit: my_lits ){
+            delete lit;
+        }
+        my_lits.clear();
+
+        my_mds = std::move(src.my_mds);
+        models = std::move(src.models);
+        my_lits = std::move(src.my_lits);
+        lights = std::move(src.lights);
+
+        return *this;
+    }
+    Scene::~Scene() noexcept {
+        for( const Model* md: my_mds ){
+            delete md;
+        }
+        for( const Light* lit: my_lits ){
+            delete lit;
+        }
+    }
+}
+
 namespace
 {
     inline int bindLightToProg(const Program& prog, const Light& lit, int activeSlot)
@@ -260,33 +319,3 @@ namespace lim
 
 
 
-namespace lim
-{
-    Scene::Scene()
-    {    
-    }
-    Scene::Scene(Scene&& src) noexcept
-        : my_mds(std::move(src.my_mds))
-        , models(std::move(src.models))
-        , lights(std::move(src.lights))
-    {
-    }
-    Scene& Scene::operator=(Scene&& src) noexcept {
-        if(this==&src)
-            return *this;
-        for( const Model* md: my_mds ){
-            delete md;
-        }
-        my_mds.clear();
-        models = std::move(src.models);
-        my_mds = std::move(src.my_mds);
-        lights = std::move(src.lights);
-        return *this;
-    }
-    Scene::~Scene() noexcept {
-        for( const Model* md: my_mds ){
-            delete md;
-        }
-        my_mds.clear();
-    }
-}

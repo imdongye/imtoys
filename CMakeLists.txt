@@ -206,7 +206,7 @@ add_custom_target(assets ALL SOURCES ${asset_files})
 source_group(TREE "${CMAKE_SOURCE_DIR}/main/assets" FILES ${asset_files})
 
 ### main proj ###
-file(GLOB_RECURSE main_files #CONFIGURE_DEPENDS 
+file(GLOB_RECURSE main_files CONFIGURE_DEPENDS 
     ${CMAKE_SOURCE_DIR}/main/*.cpp
     ${CMAKE_SOURCE_DIR}/main/*.h 
     ${CMAKE_SOURCE_DIR}/main/*.hpp

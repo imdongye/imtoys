@@ -7,6 +7,8 @@
 #define __app_kinematics_h_
 
 #include <limbrary/application.h>
+#include <limbrary/model_view/renderer.h>
+#include <limbrary/model_view/camera_man.h>
 
 namespace lim
 {
@@ -17,7 +19,8 @@ namespace lim
 		inline static constexpr CStr APP_DIR  = "im_anims";
 		inline static constexpr CStr APP_DESCRIPTION = "hello, world";
 	private:
-		glm::vec2 win_pos;
+		Scene scene;
+		ViewportWithCamera viewport;
 
 	public:
 		AppKinematics();
@@ -25,7 +28,6 @@ namespace lim
 	private:
 		virtual void update() final;
 		virtual void renderImGui() final;
-		void processInput();
 	};
 }
 

@@ -2,11 +2,9 @@
 
 2023-09-10 / imdongye
 
-Note:
-my_mds에 넣어두면 해당씬에 생명주기가 종속되어 같이삭제됨.
-
 Scene
 renderer에서 사용하기위한 단순 컨테이너
+my_mds에 넣어두면 해당씬에 생명주기가 종속되어 같이삭제됨.
 
 Todo: 
 1. 멀티라이트
@@ -29,8 +27,14 @@ namespace lim
 	{
   	public:
 		std::vector<Model*> my_mds;
+        std::vector<Light*> my_lits;
 		std::vector<const Model*> models;
 		std::vector<const Light*> lights;
+    public:
+        void addModel(const Model* md);
+        void addLight(const Light* lit);
+        void addOwnModel(Model* md);
+        void addOwnLight(Light* lit);
   	private:
 		Scene(const Scene&) = delete;
 		Scene& operator=(const Scene&) = delete;

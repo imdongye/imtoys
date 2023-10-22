@@ -177,5 +177,6 @@ void main() {
 
 	// gamma correction
 	outColor.rgb = tonemap(outColor.rgb,mat3(1),2.4);
+
 	FragColor = vec4(outColor, albedo.a);
 }

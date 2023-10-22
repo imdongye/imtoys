@@ -17,6 +17,7 @@
 #include "im_tests/app_gen_mesh.h"
 #include "im_tests/app_font.h"
 #include "im_tests/app_astar.h"
+#include "im_tests/app_moving_window.h"
 #include "im_simplification/app_simplification.h"
 #include "im_pbr/app_pbr.h"
 #include "im_npr/app_hatching.h"
@@ -48,6 +49,7 @@ static void drawAppSellector()
 			isSelectorOpened = false;
 		}
 	}
+	ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 	if( ImGui::BeginPopupModal("AppSelector", &isSelectorOpened, ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoResize) ) {
 		for( int i = 0; i<_app_names.size(); i++ ) {
 			if( ImGui::Button(_app_names[i]) ) {
@@ -81,6 +83,7 @@ int main()
 	pushAppData<lim::AppGenMesh>();
 	pushAppData<lim::AppFont>();
 	pushAppData<lim::AppAstar>();
+	pushAppData<lim::AppMovingWindow>();
 	pushAppData<lim::AppSimplification>();
 	pushAppData<lim::AppPbr>();
 	pushAppData<lim::AppHatching>();
