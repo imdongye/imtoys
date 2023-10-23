@@ -167,7 +167,7 @@ namespace lim
 					isInfoChanged = true; 
 				}
 				if( tInfo.model_idx==2 ) {
-					static const char* dStrs[]={"BlinnPhong", "GGX"};
+					static const char* dStrs[]={"BlinnPhong", "GGX", "Beckmann"};
 					if( ImGui::Combo("D", &tInfo.D_idx, dStrs, IM_ARRAYSIZE(dStrs)) ) { isInfoChanged = true; }
 					static const char* gStrs[]={"CookTorrance"};
 					if( ImGui::Combo("G", &tInfo.G_idx, gStrs, IM_ARRAYSIZE(gStrs)) ) { isInfoChanged = true; }

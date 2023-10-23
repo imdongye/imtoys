@@ -84,9 +84,6 @@ vec3 tonemap( vec3 rgb, mat3 csc, float gamma ){
 //*****************************************
 vec3 N, w_i, w_o, R, H;
 
-
-//vec3 BlinnPhongBRDF( vec3)
-
 vec3 LambertianBRDF() { // Diffuse
 	return vec3(1/PI);
 }
@@ -105,11 +102,22 @@ float BlinnPhongDistribution(float r) {
 	float normalizeFactor = 1/(PI*a*a); // for integral to 1
 	return normalizeFactor * pow( max(0,dot(N, H)), k );
 }
-float GGX_Distribution(float r) { // GGX
+float GGX_Distribution(float r) {
 	float a = r*r;
 	float aa = a*a;
 	float theta = acos(dot(N,H));
 	return aa/( PI * pow(cos(theta),4) * pow(aa+pow(tan(theta),2),2) );
+}
+float BeckmannDistrobution(float r) 
+{
+	float a = r*r;
+	float aa = max(a*a, 0.0000001);
+	float cosTheta = max(dot(N, H), 0.0000001);
+    float cos2Theta = cosTheta*cosTheta;
+	float cos4Theta = cos2Theta*cos2Theta;
+	float tan2Theta = (cos2Theta-1)/cos2Theta;
+	float D = exp(tan2Theta/aa) / (PI*aa*cos4Theta);
+	return D;
 }
 float CookTorranceGeometry() { // Cook-Torrance
 	float t1 = 2*dot(N,H)*dot(N,w_o)/dot(w_o,H);
@@ -127,6 +135,7 @@ vec3 CookTorranceBRDF() {
 	switch(D_idx) {
 		case 0: D = BlinnPhongDistribution(roughness); break;
 		case 1: D = GGX_Distribution(roughness); break;
+		case 2: D = BeckmannDistrobution(roughness); break;
 	}
 	switch(G_idx) {
 		case 0: G = CookTorranceGeometry(); break;
