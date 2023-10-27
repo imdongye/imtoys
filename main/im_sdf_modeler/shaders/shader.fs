@@ -11,16 +11,16 @@ uniform vec3 cameraPivot;
 const float PI = 3.1415926535;
 
 
-float distFromSphere(in vec3 p, in vec3 c, float r) {
+float distFromSphere(const in vec3 p, const in vec3 c, float r) {
     return length(p-c) - r;
 }
 
-float getDistFromWorld(in vec3 p) {
+float getDistFromWorld(const in vec3 p) {
     float sphere0 = distFromSphere(p, vec3(0), 1.0);
     return sphere0;
 }
 
-vec3 getNormal(in vec3 p) {
+vec3 getNormal(const in vec3 p) {
     const vec2 e = vec2(.01, 0);
     float dDdx = getDistFromWorld(p+e.xyy) - getDistFromWorld(p-e.xyy);
     float dDdy = getDistFromWorld(p+e.yxy) - getDistFromWorld(p-e.yxy);
@@ -28,7 +28,7 @@ vec3 getNormal(in vec3 p) {
     return normalize(vec3(dDdx, dDdy, dDdz));
 }
 
-vec3 rayMarch(in vec3 ro, in vec3 rd) {
+vec3 rayMarch(const in vec3 ro, const in vec3 rd) {
     const int NR_STEPS = 32;
     const float MIN_HIT_DIST = 0.001;
     const float MAX_FAR_DIST = 1000.0;

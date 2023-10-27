@@ -24,3 +24,4 @@ main/imhdr/images
 main/exports/*
 !main/exports/imgui.ini
 main/imgui.ini
+main/im_shadertoy/temp/temp.fs
