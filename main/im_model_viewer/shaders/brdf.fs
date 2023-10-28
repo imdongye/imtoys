@@ -26,6 +26,7 @@ uniform float Tr;
 uniform float Ns;
 uniform float Ni;
 uniform float roughness;
+uniform float metalness = 0.0;
 uniform vec3 F0 = vec3(1);
 
 uniform int model_idx = 0;
@@ -124,12 +125,14 @@ float CookTorranceGeometry() { // Cook-Torrance
 	float t2 = 2*dot(N,H)*dot(N,w_i)/dot(w_o,H);
 	return min(1, min(t1, t2));
 }
-vec3 SchlickFresnel(vec3 F0) { // Schlick’s
+vec3 SchlickFresnel(vec3 F0) { // Schlick’s // 다시
 	float theta = dot(N, H);
 	// theta = dot(R, w_o);
 	return F0+(vec3(1)-F0)*pow(1-cos(theta), 5);
 }
-vec3 CookTorranceBRDF() {
+// 오렌나야
+
+vec3 CookTorranceBRDF(float roughness, vec3 F0) {
 	float D, G;
 	vec3 F;
 	switch(D_idx) {
@@ -146,13 +149,15 @@ vec3 CookTorranceBRDF() {
 	//return F / (4*dot(w_i,N)*dot(w_o,N));
 	return D*G*F / (4*dot(w_i,N)*dot(w_o,N));
 }
-vec3 brdf() {
+vec3 brdf( vec3 baseColor, float roughness, float metalness, vec3 F0 ) {
 	vec3 diffuse, specular;
-	diffuse = LambertianBRDF();
+
+	diffuse = baseColor * mix(LambertianBRDF(), vec3(0), metalness);
+
 	switch(model_idx) {
 		case 0: specular = PhongBRDF(); break;
 		case 1: specular = BlinnPhongBRDF(); break;
-		case 2: specular = CookTorranceBRDF(); break;
+		case 2: specular = CookTorranceBRDF(roughness, F0); break;
 	}
 	return diffuse+specular;
 }
@@ -173,12 +178,12 @@ void main() {
 	R = normalize(2*dot(N, w_i)*N-w_i);
 	H = normalize((w_i+w_o)/2);
 
-	vec4 albedo = vec4(Kd, d);
+	vec3 baseColor = Kd;
 	if( (map_Flags & MF_Kd)>0 ) {
-		albedo = texture( map_Kd, mUv );
+		baseColor = texture( map_Kd, mUv ).rgb;
 	}
 	vec3 Li = lightInt*lightColor/dot(toLight,toLight); // 빛은 거리 제곱에 반비례함
-	vec3 outColor = emission() + brdf() * albedo.rgb * Li * dot(N,w_i);
+	vec3 outColor = emission() + brdf( baseColor.rgb, roughness, metalness, F0 ) * Li * dot(N,w_i);
 
 	//debug
 	//outColor = vec3((map_Flags & MF_Kd));
@@ -187,5 +192,5 @@ void main() {
 	// gamma correction
 	outColor.rgb = tonemap(outColor.rgb,mat3(1),2.4);
 
-	FragColor = vec4(outColor, albedo.a);
+	FragColor = vec4(outColor, d);
 }

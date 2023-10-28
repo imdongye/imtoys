@@ -4,7 +4,7 @@
 
 and there are several toys that use limbrary
 
--   model simplifier, normal map baker https://wheat-papyrus-835.notion.site/Simplification-d21e692652104cb39ce3befde034fcd2
+-   model simplifier, normal map baker [report link](https://imdongye.notion.site/Simplification-d21e692652104cb39ce3befde034fcd2?pvs=4)
 
 -   color aware image viewer
 
@@ -24,6 +24,7 @@ The reason why inherit an application class and write a program is because when 
 brew install cmake OR install @ https://cmake.org/download/
 
 git clone https://github.com/imdongye/imtoys.git
+cd imtoys
 git submodule init
 git submodule update
 
@@ -33,12 +34,12 @@ cmake --build build --config Debug
 
 ## Run / Test
 
+The program must run in the main folder.
+
+If you want to use the pre-maked imgui window settings, Copy main/exports/imgui.ini into the main folder.
+
 ```
-# Terminal
 cd main; ../build/Debug/executable/imtoys_exe; cd ..
-# VSCode
-cmake와 c/c++ 확장설치 -> 왼쪽 실행및 디버그탭 -> 구성 선택 -> f5
-    or 하단 딱정벌레
 ```
 
 ## Dependency
