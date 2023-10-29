@@ -8,8 +8,11 @@
 namespace lim
 {
 	AppSdfModeler::AppSdfModeler(): AppBase(1200, 780, APP_NAME)
-		, viewport("AnimTester", new FramebufferMs(8))
+		, viewport("AnimTester", new Framebuffer()) // 멀티셈플링 동작 안함.
 	{
+		viewport.camera.pivot = glm::vec3(0,1,0);
+		viewport.camera.position = glm::vec3(0,1,5);
+		viewport.camera.updateViewMat();
 		prog.name = "sdf and ray marching";
 		prog.home_dir = APP_DIR;
 		prog.attatch("canvas.vs").attatch("shader.fs").link();
@@ -29,6 +32,8 @@ namespace lim
 		Camera& cam = viewport.camera;
 		viewport.getFb().bind();
 		prog.use();
+		prog.setUniform("lightPos", light.position);
+		prog.setUniform("lightInt", light.intensity);
 		prog.setUniform("cameraAspect", cam.aspect);
 		prog.setUniform("cameraFovy", cam.fovy);
 		prog.setUniform("cameraOrthWidth", 0.f);

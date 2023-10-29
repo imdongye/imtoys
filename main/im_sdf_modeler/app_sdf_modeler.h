@@ -19,6 +19,7 @@ namespace lim
 		inline static constexpr CStr APP_DIR  = "im_sdf_modeler";
 		inline static constexpr CStr APP_DESCRIPTION = "hello, world";
 	private:
+		Light light;
 		ProgramReloadable prog;
 		ViewportWithCamera viewport;
 
