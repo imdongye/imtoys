@@ -3,7 +3,7 @@
 in vec3 wPos;
 in vec3 wNor;
 in vec2 mUv;
-layout(location=0) out vec4 fragColor;
+layout(location=0) out vec4 FragColor;
 
 uniform vec2 uvScale = vec2(1.f);
 uniform sampler2D uvgridTex;
@@ -13,7 +13,7 @@ uniform vec3 lightColor;
 uniform float lightInt;
 uniform vec3 cameraPos;
 
-uniform vec3 Kd;
+uniform vec3 baseColor;
 
 void main() {
 	vec3 FaceN = normalize(cross(dFdx(wPos), dFdy(wPos)));
@@ -34,5 +34,5 @@ void main() {
 	//outColor = vec3(1);
 
 	outColor = pow(outColor, vec3(1/2.2f));
-	fragColor = vec4(outColor,1);
+	FragColor = vec4(outColor,1);
 }

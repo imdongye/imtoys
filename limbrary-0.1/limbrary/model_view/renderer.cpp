@@ -83,50 +83,68 @@ namespace
     }
     inline int bindMatToProg(const Program& prog, const Material& mat, int activeSlot)
     {
-        prog.setUniform("Kd", mat.Kd);
-        prog.setUniform("Ks", mat.Ks);
-        prog.setUniform("Ka", mat.Ka);
-        prog.setUniform("Ke", mat.Ke);
-        prog.setUniform("Tf", mat.Tf);
+        prog.setUniform("baseColor", mat.baseColor);
+        prog.setUniform("specColor", mat.specColor);
+        prog.setUniform("ambientColor", mat.ambientColor);
+        prog.setUniform("emissionColor", mat.emissionColor);
 
-        prog.setUniform("d", mat.d);
-        prog.setUniform("Tr", mat.Tr);
-        prog.setUniform("Ns", mat.Ns);
-        prog.setUniform("Ni", mat.Ni);
+        prog.setUniform("transmission", mat.transmission);
+        prog.setUniform("refraciti", mat.refraciti);
+        prog.setUniform("opacity", mat.opacity);
+        prog.setUniform("shininess", mat.shininess);
         prog.setUniform("roughness", mat.roughness);
+        prog.setUniform("metalness", mat.metalness);
+        prog.setUniform("f0", mat.f0);
+        prog.setUniform("bumpHeight", mat.metalness);
+        prog.setUniform("texDelta", mat.texDelta);
 
 
         prog.setUniform("map_Flags", mat.map_Flags);
         
-        if( mat.map_Kd ) {
+        if( mat.map_BaseColor ) {
             glActiveTexture(GL_TEXTURE0 + activeSlot);
-            glBindTexture(GL_TEXTURE_2D, mat.map_Kd->tex_id);
-            prog.setUniform("map_Kd", activeSlot++);
+            glBindTexture(GL_TEXTURE_2D, mat.map_BaseColor->tex_id);
+            prog.setUniform("map_BaseColor", activeSlot++);
         }
-        if( mat.map_Ks ) {
+        if( mat.map_Specular ) {
             glActiveTexture(GL_TEXTURE0 + activeSlot);
-            glBindTexture(GL_TEXTURE_2D, mat.map_Ks->tex_id);
-            prog.setUniform("map_Ks", activeSlot++);
-        }
-        if( mat.map_Ka ) {
-            glActiveTexture(GL_TEXTURE0 + activeSlot);
-            glBindTexture(GL_TEXTURE_2D, mat.map_Ka->tex_id);
-            prog.setUniform("map_Ka", activeSlot++);
-        }
-        if( mat.map_Ns ) {
-            glActiveTexture(GL_TEXTURE0 + activeSlot);
-            glBindTexture(GL_TEXTURE_2D, mat.map_Ns->tex_id);
-            prog.setUniform("map_Ns", activeSlot++);
+            glBindTexture(GL_TEXTURE_2D, mat.map_Specular->tex_id);
+            prog.setUniform("map_Specular", activeSlot++);
         }
         if( mat.map_Bump ) {
             glActiveTexture(GL_TEXTURE0 + activeSlot);
             glBindTexture(GL_TEXTURE_2D, mat.map_Bump->tex_id);
             prog.setUniform("map_Bump", activeSlot++);
 
-            if( mat.map_Flags & Material::MF_Height ) {
+            if( mat.map_Flags & Material::MF_HEIGHT ) {
                 prog.setUniform("texDelta", mat.texDelta);
                 prog.setUniform("bumpHeight", mat.bumpHeight);
             }
+        }
+        if( mat.map_AmbOcc ) {
+            glActiveTexture(GL_TEXTURE0 + activeSlot);
+            glBindTexture(GL_TEXTURE_2D, mat.map_AmbOcc->tex_id);
+            prog.setUniform("map_AmbOcc", activeSlot++);
+        }
+        if( mat.map_Roughness ) {
+            glActiveTexture(GL_TEXTURE0 + activeSlot);
+            glBindTexture(GL_TEXTURE_2D, mat.map_Roughness->tex_id);
+            prog.setUniform("map_Roughness", activeSlot++);
+        }
+        if( mat.map_Metalness ) {
+            glActiveTexture(GL_TEXTURE0 + activeSlot);
+            glBindTexture(GL_TEXTURE_2D, mat.map_Metalness->tex_id);
+            prog.setUniform("map_Metalness", activeSlot++);
+        }
+        if( mat.map_Emission ) {
+            glActiveTexture(GL_TEXTURE0 + activeSlot);
+            glBindTexture(GL_TEXTURE_2D, mat.map_Emission->tex_id);
+            prog.setUniform("map_Emission", activeSlot++);
+        }
+        if( mat.map_Opacity ) {
+            glActiveTexture(GL_TEXTURE0 + activeSlot);
+            glBindTexture(GL_TEXTURE_2D, mat.map_Opacity->tex_id);
+            prog.setUniform("map_Opacity", activeSlot++);
         }
         return activeSlot;
     }

@@ -5,41 +5,53 @@ in vec3 wPos;
 in vec3 wNor;
 in vec2 mUv;
 
+const float PI = 3.1415926535;
+const int MF_NONE       = 0;
+const int MF_BASE_COLOR = 1<<0;
+const int MF_SPECULAR   = 1<<1;
+const int MF_HEIGHT     = 1<<2;
+const int MF_NOR        = 1<<3;
+const int MF_AMB_OCC    = 1<<4;
+const int MF_ROUGHNESS  = 1<<5;
+const int MF_METALNESS  = 1<<6;
+const int MF_EMISSION   = 1<<7;
+const int MF_Opacity    = 1<<8;
+const int MF_MR         = 1<<9;
+const int MF_ARM        = 1<<1;
+const int MF_SHININESS  = 1<<1;
+
+uniform vec3 baseColor;
+uniform vec3 specColor;
+uniform vec3 ambientColor;
+uniform vec3 emissionColor;
+
+uniform float transmission;
+uniform float refraciti;
+uniform float opacity;
+uniform float shininess;
+uniform float roughness;
+uniform float metalness;
+uniform vec3 f0 = vec3(1);
+
+uniform int map_Flags;
+
+uniform sampler2D map_BaseColor;
+uniform sampler2D map_Specular;
+uniform sampler2D map_Bump;
+uniform sampler2D map_AmbOcc;
+uniform sampler2D map_Roughness;
+uniform sampler2D map_Metalness;
+uniform sampler2D map_Emission;
+uniform sampler2D map_Opacity;
+
+uniform float texDelta;
+uniform float bumpHeight;
+
+
 uniform vec3 lightPos;
 uniform vec3 lightColor;
 uniform float lightInt;
 uniform vec3 cameraPos;
-
-uniform vec3 Kd;
-uniform vec3 Ks;
-uniform vec3 Ka;
-uniform vec3 Ke;
-uniform vec3 Tf;
-
-uniform float d;
-uniform float Tr;
-uniform float Ns;
-uniform float Ni;
-uniform float roughness;
-
-uniform int map_Flags;
-
-uniform sampler2D map_Kd;
-uniform sampler2D map_Ks;
-uniform sampler2D map_Ka;
-uniform sampler2D map_Ns;
-uniform sampler2D map_Bump;
-uniform float texDelta;
-uniform float bumpHeight;
-
-const float PI = 3.1415926535;
-const int MF_None   = 0;
-const int MF_Kd     = 1<<0;
-const int MF_Ks     = 1<<1;
-const int MF_Ka     = 1<<2;
-const int MF_Ns     = 1<<3;
-const int MF_Height = 1<<4;
-const int MF_Nor    = 1<<5;
 
 
 mat3 getTBN( vec3 N ) {

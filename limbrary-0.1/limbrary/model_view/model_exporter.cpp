@@ -17,6 +17,7 @@ edit from : https://github.com/assimp/assimp/issues/203
 #include <assimp/LogStream.hpp>
 #include <assimp/Logger.hpp>
 #include <assimp/DefaultLogger.hpp>
+#include <assimp/GltfMaterial.h>
 #include <filesystem>
 #include <stb_image_write.h>
 #include <GLFW/glfw3.h>
@@ -74,62 +75,92 @@ namespace
 		aiString tempStr;
 		float tempFloat;
 
-		temp3d = toAiC(src.Kd);
-		aiMat->AddProperty(&temp3d, 1, AI_MATKEY_COLOR_DIFFUSE);
+		if(src.factor_Flags & Material::FF_BASE_COLOR) {
+			temp3d = toAiC(src.baseColor);
+			aiMat->AddProperty(&temp3d, 1, AI_MATKEY_COLOR_DIFFUSE);
+		}
+		if(src.factor_Flags & Material::FF_SPECULAR) {
+			temp3d = toAiC(src.specColor);
+			aiMat->AddProperty(&temp3d, 1, AI_MATKEY_COLOR_SPECULAR);
+		}
+		// pass AI_MATKEY_SHININESS_STRENGTH
+		if(src.factor_Flags & Material::FF_AMBIENT) {
+			temp3d = toAiC(src.ambientColor);
+			aiMat->AddProperty(&temp3d, 1, AI_MATKEY_COLOR_AMBIENT);
+		}
+		if(src.factor_Flags & Material::FF_EMISSION) {
+			temp3d = toAiC(src.emissionColor);
+			aiMat->AddProperty(&temp3d, 1, AI_MATKEY_COLOR_EMISSIVE);
+		}
+		if(src.factor_Flags & Material::FF_TRANSMISSION) {
+			tempFloat = src.transmission;
+			aiMat->AddProperty(&tempFloat, 1, AI_MATKEY_TRANSMISSION_FACTOR);
+		}
+		if(src.factor_Flags & Material::FF_REFRACITI) {
+			tempFloat = src.refraciti;
+			aiMat->AddProperty(&tempFloat, 1, AI_MATKEY_REFRACTI);
+		}
+		if(src.factor_Flags & Material::FF_OPACITY) {
+			tempFloat = src.opacity;
+			aiMat->AddProperty(&tempFloat, 1, AI_MATKEY_OPACITY);
+		}
+		// pass AI_MATKEY_SHININESS
+		if(src.factor_Flags & Material::FF_ROUGHNESS) {
+			tempFloat = src.opacity;
+			aiMat->AddProperty(&tempFloat, 1, AI_MATKEY_ROUGHNESS_FACTOR);
+		}
+		if(src.factor_Flags & Material::FF_METALNESS) {
+			tempFloat = src.metalness;
+			aiMat->AddProperty(&tempFloat, 1, AI_MATKEY_METALLIC_FACTOR);
+		}
 
-		temp3d = toAiC(src.Ks);
-		aiMat->AddProperty(&temp3d, 1, AI_MATKEY_COLOR_SPECULAR);
-
-		temp3d = toAiC(src.Ka);
-		aiMat->AddProperty(&temp3d, 1, AI_MATKEY_COLOR_AMBIENT);
-		
-		temp3d = toAiC(src.Ke);
-		aiMat->AddProperty(&temp3d, 1, AI_MATKEY_COLOR_EMISSIVE);
-
-		temp3d = toAiC(src.Tf);
-		aiMat->AddProperty(&temp3d, 1, AI_MATKEY_COLOR_TRANSPARENT);
-
-		tempFloat = src.d;
-		aiMat->AddProperty(&tempFloat, 1, AI_MATKEY_OPACITY);
-
-		tempFloat = src.Ns;
-		aiMat->AddProperty(&tempFloat, 1, AI_MATKEY_SHININESS);
-
-		tempFloat = src.Ni;
-		aiMat->AddProperty(&tempFloat, 1, AI_MATKEY_REFRACTI);
-
-		tempFloat = src.roughness;
-		aiMat->AddProperty(&tempFloat, 1, AI_MATKEY_ROUGHNESS_FACTOR);
-
-		// AI_MATKEY_SHININESS_STRENGTH
-
-		if( src.map_Kd != nullptr ) {
-			tempStr = aiString(src.map_Kd->path.data());
+		if( src.map_BaseColor ) {
+			tempStr = aiString(src.map_BaseColor->path.data());
 			aiMat->AddProperty( &tempStr, AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE, 0) );
 		}
-		
-
-		if( src.map_Ks != nullptr ) {
-			tempStr = aiString(src.map_Ks->path.data());
+		if( src.map_Specular ) {
+			tempStr = aiString(src.map_Specular->path.data());
 			aiMat->AddProperty( &tempStr, AI_MATKEY_TEXTURE(aiTextureType_SPECULAR, 0) );
 		}
-
-		if( src.map_Ka != nullptr ) {
-			tempStr = aiString(src.map_Ka->path.data());
-			aiMat->AddProperty( &tempStr, AI_MATKEY_TEXTURE(aiTextureType_AMBIENT, 0) );
-		}
-		
-		if( src.map_Bump != nullptr ) {
+		if( src.map_Bump ) {
 			tempStr = aiString(src.map_Bump->path.data());
-			if( src.map_Flags & lim::Material::MF_Nor ) {
+			if( src.map_Flags & lim::Material::MF_NOR ) {
 				aiMat->AddProperty( &tempStr, AI_MATKEY_TEXTURE(aiTextureType_NORMALS, 0) );
 			}
-			else if( src.map_Flags & lim::Material::MF_Height ) {
+			else if( src.map_Flags & lim::Material::MF_HEIGHT ) {
 				aiMat->AddProperty( &tempStr, AI_MATKEY_TEXTURE(aiTextureType_HEIGHT, 0) );
 			}
 			else {
 				log::err("map_Bump is not nullptr but flags not defined");
 			}
+		}
+		if( src.map_AmbOcc ) {
+			tempStr = aiString(src.map_AmbOcc->path.data());
+			aiMat->AddProperty( &tempStr, AI_MATKEY_TEXTURE(aiTextureType_AMBIENT, 0) );
+		}
+		if( src.map_Roughness ) {
+			tempStr = aiString(src.map_Roughness->path.data());
+			if( src.map_Flags&Material::MF_ROUGHNESS ) {
+				aiMat->AddProperty( &tempStr, AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE_ROUGHNESS, 0) );
+			}
+			else if( src.map_Flags&Material::MF_SHININESS ) {
+				aiMat->AddProperty( &tempStr, AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE_ROUGHNESS, 0) );
+			}
+			else if( src.map_Flags&(Material::MF_MR|Material::MF_ARM) ) {
+				aiMat->AddProperty( &tempStr, AI_MATKEY_TEXTURE(aiTextureType_UNKNOWN, 0) );
+			}
+		}
+		if( src.map_Metalness ) {
+			tempStr = aiString(src.map_Metalness->path.data());
+			aiMat->AddProperty( &tempStr, AI_MATKEY_TEXTURE(aiTextureType_METALNESS, 0) );
+		}
+		if( src.map_Emission ) {
+			tempStr = aiString(src.map_Emission->path.data());
+			aiMat->AddProperty( &tempStr, AI_MATKEY_TEXTURE(aiTextureType_EMISSION_COLOR, 0) );
+		}
+		if( src.map_Opacity ) {
+			tempStr = aiString(src.map_Opacity->path.data());
+			aiMat->AddProperty( &tempStr, AI_MATKEY_TEXTURE(aiTextureType_OPACITY, 0) );
 		}
 
 		return aiMat;

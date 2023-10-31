@@ -3,7 +3,7 @@
 //  edit learnopengl code
 //
 // texture uniform sampler2d variable name rule
-// map_Kd, map_Kd1 ...
+// map_BaseColor, map_Kd1 ...
 // 
 //  TODO list:
 //  1. export
@@ -30,20 +30,29 @@ namespace
 	void correctMatTexLink( const Material& src,  Material& dst
 		, const std::vector<Texture*>& srcTexs, std::vector<Texture*>& dstTexs )
 	{
-		if( dst.map_Kd ) {
-			dst.map_Kd = dstTexs[findIdx(srcTexs, src.map_Kd)];
+		if( dst.map_BaseColor ) {
+			dst.map_BaseColor = dstTexs[findIdx(srcTexs, src.map_BaseColor)];
 		}
-		if( dst.map_Ks ) {
-			dst.map_Ks = dstTexs[findIdx(srcTexs, src.map_Ks)];
-		}
-		if( dst.map_Ka ) {
-			dst.map_Ka = dstTexs[findIdx(srcTexs, src.map_Ka)];
-		}
-		if( dst.map_Ns ) {
-			dst.map_Ns = dstTexs[findIdx(srcTexs, src.map_Ns)];
+		if( dst.map_Specular ) {
+			dst.map_Specular = dstTexs[findIdx(srcTexs, src.map_Specular)];
 		}
 		if( dst.map_Bump ) {
 			dst.map_Bump = dstTexs[findIdx(srcTexs, src.map_Bump)];
+		}
+		if( dst.map_AmbOcc ) {
+			dst.map_AmbOcc = dstTexs[findIdx(srcTexs, src.map_AmbOcc)];
+		}
+		if( dst.map_Roughness ) {
+			dst.map_Roughness = dstTexs[findIdx(srcTexs, src.map_Roughness)];
+		}
+		if( dst.map_Metalness ) {
+			dst.map_Metalness = dstTexs[findIdx(srcTexs, src.map_Metalness)];
+		}
+		if( dst.map_Emission ) {
+			dst.map_Emission = dstTexs[findIdx(srcTexs, src.map_Emission)];
+		}
+		if( dst.map_Opacity ) {
+			dst.map_Opacity = dstTexs[findIdx(srcTexs, src.map_Opacity)];
 		}
 	}
 }

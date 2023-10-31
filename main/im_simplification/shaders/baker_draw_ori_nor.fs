@@ -16,6 +16,21 @@ uniform sampler2D map_Bump;
 uniform float texDelta = 0.0001;
 uniform float bumpHeight = 100;
 
+const float PI = 3.1415926535;
+const int MF_NONE       = 0;
+const int MF_BASE_COLOR = 1<<0;
+const int MF_SPECULAR   = 1<<1;
+const int MF_HEIGHT     = 1<<2;
+const int MF_NOR        = 1<<3;
+const int MF_AMB_OCC    = 1<<4;
+const int MF_ROUGHNESS  = 1<<5;
+const int MF_METALNESS  = 1<<6;
+const int MF_EMISSION   = 1<<7;
+const int MF_Opacity    = 1<<8;
+const int MF_MR         = 1<<9;
+const int MF_ARM        = 1<<1;
+const int MF_SHININESS  = 1<<1;
+
 
 // Tangent, Bitangent, Normal
 mat3 getTBN( vec3 N ) {
@@ -44,7 +59,7 @@ void main(void)
 					- texture(map_Bump, mUv+vec2(0,-texDelta)).r;
 		tsNor = vec3(-Bu*bumpHeight, -Bv*bumpHeight, 1); // Todo: tangent space에서 노멀라이즈와 월드에서 노멀라이즈 비교
 	}
-	else if( (map_Flags & 1<<5) > 0 ) {
+	else if( (map_Flags & MF_NOR) > 0 ) {
 		tsNor = texture(map_Bump, mUv).xyz*2.0-vec3(1);
 	}
 	oriN = normalize(oriTBN*tsNor);

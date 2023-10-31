@@ -10,6 +10,21 @@ in vec3 wPos;
 in vec3 wNor;
 in vec2 mUv;
 
+const float PI = 3.1415926535;
+const int MF_NONE       = 0;
+const int MF_BASE_COLOR = 1<<0;
+const int MF_SPECULAR   = 1<<1;
+const int MF_HEIGHT     = 1<<2;
+const int MF_NOR        = 1<<3;
+const int MF_AMB_OCC    = 1<<4;
+const int MF_ROUGHNESS  = 1<<5;
+const int MF_METALNESS  = 1<<6;
+const int MF_EMISSION   = 1<<7;
+const int MF_Opacity    = 1<<8;
+const int MF_MR         = 1<<9;
+const int MF_ARM        = 1<<1;
+const int MF_SHININESS  = 1<<1;
+
 uniform int map_Flags = 0;
 uniform sampler2D map_Bump;
 uniform float texDelta = 0.0001;
@@ -36,11 +51,11 @@ void main(void)
 	mat3 TBN = getTBN( N );
     vec3 detailN;
 	
-	if( (map_Flags & 1<<5) > 0 ) {
+	if( (map_Flags & MF_NOR) > 0 ) {
 		vec3 tsNor = texture(map_Bump, mUv).rgb;
 		detailN = normalize(TBN*tsNor);
 	}
-	else if( (map_Flags & 1<<4) > 0 ) {
+	else if( (map_Flags & MF_HEIGHT) > 0 ) {
 		float Bu = texture(map_Bump, mUv+vec2(texDelta,0)).r
 						- texture(map_Bump, mUv+vec2(-texDelta,0)).r;
 		float Bv = texture(map_Bump, mUv+vec2(0,texDelta)).r

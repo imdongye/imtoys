@@ -13,9 +13,8 @@ uniform vec3 lightColor = vec3(1);
 uniform float lightInt = 0.8;
 uniform sampler2D map_Shadow;
 /* matarial */
-uniform float ambInt = 0.1;
 uniform int shininess = 20;
-uniform vec3 Kd = vec3(1,1,0);
+uniform vec3 baseColor = vec3(1,1,0);
 /* texture */
 
 /* etc */
@@ -38,7 +37,7 @@ float random(int i)
 }
 float shadowing()
 {
-	if( shadowEnabled < 0 ) return 1;
+	if( shadowEnabled < 0 ) return 1.f;
 
 	float shadowFactor = 1.0;
 	vec3 shadowClipPos = shadowFragPos.xyz/shadowFragPos.w;
@@ -68,7 +67,7 @@ float shadowing()
 
 	// 1이아니라 map_Shadow 최대값이어야함
 	// todo : texture최대값찾기
-	if( shadowTexPos.z>=1 ) return 1;
+	if( shadowTexPos.z>=1 ) return 1.f;
 
 	return shadowFactor;
 }
@@ -82,11 +81,11 @@ void main(void)
 
 	float visibility = shadowing();
 
-	vec4 albelo = vec4(Kd,1);
+	vec4 albelo = vec4(baseColor,1);
 
 	float lambertian = max(0, dot(N, L));
 	vec3 diffuse = lightInt*lambertian*albelo.rgb;
-	vec3 ambient = ambInt*albelo.rgb;
+	vec3 ambient = 0.1f*albelo.rgb;
 	vec3 specular = pow(max(0,dot(R,V)), shininess) * lambertian * vec3(1);
 	vec3 outColor = diffuse+ambient+specular;
 	outColor *= visibility;

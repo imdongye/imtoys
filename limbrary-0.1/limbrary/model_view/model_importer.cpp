@@ -18,8 +18,7 @@
 #include <assimp/LogStream.hpp>
 #include <assimp/Logger.hpp>
 #include <assimp/DefaultLogger.hpp>
-// https://stackoverflow.com/questions/54116869/how-do-i-load-roughness-metallic-map-with-assimp-using-gltf-format
-#include <assimp/material.h>
+#include <assimp/GltfMaterial.h>
 #include <GLFW/glfw3.h>
 #include <filesystem>
 
@@ -99,70 +98,107 @@ namespace
 
 		mat.prog = nullptr;
 
+		mat.factor_Flags = Material::FF_NONE;
 		if( aiMat->Get(AI_MATKEY_COLOR_DIFFUSE, temp3d) == AI_SUCCESS ) {
-			mat.Kd = toGLM(temp3d);
+			mat.baseColor = toGLM(temp3d); mat.factor_Flags |= Material::FF_BASE_COLOR;
 		}
 		if( aiMat->Get(AI_MATKEY_COLOR_SPECULAR, temp3d) == AI_SUCCESS ) {
-			mat.Ks = toGLM(temp3d);
+			mat.specColor = toGLM(temp3d); mat.factor_Flags |= Material::FF_SPECULAR;
 		}
 		if( aiMat->Get(AI_MATKEY_SHININESS_STRENGTH, tempFloat ) != AI_SUCCESS ) {
-			mat.Ks *= tempFloat;
+			mat.specColor *= tempFloat;
 		}
 		if( aiMat->Get(AI_MATKEY_COLOR_AMBIENT, temp3d) == AI_SUCCESS ) {
-			mat.Ka = toGLM(temp3d);
+			mat.ambientColor = toGLM(temp3d); mat.factor_Flags |= Material::FF_AMBIENT;
 		}
 		if( aiMat->Get(AI_MATKEY_COLOR_EMISSIVE, temp3d) == AI_SUCCESS ) {
-			mat.Ke = toGLM(temp3d);
+			mat.emissionColor = toGLM(temp3d); mat.factor_Flags |= Material::FF_EMISSION;
 		}
-		if( aiMat->Get(AI_MATKEY_COLOR_TRANSPARENT, temp3d) == AI_SUCCESS ) {
-			mat.Tf = toGLM(temp3d);
-		}
-		if( aiMat->Get(AI_MATKEY_OPACITY, tempFloat) == AI_SUCCESS ) {
-			mat.d = tempFloat;
-			mat.Tr = 1.f-tempFloat;
-		}
-		if( aiMat->Get(AI_MATKEY_SHININESS, tempFloat) == AI_SUCCESS ) {
-			mat.Ns = tempFloat;
-			mat.Ns = 100.f;
+		if( aiMat->Get(AI_MATKEY_TRANSMISSION_FACTOR, tempFloat) == AI_SUCCESS ) {
+			mat.transmission = tempFloat; mat.factor_Flags |= Material::FF_TRANSMISSION;
 		}
 		if( aiMat->Get(AI_MATKEY_REFRACTI, tempFloat) == AI_SUCCESS ) {
-			mat.Ni = tempFloat;
+			mat.refraciti = tempFloat; mat.factor_Flags |= Material::FF_REFRACITI;
+		}
+		if( aiMat->Get(AI_MATKEY_OPACITY, tempFloat) == AI_SUCCESS ) {
+			mat.opacity = tempFloat; mat.factor_Flags |= Material::FF_OPACITY;
+		}
+		if( aiMat->Get(AI_MATKEY_SHININESS, tempFloat) == AI_SUCCESS ) {
+			//mat.shininess = tempFloat;
 		}
 		if( aiMat->Get(AI_MATKEY_ROUGHNESS_FACTOR, tempFloat) == AI_SUCCESS ) {
-			mat.roughness = tempFloat;
+			mat.roughness = tempFloat; mat.factor_Flags |= Material::FF_ROUGHNESS;
+		}
+		if( aiMat->Get(AI_MATKEY_METALLIC_FACTOR, tempFloat) == AI_SUCCESS ) {
+			mat.metalness = tempFloat; mat.factor_Flags |= Material::FF_METALNESS;
 		}
 
-		mat.map_Flags = Material::MF_None;
+		mat.map_Flags = Material::MF_NONE;
 		if( aiMat->GetTexture(aiTextureType_DIFFUSE, 0, &tempStr) == AI_SUCCESS ) {
-			log::pure("map_Kd ");
-			mat.map_Flags |= Material::MF_Kd;
-			mat.map_Kd = loadTexture(tempStr.C_Str(), GL_SRGB8); // kd일때만 linear space변환
+			log::pure("map_BaseColor ");
+			mat.map_Flags |= Material::MF_BASE_COLOR;
+			mat.map_BaseColor = loadTexture(tempStr.C_Str(), GL_SRGB8); // kd일때만 linear space변환
 		}
 		if( aiMat->GetTexture(aiTextureType_SPECULAR, 0, &tempStr) == AI_SUCCESS ) {
-			log::pure("map_Ks ");
-			mat.map_Flags |= Material::MF_Ks;
-			mat.map_Ks = loadTexture(tempStr.C_Str(), GL_SRGB8); // Todo: Ka Ks map 에서도 해야하나?
-		}
-		if( aiMat->GetTexture(aiTextureType_AMBIENT, 0, &tempStr) == AI_SUCCESS ) {
-			log::pure("map_Ka ");
-			mat.map_Flags |= Material::MF_Ka;
-			mat.map_Ka = loadTexture(tempStr.C_Str(), GL_SRGB8);
-		}
-		if( aiMat->GetTexture(aiTextureType_NORMALS, 0, &tempStr) == AI_SUCCESS ) {
-			log::pure("map_Bump(Nor) ");
-           	mat.map_Flags |= Material::MF_Nor;
-			mat.map_Bump = loadTexture(tempStr.C_Str(), GL_RGB8);
+			log::pure("map_Specular ");
+			mat.map_Flags |= Material::MF_SPECULAR;
+			mat.map_Specular = loadTexture(tempStr.C_Str(), GL_SRGB8); // Todo: Ka Ks map 에서도 해야하나?
 		}
 		if( aiMat->GetTexture(aiTextureType_HEIGHT, 0, &tempStr) == AI_SUCCESS ) {
 			log::pure("map_Bump(Height) ");
-           	mat.map_Flags |= Material::MF_Height;
+           	mat.map_Flags |= Material::MF_HEIGHT;
 			mat.map_Bump = loadTexture(tempStr.C_Str(), GL_RGB8);
 		}
-		if( aiMat->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, 0, &tempStr) == AI_SUCCESS ) {
-			log::pure("map_Bump(Height) ");
-           	mat.map_Flags |= Material::MF_Height;
+		if( aiMat->GetTexture(aiTextureType_NORMALS, 0, &tempStr) == AI_SUCCESS ) {
+			log::pure("map_Bump(Nor) ");
+           	mat.map_Flags |= Material::MF_NOR;
 			mat.map_Bump = loadTexture(tempStr.C_Str(), GL_RGB8);
 		}
+		if( aiMat->GetTexture(aiTextureType_AMBIENT, 0, &tempStr) == AI_SUCCESS ) {
+			log::pure("map_AmbOcc ");
+			mat.map_Flags |= Material::MF_AMB_OCC;
+			mat.map_AmbOcc = loadTexture(tempStr.C_Str(), GL_SRGB8);
+		}
+		if( aiMat->GetTexture(aiTextureType_DIFFUSE_ROUGHNESS, 0, &tempStr) == AI_SUCCESS ) {
+			log::pure("map_Roughness(ROUGHNESS) ");
+			mat.map_Flags |= Material::MF_ROUGHNESS;
+			mat.map_Roughness = loadTexture(tempStr.C_Str(), GL_SRGB8);
+		}
+		if( aiMat->GetTexture(aiTextureType_METALNESS, 0, &tempStr) == AI_SUCCESS ) {
+			log::pure("map_Metalness ");
+			mat.map_Flags |= Material::MF_METALNESS;
+			mat.map_Metalness = loadTexture(tempStr.C_Str(), GL_SRGB8);
+		}
+		if( aiMat->GetTexture(aiTextureType_EMISSION_COLOR, 0, &tempStr) == AI_SUCCESS ) {
+			log::pure("map_Emission ");
+			mat.map_Flags |= Material::MF_EMISSION;
+			mat.map_Emission = loadTexture(tempStr.C_Str(), GL_SRGB8);
+		}
+		if( aiMat->GetTexture(aiTextureType_OPACITY, 0, &tempStr) == AI_SUCCESS ) {
+			log::pure("map_Opacity ");
+			mat.map_Flags |= Material::MF_Opacity;
+			mat.map_Opacity = loadTexture(tempStr.C_Str(), GL_SRGB8);
+		}
+		if( aiMat->GetTexture(aiTextureType_SHININESS, 0, &tempStr) == AI_SUCCESS ) {
+			log::pure("map_Roughness(SHININESS) ");
+			if(	mat.map_Flags&Material::MF_ROUGHNESS ) {
+				log::err("conflict map_Roughness(SHININESS)\n");
+				std::exit(1);
+			}
+           	mat.map_Flags |= Material::MF_SHININESS;
+			mat.map_Roughness = loadTexture(tempStr.C_Str(), GL_RGB8);
+		}
+		// https://stackoverflow.com/questions/54116869/how-do-i-load-roughness-metallic-map-with-assimp-using-gltf-format
+		if( aiMat->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &tempStr) == AI_SUCCESS ) {
+			log::pure("map_Roughness(MR) ");
+			if(	mat.map_Flags&(Material::MF_ROUGHNESS|Material::MF_SHININESS) ) {
+				log::err("conflict map_Roughness(SHININESS)\n");
+				std::exit(1);
+			}
+           	mat.map_Flags |= Material::MF_MR;
+			mat.map_Roughness = loadTexture(tempStr.C_Str(), GL_RGB8);
+		}
+		// Todo: ARM구분을 못하겠다.
 
 		return rst;
 	}

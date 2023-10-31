@@ -3,17 +3,17 @@ layout (location = 0) out vec4 FragColor;
 
 in vec2 texCoord;
 
-struct Primitive {
+// struct Primitive {
 
-};
+// };
 
-struct Material {
+// struct Material {
 
-};
+// };
 
-struct Node {
-    Node[]
-}
+// struct Node {
+//     Node[]
+// };
 
 uniform float cameraAspect;
 uniform vec3 cameraPos;

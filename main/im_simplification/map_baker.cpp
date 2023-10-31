@@ -60,7 +60,7 @@ namespace lim
             srcNormalMap.bind();
             normalDrawProg.use();
             normalDrawProg.setUniform("map_Flags", srcMat.map_Flags);
-            if ( srcMat.map_Flags & (Material::MF_Height|Material::MF_Nor) ) {
+            if ( srcMat.map_Flags & (Material::MF_HEIGHT|Material::MF_NOR) ) {
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, srcMat.map_Bump->tex_id);
                 normalDrawProg.setUniform("map_Bump", 0);
@@ -101,8 +101,8 @@ namespace lim
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
             glDeleteFramebuffers(1, &srcFbo);
 
-            dstMat.map_Flags &= ~Material::MF_Height;
-            dstMat.map_Flags |=  Material::MF_Nor;
+            dstMat.map_Flags &= ~Material::MF_HEIGHT;
+            dstMat.map_Flags |=  Material::MF_NOR;
             
             log::pure("bake done  %s\n\n", dstMat.map_Bump->name.c_str());
         }
@@ -118,7 +118,7 @@ namespace lim
         unordered_map< int,  vector<const Mesh*> > mergeByNormalMap;
 
         md.root.treversal([&](const Mesh* ms, const Material* mat) {
-            if( mat==nullptr || (mat->map_Flags|Material::MF_Height)==0 ) 
+            if( mat==nullptr || (mat->map_Flags|Material::MF_HEIGHT)==0 ) 
                 return;
             if( ms->uvs.size()==0 ) {
                 log::err("no uvs in mesh when bakeNorMap\n\n");
@@ -209,8 +209,8 @@ namespace lim
             // glDeleteFramebuffers(1, &oriFbo);
 
 
-            mat.map_Flags &= ~Material::MF_Height;
-            mat.map_Flags |=  Material::MF_Nor;
+            mat.map_Flags &= ~Material::MF_HEIGHT;
+            mat.map_Flags |=  Material::MF_NOR;
             
             glDeleteTextures(1, &norTex);
         }

@@ -179,12 +179,7 @@ namespace lim
 				}
 				if( ImGui::SliderFloat("shininess", &tInfo.shininess, 0, 1000) ) {
 					for(Material* mat : md.my_materials) {
-						mat->Ns = tInfo.shininess;
-					}
-				}
-				if( ImGui::SliderFloat("ref idx", &tInfo.refIdx, 0, 3) ) {
-					for(Material* mat : md.my_materials) {
-						mat->Ni = tInfo.refIdx;
+						mat->shininess = tInfo.shininess;
 					}
 				}
 				if( ImGui::SliderFloat("roughness", &tInfo.roughness, 0.001, 1) ) {
