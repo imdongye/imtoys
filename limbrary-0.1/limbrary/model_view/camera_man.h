@@ -149,6 +149,7 @@ namespace lim
 		ViewportWithCamera(ViewportWithCamera&& src) noexcept;
 		ViewportWithCamera& operator=(ViewportWithCamera&& src) noexcept;
 		virtual ~ViewportWithCamera() noexcept;
+		virtual bool drawImGui() override;
 	};
 }
 

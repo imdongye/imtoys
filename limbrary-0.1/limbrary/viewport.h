@@ -57,9 +57,10 @@ namespace lim
 		glm::vec2 scroll_off = {0,0};
 		Callbacks<void(int, int)> resize_callbacks;
 		Callbacks<void(float dt)> update_callbacks;
-	private:
+	protected:
 		glm::vec2 prev_mouse_pos = {0,0};
 		Framebuffer* framebuffer = nullptr;
+	private:
 		Viewport(const Viewport&) = delete;
 		Viewport& operator=(const Viewport&) = delete;
 	public:
@@ -68,7 +69,7 @@ namespace lim
 		Viewport& operator=(Viewport&& src) noexcept;
 		virtual ~Viewport() noexcept;
 
-		bool drawImGui(); // and resize fb and return windowOpened
+		virtual bool drawImGui(); // and resize fb and return windowOpened
 		void resize(GLuint _width, GLuint _height);
 		const Framebuffer& getFb();
 		void setClearColor(glm::vec4 color);

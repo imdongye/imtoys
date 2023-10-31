@@ -41,9 +41,9 @@ namespace
 	inline aiColor3D toAiC( const vec3& c ) {
 		return { c.r, c.g, c.b };
 	}
-	inline aiColor4D toAiC( const vec4& c ) {
-		return { c.r, c.g, c.b, c.a };
-	}
+	// inline aiColor4D toAiC( const vec4& c ) {
+	// 	return { c.r, c.g, c.b, c.a };
+	// }
 	inline aiMatrix4x4 toAi( const mat4& m ) {
 		return aiMatrix4x4(	m[0][0], m[0][1], m[0][2], m[0][3], 
 							m[1][0], m[1][1], m[1][2], m[1][3], 

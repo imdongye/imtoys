@@ -70,8 +70,8 @@ template <typename TApp>
 static void pushAppData()
 {
 	_app_names.push_back(TApp::APP_NAME);
-	_app_descriptions.push_back(TApp::APP_DESCRIPTION);
-	_app_constructors.push_back([](){ return new TApp(); });
+	_app_descriptions.push_back( TApp::APP_DESCRIPTION );
+	_app_constructors.push_back( [](){ return new TApp(); } );
 }
 
 

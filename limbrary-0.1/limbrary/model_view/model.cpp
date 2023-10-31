@@ -233,7 +233,7 @@ namespace lim
 			updateNrAndBoundary();
 		}
 		constexpr float unit_length = 2.f;
-		float max_axis_length = glm::max(glm::max(boundary_size.x, boundary_size.y), boundary_size.z);
+		//float max_axis_length = glm::max(glm::max(boundary_size.x, boundary_size.y), boundary_size.z);
 		float min_axis_length = glm::min(glm::min(boundary_size.x, boundary_size.y), boundary_size.z);
 		scale = glm::vec3(unit_length/min_axis_length);
 

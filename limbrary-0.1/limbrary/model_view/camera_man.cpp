@@ -1,9 +1,13 @@
 #include <limbrary/model_view/camera_man.h>
 #include <limbrary/asset_lib.h>
 #include <limbrary/application.h>
+#define IMGUI_DEFINE_MATH_OPERATORS
 #include <imgui.h>
+#include <imgui_internal.h>
+#include <imguizmo/ImGuizmo.h>
 #include <limbrary/log.h>
 #include <glm/gtx/transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 using namespace glm;
 
@@ -360,5 +364,101 @@ namespace lim
 	}
 	ViewportWithCamera::~ViewportWithCamera() noexcept
 	{
+	}
+	bool ViewportWithCamera::drawImGui()
+	{
+		Framebuffer& fb = *framebuffer;
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
+		ImGui::SetNextWindowSize({(float)fb.width, (float)fb.height+ImGui::GetFrameHeight()}, (window_mode==WM_FIXED_SIZE)?ImGuiCond_Always:ImGuiCond_Once);
+
+		ImGuiWindowFlags vpWinFlag = ImGuiWindowFlags_NoCollapse;
+		if( window_mode==WM_FIXED_RATIO ) {
+			ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), [](ImGuiSizeCallbackData *data) {
+				Viewport& vp = *(Viewport*)(data->UserData);
+
+				float frameHeight = ImGui::GetFrameHeight();
+				float aspectedWidth = vp.getAspect() * (data->DesiredSize.y - frameHeight);
+				float aspectedHeight = data->DesiredSize.x / vp.getAspect() + frameHeight;
+
+				if( data->DesiredSize.x <= aspectedWidth )
+					data->DesiredSize.x = aspectedWidth;
+				else
+					data->DesiredSize.y = aspectedHeight;
+			}, (void*)this);
+			vpWinFlag |= ImGuiWindowFlags_NoDocking;
+		}
+		else if( window_mode==WM_FIXED_SIZE ) {
+			vpWinFlag |= ImGuiWindowFlags_NoResize;
+		}
+		ImGui::Begin(name.c_str(), &is_opened, vpWinFlag);
+		
+		// for ignore draging
+		bool isHoveredOnTitle = ImGui::IsItemHovered(); // when move window
+		bool isWindowActivated = ImGui::IsItemActive(); // when resize window
+
+		// update size
+		auto contentSize = ImGui::GetContentRegionAvail();
+		if( fb.width!=contentSize.x || fb.height !=contentSize.y ) {
+			if(contentSize.x>10&&contentSize.y>10) // This is sometimes negative
+				resize(contentSize.x, contentSize.y);
+		}
+
+		ImGui::SetItemKeyOwner(ImGuiKey_MouseWheelY);
+		ImGui::SetItemKeyOwner(ImGuiKey_MouseWheelX);
+		GLuint texID = framebuffer->getRenderedTex();
+		if( texID!=0 ) {
+			ImGui::Image((void*)(intptr_t)texID, ImVec2{(float)fb.width, (float)fb.height}, ImVec2{0, 1}, ImVec2{1, 0});
+		}
+	
+		is_focused = ImGui::IsWindowFocused();
+		is_hovered = ImGui::IsItemHovered();
+		is_dragged = isWindowActivated && !isHoveredOnTitle && ImGui::IsMouseDown(0);
+		is_dragged |= (is_hovered||is_focused)&&(ImGui::IsMouseDown(1)||ImGui::IsMouseDown(2));
+		if( is_dragged ) ImGui::SetMouseCursor(7);
+
+		prev_mouse_pos = mouse_pos;
+		ImVec2 imMousePos = ImGui::GetMousePos() - ImGui::GetWindowPos() - ImVec2(0, ImGui::GetFrameHeight());
+		mouse_pos = {imMousePos.x, imMousePos.y};
+		mouse_off = mouse_pos - prev_mouse_pos;
+		prev_mouse_pos = mouse_pos;
+
+		ImGuiIO io = ImGui::GetIO();
+		is_scrolled =  is_hovered&&(io.MouseWheel||io.MouseWheelH);
+		scroll_off = {io.MouseWheelH, io.MouseWheel};
+
+
+		const auto& pos = ImGui::GetItemRectMin();
+		const auto& size = ImGui::GetItemRectSize();
+		glm::mat4 identity{1.f};
+		float* modelMat = glm::value_ptr(identity);
+		float* viewMat = glm::value_ptr(camera.view_mat);
+		float* projMat = glm::value_ptr(camera.proj_mat);
+		ImGuizmo::OPERATION zmoOper = ImGuizmo::TRANSLATE;
+		ImGuizmo::MODE 		zmoMode = ImGuizmo::WORLD;
+
+
+		ImGuizmo::SetDrawlist();
+		ImGuizmo::SetRect(pos.x, pos.y, size.x, size.y);
+		ImGuizmo::Manipulate( viewMat, projMat, zmoOper, zmoMode, modelMat
+							, nullptr, nullptr, nullptr);
+		if( ImGuizmo::IsUsing() ) {
+			
+		}
+		
+		ImGuizmo::SetOrthographic(false);
+
+		ImGuizmo::ViewManipulate( glm::value_ptr(camera.view_mat)
+								, 8.0f, {pos.x+size.x-128, pos.y}, {128, 128}, 0x10101010);
+		
+
+
+		
+		ImGui::End();
+		ImGui::PopStyleVar();
+
+		for( auto& cb : update_callbacks ) {
+			cb(ImGui::GetIO().DeltaTime);
+		}
+		return is_opened;
 	}
 }

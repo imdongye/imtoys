@@ -119,6 +119,31 @@ target_compile_definitions(${lib_name}
 )
 add_dependencies(${lib_name} glfw stb)
 
+set(lib_name "imguizmo")
+set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/others/imguizmo")
+file(GLOB_RECURSE headers "${lib_dir}/*.h" "${lib_dir}/*.hpp")
+file(GLOB_RECURSE sources "${lib_dir}/*.c" "${lib_dir}/*.cpp")
+list(REMOVE_ITEM sources "${lib_dir}/example.cpp")
+add_library(${lib_name} STATIC ${headers} ${sources})
+source_group(TREE "${lib_dir}" FILES ${headers} ${sources})
+target_include_directories(${lib_name} PUBLIC "${CMAKE_SOURCE_DIR}/vendor/others")
+target_link_libraries(${lib_name} PUBLIC imgui)
+target_compile_definitions(${lib_name} PRIVATE USE_IMGUI_API)
+add_dependencies(${lib_name} imgui)
+
+set(lib_name "implot")
+set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/others/implot")
+file(GLOB_RECURSE headers "${lib_dir}/*.h" "${lib_dir}/*.hpp")
+file(GLOB_RECURSE sources "${lib_dir}/*.c" "${lib_dir}/*.cpp")
+add_library(${lib_name} STATIC ${headers} ${sources})
+source_group(TREE "${lib_dir}" FILES ${headers} ${sources})
+target_include_directories(${lib_name} PUBLIC "${CMAKE_SOURCE_DIR}/vendor/others")
+target_link_libraries(${lib_name} PUBLIC imgui)
+add_dependencies(${lib_name} imgui)
+
+
+
+
 ### glm (header only) ###
 set(lib_name "glm")
 set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/glm-0.9.9.8")
@@ -155,6 +180,8 @@ set(dep_libs
     eigen
     others
     imgui
+    imguizmo
+    implot
     assimp
     nanovg
     glfw
