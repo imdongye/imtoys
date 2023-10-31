@@ -19,7 +19,7 @@
 #include <assimp/Logger.hpp>
 #include <assimp/DefaultLogger.hpp>
 // https://stackoverflow.com/questions/54116869/how-do-i-load-roughness-metallic-map-with-assimp-using-gltf-format
-#include <assimp/pbrmaterial.h>
+#include <assimp/material.h>
 #include <GLFW/glfw3.h>
 #include <filesystem>
 

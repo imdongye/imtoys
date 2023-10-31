@@ -7,7 +7,8 @@
 #include <iostream>
 #include <filesystem>
 #include <imgui.h>
-#include <implot.h>
+//#include <implot/implot.h>
+#include <imguizmo/ImGuizmo.h>
 #include <backend/imgui_impl_glfw.h>
 #include <backend/imgui_impl_opengl3.h>
 #include <algorithm>
@@ -54,17 +55,7 @@ namespace
 				const char* fpsStr = lim::fmtStrToBuf("%.3f ms/frame, %.2fFPS", 1000.0f/framerate, framerate);
 				ImGui::PlotHistogram("##FPS", &_fps_graph_data[0].y, IM_ARRAYSIZE(_fps_graph_data), fpsGraphOffset, fpsStr, mid-pad, mid+pad, ImVec2(0, 40.0f), 8);
 
-				// static float history = 10.0f;
-				// static ImPlotAxisFlags flags = ImPlotAxisFlags_NoTickLabels;
-				// if (ImPlot::BeginPlot("##Scrolling", ImVec2(-1,150))) {
-				// 	ImPlot::SetupAxes(nullptr, nullptr, flags, flags);
-				// 	ImPlot::SetupAxisLimits(ImAxis_X1, time-history, time, ImGuiCond_Always);
-				// 	ImPlot::SetupAxisLimits(ImAxis_Y1,0,1);
-				// 	ImPlot::SetNextFillStyle(IMPLOT_AUTO_COL,0.5f);
-				// 	ImPlot::PlotShaded("Mouse X", &fpsGraphData[0].x, &fpsGraphData[0].y,  IM_ARRAYSIZE(fpsGraphData), -INFINITY, 0, fpsGraphOffset, 2 * sizeof(float));
-				// 	//ImPlot::PlotLine("Mouse Y", &sdata2.Data[0].x, &sdata2.Data[0].y, sdata2.Data.size(), 0, sdata2.Offset, 2*sizeof(float));
-				// 	ImPlot::EndPlot();
-				// }
+				
 			}
 			ImGui::PopStyleVar();
 			ImGui::End();
@@ -220,7 +211,7 @@ namespace lim
 		{ 	
 			IMGUI_CHECKVERSION();
 			ImGui::CreateContext();
-			ImPlot::CreateContext();
+			//ImPlot::CreateContext();
 			ImGuiIO& io = ImGui::GetIO(); (void)io;
 			io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
 			//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
@@ -257,7 +248,7 @@ namespace lim
 		// Cleanup
 		ImGui_ImplOpenGL3_Shutdown();
 		ImGui_ImplGlfw_Shutdown();
-		ImPlot::DestroyContext();
+		//ImPlot::DestroyContext();
 		ImGui::DestroyContext();
 
 		AppPrefs::get().saveToFile();
@@ -290,7 +281,7 @@ namespace lim
 			ImGui_ImplGlfw_NewFrame();
 			ImGui::NewFrame();
 			
-			//ImGuizmo::BeginFrame();
+			ImGuizmo::BeginFrame();
 
 			renderImGui();
 			draw_appselector();

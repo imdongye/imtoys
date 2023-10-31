@@ -3,6 +3,18 @@ layout (location = 0) out vec4 FragColor;
 
 in vec2 texCoord;
 
+struct Primitive {
+
+};
+
+struct Material {
+
+};
+
+struct Node {
+    Node[]
+}
+
 uniform float cameraAspect;
 uniform vec3 cameraPos;
 uniform float cameraFovy;
@@ -34,7 +46,7 @@ float sdWorld(vec3 p) {
     float sphere0 = sdSphere(p, vec3(0,1,0), 1.0);
     float plane = sdPlane(p, UP, 0.0);
     float rst = min(sphere0, plane);
-    rst = smoothMin(sphere0, plane, 20.0);
+    rst = smoothMin(sphere0, plane, 1.0);
     // return plane;
     //return sphere0;
     return rst;
@@ -46,6 +58,9 @@ vec3 getNormal(vec3 p) {
     float dDdy = sdWorld(p+e.yxy) - sdWorld(p-e.yxy);
     float dDdz = sdWorld(p+e.yyx) - sdWorld(p-e.yyx);
     return normalize(vec3(dDdx, dDdy, dDdz));
+    // vec3 dPdx = dFdx(p);
+    // vec3 dPdy = dFdy(p);
+    // return normalize(cross(dPdx, dPdy));
 }
 
 float rayMarch(vec3 ro, vec3 rd) {    
@@ -73,6 +88,7 @@ vec3 render(vec3 p, vec3 v) {
     float vdr = max(0, dot(v,r));
     float specular = pow(vdr, 1000);
     float rst = ndl+specular;
+
     //rst = specular;
     vec3 color = vec3(rst);
     return color;
