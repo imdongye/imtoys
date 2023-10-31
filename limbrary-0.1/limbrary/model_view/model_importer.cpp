@@ -19,7 +19,7 @@
 #include <assimp/Logger.hpp>
 #include <assimp/DefaultLogger.hpp>
 // https://stackoverflow.com/questions/54116869/how-do-i-load-roughness-metallic-map-with-assimp-using-gltf-format
-#include <assimp/pbrmaterial.h>
+#include <assimp/GltfMaterial.h>
 #include <GLFW/glfw3.h>
 #include <filesystem>
 
@@ -158,11 +158,11 @@ namespace
            	mat.map_Flags |= Material::MF_Height;
 			mat.map_Bump = loadTexture(tempStr.C_Str(), GL_RGB8);
 		}
-		// if( aiMat->GetTexture(AI_MATKEY_GLTF, 0, &tempStr) == AI_SUCCESS ) {
-		// 	log::pure("map_Bump(Height) ");
-        //    	mat.map_Flags |= Material::MF_Height;
-		// 	mat.map_Bump = loadTexture(tempStr.C_Str(), GL_RGB8);
-		// }
+		if( aiMat->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, 0, &tempStr) == AI_SUCCESS ) {
+			log::pure("map_Bump(Height) ");
+           	mat.map_Flags |= Material::MF_Height;
+			mat.map_Bump = loadTexture(tempStr.C_Str(), GL_RGB8);
+		}
 
 		return rst;
 	}

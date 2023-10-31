@@ -41,6 +41,7 @@ namespace lim
         float Ns        = 100.f;              // shininess
         float Ni        = 1.45f;              // index of refraction
         float roughness = 0.3f;               // brdf param
+        float metalness = 0.0f;
 
         int map_Flags = 0;
         Texture* map_Kd = nullptr;
@@ -48,6 +49,7 @@ namespace lim
         Texture* map_Ka = nullptr;
         Texture* map_Ns = nullptr;            // shininess
         Texture* map_Bump = nullptr; // MF_Height, MF_Nor 로 노멀맵인지 height맵인지 구분
+        Texture* map_ARM = nullptr;
 
         float bumpHeight = 100;
         float texDelta = 0.00001f;
