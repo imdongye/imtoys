@@ -68,6 +68,8 @@ OpenGL ID 가 들어가거나 삭제해야할 객체포인터를 맴버로 가�
 
 또한 dinamic array 에 객체들을 생성하면 각 객체의 주소가 바뀔수있기때문에 조심해야한다.
 
+헤더에서 멤버변수 초기화화하면 가독성은 좋지만 멤버값 바꿀때마다, 포함하는 모든소스 다시 컴파일해서 안좋긴한데 그렇다고 멤버이니셜라이져나 생성자에서 초기화하기엔 멤버수정될때마다 생성자 관리해줘야하고 읽을때 파일 두번 열어야하고 중복코드가 많이생김.
+
 작성방법 : https://learn.microsoft.com/en-us/cpp/cpp/move-constructors-and-move-assignment-operators-cpp?view=msvc-170&redirectedfrom=MSDN
 
 https://en.wikipedia.org/wiki/Fail-fast

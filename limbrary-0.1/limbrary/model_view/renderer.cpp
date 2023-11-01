@@ -1,3 +1,10 @@
+/*
+
+Todo:
+지금 render node에 material없을때 dfs에서 이전에 사용된 mat쓰는데 원래 부모의 mat을 사용하게 해야됨.
+
+*/
+
 #include <limbrary/model_view/renderer.h>
 #include <limbrary/asset_lib.h>
 #include <limbrary/log.h>
@@ -75,9 +82,7 @@ namespace
         prog.setUniform("shadowEnabled", (lit.shadow_enabled)?1:0);
         if( lit.shadow_enabled ) {
             prog.setUniform("shadowVP", lit.shadow_vp_mat);
-            glActiveTexture(GL_TEXTURE0 + activeSlot);
-            glBindTexture(GL_TEXTURE_2D, lit.map_Shadow.color_tex);
-            prog.setUniform("map_Shadow", activeSlot++);
+            prog.setTexture("map_Shadow", lit.map_Shadow.getRenderedTex(), activeSlot++);
         }
         return activeSlot; // return next texture slot
     }
@@ -102,51 +107,53 @@ namespace
         prog.setUniform("map_Flags", mat.map_Flags);
         
         if( mat.map_BaseColor ) {
-            glActiveTexture(GL_TEXTURE0 + activeSlot);
-            glBindTexture(GL_TEXTURE_2D, mat.map_BaseColor->tex_id);
-            prog.setUniform("map_BaseColor", activeSlot++);
+            prog.setTexture("map_BaseColor", mat.map_BaseColor->tex_id, activeSlot++);
         }
         if( mat.map_Specular ) {
-            glActiveTexture(GL_TEXTURE0 + activeSlot);
-            glBindTexture(GL_TEXTURE_2D, mat.map_Specular->tex_id);
-            prog.setUniform("map_Specular", activeSlot++);
+            prog.setTexture("map_Specular", mat.map_Specular->tex_id, activeSlot++);
         }
         if( mat.map_Bump ) {
-            glActiveTexture(GL_TEXTURE0 + activeSlot);
-            glBindTexture(GL_TEXTURE_2D, mat.map_Bump->tex_id);
-            prog.setUniform("map_Bump", activeSlot++);
-
+            prog.setTexture("map_Bump", mat.map_Bump->tex_id, activeSlot++);
             if( mat.map_Flags & Material::MF_HEIGHT ) {
                 prog.setUniform("texDelta", mat.texDelta);
                 prog.setUniform("bumpHeight", mat.bumpHeight);
             }
         }
         if( mat.map_AmbOcc ) {
-            glActiveTexture(GL_TEXTURE0 + activeSlot);
-            glBindTexture(GL_TEXTURE_2D, mat.map_AmbOcc->tex_id);
-            prog.setUniform("map_AmbOcc", activeSlot++);
+            prog.setTexture("map_AmbOcc", mat.map_AmbOcc->tex_id, activeSlot++);
         }
         if( mat.map_Roughness ) {
-            glActiveTexture(GL_TEXTURE0 + activeSlot);
-            glBindTexture(GL_TEXTURE_2D, mat.map_Roughness->tex_id);
-            prog.setUniform("map_Roughness", activeSlot++);
+            prog.setTexture("map_Roughness", mat.map_Roughness->tex_id, activeSlot++);
         }
         if( mat.map_Metalness ) {
-            glActiveTexture(GL_TEXTURE0 + activeSlot);
-            glBindTexture(GL_TEXTURE_2D, mat.map_Metalness->tex_id);
-            prog.setUniform("map_Metalness", activeSlot++);
+            prog.setTexture("map_Metalness", mat.map_Metalness->tex_id, activeSlot++);
         }
         if( mat.map_Emission ) {
-            glActiveTexture(GL_TEXTURE0 + activeSlot);
-            glBindTexture(GL_TEXTURE_2D, mat.map_Emission->tex_id);
-            prog.setUniform("map_Emission", activeSlot++);
+            prog.setTexture("map_Emission", mat.map_Emission->tex_id, activeSlot++);
         }
         if( mat.map_Opacity ) {
-            glActiveTexture(GL_TEXTURE0 + activeSlot);
-            glBindTexture(GL_TEXTURE_2D, mat.map_Opacity->tex_id);
-            prog.setUniform("map_Opacity", activeSlot++);
+            prog.setTexture("map_Opacity", mat.map_Opacity->tex_id, activeSlot++);
         }
         return activeSlot;
+    }
+
+    // 편하고 코드 보기 좋아졌다. 메쉬마다 함수포인터로 점프해서 성능이 많이 안좋아질줄알았는데 큰차이없다.
+    inline void dfsNodeTree(const Model::Node* root, function<void(const Mesh*, const Material*, const glm::mat4& transform)> hook) {
+        stack<const Model::Node*> nodeStack;
+        glm::mat4 transform = glm::mat4(1);
+        nodeStack.push( root );
+        while( nodeStack.size()>0 ) {
+            const Model::Node& node = *nodeStack.top();
+            nodeStack.pop();
+            transform = node.transform*transform;
+            for( const Model::Node& child : node.childs ) {
+                nodeStack.push(&child);
+            }
+            for( int i=0; i<node.getNrMesh(); i++ ) {
+                auto [ms, mat] = node.getMesh(i);
+                hook(ms, mat, transform);
+            }
+        }
     }
 
     inline void bakeShadowMap(const std::vector<const Light*>& lits, const std::vector<const Model*>& mds)
@@ -165,14 +172,12 @@ namespace
 
             depthProg.setUniform("viewMat", lit.shadow_view_mat);
             depthProg.setUniform("projMat", lit.shadow_proj_mat);
-
+            
             for( const Model* pMd : mds ) {
-                const Model& md = *pMd;
-                depthProg.setUniform("modelMat", md.model_mat);
-
-                for( const Mesh* ms : md.my_meshes ) {
+                depthProg.setUniform("modelMat", pMd->model_mat);
+                dfsNodeTree(&pMd->root, [](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
                     ms->drawGL();
-                }
+                });
             }
 
             lit.map_Shadow.unbind();
@@ -188,28 +193,18 @@ namespace lim
     {
         fb.bind();
         prog.use();
+        prog.setUniform("modelMat", md.model_mat);
 
         const Material* curMat = md.default_material;
 
-        stack<const Model::Node*> nodeStack;
-        nodeStack.push( &(md.root) );
-        while( nodeStack.size()>0 ) {
-            const Model::Node& node = *nodeStack.top();
-            nodeStack.pop();
-            for( const Model::Node& child : node.childs ) {
-                nodeStack.push(&child);
+        dfsNodeTree(&md.root, [&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
+            if( mat!=nullptr ) {
+                curMat = mat;
             }
+            bindMatToProg(prog, *curMat, 0);
+            ms->drawGL();
+        });
 
-            for( int i=0; i<node.getNrMesh(); i++ ) {
-                auto [ms, mat] = node.getMesh(i);
-                if( mat!=nullptr ) {
-                    curMat = mat;
-                }
-                bindMatToProg(prog, *curMat, 0);
-                prog.setUniform("modelMat", md.model_mat);
-                ms->drawGL();
-            }
-        }
         fb.unbind();
     }
     
@@ -233,26 +228,13 @@ namespace lim
 
         const Material* curMat = md.default_material;
 
-        stack<const Model::Node*> nodeStack;
-        nodeStack.push( &(md.root) );
-
-        while( nodeStack.size()>0 ) {
-            const Model::Node& node = *nodeStack.top();
-            nodeStack.pop();
-            for( const Model::Node& child : node.childs ) {
-                nodeStack.push(&child);
+        dfsNodeTree(&md.root, [&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
+            if( mat!=nullptr ) {
+                curMat = mat;
             }
-
-            for( int i=0; i<node.getNrMesh(); i++ ) {
-                auto [ms, mat] = node.getMesh(i);
-                if( mat!=nullptr ) {
-                    curMat = mat;
-                }
-                bindMatToProg(prog, *curMat, activeSlot);
-                prog.setUniform("modelMat", md.model_mat);
-                ms->drawGL();
-            }
-        }
+            bindMatToProg(prog, *curMat, activeSlot);
+            ms->drawGL();
+        });
 
         fb.unbind();
     }
@@ -279,61 +261,44 @@ namespace lim
             nextProg = md.default_material->prog;
             curSetProg = md.default_material->set_prog;
 
-            stack<const Model::Node*> nodeStack;
-            nodeStack.push( &(pMd->root) );
+            dfsNodeTree(&md.root, [&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
+                if( mat!=nullptr ) {
+                     nextMat = mat;
+                    if( nextMat->prog != nullptr )
+                        nextProg = nextMat->prog;
+                    if( nextMat->set_prog )
+                        curSetProg = nextMat->set_prog;
+                }
+                if( curProg != nextProg ) {
+                    const Program& prog = *nextProg;
+                    activeSlot = 0;
 
-            while( nodeStack.size()>0 ) {
-                const Model::Node& node = *nodeStack.top();
-                nodeStack.pop();
-                for( const Model::Node& child : node.childs ) {
-                    nodeStack.push(&child);
+                    prog.use();
+                    prog.setUniform("cameraPos", cam.position);
+                    prog.setUniform("viewMat", cam.view_mat);
+                    prog.setUniform("projMat", cam.proj_mat);
+
+                    for( const Light* pLit : scn.lights ) {
+                        activeSlot = bindLightToProg(prog, *pLit, activeSlot);
+                        break; //  Todo: 지금은 라이트 하나만
+                    }
                 }
 
-                for( int i=0; i<node.getNrMesh(); i++ ) {
-                    auto [ms, mat] = node.getMesh(i);
-
-                    if( mat != nullptr ) {
-                        nextMat = mat;
-                        if( nextMat->prog != nullptr )
-                            nextProg = nextMat->prog;
-                        if( nextMat->set_prog )
-                            curSetProg = nextMat->set_prog;
-                    }
-
-                    if( curProg != nextProg ) {
-                        const Program& prog = *nextProg;
-                        activeSlot = 0;
-
-                        prog.use();
-                        prog.setUniform("cameraPos", cam.position);
-                        prog.setUniform("viewMat", cam.view_mat);
-                        prog.setUniform("projMat", cam.proj_mat);
-
-                        for( const Light* pLit : scn.lights ) {
-                            activeSlot = bindLightToProg(prog, *pLit, activeSlot);
-                            break; //  Todo: 지금은 라이트 하나만
-                        }
-                    }
-
-                    if(  curProg != nextProg || curMat != nextMat ) {
-                        curSetProg(*nextProg);
-                        bindMatToProg(*nextProg, *nextMat, activeSlot);
-                        curMat = nextMat;
-                    }
-
-                    if( curProg != nextProg ) {
-                        curProg = nextProg;
-                    }
-
-                    curProg->setUniform("modelMat", md.model_mat); // Todo: hirachi trnasformation
-                    ms->drawGL();
+                if(  curProg != nextProg || curMat != nextMat ) {
+                    curSetProg(*nextProg);
+                    bindMatToProg(*nextProg, *nextMat, activeSlot);
+                    curMat = nextMat;
                 }
-            }
+
+                if( curProg != nextProg ) {
+                    curProg = nextProg;
+                }
+
+                curProg->setUniform("modelMat", md.model_mat); // Todo: hirachi trnasformation
+                ms->drawGL();
+            });
         }
 
         fb.unbind();
     }
 }
-
-
-

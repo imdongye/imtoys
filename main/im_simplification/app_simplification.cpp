@@ -16,7 +16,7 @@
 
 namespace lim
 {
-	AppSimplification::AppSimplification() : AppBase(1200, 780, APP_NAME)
+	AppSimplification::AppSimplification() : AppBase(1200, 780, APP_NAME, false)
 	{
 		programs.emplace_back("Normal Dot View");
 		programs.back().attatch("mvp.vs").attatch("ndv.fs").link();
@@ -387,6 +387,7 @@ namespace lim
 			if( ImGui::Combo("type", &selected_prog_idx, shader_names.data(), shader_names.size()) )
 			{
 				AssetLib::get().default_material.prog = &programs[selected_prog_idx];
+				light.shadow_enabled = strcmp(shader_names[selected_prog_idx], "Shadowed")==0;
 			}
 			ImGui::Dummy(ImVec2(0.0f, 8.0f));
 			ImGui::Separator();

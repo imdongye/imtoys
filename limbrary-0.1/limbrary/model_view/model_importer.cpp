@@ -160,9 +160,9 @@ namespace
 			mat.map_AmbOcc = loadTexture(tempStr.C_Str(), GL_SRGB8);
 		}
 		if( aiMat->GetTexture(aiTextureType_DIFFUSE_ROUGHNESS, 0, &tempStr) == AI_SUCCESS ) {
-			log::pure("map_Roughness(ROUGHNESS) ");
-			mat.map_Flags |= Material::MF_ROUGHNESS;
-			mat.map_Roughness = loadTexture(tempStr.C_Str(), GL_SRGB8);
+			// log::pure("map_Roughness(ROUGHNESS) ");
+			// mat.map_Flags |= Material::MF_ROUGHNESS;
+			// mat.map_Roughness = loadTexture(tempStr.C_Str(), GL_SRGB8);
 		}
 		if( aiMat->GetTexture(aiTextureType_METALNESS, 0, &tempStr) == AI_SUCCESS ) {
 			log::pure("map_Metalness ");
@@ -182,23 +182,23 @@ namespace
 		if( aiMat->GetTexture(aiTextureType_SHININESS, 0, &tempStr) == AI_SUCCESS ) {
 			log::pure("map_Roughness(SHININESS) ");
 			if(	mat.map_Flags&Material::MF_ROUGHNESS ) {
-				log::err("conflict map_Roughness(SHININESS)\n");
+				log::err("conflict map_Roughness(Shininess)\n");
 				std::exit(1);
 			}
            	mat.map_Flags |= Material::MF_SHININESS;
 			mat.map_Roughness = loadTexture(tempStr.C_Str(), GL_RGB8);
 		}
+		// Todo: assimp에서 ARM인지 RM인지 Roughness인지 구별을 못함. 일단 ARM으로 가정
 		// https://stackoverflow.com/questions/54116869/how-do-i-load-roughness-metallic-map-with-assimp-using-gltf-format
 		if( aiMat->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &tempStr) == AI_SUCCESS ) {
-			log::pure("map_Roughness(MR) ");
+			log::pure("map_Roughness(AMR) ");
 			if(	mat.map_Flags&(Material::MF_ROUGHNESS|Material::MF_SHININESS) ) {
-				log::err("conflict map_Roughness(SHININESS)\n");
+				log::err("conflict map_Roughness(Roughness or Shininess)\n");
 				std::exit(1);
 			}
-           	mat.map_Flags |= Material::MF_MR;
+           	mat.map_Flags |= Material::MF_ARM;
 			mat.map_Roughness = loadTexture(tempStr.C_Str(), GL_RGB8);
 		}
-		// Todo: ARM구분을 못하겠다.
 
 		return rst;
 	}
@@ -288,7 +288,7 @@ namespace
 
 	void recursiveConvertTree(const aiNode* src, Model::Node& dst) 
 	{
-		dst.transformation = toGLM(src->mTransformation);
+		dst.transform = toGLM(src->mTransformation);
 		for( size_t i=0; i<src->mNumMeshes; i++ ) {
 			Material* mat = nullptr;
 			if( _rst_md->my_materials.size()>0 ) {

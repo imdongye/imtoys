@@ -11,6 +11,7 @@ namespace
 {
 	struct BrdfTestInfo {
 		std::string ctrlName = "##modelview";
+		bool isRotated = false;
 		int model_idx = 0;
 		int D_idx = 0;
 		int G_idx = 0;
@@ -18,6 +19,7 @@ namespace
         float shininess = 100.f; // shininess
         float refIdx    = 1.45f; // index of refraction
         float roughness = 0.3f;  // brdf param
+		float metalness = 0.f;
 	};
 	std::vector<BrdfTestInfo> brdfTestInfos;
 
@@ -159,10 +161,13 @@ namespace lim
 				BrdfTestInfo& tInfo = brdfTestInfos[i];
 
 				ImGui::Begin(tInfo.ctrlName.c_str());
-
+				ImGui::Checkbox("rotate", &tInfo.isRotated);
+				if( tInfo.isRotated ) {
+					md.orientation = glm::rotate(md.orientation, Q_PI*delta_time, {0,1,0});
+					md.updateModelMat();
+				}
 				bool isInfoChanged = false;
 				static const char* modelStrs[]={"Phong", "BlinnPhong", "CookTorrance"};
-
 				if( ImGui::Combo("Model", &tInfo.model_idx, modelStrs, IM_ARRAYSIZE(modelStrs)) ) {
 					isInfoChanged = true; 
 				}
@@ -177,14 +182,23 @@ namespace lim
 				if( isInfoChanged ) {
 					md.default_material->set_prog = makeSetProg(tInfo);
 				}
-				if( ImGui::SliderFloat("shininess", &tInfo.shininess, 0, 1000) ) {
-					for(Material* mat : md.my_materials) {
-						mat->shininess = tInfo.shininess;
+				if( tInfo.model_idx<2 ) { // phong, blinn phong
+					if( ImGui::SliderFloat("shininess", &tInfo.shininess, 0.5, 300) ) {
+						for(Material* mat : md.my_materials) {
+							mat->shininess = tInfo.shininess;
+						}
 					}
 				}
-				if( ImGui::SliderFloat("roughness", &tInfo.roughness, 0.001, 1) ) {
-					for(Material* mat : md.my_materials) {
-						mat->roughness = tInfo.roughness;
+				else { // cook-torrance
+					if( ImGui::SliderFloat("roughness", &tInfo.roughness, 0.01, 1) ) {
+						for(Material* mat : md.my_materials) {
+							mat->roughness = tInfo.roughness;
+						}
+					}
+					if( ImGui::SliderFloat("metalness", &tInfo.metalness, 0.000, 1) ) {
+						for(Material* mat : md.my_materials) {
+							mat->metalness = tInfo.metalness;
+						}
 					}
 				}
 				ImGui::End();

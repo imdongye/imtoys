@@ -68,7 +68,7 @@ namespace lim
 				}
 			}
 			std::vector<Node> childs;
-			glm::mat4 transformation = glm::mat4(1);
+			glm::mat4 transform = glm::mat4(1);
 		};
 	public:
 		std::string name = "nonamed model";
@@ -76,7 +76,7 @@ namespace lim
 
 		/* transformation */
 		glm::vec3 position = glm::vec3(0);
-		glm::quat orientation = glm::quat();
+		glm::quat orientation = glm::quat(1,0,0,0);
 		glm::vec3 scale = glm::vec3(1);
 		glm::mat4 pivot_mat = glm::mat4(1);
 		glm::mat4 model_mat = glm::mat4(1); // = trans*rot*scale*pivot

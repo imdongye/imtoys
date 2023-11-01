@@ -219,7 +219,7 @@ namespace lim
 			for( int i=0; i<cur.getNrMesh(); i++) {
 				auto [ms, _] = cur.getMesh(i);
 				for(const glm::vec3& p : ms->poss) {
-					// Todo : transformation
+					// Todo : transform
 					boundary_max = glm::max(boundary_max, p);
 					boundary_min = glm::min(boundary_min, p);
 				}

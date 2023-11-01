@@ -52,7 +52,7 @@ void main(void)
 	mat3 oriTBN = getTBN( oriN );
 	
 	vec3 tsNor;
-	if( (map_Flags & 1<<4) > 0 ) {
+	if( (map_Flags & MF_HEIGHT) > 0 ) {
 		float Bu = texture(map_Bump, mUv+vec2(texDelta,0)).r
 					- texture(map_Bump, mUv+vec2(-texDelta,0)).r;
 		float Bv = texture(map_Bump, mUv+vec2(0,texDelta)).r

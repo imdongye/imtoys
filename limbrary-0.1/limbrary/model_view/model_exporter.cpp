@@ -224,7 +224,7 @@ namespace
 	aiNode* recursiveConvertTree(const Model::Node& src)
 	{
 		aiNode* node = new aiNode();
-		node->mTransformation = toAi(src.transformation);
+		node->mTransformation = toAi(src.transform);
 
 		const int nrMeshes = src.getNrMesh();
 		node->mNumMeshes = nrMeshes;

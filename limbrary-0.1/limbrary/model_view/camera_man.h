@@ -140,10 +140,12 @@ namespace lim
 	class ViewportWithCamera : public Viewport
 	{
 	public:
+		bool use_guizmo = false;
 		CameraManVp camera;
 	private:
 		ViewportWithCamera(const ViewportWithCamera&) = delete;
 		ViewportWithCamera& operator=(const ViewportWithCamera&) = delete;
+		void drawGuizmo();
 	public:
 		ViewportWithCamera(std::string_view _name, Framebuffer* createdFB);
 		ViewportWithCamera(ViewportWithCamera&& src) noexcept;

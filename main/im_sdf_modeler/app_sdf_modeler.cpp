@@ -10,6 +10,7 @@ namespace lim
 	AppSdfModeler::AppSdfModeler(): AppBase(1200, 780, APP_NAME)
 		, viewport("AnimTester", new Framebuffer()) // 멀티셈플링 동작 안함.
 	{
+		viewport.use_guizmo = true;
 		viewport.camera.pivot = glm::vec3(0,1,0);
 		viewport.camera.position = glm::vec3(0,1,5);
 		viewport.camera.updateViewMat();

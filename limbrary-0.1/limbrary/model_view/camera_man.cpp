@@ -414,7 +414,6 @@ namespace lim
 		is_hovered = ImGui::IsItemHovered();
 		is_dragged = isWindowActivated && !isHoveredOnTitle && ImGui::IsMouseDown(0);
 		is_dragged |= (is_hovered||is_focused)&&(ImGui::IsMouseDown(1)||ImGui::IsMouseDown(2));
-		if( is_dragged ) ImGui::SetMouseCursor(7);
 
 		prev_mouse_pos = mouse_pos;
 		ImVec2 imMousePos = ImGui::GetMousePos() - ImGui::GetWindowPos() - ImVec2(0, ImGui::GetFrameHeight());
@@ -426,7 +425,21 @@ namespace lim
 		is_scrolled =  is_hovered&&(io.MouseWheel||io.MouseWheelH);
 		scroll_off = {io.MouseWheelH, io.MouseWheel};
 
+		if(use_guizmo) {
+			drawGuizmo();
+			is_dragged &= !ImGuizmo::IsUsingAny();
+		}
+		
+		if( is_dragged ) ImGui::SetMouseCursor(7);
+		ImGui::End();
+		ImGui::PopStyleVar();
 
+		for( auto& cb : update_callbacks ) {
+			cb(ImGui::GetIO().DeltaTime);
+		}
+		return is_opened;
+	}
+	void ViewportWithCamera::drawGuizmo() {
 		const auto& pos = ImGui::GetItemRectMin();
 		const auto& size = ImGui::GetItemRectSize();
 		glm::mat4 identity{1.f};
@@ -441,24 +454,10 @@ namespace lim
 		ImGuizmo::SetRect(pos.x, pos.y, size.x, size.y);
 		ImGuizmo::Manipulate( viewMat, projMat, zmoOper, zmoMode, modelMat
 							, nullptr, nullptr, nullptr);
-		if( ImGuizmo::IsUsing() ) {
-			
-		}
 		
 		ImGuizmo::SetOrthographic(false);
 
 		ImGuizmo::ViewManipulate( glm::value_ptr(camera.view_mat)
 								, 8.0f, {pos.x+size.x-128, pos.y}, {128, 128}, 0x10101010);
-		
-
-
-		
-		ImGui::End();
-		ImGui::PopStyleVar();
-
-		for( auto& cb : update_callbacks ) {
-			cb(ImGui::GetIO().DeltaTime);
-		}
-		return is_opened;
 	}
 }

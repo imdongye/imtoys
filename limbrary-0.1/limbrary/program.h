@@ -118,11 +118,10 @@ namespace lim
 			glUniformMatrix4fv(getUniformLocation(vname), 1, 0, glm::value_ptr(v));
 			return *this;
 		}
-		inline const Program& setUniform(const std::string& vname, const TexBase& tex, int activeSlot) const {
+		inline const Program& setTexture(const std::string& vname, GLuint texId, int activeSlot) const {
 			glActiveTexture(GL_TEXTURE0 + activeSlot);
-            glBindTexture(GL_TEXTURE_2D, tex.tex_id);
-           	setUniform(vname, activeSlot);
-			return *this;
+            glBindTexture(GL_TEXTURE_2D, texId);
+			return setUniform(vname, activeSlot);
 		}
 	};
 

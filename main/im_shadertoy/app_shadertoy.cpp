@@ -54,7 +54,7 @@ namespace lim
 		vec4 iMouse = {viewport.mouse_pos.x, viewport.mouse_pos.y, 0,0};
 		program.setUniform("iMouse", iMouse);
 
-		program.setUniform("iChannel0", iChannel0, 0);
+		program.setTexture("iChannel0", iChannel0.tex_id, 0);
 		// program.setUniform("iChannel1", iChannel1, 0);
 		// program.setUniform("iChannel2", iChannel2, 0);
 		// program.setUniform("iChannel3", iChannel3, 0);

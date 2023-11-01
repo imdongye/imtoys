@@ -77,11 +77,11 @@ void main(void)
 	vec3 L = normalize(lightPos - wPos);
 	vec3 V = normalize(cameraPos - wPos);
 
-	if( (map_Flags&(3<<4)) > 0 ) // has bump
+	if( (map_Flags&(MF_NOR|MF_HEIGHT)) > 0 ) // has bump
 	{
 		mat3 TBN = getTBN( N );
 		vec3 tsNor; // tangent normal
-		if( (map_Flags&(1<<4)) > 0 ) { // bump map
+		if( (map_Flags&MF_HEIGHT) > 0 ) { // bump map
 			float Bu = texture(map_Bump, mUv+vec2(texDelta,0)).r
 						- texture(map_Bump, mUv+vec2(-texDelta,0)).r;
 			float Bv = texture(map_Bump, mUv+vec2(0,texDelta)).r

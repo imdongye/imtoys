@@ -28,7 +28,7 @@ namespace lim
 		const float halfW = ortho_width*0.5f;
 		const float halfH = ortho_height*0.5f;
 		shadow_proj_mat = glm::ortho(-halfW, halfW, -halfH, halfH, shadow_z_near, shadow_z_far);
-		updateWithPivotAndPos();
+		updateShadowVP();
 	}
 	Light::Light(Light&& src) noexcept
 	{
@@ -67,9 +67,9 @@ namespace lim
 		toLit = rotate(radians(phiDeg), vec3{0,1,0}) * toLit;
 
 		position = pivot+distance*vec3(toLit);
-		updateWithPivotAndPos();
+		updateShadowVP();
 	}
-	void Light::updateWithPivotAndPos()
+	void Light::updateShadowVP()
 	{
 		shadow_view_mat = lookAt(vec3(position), pivot, {0,1,0});
 		shadow_vp_mat = shadow_proj_mat * shadow_view_mat;
