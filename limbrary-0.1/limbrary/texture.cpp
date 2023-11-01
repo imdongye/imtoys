@@ -174,8 +174,6 @@ namespace lim
 		initGL(data);
 		stbi_image_free(data);
 
-		log::pure("%s(%dx%dx%d) loaded\n", name.c_str(), width, height, nr_channels);
-
 		return true;
 	}
 
@@ -259,8 +257,6 @@ namespace lim
 
 		initGL(data);
 		stbi_image_free(data);
-
-		log::pure("%s(%dx%dx%d) auto loaded\n", name.c_str(), width, height, nr_channels);
 
 		return true;
 	}

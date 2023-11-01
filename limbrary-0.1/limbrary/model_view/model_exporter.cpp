@@ -336,7 +336,7 @@ namespace lim
 		/* export model */
 		double elapsedTime = glfwGetTime();
 		aiScene* scene = makeScene(*this);
-		log::pure("done! convert model for export in %.2f\n", glfwGetTime()-elapsedTime);
+		log::pure("done! convert model for export in %.2fsec\n", glfwGetTime()-elapsedTime);
 		
 		elapsedTime = glfwGetTime();
 		const GLuint severity = Assimp::Logger::Debugging|Assimp::Logger::Info|Assimp::Logger::Err|Assimp::Logger::Warn;
@@ -354,7 +354,7 @@ namespace lim
 		Assimp::DefaultLogger::kill();
 		delete scene;
 		scene = nullptr;
-		log::pure("done! export model in %.2f\n", glfwGetTime()-elapsedTime);
+		log::pure("done! export model in %.2fsec\n", glfwGetTime()-elapsedTime);
 
 
 		/* export texture */
@@ -382,6 +382,7 @@ namespace lim
             glReadPixels(0, 0,  tex->width, tex->height, GL_RGB, GL_UNSIGNED_BYTE, fileData);
 
 			stbi_flip_vertically_on_write(true);
+			// Todo: base color texture srgb로 변환
             stbi_write_png(newTexPath.c_str(), tex->width, tex->height, 3, fileData, tex->width * 3);
 
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -391,7 +392,7 @@ namespace lim
 			// log::pure("copied texture: %s to %s\n", fromTexPath.string().c_str(), toTexPath.string().c_str());
 		}
 
-		log::pure("done! export texture in %.2f\n\n", glfwGetTime()-elapsedTime);
+		log::pure("done! export texture in %.2fsec\n\n", glfwGetTime()-elapsedTime);
 		return true;
 	}
 }

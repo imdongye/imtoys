@@ -7,7 +7,7 @@
 
 namespace lim
 {
-	AppSdfModeler::AppSdfModeler(): AppBase(1200, 780, APP_NAME)
+	AppSdfModeler::AppSdfModeler(): AppBase(1200, 780, APP_NAME, false)
 		, viewport("AnimTester", new Framebuffer()) // 멀티셈플링 동작 안함.
 	{
 		viewport.use_guizmo = true;

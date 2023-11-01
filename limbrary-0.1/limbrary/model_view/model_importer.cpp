@@ -67,24 +67,29 @@ namespace
 			}
 	};
 
+	// 중복 load 막기
 	Texture* loadTexture(string texPath, GLint internalFormat=GL_RGB8)
 	{
+		Texture* rst = nullptr;
 		std::vector<Texture*>& loadedTexs = _rst_md->my_textures; 
 
-		// assimp가 뒤에오는 옵션을 읽지 않음 (ex: eye.png -bm 0.4) 그래서 아래와 같이 필터링한다.
+		// assimp가 mtl의 뒤에오는 옵션을 읽지 않음 (ex: eye.png -bm 0.4) 그래서 아래와 같이 필터링한다.
 		texPath = texPath.substr(0, texPath.find_first_of(' '));
 		texPath = _model_dir + "/" + texPath;
 
 		for( size_t i = 0; i < loadedTexs.size(); i++ ) {
 			if( texPath.compare(loadedTexs[i]->path)==0 ) {
-				return loadedTexs[i];
+				rst = loadedTexs[i];
 			}
 		}
+		if( !rst ) {
+			loadedTexs.push_back(new Texture());
+			loadedTexs.back()->initFromImage(texPath, internalFormat);
+			rst = loadedTexs.back();
+		}
+		log::pure("%s(%dx%dx%d)\n", rst->name.c_str(), rst->width, rst->height, rst->nr_channels);
 
-		loadedTexs.push_back(new Texture());
-		loadedTexs.back()->initFromImage(texPath, internalFormat);
-
-		return loadedTexs.back();
+		return rst;
 	}
 
 	Material* convertMaterial(aiMaterial* aiMat)
@@ -97,101 +102,124 @@ namespace
 		float tempFloat;
 
 		mat.prog = nullptr;
-
+		log::pure("<load factors>\n");
 		mat.factor_Flags = Material::FF_NONE;
 		if( aiMat->Get(AI_MATKEY_COLOR_DIFFUSE, temp3d) == AI_SUCCESS ) {
-			mat.baseColor = toGLM(temp3d); mat.factor_Flags |= Material::FF_BASE_COLOR;
+			log::pure("base color: %.1f %.1f %.1f\n", temp3d.r, temp3d.g, temp3d.b);
+			mat.factor_Flags |= Material::FF_BASE_COLOR;
+			mat.baseColor = toGLM(temp3d); 
 		}
 		if( aiMat->Get(AI_MATKEY_COLOR_SPECULAR, temp3d) == AI_SUCCESS ) {
-			mat.specColor = toGLM(temp3d); mat.factor_Flags |= Material::FF_SPECULAR;
+			log::pure("specular color: %.1f %.1f %.1f\n", temp3d.r, temp3d.g, temp3d.b);
+			mat.factor_Flags |= Material::FF_SPECULAR;
+			mat.specColor = toGLM(temp3d); 
 		}
 		if( aiMat->Get(AI_MATKEY_SHININESS_STRENGTH, tempFloat ) != AI_SUCCESS ) {
-			mat.specColor *= tempFloat;
+			log::pure("*pass wrong shininess strength: %.1f\n", tempFloat);
+			//mat.specColor *= tempFloat;
 		}
 		if( aiMat->Get(AI_MATKEY_COLOR_AMBIENT, temp3d) == AI_SUCCESS ) {
-			mat.ambientColor = toGLM(temp3d); mat.factor_Flags |= Material::FF_AMBIENT;
+			log::pure("ambient color: %.1f %.1f %.1f\n", temp3d.r, temp3d.g, temp3d.b);
+			mat.factor_Flags |= Material::FF_AMBIENT;
+			mat.ambientColor = toGLM(temp3d); 
 		}
 		if( aiMat->Get(AI_MATKEY_COLOR_EMISSIVE, temp3d) == AI_SUCCESS ) {
-			mat.emissionColor = toGLM(temp3d); mat.factor_Flags |= Material::FF_EMISSION;
+			log::pure("emissive color: %.1f %.1f %.1f\n", temp3d.r, temp3d.g, temp3d.b);
+			mat.factor_Flags |= Material::FF_EMISSION;
+			mat.emissionColor = toGLM(temp3d); 
 		}
 		if( aiMat->Get(AI_MATKEY_TRANSMISSION_FACTOR, tempFloat) == AI_SUCCESS ) {
-			mat.transmission = tempFloat; mat.factor_Flags |= Material::FF_TRANSMISSION;
+			log::pure("transmission: %.1f\n", tempFloat);
+			mat.factor_Flags |= Material::FF_TRANSMISSION;
+			mat.transmission = tempFloat; 
 		}
 		if( aiMat->Get(AI_MATKEY_REFRACTI, tempFloat) == AI_SUCCESS ) {
-			mat.refraciti = tempFloat; mat.factor_Flags |= Material::FF_REFRACITI;
+			log::pure("refraciti: %.1f\n", tempFloat);
+			mat.factor_Flags |= Material::FF_REFRACITI;
+			mat.refraciti = tempFloat; 
 		}
 		if( aiMat->Get(AI_MATKEY_OPACITY, tempFloat) == AI_SUCCESS ) {
-			mat.opacity = tempFloat; mat.factor_Flags |= Material::FF_OPACITY;
+			log::pure("opacity: %.1f\n", tempFloat);
+			mat.factor_Flags |= Material::FF_OPACITY;
+			mat.opacity = tempFloat; 
 		}
 		if( aiMat->Get(AI_MATKEY_SHININESS, tempFloat) == AI_SUCCESS ) {
+			log::pure("*pass wrong shininess: %.1f\n", tempFloat);
 			//mat.shininess = tempFloat;
 		}
 		if( aiMat->Get(AI_MATKEY_ROUGHNESS_FACTOR, tempFloat) == AI_SUCCESS ) {
-			mat.roughness = tempFloat; mat.factor_Flags |= Material::FF_ROUGHNESS;
+			log::pure("roughness: %.1f\n", tempFloat);
+			mat.factor_Flags |= Material::FF_ROUGHNESS;
+			mat.roughness = tempFloat;
 		}
 		if( aiMat->Get(AI_MATKEY_METALLIC_FACTOR, tempFloat) == AI_SUCCESS ) {
-			mat.metalness = tempFloat; mat.factor_Flags |= Material::FF_METALNESS;
+			log::pure("metalness: %.1f\n", tempFloat);
+			mat.factor_Flags |= Material::FF_METALNESS;
+			mat.metalness = tempFloat; 
 		}
 
+		// normal, metalness, roughness, occlusion 은 linear space다.
+		log::pure("<load maps>\n");
 		mat.map_Flags = Material::MF_NONE;
 		if( aiMat->GetTexture(aiTextureType_DIFFUSE, 0, &tempStr) == AI_SUCCESS ) {
-			log::pure("map_BaseColor ");
+			log::pure("map_BaseColor: ");
 			mat.map_Flags |= Material::MF_BASE_COLOR;
 			mat.map_BaseColor = loadTexture(tempStr.C_Str(), GL_SRGB8); // kd일때만 linear space변환
 		}
 		if( aiMat->GetTexture(aiTextureType_SPECULAR, 0, &tempStr) == AI_SUCCESS ) {
-			log::pure("map_Specular ");
+			log::pure("map_Specular: ");
 			mat.map_Flags |= Material::MF_SPECULAR;
 			mat.map_Specular = loadTexture(tempStr.C_Str(), GL_SRGB8); // Todo: Ka Ks map 에서도 해야하나?
 		}
 		if( aiMat->GetTexture(aiTextureType_HEIGHT, 0, &tempStr) == AI_SUCCESS ) {
-			log::pure("map_Bump(Height) ");
+			log::pure("map_Bump(Height): ");
            	mat.map_Flags |= Material::MF_HEIGHT;
 			mat.map_Bump = loadTexture(tempStr.C_Str(), GL_RGB8);
 		}
 		if( aiMat->GetTexture(aiTextureType_NORMALS, 0, &tempStr) == AI_SUCCESS ) {
-			log::pure("map_Bump(Nor) ");
+			log::pure("map_Bump(Nor): ");
            	mat.map_Flags |= Material::MF_NOR;
 			mat.map_Bump = loadTexture(tempStr.C_Str(), GL_RGB8);
 		}
 		if( aiMat->GetTexture(aiTextureType_AMBIENT, 0, &tempStr) == AI_SUCCESS ) {
-			log::pure("map_AmbOcc ");
+			log::pure("map_AmbOcc: ");
 			mat.map_Flags |= Material::MF_AMB_OCC;
-			mat.map_AmbOcc = loadTexture(tempStr.C_Str(), GL_SRGB8);
+			mat.map_AmbOcc = loadTexture(tempStr.C_Str(), GL_RGB8);
 		}
 		if( aiMat->GetTexture(aiTextureType_DIFFUSE_ROUGHNESS, 0, &tempStr) == AI_SUCCESS ) {
-			// log::pure("map_Roughness(ROUGHNESS) ");
+			log::pure("*pass map_Roughness(ROUGHNESS): %s\n", tempStr.C_Str());
 			// mat.map_Flags |= Material::MF_ROUGHNESS;
 			// mat.map_Roughness = loadTexture(tempStr.C_Str(), GL_SRGB8);
 		}
 		if( aiMat->GetTexture(aiTextureType_METALNESS, 0, &tempStr) == AI_SUCCESS ) {
-			log::pure("map_Metalness ");
-			mat.map_Flags |= Material::MF_METALNESS;
-			mat.map_Metalness = loadTexture(tempStr.C_Str(), GL_SRGB8);
+			log::pure("*pass map_Metalness: %s\n", tempStr.C_Str());
+			// mat.map_Flags |= Material::MF_METALNESS;
+			// mat.map_Metalness = loadTexture(tempStr.C_Str(), GL_RGB8);
 		}
 		if( aiMat->GetTexture(aiTextureType_EMISSION_COLOR, 0, &tempStr) == AI_SUCCESS ) {
-			log::pure("map_Emission ");
+			log::pure("map_Emission: ");
 			mat.map_Flags |= Material::MF_EMISSION;
 			mat.map_Emission = loadTexture(tempStr.C_Str(), GL_SRGB8);
 		}
 		if( aiMat->GetTexture(aiTextureType_OPACITY, 0, &tempStr) == AI_SUCCESS ) {
-			log::pure("map_Opacity ");
+			log::pure("map_Opacity: ");
 			mat.map_Flags |= Material::MF_Opacity;
 			mat.map_Opacity = loadTexture(tempStr.C_Str(), GL_SRGB8);
 		}
 		if( aiMat->GetTexture(aiTextureType_SHININESS, 0, &tempStr) == AI_SUCCESS ) {
-			log::pure("map_Roughness(SHININESS) ");
-			if(	mat.map_Flags&Material::MF_ROUGHNESS ) {
-				log::err("conflict map_Roughness(Shininess)\n");
-				std::exit(1);
-			}
-           	mat.map_Flags |= Material::MF_SHININESS;
-			mat.map_Roughness = loadTexture(tempStr.C_Str(), GL_RGB8);
+			log::pure("*pass map_Roughness(SHININESS): %s\n", tempStr.C_Str());
+			// if(	mat.map_Flags&Material::MF_ROUGHNESS ) {
+			// 	log::err("conflict map_Roughness(Shininess)\n");
+			// 	std::exit(1);
+			// }
+           	// mat.map_Flags |= Material::MF_SHININESS;
+			// mat.map_Roughness = loadTexture(tempStr.C_Str(), GL_RGB8);
 		}
 		// Todo: assimp에서 ARM인지 RM인지 Roughness인지 구별을 못함. 일단 ARM으로 가정
+		// 파일이름 분해해서 어떤 텍스쳐가 어떤순서로 있는지 찾아야함.
 		// https://stackoverflow.com/questions/54116869/how-do-i-load-roughness-metallic-map-with-assimp-using-gltf-format
 		if( aiMat->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &tempStr) == AI_SUCCESS ) {
-			log::pure("map_Roughness(AMR) ");
+			log::pure("map_Roughness(AMR): ");
 			if(	mat.map_Flags&(Material::MF_ROUGHNESS|Material::MF_SHININESS) ) {
 				log::err("conflict map_Roughness(Roughness or Shininess)\n");
 				std::exit(1);
@@ -351,7 +379,7 @@ namespace lim
 		}
 		Assimp::DefaultLogger::kill();
 		ai_backup_flags = _scene->mFlags;
-		log::pure("done! read file with assimp in %.2f\n", glfwGetTime()-elapsedTime);
+		log::pure("done! read file with assimp in %.2fsec\n", glfwGetTime()-elapsedTime);
 
 		/* import mats */
 		elapsedTime = glfwGetTime();
@@ -373,7 +401,7 @@ namespace lim
 		recursiveConvertTree(_scene->mRootNode, root);
 		log::pure("#meshs %d, #mats %d, #verts %d, #tris %d\n", my_meshes.size(), my_materials.size(), nr_vertices, nr_triangles);
 		log::pure("boundary size : %f, %f, %f\n", name.c_str(), boundary_size.x, boundary_size.y, boundary_size.z);
-		log::pure("done! convert aiScene in %.2f\n\n", glfwGetTime()-elapsedTime);
+		log::pure("done! convert aiScene in %.2fsec\n\n", glfwGetTime()-elapsedTime);
 
 		aiReleaseImport(_scene);
 

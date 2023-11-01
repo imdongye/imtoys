@@ -58,7 +58,7 @@ namespace lim
         int factor_Flags = 0; // just for export
         glm::vec3 baseColor = {0.27f, 0.79f, 0.69f}; // 지구의 모든 물체는 반사율 0이 될수없음.
         glm::vec3 specColor = {1.f, 1.f, 1.f};
-        glm::vec3 ambientColor = {0.2f, 0.2f, 0.2f};
+        glm::vec3 ambientColor = {0.0f, 0.0f, 0.0f};
         glm::vec3 emissionColor = {0.f, 0.f, 0.f};
         float transmission = 0.f;
         float refraciti = 0.f;           // ior

@@ -108,11 +108,11 @@ vec3 LambertianBRDF() { // Diffuse
 
 vec3 PhongBRDF() { // Specular
 	float normalizeFactor = (shininess+1)/(2*PI);
-	return vec3(1) * normalizeFactor * pow( max(0,dot(R, w_o)), shininess );
+	return ambientColor + vec3(1) * normalizeFactor * pow( max(0,dot(R, w_o)), shininess );
 }
 vec3 BlinnPhongBRDF() { // Specular
 	float normalizeFactor = (shininess+1)/(2*PI);
-	return vec3(1) * normalizeFactor * pow( max(0,dot(N, H)), shininess );
+	return ambientColor + vec3(1) * normalizeFactor * pow( max(0,dot(N, H)), shininess );
 }
 vec3 OrenNayar(float r) {
 	float cosTi = dot(w_i, N);
