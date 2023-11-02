@@ -230,7 +230,7 @@ namespace
 		node->mNumMeshes = nrMeshes;
 		node->mMeshes = new unsigned int[nrMeshes];
 		for( int i=0; i<nrMeshes; i++ ) {
-			auto [ms, mat] = src.getMesh(i);
+			auto [ms, mat] = src.getMeshWithMat(i);
 			node->mMeshes[i] = findIdx(_index_cache, std::make_pair(ms, mat));
 		}
 
@@ -252,7 +252,7 @@ namespace
 			const Model::Node& node = *nodeStack.top();
 			nodeStack.pop();
 			for(int i=0; i<node.getNrMesh(); i++) {
-				auto [ms, mat] = node.getMesh(i);
+				auto [ms, mat] = node.getMeshWithMat(i);
 				if(pMesh==ms) {
 					rst.push_back(mat);
 				}

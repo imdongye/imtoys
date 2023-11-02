@@ -21,32 +21,39 @@ uniform float cameraFovy;
 uniform vec3 cameraPivot;
 uniform vec3 lightPos;
 uniform float lightInt;
+uniform mat4 modelMat;
 
 const float PI = 3.1415926535;
 const vec3 UP = vec3(0,1,0);
-const int NR_STEPS = 400;
+const int NR_STEPS = 100;
 const float MIN_HIT_DIST = 0.01;
-const float MAX_FAR_DIST = 100.0;
+const float MAX_FAR_DIST = 40.0;
 
 
 float sdSphere(vec3 p, vec3 c, float r) {
     return length(p-c) - r;
 }
-/// http://www.songho.ca/math/plane/plane.html
+float sdBox( vec3 p, vec3 b ) {
+  vec3 q = abs(p) - b;
+  return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
+}
 // h is distance form origin
 float sdPlane(vec3 p, vec3 n, float h) {
     return dot(n,p) - h;
 }
 float smoothMin(float a, float b, float k) {
     return -log(exp(-k*a) + exp(-k*b)) / k;
-
 }
 
 float sdWorld(vec3 p) {
+    vec4 hp = vec4(p, 1);
     float sphere0 = sdSphere(p, vec3(0,1,0), 1.0);
     float plane = sdPlane(p, UP, 0.0);
-    float rst = min(sphere0, plane);
-    rst = smoothMin(sphere0, plane, 1.0);
+    float box = sdBox((modelMat*hp).xyz, vec3(1,0.5,1));
+    float rst = sphere0;
+    rst = smoothMin(plane, rst, 1.0);
+    rst = min(box, rst);
+    //rst = smoothMin(sphere0, plane, 1.0);
     // return plane;
     //return sphere0;
     return rst;

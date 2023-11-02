@@ -13,6 +13,7 @@
 #include <imgui.h>
 #include <limbrary/model_view/renderer.h>
 #include <limbrary/asset_lib.h>
+#include <limbrary/model_view/model_io_helper.h>
 
 namespace lim
 {

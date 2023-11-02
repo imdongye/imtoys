@@ -96,7 +96,7 @@ namespace lim
 				Node* dstN = dstNs.top(); dstNs.pop();
 				
 				for( int i=0; i<srcN->getNrMesh(); i++ ) {
-					auto [ms, mat] = srcN->getMesh(i);
+					auto [ms, mat] = srcN->getMeshWithMat(i);
 					dstN->addMeshWithMat(ms, mat);
 				}
 				dstN->childs.reserve(srcN->childs.size());
@@ -135,7 +135,7 @@ namespace lim
 				Node* dstN = dstNs.top(); dstNs.pop();
 				
 				for( int i=0; i<srcN->getNrMesh(); i++ ) {
-					auto [ms, mat] = srcN->getMesh(i);
+					auto [ms, mat] = srcN->getMeshWithMat(i);
 					dstN->addMeshWithMat(my_meshes[findIdx(src.my_meshes, (Mesh*)ms)]
 								, my_materials[findIdx(src.my_materials, (Material*)mat)]);
 				}
@@ -217,7 +217,7 @@ namespace lim
 		{
 			const Node& cur = *nodeStack.top(); nodeStack.pop();
 			for( int i=0; i<cur.getNrMesh(); i++) {
-				auto [ms, _] = cur.getMesh(i);
+				auto [ms, _] = cur.getMeshWithMat(i);
 				for(const glm::vec3& p : ms->poss) {
 					// Todo : transform
 					boundary_max = glm::max(boundary_max, p);

@@ -30,9 +30,6 @@ TODO list:
 #include "mesh.h"
 #include "light.h"
 #include "camera.h"
-#include <assimp/scene.h>
-#include <assimp/cexport.h>
-#include <assimp/cimport.h>
 #include <limits>
 
 namespace lim
@@ -53,7 +50,7 @@ namespace lim
 				mats.push_back(mat);
 				nr_meshes++;
 			}
-			std::pair<const Mesh*, const Material*> getMesh(int idx) const {
+			std::pair<const Mesh*, const Material*> getMeshWithMat(int idx) const {
 				return std::make_pair(meshes[idx], mats[idx]);
 			}
 			int getNrMesh() const {
@@ -116,12 +113,5 @@ namespace lim
 		bool importFromFile(std::string_view modelPath, bool unitScaleAndPivot = false, bool withMaterial = true);
 		bool exportToFile(size_t pIndex, std::string_view exportPath);
 	};
-
-	// get format data
-	int getNrImportFormats();
-	const char* getImportFormat(int idx);
-	std::string findModelInDirectory(std::string_view path);
-	int getNrExportFormats();
-	const aiExportFormatDesc* getExportFormatInfo(int idx);
 }
 #endif

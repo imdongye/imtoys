@@ -22,6 +22,7 @@ namespace lim
 		Light light;
 		ProgramReloadable prog;
 		ViewportWithCamera viewport;
+		Model box;
 
 	public:
 		AppSdfModeler();

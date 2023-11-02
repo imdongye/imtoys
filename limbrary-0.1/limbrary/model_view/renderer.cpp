@@ -150,7 +150,7 @@ namespace
                 nodeStack.push(&child);
             }
             for( int i=0; i<node.getNrMesh(); i++ ) {
-                auto [ms, mat] = node.getMesh(i);
+                auto [ms, mat] = node.getMeshWithMat(i);
                 hook(ms, mat, transform);
             }
         }

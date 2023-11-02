@@ -17,6 +17,9 @@ namespace lim
 		prog.name = "sdf and ray marching";
 		prog.home_dir = APP_DIR;
 		prog.attatch("canvas.vs").attatch("shader.fs").link();
+
+		box.position = glm::vec3(1,0,0);
+		box.updateModelMat();
 	}
 	AppSdfModeler::~AppSdfModeler()
 	{
@@ -40,6 +43,7 @@ namespace lim
 		prog.setUniform("cameraOrthWidth", 0.f);
 		prog.setUniform("cameraPos", cam.position);
 		prog.setUniform("cameraPivot", cam.pivot);
+		prog.setUniform("modelMat", glm::inverse(box.model_mat));
 
 		AssetLib::get().screen_quad.drawGL();
 		viewport.getFb().unbind();
@@ -47,6 +51,14 @@ namespace lim
 	void AppSdfModeler::renderImGui()
 	{
 		ImGui::DockSpaceOverViewport();
+
+		ImGui::Begin("sdf tester");
+		ImGui::SliderFloat("pos x", &box.position.x, 0,3);
+		static float rotY = 0;
+		ImGui::SliderFloat("rot y", &rotY, 0,F_PI);
+		box.orientation = glm::angleAxis(rotY, glm::vec3(0,1,0));
+		box.updateModelMat();
+		ImGui::End();
 
 		viewport.drawImGui();
 	}

@@ -1,6 +1,7 @@
 #include "app_icp.h"
 #include <stb_image.h>
 #include <glm/gtx/transform.hpp>
+#include <glm/gtx/string_cast.hpp>
 #include <imgui.h>
 #include <Eigen/Eigen>
 #include <numeric>
@@ -11,25 +12,22 @@ using namespace Eigen;
 
 namespace
 {
-    Mesh* makeTransformedMesh(const Mesh& ori, const glm::mat4& modelMat)
+    void makeTransformedMesh(const Mesh& src, Mesh& dst, const glm::mat4& modelMat)
     {
-        Mesh* rst = new Mesh();
-        rst->tris = ori.tris;
-
-        for( const glm::vec3& p : ori.poss ) {
+        dst.tris = src.tris;
+        dst.uvs = src.uvs;
+        dst.deinitGL();
+        for( const glm::vec3& p : src.poss ) {
             glm::vec4 hc = {p.x, p.y, p.z, 1};
-            rst->poss.push_back( glm::vec3(modelMat*hc) );
+            hc = modelMat*hc;
+            dst.poss.push_back( glm::vec3(hc) );
         }
-        for( const glm::vec3& n : ori.nors ) {
+        for( const glm::vec3& n : src.nors ) {
             glm::vec4 hc = {n.x, n.y, n.z, 0};
-            rst->nors.push_back( glm::vec3(modelMat*hc) );
+            hc = modelMat*hc;
+            dst.nors.push_back( glm::vec3(hc) );
         }
-        for( const glm::vec2& uv : ori.uvs ) {
-            rst->uvs.push_back(uv);
-        }
-        rst->initGL();
-
-        return rst;
+        dst.initGL();
     }
 
     struct Neighbor
@@ -171,32 +169,27 @@ namespace lim
 {
     AppICP::AppICP(): AppBase(1200, 780, APP_NAME)
     {
-        prog = new Program();
-        prog->name = "icp";
-        prog->home_dir = APP_DIR;
-        prog->attatch("assets/shaders/mvp_points.vs").attatch("blue.fs").link();
+        prog.name = "icp";
+        prog.home_dir = APP_DIR;
+        prog.attatch("mvp_points.vs").attatch("blue.fs").link();
 
-        camera = new CameraManWin();
-        camera->position = {0,0,5};
-        camera->pivot = {0,0,0};
-        camera->updateViewMat();
+        camera.position = {0,0,5};
+        camera.pivot = {0,0,0};
+        camera.updateViewMat();
 
-        model = new Model();
-        model->importFromFile("assets/models/objs/woody.obj", true);
+        Model model;
+        model.importFromFile("assets/models/objs/woody.obj", true, false);
+        log::pure(glm::to_string(model.position).c_str());
+        log::pure("\n");
+        log::pure(glm::to_string(model.scale).c_str());
 
-        dest = makeTransformedMesh(*model->my_meshes[0], model->model_mat);
+        makeTransformedMesh(*model.my_meshes[0], dst, model.model_mat);
 
         glm::mat4 rigidMat = glm::translate(glm::vec3 {3,1, 0}) * glm::rotate(0.2f, glm::vec3 {0,0,1});
-
-        src = makeTransformedMesh(*dest, rigidMat);
+        makeTransformedMesh(dst, src, rigidMat);
     }
     AppICP::~AppICP()
     {
-        delete prog;
-        delete camera;
-        delete model;
-        delete dest;
-        delete src;
     }
     void AppICP::update()
     {
@@ -207,22 +200,21 @@ namespace lim
 		glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        prog->use();
+        prog.use();
 
-        prog->setUniform("viewMat", camera->view_mat);
-        prog->setUniform("cameraPos", camera->position);
-        prog->setUniform("projMat", camera->proj_mat);
+        prog.setUniform("viewMat", camera.view_mat);
+        prog.setUniform("projMat", camera.proj_mat);
+        prog.setUniform("cameraPos", camera.position);
 
-        prog->setUniform("modelMat", glm::mat4(1));
-        glBindVertexArray(dest->vert_array);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, dest->element_buf);
-        glDrawElements(GL_POINTS, dest->tris.size()*3, GL_UNSIGNED_INT, 0);
+        prog.setUniform("modelMat", glm::mat4(1));
+        glBindVertexArray(dst.vert_array);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, dst.element_buf);
+		glDrawElements(GL_POINTS, dst.tris.size()*3, GL_UNSIGNED_INT, 0);
 		
-
-        prog->setUniform("modelMat", icp_mat);
-        glBindVertexArray(src->vert_array);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, src->element_buf);
-        glDrawElements(GL_POINTS, dest->tris.size()*3, GL_UNSIGNED_INT, 0);
+        prog.setUniform("modelMat", icp_mat);
+        glBindVertexArray(src.vert_array);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, src.element_buf);
+		glDrawElements(GL_POINTS, src.tris.size()*3, GL_UNSIGNED_INT, 0);
     }
     void AppICP::renderImGui()
     {
@@ -231,17 +223,17 @@ namespace lim
         //ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
         ImGui::Begin("icp tester##icp", &isoverlay);
         if( ImGui::Button("iterate") ) {
-            const int nrPoss = src->poss.size();
+            const int nrPoss = src.poss.size();
             // 열벡터로 나열
             Eigen::MatrixXd srcdata = Eigen::MatrixXd::Ones(3, nrPoss);
             Eigen::MatrixXd dstdata = Eigen::MatrixXd::Ones(3, nrPoss);
 
             for( int i=0; i<nrPoss; i++ ) {
                 glm::vec3 p;
-                p = src->poss[i];
+                p = src.poss[i];
                 srcdata.block<3,1>(0, i) << p.x, p.y, p.z;
 
-                p = dest->poss[i];
+                p = dst.poss[i];
                 dstdata.block<3,1>(0, i) << p.x, p.y, p.z;
             }
 
