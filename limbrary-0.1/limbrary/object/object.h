@@ -7,11 +7,6 @@
 #ifndef __object_h_
 #define __object_h_
 
-class Component;
 
-class Object
-{
-
-}
 
 #endif

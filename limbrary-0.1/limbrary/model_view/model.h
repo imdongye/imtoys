@@ -6,6 +6,8 @@ edit learnopengl code
 Note:
 default_mat을 수정한다면 program 과 set_prog는 반드시 지정해줘야함.
 
+Transform 하이라키 구조는 굳이 필요하지 않고 Model 의 RenderTree 를 사용해도된다.
+
 TODO list:
 1. Transfrom.h
 2. rigging
@@ -22,20 +24,18 @@ TODO list:
 
 #include <string>
 #include <vector>
-#include <memory>
+#include <limits>
 #include <glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include "../texture.h"
-#include "../program.h"
 #include "mesh.h"
-#include "light.h"
 #include "camera.h"
-#include <limits>
+#include "transform.h"
 
 namespace lim
 {
 	// clone able
-	class Model
+	class Model : public Transform
 	{
 	public:
 		struct Node
@@ -72,11 +72,8 @@ namespace lim
 		std::string path = "nodir";
 
 		/* transformation */
-		glm::vec3 position = glm::vec3(0);
-		glm::quat orientation = glm::quat(1,0,0,0);
-		glm::vec3 scale = glm::vec3(1);
-		glm::mat4 pivot_mat = glm::mat4(1);
-		glm::mat4 model_mat = glm::mat4(1); // = trans*rot*scale*pivot
+		Transform normalize_term;
+		glm::mat4 model_mat;
 
 		/* render data */
 		Node root;
@@ -95,23 +92,23 @@ namespace lim
 		glm::vec3 boundary_max = glm::vec3(std::numeric_limits<float>::min());
 		float pivoted_scaled_bottom_height = 0;
 		GLuint ai_backup_flags = 0;
-	private:
-		Model& operator=(const Model&) = delete;
+	public:
+		void updateModelMat();
+		void updateUnitScaleAndPivot();
+		void updateNrAndBoundary();
+
+		bool importFromFile(std::string_view modelPath, bool unitScaleAndPivot = false, bool withMaterial = true);
+		bool exportToFile(size_t pIndex, std::string_view exportPath);
+
+		void releaseResource();
 	public:
 		Model(std::string_view name="nonamed");
 		Model(const Model& src, bool makeRef=false);
 		Model(Model&& src) noexcept;
 		Model& operator=(Model&& src) noexcept;
 		~Model() noexcept;
-		void releaseResource();
-		
-		void updateModelMat();
-		void updateUnitScaleAndPivot();
-		void updateNrAndBoundary();
-		void setPivot(const glm::vec3& pivot);
-
-		bool importFromFile(std::string_view modelPath, bool unitScaleAndPivot = false, bool withMaterial = true);
-		bool exportToFile(size_t pIndex, std::string_view exportPath);
+	private:
+		Model& operator=(const Model&) = delete;
 	};
 }
 #endif

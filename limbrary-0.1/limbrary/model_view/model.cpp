@@ -69,10 +69,7 @@ namespace lim
 		name = src.name;
 		path = src.path;
 
-		position = src.position;
-		orientation = src.orientation;
-		scale = src.scale;
-		pivot_mat = src.pivot_mat;
+		transform = transform;
 		model_mat = src.model_mat;
 		default_material = src.default_material;
 
@@ -160,9 +157,8 @@ namespace lim
 
 		name = std::move(src.name);
 		path = std::move(src.path);
-		position = src.position;
-		scale = src.scale;
-		pivot_mat = src.pivot_mat;
+		transform = std::move(transform);
+		normalize_term = std::move(normalize_term);
 		model_mat = src.model_mat;
 		
 		root = src.root;
@@ -194,14 +190,10 @@ namespace lim
 		for( Mesh* ms : my_meshes )
 			delete ms;
 	}
-
-
 	void Model::updateModelMat()
 	{
-		glm::mat4 translateMat = glm::translate(position);
-		glm::mat4 scaleMat = glm::scale(scale);
-		glm::mat4 rotateMat = glm::toMat4(orientation);
-		model_mat = translateMat * rotateMat * scaleMat * pivot_mat;
+		updateTransform();
+		model_mat = transform * normalize_term.transform;
 	}
 	void Model::updateNrAndBoundary()
 	{
@@ -232,10 +224,6 @@ namespace lim
 		}
 		boundary_size = boundary_max-boundary_min;
 	}
-	void Model::setPivot(const glm::vec3& pivot) 
-	{
-		pivot_mat = glm::translate(-pivot);
-	}
 	void Model::updateUnitScaleAndPivot()
 	{
 		if( nr_vertices==0 ) {
@@ -244,12 +232,13 @@ namespace lim
 		constexpr float unit_length = 2.f;
 		//float max_axis_length = glm::max(glm::max(boundary_size.x, boundary_size.y), boundary_size.z);
 		float min_axis_length = glm::min(glm::min(boundary_size.x, boundary_size.y), boundary_size.z);
-		scale = glm::vec3(unit_length/min_axis_length);
-
-		setPivot(boundary_min + boundary_size*0.5f);
-
-		pivoted_scaled_bottom_height = scale.y*boundary_size.y*0.5f;
-
+		float scale = unit_length/min_axis_length;
+		glm::vec3 pivot = -(boundary_min + boundary_size*0.5f)/scale;
+		normalize_term.position = pivot;
+		normalize_term.scale = glm::vec3(scale);
+		normalize_term.updateTransform();
 		updateModelMat();
+
+		pivoted_scaled_bottom_height = boundary_size.y*0.5f/scale;
 	}
 }
