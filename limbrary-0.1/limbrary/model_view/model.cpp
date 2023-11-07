@@ -232,13 +232,12 @@ namespace lim
 		constexpr float unit_length = 2.f;
 		//float max_axis_length = glm::max(glm::max(boundary_size.x, boundary_size.y), boundary_size.z);
 		float min_axis_length = glm::min(glm::min(boundary_size.x, boundary_size.y), boundary_size.z);
-		float scale = unit_length/min_axis_length;
-		glm::vec3 pivot = -(boundary_min + boundary_size*0.5f)/scale;
-		normalize_term.position = pivot;
-		normalize_term.scale = glm::vec3(scale);
+		float normScale = unit_length/min_axis_length;
+		normalize_term.scale = glm::vec3(normScale);
+		normalize_term.position = -(boundary_min + boundary_size*0.5f)*normScale;
 		normalize_term.updateTransform();
 		updateModelMat();
 
-		pivoted_scaled_bottom_height = boundary_size.y*0.5f/scale;
+		pivoted_scaled_bottom_height = boundary_size.y*0.5f/normScale;
 	}
 }

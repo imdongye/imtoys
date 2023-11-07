@@ -41,7 +41,6 @@ Todo:
 
 namespace lim
 {
-	// copyable
 	class CameraController : public Camera
 	{
 	public:
