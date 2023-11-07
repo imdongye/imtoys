@@ -3,6 +3,7 @@
 layout (location = 0) in vec2 aPos;
 
 out vec2 texCoord;
+const int a = 1;
 
 void main()
 {
