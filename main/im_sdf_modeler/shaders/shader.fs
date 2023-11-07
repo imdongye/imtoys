@@ -27,7 +27,8 @@ const float PI = 3.1415926535;
 const vec3 UP = vec3(0,1,0);
 const int NR_STEPS = 100;
 const float MIN_HIT_DIST = 0.01;
-const float MAX_FAR_DIST = 40.0;
+const float MAX_FAR_DIST = 100.0;
+const float EPSILON_FOR_NORMAL = 0.01;
 
 
 float sdSphere(vec3 p, vec3 c, float r) {
@@ -47,43 +48,46 @@ float smoothMin(float a, float b, float k) {
 
 float sdWorld(vec3 p) {
     vec4 hp = vec4(p, 1);
-    float sphere0 = sdSphere(p, vec3(0,1,0), 1.0);
+    float sphere = sdSphere(p, vec3(0,1,0), 1.0);
     float plane = sdPlane(p, UP, 0.0);
     float box = sdBox((modelMat*hp).xyz, vec3(1,0.5,1));
-    float rst = sphere0;
+    float rst = sphere;
     rst = smoothMin(plane, rst, 1.0);
     rst = min(box, rst);
-    //rst = smoothMin(sphere0, plane, 1.0);
-    // return plane;
-    //return sphere0;
     return rst;
 }
 
 vec3 getNormal(vec3 p) {
-    const vec2 e = vec2(.01, 0);
-    float dDdx = sdWorld(p+e.xyy) - sdWorld(p-e.xyy);
-    float dDdy = sdWorld(p+e.yxy) - sdWorld(p-e.yxy);
-    float dDdz = sdWorld(p+e.yyx) - sdWorld(p-e.yyx);
+    const vec2 e = vec2(EPSILON_FOR_NORMAL, 0);
+    float dist = sdWorld(p);
+    float dDdx = sdWorld(p+e.xyy) - dist;
+    float dDdy = sdWorld(p+e.yxy) - dist;
+    float dDdz = sdWorld(p+e.yyx) - dist;
     return normalize(vec3(dDdx, dDdy, dDdz));
+
+    // float dDdx = sdWorld(p+e.xyy) - sdWorld(p-e.xyy);
+    // float dDdy = sdWorld(p+e.yxy) - sdWorld(p-e.yxy);
+    // float dDdz = sdWorld(p+e.yyx) - sdWorld(p-e.yyx);
+    // return normalize(vec3(dDdx, dDdy, dDdz));
     // vec3 dPdx = dFdx(p);
     // vec3 dPdy = dFdy(p);
     // return normalize(cross(dPdx, dPdy));
 }
 
-float rayMarch(vec3 ro, vec3 rd) {    
+float rayMarch(vec3 origin, vec3 dir, float maxDist) {
     float dist = 0;
-
     for( int i=0; i<NR_STEPS; i++ )
     {
-        vec3 curPos = dist*rd + ro;
-        float closestDist = sdWorld(curPos);
-        if( closestDist<MIN_HIT_DIST )
-            return dist;
-        dist += closestDist;
-        if( dist>MAX_FAR_DIST )
+        float closestDist = sdWorld( dist*dir + origin );
+        if( closestDist<MIN_HIT_DIST ) {
             break;
+        }
+        dist += closestDist;
+        if( dist>maxDist ) {
+            break;
+        }
     }
-    return MAX_FAR_DIST+1;
+    return dist;
 }
 
 vec3 render(vec3 p, vec3 v) {
@@ -113,7 +117,7 @@ void main()
     vec3 camUp = normalize( cross(camRight, camFront) );
     float eyeZ = 1/tan((PI/360)*cameraFovy);
     vec3 rd = normalize( cameraAspect*uv.x*camRight + uv.y*camUp + eyeZ*camFront );
-    float hitDist = rayMarch(ro, rd);
+    float hitDist = rayMarch(ro, rd, MAX_FAR_DIST);
     vec3 outColor;
     if( hitDist > MAX_FAR_DIST ) {
         outColor = vec3(0,0.001,0.3);
