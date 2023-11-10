@@ -27,7 +27,6 @@ namespace lim
 	void AppSdfModeler::update()
 	{
 		glEnable(GL_DEPTH_TEST);
-		glDisable(GL_MULTISAMPLE);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glViewport(0, 0, fb_width, fb_height);
 		glClearColor(0.05f, 0.09f, 0.11f, 1.0f);

@@ -23,6 +23,7 @@ namespace lim
 		std::vector<ViewportWithCamera> viewports;
 		std::vector<Scene> scenes;
 
+		Texture light_map;
 		ProgramReloadable program;
 		Light light;
 		Model light_model;

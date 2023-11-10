@@ -16,14 +16,6 @@ using namespace lim;
 
 namespace lim
 {
-    void Scene::addModel(const Model* md)
-    {
-        models.push_back(md);
-    }
-    void Scene::addLight(const Light* lit)
-    {
-        lights.push_back(lit);
-    }
     void Scene::addOwnModel(Model* md)
     {
         models.push_back(md);
@@ -281,6 +273,10 @@ namespace lim
                     for( const Light* pLit : scn.lights ) {
                         activeSlot = bindLightToProg(prog, *pLit, activeSlot);
                         break; //  Todo: 지금은 라이트 하나만
+                    }
+                    prog.setUniform("useIBL", ( scn.light_map )?1:-1);
+                    if( scn.light_map ) {
+                        prog.setTexture("map_Light", scn.light_map->tex_id, activeSlot++);
                     }
                 }
 

@@ -49,6 +49,9 @@ uniform sampler2D map_Metalness;
 uniform sampler2D map_Emission;
 uniform sampler2D map_Opacity;
 
+uniform int useIBL;
+uniform sampler2D map_Light;
+
 uniform float texDelta;
 uniform float bumpHeight;
 
@@ -185,6 +188,12 @@ vec3 CookTorranceBRDF(float roughness, vec3 F0) {
 	//return F / (4*dot(w_i,N)*dot(w_o,N));
 	return D*G*F / (4*dot(w_i,N)*dot(w_o,N));
 }
+vec3 sampleIBL( vec3 r ) {
+	float theta = atan(r.z, r.x);
+	float phi = atan(r.y, length(r.xz));
+	vec2 uv = vec2(1-theta/(2*PI), 0.5-phi/PI);
+	return texture(map_Light, uv).rgb;
+}
 vec3 brdf( vec3 baseColor, float roughness, float metalness, vec3 F0 ) {
 	vec3 diffuse, specular;
 
@@ -195,6 +204,7 @@ vec3 brdf( vec3 baseColor, float roughness, float metalness, vec3 F0 ) {
 		case 1: specular = BlinnPhongBRDF(); break;
 		case 2: specular = CookTorranceBRDF(roughness, F0); break;
 	}
+	return sampleIBL(R);
 	return diffuse+specular;
 }
 
@@ -206,8 +216,8 @@ vec3 emission() {
 
 void main() {
     vec3 faceN = normalize( cross( dFdx(wPos), dFdy(wPos) ) );
-	N = normalize(wNor);
-	if( dot(N,faceN)<0 ) N = -N; // 모델의 내부에서 back face일때 노멀을 뒤집는다.
+	N = (gl_FrontFacing)?normalize(wNor):normalize(-wNor);
+	//if( dot(N,faceN)<0 ) N = -N; // 모델의 내부에서 back face일때 노멀을 뒤집는다.
 	vec3 toLight = lightPos-wPos;
 	w_i = normalize( toLight );
 	w_o = normalize( cameraPos - wPos );

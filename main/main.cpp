@@ -77,8 +77,8 @@ static void pushAppData()
 
 int main()
 {
-	pushAppData<lim::AppSdfModeler>();
 	pushAppData<lim::AppModelViewer>();
+	pushAppData<lim::AppSdfModeler>();
 	pushAppData<lim::AppTemplate>();
 	pushAppData<lim::AppImGuiTest>();
 	pushAppData<lim::AppICP>();

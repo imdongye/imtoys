@@ -42,18 +42,22 @@ namespace lim
 	{
 		viewports.reserve(5);
 		scenes.reserve(5);
-
+		
+		program.name = "brdf_prog";
 		program.home_dir = APP_DIR;
 		program.attatch("mvp.vs").attatch("brdf.fs").link();
 
 		light.setRotate(35.f, -35.f, 5.f);
 		light.intensity = 15.f;
+
 		light_model.name = "light";
 		light_model.my_meshes.push_back(new MeshSphere(8, 4));
 		light_model.root.addMeshWithMat(light_model.my_meshes.back()); // delete sphere when delete model!
 		light_model.position = light.position;
 		light_model.scale = glm::vec3(0.3f);
 		light_model.updateModelMat();
+
+		light_map.initFromImageAuto("assets/ibls/meadow_2_4k.hdr");
 
 		AssetLib::get().default_material.prog = &program;
 
@@ -81,8 +85,8 @@ namespace lim
 		Scene scn;
 		scn.lights.push_back(&light);
 		scn.models.push_back(&light_model);
-		scn.models.push_back(md);
-		scn.my_mds.push_back(md); // 0번째
+		scn.addOwnModel(md);
+		scn.light_map = &light_map;
 		scenes.emplace_back(std::move(scn));
 
 		char* vpName = fmtStrToBuf("%s##model_view", md->name.c_str());
@@ -98,8 +102,10 @@ namespace lim
 	
 	void AppModelViewer::drawModelsToViewports()
 	{
-		for(int i=0; i<viewports.size(); i++ ) {
+		for(int i=0; i<viewports.size(); i++ )
+		{
 			render(viewports[i].getFb(), viewports[i].camera, scenes[i]);
+
 			if( !viewports[i].is_opened ) {
 				subModelViewer(i);
 				i--;
