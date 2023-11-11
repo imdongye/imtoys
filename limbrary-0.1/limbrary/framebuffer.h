@@ -15,6 +15,7 @@ glTexImage는 텍스쳐 크기를 동적으로 바꿀수있다고 명세되어�
 
 Note:
 you must use after resize
+컬러버퍼는 8비트 3채널 고정
 
 Todo:
 1. 생성

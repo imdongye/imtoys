@@ -238,6 +238,6 @@ namespace lim
 		normalize_term.updateTransform();
 		updateModelMat();
 
-		pivoted_scaled_bottom_height = boundary_size.y*0.5f/normScale;
+		pivoted_scaled_bottom_height = boundary_size.y*0.5f*normScale;
 	}
 }

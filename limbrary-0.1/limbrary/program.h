@@ -74,12 +74,14 @@ namespace lim
 	private:
 		GLint getUniformLocation(const std::string& vname) const;
 	public:
-		inline const Program& setUniform(const std::string& vname, const int v) const {
+		/* & bool */
+		inline const Program& setUniform(const std::string& vname, const bool v) const {
 			glUniform1i(getUniformLocation(vname), v);
 			return *this;
 		}
-		inline const Program& setUniform(const std::string& vname, int n, const int v[]) const {
-			glUniform1iv(getUniformLocation(vname), n, (GLint*)v);
+		/* & int */
+		inline const Program& setUniform(const std::string& vname, const int v) const {
+			glUniform1i(getUniformLocation(vname), v);
 			return *this;
 		}
 		inline const Program& setUniform(const std::string& vname, const glm::ivec2& v) const {
@@ -90,6 +92,11 @@ namespace lim
 			glUniform3iv(getUniformLocation(vname), 1, glm::value_ptr(v));
 			return *this;
 		}
+		inline const Program& setUniform(const std::string& vname, const glm::ivec4& v) const {
+			glUniform4iv(getUniformLocation(vname), 1, glm::value_ptr(v));
+			return *this;
+		}
+		/* &float */
 		inline const Program& setUniform(const std::string& vname, const float v) const {
 			glUniform1f(getUniformLocation(vname), v);
 			return *this;
@@ -106,8 +113,8 @@ namespace lim
 			glUniform4fv(getUniformLocation(vname), 1, glm::value_ptr(v));
 			return *this;
 		}
-		inline const Program& setUniform(const std::string& vname, int n, const glm::vec3 *v) const {
-			glUniform3fv(getUniformLocation(vname), n, (GLfloat*)v);
+		inline const Program& setUniform(const std::string& vname, const glm::mat2& v) const {
+			glUniformMatrix2fv(getUniformLocation(vname), 1, 0, glm::value_ptr(v));
 			return *this;
 		}
 		inline const Program& setUniform(const std::string& vname, const glm::mat3& v) const {
@@ -118,6 +125,54 @@ namespace lim
 			glUniformMatrix4fv(getUniformLocation(vname), 1, 0, glm::value_ptr(v));
 			return *this;
 		}
+		/* int[] */
+		inline const Program& setUniform(const std::string& vname, int n, const int v[]) const {
+			glUniform1iv(getUniformLocation(vname), n, (GLint*)v);
+			return *this;
+		}
+		inline const Program& setUniform(const std::string& vname, const int n, const glm::ivec2 v[]) const {
+			glUniform2iv(getUniformLocation(vname), n, (GLint*)v);
+			return *this;
+		}
+		inline const Program& setUniform(const std::string& vname, const int n, const glm::ivec3 v[]) const {
+			glUniform3iv(getUniformLocation(vname), n, (GLint*)v);
+			return *this;
+		}
+		inline const Program& setUniform(const std::string& vname, const int n, const glm::ivec4 v[]) const {
+			glUniform4iv(getUniformLocation(vname), n, (GLint*)v);
+			return *this;
+		}
+		/* float[] */
+		inline const Program& setUniform(const std::string& vname, const int n, const float v[]) const {
+			glUniform1fv(getUniformLocation(vname), n, (GLfloat*)v);
+			return *this;
+		}
+		inline const Program& setUniform(const std::string& vname, const int n, const glm::vec2 v[]) const {
+			glUniform2fv(getUniformLocation(vname), n, (GLfloat*)v);
+			return *this;
+		}
+		inline const Program& setUniform(const std::string& vname, const int n, const glm::vec3 v[]) const {
+			glUniform3fv(getUniformLocation(vname), n, (GLfloat*)v);
+			return *this;
+		}
+		inline const Program& setUniform(const std::string& vname, const int n, const glm::vec4 v[]) const {
+			glUniform4fv(getUniformLocation(vname), n, (GLfloat*)v);
+			return *this;
+		}
+		inline const Program& setUniform(const std::string& vname, const int n, const glm::mat2 v[]) const {
+			glUniformMatrix2fv(getUniformLocation(vname), n, GL_FALSE, (GLfloat*)v);
+			return *this;
+		}
+		inline const Program& setUniform(const std::string& vname, const int n, const glm::mat3 v[]) const {
+			glUniformMatrix3fv(getUniformLocation(vname), n, GL_FALSE, (GLfloat*)v);
+			return *this;
+		}
+		inline const Program& setUniform(const std::string& vname, const int n, const glm::mat4 v[]) const {
+			glUniformMatrix4fv(getUniformLocation(vname), n, GL_FALSE, (GLfloat*)v);
+			return *this;
+		}
+
+
 		inline const Program& setTexture(const std::string& vname, GLuint texId, int activeSlot) const {
 			glActiveTexture(GL_TEXTURE0 + activeSlot);
             glBindTexture(GL_TEXTURE_2D, texId);

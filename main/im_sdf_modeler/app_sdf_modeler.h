@@ -1,7 +1,7 @@
-//
-//  forward backword kinematics
-//	2023-2-28 / im dong ye
-//
+/*
+ 	sdf modeler
+	2023-2-28 / im dong ye
+*/
 
 #ifndef __app_sdf_modeler_h_
 #define __app_sdf_modeler_h_
@@ -22,7 +22,6 @@ namespace lim
 		Light light;
 		ProgramReloadable prog;
 		ViewportWithCamera viewport;
-		Model box;
 
 	public:
 		AppSdfModeler();
