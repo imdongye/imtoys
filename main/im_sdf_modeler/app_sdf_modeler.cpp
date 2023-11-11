@@ -217,7 +217,7 @@ namespace lim { namespace sdf
 			flags |= ImGuiTreeNodeFlags_Selected;
 		}
 
-		bool isOpen = ImGui::TreeNodeEx(pObj, flags, obj.name.c_str());
+		bool isOpen = ImGui::TreeNodeEx(pObj, flags, "%s", obj.name.c_str());
 
         if( selected_obj!=pObj &&(ImGui::IsItemClicked(0)||ImGui::IsItemClicked(1))) {
             selected_obj = pObj;
@@ -284,7 +284,7 @@ namespace lim { namespace sdf
                 return;
             }
             ObjNode& obj = *selected_obj;
-            ImGui::Text(obj.name.c_str());
+            ImGui::Text("%s", obj.name.c_str());
 
             static const float slide_spd = 1/300.f;
             static bool isMatUpdated = false;
@@ -317,14 +317,12 @@ namespace lim { namespace sdf
 
 namespace lim
 {
-	AppSdfModeler::AppSdfModeler(): AppBase(1520, 800, APP_NAME, false)
+	AppSdfModeler::AppSdfModeler(): AppBase(1373, 783, APP_NAME, false)
 		, viewport("AnimTester", new Framebuffer()) // 멀티셈플링 동작 안함.
 	{
 		GLint tempInt;
 		glGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_VECTORS, &tempInt);
 		log::pure("GL_MAX_FRAGMENT_UNIFORM_VECTORS : %d\n", tempInt);
-		glGetIntegerv(GL_MAX_UNIFORM_LOCATIONS, &tempInt);
-		log::pure("GL_MAX_UNIFORM_LOCATIONS : %d\n", tempInt);
 		glGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_COMPONENTS, &tempInt);
 		log::pure("GL_MAX_FRAGMENT_UNIFORM_COMPONENTS : %d\n", tempInt);
 

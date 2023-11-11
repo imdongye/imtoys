@@ -157,8 +157,8 @@ namespace lim
 
 		name = std::move(src.name);
 		path = std::move(src.path);
-		transform = std::move(transform);
-		normalize_term = std::move(normalize_term);
+		transform = std::move(src.transform);
+		normalize_term = std::move(src.normalize_term);
 		model_mat = src.model_mat;
 		
 		root = src.root;
