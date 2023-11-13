@@ -44,12 +44,10 @@ namespace lim { namespace sdf
     };
     struct ObjNode {
         int obj_idx = -1;
-        glm::mat4 translate_mat = glm::mat4(1);
-        glm::mat4 scale_mat = glm::mat4(1);
-        glm::mat4 rotate_mat = glm::mat4(1);
 
 		// 8개의 속성은 group이 아니라면 부모에 따라 수정되어 glsl data에 복사됨.
-        glm::mat4 transform = glm::mat4(1);
+        glm::mat4 my_transform = glm::mat4(1); // local transform
+        glm::mat4 transform = glm::mat4(1); // global transform
         int mat_idx = 0;
         PrimitiveType prim_type = PT_GROUP;
         int prim_idx = 0;
@@ -68,12 +66,9 @@ namespace lim { namespace sdf
 		ObjNode() = default;
 		ObjNode(PrimitiveType primType, const ObjNode* parent);
         void addChild(PrimitiveType primType);
-		void updateTranslate();
-		void updateScale();
-		void updateRotate();
+		void updateTransformWithParent();
+		void composeTransform();
 		void decomposeTransform();
-	private:
-		void makeTransform();
     };
 
 	/* application data */
@@ -84,7 +79,7 @@ namespace lim { namespace sdf
 		int nr_prims[nr_prim_types] = {0,};
 
 		ImGuizmo::OPERATION gzmo_oper = ImGuizmo::OPERATION::TRANSLATE;
-		ImGuizmo::MODE 		gzmo_mode = ImGuizmo::MODE::WORLD;
+		ImGuizmo::MODE 		gzmo_mode = ImGuizmo::MODE::LOCAL;
 	};
 
 	/* glsl data */
@@ -140,52 +135,46 @@ namespace lim { namespace sdf
 		blendnesses[obj_idx] = blendness;
 		roundnesses[obj_idx] = roundness;
 		mirrors[obj_idx] = mirror;
-		makeTransform();
+
+		composeTransform();
 	}
 	void ObjNode::addChild(PrimitiveType primType)
 	{
 		children.emplace_back(primType, this);
 	}
-	void ObjNode::updateTranslate() {
-		translate_mat = glm::translate(position);
-		makeTransform();
-	}
-	void ObjNode::updateScale() {
-		scale_mat = glm::scale(scale);
-		makeTransform();
-	}
-	void ObjNode::updateRotate() {
-		rotate_mat = glm::eulerAngleYXZ(euler_angles.y, euler_angles.x, euler_angles.z);
-		makeTransform();
-	}
-	void ObjNode::makeTransform() {
-		transform = translate_mat * rotate_mat * scale_mat;
+	void ObjNode::updateTransformWithParent() {
 		if(parent) {
-			transform = parent->transform * transform;
+			transform = parent->transform * my_transform;
 		}
 		if(obj_idx<0) {
-			for(ObjNode& child: children) {
-				child.makeTransform();
+			for(ObjNode& child : children) {
+				child.updateTransformWithParent();
 			}
-		} else {
+		}
+		else {
 			transforms[obj_idx] = glm::inverse(transform);
 		}
 	}
+	void ObjNode::composeTransform() {
+		ImGuizmo::RecomposeMatrixFromComponents(
+					glm::value_ptr(position)
+					,glm::value_ptr(euler_angles)
+					,glm::value_ptr(scale)
+					,glm::value_ptr(transform));
+		
+		my_transform = (parent)? glm::inverse(parent->transform)*transform : transform;
+		updateTransformWithParent();
+	}
 	void ObjNode::decomposeTransform() {
-		glm::mat3 mat33 = (parent)? glm::inverse(parent->transform)*transform : transform;
+		my_transform = (parent)? glm::inverse(parent->transform)*transform : transform;
 
-		position = glm::vec3(transform[3]);
-		translate_mat = glm::translate(position);
+		ImGuizmo::DecomposeMatrixToComponents(
+					glm::value_ptr(transform)
+					,glm::value_ptr(position)
+					,glm::value_ptr(euler_angles)
+					,glm::value_ptr(scale));
 
-		scale = {glm::length(mat33[0]), glm::length(mat33[1]), glm::length(mat33[2])};
-		scale_mat = glm::scale(scale);
-
-		mat33 = glm::mat3(mat33[0]/scale.x, mat33[1]/scale.y, mat33[2]/scale.z);
-		glm::quat orientation = glm::quat_cast(mat33);
-		euler_angles = glm::eulerAngles(orientation); // Todo: fix
-		rotate_mat = mat33;
-
-		makeTransform();
+		updateTransformWithParent();
 	}
 
 	void makeSpaceInGlslObjData(int pos, int len) {
@@ -334,13 +323,13 @@ namespace lim { namespace sdf
             static const float slide_spd = 1/300.f;
             static bool isMatUpdated = false;
             if(ImGui::DragFloat3("pos", glm::value_ptr(obj.position), slide_spd, -FLT_MAX, +FLT_MAX)) {
-                obj.updateTranslate();
+                obj.composeTransform();
             }
             if(ImGui::DragFloat3("scale", glm::value_ptr(obj.scale), slide_spd, -FLT_MAX, +FLT_MAX)) {
-                obj.updateScale();
+                obj.composeTransform();
             }
             if(ImGui::DragFloat3("rotate", glm::value_ptr(obj.euler_angles), slide_spd, -FLT_MAX, +FLT_MAX)) {
-                obj.updateRotate();
+                obj.composeTransform();
             }
             
             ImGui::End();
