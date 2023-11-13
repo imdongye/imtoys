@@ -35,6 +35,8 @@ Todo:
 
 namespace lim
 {
+	class Camera;
+
 	class Viewport
 	{
 	public:
@@ -69,7 +71,7 @@ namespace lim
 		Viewport& operator=(Viewport&& src) noexcept;
 		virtual ~Viewport() noexcept;
 
-		virtual bool drawImGui(); // and resize fb and return windowOpened
+		bool drawImGui(std::function<void(const Viewport&)> guizmoFunc = nullptr);
 		void resize(GLuint _width, GLuint _height);
 		const Framebuffer& getFb();
 		void setClearColor(glm::vec4 color);

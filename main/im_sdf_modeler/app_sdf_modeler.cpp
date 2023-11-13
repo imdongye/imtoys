@@ -14,27 +14,29 @@
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <imguizmo/ImGuizmo.h>
+
 
 namespace lim { namespace sdf
 {
-	constexpr int nr_oper_types = 5;
-	const char* prim_oper_names[nr_oper_types] = {
-        "Addition", "Subtitution"
-    };
-    enum OperationType {
-        OT_ADDITION, OT_SUBTRACTION, OT_INTERSECTION
-    };
-	constexpr int nr_prim_types = 5;
-	const char* prim_type_names[nr_prim_types] = {
-        "Group", "Sphere", "Box", "Pipe", "Donut"
-    };
-    enum PrimitiveType {
-        PT_GROUP,
-        PT_SPHERE,
-        PT_BOX,
-        PT_PIPE,
-        PT_DONUT,
-    };
+	namespace {
+		constexpr int nr_oper_types = 3;
+		const char* prim_oper_names[nr_oper_types] = {
+			"Addition", "Subtitution", "Intersection"
+		};
+		enum OperationType {
+			OT_ADDITION, OT_SUBTRACTION, OT_INTERSECTION
+		};
+
+		constexpr int nr_prim_types = 5;
+		const char* prim_type_names[nr_prim_types] = {
+			"Group", "Sphere", "Box", "Pipe", "Donut"
+		};
+		enum PrimitiveType {
+			PT_GROUP, PT_SPHERE, PT_BOX, PT_PIPE, PT_DONUT
+		};
+	}
+
     struct Material {
         glm::vec3 base_color;
         float roughness = 1.f;
@@ -69,16 +71,20 @@ namespace lim { namespace sdf
 		void updateTranslate();
 		void updateScale();
 		void updateRotate();
+		void decomposeTransform();
 	private:
 		void makeTransform();
     };
 
-	 /* application data */
+	/* application data */
 	namespace {
 		ObjNode root;
 		ObjNode* selected_obj = nullptr;
 		std::vector<Material> mats;
 		int nr_prims[nr_prim_types] = {0,};
+
+		ImGuizmo::OPERATION gzmo_oper = ImGuizmo::OPERATION::TRANSLATE;
+		ImGuizmo::MODE 		gzmo_mode = ImGuizmo::MODE::WORLD;
 	};
 
 	/* glsl data */
@@ -108,6 +114,8 @@ namespace lim { namespace sdf
 		float donuts[MAX_PRIMS];
 		float cylinder[MAX_PRIMS];
 	}
+
+	/* functions */
 
 	ObjNode::ObjNode(PrimitiveType primType, const ObjNode* p)
 		: prim_type(primType), parent(p)
@@ -152,9 +160,32 @@ namespace lim { namespace sdf
 	}
 	void ObjNode::makeTransform() {
 		transform = translate_mat * rotate_mat * scale_mat;
-		if(obj_idx<0)
-			return;
-		transforms[obj_idx] = glm::inverse(transform);
+		if(parent) {
+			transform = parent->transform * transform;
+		}
+		if(obj_idx<0) {
+			for(ObjNode& child: children) {
+				child.makeTransform();
+			}
+		} else {
+			transforms[obj_idx] = glm::inverse(transform);
+		}
+	}
+	void ObjNode::decomposeTransform() {
+		glm::mat3 mat33 = (parent)? glm::inverse(parent->transform)*transform : transform;
+
+		position = glm::vec3(transform[3]);
+		translate_mat = glm::translate(position);
+
+		scale = {glm::length(mat33[0]), glm::length(mat33[1]), glm::length(mat33[2])};
+		scale_mat = glm::scale(scale);
+
+		mat33 = glm::mat3(mat33[0]/scale.x, mat33[1]/scale.y, mat33[2]/scale.z);
+		glm::quat orientation = glm::quat_cast(mat33);
+		euler_angles = glm::eulerAngles(orientation); // Todo: fix
+		rotate_mat = mat33;
+
+		makeTransform();
 	}
 
 	void makeSpaceInGlslObjData(int pos, int len) {
@@ -270,6 +301,13 @@ namespace lim { namespace sdf
 
     void drawImGui() 
 	{
+		/* Settings */
+		{
+			static int nr_step = 100;
+			ImGui::Begin("Settings##sdf");
+			ImGui::SliderInt("nr_iter", &nr_step, 20, 900, "%d");
+            ImGui::End();
+		}
         /* Scene Hierarchy */
         {
             ImGui::Begin("Scene##sdf");
@@ -285,6 +323,13 @@ namespace lim { namespace sdf
             }
             ObjNode& obj = *selected_obj;
             ImGui::Text("%s", obj.name.c_str());
+
+			static int selectecGzmoOperIdx = 1;
+			static const char* gzmoOperStrs[] = { "Select", "Position", "Scale", "Rotate", "Transform" };
+			static const int   gzmoOpers[] = { 0, ImGuizmo::TRANSLATE, ImGuizmo::SCALE, ImGuizmo::ROTATE, ImGuizmo::UNIVERSAL };
+			if( ImGui::Combo("MouseTool", &selectecGzmoOperIdx, gzmoOperStrs, 4) ) {
+				gzmo_oper = (ImGuizmo::OPERATION)gzmoOpers[selectecGzmoOperIdx];
+			}
 
             static const float slide_spd = 1/300.f;
             static bool isMatUpdated = false;
@@ -311,6 +356,24 @@ namespace lim { namespace sdf
             ImGui::End();
         }
     }
+	void drawGuizmo(const Viewport& vp, Camera& cam) {
+		const auto& pos = ImGui::GetItemRectMin();
+		const auto& size = ImGui::GetItemRectSize();
+		ImGuizmo::SetDrawlist();
+		ImGuizmo::SetRect(pos.x, pos.y, size.x, size.y);
+
+		ImGuizmo::SetOrthographic(false);
+
+		ImGuizmo::Manipulate( glm::value_ptr(cam.view_mat), glm::value_ptr(cam.proj_mat)
+							, gzmo_oper, gzmo_mode, glm::value_ptr(selected_obj->transform)
+							, nullptr, nullptr, nullptr);
+		
+		if( ImGuizmo::IsUsing() ) {
+			selected_obj->decomposeTransform();
+		}
+		// Axis
+		ImGuizmo::ViewManipulate( glm::value_ptr(cam.view_mat), 8.0f, ImVec2{pos.x+size.x-128, pos.y}, ImVec2{128, 128}, (ImU32)0x10101010 );
+	}
 }}
 
 
@@ -369,7 +432,9 @@ namespace lim
 	{
 		ImGui::DockSpaceOverViewport();
 
-		viewport.drawImGui();
+		viewport.drawImGui([&cam = viewport.camera](const Viewport& vp){
+			sdf::drawGuizmo(vp, cam);
+		});
 
 		sdf::drawImGui();
 	}

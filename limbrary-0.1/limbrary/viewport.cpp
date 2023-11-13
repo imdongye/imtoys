@@ -2,6 +2,8 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include <imgui.h>
 #include <imgui_internal.h>
+#include <limbrary/model_view/camera.h>
+#include <imguizmo/ImGuizmo.h>
 
 namespace lim 
 {
@@ -47,7 +49,7 @@ namespace lim
 		if( framebuffer )
 			delete framebuffer;
 	}
-	bool Viewport::drawImGui() // and resize framebuffer
+	bool Viewport::drawImGui(std::function<void(const Viewport&)> guizmoFunc) // and resize framebuffer
 	{
 		Framebuffer& fb = *framebuffer;
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
@@ -96,7 +98,6 @@ namespace lim
 		is_hovered = ImGui::IsItemHovered();
 		is_dragged = isWindowActivated && !isHoveredOnTitle && ImGui::IsMouseDown(0);
 		is_dragged |= (is_hovered||is_focused)&&(ImGui::IsMouseDown(1)||ImGui::IsMouseDown(2));
-		if( is_dragged ) ImGui::SetMouseCursor(7);
 
 		prev_mouse_pos = mouse_pos;
 		ImVec2 imMousePos = ImGui::GetMousePos() - ImGui::GetWindowPos() - ImVec2(0, ImGui::GetFrameHeight());
@@ -108,6 +109,12 @@ namespace lim
 		is_scrolled =  is_hovered&&(io.MouseWheel||io.MouseWheelH);
 		scroll_off = {io.MouseWheelH, io.MouseWheel};
 		
+		if( guizmoFunc ) {
+			guizmoFunc(*this);
+			is_dragged &= !ImGuizmo::IsUsingAny();
+		}
+		if( is_dragged ) ImGui::SetMouseCursor(7);
+
 		ImGui::End();
 		ImGui::PopStyleVar();
 

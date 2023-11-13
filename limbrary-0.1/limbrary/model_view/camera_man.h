@@ -144,13 +144,11 @@ namespace lim
 	private:
 		ViewportWithCamera(const ViewportWithCamera&) = delete;
 		ViewportWithCamera& operator=(const ViewportWithCamera&) = delete;
-		void drawGuizmo();
 	public:
 		ViewportWithCamera(std::string_view _name, Framebuffer* createdFB);
 		ViewportWithCamera(ViewportWithCamera&& src) noexcept;
 		ViewportWithCamera& operator=(ViewportWithCamera&& src) noexcept;
 		virtual ~ViewportWithCamera() noexcept;
-		virtual bool drawImGui() override;
 	};
 }
 
