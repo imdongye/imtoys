@@ -4,20 +4,14 @@
 
 namespace lim
 {
-	Framebuffer::Framebuffer()
+	Framebuffer::Framebuffer(GLint interFormat)
+		: color_tex()
 	{
+		color_tex.internal_format = interFormat;
 	}
 	Framebuffer::Framebuffer(Framebuffer&& src) noexcept
 	{
-		fbo = src.fbo;
-		color_tex = src.color_tex;
-		src.fbo = 0;
-		src.color_tex = 0;
-
-		clear_color = src.clear_color;
-		width = src.width;
-		height = src.height;
-		aspect = src.aspect;
+		*this = std::move(src);
 	}
 	Framebuffer& Framebuffer::operator=(Framebuffer&& src) noexcept
 	{
@@ -26,20 +20,14 @@ namespace lim
 		deinitGL();
 
 		fbo = src.fbo;
-		color_tex = src.color_tex;
+		color_tex = std::move(src.color_tex);
 		src.fbo = 0;
-		src.color_tex = 0;
 
 		clear_color = src.clear_color;
 		width = src.width;
 		height = src.height;
 		aspect = src.aspect;
 		return *this;
-	}
-	void Framebuffer::deinitGL()
-	{
-		if( fbo>0 ) 	  { glDeleteFramebuffers(1, &fbo); fbo=0; }
-		if( color_tex>0 ) { glDeleteTextures(1, &color_tex); color_tex=0; }
 	}
 	Framebuffer::~Framebuffer() noexcept
 	{
@@ -48,11 +36,17 @@ namespace lim
 	void Framebuffer::initGL()
 	{
 		deinitGL();
-		Framebuffer::genGLFbAndColor();
+
 
 		/* bind fbo */
+		glGenFramebuffers(1, &fbo);
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, color_tex, 0);
+
+		color_tex.initGL();
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, color_tex.tex_id, 0);
+
+		if(initGL_hook) initGL_hook();
+
 
 		std::vector<GLenum> drawBuffers ={GL_COLOR_ATTACHMENT0};
 		glDrawBuffers(1, drawBuffers.data());
@@ -62,33 +56,13 @@ namespace lim
 			log::err("Framebuffer is not completed!! (%d)\n", status);
 
 	}
-	void Framebuffer::genGLFbAndColor()
+	void Framebuffer::deinitGL()
 	{
-		glGenFramebuffers(1, &fbo);
+		if( fbo>0 ) { glDeleteFramebuffers(1, &fbo); fbo=0; }
 
-		glGenTextures(1, &color_tex);
-		glBindTexture(GL_TEXTURE_2D, color_tex);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
-		glBindTexture(GL_TEXTURE_2D, 0);
-	}
-	bool Framebuffer::resize(GLuint _width, GLuint _height)
-	{
-		if( width==_width && height==_height )
-			return false;
-		width = _width; height = _height;
-		aspect = width/(float)height;
-		initGL();
-		glFlush();
-		glFinish();
-		return true;
-	}
-	bool Framebuffer::resize(GLuint square)
-	{
-		return resize(square, square);
+		color_tex.deinitGL();
+
+		if( deinitGL_hook ) deinitGL_hook();
 	}
 	void Framebuffer::bind() const
 	{
@@ -107,18 +81,34 @@ namespace lim
 	/* ms framebuffer return intermidiate */
 	GLuint Framebuffer::getRenderedTex() const
 	{
-		return color_tex;
+		return color_tex.tex_id;
+	}
+	bool Framebuffer::resize(GLuint _width, GLuint _height)
+	{
+		_height = (_height<0)?_width:_height;
+		if( width==_width && height==_height )
+			return false;
+		width = _width; height = _height;
+		aspect = width/(float)height;
+		initGL(); // 여기서 자식들의 가상함수를 호출함.
+		glFlush();
+		glFinish();
+		return true;
 	}
 
 
 	
-	FramebufferTexDepth::FramebufferTexDepth(): Framebuffer()
+	FramebufferTexDepth::FramebufferTexDepth(GLint interFormat = GL_RGB)
+		: Framebuffer(interFormat)
 	{
+		// GL_DEPTH_COMPONENT32F overkill?
+		// From: https://gamedev.stackexchange.com/questions/111955/gl-depth-component-vs-gl-depth-component32
+		depth_tex.internal_format = GL_DEPTH_COMPONENT;
 	}
 	FramebufferTexDepth::FramebufferTexDepth(FramebufferTexDepth&& src) noexcept
-		: Framebuffer(std::move(src))
+		: Framebuffer(std::move(src)), 
 	{
-		depth_tex = src.depth_tex;
+		depth_tex = std::move(src.depth_tex);
 		src.depth_tex = 0;
 	}
 	FramebufferTexDepth& FramebufferTexDepth::operator=(FramebufferTexDepth&& src) noexcept
@@ -129,8 +119,7 @@ namespace lim
 
 		Framebuffer::operator=(std::move(src));
 
-		depth_tex = src.depth_tex;
-		src.depth_tex = 0;
+		depth_tex = std::move(src.depth_tex);
 		return *this;
 	}
 	void FramebufferTexDepth::deinitGL()

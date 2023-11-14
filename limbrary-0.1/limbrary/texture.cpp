@@ -50,9 +50,7 @@ namespace lim
 	}
 	Texture::Texture(Texture&& src) noexcept
 	{
-		copyTexBaseProps(src, *this);
-		tex_id = src.tex_id;
-		src.tex_id = 0;
+		*this = std::move(src);
 	}
 	Texture& Texture::operator=(Texture&& src) noexcept
 	{
@@ -167,6 +165,7 @@ namespace lim
 		// Todo: GL_SRGB == GL_SRGB8 ?
 		// 		SNORM은 언제 쓰지?
 		//		I, UI, F 가 무슨 의미가 있지?
+		// internal_format에 GL_RGB는 하위호환성으로 되긴하는데 크기를 붙여주는게 맞다.
 		log::pure("texture %s loading auto with ", file_path.c_str());
 		if( convertLinear ) {
 			switch(src_nr_channels) {
