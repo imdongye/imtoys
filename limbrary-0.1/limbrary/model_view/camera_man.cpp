@@ -17,15 +17,8 @@ namespace lim
 	{
 	}
 	CameraController::CameraController(CameraController&& src) noexcept
+		: Camera(std::move(src))
 	{
-		*this = std::move(src);
-	}
-	CameraController& CameraController::operator=(CameraController&& src) noexcept
-	{
-		if( this==&src )
-			return *this;
-		Camera::operator=(std::move(src));
-
 		viewing_mode = src.viewing_mode;
 		spd_free_move = src.spd_free_move;
 		spd_free_rot = src.spd_free_rot;
@@ -35,6 +28,21 @@ namespace lim
 		spd_scroll_rot = src.spd_scroll_rot;
 		spd_zoom_fovy = src.spd_zoom_fovy;
 		spd_zoom_dist = src.spd_zoom_dist;
+	}
+	CameraController& CameraController::operator=(CameraController&& src) noexcept
+	{
+		if( this!=&src ) {
+			Camera::operator=(std::move(src));
+			viewing_mode = src.viewing_mode;
+			spd_free_move = src.spd_free_move;
+			spd_free_rot = src.spd_free_rot;
+			spd_pivot_move = src.spd_pivot_move;
+			spd_pivot_rot = src.spd_pivot_rot;
+			spd_scroll_move = src.spd_scroll_move;
+			spd_scroll_rot = src.spd_scroll_rot;
+			spd_zoom_fovy = src.spd_zoom_fovy;
+			spd_zoom_dist = src.spd_zoom_dist;
+		}
 		return *this;
 	}
 	CameraController::~CameraController() noexcept
@@ -197,14 +205,13 @@ namespace lim
 	}
 	CameraManWin& CameraManWin::operator=(CameraManWin&& src) noexcept
 	{
-		if( this==&src )
-			return *this;
-		CameraController::operator=(std::move(src));
+		if( this!=&src ) {
+			CameraController::operator=(std::move(src));
+			deinitCallbacks();
 
-		deinitCallbacks();
-		src.deinitCallbacks();
-
-		initCallbacks();
+			src.deinitCallbacks();
+			initCallbacks();
+		}
 		return *this;
 	}
 	CameraManWin::~CameraManWin() noexcept
@@ -271,14 +278,13 @@ namespace lim
 	}
 	CameraManVp& CameraManVp::operator=(CameraManVp&& src) noexcept
 	{
-		if( this==&src )
-			return *this;
-		deinitCallbacks();
+		if( this!=&src ) {
+			CameraController::operator=(std::move(src));
+			deinitCallbacks();
 
-		CameraController::operator=(std::move(src));
-
-		src.deinitCallbacks();
-		initCallbacks(src.vp);
+			src.deinitCallbacks();
+			initCallbacks(src.vp);
+		}
 		return *this;
 	}
 	CameraManVp::~CameraManVp() noexcept
@@ -339,7 +345,7 @@ namespace lim
 
 
 
-	ViewportWithCamera::ViewportWithCamera(std::string_view _name, Framebuffer* createdFB)
+	ViewportWithCamera::ViewportWithCamera(std::string_view _name, IFramebuffer* createdFB)
 		: Viewport(_name, createdFB), camera(this)
 	{
 	}
@@ -352,14 +358,14 @@ namespace lim
 	}
 	ViewportWithCamera& ViewportWithCamera::operator=(ViewportWithCamera&& src) noexcept
 	{
-		if( this==&src )
-			return *this;
-		camera.deinitCallbacks();
-		Viewport::operator=(std::move(src));
+		if( this!=&src ) {
+			camera.deinitCallbacks();
+			Viewport::operator=(std::move(src));
 
-		src.camera.deinitCallbacks();
-		camera.operator=(std::move(src.camera));
-		camera.initCallbacks(this);
+			src.camera.deinitCallbacks();
+			camera.operator=(std::move(src.camera));
+			camera.initCallbacks(this);
+		}
 		return *this;
 	}
 	ViewportWithCamera::~ViewportWithCamera() noexcept

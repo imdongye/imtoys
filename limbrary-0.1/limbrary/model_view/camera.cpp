@@ -30,12 +30,6 @@ namespace lim
 	}
 	Camera::Camera(Camera&& src) noexcept
 	{
-		*this = std::move(src);
-	}
-	Camera& Camera::operator=(Camera&& src) noexcept
-	{
-		if( this==&src )
-			return *this;
 		aspect = src.aspect;
 		fovy = src.fovy;
 		z_near = src.z_near;
@@ -45,6 +39,20 @@ namespace lim
 		global_up = src.global_up;
 		view_mat = src.view_mat;
 		proj_mat = src.proj_mat;
+	}
+	Camera& Camera::operator=(Camera&& src) noexcept
+	{
+		if( this!=&src ) {
+			aspect = src.aspect;
+			fovy = src.fovy;
+			z_near = src.z_near;
+			z_far = src.z_far;
+			position = src.position;
+			pivot = src.pivot;
+			global_up = src.global_up;
+			view_mat = src.view_mat;
+			proj_mat = src.proj_mat;
+		}
 		return *this;
 	}
 	Camera::~Camera() noexcept

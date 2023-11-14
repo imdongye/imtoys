@@ -25,15 +25,15 @@ namespace
 		dst.min_filter 			= src.min_filter;
 		dst.wrap_param 			= src.wrap_param;
 		dst.mipmap_max_level 	= src.mipmap_max_level;
+		dst.src_format 			= src.src_format;
+		dst.src_chanel_type 	= src.src_chanel_type;
 
 		dst.aspect_ratio 		= src.aspect_ratio;
 
 		dst.file_path			= src.file_path;
 		dst.file_format			= dst.file_path.c_str() + (src.file_format - src.file_path.c_str());
-		dst.src_nr_channels     = src.src_nr_channels;
-		dst.src_format 			= src.src_format;
-		dst.src_chanel_type 	= src.src_chanel_type;
-		dst.src_bit_per_channel	= src.src_bit_per_channel;
+		dst.nr_channels     	= src.nr_channels;
+		dst.bit_per_channel		= src.bit_per_channel;
 	}
 }
 
@@ -50,16 +50,19 @@ namespace lim
 	}
 	Texture::Texture(Texture&& src) noexcept
 	{
-		*this = std::move(src);
-	}
-	Texture& Texture::operator=(Texture&& src) noexcept
-	{
-		if(this == &src)
-			return *this;
 		deinitGL();
 		copyTexBaseProps(src, *this);
 		tex_id = src.tex_id;
 		src.tex_id = 0;
+	}
+	Texture& Texture::operator=(Texture&& src) noexcept
+	{
+		if(this != &src) {
+			deinitGL();
+			copyTexBaseProps(src, *this);
+			tex_id = src.tex_id;
+			src.tex_id = 0;
+		}
 		return *this;
 	}
 	Texture::~Texture() noexcept
@@ -72,6 +75,9 @@ namespace lim
 			glDeleteTextures(1, &tex_id);
 			tex_id=0;
 		}
+	}
+	void setSrcAndInterFormat(int nrChannel, GLenum type) {
+
 	}
 	void Texture::initGL(void* data)
 	{
@@ -106,92 +112,66 @@ namespace lim
 
 		// hdr loading
 		if( stbi_is_hdr(file_path.c_str()) ) {
-			data=stbi_loadf(file_path.c_str(), &width, &height, &src_nr_channels, 0);
+			data=stbi_loadf(file_path.c_str(), &width, &height, &nr_channels, 0);
 			if( stbi_is_16_bit(file_path.c_str()) ) {
-				src_chanel_type = GL_HALF_FLOAT;
-				src_bit_per_channel = 16;
+				
+				bit_per_channel = 16;
 			}
 			else {
-				src_chanel_type = GL_FLOAT;
-				src_bit_per_channel = 32;
+				
+				bit_per_channel = 32;
 			}
 		}
 		else {
-			data=stbi_load(file_path.c_str(), &width, &height, &src_nr_channels, 0);
-			src_chanel_type = GL_UNSIGNED_BYTE;
-			src_bit_per_channel = 8;
+			data=stbi_load(file_path.c_str(), &width, &height, &nr_channels, 0);
+			
+			bit_per_channel = 8;
 		}
 		if( !data ) {
 			log::err("texture failed to load at path: %s\n", file_path.c_str());
 			return nullptr;
 		}
-
-		switch( src_nr_channels ) {
-			case 1: src_format = GL_RED; break;
-			case 2: src_format = GL_RG; break;
-			case 3: src_format = GL_RGB; break;
-			case 4: src_format = GL_RGBA; break;
-			default: {
-				log::err("texter channels is over 4\n");
-				stbi_image_free(data);
-				return nullptr;
-			}
-		}
 		return data;
 	}
-	bool Texture::initFromFile(std::string_view filePath)
-	{
-		void* data = getDataAndPropsFromFile(filePath);
-		if(!data)
-			return false;
+	bool Texture::updateFormat(int nrChannels, int bitPerChannel, bool convertLinear) {
+		nr_channels = nrChannels;
+		bit_per_channel = bitPerChannel;
 
-		initGL(data);
-		stbi_image_free(data);
-
-		return true;
-	}
-
-	bool Texture::initFromFileAutoInterFormat(std::string_view filePath, bool convertLinear)
-	{
-		void* data = getDataAndPropsFromFile(filePath);
-		if(!data)
-			return false;
-	
-		/*** auto internal format ***/
-		internal_format = -1;
-
-		// sRGB는 밝은영역을 압축하기 위함이라 8비트 이상이 필요없음
-		// From : https://registry.khronos.org/OpenGL-Refpages/gl4/html/glTexImage2D.xhtml
-		// Todo: GL_SRGB == GL_SRGB8 ?
-		// 		SNORM은 언제 쓰지?
-		//		I, UI, F 가 무슨 의미가 있지?
-		// internal_format에 GL_RGB는 하위호환성으로 되긴하는데 크기를 붙여주는게 맞다.
-		log::pure("texture %s loading auto with ", file_path.c_str());
 		if( convertLinear ) {
-			switch(src_nr_channels) {
-				case 3: internal_format = GL_SRGB8; 		log::pure("GL_SRGB8"); break;
-				case 4: internal_format = GL_SRGB8_ALPHA8; 	log::pure("GL_SRGB8"); break;
+			if(bit_per_channel==8) {
+				switch(nr_channels) {
+					case 3: internal_format = GL_SRGB8; 		log::pure("GL_SRGB8"); break;
+					case 4: internal_format = GL_SRGB8_ALPHA8; 	log::pure("GL_SRGB8"); break;
+					default: 
+						log::err("no matched srgb format\n");
+						return false;
+						break;
+				}
+			} 
+			else {
+				log::err("no matched srgb format\n");
+				return false;
 			}
 		}
 		else {
-			if(src_bit_per_channel==8) {
-				switch(src_nr_channels) {
+			if(bit_per_channel==8) {
+				switch(nr_channels) {
 				case 1: internal_format = GL_R8; 	log::pure("GL_R8"); break;
 				case 2: internal_format = GL_RG8; 	log::pure("GL_RG8"); break;
 				case 3: internal_format = GL_RGB8; 	log::pure("GL_RGB8"); break;
 				case 4: internal_format = GL_RGBA8; log::pure("GL_RGBA8"); break;
 				}
 			}
-			else if(src_bit_per_channel==16) {
-				switch(src_nr_channels) {
+			else if(bit_per_channel==16) {
+				switch(nr_channels) {
 				case 1: internal_format = GL_R16; 	log::pure("GL_R16"); break;
 				case 2: internal_format = GL_RG16; 	log::pure("GL_RG16"); break;
 				case 3: internal_format = GL_RGB16; log::pure("GL_RGB16"); break;
 				case 4: internal_format = GL_RGBA16;log::pure("GL_RGBA16"); break;
 				}
 			}
-			else if(src_bit_per_channel==32) {
-				switch(src_nr_channels) {
+			else if(bit_per_channel==32) {
+				switch(nr_channels) {
 				case 1: internal_format = GL_R32F; 	 log::pure("GL_R32F"); break;
 				case 2: internal_format = GL_RG32F;  log::pure("GL_RG32F"); break;
 				case 3: internal_format = GL_RGB32F; log::pure("GL_RGB32F"); break;
@@ -199,15 +179,46 @@ namespace lim
 				}
 			}
 		}
+		switch( nr_channels ) {
+			case 1: src_format = GL_RED; break;
+			case 2: src_format = GL_RG; break;
+			case 3: src_format = GL_RGB; break;
+			case 4: src_format = GL_RGBA; break;
+			default: {
+				log::err("texter channels is over 4\n");
+				return false;
+			}
+		}
+		switch( bit_per_channel ) {
+			case 8:  src_chanel_type = GL_UNSIGNED_BYTE; break;
+			case 16: src_chanel_type = GL_HALF_FLOAT; break;
+			case 32: src_chanel_type = GL_FLOAT; break;
+			default: {
+				log::err("no machec bit per channel\n");
+				return false;
+			}
+		}
+	}
+
+	bool Texture::initFromFile(std::string_view filePath, bool convertLinear)
+	{
+		void* data = getDataAndPropsFromFile(filePath);
+		if(!data)
+			return false;
+
+		if( updateFormat(nr_channels, bit_per_channel, convertLinear) ) {
+			log::err("no mached format\n");
+			stbi_image_free(data);
+			return false;
+		}
 
 		initGL(data);
 		stbi_image_free(data);
 
+		log::pure("%s(%dx%dx%dx%dbits)\n", name.c_str(), width, height, nr_channels, bit_per_channel);
 		return true;
 	}
-	
 
-	
 	void drawTexToQuad(const GLuint texId, float gamma) 
 	{
 		const Program& prog = AssetLib::get().tex_to_quad_prog;
@@ -238,6 +249,7 @@ namespace lim
 
 		glDeleteFramebuffers( 1, &srcFbo );
 	}
+
 	void copyTexToTex(const Texture& srcTex, Texture& dstTex) 
 	{
 		if(dstTex.tex_id==0) {

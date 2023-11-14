@@ -30,37 +30,36 @@ namespace lim
     {    
     }
     Scene::Scene(Scene&& src) noexcept
-        : my_mds(std::move(src.my_mds))
-        , models(std::move(src.models))
-        , lights(std::move(src.lights))
     {
-    }
-    Scene& Scene::operator=(Scene&& src) noexcept {
-        if(this==&src)
-            return *this;
-        for( const Model* md: my_mds ){
-            delete md;
-        }
-        my_mds.clear();
-        for( const Light* lit: my_lits ){
-            delete lit;
-        }
-        my_lits.clear();
-
         my_mds = std::move(src.my_mds);
         models = std::move(src.models);
-        my_lits = std::move(src.my_lits);
+        my_lits =std::move(src.my_lits);
         lights = std::move(src.lights);
-
+    }
+    Scene& Scene::operator=(Scene&& src) noexcept {
+        if(this!=&src) {
+            releaseData();
+            my_mds = std::move(src.my_mds);
+            models = std::move(src.models);
+            my_lits =std::move(src.my_lits);
+            lights = std::move(src.lights);
+        }
         return *this;
     }
     Scene::~Scene() noexcept {
+        releaseData();
+    }
+    void Scene::releaseData() {
         for( const Model* md: my_mds ){
             delete md;
         }
         for( const Light* lit: my_lits ){
             delete lit;
         }
+        my_mds.clear();
+        my_lits.clear();
+        models.clear();
+        lights.clear();
     }
 }
 
@@ -179,7 +178,7 @@ namespace
 
 namespace lim
 {
-    void render( const Framebuffer& fb,
+    void render( const IFramebuffer& fb,
                  const Program& prog,
                  const Model& md )
     {
@@ -200,7 +199,7 @@ namespace lim
         fb.unbind();
     }
     
-    void render( const Framebuffer& fb, 
+    void render( const IFramebuffer& fb, 
                  const Program& prog,
                  const Camera& cam,
                  const Model& md, 
@@ -232,7 +231,7 @@ namespace lim
     }
 
 
-    void render( const Framebuffer& fb,
+    void render( const IFramebuffer& fb,
                  const Camera& cam,
                  const Scene& scn )
     {

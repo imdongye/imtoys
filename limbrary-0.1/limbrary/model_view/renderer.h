@@ -42,21 +42,22 @@ namespace lim
 		Scene(Scene&& src) noexcept;
 		Scene& operator=(Scene&& src) noexcept;
         ~Scene() noexcept;
+        void releaseData();
 	};
 
-    void render( const Framebuffer& fb,
+    void render( const IFramebuffer& fb,
                  const Program& prog,
                  const Model& md );
 
     // use prog in param
-    void render( const Framebuffer& fb, 
+    void render( const IFramebuffer& fb, 
                  const Program& prog,
                  const Camera& cam,
                  const Model& md, 
                  const Light& lit );
 
     // use prog in mat
-    void render( const Framebuffer& fb,
+    void render( const IFramebuffer& fb,
                  const Camera& cam,
                  const Scene& scn );
 }

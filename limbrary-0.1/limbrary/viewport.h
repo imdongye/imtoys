@@ -61,19 +61,19 @@ namespace lim
 		Callbacks<void(float dt)> update_callbacks;
 	protected:
 		glm::vec2 prev_mouse_pos = {0,0};
-		Framebuffer* framebuffer = nullptr;
+		IFramebuffer* framebuffer = nullptr;
 	private:
 		Viewport(const Viewport&) = delete;
 		Viewport& operator=(const Viewport&) = delete;
 	public:
-		Viewport(std::string_view _name, Framebuffer* createdFB);
+		Viewport(std::string_view _name, IFramebuffer* createdFB);
 		Viewport(Viewport&& src) noexcept;
 		Viewport& operator=(Viewport&& src) noexcept;
 		virtual ~Viewport() noexcept;
 
 		bool drawImGui(std::function<void(const Viewport&)> guizmoFunc = nullptr);
 		void resize(GLuint _width, GLuint _height);
-		const Framebuffer& getFb();
+		const IFramebuffer& getFb();
 		void setClearColor(glm::vec4 color);
 		const GLuint& getWidth() const;
 		const GLuint& getHeight() const;

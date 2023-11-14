@@ -36,22 +36,22 @@ namespace lim
 	}
 	Light& Light::operator=(Light&& src) noexcept
 	{
-		if( this==&src )
-			return *this;
-		map_Shadow = std::move(src.map_Shadow);
-		shadow_map_size = src.shadow_map_size;
-		shadow_z_near = src.shadow_z_near;
-		shadow_z_far = src.shadow_z_far;
-		ortho_width = src.ortho_width;
-		ortho_height = src.ortho_height;
-		shadow_enabled = src.shadow_enabled;
-		color = src.color;
-		intensity = src.intensity;
-		pivot = src.pivot;
-		position = src.position;
-		shadow_view_mat = src.shadow_view_mat;
-		shadow_proj_mat = src.shadow_proj_mat;
-		shadow_vp_mat = src.shadow_vp_mat;
+		if( this!=&src ) {
+			map_Shadow = std::move(src.map_Shadow);
+			shadow_map_size = src.shadow_map_size;
+			shadow_z_near = src.shadow_z_near;
+			shadow_z_far = src.shadow_z_far;
+			ortho_width = src.ortho_width;
+			ortho_height = src.ortho_height;
+			shadow_enabled = src.shadow_enabled;
+			color = src.color;
+			intensity = src.intensity;
+			pivot = src.pivot;
+			position = src.position;
+			shadow_view_mat = src.shadow_view_mat;
+			shadow_proj_mat = src.shadow_proj_mat;
+			shadow_vp_mat = src.shadow_vp_mat;
+		}
 		return *this;
 	}
 	Light::~Light() noexcept

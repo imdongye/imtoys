@@ -145,7 +145,7 @@ namespace lim
 		ViewportWithCamera(const ViewportWithCamera&) = delete;
 		ViewportWithCamera& operator=(const ViewportWithCamera&) = delete;
 	public:
-		ViewportWithCamera(std::string_view _name, Framebuffer* createdFB);
+		ViewportWithCamera(std::string_view _name, IFramebuffer* createdFB);
 		ViewportWithCamera(ViewportWithCamera&& src) noexcept;
 		ViewportWithCamera& operator=(ViewportWithCamera&& src) noexcept;
 		virtual ~ViewportWithCamera() noexcept;

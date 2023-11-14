@@ -47,7 +47,7 @@ namespace lim
 		AssetLib::get().default_material.prog = &programs[0];
 
 		ground.my_textures.push_back(new Texture());
-		ground.my_textures.back()->initFromFileAutoInterFormat("assets/images/uv_grid.jpg", true);
+		ground.my_textures.back()->initFromFile("assets/images/uv_grid.jpg", true);
 		ground.my_materials.push_back(new Material());
 		ground.my_materials.back()->baseColor = {0,1,0};
 		ground.my_materials.back()->map_BaseColor = ground.my_textures.back();

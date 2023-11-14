@@ -26,7 +26,7 @@ namespace lim
 
 		internal_format = GL_SRGB8;
 		src_chanel_type = GL_UNSIGNED_BYTE;
-		src_bit_per_channel = 8;
+		bit_per_channel = 8;
 
 		glGenTextures(1, &tex_id);
 		glBindTexture(GL_TEXTURE_2D, tex_id);
@@ -51,7 +51,7 @@ namespace lim
 				return;
 			}
 			if( lv==0 ) {
-				width = w; height = h; src_nr_channels = ch;
+				width = w; height = h; nr_channels = ch;
 			}
 			aspect_ratio = width/(float)height;
 
@@ -79,7 +79,7 @@ namespace lim
 
 
 	AppHatching::AppHatching(): AppBase(1200, 780, APP_NAME)
-		, viewport("viewport##hatching", new FramebufferMs())
+		, viewport("viewport##hatching", new FramebufferMs(8))
 	{
 		glEnable(GL_CULL_FACE);
 		//glCullFace(GL_FRONT);

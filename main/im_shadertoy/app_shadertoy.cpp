@@ -9,11 +9,11 @@ using namespace glm;
 namespace lim
 {
 	AppShaderToy::AppShaderToy() : AppBase(780, 780, APP_NAME, true)
-		, viewport("viewport##shadertoy", new Framebuffer())
+		, viewport("viewport##shadertoy", new FramebufferNoDepth())
 		, program("im_shadertoy/shaders/hextile.glsl")
 	{
 		iChannel0.wrap_param = GL_REPEAT;
-		iChannel0.initFromFileAutoInterFormat("assets/images/uv_grid.jpg", true);
+		iChannel0.initFromFile("assets/images/uv_grid.jpg", true);
 	}
 	AppShaderToy::~AppShaderToy()
 	{

@@ -7,7 +7,7 @@
 
 namespace lim 
 {
-	Viewport::Viewport(std::string_view _name, Framebuffer* createdFB)
+	Viewport::Viewport(std::string_view _name, IFramebuffer* createdFB)
 		:name(_name)
 	{
 		if( createdFB==nullptr )
@@ -21,27 +21,25 @@ namespace lim
 	}
 	Viewport& Viewport::operator=(Viewport&& src) noexcept
 	{
-		if(this == &src)
-			return *this;
+		if(this != &src) {
+			name 			 = std::move(src.name);
+			window_mode 	 = src.window_mode;
+			is_opened	 = src.is_opened;
+			is_hovered 		 = src.is_hovered;
+			is_focused 		 = src.is_focused;
+			is_dragged 		 = src.is_dragged;
+			mouse_pos 		 = src.mouse_pos;
+			is_scrolled = src.is_scrolled;
+			scroll_off  = src.scroll_off;
 
-		name 			 = std::move(src.name);
-		window_mode 	 = src.window_mode;
-		is_opened	 = src.is_opened;
-		is_hovered 		 = src.is_hovered;
-		is_focused 		 = src.is_focused;
-		is_dragged 		 = src.is_dragged;
-		mouse_pos 		 = src.mouse_pos;
-		is_scrolled = src.is_scrolled;
-		scroll_off  = src.scroll_off;
+			resize_callbacks = std::move(src.resize_callbacks);
+			update_callbacks = std::move(src.update_callbacks);
 
-		resize_callbacks = std::move(src.resize_callbacks);
-		update_callbacks = std::move(src.update_callbacks);
-
-		if( framebuffer )
-			delete framebuffer;
-		framebuffer = src.framebuffer;
-		src.framebuffer = nullptr;
-
+			if( framebuffer )
+				delete framebuffer;
+			framebuffer = src.framebuffer;
+			src.framebuffer = nullptr;
+		}
 		return *this; 
 	}
 	Viewport::~Viewport() noexcept
@@ -51,7 +49,7 @@ namespace lim
 	}
 	bool Viewport::drawImGui(std::function<void(const Viewport&)> guizmoFunc) // and resize framebuffer
 	{
-		Framebuffer& fb = *framebuffer;
+		IFramebuffer& fb = *framebuffer;
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
 		ImGui::SetNextWindowSize({(float)fb.width, (float)fb.height+ImGui::GetFrameHeight()}, (window_mode==WM_FIXED_SIZE)?ImGuiCond_Always:ImGuiCond_Once);
 
@@ -130,7 +128,7 @@ namespace lim
 			cb(_width, _height);
 		}
 	}
-	const Framebuffer& Viewport::getFb()
+	const IFramebuffer& Viewport::getFb()
 	{
 		return *framebuffer;
 	}

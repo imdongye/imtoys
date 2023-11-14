@@ -64,19 +64,17 @@ namespace lim
 	}
 	Program& Program::operator=(Program&& src) noexcept
 	{
-		if(this == &src)
-			return *this;
+		if(this != &src) {
+			deinitGL();
 
-		deinitGL();
+			name = std::move(src.name);
+			home_dir = std::move(src.home_dir);
 
-		name = std::move(src.name);
-		home_dir = std::move(src.home_dir);
-
-		pid = src.pid;
-		src.pid = 0;// 바뀌는지 todo
-		shaders = std::move(src.shaders);
-		uniform_location_cache = std::move(src.uniform_location_cache);
-		
+			pid = src.pid;
+			src.pid = 0;// 바뀌는지 todo
+			shaders = std::move(src.shaders);
+			uniform_location_cache = std::move(src.uniform_location_cache);
+		}
 		return *this;
 	}
 	Program::~Program() noexcept
@@ -207,11 +205,11 @@ namespace lim
 	}
 	ProgramReloadable& ProgramReloadable::operator=(ProgramReloadable&& src) noexcept
 	{
-		if(this == &src)
-			return *this;
-		deinitGL();
-		Program::operator=(std::move(src));
-		reloadable = true;
+		if(this != &src) {
+			deinitGL();
+			Program::operator=(std::move(src));
+			reloadable = true;
+		}
 		return *this;
 	}
 	void ProgramReloadable::reload(GLenum type)

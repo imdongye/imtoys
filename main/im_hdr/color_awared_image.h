@@ -642,7 +642,7 @@ RAW bit :)");
 				delete colorAwareDisplayProg;
 			}
 		}
-		void toFramebuffer(const Framebuffer& fb)
+		void toFramebuffer(const IFramebuffer& fb)
 		{
 			fb.bind();
 
@@ -652,7 +652,7 @@ RAW bit :)");
 			glBindTexture(GL_TEXTURE_2D, tex_id);
 
 			prog.setUniform("tex", 0);
-			prog.setUniform("nrChannels", src_nr_channels);
+			prog.setUniform("nrChannels", nr_channels);
 			
 			prog.setUniform("inputGamma", profile.gamma);
 			prog.setUniform("outputGamma", output_gamma);

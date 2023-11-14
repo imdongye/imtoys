@@ -152,18 +152,8 @@ namespace lim
 	Model::Model(Model&& src) noexcept
 		: Transform(std::move(src))
 	{
-		*this = std::move(src);
-	}
-	Model& Model::operator=(Model&& src) noexcept
-	{
-		if( this==&src )
-			return *this;
-		releaseResource();
-
-		Transform::operator=(src);
-
-		name = std::move(src.name);
-		path = std::move(src.path);
+		name = src.name;
+		path = src.path;
 
 		normalize_term = src.normalize_term;
 		model_mat = src.model_mat;
@@ -171,9 +161,10 @@ namespace lim
 		root = src.root;
 
 		default_material = src.default_material;
-		my_materials = src.my_materials;
-		my_textures = src.my_textures;
-		my_meshes = src.my_meshes;
+		my_materials = src.my_materials; 	src.my_materials.clear();
+		my_textures = src.my_textures;		src.my_textures.clear();
+		my_meshes = src.my_meshes;			src.my_meshes.clear();
+
 
 		nr_vertices = src.nr_vertices;
 		nr_triangles = src.nr_triangles;
@@ -182,6 +173,34 @@ namespace lim
 		boundary_max = src.boundary_max;
 		pivoted_scaled_bottom_height = src.pivoted_scaled_bottom_height;
 		ai_backup_flags = src.ai_backup_flags;
+	}
+	Model& Model::operator=(Model&& src) noexcept
+	{
+		if( this!=&src ) {
+			releaseResource();
+			Transform::operator=(src);
+
+			name = src.name;
+			path = src.path;
+
+			normalize_term = src.normalize_term;
+			model_mat = src.model_mat;
+			
+			root = src.root;
+
+			default_material = src.default_material;
+			my_materials = src.my_materials; 	src.my_materials.clear();
+			my_textures = src.my_textures;		src.my_textures.clear();
+			my_meshes = src.my_meshes;			src.my_meshes.clear();
+
+			nr_vertices = src.nr_vertices;
+			nr_triangles = src.nr_triangles;
+			boundary_size = src.boundary_size;
+			boundary_min = src.boundary_min;
+			boundary_max = src.boundary_max;
+			pivoted_scaled_bottom_height = src.pivoted_scaled_bottom_height;
+			ai_backup_flags = src.ai_backup_flags;
+		}
 		return *this;
 	}
 	Model::~Model() noexcept

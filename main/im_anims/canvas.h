@@ -25,7 +25,8 @@ namespace lim
 			internal_format = GL_R32F;
 			src_format = GL_RED;
 			src_chanel_type = GL_FLOAT;
-			src_bit_per_channel = 32;
+			bit_per_channel = 32;
+			nr_channels = 1;
 
 			mag_filter = GL_NEAREST;
 			min_filter = GL_NEAREST;
@@ -78,6 +79,9 @@ namespace lim
 			mag_filter = GL_NEAREST;
 			min_filter = GL_NEAREST;
 			mipmap_max_level = 0;
+
+			bit_per_channel = 32;
+			nr_channels = 3;
 
 			resize(w, h);
 		}

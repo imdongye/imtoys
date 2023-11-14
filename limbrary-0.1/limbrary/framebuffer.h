@@ -16,6 +16,7 @@ glTexImage는 텍스쳐 크기를 동적으로 바꿀수있다고 명세되어�
 Note:
 you must use after resize
 컬러버퍼는 8비트 3채널 고정
+glEnable로 사용하는 옵션은 콜러 세이브로 가정하므로 framebuffer bind하기전에 백업해두거나 원하는걸 다시 켜줘야한다.
 
 Todo:
 1. 생성
@@ -31,93 +32,130 @@ Todo:
 #include "texture.h"
 #include <glad/glad.h>
 #include <glm/glm.hpp>
+#include <functional>
 
 
 namespace lim
 {
-	// depth attachment 없음
-	class Framebuffer
+	class IFramebuffer
 	{
 	public:
 		GLuint fbo = 0;
-		Texture color_tex;
-		glm::vec4 clear_color = {0.05f, 0.09f, 0.11f, 1.0f};
 		GLuint width = 0;
 		GLuint height = 0;
 		float aspect = 1.f;
+		glm::vec4 clear_color = {0.05f, 0.09f, 0.11f, 1.0f};
 	public:
-		Framebuffer(GLint interFormat = GL_RGB);
-		Framebuffer(Framebuffer&& src) noexcept;
-		Framebuffer& operator=(Framebuffer&& src) noexcept;
-		virtual ~Framebuffer() noexcept;
-
-		virtual void bind() const;
-		virtual void unbind() const;
-		/* ms framebuffer return intermidiate */
-		virtual GLuint getRenderedTex() const;
+		IFramebuffer();
+		IFramebuffer(IFramebuffer&& src) noexcept;
+		IFramebuffer& operator=(IFramebuffer&& src) noexcept;
+		// deinit함수가 virtual이라 자식소멸자 호출할 필요없어서 virtual안해도 되는데 경고때문에 함.
+		virtual ~IFramebuffer() noexcept; 
+		
 		// height -1 is square
 		bool resize(GLuint _width, GLuint _height=-1);
-	protected:
-		std::function<void()> initGL_hook;
+
 		void initGL();
-		std::function<void()> deinitGL_hook;
 		void deinitGL();
+		void bind() const;
+		void unbind() const;
+
+		// ms framebuffer return intermidiate
+		virtual GLuint getRenderedTex() const = 0;
+		
+	protected:
+		virtual void myInitGL() = 0;
+		virtual void myDeinitGL() = 0;
+		virtual void myBind() const = 0;
+		virtual void myUnbind() const = 0;
 	private:
-		Framebuffer(const Framebuffer&) = delete;
-		Framebuffer& operator=(const Framebuffer&) = delete;
+		IFramebuffer(const IFramebuffer&) = delete;
+		IFramebuffer& operator=(const IFramebuffer&) = delete;
+	};
+
+	// depth attachment 없음
+	class FramebufferNoDepth : public IFramebuffer
+	{
+	public:
+		Texture color_tex;
+	public:
+		FramebufferNoDepth(int nrChannels = 3, int bitPerChannel = 8);
+		FramebufferNoDepth(FramebufferNoDepth&& src) noexcept;
+		FramebufferNoDepth& operator=(FramebufferNoDepth&& src) noexcept;
+		~FramebufferNoDepth() noexcept; 
+
+		virtual GLuint getRenderedTex() const override;
+	protected:
+		virtual void myInitGL() override;
+		virtual void myDeinitGL() override;
+		virtual void myBind() const override;
+		virtual void myUnbind() const override;
+	private:
+		FramebufferNoDepth(const FramebufferNoDepth&) = delete;
+		FramebufferNoDepth& operator=(const FramebufferNoDepth&) = delete;
 	};
 
 	// depth_tex 샘플링 가능, 성능저하
-	class FramebufferTexDepth: public Framebuffer
+	class FramebufferTexDepth: public FramebufferNoDepth
 	{
 	public:
 		Texture depth_tex;
 	public:
-		FramebufferTexDepth(GLint interFormat = GL_RGB);
+		FramebufferTexDepth(int nrChannels = 3, int bitPerChannel = 8);
 		FramebufferTexDepth(FramebufferTexDepth&& src) noexcept;
 		FramebufferTexDepth& operator=(FramebufferTexDepth&& src) noexcept;
-		virtual ~FramebufferTexDepth() noexcept override;
+		~FramebufferTexDepth() noexcept;
 
-		virtual void bind() const override;
 	protected:
-		void genGLDepthTex();
+		virtual void myInitGL() override;
+		virtual void myDeinitGL() override;
+		virtual void myBind() const override;
 	private:
 		FramebufferTexDepth(const FramebufferTexDepth&) = delete;
 		FramebufferTexDepth& operator=(const FramebufferTexDepth&) = delete;
 	};
 
 	// depth_rbo 샘플링 불가능, 성능향상
-	class FramebufferRbDepth: public Framebuffer
+	class FramebufferRbDepth: public FramebufferNoDepth
 	{
 	public:
-		GLuint depth_rbo = 0;
+		GLuint depth_rbo_id = 0;
 	public:
-		FramebufferRbDepth(GLint interFormat = GL_RGB);
+		FramebufferRbDepth(int nrChannels = 3, int bitPerChannel = 8);
 		FramebufferRbDepth(FramebufferRbDepth&& src) noexcept;
 		FramebufferRbDepth& operator=(FramebufferRbDepth&& src) noexcept;
-		virtual ~FramebufferRbDepth() noexcept override;
+		~FramebufferRbDepth() noexcept;
 
-		virtual void bind() const override;
+	protected:
+		virtual void myInitGL() override;
+		virtual void myDeinitGL() override;
+		virtual void myBind() const override;
 	private:
 		FramebufferRbDepth(const FramebufferRbDepth&) = delete;
 		FramebufferRbDepth& operator=(const FramebufferRbDepth&) = delete;
 	};
 
 	// 멀티셈플링으로 안티엘리어싱됨
-	class FramebufferMs: public FramebufferRbDepth
+	class FramebufferMs: public IFramebuffer
 	{
 	private:
 		int samples = 8;
-		Framebuffer intermediate_fb;
+		FramebufferNoDepth intermediate_fb;
+		glm::vec4 clear_color = {0.05f, 0.09f, 0.11f, 1.0f};
+		GLuint ms_color_tex_id = 0;
+		GLuint ms_depth_rbo_id = 0;
 	public:
-		FramebufferMs(GLint interFormat = GL_RGB, int samples = 8);
+		FramebufferMs(int samples = 8, int nrChannels = 3, int bitPerChannel = 8);
 		FramebufferMs(FramebufferMs&& src) noexcept;
 		FramebufferMs& operator=(FramebufferMs&& src) noexcept;
-		virtual ~FramebufferMs() noexcept override;
+		~FramebufferMs() noexcept;
 
-		virtual void bind() const override;
-		virtual void unbind() const override;
 		virtual GLuint getRenderedTex() const override;
+	protected:
+		virtual void myInitGL() override;
+		virtual void myDeinitGL() override;
+		virtual void myBind() const override;
+		virtual void myUnbind() const override;
 	private:
 		FramebufferMs(const FramebufferMs&) = delete;
 		FramebufferMs& operator=(const FramebufferMs&) = delete;

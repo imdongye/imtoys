@@ -31,6 +31,8 @@ namespace lim
 		GLint min_filter = GL_LINEAR_MIPMAP_LINEAR;
 		GLint wrap_param = GL_CLAMP_TO_EDGE; // GL_CLAMP_TO_EDGE , GL_REPEAT , GL_REPEAT_MIRROR
 		GLint mipmap_max_level = 1000;
+		GLenum src_format = GL_RGBA;
+		GLenum src_chanel_type = GL_UNSIGNED_BYTE;
 
 		// modified by initGL
 		GLuint tex_id=0;
@@ -39,11 +41,8 @@ namespace lim
 		// modified by initFromFile
 		std::string file_path = "nopath/nofile.noformat";
 		const char* file_format = file_path.c_str()+10;
-
-		int src_nr_channels = 3;
-		GLenum src_format = GL_RGBA;
-		GLenum src_chanel_type = GL_UNSIGNED_BYTE;
-		int src_bit_per_channel = 8;
+		int nr_channels = 3;
+		int bit_per_channel = 8;
 
 	private:
 		Texture& operator=(const Texture&) = delete;
@@ -56,10 +55,9 @@ namespace lim
 	private:
 		void* getDataAndPropsFromFile(std::string_view path);
 	public:
+		bool updateFormat(int nrChannels = 3, int bitPerChannel = 8, bool convertLinear = false);
 		void initGL(void* data = nullptr);
-		bool initFromFile(std::string_view path);
-		// nrChannels, bitPerChannel 0 is auto bit
-		bool initFromFileAutoInterFormat(std::string_view path, bool convertLinear = false);
+		bool initFromFile(std::string_view path, bool convertLinear = false);
 		void deinitGL();
 	};
 

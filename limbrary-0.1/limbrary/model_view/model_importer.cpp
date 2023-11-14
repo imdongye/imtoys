@@ -88,8 +88,6 @@ namespace
 			loadedTexs.back()->initFromFile(texPath);
 			rst = loadedTexs.back();
 		}
-		log::pure("%s(%dx%dx%d)\n", rst->name.c_str(), rst->width, rst->height, rst->src_nr_channels);
-
 		return rst;
 	}
 

@@ -20,7 +20,7 @@ namespace lim
 			log::err("not mached model in bake normal map\n\n");
             return;
         }
-        Framebuffer srcNormalMap;
+        FramebufferNoDepth srcNormalMap;
         srcNormalMap.clear_color = {0.5, 0.5, 1, 1};
         srcNormalMap.resize(texSize);
 
@@ -87,7 +87,7 @@ namespace lim
             glClear(GL_COLOR_BUFFER_BIT);
             bakerProg.use();
             glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, srcNormalMap.color_tex);
+            glBindTexture(GL_TEXTURE_2D, srcNormalMap.color_tex.tex_id);
             bakerProg.setUniform("map_OriNormal", 0);
             
             for( auto& [srcMs, dstMs] : meshes ) {

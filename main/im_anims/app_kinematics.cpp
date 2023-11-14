@@ -34,7 +34,6 @@ namespace lim
 		glViewport(0, 0, fb_width, fb_height);
 		glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 		render(viewport.getFb(), viewport.camera, scene);
 	}
 	void AppKinematics::renderImGui()
