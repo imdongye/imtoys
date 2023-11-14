@@ -78,16 +78,17 @@ namespace
 		texPath = _model_dir + "/" + texPath;
 
 		for( size_t i = 0; i < loadedTexs.size(); i++ ) {
-			if( texPath.compare(loadedTexs[i]->path)==0 ) {
+			if( texPath.compare(loadedTexs[i]->file_path)==0 ) {
 				rst = loadedTexs[i];
 			}
 		}
 		if( !rst ) {
 			loadedTexs.push_back(new Texture());
-			loadedTexs.back()->initFromImage(texPath, internalFormat);
+			loadedTexs.back()->internal_format = internalFormat;
+			loadedTexs.back()->initFromFile(texPath);
 			rst = loadedTexs.back();
 		}
-		log::pure("%s(%dx%dx%d)\n", rst->name.c_str(), rst->width, rst->height, rst->nr_channels);
+		log::pure("%s(%dx%dx%d)\n", rst->name.c_str(), rst->width, rst->height, rst->src_nr_channels);
 
 		return rst;
 	}

@@ -13,7 +13,7 @@ namespace lim
 		, program("im_shadertoy/shaders/hextile.glsl")
 	{
 		iChannel0.wrap_param = GL_REPEAT;
-		iChannel0.initFromImageAuto("assets/images/uv_grid.jpg", true);
+		iChannel0.initFromFileAutoInterFormat("assets/images/uv_grid.jpg", true);
 	}
 	AppShaderToy::~AppShaderToy()
 	{

@@ -18,7 +18,7 @@
 
 namespace lim
 {
-	class ArtMap: public TexBase
+	class ArtMap: public Texture
 	{
 	public:
 		static constexpr GLint nr_mips = 4;

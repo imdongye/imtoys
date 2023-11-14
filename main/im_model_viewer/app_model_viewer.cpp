@@ -57,7 +57,7 @@ namespace lim
 		light_model.scale = glm::vec3(0.3f);
 		light_model.updateModelMat();
 
-		light_map.initFromImageAuto("assets/ibls/meadow_2_4k.hdr");
+		light_map.initFromFileAutoInterFormat("assets/ibls/meadow_2_4k.hdr", false);
 
 		AssetLib::get().default_material.prog = &program;
 

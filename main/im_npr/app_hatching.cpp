@@ -20,7 +20,7 @@
 namespace lim
 {
 	ArtMap::ArtMap(const std::string_view _path, GLint _tone)
-		: TexBase(), tone(_tone)
+		: Texture(), tone(_tone)
 	{
 		path = _path;
 
@@ -51,7 +51,7 @@ namespace lim
 				return;
 			}
 			if( lv==0 ) {
-				width = w; height = h; nr_channels = ch;
+				width = w; height = h; src_nr_channels = ch;
 			}
 			aspect_ratio = width/(float)height;
 

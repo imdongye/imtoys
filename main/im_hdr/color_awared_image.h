@@ -598,7 +598,8 @@ namespace lim
 		ColorAwareImage(const std::string_view _path, glm::vec3 outputGamma = glm::vec3(2.4))
 			: Texture(), output_gamma(outputGamma)
 		{
-			initFromImage(_path, GL_RGB32F);
+			internal_format = GL_RGB32F;
+			initFromFile(_path);
 			
 			if( refCount++==0 ) {
 				colorAwareDisplayProg = new Program("color aware display program");
@@ -617,7 +618,8 @@ RAW bit :)");
 
 
 			// is JPEG
-			if( (strcmp(format, "jpg")==0||strcmp(format, "jpeg")==0) && profile.initWithJPEG(path, true) ) {
+			if( (strcmp(file_format, "jpg")==0||strcmp(file_format, "jpeg")==0) 
+				&& profile.initWithJPEG(file_path, true) ) {
 	
 			} 
 			// todo png
@@ -650,7 +652,7 @@ RAW bit :)");
 			glBindTexture(GL_TEXTURE_2D, tex_id);
 
 			prog.setUniform("tex", 0);
-			prog.setUniform("nrChannels", nr_channels);
+			prog.setUniform("nrChannels", src_nr_channels);
 			
 			prog.setUniform("inputGamma", profile.gamma);
 			prog.setUniform("outputGamma", output_gamma);

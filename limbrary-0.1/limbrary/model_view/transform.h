@@ -24,14 +24,11 @@ namespace lim
 		glm::vec3 scale = glm::vec3(1);
         // translateMat * rotateMat * scaleMat
         glm::mat4 transform = glm::mat4(1);
-    protected: // cache
-        glm::mat4 translate_mat, scale_mat, rotate_mat;
     public:
         void updateTransform() {
-            translate_mat = glm::translate(position);
-            scale_mat = glm::scale(scale);
-            rotate_mat = glm::toMat4(orientation);
-            transform = translate_mat * rotate_mat * scale_mat;
+            transform = glm::translate(position) 
+                        * glm::toMat4(orientation) 
+                        * glm::scale(scale);
         }
         Transform() = default;
         Transform(const Transform& copy) = default;

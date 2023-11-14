@@ -115,15 +115,15 @@ namespace
 		}
 
 		if( src.map_BaseColor ) {
-			tempStr = aiString(src.map_BaseColor->path.data());
+			tempStr = aiString(src.map_BaseColor->file_path.data());
 			aiMat->AddProperty( &tempStr, AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE, 0) );
 		}
 		if( src.map_Specular ) {
-			tempStr = aiString(src.map_Specular->path.data());
+			tempStr = aiString(src.map_Specular->file_path.data());
 			aiMat->AddProperty( &tempStr, AI_MATKEY_TEXTURE(aiTextureType_SPECULAR, 0) );
 		}
 		if( src.map_Bump ) {
-			tempStr = aiString(src.map_Bump->path.data());
+			tempStr = aiString(src.map_Bump->file_path.data());
 			if( src.map_Flags & lim::Material::MF_NOR ) {
 				aiMat->AddProperty( &tempStr, AI_MATKEY_TEXTURE(aiTextureType_NORMALS, 0) );
 			}
@@ -135,11 +135,11 @@ namespace
 			}
 		}
 		if( src.map_AmbOcc ) {
-			tempStr = aiString(src.map_AmbOcc->path.data());
+			tempStr = aiString(src.map_AmbOcc->file_path.data());
 			aiMat->AddProperty( &tempStr, AI_MATKEY_TEXTURE(aiTextureType_AMBIENT, 0) );
 		}
 		if( src.map_Roughness ) {
-			tempStr = aiString(src.map_Roughness->path.data());
+			tempStr = aiString(src.map_Roughness->file_path.data());
 			if( src.map_Flags&Material::MF_ROUGHNESS ) {
 				aiMat->AddProperty( &tempStr, AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE_ROUGHNESS, 0) );
 			}
@@ -151,15 +151,15 @@ namespace
 			}
 		}
 		if( src.map_Metalness ) {
-			tempStr = aiString(src.map_Metalness->path.data());
+			tempStr = aiString(src.map_Metalness->file_path.data());
 			aiMat->AddProperty( &tempStr, AI_MATKEY_TEXTURE(aiTextureType_METALNESS, 0) );
 		}
 		if( src.map_Emission ) {
-			tempStr = aiString(src.map_Emission->path.data());
+			tempStr = aiString(src.map_Emission->file_path.data());
 			aiMat->AddProperty( &tempStr, AI_MATKEY_TEXTURE(aiTextureType_EMISSION_COLOR, 0) );
 		}
 		if( src.map_Opacity ) {
-			tempStr = aiString(src.map_Opacity->path.data());
+			tempStr = aiString(src.map_Opacity->file_path.data());
 			aiMat->AddProperty( &tempStr, AI_MATKEY_TEXTURE(aiTextureType_OPACITY, 0) );
 		}
 
@@ -330,7 +330,7 @@ namespace lim
 		path = mdPath;
 		// export할때 모델의 상대 경로로 임시 변경
 		for( Texture* tex : my_textures ) {
-			tex->path = tex->path.c_str() + lastSlashPosInOriMdPath+1;
+			tex->file_path = tex->file_path.c_str() + lastSlashPosInOriMdPath+1;
 		}
 
 		/* export model */
@@ -361,8 +361,8 @@ namespace lim
 		elapsedTime = glfwGetTime();
 		for( Texture* tex : my_textures )
 		{
-			std::string newTexPath = md_dir + "/" + tex->path.c_str();
-			tex->path = newTexPath;
+			std::string newTexPath = md_dir + "/" + tex->file_path.c_str();
+			tex->file_path = newTexPath;
 
 			size_t lastTexSlashPos = newTexPath.find_last_of("/\\");
 			std::string newTexDirStr = newTexPath.substr(0, lastTexSlashPos);

@@ -1,12 +1,14 @@
-//
-//  2022-11-14 / im dong ye
-// 	From: https://registry.khronos.org/OpenGL-Refpages/gl4/html/glTexImage2D.xhtml
-//
-//	Todo:
-//	1. ARB 확장이 뭐지 어셈블리?
-//  2. GL_TEXTURE_MAX_ANISOTROPY_EXT
-//	3. texture loading 분리
-//
+/*
+	2022-11-14 / im dong ye
+	From: https://registry.khronos.org/OpenGL-Refpages/gl4/html/glTexImage2D.xhtml
+
+	Note:
+	opengl srgb변환은 8bit 이미지에만 적용할수있음.
+
+	Todo:
+	1. ARB 확장이 뭐지 어셈블리?
+	2. GL_TEXTURE_MAX_ANISOTROPY_EXT
+*/
 
 #ifndef __texture_h_
 #define __texture_h_
@@ -18,64 +20,54 @@
 namespace lim
 {
 	// clone able
-	class TexBase
+	class Texture
 	{
 	public:
-		std::string name = "nonamed texbase";
-
-		int width=0, height=0;
-		float aspect_ratio=1.f;
-		int nr_channels = 3;
-
-		GLuint tex_id=0;
-		// 내부 저장 포맷, sRGB면 data에서 감마 변환
-		GLint internal_format = GL_SRGB8_ALPHA8; // GL_R8, 
-		GLenum src_format = GL_RGBA;
-		GLenum src_chanel_type = GL_UNSIGNED_BYTE;
-		int src_bit_per_channel = 8;
-
+		// modified by user
+		std::string name = "nonamed texture";
+		int width=0, height=0; // initFromFile을 사용하면 수정됨.
+		GLint internal_format = GL_RGB8; // GL_R8, GL_SRGB8_ALPHA8(internal gamma collection)
 		GLint mag_filter = GL_LINEAR; // GL_NEAREST, LINEAR, *_MIPMAP_*
 		GLint min_filter = GL_LINEAR_MIPMAP_LINEAR;
 		GLint wrap_param = GL_CLAMP_TO_EDGE; // GL_CLAMP_TO_EDGE , GL_REPEAT , GL_REPEAT_MIRROR
 		GLint mipmap_max_level = 1000;
 
-	private:
-		TexBase& operator=(const TexBase&) = delete;
-	public:
-		TexBase();
-		TexBase(const TexBase& src);
-		TexBase(TexBase&& src) noexcept;
-		TexBase& operator=(TexBase&& src) noexcept;
-		virtual ~TexBase() noexcept;
-	public:
-		void initGL(void* data = nullptr);
-		void deinitGL();
-	};
+		// modified by initGL
+		GLuint tex_id=0;
+		float aspect_ratio=1.f;
 
-	class Texture: public TexBase
-	{
-	public:
-		std::string path = "nopath/texture.png";
-		const char* format = path.c_str()+10;
+		// modified by initFromFile
+		std::string file_path = "nopath/nofile.noformat";
+		const char* file_format = file_path.c_str()+10;
+
+		int src_nr_channels = 3;
+		GLenum src_format = GL_RGBA;
+		GLenum src_chanel_type = GL_UNSIGNED_BYTE;
+		int src_bit_per_channel = 8;
+
 	private:
-		Texture &operator=(const Texture &) = delete;
+		Texture& operator=(const Texture&) = delete;
 	public:
 		Texture();
 		Texture(const Texture& src);
 		Texture(Texture&& src) noexcept;
 		Texture& operator=(Texture&& src) noexcept;
 		virtual ~Texture() noexcept;
-
-		bool initFromImage(std::string_view path, GLint internalFormat);
+	private:
+		void* getDataAndPropsFromFile(std::string_view path);
+	public:
+		void initGL(void* data = nullptr);
+		bool initFromFile(std::string_view path);
 		// nrChannels, bitPerChannel 0 is auto bit
-		bool initFromImageAuto(std::string_view path, bool convertLinear = false, int nrChannels = 0, int bitPerChannel = 0);
+		bool initFromFileAutoInterFormat(std::string_view path, bool convertLinear = false);
+		void deinitGL();
 	};
 
 	void drawTexToQuad(const GLuint texId, float gamma = 2.2f);
 	// for same size
-	void copyTexToTex(const GLuint srcTexId, TexBase& dstTex);
+	void copyTexToTex(const GLuint srcTexId, Texture& dstTex);
 	// for diff size
-	void copyTexToTex(const TexBase& srcTex, TexBase& dstTex);
+	void copyTexToTex(const Texture& srcTex, Texture& dstTex);
 }
 
 #endif

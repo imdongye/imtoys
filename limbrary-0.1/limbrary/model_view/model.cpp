@@ -1,20 +1,21 @@
-//
-//  2022-07-20 / im dong ye
-//  edit learnopengl code
-//
-// texture uniform sampler2d variable name rule
-// map_BaseColor, map_Kd1 ...
-// 
-//  TODO list:
-//  1. export
-//  2. rigging
-//  3. not gl_static으로 실시간 vert변화
-//  4. width, height, depth 찾아서 -1~1공간으로 scaling
-//  5. load model 이 모델안에 있는데 따로 빼야될까
-//  6. 언제 어디서 업데이트해줘야하는지 규칙정하기
-//	7. reload normal map 외부로 빼기
-// 
-//
+/*
+	2022-07-20 / im dong ye
+	edit learnopengl code
+
+	texture uniform sampler2d variable name rule
+	map_BaseColor, map_Kd1 ...
+
+	TODO list:
+	0. transform, glm move constructor 리펙토링 필요함.
+	1. export
+	2. rigging
+	3. not gl_static으로 실시간 vert변화
+	4. width, height, depth 찾아서 -1~1공간으로 scaling
+	5. load model 이 모델안에 있는데 따로 빼야될까
+	6. 언제 어디서 업데이트해줘야하는지 규칙정하기
+	7. reload normal map 외부로 빼기
+*/
+
 #include <limbrary/model_view/model.h>
 #include <limbrary/log.h>
 #include <glm/gtx/transform.hpp>
@@ -60,17 +61,20 @@ namespace
 namespace lim
 {
 	Model::Model(std::string_view _name)
-		: name(_name)
+		: Transform(), name(_name)
 	{
 		default_material = &AssetLib::get().default_material;
+		updateModelMat();
 	}
-	Model::Model(const Model& src, bool makeRef) 
+	Model::Model(const Model& src, bool makeRef)
+		: Transform(src)
 	{
 		name = src.name;
 		path = src.path;
 
-		transform = transform;
+		normalize_term = src.normalize_term;
 		model_mat = src.model_mat;
+		
 		default_material = src.default_material;
 
 		nr_vertices = src.nr_vertices;
@@ -146,6 +150,7 @@ namespace lim
 		}
 	}
 	Model::Model(Model&& src) noexcept
+		: Transform(std::move(src))
 	{
 		*this = std::move(src);
 	}
@@ -155,17 +160,20 @@ namespace lim
 			return *this;
 		releaseResource();
 
+		Transform::operator=(src);
+
 		name = std::move(src.name);
 		path = std::move(src.path);
-		transform = std::move(src.transform);
-		normalize_term = std::move(src.normalize_term);
+
+		normalize_term = src.normalize_term;
 		model_mat = src.model_mat;
 		
 		root = src.root;
-		default_material = std::move(src.default_material);
-		my_materials = std::move(src.my_materials);
-		my_textures = std::move(src.my_textures);
-		my_meshes = std::move(src.my_meshes);
+
+		default_material = src.default_material;
+		my_materials = src.my_materials;
+		my_textures = src.my_textures;
+		my_meshes = src.my_meshes;
 
 		nr_vertices = src.nr_vertices;
 		nr_triangles = src.nr_triangles;
@@ -173,7 +181,6 @@ namespace lim
 		boundary_min = src.boundary_min;
 		boundary_max = src.boundary_max;
 		pivoted_scaled_bottom_height = src.pivoted_scaled_bottom_height;
-
 		ai_backup_flags = src.ai_backup_flags;
 		return *this;
 	}

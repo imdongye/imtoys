@@ -18,7 +18,7 @@ namespace lim
 	class Program;
 	class Mesh;
 	struct Material;
-	class TexBase;
+	class Texture;
 
 	class AssetLib
 	{

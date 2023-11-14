@@ -77,6 +77,7 @@ static void pushAppData()
 
 int main()
 {
+	pushAppData<lim::AppKinematics>();
 	pushAppData<lim::AppSdfModeler>();
 	pushAppData<lim::AppModelViewer>();
 	pushAppData<lim::AppTemplate>();
@@ -91,7 +92,6 @@ int main()
 	pushAppData<lim::AppHatching>();
 	pushAppData<lim::AppHdr>();
 	pushAppData<lim::AppNano>();
-	pushAppData<lim::AppKinematics>();
 	pushAppData<lim::AppFluid>();
 	pushAppData<lim::AppShaderToy>();
 

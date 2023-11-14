@@ -13,14 +13,14 @@
 
 namespace lim
 {
-	class CanvasGray : public TexBase
+	class CanvasGray : public Texture
 	{
 	public:
 		float clear_color = 0.01f;
 		std::vector<float> buf;
 
 	public:
-		CanvasGray(int w, int h) : TexBase()
+		CanvasGray(int w, int h) : Texture()
 		{
 			internal_format = GL_R32F;
 			src_format = GL_RED;
@@ -63,13 +63,13 @@ namespace lim
 		}
 	};
 
-	class CanvasColor : public TexBase
+	class CanvasColor : public Texture
 	{
 	public:
 		glm::vec3 clear_color = {0.f, 0.1f, 0.12f};
 		std::vector<glm::vec3> buf;
 	public:
-		CanvasColor(int w, int h) : TexBase()
+		CanvasColor(int w, int h) : Texture()
 		{
 			internal_format = GL_RGB32F;
 			src_format = GL_RGB;

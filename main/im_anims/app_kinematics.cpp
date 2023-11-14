@@ -9,21 +9,18 @@ namespace lim
 	AppKinematics::AppKinematics(): AppBase(1200, 780, APP_NAME)
 		, viewport("AnimTester", new FramebufferMs(8))
 	{
-		Mesh* ms; 
-		Model* md; 
 		scene.addOwnLight(new Light());
-
-		ms = new MeshCapsule();
-		md = new Model();
-		md->my_meshes.push_back(ms);
-		md->root.addMeshWithMat(ms);
-		scene.addOwnModel(md);
-
-		ms = new MeshPlane();
-		md = new Model();
-		md->my_meshes.push_back(ms);
-		md->root.addMeshWithMat(ms);
-		scene.addOwnModel(md);
+		
+		scene.addOwnModel(new Model());
+		scene.my_mds.back()->my_meshes.push_back(new MeshCapsule());
+		scene.my_mds.back()->root.addMeshWithMat(
+			scene.my_mds.back()->my_meshes.back()
+		);
+		scene.addOwnModel(new Model());
+		scene.my_mds.back()->my_meshes.push_back(new MeshPlane());
+		scene.my_mds.back()->root.addMeshWithMat(
+			scene.my_mds.back()->my_meshes.back()
+		);
 	}
 	AppKinematics::~AppKinematics()
 	{
@@ -45,5 +42,17 @@ namespace lim
 		ImGui::DockSpaceOverViewport();
 
 		viewport.drawImGui();
+
+		ImGui::Begin("camera");
+		ImGui::Text("%f %f %f", viewport.camera.position.x, viewport.camera.position.y,viewport.camera.position.z);
+		ImGui::Text("%f %f %f", viewport.camera.pivot.x, viewport.camera.pivot.y,viewport.camera.pivot.z);
+		const Model* md = scene.models[0];
+		ImGui::Text("model");
+		ImGui::Text("%f %f %f", md->position.x, md->position.y, md->position.z);
+		for(int i=0;i<4;i++) for(int j=0;j<4;j++) {
+			ImGui::Text("%.1f", md->transform[j][i]);
+			if(j<3) ImGui::SameLine();
+		}
+		ImGui::End();
 	}
 }
