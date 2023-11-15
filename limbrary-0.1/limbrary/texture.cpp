@@ -141,15 +141,14 @@ namespace lim
 			if(bit_per_channel==8) {
 				switch(nr_channels) {
 					case 3: internal_format = GL_SRGB8; 		log::pure("GL_SRGB8"); break;
-					case 4: internal_format = GL_SRGB8_ALPHA8; 	log::pure("GL_SRGB8"); break;
-					default: 
-						log::err("no matched srgb format\n");
+					case 4: internal_format = GL_SRGB8_ALPHA8; 	log::pure("GL_SRGB8_ALPHA8"); break;
+					default:
+						log::err("no matched srgb format nr channel %d\n", nr_channels);
 						return false;
-						break;
 				}
 			} 
 			else {
-				log::err("no matched srgb format\n");
+				log::err("no matched srgb %d bitpercha, %d nr_cha\n", bit_per_channel, nr_channels);
 				return false;
 			}
 		}
@@ -180,24 +179,23 @@ namespace lim
 			}
 		}
 		switch( nr_channels ) {
-			case 1: src_format = GL_RED; break;
-			case 2: src_format = GL_RG; break;
-			case 3: src_format = GL_RGB; break;
-			case 4: src_format = GL_RGBA; break;
-			default: {
-				log::err("texter channels is over 4\n");
-				return false;
-			}
+		case 1: src_format = GL_RED; break;
+		case 2: src_format = GL_RG; break;
+		case 3: src_format = GL_RGB; break;
+		case 4: src_format = GL_RGBA; break;
+		default:
+			log::err("texture channels is over %d\n", nr_channels);
+			return false;
 		}
 		switch( bit_per_channel ) {
-			case 8:  src_chanel_type = GL_UNSIGNED_BYTE; break;
-			case 16: src_chanel_type = GL_HALF_FLOAT; break;
-			case 32: src_chanel_type = GL_FLOAT; break;
-			default: {
-				log::err("no machec bit per channel\n");
-				return false;
-			}
+		case 8:  src_chanel_type = GL_UNSIGNED_BYTE; break;
+		case 16: src_chanel_type = GL_HALF_FLOAT; break;
+		case 32: src_chanel_type = GL_FLOAT; break;
+		default:
+			log::err("no machec bit per channel\n");
+			return false;
 		}
+		return true;
 	}
 
 	bool Texture::initFromFile(std::string_view filePath, bool convertLinear)
@@ -206,7 +204,7 @@ namespace lim
 		if(!data)
 			return false;
 
-		if( updateFormat(nr_channels, bit_per_channel, convertLinear) ) {
+		if( !updateFormat(nr_channels, bit_per_channel, convertLinear) ) {
 			log::err("no mached format\n");
 			stbi_image_free(data);
 			return false;

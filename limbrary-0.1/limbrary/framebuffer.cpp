@@ -34,7 +34,6 @@ namespace lim
 	}
 	IFramebuffer::~IFramebuffer() noexcept
 	{
-		deinitGL();
 	}
 	void IFramebuffer::initGL()
 	{
@@ -97,15 +96,16 @@ namespace lim
 	}
 	FramebufferNoDepth& FramebufferNoDepth::operator=(FramebufferNoDepth&& src) noexcept
 	{
-		if( this==&src ) {
+		if( this!=&src ) {
 			IFramebuffer::operator=(std::move(src));
 
 			color_tex = std::move(src.color_tex);
 		}
 		return *this;
 	}
-	FramebufferNoDepth::~FramebufferNoDepth()
+	FramebufferNoDepth::~FramebufferNoDepth() noexcept
 	{
+		deinitGL();
 	}
 	/* override albe */
 	GLuint FramebufferNoDepth::getRenderedTex() const
@@ -135,8 +135,9 @@ namespace lim
 
 	
 	FramebufferTexDepth::FramebufferTexDepth(int nrChannels, int bitPerChannel)
-		: FramebufferNoDepth(nrChannels, bitPerChannel)
 	{
+		color_tex.updateFormat(nrChannels, bitPerChannel);
+
 		// GL_DEPTH_COMPONENT32F overkill?
 		// From: https://gamedev.stackexchange.com/questions/111955/gl-depth-component-vs-gl-depth-component32
 		depth_tex.internal_format = GL_DEPTH_COMPONENT32F;
@@ -146,26 +147,37 @@ namespace lim
 		depth_tex.bit_per_channel = 32;
 	}
 	FramebufferTexDepth::FramebufferTexDepth(FramebufferTexDepth&& src) noexcept
-		: FramebufferNoDepth(std::move(src))
+		: IFramebuffer(std::move(src))
 	{
+		color_tex = std::move(src.color_tex);
 		depth_tex = std::move(src.depth_tex);
 	}
 	FramebufferTexDepth& FramebufferTexDepth::operator=(FramebufferTexDepth&& src) noexcept
 	{
-		if( this==&src ) {
-			FramebufferNoDepth::operator=(std::move(src));
+		if( this!=&src ) {
+			IFramebuffer::operator=(std::move(src));
 
+			color_tex = std::move(src.color_tex);
 			depth_tex = std::move(src.depth_tex);
 		}
 		return *this;
 	}
-	FramebufferTexDepth::~FramebufferTexDepth()
+	FramebufferTexDepth::~FramebufferTexDepth() noexcept
 	{
+		deinitGL();
 	}
-
+	/* override albe */
+	GLuint FramebufferTexDepth::getRenderedTex() const
+	{
+		return color_tex.tex_id;
+	}
 	void FramebufferTexDepth::myInitGL()
 	{
-		FramebufferNoDepth::myInitGL();
+		color_tex.width = width;
+		color_tex.height = height;
+		color_tex.initGL();
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, color_tex.tex_id, 0);
+
 		depth_tex.width = width;
 		depth_tex.height = height;
 		depth_tex.initGL();
@@ -173,33 +185,36 @@ namespace lim
 	}
 	void FramebufferTexDepth::myDeinitGL()
 	{
-		FramebufferNoDepth::myDeinitGL();
+		color_tex.deinitGL();
 		depth_tex.deinitGL();
 	}
 	void FramebufferTexDepth::myBind() const
 	{
-		FramebufferNoDepth::myBind();
 		glEnable(GL_DEPTH_TEST);
-		glClear(GL_DEPTH_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 	}
-
+	void FramebufferTexDepth::myUnbind() const
+	{
+	}
 
 
 	FramebufferRbDepth::FramebufferRbDepth(int nrChannels, int bitPerChannel)
-		: FramebufferNoDepth(nrChannels, bitPerChannel)
 	{
+		color_tex.updateFormat(nrChannels, bitPerChannel);
 	}
 	FramebufferRbDepth::FramebufferRbDepth(FramebufferRbDepth&& src) noexcept
-		: FramebufferNoDepth(std::move(src))
+		: IFramebuffer(std::move(src))
 	{
+		color_tex = std::move(src.color_tex);
 		depth_rbo_id = src.depth_rbo_id;
 		src.depth_rbo_id = 0;
 	}
 	FramebufferRbDepth& FramebufferRbDepth::operator=(FramebufferRbDepth&& src) noexcept
 	{
-		if( this==&src ) {
-			FramebufferNoDepth::operator=(std::move(src));
+		if( this!=&src ) {
+			IFramebuffer::operator=(std::move(src));
 
+			color_tex = std::move(src.color_tex);
 			depth_rbo_id = src.depth_rbo_id;
 			src.depth_rbo_id = 0;
 		}
@@ -207,10 +222,20 @@ namespace lim
 	}
 	FramebufferRbDepth::~FramebufferRbDepth() noexcept
 	{
+		deinitGL();
+	}
+	/* override albe */
+	GLuint FramebufferRbDepth::getRenderedTex() const
+	{
+		return color_tex.tex_id;
 	}
 	void FramebufferRbDepth::myInitGL()
 	{
-		FramebufferNoDepth::myInitGL();
+		color_tex.width = width;
+		color_tex.height = height;
+		color_tex.initGL();
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, color_tex.tex_id, 0);
+		
 		if( depth_rbo_id>0 ) { log::err("myDeinitGL이 먼저 호출돼서 절대 들어올수 없음\n"); }
 		glGenRenderbuffers(1, &depth_rbo_id);
 		glBindRenderbuffer(GL_RENDERBUFFER, depth_rbo_id);
@@ -221,18 +246,20 @@ namespace lim
 	}
 	void FramebufferRbDepth::myDeinitGL()
 	{
-		FramebufferNoDepth::myDeinitGL();
+		color_tex.deinitGL();
 		if( depth_rbo_id>0 ) { glDeleteRenderbuffers(1, &depth_rbo_id); depth_rbo_id=0; }
 	}
 	void FramebufferRbDepth::myBind() const
 	{
-		FramebufferNoDepth::myBind();
 		glEnable(GL_DEPTH_TEST);
-		glClear(GL_DEPTH_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+	}
+	void FramebufferRbDepth::myUnbind() const
+	{
 	}
 
 
-	FramebufferMs::FramebufferMs(int nrChannels, int bitPerChannel, int _samples)
+	FramebufferMs::FramebufferMs(int _samples, int nrChannels, int bitPerChannel)
 		: IFramebuffer(), samples(_samples)
 		, intermediate_fb(nrChannels, bitPerChannel)
 	{
@@ -263,8 +290,9 @@ namespace lim
 	}
 	FramebufferMs::~FramebufferMs() noexcept
 	{
+		deinitGL();
 	}
-
+	/* override able */
 	GLuint FramebufferMs::getRenderedTex() const
 	{
 		return intermediate_fb.color_tex.tex_id;

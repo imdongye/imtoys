@@ -24,6 +24,10 @@ Todo:
 3. 부모 deinit 중복 호출 문제
 4. GL_DEPTH_STENCIL_ATTACHMENT 24+8
 
+IFramebuffer 상속깊이는 무조건 한번이여야하고
+자식소멸자에서 deinit을 호출해줘야함.
+
+
 */
 
 #ifndef __framebuffer_h_
@@ -49,7 +53,7 @@ namespace lim
 		IFramebuffer();
 		IFramebuffer(IFramebuffer&& src) noexcept;
 		IFramebuffer& operator=(IFramebuffer&& src) noexcept;
-		// deinit함수가 virtual이라 자식소멸자 호출할 필요없어서 virtual안해도 되는데 경고때문에 함.
+		// 자식 소멸자에서 deinit호출해줘야함.
 		virtual ~IFramebuffer() noexcept; 
 		
 		// height -1 is square
@@ -84,21 +88,22 @@ namespace lim
 		FramebufferNoDepth& operator=(FramebufferNoDepth&& src) noexcept;
 		~FramebufferNoDepth() noexcept; 
 
-		virtual GLuint getRenderedTex() const override;
+		virtual GLuint getRenderedTex() const final;
 	protected:
-		virtual void myInitGL() override;
-		virtual void myDeinitGL() override;
-		virtual void myBind() const override;
-		virtual void myUnbind() const override;
+		virtual void myInitGL() final;
+		virtual void myDeinitGL() final;
+		virtual void myBind() const final;
+		virtual void myUnbind() const final;
 	private:
 		FramebufferNoDepth(const FramebufferNoDepth&) = delete;
 		FramebufferNoDepth& operator=(const FramebufferNoDepth&) = delete;
 	};
 
 	// depth_tex 샘플링 가능, 성능저하
-	class FramebufferTexDepth: public FramebufferNoDepth
+	class FramebufferTexDepth: public IFramebuffer
 	{
 	public:
+		Texture color_tex;
 		Texture depth_tex;
 	public:
 		FramebufferTexDepth(int nrChannels = 3, int bitPerChannel = 8);
@@ -106,19 +111,22 @@ namespace lim
 		FramebufferTexDepth& operator=(FramebufferTexDepth&& src) noexcept;
 		~FramebufferTexDepth() noexcept;
 
+		virtual GLuint getRenderedTex() const final;
 	protected:
-		virtual void myInitGL() override;
-		virtual void myDeinitGL() override;
-		virtual void myBind() const override;
+		virtual void myInitGL() final;
+		virtual void myDeinitGL() final;
+		virtual void myBind() const final;
+		virtual void myUnbind() const final;
 	private:
 		FramebufferTexDepth(const FramebufferTexDepth&) = delete;
 		FramebufferTexDepth& operator=(const FramebufferTexDepth&) = delete;
 	};
 
 	// depth_rbo 샘플링 불가능, 성능향상
-	class FramebufferRbDepth: public FramebufferNoDepth
+	class FramebufferRbDepth: public IFramebuffer
 	{
 	public:
+		Texture color_tex;
 		GLuint depth_rbo_id = 0;
 	public:
 		FramebufferRbDepth(int nrChannels = 3, int bitPerChannel = 8);
@@ -126,10 +134,12 @@ namespace lim
 		FramebufferRbDepth& operator=(FramebufferRbDepth&& src) noexcept;
 		~FramebufferRbDepth() noexcept;
 
+		virtual GLuint getRenderedTex() const final;
 	protected:
-		virtual void myInitGL() override;
-		virtual void myDeinitGL() override;
-		virtual void myBind() const override;
+		virtual void myInitGL() final;
+		virtual void myDeinitGL() final;
+		virtual void myBind() const final;
+		virtual void myUnbind() const final;
 	private:
 		FramebufferRbDepth(const FramebufferRbDepth&) = delete;
 		FramebufferRbDepth& operator=(const FramebufferRbDepth&) = delete;
@@ -150,12 +160,12 @@ namespace lim
 		FramebufferMs& operator=(FramebufferMs&& src) noexcept;
 		~FramebufferMs() noexcept;
 
-		virtual GLuint getRenderedTex() const override;
+		virtual GLuint getRenderedTex() const final;
 	protected:
-		virtual void myInitGL() override;
-		virtual void myDeinitGL() override;
-		virtual void myBind() const override;
-		virtual void myUnbind() const override;
+		virtual void myInitGL() final;
+		virtual void myDeinitGL() final;
+		virtual void myBind() const final;
+		virtual void myUnbind() const final;
 	private:
 		FramebufferMs(const FramebufferMs&) = delete;
 		FramebufferMs& operator=(const FramebufferMs&) = delete;
