@@ -310,15 +310,8 @@ namespace lim { namespace sdf
                 ImGui::End();
                 return;
             }
-            ObjNode& obj = *selected_obj;
+			ObjNode& obj = *selected_obj;
             ImGui::Text("%s", obj.name.c_str());
-
-			static int selectecGzmoOperIdx = 1;
-			static const char* gzmoOperStrs[] = { "Select", "Position", "Scale", "Rotate", "Transform" };
-			static const int   gzmoOpers[] = { 0, ImGuizmo::TRANSLATE, ImGuizmo::SCALE, ImGuizmo::ROTATE, ImGuizmo::UNIVERSAL };
-			if( ImGui::Combo("MouseTool", &selectecGzmoOperIdx, gzmoOperStrs, 4) ) {
-				gzmo_oper = (ImGuizmo::OPERATION)gzmoOpers[selectecGzmoOperIdx];
-			}
 
             static const float slide_spd = 1/300.f;
             static bool isMatUpdated = false;
@@ -331,6 +324,9 @@ namespace lim { namespace sdf
             if(ImGui::DragFloat3("rotate", glm::value_ptr(obj.euler_angles), slide_spd, -FLT_MAX, +FLT_MAX)) {
                 obj.composeTransform();
             }
+			if( ImGui::Combo("Operator", (int*)&obj.op_type, prim_oper_names, nr_oper_types) ) {
+				//gzmo_oper = (ImGuizmo::OPERATION)gzmoOpers[selectecGzmoOperIdx];
+			}
             
             ImGui::End();
         }
@@ -362,6 +358,33 @@ namespace lim { namespace sdf
 		}
 		// Axis
 		ImGuizmo::ViewManipulate( glm::value_ptr(cam.view_mat), 8.0f, ImVec2{pos.x+size.x-128, pos.y}, ImVec2{128, 128}, (ImU32)0x10101010 );
+
+		/* Edit option */
+		{
+			ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoMove;
+			const float PAD = 10.0f;
+			const ImGuiViewport* viewport = ImGui::GetMainViewport();
+			ImVec2 workPos = ImGui::GetWindowPos();
+			ImVec2 windowPos = {workPos.x+PAD, workPos.y+PAD+PAD*1.8f};
+			
+			//ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
+			ImGui::SetNextWindowSizeConstraints(ImVec2(0.f, 0.f), ImVec2(100.f, FLT_MAX));
+			ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always);
+			ImGui::SetNextWindowViewport(viewport->ID);
+
+			ImGui::SetNextWindowBgAlpha(0.35f); // Transparent background
+			if( ImGui::Begin("debug overlay", nullptr, window_flags) )
+			{
+				static int selectecGzmoOperIdx = 1;
+				static const char* gzmoOperStrs[] = { "Select", "Position", "Scale", "Rotate", "Transform" };
+				static const int   gzmoOpers[] = { 0, ImGuizmo::TRANSLATE, ImGuizmo::SCALE, ImGuizmo::ROTATE, ImGuizmo::UNIVERSAL };
+				if( ImGui::Combo("MouseTool", &selectecGzmoOperIdx, gzmoOperStrs, 4) ) {
+					gzmo_oper = (ImGuizmo::OPERATION)gzmoOpers[selectecGzmoOperIdx];
+				}
+			}
+			//ImGui::PopStyleVar();
+			ImGui::End();
+		}
 	}
 }}
 
