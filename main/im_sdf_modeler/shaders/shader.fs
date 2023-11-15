@@ -41,7 +41,6 @@ uniform int prim_idxs[MAX_OBJS];
 uniform int op_types[MAX_OBJS];
 uniform float blendnesses[MAX_OBJS];
 uniform float roundnesses[MAX_OBJS];
-uniform ivec3 mirrors[MAX_OBJS];
 
 
 

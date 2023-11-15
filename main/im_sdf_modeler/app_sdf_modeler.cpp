@@ -15,6 +15,7 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <imguizmo/ImGuizmo.h>
+#include <limbrary/limgui.h>
 
 
 namespace lim { namespace sdf
@@ -45,8 +46,7 @@ namespace lim { namespace sdf
     struct ObjNode {
         int obj_idx = -1;
 
-		// 8개의 속성은 group이 아니라면 부모에 따라 수정되어 glsl data에 복사됨.
-        glm::mat4 my_transform = glm::mat4(1); // local transform
+		// 7개의 속성은 group이 아니라면 부모에 따라 수정되어 glsl data에 복사됨.
         glm::mat4 transform = glm::mat4(1); // global transform
         int mat_idx = 0;
         PrimitiveType prim_type = PT_GROUP;
@@ -54,14 +54,15 @@ namespace lim { namespace sdf
         OperationType op_type = OT_ADDITION;
         float blendness = 0.f;
         float roundness = 0.f;
-        glm::bvec3 mirror = {0,0,0};
 
         std::string name = "sdf_obj";
         glm::vec3 position = {0,0,0};
         glm::vec3 scale = glm::vec3(1);
         glm::vec3 euler_angles = glm::vec3(0);
+        glm::mat4 my_transform = glm::mat4(1); // local transform
         const ObjNode* parent = nullptr;
         std::vector<ObjNode> children;
+        glm::bvec3 mirror = {0,0,0};
 
 		ObjNode() = default;
 		ObjNode(PrimitiveType primType, const ObjNode* parent);
@@ -78,8 +79,8 @@ namespace lim { namespace sdf
 		std::vector<Material> mats;
 		int nr_prims[nr_prim_types] = {0,};
 
-		ImGuizmo::OPERATION gzmo_oper = ImGuizmo::OPERATION::TRANSLATE;
-		ImGuizmo::MODE 		gzmo_mode = ImGuizmo::MODE::LOCAL;
+		ImGuizmo::OPERATION gzmo_edit_mode = ImGuizmo::OPERATION::TRANSLATE;
+		ImGuizmo::MODE 		gzmo_space = ImGuizmo::MODE::LOCAL;
 	};
 
 	/* glsl data */
@@ -103,7 +104,6 @@ namespace lim { namespace sdf
 		int op_types[2*MAX_OBJS];
 		float blendnesses[2*MAX_OBJS];
 		float roundnesses[2*MAX_OBJS];
-		glm::ivec3 mirrors[2*MAX_OBJS];
 
 		// each prim ...
 		float donuts[MAX_PRIMS];
@@ -134,7 +134,6 @@ namespace lim { namespace sdf
 		op_types[obj_idx] = op_type;
 		blendnesses[obj_idx] = blendness;
 		roundnesses[obj_idx] = roundness;
-		mirrors[obj_idx] = mirror;
 
 		composeTransform();
 	}
@@ -186,7 +185,6 @@ namespace lim { namespace sdf
 		memcpy((int*)&op_types[pos+len], (int*)&op_types[pos], sizeof(int)*nr_rights);
 		memcpy((float*)&blendnesses[pos+len], (float*)&blendnesses[pos], sizeof(float)*nr_rights);
 		memcpy((float*)&roundnesses[pos+len], (float*)&roundnesses[pos], sizeof(float)*nr_rights);
-		memcpy((int*)&mirrors[pos+len], (int*)&mirrors[pos], sizeof(glm::ivec3)*nr_rights);
 	}
 
 	void init() 
@@ -219,7 +217,6 @@ namespace lim { namespace sdf
         prog.setUniform("op_types", MAX_OBJS, op_types);
         prog.setUniform("blendness", MAX_OBJS, blendnesses);
         prog.setUniform("roundness", MAX_OBJS, roundnesses);
-        prog.setUniform("mirrors", MAX_OBJS, mirrors);
     }
 
     void drawTree(ObjNode* pObj) 
@@ -290,13 +287,6 @@ namespace lim { namespace sdf
 
     void drawImGui() 
 	{
-		/* Settings */
-		{
-			static int nr_step = 100;
-			ImGui::Begin("Settings##sdf");
-			ImGui::SliderInt("nr_iter", &nr_step, 20, 900, "%d");
-            ImGui::End();
-		}
         /* Scene Hierarchy */
         {
             ImGui::Begin("Scene##sdf");
@@ -306,6 +296,7 @@ namespace lim { namespace sdf
         /* Obj Editor */
         {
             ImGui::Begin("Object##sdf");
+			float windowWidth = ImGui::CalcItemWidth();
             if(!selected_obj) {
                 ImGui::End();
                 return;
@@ -313,23 +304,53 @@ namespace lim { namespace sdf
 			ObjNode& obj = *selected_obj;
             ImGui::Text("%s", obj.name.c_str());
 
-            static const float slide_spd = 1/300.f;
-            static bool isMatUpdated = false;
-            if(ImGui::DragFloat3("pos", glm::value_ptr(obj.position), slide_spd, -FLT_MAX, +FLT_MAX)) {
+            static const float slide_pos_spd = 4/500.f;
+            static const float slide_scale_spd = 4/500.f;
+            static const float slide_rot_spd = 180/500.f;
+            if(ImGui::DragFloat3("Position", glm::value_ptr(obj.position), slide_pos_spd, -FLT_MAX, +FLT_MAX)) {
                 obj.composeTransform();
             }
-            if(ImGui::DragFloat3("scale", glm::value_ptr(obj.scale), slide_spd, -FLT_MAX, +FLT_MAX)) {
+            if(ImGui::DragFloat3("Scale", glm::value_ptr(obj.scale), slide_scale_spd, -FLT_MAX, +FLT_MAX)) {
                 obj.composeTransform();
             }
-            if(ImGui::DragFloat3("rotate", glm::value_ptr(obj.euler_angles), slide_spd, -FLT_MAX, +FLT_MAX)) {
+            if(ImGui::DragFloat3("Rotate", glm::value_ptr(obj.euler_angles), slide_rot_spd, -FLT_MAX, +FLT_MAX)) {
                 obj.composeTransform();
             }
-			if( ImGui::Combo("Operator", (int*)&obj.op_type, prim_oper_names, nr_oper_types) ) {
-				//gzmo_oper = (ImGuizmo::OPERATION)gzmoOpers[selectecGzmoOperIdx];
+			if( obj.prim_type==PT_GROUP ) {
+				// for(int i=0;i<3;i++) {
+				// 	ImGui::PushID(i);
+				// 	ImGui::Checkbox("",&obj.mirror[i]);
+				// 	ImGui::PopID();
+				// 	ImGui::SameLine(0, ImGui::GetStyle().ItemInnerSpacing.x);
+				// }
+				// ImGui::Text("Mirror");
+				LimGui::CheckBox3("Mirror", glm::value_ptr(obj.mirror));
 			}
+			else {
+				if( ImGui::Combo("Operator", (int*)&obj.op_type, prim_oper_names, nr_oper_types) ) {
+					//gzmo_oper = (ImGuizmo::OPERATION)gzmoOpers[selectecGzmoOperIdx];
+				}
+				if( ImGui::SliderFloat("Blendness", &obj.blendness, 0.f, 1.f) ) {
+				}
+				if( ImGui::SliderFloat("Roundness", &obj.roundness, 0.f, 1.f) ) {
+				}
+			}
+
             
             ImGui::End();
         }
+		/* Settings */
+		{
+			static int nr_step = 100;
+			ImGui::Begin("Settings##sdf");
+				ImGui::Text("%f", ImGui::CalcItemWidth());
+
+			ImGui::SliderInt("nr_iter", &nr_step, 20, 900, "%d");
+				ImGui::Text("%f", ImGui::CalcItemWidth());
+
+
+            ImGui::End();
+		}
         /* Mat List*/
         {
             ImGui::Begin("Materials##sdf");
@@ -348,10 +369,11 @@ namespace lim { namespace sdf
 		ImGuizmo::SetRect(pos.x, pos.y, size.x, size.y);
 
 		ImGuizmo::SetOrthographic(false);
-
-		ImGuizmo::Manipulate( glm::value_ptr(cam.view_mat), glm::value_ptr(cam.proj_mat)
-							, gzmo_oper, gzmo_mode, glm::value_ptr(selected_obj->transform)
-							, nullptr, nullptr, nullptr);
+		if(gzmo_edit_mode>0) {
+			ImGuizmo::Manipulate( glm::value_ptr(cam.view_mat), glm::value_ptr(cam.proj_mat)
+								, gzmo_edit_mode, gzmo_space, glm::value_ptr(selected_obj->transform)
+								, nullptr, nullptr, nullptr);
+		}
 		
 		if( ImGuizmo::IsUsing() ) {
 			selected_obj->decomposeTransform();
@@ -363,23 +385,24 @@ namespace lim { namespace sdf
 		{
 			ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoMove;
 			const float PAD = 10.0f;
-			const ImGuiViewport* viewport = ImGui::GetMainViewport();
 			ImVec2 workPos = ImGui::GetWindowPos();
 			ImVec2 windowPos = {workPos.x+PAD, workPos.y+PAD+PAD*1.8f};
 			
 			//ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
-			ImGui::SetNextWindowSizeConstraints(ImVec2(0.f, 0.f), ImVec2(100.f, FLT_MAX));
+			//ImGui::SetNextWindowSizeConstraints(ImVec2(30.f, 120.f));
 			ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always);
-			ImGui::SetNextWindowViewport(viewport->ID);
-
+			ImGui::SetNextWindowViewport(ImGui::GetMainViewport()->ID); // 뷰포트가 안되도록
 			ImGui::SetNextWindowBgAlpha(0.35f); // Transparent background
-			if( ImGui::Begin("debug overlay", nullptr, window_flags) )
+			if( ImGui::Begin("edit mode selector", nullptr, window_flags) )
 			{
-				static int selectecGzmoOperIdx = 1;
-				static const char* gzmoOperStrs[] = { "Select", "Position", "Scale", "Rotate", "Transform" };
-				static const int   gzmoOpers[] = { 0, ImGuizmo::TRANSLATE, ImGuizmo::SCALE, ImGuizmo::ROTATE, ImGuizmo::UNIVERSAL };
-				if( ImGui::Combo("MouseTool", &selectecGzmoOperIdx, gzmoOperStrs, 4) ) {
-					gzmo_oper = (ImGuizmo::OPERATION)gzmoOpers[selectecGzmoOperIdx];
+				static int selectedEditModeIdx = 1;
+				static const char* editModeStrs[] = { "Select", "Position", "Scale", "Rotate", "Transform" };
+				static const int   editModes[] = { 0, ImGuizmo::TRANSLATE, ImGuizmo::SCALE, ImGuizmo::ROTATE, ImGuizmo::UNIVERSAL };
+				for(int i=0; i<5; i++) {
+					if( ImGui::Selectable(editModeStrs[i], selectedEditModeIdx==i, 0, {30, 30}) ) {
+						selectedEditModeIdx = i;
+						gzmo_edit_mode = (ImGuizmo::OPERATION)editModes[i];
+					}
 				}
 			}
 			//ImGui::PopStyleVar();
