@@ -5,10 +5,6 @@ in vec2 texCoord;
 
 const float PI = 3.1415926535;
 const vec3 UP = vec3(0,1,0);
-const int NR_STEPS = 100;
-const float MIN_HIT_DIST = 0.01;
-const float MAX_FAR_DIST = 100.0;
-const float EPSILON_FOR_NORMAL = 0.01;
 
 uniform float cameraAspect;
 uniform vec3 cameraPos;
@@ -17,8 +13,8 @@ uniform vec3 cameraPivot;
 uniform vec3 lightPos;
 uniform float lightInt;
 
-const int MAX_MATS = 64;
-const int MAX_OBJS = 64;
+const int MAX_MATS = 32;
+const int MAX_OBJS = 32;
 
 const int PM_SPHERE = 1;
 const int PM_BOX    = 2;
@@ -28,6 +24,12 @@ const int PM_DONUT  = 4;
 const int OT_ADDITION     = 0;
 const int OT_SUBTRACTION  = 1;
 const int OT_INTERSECTION = 2;
+
+
+uniform int nr_march_steps = 100;
+uniform float far_distance = 100.0;
+uniform float hit_threshold = 0.01;
+uniform float diff_for_normal = 0.01;
 
 uniform vec3 base_colors[MAX_MATS];
 uniform float roughnesses[MAX_MATS];
@@ -116,7 +118,7 @@ float sdWorld(vec3 p)
 // }
 
 vec3 getNormal(vec3 p) {
-    const vec2 e = vec2(EPSILON_FOR_NORMAL, 0);
+    vec2 e = vec2(diff_for_normal, 0);
     float dist = sdWorld(p);
     float dDdx = sdWorld(p+e.xyy) - dist;
     float dDdy = sdWorld(p+e.yxy) - dist;
@@ -134,10 +136,10 @@ vec3 getNormal(vec3 p) {
 
 float rayMarch(vec3 origin, vec3 dir, float maxDist) {
     float dist = 0;
-    for( int i=0; i<NR_STEPS; i++ )
+    for( int i=0; i<nr_march_steps; i++ )
     {
         float closestDist = sdWorld( dist*dir + origin );
-        if( closestDist<MIN_HIT_DIST ) {
+        if( closestDist<hit_threshold ) {
             break;
         }
         dist += closestDist;
@@ -175,9 +177,9 @@ void main()
     vec3 camUp = normalize( cross(camRight, camFront) );
     float eyeZ = 1/tan((PI/360)*cameraFovy);
     vec3 rd = normalize( cameraAspect*uv.x*camRight + uv.y*camUp + eyeZ*camFront );
-    float hitDist = rayMarch(ro, rd, MAX_FAR_DIST);
+    float hitDist = rayMarch(ro, rd, far_distance);
     vec3 outColor;
-    if( hitDist > MAX_FAR_DIST ) {
+    if( hitDist > far_distance ) {
         outColor = vec3(0,0.001,0.3);
     }
     else {

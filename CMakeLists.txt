@@ -100,7 +100,7 @@ target_include_directories(${lib_name} PUBLIC ${lib_dir})
 
 ### imgui ###
 set(lib_name "imgui")
-set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/imgui-docking-1.89.4")
+set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/imgui-docking-1.90")
 file(GLOB_RECURSE headers "${lib_dir}/*.h" "${lib_dir}/*.hpp")
 file(GLOB_RECURSE sources "${lib_dir}/*.c" "${lib_dir}/*.cpp")
 list(REMOVE_ITEM sources "${lib_dir}/misc/freetype/imgui_freetype.cpp")

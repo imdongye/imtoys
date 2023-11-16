@@ -16,6 +16,7 @@
 #include <glm/gtx/quaternion.hpp>
 #include <imguizmo/ImGuizmo.h>
 #include <limbrary/limgui.h>
+#include <misc/cpp/imgui_stdlib.h>
 
 
 namespace lim { namespace sdf
@@ -39,6 +40,7 @@ namespace lim { namespace sdf
 	}
 
     struct Material {
+		std::string name = "sdf_mat";
         glm::vec3 base_color;
         float roughness = 1.f;
         float metalness = 1.f;
@@ -76,7 +78,8 @@ namespace lim { namespace sdf
 	namespace {
 		ObjNode root;
 		ObjNode* selected_obj = nullptr;
-		std::vector<Material> mats;
+		std::vector<Material> materials;
+		int selected_mat_idx = 0;
 		int nr_prims[nr_prim_types] = {0,};
 
 		ImGuizmo::OPERATION gzmo_edit_mode = ImGuizmo::OPERATION::TRANSLATE;
@@ -89,6 +92,12 @@ namespace lim { namespace sdf
 		constexpr int MAX_MATS = 32;
 		constexpr int MAX_OBJS = 32;
 		constexpr int MAX_PRIMS = 32;
+
+		// optimize options
+		int nr_march_steps = 100;
+		float far_distance = 100.0;
+		float hit_threshold = 0.01;
+		float diff_for_normal = 0.01;
 
 		// mat
 		glm::vec3 base_colors[MAX_MATS];
@@ -189,9 +198,11 @@ namespace lim { namespace sdf
 
 	void init() 
 	{
-        mats.push_back({{0.2, 0.13, 0.87}, 1.f, 0.f});
+        materials.push_back({"Material_0", {0.2, 0.13, 0.87}, 1.f, 0.f});
+		selected_mat_idx = 0;
+
         root.name = "root";
-        
+    
         root.addChild(PT_BOX);
         selected_obj = &root.children.back();
     }
@@ -202,10 +213,15 @@ namespace lim { namespace sdf
 		for(int i=0;i<nr_prim_types;i++) {
 			nr_prims[i] = 0;
 		}
-        mats.clear();
+        materials.clear();
     }
     void bindSdfData(const Program& prog) 
 	{
+		prog.setUniform("nr_march_steps", nr_march_steps);
+        prog.setUniform("far_distance", far_distance);
+        prog.setUniform("hit_threshold", hit_threshold);
+        prog.setUniform("diff_for_normal", diff_for_normal);
+
         prog.setUniform("base_colors", MAX_OBJS, base_colors);
         prog.setUniform("roughnesses", MAX_MATS, roughnesses);
         prog.setUniform("metalnesses", MAX_MATS, metalnesses);
@@ -219,11 +235,11 @@ namespace lim { namespace sdf
         prog.setUniform("roundness", MAX_OBJS, roundnesses);
     }
 
-    void drawTree(ObjNode* pObj) 
+    void drawObjTree(ObjNode* pObj) 
 	{
 		ObjNode& obj = *pObj;
         bool isGroup = obj.prim_type==PT_GROUP;
-        ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_None | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnArrow;
+        ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_None;
 		if( isGroup) {
 			flags |= ImGuiTreeNodeFlags_OpenOnArrow|ImGuiTreeNodeFlags_DefaultOpen;
 		}
@@ -279,7 +295,7 @@ namespace lim { namespace sdf
 
         if( isGroup&&isOpen ) {
             for( ObjNode& child: obj.children) {
-                drawTree(&child);
+                drawObjTree(&child);
             }
             ImGui::TreePop();
         }
@@ -290,7 +306,15 @@ namespace lim { namespace sdf
         /* Scene Hierarchy */
         {
             ImGui::Begin("Scene##sdf");
-            drawTree(&root);
+
+            drawObjTree(&root);
+
+			// ImGui::SetCursorPosY(ImGui::GetCursorPosY()+ImGui::GetContentRegionAvail().y-ImGui::GetFontSize()*2.3f);
+			// ImGui::Separator();
+			ImGui::SetCursorPosY(ImGui::GetCursorPosY()+ImGui::GetContentRegionAvail().y-ImGui::GetFontSize()*1.6f);
+			if( ImGui::Button("Add", {-1,0}) ) {
+
+			}
             ImGui::End();
         }
         /* Obj Editor */
@@ -302,7 +326,7 @@ namespace lim { namespace sdf
                 return;
             }
 			ObjNode& obj = *selected_obj;
-            ImGui::Text("%s", obj.name.c_str());
+			ImGui::InputText("Name", &obj.name);
 
             static const float slide_pos_spd = 4/500.f;
             static const float slide_scale_spd = 4/500.f;
@@ -341,24 +365,54 @@ namespace lim { namespace sdf
         }
 		/* Settings */
 		{
-			static int nr_step = 100;
 			ImGui::Begin("Settings##sdf");
-				ImGui::Text("%f", ImGui::CalcItemWidth());
-
-			ImGui::SliderInt("nr_iter", &nr_step, 20, 900, "%d");
-				ImGui::Text("%f", ImGui::CalcItemWidth());
-
-
+			ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.5f);
+			ImGui::SliderInt("# March Steps", &nr_march_steps, 20, 300, "%d");
+			ImGui::SliderFloat("Far Distance", &far_distance, 20, 300, "%.0f");
+			ImGui::SliderFloat("Hit Threshold", &hit_threshold, 0.0001, 0.1, "%.4f");
+			ImGui::SliderFloat("Diff for Normal", &diff_for_normal, 0.0001, 0.1, "%.4f");
+			ImGui::PopItemWidth();
             ImGui::End();
 		}
         /* Mat List*/
         {
             ImGui::Begin("Materials##sdf");
+			
+			for( int i=0; i<materials.size(); i++ ) {
+				ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_Leaf|ImGuiTreeNodeFlags_NoTreePushOnOpen|ImGuiTreeNodeFlags_Bullet;
+				if( selected_mat_idx == i ) {
+					flags |= ImGuiTreeNodeFlags_Selected;
+				}
+				Material& mat = materials[i];
+				if( ImGui::TreeNodeEx("MatList", flags, "%s", mat.name.c_str()) ) {
+					if( selected_mat_idx != i &&(ImGui::IsItemClicked(0)||ImGui::IsItemClicked(1))) {
+						selected_mat_idx = i;
+					}
+				}
+			}
+
+			// ImGui::SetCursorPosY(ImGui::GetCursorPosY()+ImGui::GetContentRegionAvail().y-ImGui::GetFontSize()*2.3f);
+			// ImGui::Separator();
+			ImGui::SetCursorPosY(ImGui::GetCursorPosY()+ImGui::GetContentRegionAvail().y-ImGui::GetFontSize()*1.6f);
+			if( ImGui::Button("Add", {-1,0}) ) {
+				selected_mat_idx = materials.size();
+				materials.push_back({});
+				materials.back().name = fmtStrToBuf("Material_%d", selected_mat_idx);
+			}
             ImGui::End();
         }
         /* Mat Editor */
         {
             ImGui::Begin("Mat Editor##sdf");
+			Material& mat = materials[selected_mat_idx];
+			ImGui::InputText("Name", &mat.name);
+			ImGui::SliderFloat("Roughness", &mat.roughness, 0.001, 1.0);
+			ImGui::SliderFloat("Metalness", &mat.metalness, 0.001, 1.0);
+			ImGui::TextUnformatted("Base Color");
+			ImGuiColorEditFlags flags = ImGuiColorEditFlags_PickerHueBar | ImGuiColorEditFlags_NoSidePreview | ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoAlpha;
+			float w = glm::min(280.f, ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.y);
+			ImGui::SetNextItemWidth(w);
+			ImGui::ColorPicker3("##Base Color", glm::value_ptr(mat.base_color), flags);
             ImGui::End();
         }
     }
@@ -416,7 +470,7 @@ namespace lim { namespace sdf
 namespace lim
 {
 	AppSdfModeler::AppSdfModeler(): AppBase(1373, 783, APP_NAME, false)
-		, viewport("AnimTester", new FramebufferNoDepth()) // 멀티셈플링 동작 안함.
+		, viewport("viewport", new FramebufferNoDepth()) // 멀티셈플링 동작 안함.
 	{
 		GLint tempInt;
 		glGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_VECTORS, &tempInt);
