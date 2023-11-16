@@ -68,7 +68,7 @@ namespace {
 
 
 
-lim::sdf::ObjNode::ObjNode(PrimitiveType primType, const ObjNode* p)
+lim::sdf::ObjNode::ObjNode(PrimitiveType primType, ObjNode* p)
     : prim_type(primType), parent(p)
 {
     name = fmtStrToBuf("%s_%d", prim_type_names[primType], nr_prims[primType]);
@@ -96,6 +96,7 @@ lim::sdf::ObjNode::ObjNode(PrimitiveType primType, const ObjNode* p)
 void lim::sdf::ObjNode::addChild(PrimitiveType primType)
 {
     children.emplace_back(primType, this);
+    selected_obj = &children.back();
 }
 void lim::sdf::ObjNode::updateTransformWithParent() {
     if(parent) {
@@ -260,7 +261,18 @@ void lim::sdf::drawImGui()
         // ImGui::Separator();
         ImGui::SetCursorPosY(ImGui::GetCursorPosY()+ImGui::GetContentRegionAvail().y-ImGui::GetFontSize()*1.6f);
         if( ImGui::Button("Add", {-1,0}) ) {
-
+            ImGui::OpenPopup("AddObj");
+        }
+        if( ImGui::BeginPopup("AddObj") ) {
+            while( selected_obj->prim_type!=ObjNode::PT_GROUP ) {
+                selected_obj = selected_obj->parent;
+            }
+            for(int i=0; i<nr_prim_types; i++) {
+                if( ImGui::Selectable(prim_type_names[i]) ) {
+                    selected_obj->addChild((ObjNode::PrimitiveType)i);
+                }
+            }
+            ImGui::EndPopup();
         }
         ImGui::End();
     }
@@ -288,23 +300,26 @@ void lim::sdf::drawImGui()
             obj.composeTransform();
         }
         if( obj.prim_type==ObjNode::PT_GROUP ) {
-            // for(int i=0;i<3;i++) {
-            // 	ImGui::PushID(i);
-            // 	ImGui::Checkbox("",&obj.mirror[i]);
-            // 	ImGui::PopID();
-            // 	ImGui::SameLine(0, ImGui::GetStyle().ItemInnerSpacing.x);
-            // }
-            // ImGui::Text("Mirror");
             LimGui::CheckBox3("Mirror", glm::value_ptr(obj.mirror));
         }
         else {
             if( ImGui::Combo("Operator", (int*)&obj.op_type, prim_oper_names, nr_oper_types) ) {
-                //gzmo_oper = (ImGuizmo::OPERATION)gzmoOpers[selectecGzmoOperIdx];
+                op_types[obj.obj_idx] = obj.op_type;
             }
             if( ImGui::SliderFloat("Blendness", &obj.blendness, 0.f, 1.f) ) {
+                blendnesses[obj.obj_idx] = obj.blendness;
             }
             if( ImGui::SliderFloat("Roundness", &obj.roundness, 0.f, 1.f) ) {
+                roundnesses[obj.obj_idx] = obj.roundness;
             }
+            static const char* matNames[MAX_MATS];
+            const int nrMats = materials.size();
+            for( int i=0; i<nrMats; i++ ) {
+                matNames[i] = materials[i].name.c_str();
+            }
+            if( ImGui::Combo("Material", &obj.mat_idx, matNames, nrMats) ) {
+                selected_mat_idx = obj.mat_idx;
+            } 
         }
 
         
@@ -353,13 +368,19 @@ void lim::sdf::drawImGui()
         ImGui::Begin("Mat Editor##sdf");
         Material& mat = materials[selected_mat_idx];
         ImGui::InputText("Name", &mat.name);
-        ImGui::SliderFloat("Roughness", &mat.roughness, 0.001, 1.0);
-        ImGui::SliderFloat("Metalness", &mat.metalness, 0.001, 1.0);
+        if( ImGui::SliderFloat("Roughness", &mat.roughness, 0.001, 1.0) ) {
+            roughnesses[selected_mat_idx] = mat.roughness;
+        }
+        if( ImGui::SliderFloat("Metalness", &mat.metalness, 0.001, 1.0) ) {
+            metalnesses[selected_mat_idx] = mat.metalness;
+        }
         ImGui::TextUnformatted("Base Color");
         ImGuiColorEditFlags flags = ImGuiColorEditFlags_PickerHueBar | ImGuiColorEditFlags_NoSidePreview | ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoAlpha;
         float w = glm::min(280.f, ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.y);
         ImGui::SetNextItemWidth(w);
-        ImGui::ColorPicker3("##Base Color", glm::value_ptr(mat.base_color), flags);
+        if( ImGui::ColorPicker3("##Base Color", glm::value_ptr(mat.base_color), flags) ) {
+            base_colors[selected_mat_idx] = mat.base_color;
+        }
         ImGui::End();
     }
 }

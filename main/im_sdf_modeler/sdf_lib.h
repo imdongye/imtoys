@@ -26,12 +26,12 @@ namespace lim { namespace sdf
         glm::vec3 scale = glm::vec3(1);
         glm::vec3 euler_angles = glm::vec3(0);
         glm::mat4 my_transform = glm::mat4(1); // local transform
-        const ObjNode* parent = nullptr;
+        ObjNode* parent = nullptr;
         std::vector<ObjNode> children;
         glm::bvec3 mirror = {0,0,0};
 
 		ObjNode() = default;
-		ObjNode(PrimitiveType primType, const ObjNode* parent);
+		ObjNode(PrimitiveType primType, ObjNode* parent);
         void addChild(PrimitiveType primType);
 		void updateTransformWithParent();
 		void composeTransform();
