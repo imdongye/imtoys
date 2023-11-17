@@ -9,33 +9,92 @@
 #include <misc/cpp/imgui_stdlib.h>
 #include <vector>
 
-namespace {
-    constexpr int nr_oper_types = 3;
-    const char* prim_oper_names[nr_oper_types] = {
-        "Addition", "Subtitution", "Intersection"
-    };
+using namespace lim;
 
+
+namespace 
+{
+    enum PrimitiveType {
+        PT_GROUP, PT_SPHERE, PT_BOX, PT_PIPE, PT_DONUT
+    };
     constexpr int nr_prim_types = 5;
     const char* prim_type_names[nr_prim_types] = {
         "Group", "Sphere", "Box", "Pipe", "Donut"
     };
+
+
+    enum OperationGroup {
+        OG_ADDITION,
+        OG_SUBTITUTION,
+        OG_INTERSECTION,
+    };
+    constexpr int nr_prim_oper_groups = 3;
+    const char* prim_oper_group_names[nr_prim_oper_groups] = {
+        "Addition", "Subtitution", "Intersection"
+    };
+    enum OperationSpec {
+        OS_ROUND,
+        OS_EDGE,
+    };
+    constexpr int nr_prim_oper_specs = 2;
+    const char* prim_oper_spec_names[nr_prim_oper_specs] = {
+        "Round", "Edge",
+    };
+
+    enum OperationType {
+        OT_ADD_ROUND, // addition
+        OT_ADD_EDGE,
+        OT_SUB_ROUND, // subtitution
+        OT_SUB_EDGE,
+        OT_INT_ROUND, // intersection
+        OT_INT_EDGE,
+    };
 }
 
-/* application data */
-namespace {
-    lim::sdf::ObjNode root;
-    lim::sdf::ObjNode* selected_obj = nullptr;
-    std::vector<lim::sdf::Material> materials;
-    int selected_mat_idx = 0;
-    int nr_prims[nr_prim_types] = {0,};
+struct ObjNode {
+    int obj_idx = -1;
 
-    ImGuizmo::OPERATION gzmo_edit_mode = ImGuizmo::OPERATION::TRANSLATE;
-    ImGuizmo::MODE 		gzmo_space = ImGuizmo::MODE::LOCAL;
+    // 7개의 속성은 group이 아니라면 부모에 따라 수정되어 glsl data에 복사됨.
+    glm::mat4 transform = glm::mat4(1); // global transform
+    int mat_idx = 0;
+    PrimitiveType prim_type = PT_GROUP;
+    int prim_idx = 0;
+    OperationGroup op_group = OG_ADDITION; // addition
+    OperationSpec op_spec = OS_ROUND;  // round
+    float blendness = 0.f;
+    float roundness = 0.f;
+
+    std::string name = "sdf_obj";
+    glm::vec3 position = {0,0,0};
+    glm::vec3 scale = glm::vec3(1);
+    glm::vec3 euler_angles = glm::vec3(0);
+    glm::mat4 my_transform = glm::mat4(1); // local transform
+    ObjNode* parent = nullptr;
+    std::vector<ObjNode> children;
+    glm::bvec3 mirror = {0,0,0};
+
+    ObjNode() = default;
+    ObjNode(PrimitiveType primType, ObjNode* parent = nullptr);
+    void addChild(PrimitiveType primType);
+    void updateTransformWithParent();
+    void composeTransform();
+    void decomposeTransform();
 };
+
+struct Material {
+    std::string name = "sdf_mat";
+    glm::vec3 base_color = {0.2, 0.13, 0.87};
+    float roughness = 1.f;
+    float metalness = 0.f;
+};
+
+
+
 
 /* glsl data */
 // todo: 1.uniform block   2.look up table texture
-namespace {
+namespace 
+{
     constexpr int MAX_MATS = 32;
     constexpr int MAX_OBJS = 32;
     constexpr int MAX_PRIMS = 32;
@@ -55,9 +114,9 @@ namespace {
     int nr_objs = 0;
     glm::mat4 transforms[2*MAX_OBJS];
     int mat_idxs[2*MAX_OBJS];
-    int prim_types[2*MAX_OBJS];
+    int op_types[2*MAX_OBJS];   // Todo: runtime edit shader
+    int prim_types[2*MAX_OBJS]; // Todo: runtime edit shader
     int prim_idxs[2*MAX_OBJS];
-    int op_types[2*MAX_OBJS];
     float blendnesses[2*MAX_OBJS];
     float roundnesses[2*MAX_OBJS];
 
@@ -66,39 +125,52 @@ namespace {
     float cylinder[MAX_PRIMS];
 }
 
-
-
-lim::sdf::ObjNode::ObjNode(PrimitiveType primType, ObjNode* p)
-    : prim_type(primType), parent(p)
+/* application data */
+namespace 
 {
+    ObjNode root;
+    ObjNode* selected_obj = nullptr;
+    int nr_prims[nr_prim_types] = {0,};
+
+    int nr_mats = 0;
+    Material materials[MAX_MATS];
+    const char* mat_names[MAX_MATS]; // for gui
+    int selected_mat_idx = 0;
+
+    ImGuizmo::OPERATION gzmo_edit_mode = ImGuizmo::OPERATION::TRANSLATE;
+    ImGuizmo::MODE 		gzmo_space     = ImGuizmo::MODE::LOCAL;
+};
+ObjNode::ObjNode(PrimitiveType primType, ObjNode* p)
+{
+    prim_type = primType;
     name = fmtStrToBuf("%s_%d", prim_type_names[primType], nr_prims[primType]);
     prim_idx = nr_prims[prim_type]++;
+    parent = p;
 
-    if(prim_type == PT_GROUP) {
+    if( prim_type == PT_GROUP ) {
         return;
     }
-    
     obj_idx = nr_objs++;
-    if(nr_objs==MAX_OBJS) {
+    if( nr_objs==MAX_OBJS)  {
+        log::err("maximum of primitives\n");
         exit(1);
     }
 
-    transforms[obj_idx] = glm::inverse(root.transform);
     mat_idxs[obj_idx] = mat_idx;
     prim_types[obj_idx] = prim_type;
     prim_idxs[obj_idx] = prim_idx;
-    op_types[obj_idx] = op_type;
+    op_types[obj_idx] = op_group*2 + op_spec;
     blendnesses[obj_idx] = blendness;
     roundnesses[obj_idx] = roundness;
 
     composeTransform();
 }
-void lim::sdf::ObjNode::addChild(PrimitiveType primType)
+void ObjNode::addChild(PrimitiveType primType)
 {
     children.emplace_back(primType, this);
     selected_obj = &children.back();
 }
-void lim::sdf::ObjNode::updateTransformWithParent() {
+void ObjNode::updateTransformWithParent() {
     if(parent) {
         transform = parent->transform * my_transform;
     }
@@ -111,7 +183,7 @@ void lim::sdf::ObjNode::updateTransformWithParent() {
         transforms[obj_idx] = glm::inverse(transform);
     }
 }
-void lim::sdf::ObjNode::composeTransform() {
+void ObjNode::composeTransform() {
     ImGuizmo::RecomposeMatrixFromComponents(
                 glm::value_ptr(position)
                 ,glm::value_ptr(euler_angles)
@@ -121,7 +193,7 @@ void lim::sdf::ObjNode::composeTransform() {
     my_transform = (parent)? glm::inverse(parent->transform)*transform : transform;
     updateTransformWithParent();
 }
-void lim::sdf::ObjNode::decomposeTransform() {
+void ObjNode::decomposeTransform() {
     my_transform = (parent)? glm::inverse(parent->transform)*transform : transform;
 
     ImGuizmo::DecomposeMatrixToComponents(
@@ -133,7 +205,20 @@ void lim::sdf::ObjNode::decomposeTransform() {
     updateTransformWithParent();
 }
 
-void lim::sdf::makeSpaceInGlslObjData(int pos, int len) {
+static void addMaterial() {
+    int idx = nr_mats++;
+    Material& mat = materials[idx];
+    selected_mat_idx = idx;
+
+    mat.name = fmtStrToBuf("Material_%d", idx);
+    mat_names[idx] = mat.name.c_str();
+    mat_names[idx+1] = "Add New Material";
+    base_colors[idx] = mat.base_color;
+    roughnesses[idx] = mat.roughness;
+    metalnesses[idx] = mat.metalness;
+}
+
+static void makeSpaceInGlslObjData(int pos, int len) {
     int nr_rights = nr_objs - pos;
     memcpy((float*)&transforms[pos+len], (float*)&transforms[pos], sizeof(glm::mat4)*nr_rights);
     memcpy((int*)&mat_idxs[pos+len], (int*)&mat_idxs[pos], sizeof(int)*nr_rights);
@@ -146,22 +231,22 @@ void lim::sdf::makeSpaceInGlslObjData(int pos, int len) {
 
 void lim::sdf::init() 
 {
-    materials.push_back({"Material_0", {0.2, 0.13, 0.87}, 1.f, 0.f});
-    selected_mat_idx = 0;
+    addMaterial();
 
     root.name = "root";
 
-    root.addChild(ObjNode::PT_BOX);
+    root.addChild(PT_BOX);
     selected_obj = &root.children.back();
 }
 void lim::sdf::deinit() 
 {
+    root = ObjNode();
     nr_objs = 0;
+    nr_mats = 0;
     selected_obj = nullptr;
     for(int i=0;i<nr_prim_types;i++) {
         nr_prims[i] = 0;
     }
-    materials.clear();
 }
 void lim::sdf::bindSdfData(const Program& prog) 
 {
@@ -179,14 +264,14 @@ void lim::sdf::bindSdfData(const Program& prog)
     prog.setUniform("mat_idxs", MAX_OBJS, mat_idxs);
     prog.setUniform("prim_types", MAX_OBJS, prim_types);
     prog.setUniform("op_types", MAX_OBJS, op_types);
-    prog.setUniform("blendness", MAX_OBJS, blendnesses);
-    prog.setUniform("roundness", MAX_OBJS, roundnesses);
+    prog.setUniform("blendnesses", MAX_OBJS, blendnesses);
+    prog.setUniform("roundnesses", MAX_OBJS, roundnesses);
 }
 
-void lim::sdf::drawObjTree(ObjNode* pObj) 
+static void drawObjTree(ObjNode* pObj) 
 {
     ObjNode& obj = *pObj;
-    bool isGroup = obj.prim_type==ObjNode::PT_GROUP;
+    bool isGroup = obj.prim_type==PT_GROUP;
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_None;
     if( isGroup) {
         flags |= ImGuiTreeNodeFlags_OpenOnArrow|ImGuiTreeNodeFlags_DefaultOpen;
@@ -202,13 +287,14 @@ void lim::sdf::drawObjTree(ObjNode* pObj)
 
     if( selected_obj!=pObj &&(ImGui::IsItemClicked(0)||ImGui::IsItemClicked(1))) {
         selected_obj = pObj;
+        selected_mat_idx = pObj->mat_idx;
     }
 
     if( ImGui::BeginPopupContextItem() ) {
-        if( obj.prim_type==ObjNode::PT_GROUP && ImGui::BeginMenu("Add") ) {
+        if( obj.prim_type==PT_GROUP && ImGui::BeginMenu("Add") ) {
             for(int i=0; i<nr_prim_types; i++) {
                 if( ImGui::MenuItem(prim_type_names[i], fmtStrToBuf("Ctrl+%d",i), false, true) ) {
-                    obj.addChild((ObjNode::PrimitiveType)i);
+                    obj.addChild((PrimitiveType)i);
                 }
             }
             ImGui::EndMenu();
@@ -264,12 +350,12 @@ void lim::sdf::drawImGui()
             ImGui::OpenPopup("AddObj");
         }
         if( ImGui::BeginPopup("AddObj") ) {
-            while( selected_obj->prim_type!=ObjNode::PT_GROUP ) {
+            while( selected_obj->prim_type!=PT_GROUP ) {
                 selected_obj = selected_obj->parent;
             }
             for(int i=0; i<nr_prim_types; i++) {
                 if( ImGui::Selectable(prim_type_names[i]) ) {
-                    selected_obj->addChild((ObjNode::PrimitiveType)i);
+                    selected_obj->addChild((PrimitiveType)i);
                 }
             }
             ImGui::EndPopup();
@@ -299,12 +385,15 @@ void lim::sdf::drawImGui()
         if(ImGui::DragFloat3("Rotate", glm::value_ptr(obj.euler_angles), slide_rot_spd, -FLT_MAX, +FLT_MAX)) {
             obj.composeTransform();
         }
-        if( obj.prim_type==ObjNode::PT_GROUP ) {
+        if( obj.prim_type==PT_GROUP ) {
             LimGui::CheckBox3("Mirror", glm::value_ptr(obj.mirror));
         }
         else {
-            if( ImGui::Combo("Operator", (int*)&obj.op_type, prim_oper_names, nr_oper_types) ) {
-                op_types[obj.obj_idx] = obj.op_type;
+            if( ImGui::Combo("OperGroup", (int*)&obj.op_group, prim_oper_group_names, nr_prim_oper_groups) ) {
+                op_types[obj.obj_idx] = obj.op_group*2 + obj.op_spec;
+            }
+            if( ImGui::Combo("OperSpec", (int*)&obj.op_spec, prim_oper_spec_names, nr_prim_oper_specs) ) {
+                op_types[obj.obj_idx] = obj.op_group*2 + obj.op_spec;
             }
             if( ImGui::SliderFloat("Blendness", &obj.blendness, 0.f, 1.f) ) {
                 blendnesses[obj.obj_idx] = obj.blendness;
@@ -312,13 +401,12 @@ void lim::sdf::drawImGui()
             if( ImGui::SliderFloat("Roundness", &obj.roundness, 0.f, 1.f) ) {
                 roundnesses[obj.obj_idx] = obj.roundness;
             }
-            static const char* matNames[MAX_MATS];
-            const int nrMats = materials.size();
-            for( int i=0; i<nrMats; i++ ) {
-                matNames[i] = materials[i].name.c_str();
-            }
-            if( ImGui::Combo("Material", &obj.mat_idx, matNames, nrMats) ) {
+            if( ImGui::Combo("Material", &obj.mat_idx, mat_names, nr_mats+1) ) {
                 selected_mat_idx = obj.mat_idx;
+                mat_idxs[obj.obj_idx] = obj.mat_idx;
+                if( obj.mat_idx==nr_mats ) {
+                    addMaterial();
+                }
             } 
         }
 
@@ -340,7 +428,7 @@ void lim::sdf::drawImGui()
     {
         ImGui::Begin("Materials##sdf");
         
-        for( int i=0; i<materials.size(); i++ ) {
+        for( int i=0; i<nr_mats; i++ ) {
             ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_Leaf|ImGuiTreeNodeFlags_NoTreePushOnOpen|ImGuiTreeNodeFlags_Bullet;
             if( selected_mat_idx == i ) {
                 flags |= ImGuiTreeNodeFlags_Selected;
@@ -357,9 +445,7 @@ void lim::sdf::drawImGui()
         // ImGui::Separator();
         ImGui::SetCursorPosY(ImGui::GetCursorPosY()+ImGui::GetContentRegionAvail().y-ImGui::GetFontSize()*1.6f);
         if( ImGui::Button("Add", {-1,0}) ) {
-            selected_mat_idx = materials.size();
-            materials.push_back({});
-            materials.back().name = fmtStrToBuf("Material_%d", selected_mat_idx);
+            addMaterial();
         }
         ImGui::End();
     }

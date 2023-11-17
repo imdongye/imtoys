@@ -21,9 +21,12 @@ const int PM_BOX    = 2;
 const int PM_PIPE   = 3;
 const int PM_DONUT  = 4;
 
-const int OT_ADDITION     = 0;
-const int OT_SUBTRACTION  = 1;
-const int OT_INTERSECTION = 2;
+const int OT_ADD_ROUND  = 0;
+const int OT_ADD_EDGE   = 1;
+const int OT_SUB_ROUND  = 2;
+const int OT_SUB_EDGE   = 3;
+const int OT_INT_ROUND  = 4;
+const int OT_INT_EDGE   = 5;
 
 
 uniform int nr_march_steps = 100;
@@ -44,6 +47,14 @@ uniform int op_types[MAX_OBJS];
 uniform float blendnesses[MAX_OBJS];
 uniform float roundnesses[MAX_OBJS];
 
+float distToObjs[MAX_OBJS];
+vec3 baseColor = vec3(1);
+float roughness;
+float metalness;
+
+float map01(float min, float max, float x) {
+    return (x-min)/(max-min);
+}
 
 
 float sdSphere( vec3 p ) {
@@ -64,22 +75,53 @@ float sdDonut( vec3 p, float r ) {
 // float sdPlane(vec3 p, vec3 n, float h) {
 //     return dot(n,p) - h;
 // }
-float smoothMin(float a, float b, float k) {
-    return min(a,b);
-    return -log(exp(-k*a) + exp(-k*b)) / k;
+// float smoothMin(float a, float b, float k) {
+//     return -log(exp(-k*a) + exp(-k*b)) / k;
+// }
+
+/********************************   hg_sdf.glsl part   ********************************/
+// https://iquilezles.org/articles/smin/
+// The "Chamfer" flavour makes a 45-degree chamfered edge (the diagonal of a square of size <r>):
+float fOpUnionChamfer(float a, float b, float r) {
+	return min(min(a, b), (a - r + b)*sqrt(0.5));
 }
+// The "Round" variant uses a quarter-circle to join the two objects smoothly:
+float fOpUnionRound(float a, float b, float r) {
+	vec2 u = max(vec2(r - a,r - b), vec2(0));
+	return max(r, min (a, b)) - length(u);
+}
+// Intersection has to deal with what is normally the inside of the resulting object
+// when using union, which we normally don't care about too much. Thus, intersection
+// implementations sometimes differ from union implementations.
+float fOpIntersectionChamfer(float a, float b, float r) {
+	return max(max(a, b), (a + r + b)*sqrt(0.5));
+}
+float fOpIntersectionRound(float a, float b, float r) {
+	vec2 u = max(vec2(r + a,r + b), vec2(0));
+	return min(-r, max (a, b)) + length(u);
+}
+// Difference can be built from Intersection or Union:
+float fOpDifferenceChamfer (float a, float b, float r) {
+	return fOpIntersectionChamfer(a, -b, r);
+}
+float fOpDifferenceRound (float a, float b, float r) {
+	return fOpIntersectionRound(a, -b, r);
+}
+
+/********************************   hg_sdf.glsl part   ********************************/
+
 
 float sdWorld(vec3 p)
 {
-    float dist = p.y; // plane
+    float dist = far_distance; 
+    dist = p.y; // plane
 
     for( int i=0; i<nr_objs; i++ ) 
     {
         float blendness = blendnesses[i];
-        mat4 transform = mat4(1);
-        transform = transforms[i];
+        mat4 transform = transforms[i];
         vec3 mPos = (transform*vec4(p,1)).xyz;
-        float primDist;
+        float primDist, tempDist;
         switch(prim_types[i])
         {
         case PM_SPHERE:
@@ -97,25 +139,94 @@ float sdWorld(vec3 p)
         }
         switch(op_types[i])
         {
-        case OT_ADDITION:
-            dist = smoothMin(dist, primDist, blendness);
+        case OT_ADD_ROUND:
+            tempDist = fOpUnionRound(dist, primDist, blendness);
             break;
-        case OT_SUBTRACTION:
-            dist = smoothMin(dist, primDist, blendness);
+        case OT_ADD_EDGE:
+            tempDist = fOpUnionChamfer(dist, primDist, blendness);
             break;
-        case OT_INTERSECTION:
-            dist = smoothMin(dist, primDist, blendness);
+        case OT_SUB_ROUND:
+            tempDist = fOpDifferenceRound(dist, primDist, blendness);
+            break;
+        case OT_SUB_EDGE:
+            tempDist = fOpDifferenceChamfer(dist, primDist, blendness);
+            break;
+        case OT_INT_ROUND:
+            tempDist = fOpIntersectionRound(dist, primDist, blendness);
+            break;
+        case OT_INT_EDGE:
+            tempDist = fOpIntersectionChamfer(dist, primDist, blendness);
             break;
         }
+
+        distToObjs[i] = primDist;
+        dist = tempDist;
     }
     return dist;
 }
 
-// float sdWorld(vec3 p)
-// {
-//     float dist = p.y; // plane
-//     return dist;
-// }
+void updateMaterial(vec3 p) 
+{
+    baseColor = vec3(1);
+    roughness = 0;
+    metalness = 0;
+
+    float totalDist = p.y;
+
+    for( int i=0; i<nr_objs; i++ ) 
+    {
+        float blendness = blendnesses[i];
+        mat4 transform = transforms[i];
+        vec3 mPos = (transform*vec4(p,1)).xyz;
+       
+        float primDist, tempDist;
+        switch(prim_types[i])
+        {
+        case PM_SPHERE:
+            primDist = sdSphere(mPos);
+            break;
+        case PM_BOX:
+            primDist = sdBox(mPos);
+            break;
+        case PM_PIPE:
+            primDist = sdPipe(mPos);
+            break;
+        case PM_DONUT:
+            primDist = sdDonut(mPos, 1);
+            break;
+        }
+        switch(op_types[i])
+        {
+        case OT_ADD_ROUND:
+            tempDist = fOpUnionRound(totalDist, primDist, blendness);
+            break;
+        case OT_ADD_EDGE:
+            tempDist = fOpUnionChamfer(totalDist, primDist, blendness);
+            break;
+        case OT_SUB_ROUND:
+            tempDist = fOpDifferenceRound(totalDist, primDist, blendness);
+            break;
+        case OT_SUB_EDGE:
+            tempDist = fOpDifferenceChamfer(totalDist, primDist, blendness);
+            break;
+        case OT_INT_ROUND:
+            tempDist = fOpIntersectionRound(totalDist, primDist, blendness);
+            break;
+        case OT_INT_EDGE:
+            tempDist = fOpIntersectionChamfer(totalDist, primDist, blendness);
+            break;
+        }
+        // hard part
+        int matIdx = mat_idxs[i];
+        float percent = totalDist/(primDist+totalDist);
+        baseColor = mix(baseColor, base_colors[matIdx], percent);
+        roughness = mix(roughness, roughnesses[matIdx], percent);
+        metalness = mix(metalness, metalnesses[matIdx], percent);
+
+        totalDist = tempDist;
+    }
+}
+
 
 vec3 getNormal(vec3 p) {
     vec2 e = vec2(diff_for_normal, 0);
@@ -150,6 +261,8 @@ float rayMarch(vec3 origin, vec3 dir, float maxDist) {
     return dist;
 }
 
+
+
 vec3 render(vec3 p, vec3 v) {
     vec3 n = getNormal(p);
     vec3 l = normalize(lightPos - p);
@@ -159,9 +272,9 @@ vec3 render(vec3 p, vec3 v) {
     float vdr = max(0, dot(v,r));
     float specular = pow(vdr, 1000);
     float rst = ndl+specular;
+    updateMaterial(p);
 
-    //rst = specular;
-    vec3 color = vec3(rst);
+    vec3 color = baseColor*rst;
     return color;
 }
 
@@ -179,6 +292,7 @@ void main()
     vec3 rd = normalize( cameraAspect*uv.x*camRight + uv.y*camUp + eyeZ*camFront );
     float hitDist = rayMarch(ro, rd, far_distance);
     vec3 outColor;
+    
     if( hitDist > far_distance ) {
         outColor = vec3(0,0.001,0.3);
     }
