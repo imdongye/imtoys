@@ -204,7 +204,7 @@ vec3 brdf( vec3 baseColor, float roughness, float metalness, vec3 F0 ) {
 		case 1: specular = BlinnPhongBRDF(); break;
 		case 2: specular = CookTorranceBRDF(roughness, F0); break;
 	}
-	return sampleIBL(R);
+	//return sampleIBL(R);
 	return diffuse+specular;
 }
 

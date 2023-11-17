@@ -4,6 +4,7 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/color_space.hpp>
 #include <imguizmo/ImGuizmo.h>
 #include <limbrary/limgui.h>
 #include <misc/cpp/imgui_stdlib.h>
@@ -105,6 +106,9 @@ namespace
     float hit_threshold = 0.01;
     float diff_for_normal = 0.01;
 
+    // env
+    glm::vec3 sky_color = {0.01,0.001,0.3};
+
     // mat
     glm::vec3 base_colors[MAX_MATS];
     float roughnesses[MAX_MATS];
@@ -128,6 +132,9 @@ namespace
 /* application data */
 namespace 
 {
+    Camera* camera = nullptr;
+    Light* light = nullptr;
+
     ObjNode root;
     ObjNode* selected_obj = nullptr;
     int nr_prims[nr_prim_types] = {0,};
@@ -213,7 +220,7 @@ static void addMaterial() {
     mat.name = fmtStrToBuf("Material_%d", idx);
     mat_names[idx] = mat.name.c_str();
     mat_names[idx+1] = "Add New Material";
-    base_colors[idx] = mat.base_color;
+    base_colors[idx] = glm::convertSRGBToLinear(mat.base_color);
     roughnesses[idx] = mat.roughness;
     metalnesses[idx] = mat.metalness;
 }
@@ -229,8 +236,10 @@ static void makeSpaceInGlslObjData(int pos, int len) {
     memcpy((float*)&roundnesses[pos+len], (float*)&roundnesses[pos], sizeof(float)*nr_rights);
 }
 
-void lim::sdf::init() 
+void lim::sdf::init(Camera* cam, Light* lit) 
 {
+    camera = cam;
+    light = lit;
     addMaterial();
 
     root.name = "root";
@@ -250,6 +259,14 @@ void lim::sdf::deinit()
 }
 void lim::sdf::bindSdfData(const Program& prog) 
 {
+    prog.setUniform("lightPos", light->position);
+    prog.setUniform("lightInt", light->intensity);
+    prog.setUniform("cameraAspect", camera->aspect);
+	prog.setUniform("cameraFovy", camera->fovy);
+	prog.setUniform("cameraOrthWidth", 0.f);
+	prog.setUniform("cameraPos", camera->position);
+	prog.setUniform("cameraPivot", camera->pivot);
+
     prog.setUniform("nr_march_steps", nr_march_steps);
     prog.setUniform("far_distance", far_distance);
     prog.setUniform("hit_threshold", hit_threshold);
@@ -421,6 +438,25 @@ void lim::sdf::drawImGui()
         ImGui::SliderFloat("Far Distance", &far_distance, 20, 300, "%.0f");
         ImGui::SliderFloat("Hit Threshold", &hit_threshold, 0.0001, 0.1, "%.4f");
         ImGui::SliderFloat("Diff for Normal", &diff_for_normal, 0.0001, 0.1, "%.4f");
+        ImGui::Separator();
+
+        ImGui::Text("<light>");
+        static float litTheta = 90.f-glm::degrees(glm::acos(glm::dot(glm::normalize(light->position), glm::normalize(glm::vec3(light->position.x, 0, light->position.z)))));
+        const static float litThetaSpd = 70 * 0.001;
+        static float litPhi = 90.f-glm::degrees(glm::atan(light->position.x,-light->position.z));
+        const static float litPhiSpd = 360 * 0.001;
+        static float litDist = glm::length(light->position);
+        const static float litDistSpd = 45.f * 0.001;
+        bool isLightDraged = false;
+        isLightDraged |= ImGui::DragFloat("pitch", &litTheta, litThetaSpd, 0, 80, "%.3f");
+        isLightDraged |= ImGui::DragFloat("yaw", &litPhi, litPhiSpd, -FLT_MAX, +FLT_MAX, "%.3f");
+        isLightDraged |= ImGui::DragFloat("dist", &litDist, litDistSpd, 5.f, 50.f, "%.3f");
+        if( isLightDraged ) {
+            light->setRotate(litTheta, glm::fract(litPhi/360.f)*360.f, litDist);
+        }
+        ImGui::Text("pos: %.1f %.1f %.1f", light->position.x, light->position.y, light->position.z);
+        ImGui::SliderFloat("intencity", &light->intensity, 0.5f, 60.f, "%.1f");
+        
         ImGui::PopItemWidth();
         ImGui::End();
     }
@@ -470,7 +506,8 @@ void lim::sdf::drawImGui()
         ImGui::End();
     }
 }
-void lim::sdf::drawGuizmo(const Viewport& vp, Camera& cam) {
+void lim::sdf::drawGuizmo(const Viewport& vp) {
+    Camera& cam = *camera;
     const auto& pos = ImGui::GetItemRectMin();
     const auto& size = ImGui::GetItemRectSize();
     ImGuizmo::SetDrawlist();

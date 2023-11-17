@@ -28,9 +28,7 @@ lim::AppSdfModeler::AppSdfModeler(): AppBase(1373, 783, APP_NAME, false)
 	prog.home_dir = APP_DIR;
 	prog.attatch("canvas.vs").attatch("shader.fs").link();
 
-
-
-	sdf::init();
+	sdf::init(&viewport.camera, &light);
 }
 lim::AppSdfModeler::~AppSdfModeler()
 {
@@ -47,13 +45,6 @@ void lim::AppSdfModeler::update()
 	Camera& cam = viewport.camera;
 	viewport.getFb().bind();
 	prog.use();
-	prog.setUniform("lightPos", light.position);
-	prog.setUniform("lightInt", light.intensity);
-	prog.setUniform("cameraAspect", cam.aspect);
-	prog.setUniform("cameraFovy", cam.fovy);
-	prog.setUniform("cameraOrthWidth", 0.f);
-	prog.setUniform("cameraPos", cam.position);
-	prog.setUniform("cameraPivot", cam.pivot);
 	sdf::bindSdfData(prog);
 
 	AssetLib::get().screen_quad.drawGL();
@@ -63,8 +54,8 @@ void lim::AppSdfModeler::renderImGui()
 {
 	ImGui::DockSpaceOverViewport();
 
-	viewport.drawImGui([&cam = viewport.camera](const Viewport& vp){
-		sdf::drawGuizmo(vp, cam);
+	viewport.drawImGui([](const Viewport& vp){
+		sdf::drawGuizmo(vp);
 	});
 
 	sdf::drawImGui();

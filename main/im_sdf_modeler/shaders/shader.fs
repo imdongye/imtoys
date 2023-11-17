@@ -52,10 +52,8 @@ vec3 baseColor = vec3(1);
 float roughness;
 float metalness;
 
-float map01(float min, float max, float x) {
-    return (x-min)/(max-min);
-}
-
+vec3 N, L, V, R, H, F0;
+float NDL, NDV, NDH, VDR;
 
 float sdSphere( vec3 p ) {
     return length(p) - 0.5f;
@@ -110,9 +108,38 @@ float fOpDifferenceRound (float a, float b, float r) {
 
 /********************************   hg_sdf.glsl part   ********************************/
 
+float getPrimDist(int primType, vec3 mPos) {
+    switch(primType)
+    {
+    case PM_SPHERE:
+        return sdSphere(mPos);
+    case PM_BOX:
+        return sdBox(mPos);
+    case PM_PIPE:
+        return sdPipe(mPos);
+    case PM_DONUT:
+        return sdDonut(mPos, 1);
+    }
+}
+float operateDist(int opType, float a, float b, float blendness) {
+    switch(opType)
+    {
+    case OT_ADD_ROUND:
+        return fOpUnionRound(a, b, blendness);
+    case OT_ADD_EDGE:
+        return fOpUnionChamfer(a, b, blendness);
+    case OT_SUB_ROUND:
+        return fOpDifferenceRound(a, b, blendness);
+    case OT_SUB_EDGE:
+        return fOpDifferenceChamfer(a, b, blendness);
+    case OT_INT_ROUND:
+        return fOpIntersectionRound(a, b, blendness);
+    case OT_INT_EDGE:
+        return fOpIntersectionChamfer(a, b, blendness);
+    }
+}
 
-float sdWorld(vec3 p)
-{
+float sdWorld(vec3 p) {
     float dist = far_distance; 
     dist = p.y; // plane
 
@@ -121,112 +148,54 @@ float sdWorld(vec3 p)
         float blendness = blendnesses[i];
         mat4 transform = transforms[i];
         vec3 mPos = (transform*vec4(p,1)).xyz;
-        float primDist, tempDist;
-        switch(prim_types[i])
-        {
-        case PM_SPHERE:
-            primDist = sdSphere(mPos);
-            break;
-        case PM_BOX:
-            primDist = sdBox(mPos);
-            break;
-        case PM_PIPE:
-            primDist = sdPipe(mPos);
-            break;
-        case PM_DONUT:
-            primDist = sdDonut(mPos, 1);
-            break;
-        }
-        switch(op_types[i])
-        {
-        case OT_ADD_ROUND:
-            tempDist = fOpUnionRound(dist, primDist, blendness);
-            break;
-        case OT_ADD_EDGE:
-            tempDist = fOpUnionChamfer(dist, primDist, blendness);
-            break;
-        case OT_SUB_ROUND:
-            tempDist = fOpDifferenceRound(dist, primDist, blendness);
-            break;
-        case OT_SUB_EDGE:
-            tempDist = fOpDifferenceChamfer(dist, primDist, blendness);
-            break;
-        case OT_INT_ROUND:
-            tempDist = fOpIntersectionRound(dist, primDist, blendness);
-            break;
-        case OT_INT_EDGE:
-            tempDist = fOpIntersectionChamfer(dist, primDist, blendness);
-            break;
-        }
-
-        distToObjs[i] = primDist;
+        float primDist = getPrimDist(prim_types[i], mPos);
+        float tempDist = operateDist(op_types[i], dist, primDist, blendness);
         dist = tempDist;
     }
     return dist;
 }
-
-void updateMaterial(vec3 p) 
-{
+float rayMarch(vec3 origin, vec3 dir, float maxDist) {
+    float dist = 0;
+    for( int i=0; i<nr_march_steps; i++ )
+    {
+        float closestDist = sdWorld( dist*dir + origin );
+        if( closestDist<hit_threshold ) {
+            break;
+        }
+        dist += closestDist;
+        if( dist>maxDist ) {
+            break;
+        }
+    }
+    return dist;
+}
+float updateMaterial(vec3 p) {
+    float dist = far_distance; 
+    dist = p.y; // plane
+    
     baseColor = vec3(1);
     roughness = 0;
     metalness = 0;
-
-    float totalDist = p.y;
 
     for( int i=0; i<nr_objs; i++ ) 
     {
         float blendness = blendnesses[i];
         mat4 transform = transforms[i];
         vec3 mPos = (transform*vec4(p,1)).xyz;
+        float primDist = getPrimDist(prim_types[i], mPos);
+        float tempDist = operateDist(op_types[i], dist, primDist, blendness);
        
-        float primDist, tempDist;
-        switch(prim_types[i])
-        {
-        case PM_SPHERE:
-            primDist = sdSphere(mPos);
-            break;
-        case PM_BOX:
-            primDist = sdBox(mPos);
-            break;
-        case PM_PIPE:
-            primDist = sdPipe(mPos);
-            break;
-        case PM_DONUT:
-            primDist = sdDonut(mPos, 1);
-            break;
-        }
-        switch(op_types[i])
-        {
-        case OT_ADD_ROUND:
-            tempDist = fOpUnionRound(totalDist, primDist, blendness);
-            break;
-        case OT_ADD_EDGE:
-            tempDist = fOpUnionChamfer(totalDist, primDist, blendness);
-            break;
-        case OT_SUB_ROUND:
-            tempDist = fOpDifferenceRound(totalDist, primDist, blendness);
-            break;
-        case OT_SUB_EDGE:
-            tempDist = fOpDifferenceChamfer(totalDist, primDist, blendness);
-            break;
-        case OT_INT_ROUND:
-            tempDist = fOpIntersectionRound(totalDist, primDist, blendness);
-            break;
-        case OT_INT_EDGE:
-            tempDist = fOpIntersectionChamfer(totalDist, primDist, blendness);
-            break;
-        }
         // hard part
         int matIdx = mat_idxs[i];
-        float percent = totalDist/(primDist+totalDist);
+        float percent = dist/(primDist+dist);
         baseColor = mix(baseColor, base_colors[matIdx], percent);
         roughness = mix(roughness, roughnesses[matIdx], percent);
         metalness = mix(metalness, metalnesses[matIdx], percent);
-
-        totalDist = tempDist;
+       
+        dist = tempDist;
     }
+    return dist;
 }
-
 
 vec3 getNormal(vec3 p) {
     vec2 e = vec2(diff_for_normal, 0);
@@ -245,37 +214,56 @@ vec3 getNormal(vec3 p) {
     // return normalize(cross(dPdx, dPdy));
 }
 
-float rayMarch(vec3 origin, vec3 dir, float maxDist) {
-    float dist = 0;
-    for( int i=0; i<nr_march_steps; i++ )
-    {
-        float closestDist = sdWorld( dist*dir + origin );
-        if( closestDist<hit_threshold ) {
-            break;
-        }
-        dist += closestDist;
-        if( dist>maxDist ) {
-            break;
-        }
-    }
-    return dist;
+float distributionGGX() {
+    float a = roughness*roughness;
+	float aa = a*a;
+	float theta = acos(NDH);
+	return aa/( PI * pow(cos(theta),4) * pow(aa+pow(tan(theta),2),2) );
+}
+float geometryCookTorrance() {
+    float t1 = 2*NDH*NDV/dot(V,H);
+	float t2 = 2*NDH*NDL/dot(V,H);
+	return min(1, min(t1, t2));
+}
+vec3 fresnelSchlick() {
+    float theta = NDH;
+	// theta = dot(R, w_o);
+	return F0+(vec3(1)-F0)*pow(1-cos(theta), 5);
+}
+
+vec3 brdfCookTorrence() {
+    float D = distributionGGX();
+    float G = geometryCookTorrance();
+    vec3 F = fresnelSchlick();
+    return D*G*F / (4*NDL*NDV);
+}
+
+vec3 brdf() {
+    
+    vec3 diff = baseColor* mix(1/PI, 0, metalness);
+    vec3 spec = brdfCookTorrence();
+    return diff + spec;
 }
 
 
+vec3 render(vec3 wPos, vec3 view) {
+    V = view;
+    N = getNormal(wPos);
+    L = normalize(lightPos - wPos);
+    H = normalize((V+L)/2.0);
+    R = reflect(-L, N);
+    F0 = mix(vec3(0.24), baseColor, metalness);
 
-vec3 render(vec3 p, vec3 v) {
-    vec3 n = getNormal(p);
-    vec3 l = normalize(lightPos - p);
-    vec3 r = reflect(-l, n);
-    //r = normalize( 2*dot(n, l)*n - l );
-    float ndl = max(0, dot(n,l));
-    float vdr = max(0, dot(v,r));
-    float specular = pow(vdr, 1000);
-    float rst = ndl+specular;
-    updateMaterial(p);
+    NDL = max(0, dot(N,L));
+    NDV = max(0, dot(N,V));
+    NDH = max(0, dot(N,H));
+    VDR = max(0, dot(V,R));
 
-    vec3 color = baseColor*rst;
-    return color;
+    // return (NDL+pow(VDR, 1000))*baseColor;
+
+	vec3 Li = lightInt*vec3(1)/dot(L,L);
+
+    return brdf() * Li * NDL;
 }
 
 // tan(fovy/2) = 1/eyeZ
@@ -297,11 +285,14 @@ void main()
         outColor = vec3(0,0.001,0.3);
     }
     else {
-        outColor = render( ro + rd*hitDist, -rd );
+        vec3 wPos = ro + rd*hitDist;
+        updateMaterial(wPos);
+        outColor = render( wPos, -rd );
     }
     
     // debug
     //outColor = vec3(1,0,0);
-    
+
+    //outColor = pow(outColor, vec3(1/2.2));
     FragColor = vec4(outColor, 1);
 }  
