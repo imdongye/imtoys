@@ -251,8 +251,8 @@ namespace lim
 				input_status |= IST_SCROLLED;
 			}
 			if( (glfwGetMouseButton(app->window, GLFW_MOUSE_BUTTON_LEFT)==GLFW_PRESS)
-				| (glfwGetMouseButton(app->window, GLFW_MOUSE_BUTTON_MIDDLE)==GLFW_PRESS)
-				| (!ImGui::GetIO().WantCaptureMouse) ) {
+				|| (glfwGetMouseButton(app->window, GLFW_MOUSE_BUTTON_MIDDLE)==GLFW_PRESS)
+				|| (!ImGui::GetIO().WantCaptureMouse) ) {
 				input_status |= IST_DRAGGED;
 			}
 			if( (!ImGui::GetIO().WantCaptureMouse) && (!ImGui::GetIO().WantCaptureKeyboard) ) {
