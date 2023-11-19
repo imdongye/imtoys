@@ -8,18 +8,18 @@ out vec3 wNor;
 out vec2 mUv;
 out vec4 shadowFragPos;
 
-uniform mat4 modelMat = mat4(1);
-uniform mat4 viewMat = mat4(1);
-uniform mat4 projMat= mat4(1);
+uniform mat4 model_Mat = mat4(1);
+uniform mat4 view_Mat = mat4(1);
+uniform mat4 proj_Mat= mat4(1);
 
-uniform mat4 shadowVP = mat4(1);
+uniform mat4 shadow_VP = mat4(1);
 
 void main()
 {
-    wPos = (modelMat * vec4(aPos, 1.0)).xyz;
-    wNor = (modelMat * vec4(aNor, 0)).xyz; // do not with nonuniform scale
+    wPos = (model_Mat * vec4(aPos, 1.0)).xyz;
+    wNor = (model_Mat * vec4(aNor, 0)).xyz; // do not with nonuniform scale
     mUv = aUv;
-    gl_Position = projMat * viewMat * vec4(wPos, 1.0);
+    gl_Position = proj_Mat * view_Mat * vec4(wPos, 1.0);
 
-	shadowFragPos = shadowVP * vec4(wPos, 1.0);
+	shadowFragPos = shadow_VP * vec4(wPos, 1.0);
 }

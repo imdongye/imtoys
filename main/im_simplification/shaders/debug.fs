@@ -1,5 +1,5 @@
 #version 410 core
-layout(location=0) out vec4 fragColor;
+layout(location=0) out vec4 FragColor;
 
 
 uniform float gamma = 2.2f;
@@ -15,5 +15,5 @@ void main(void)
     outColor = texture(map_Bump, mUv).xyz;
 
     outColor = pow(outColor, vec3(1/gamma));
-    fragColor = vec4(outColor, 1);
+    FragColor = vec4(outColor, 1);
 }

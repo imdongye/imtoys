@@ -8,18 +8,18 @@ layout(location=0) out vec4 FragColor;
 uniform vec2 uvScale = vec2(1.f);
 uniform sampler2D uvgridTex;
 
-uniform vec3 lightPos;
-uniform vec3 lightColor;
-uniform float lightInt;
-uniform vec3 cameraPos;
+uniform vec3 light_Pos;
+uniform vec3 light_Color;
+uniform float light_Int;
+uniform vec3 camera_Pos;
 
-uniform vec3 baseColor;
+uniform vec3 mat_BaseColor;
 
 void main() {
 	vec3 FaceN = normalize(cross(dFdx(wPos), dFdy(wPos)));
 	vec3 N = normalize(wNor);
-	vec3 L = normalize(lightPos-wPos);
-	vec3 V = normalize(cameraPos-wPos);
+	vec3 L = normalize(light_Pos-wPos);
+	vec3 V = normalize(camera_Pos-wPos);
 	float ndotv = max(0, dot(N, V));
 	float lambertian = max(0,dot(FaceN,L));
 	vec2 scaledUv = uvScale * (mUv-vec2(.5f)) + vec2(.5f);

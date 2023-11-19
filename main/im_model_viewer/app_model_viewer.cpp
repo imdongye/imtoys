@@ -13,10 +13,10 @@ namespace
 	struct BrdfTestInfo {
 		std::string ctrlName = "##modelview";
 		bool isRotated = false;
-		int model_idx = 0;
-		int D_idx = 0;
-		int G_idx = 0;
-		int F_idx = 0;
+		int idx_Brdf = 0;
+		int idx_D = 0;
+		int idx_G = 0;
+		int idx_F = 0;
         float shininess = 100.f; // shininess
         float refIdx    = 1.45f; // index of refraction
         float roughness = 0.3f;  // brdf param
@@ -26,10 +26,10 @@ namespace
 
 	function<void(const Program&)> makeSetProg(BrdfTestInfo tInfo) {
 		return [tInfo](const Program& prog) {
-			prog.setUniform("model_idx", tInfo.model_idx);
-			prog.setUniform("D_idx", tInfo.D_idx);
-			prog.setUniform("G_idx", tInfo.G_idx);
-			prog.setUniform("F_idx", tInfo.F_idx);
+			prog.setUniform("idx_Brdf", tInfo.idx_Brdf);
+			prog.setUniform("idx_D", tInfo.idx_D);
+			prog.setUniform("idx_G", tInfo.idx_G);
+			prog.setUniform("idx_F", tInfo.idx_F);
 		};
 	}
 }
@@ -175,21 +175,21 @@ namespace lim
 				}
 				bool isInfoChanged = false;
 				static const char* modelStrs[]={"Phong", "BlinnPhong", "CookTorrance"};
-				if( ImGui::Combo("Model", &tInfo.model_idx, modelStrs, IM_ARRAYSIZE(modelStrs)) ) {
+				if( ImGui::Combo("Model", &tInfo.idx_Brdf, modelStrs, IM_ARRAYSIZE(modelStrs)) ) {
 					isInfoChanged = true; 
 				}
-				if( tInfo.model_idx==2 ) {
+				if( tInfo.idx_Brdf==2 ) {
 					static const char* dStrs[]={"BlinnPhong", "GGX", "Beckmann"};
-					if( ImGui::Combo("D", &tInfo.D_idx, dStrs, IM_ARRAYSIZE(dStrs)) ) { isInfoChanged = true; }
+					if( ImGui::Combo("D", &tInfo.idx_D, dStrs, IM_ARRAYSIZE(dStrs)) ) { isInfoChanged = true; }
 					static const char* gStrs[]={"CookTorrance"};
-					if( ImGui::Combo("G", &tInfo.G_idx, gStrs, IM_ARRAYSIZE(gStrs)) ) { isInfoChanged = true; }
+					if( ImGui::Combo("G", &tInfo.idx_G, gStrs, IM_ARRAYSIZE(gStrs)) ) { isInfoChanged = true; }
 					static const char* fStrs[]={"Schlick"};
-					if( ImGui::Combo("F", &tInfo.F_idx, fStrs, IM_ARRAYSIZE(fStrs)) ) { isInfoChanged = true; }
+					if( ImGui::Combo("F", &tInfo.idx_F, fStrs, IM_ARRAYSIZE(fStrs)) ) { isInfoChanged = true; }
 				}
 				if( isInfoChanged ) {
 					md.default_material->set_prog = makeSetProg(tInfo);
 				}
-				if( tInfo.model_idx<2 ) { // phong, blinn phong
+				if( tInfo.idx_Brdf<2 ) { // phong, blinn phong
 					if( ImGui::SliderFloat("shininess", &tInfo.shininess, 0.5, 300) ) {
 						for(Material* mat : md.my_materials) {
 							mat->shininess = tInfo.shininess;

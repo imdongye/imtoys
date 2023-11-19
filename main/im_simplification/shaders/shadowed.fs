@@ -1,5 +1,5 @@
 #version 410 core
-layout(location=0) out vec4 fragColor;
+layout(location=0) out vec4 FragColor;
 
 in vec3 wPos;
 in vec3 wNor;
@@ -7,18 +7,18 @@ in vec2 mUv;
 in vec4 shadowFragPos;
 
 /* light */
-uniform int shadowEnabled = -1;
-uniform vec3 lightPos = vec3(1,0,0);
-uniform vec3 lightColor = vec3(1);
-uniform float lightInt = 0.8;
+uniform int shadow_Enabled = -1;
+uniform vec3 light_Pos = vec3(1,0,0);
+uniform vec3 light_Color = vec3(1);
+uniform float light_Int = 0.8;
 uniform sampler2D map_Shadow;
 /* matarial */
 uniform int shininess = 20;
-uniform vec3 baseColor = vec3(1,1,0);
+uniform vec3 mat_BaseColor = vec3(1,1,0);
 /* texture */
 
 /* etc */
-uniform vec3 cameraPos;
+uniform vec3 camera_Pos;
 uniform float gamma = 2.2;
 
 // 포아송 분포
@@ -37,7 +37,7 @@ float random(int i)
 }
 float shadowing()
 {
-	if( shadowEnabled < 0 ) return 1.f;
+	if( shadow_Enabled < 0 ) return 1.f;
 
 	float shadowFactor = 1.0;
 	vec3 shadowClipPos = shadowFragPos.xyz/shadowFragPos.w;
@@ -75,21 +75,21 @@ float shadowing()
 void main(void)
 {
 	vec3 N = normalize(wNor);
-	vec3 L = normalize(lightPos-wPos);
-	vec3 V = normalize(cameraPos - wPos);
+	vec3 L = normalize(light_Pos-wPos);
+	vec3 V = normalize(camera_Pos - wPos);
 	vec3 R = 2*dot(N,L)*N-L;
 
 	float visibility = shadowing();
 
-	vec4 albelo = vec4(baseColor,1);
+	vec4 albelo = vec4(mat_BaseColor,1);
 
 	float lambertian = max(0, dot(N, L));
-	vec3 diffuse = lightInt*lambertian*albelo.rgb;
+	vec3 diffuse = light_Int*lambertian*albelo.rgb;
 	vec3 ambient = 0.1f*albelo.rgb;
 	vec3 specular = pow(max(0,dot(R,V)), shininess) * lambertian * vec3(1);
 	vec3 outColor = diffuse+ambient+specular;
 	outColor *= visibility;
 
     outColor = pow(outColor, vec3(1/gamma));
-    fragColor = vec4(outColor, 1);
+    FragColor = vec4(outColor, 1);
 }

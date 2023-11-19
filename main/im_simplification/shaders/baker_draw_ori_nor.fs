@@ -5,7 +5,7 @@
 */
 
 #version 410 core
-layout(location=0) out vec4 fragColor;
+layout(location=0) out vec4 FragColor;
 
 in vec3 wPos;
 in vec3 wNor;
@@ -66,5 +66,5 @@ void main(void)
 	
 	vec3 outColor = oriN*0.5+0.5;
 
-    fragColor = vec4(outColor, 1);
+    FragColor = vec4(outColor, 1);
 }

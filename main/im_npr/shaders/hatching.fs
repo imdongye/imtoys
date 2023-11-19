@@ -4,7 +4,7 @@ in vec3 wPos;
 in vec3 wNor;
 in vec2 mUv;
 
-layout(location=0) out vec4 fragColor;
+layout(location=0) out vec4 FragColor;
 
 uniform vec2 uvScale = vec2(1.f);
 uniform int nrTones = 6;
@@ -13,16 +13,16 @@ uniform sampler2D uvgridTex;
 uniform int fixedArtMapIdx = -1;
 uniform bool is6way = true;
 
-uniform vec3 lightPos;
-uniform vec3 lightColor;
-uniform float lightInt;
+uniform vec3 light_Pos;
+uniform vec3 light_Color;
+uniform float light_Int;
 
-uniform vec3 cameraPos;
+uniform vec3 camera_Pos;
 
 void main() {
 	vec3 FaceN = normalize(cross(dFdx(wPos), dFdy(wPos)));
 	vec3 N = normalize(wNor);
-	vec3 L = normalize(lightPos-wPos);
+	vec3 L = normalize(light_Pos-wPos);
 	float lambertian = max(0,dot(N,L));
 	vec2 scaledUv = uvScale * (mUv-vec2(.5f)) + vec2(.5f);
 	vec3 outColor = vec3(0);
@@ -66,5 +66,5 @@ void main() {
 	//outColor = vec3(left/float(nrTones));
 	//outColor = vec3(coef);
 
-	fragColor = vec4(outColor,1);
+	FragColor = vec4(outColor,1);
 }

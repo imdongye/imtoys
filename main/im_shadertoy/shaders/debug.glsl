@@ -54,27 +54,27 @@
 // (FPS는 화면 아래쪽 정보 바 에 표시됩니다.)
 //
 // 우리가 아무것도 안할거기 때문에 이 쉐이더는 그냥 검은 화면을 보여줍니다.
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
+void mainImage( out vec4 FragColor, in vec2 fragCoord )
 {
 }
 
 #elif TUTORIAL == 2
 // 균일 색상
 //
-// "fragColor" 는 쉐이더의 출력입니다.
+// "FragColor" 는 쉐이더의 출력입니다.
 // 이 값이 화면에 보여지는 이미지를 결정하게 됩니다.
 // 이 쉐이더는 이 값을 노란색으로 지정합니다.
 //
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
+void mainImage( out vec4 FragColor, in vec2 fragCoord )
 {
-	fragColor = vec4(1.0, 1.0, 0.0 ,1.0);
+	FragColor = vec4(1.0, 1.0, 0.0 ,1.0);
 }
 
 
 #elif TUTORIAL == 3
 // GLSL 벡터들
 // 
-// "fragColor" 는 vec4 객체에 할당되어야 합니다.
+// "FragColor" 는 vec4 객체에 할당되어야 합니다.
 // 이건 0~1 사이 실수 값이 담긴 4개 짜리 배열 입니다.
 // 앞에 3 개의 숫자는 색상을 지정 하고 4번째 숫자는 
 // 불투명도(opactiy) 를 지정 합니다.
@@ -82,7 +82,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 // 하나의 vec2 객체는 4개의 float 을 인자로 받아 생성되거나.
 // 아래처럼, vec3 와 float. 2개의 인자를 생성자 인자로 받아 생성됩니다.
 //
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
+void mainImage( out vec4 FragColor, in vec2 fragCoord )
 {
 	// Here we are seperating the color and transparency parts
 	// of the vec4 that represents the pixels.
@@ -90,7 +90,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 	float alpha = 1.0;
 	
 	vec4 pixel = vec4(color, alpha);
-	fragColor = pixel;
+	FragColor = pixel;
 }
 
 #elif TUTORIAL == 4
@@ -108,7 +108,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 // http://www.colourlovers.com/palettes
 // http://www.colourlovers.com/colors
 
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
+void mainImage( out vec4 FragColor, in vec2 fragCoord )
 {
 	// 아래 숫자들을 바꿔가며 놀아보세요:
 	float redAmount = 0.6; // 빨간색의 세기
@@ -127,7 +127,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 	
 	float alpha = 1.0;
 	vec4 pixel = vec4(color, alpha);	
-	fragColor = pixel;
+	FragColor = pixel;
 }
 
 
@@ -151,7 +151,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 // 이것이 쉐이더 프로그래밍에서 가장 중요한 차이점입니다. 이 것을 아마 계속 마주치게 될 것 입니다.
 //
 // 균일 색상이 아닌 뭔가를 그려보도록 하죠.
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
+void mainImage( out vec4 FragColor, in vec2 fragCoord )
 {
 	// 생상을 선택합니다.
 	vec3 color1 = vec3(0.886, 0.576, 0.898);
@@ -167,7 +167,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 		pixel = color1;
 	}
 	
-	fragColor = vec4(pixel, 1.0);
+	FragColor = vec4(pixel, 1.0);
 }
 
 #elif TUTORIAL == 6
@@ -184,7 +184,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 // 이건 "iResolution" 이라는 변수로 주어지게 됩니다.
 // "iResolution.x" 는 화면 프레임의 폭
 // "iResolution.y" 는 화면 프레임의 높이가 됩니다.
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
+void mainImage( out vec4 FragColor, in vec2 fragCoord )
 {
 	vec3 color1 = vec3(0.741, 0.635, 0.471);
 	vec3 color2 = vec3(0.192, 0.329, 0.439);
@@ -195,7 +195,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 	// 아니면 color2를 사용.
 	pixel = ( fragCoord.x > iResolution.x / 2.0 ) ? color1 : color2;
 	
-	fragColor = vec4(pixel, 1.0);
+	FragColor = vec4(pixel, 1.0);
 }
 
 #elif TUTORIAL == 7
@@ -209,7 +209,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 // 1이면 위쪽끝을 의미합니다.
 //
 // "r" 을 사용하여 화면을 3 둥분 하도록 하겠습니다.
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
+void mainImage( out vec4 FragColor, in vec2 fragCoord )
 {
 	vec2 r = vec2(fragCoord.x / iResolution.x,
 				  fragCoord.y / iResolution.y);
@@ -243,12 +243,12 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 	// pixel = ( r.x < 1.0/3.0 ) ? color1 : (r.x<2.0/3.0) ? color2: color3;
 	// 위처럼 3항 연산자를 이용해서 간단하게 표현도 가능합니다.
 	
-	fragColor = vec4(pixel, 1.0);
+	FragColor = vec4(pixel, 1.0);
 }
 
 #elif TUTORIAL == 8
 // 수평선과 수직선
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
+void mainImage( out vec4 FragColor, in vec2 fragCoord )
 {
 	vec2 r = vec2( fragCoord.xy / iResolution.xy );
 	// 짧은 버젼의 좌표계번환.
@@ -286,14 +286,14 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 	// 3번째 수평선이 위의 두 선 위로 어떻게 지나가는지 확인해보세요.
 	// 마지막으로 "pixel" 값이 지정되었기 때문에 제일 위에 놓인 선이 됩니다.
 
-	fragColor = vec4(pixel, 1.0);
+	FragColor = vec4(pixel, 1.0);
 }
 
 #elif TUTORIAL == 9
 // 좌표계 시각화
 //
 // for 루프와 수평선, 수직선을 이용하여 그리드(격자무늬) 그려보도록 하겠습니다.
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
+void mainImage( out vec4 FragColor, in vec2 fragCoord )
 {
 	vec2 r = vec2( fragCoord.xy / iResolution.xy );
 	
@@ -317,7 +317,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 	if( abs(r.x)<0.005 ) pixel = axesColor;
 	if( abs(r.y)<0.006 ) pixel = axesColor;
 	
-	fragColor = vec4(pixel, 1.0);
+	FragColor = vec4(pixel, 1.0);
 }
 
 #elif TUTORIAL == 10
@@ -326,7 +326,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 // [0, iResolution.x]x[0, iResolution.y]영역 대신
 // [0,1]x[0,1]영역을 [-1,1]x[-1,1] 로 맵핑합니다.
 // 이 방법을 쓰면 (0,0)은 왼쪽 하단이 아니고 화면 중앙이 됩니다.
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
+void mainImage( out vec4 FragColor, in vec2 fragCoord )
 {
 	vec2 r = vec2( fragCoord.xy - 0.5*iResolution.xy );
 	// [0, iResolution.x] -> [-0.5*iResolution.x, 0.5*iResolution.x]
@@ -352,7 +352,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 	if( abs(r.x)<0.006 ) pixel = axesColor;
 	if( abs(r.y)<0.007 ) pixel = axesColor;
 	
-	fragColor = vec4(pixel, 1.0);
+	FragColor = vec4(pixel, 1.0);
 }
 
 
@@ -364,7 +364,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 // 사실 가로가 세로보다 더 큽니다.
 // 따라서 화면비율을 유지하기 위해서는 실제 거리인 
 // [0,iResolution.x] 와 [0, iResolution.y] 를 같은 간격으로 맵핑하면 안됩니다.
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
+void mainImage( out vec4 FragColor, in vec2 fragCoord )
 {
 	vec2 r = vec2( fragCoord.xy - 0.5*iResolution.xy );
 	r = 2.0 * r.xy / iResolution.y;
@@ -391,7 +391,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 	if( abs(r.x)<0.006 ) pixel = axesColor;
 	if( abs(r.y)<0.007 ) pixel = axesColor;
 	
-	fragColor = vec4(pixel, 1.0);
+	FragColor = vec4(pixel, 1.0);
 }
 
 
@@ -405,7 +405,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 // coordinate is inside this disk, put that color for the pixel"
 // The indirect commands are a bit counter intuitive until you
 // get used to that way of thinking.
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
+void mainImage( out vec4 FragColor, in vec2 fragCoord )
 {
 	vec2 r =  2.0*vec2(fragCoord.xy - 0.5*iResolution.xy)/iResolution.y;
 	
@@ -459,13 +459,13 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 	// f(r) = 0, then f(r-c)=0 expresses the same geometric shape
 	// but its coordinate is shifted by c.
 	
-	fragColor = vec4(pixel, 1.0);
+	FragColor = vec4(pixel, 1.0);
 }
 // Note how the latest disk is shown and previous ones are left
 // behind it. It is because the last if condition changes the pixel
 // value at the end.
 // If the coordinates of pixel fits multiple if conditions, the last
-// manipulation will remain and fragColor is set to that one.
+// manipulation will remain and FragColor is set to that one.
 
 
 #elif TUTORIAL == 13
@@ -500,7 +500,7 @@ void disk(vec2 r, vec2 center, float radius, vec3 color, inout vec3 pixel) {
 	}
 }
 
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
+void mainImage( out vec4 FragColor, in vec2 fragCoord )
 {
 	vec2 r =  2.0*vec2(fragCoord.xy - 0.5*iResolution.xy)/iResolution.y;
 	
@@ -515,7 +515,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 	disk(r, vec2(-0.8, -0.6), 1.5, col1, pixel);
 	disk(r, vec2(0.8, 0.0), .15, col2, pixel);
 	
-	fragColor = vec4(pixel, 1.0);
+	FragColor = vec4(pixel, 1.0);
 }
 // As you see, the borders of the disks have "jagged" curves, where
 // individual pixels can be seen. This is called "aliasing". It occurs
@@ -528,7 +528,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 // And, again, note the order of disk function calls and how they are
 // drawn on top of each other. Each disk function manipulates
 // the pixel variable. If a pixel is manipulated by multiple disk
-// functions, the value of the last one is sent to fragColor.
+// functions, the value of the last one is sent to FragColor.
 
 // In this case, the previous values are completely overwritten.
 // The final value only depends to the last function that manipulated
@@ -543,7 +543,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 // 
 // f(x0, x) = {1 x>x0, 
 //            {0 x<x0
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
+void mainImage( out vec4 FragColor, in vec2 fragCoord )
 {
 	vec2 r =  2.0*vec2(fragCoord.xy - 0.5*iResolution.xy)/iResolution.y;
 	float xMax = iResolution.x/iResolution.y;
@@ -591,7 +591,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 	}
 	
 	pixel = vec3(ret); // make a color out of return value.
-	fragColor = vec4(pixel, 1.0);
+	FragColor = vec4(pixel, 1.0);
 }
 
 #elif TUTORIAL == 15
@@ -601,7 +601,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 // f(x, min, max) = { max x>max
 //                  { x   max>x>min
 //                  { min min>x
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
+void mainImage( out vec4 FragColor, in vec2 fragCoord )
 {
 	vec2 r =  2.0*vec2(fragCoord.xy - 0.5*iResolution.xy)/iResolution.y;
 	vec2 p = vec2(fragCoord.xy / iResolution.xy);
@@ -650,7 +650,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 	}
 	
 	pixel = vec3(ret); // make a color out of return value.
-	fragColor = vec4(pixel, 1.0);
+	FragColor = vec4(pixel, 1.0);
 }
 
 #elif TUTORIAL == 16
@@ -660,7 +660,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 // sudden jump from 0 to 1 at the edge, it makes a smooth transition 자연스러운변화
 // in a given interval 주워진간격에서
 // http://en.wikipedia.org/wiki/Smoothstep
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
+void mainImage( out vec4 FragColor, in vec2 fragCoord )
 {
 	vec2 r =  2.0*vec2(fragCoord.xy - 0.5*iResolution.xy)/iResolution.y;
 	vec2 p = vec2(fragCoord.xy / iResolution.xy);
@@ -726,7 +726,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 	}	
 		
 	pixel = vec3(ret); // make a color out of return value.
-	fragColor = vec4(pixel, 1.0);
+	FragColor = vec4(pixel, 1.0);
 }
 
 #elif TUTORIAL == 17
@@ -741,7 +741,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 //
 // Let's learn mixing different data types (in this case vec3's
 // representing colors
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
+void mainImage( out vec4 FragColor, in vec2 fragCoord )
 {
 	vec2 p = vec2(fragCoord.xy / iResolution.xy);
 	
@@ -794,7 +794,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 	}
 	
 	vec3 pixel = ret;
-	fragColor = vec4(pixel, 1.0);
+	FragColor = vec4(pixel, 1.0);
 }
 
 #elif TUTORIAL == 18
@@ -811,7 +811,7 @@ float smootherstep(float edge0, float edge1, float x) {
 	return clamp(t1, 0.0, 1.0);
 }
 
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
+void mainImage( out vec4 FragColor, in vec2 fragCoord )
 {
 	vec2 r =  2.0*vec2(fragCoord.xy - 0.5*iResolution.xy)/iResolution.y;
 	float xMax = iResolution.x/iResolution.y;
@@ -851,7 +851,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 		pixel = mix(col1, bgCol, m);
 	}
 
-	fragColor = vec4(pixel, 1.0);
+	FragColor = vec4(pixel, 1.0);
 }
 
 #elif TUTORIAL == 19
@@ -889,7 +889,7 @@ void plot(vec2 r, float y, float lineThickness, vec3 color, inout vec3 pixel) {
 	if( abs(y - r.y) < lineThickness ) pixel = color;
 }
 
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
+void mainImage( out vec4 FragColor, in vec2 fragCoord )
 {
 	vec2 r = 2.0*vec2(fragCoord.xy - 0.5*iResolution.xy)/iResolution.y;
 	
@@ -937,7 +937,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 	// bell curve around -0.5
 	plot(r, 0.6*exp(-10.0*(x+0.8)*(x+0.8)) - 0.1, 0.015, col2, pixel);
 	
-	fragColor = vec4(pixel, 1.0);
+	FragColor = vec4(pixel, 1.0);
 }
 // in the future we can use this framework to see the plot of functions
 // and design and find functions for our liking
@@ -969,7 +969,7 @@ float disk(vec2 r, vec2 center, float radius) {
 	return insideOfDisk;
 }
 
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
+void mainImage( out vec4 FragColor, in vec2 fragCoord )
 {
 	vec2 p = vec2(fragCoord.xy / iResolution.xy);
 	vec2 r =  2.0*vec2(fragCoord.xy - 0.5*iResolution.xy)/iResolution.y;
@@ -1025,7 +1025,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 	}
 	
 	vec3 pixel = ret;
-	fragColor = vec4(pixel, 1.0);
+	FragColor = vec4(pixel, 1.0);
 }
 
 
@@ -1070,7 +1070,7 @@ float rectangle(vec2 r, vec2 topLeft, vec2 bottomRight) {
 	return ret;
 }
 
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
+void mainImage( out vec4 FragColor, in vec2 fragCoord )
 {
 	vec2 p = vec2(fragCoord.xy / iResolution.xy);
 	vec2 r =  2.0*vec2(fragCoord.xy - 0.5*iResolution.xy)/iResolution.y;
@@ -1105,7 +1105,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 	// on different locations of the screen
 		
 	vec3 pixel = ret;
-	fragColor = vec4(pixel, 1.0);
+	FragColor = vec4(pixel, 1.0);
 }
 
 
@@ -1147,7 +1147,7 @@ float rectangle(vec2 r, vec2 topLeft, vec2 bottomRight) {
 	return ret;
 }
 
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
+void mainImage( out vec4 FragColor, in vec2 fragCoord )
 {
 	vec2 p = vec2(fragCoord.xy / iResolution.xy);
 	vec2 r =  2.0*vec2(fragCoord.xy - 0.5*iResolution.xy)/iResolution.y;
@@ -1180,7 +1180,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 	// coordinates with a constant.
 	
 	vec3 pixel = ret;
-	fragColor = vec4(pixel, 1.0);
+	FragColor = vec4(pixel, 1.0);
 }
 
 
@@ -1229,7 +1229,7 @@ float rectangle(vec2 r, vec2 topLeft, vec2 bottomRight) {
 	return ret;
 }
 
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
+void mainImage( out vec4 FragColor, in vec2 fragCoord )
 {
 	vec2 p = vec2(fragCoord.xy / iResolution.xy);
 	vec2 r =  2.0*vec2(fragCoord.xy - 0.5*iResolution.xy)/iResolution.y;
@@ -1276,7 +1276,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 	} 	
 	
 	vec3 pixel = ret;
-	fragColor = vec4(pixel, 1.0);
+	FragColor = vec4(pixel, 1.0);
 }
 
 
@@ -1304,7 +1304,7 @@ float rect(vec2 r, vec2 bottomLeft, vec2 topRight) {
 	return ret;
 }
 
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
+void mainImage( out vec4 FragColor, in vec2 fragCoord )
 {
 	vec2 p = vec2(fragCoord.xy / iResolution.xy);
 	vec2 r =  2.0*vec2(fragCoord.xy - 0.5*iResolution.xy)/iResolution.y;
@@ -1393,7 +1393,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 	}
 	
 	vec3 pixel = ret;
-	fragColor = vec4(pixel, 1.0);
+	FragColor = vec4(pixel, 1.0);
 }
 
 
@@ -1410,7 +1410,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 //
 // http://en.wikipedia.org/wiki/Plasma_effect
 
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
+void mainImage( out vec4 FragColor, in vec2 fragCoord )
 {
 	vec2 p = vec2(fragCoord.xy / iResolution.xy);
 	vec2 r =  2.0*vec2(fragCoord.xy - 0.5*iResolution.xy)/iResolution.y;
@@ -1458,7 +1458,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 	ret = 0.5 + 0.5*ret;
 	
     vec3 pixel = ret;
-    fragColor = vec4(pixel, 1.);
+    FragColor = vec4(pixel, 1.);
 }
 
 
@@ -1478,7 +1478,7 @@ float rect(vec2 r, vec2 bottomLeft, vec2 topRight) {
 	return ret;
 }
 
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
+void mainImage( out vec4 FragColor, in vec2 fragCoord )
 {
 	vec2 p = vec2(fragCoord.xy / iResolution.xy);
 	vec2 r =  2.0*vec2(fragCoord.xy - 0.5*iResolution.xy)/iResolution.y;
@@ -1515,7 +1515,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 	}
 	
 	vec3 pixel = ret;
-	fragColor = vec4(pixel, 1.0);
+	FragColor = vec4(pixel, 1.0);
 }
 
 
@@ -1536,7 +1536,7 @@ float disk(vec2 r, vec2 center, float radius) {
 	return 1.0 - smoothstep( radius-0.5, radius+0.5, length(r-center));
 }
 
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
+void mainImage( out vec4 FragColor, in vec2 fragCoord )
 {
 	vec2 p = vec2(fragCoord.xy / iResolution.xy);
 	vec2 r =  2.0*vec2(fragCoord.xy - 0.5*iResolution.xy)/iResolution.y;
@@ -1569,7 +1569,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 	ret = mix(ret, col1, disk(fragCoord.xy, center, 20.));
 	
 	vec3 pixel = ret;
-	fragColor = vec4(pixel, 1.0);
+	FragColor = vec4(pixel, 1.0);
 }
 
 
@@ -1630,7 +1630,7 @@ float plot(vec2 r, float y, float thickness) {
 	return ( abs(y - r.y) < thickness ) ? 1.0 : 0.0;
 }
 
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
+void mainImage( out vec4 FragColor, in vec2 fragCoord )
 {
 	vec2 p = vec2(fragCoord.xy / iResolution.xy);
 	vec2 r =  2.0*vec2(fragCoord.xy - 0.5*iResolution.xy)/iResolution.y;
@@ -1711,7 +1711,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 	}
 	
 	vec3 pixel = ret;
-	fragColor = vec4(pixel, 1.0);
+	FragColor = vec4(pixel, 1.0);
 }
 
 
@@ -1752,7 +1752,7 @@ float character(vec2 r, vec2 bottomLeft, float charCode, float squareSide) {
 
 mat2 rot(float th) { return mat2(cos(th), -sin(th), sin(th), cos(th)); }
 
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
+void mainImage( out vec4 FragColor, in vec2 fragCoord )
 {
 	float G = 990623.; // compressed characters :-)
 	float L = 69919.;
@@ -1802,6 +1802,6 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 	float dirt = pow(texture(iChannel0, 4.0*r).x, 4.0);
 	pixel -= (0.2*dirt - 0.1)*(maskG+maskS); // dirt
 	pixel -= smoothstep(0.45, 2.5, length(r));
-	fragColor = vec4(pixel, 1.0);
+	FragColor = vec4(pixel, 1.0);
 }
 #endif

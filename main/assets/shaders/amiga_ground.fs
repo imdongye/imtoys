@@ -1,9 +1,9 @@
 #version 410 core
-layout(location=0) out vec4 fragColor;
+layout(location=0) out vec4 FragColor;
 
 in vec3 wPos;
 
-uniform vec3 cameraPos;
+uniform vec3 camera_Pos;
 uniform float gamma = 2.2;
 
 void main()
@@ -15,5 +15,5 @@ void main()
     //out_color *= mix(vec3(1,1,1),vec3(0.1,0.1,0.1),t/d);
     
     outColor = pow(outColor, vec3(1/gamma));
-    fragColor = vec4(outColor, 1);
+    FragColor = vec4(outColor, 1);
 }

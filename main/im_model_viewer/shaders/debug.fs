@@ -20,7 +20,7 @@ const int MF_MR         = 1<<9;
 const int MF_ARM        = 1<<1;
 const int MF_SHININESS  = 1<<1;
 
-uniform vec3 baseColor;
+uniform vec3 mat_BaseColor;
 uniform vec3 specColor;
 uniform vec3 ambientColor;
 uniform vec3 emissionColor;
@@ -48,20 +48,20 @@ uniform float texDelta;
 uniform float bumpHeight;
 
 
-uniform vec3 lightPos;
-uniform vec3 lightColor;
-uniform float lightInt;
-uniform vec3 cameraPos;
+uniform vec3 light_Pos;
+uniform vec3 light_Color;
+uniform float light_Int;
+uniform vec3 camera_Pos;
 
 void main() {
 	vec3 faceN = normalize(cross(dFdx(wPos), dFdy(wPos)));
 	vec3 N = normalize(wNor);
-    vec3 V = normalize(cameraPos - wPos);
-	vec3 L = normalize(lightPos-wPos);
+    vec3 V = normalize(camera_Pos - wPos);
+	vec3 L = normalize(light_Pos-wPos);
 	float lambertian = max(0,dot(N,L));
     float ndv = max(0, dot(N,V));
 
-	vec3 albelo = ( (map_Flags&MF_BASE_COLOR) > 0 ) ? texture(map_BaseColor, mUv).rgb : baseColor;
+	vec3 albelo = ( (map_Flags&MF_BASE_COLOR) > 0 ) ? texture(map_BaseColor, mUv).rgb : mat_BaseColor;
 	
     vec3 outColor = albelo*0.5+albelo*vec3(ndv*0.5);
 	//outColor = vec3(1.f);

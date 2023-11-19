@@ -22,7 +22,7 @@ const int MF_MR         = 1<<9;
 const int MF_ARM        = 1<<1;
 const int MF_SHININESS  = 1<<1;
 
-uniform vec3 baseColor;
+uniform vec3 mat_BaseColor;
 uniform vec3 specColor;
 uniform vec3 ambientColor;
 uniform vec3 emissionColor;
@@ -50,11 +50,11 @@ uniform float texDelta;
 uniform float bumpHeight;
 
 
-uniform vec3 lightPos;
-uniform vec3 lightColor;
-uniform float lightInt;
-uniform int shadowEnabled;
-uniform vec3 cameraPos;
+uniform vec3 light_Pos;
+uniform vec3 light_Color;
+uniform float light_Int;
+uniform int shadow_Enabled;
+uniform vec3 camera_Pos;
 
 
 
@@ -74,8 +74,8 @@ mat3 getTBN( vec3 N ) {
 void main(void)
 {
 	vec3 N = normalize(wNor);
-	vec3 L = normalize(lightPos - wPos);
-	vec3 V = normalize(cameraPos - wPos);
+	vec3 L = normalize(light_Pos - wPos);
+	vec3 V = normalize(camera_Pos - wPos);
 
 	if( (map_Flags&(MF_NOR|MF_HEIGHT)) > 0 ) // has bump
 	{
@@ -96,14 +96,14 @@ void main(void)
 	vec3 R = 2*dot(N,L)*N-L;
 	
 
-	if( shadowEnabled > 0 )
+	if( shadow_Enabled > 0 )
 	{
 		// ...
 	}
 
-	vec3 albelo = ( (map_Flags&MF_BASE_COLOR) > 0 ) ? texture(map_BaseColor, mUv).rgb : baseColor;
+	vec3 albelo = ( (map_Flags&MF_BASE_COLOR) > 0 ) ? texture(map_BaseColor, mUv).rgb : mat_BaseColor;
 	float lambertian = max(0, dot(N, L));
-	vec3 diffuse = lightColor*lambertian*albelo;
+	vec3 diffuse = light_Color*lambertian*albelo;
 	vec3 ambient = albelo*0.2;//Ka;
 	vec3 specular = pow(max(0,dot(R,V)), shininess) * lambertian * vec3(1);
 	vec3 outColor = diffuse+ambient+specular;

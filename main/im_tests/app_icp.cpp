@@ -202,9 +202,9 @@ namespace lim
 
         prog.use();
 
-        prog.setUniform("viewMat", camera.view_mat);
-        prog.setUniform("projMat", camera.proj_mat);
-        prog.setUniform("cameraPos", camera.position);
+        prog.setUniform("view_Mat", camera.view_mat);
+        prog.setUniform("proj_Mat", camera.proj_mat);
+        prog.setUniform("camera_Pos", camera.position);
 
         prog.setUniform("modelMat", glm::mat4(1));
         glBindVertexArray(dst.vert_array);

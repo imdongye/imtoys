@@ -57,7 +57,7 @@ vec2 getPatchUv( vec2 puv, vec2 uv, float scale )
     return scale*(rot*offset)+vec2(.5);
 }
 
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
+void mainImage( out vec4 FragColor, in vec2 fragCoord )
 {
     const float mixoff = 0.1;
     const float texScale = 2.;
@@ -91,5 +91,5 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     //col = sideTex;
     //col = tex;
     
-    fragColor = vec4(col,1.0);
+    FragColor = vec4(col,1.0);
 }

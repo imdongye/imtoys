@@ -269,12 +269,12 @@ void lim::sdf::deinit()
 }
 void lim::sdf::bindSdfData(const Program& prog) 
 {
-    prog.setUniform("lightPos", light->position);
-    prog.setUniform("lightInt", light->intensity);
+    prog.setUniform("light_Pos", light->position);
+    prog.setUniform("light_Int", light->intensity);
     prog.setUniform("cameraAspect", camera->aspect);
 	prog.setUniform("cameraFovy", camera->fovy);
 	prog.setUniform("cameraOrthWidth", 0.f);
-	prog.setUniform("cameraPos", camera->position);
+	prog.setUniform("camera_Pos", camera->position);
 	prog.setUniform("cameraPivot", camera->pivot);
 
     prog.setUniform("nr_march_steps", nr_march_steps);

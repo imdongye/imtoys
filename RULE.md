@@ -30,12 +30,10 @@ getter / setter 은 간단한 프로젝트에서 예방의 효과보다 생산�
 
 glEnable/Disable은 사용후 초기값으로 복구 시켜두기
 
-glsl 변수이름 camelCase
+attribute 변수 : aPos, aNor, ...
+varying 변수 : mPos(model space), cPos(camera space), wPos(world space)
+uniform 변수 : map_Bump, camera_Pos ( snake + camel_Case )
 
-#### 접두어
-* a : attribute
-* m : model
-* w : world
 
 ## [ 패키지 ]
 ```

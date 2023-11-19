@@ -66,7 +66,7 @@ namespace lim
         float shininess = 100.f;         // assimp로드 기본값 낮아서 로드하지 않음.
         float roughness = 0.3f;
         float metalness = 0.0f;
-        glm::vec3 f0 = glm::vec3(0.21f); // assimp로드되지 않음. 
+        glm::vec3 F0 = glm::vec3(0.21f); // assimp로드되지 않음. 
 
         float bumpHeight = 100;
         float texDelta = 0.00001f;

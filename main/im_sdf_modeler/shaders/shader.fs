@@ -7,11 +7,11 @@ const float PI = 3.1415926535;
 const vec3 UP = vec3(0,1,0);
 
 uniform float cameraAspect;
-uniform vec3 cameraPos;
+uniform vec3 camera_Pos;
 uniform float cameraFovy;
 uniform vec3 cameraPivot;
-uniform vec3 lightPos;
-uniform float lightInt;
+uniform vec3 light_Pos;
+uniform float light_Int;
 
 const int MAX_MATS = 32;
 const int MAX_OBJS = 32;
@@ -48,7 +48,7 @@ uniform float blendnesses[MAX_OBJS];
 uniform float roundnesses[MAX_OBJS];
 
 float distToObjs[MAX_OBJS];
-vec3 baseColor = vec3(1);
+vec3 mat_BaseColor = vec3(1);
 float roughness;
 float metalness;
 
@@ -173,7 +173,7 @@ float updateMaterial(vec3 p) {
     float dist = far_distance; 
     dist = p.y; // plane
     
-    baseColor = vec3(1);
+    mat_BaseColor = vec3(1);
     roughness = 0;
     metalness = 0;
 
@@ -188,7 +188,7 @@ float updateMaterial(vec3 p) {
         // hard part
         int matIdx = mat_idxs[i];
         float percent = dist/(primDist+dist);
-        baseColor = mix(baseColor, base_colors[matIdx], percent);
+        mat_BaseColor = mix(mat_BaseColor, base_colors[matIdx], percent);
         roughness = mix(roughness, roughnesses[matIdx], percent);
         metalness = mix(metalness, metalnesses[matIdx], percent);
        
@@ -240,29 +240,29 @@ vec3 brdfCookTorrence() {
 
 vec3 brdf() {
     
-    vec3 diff = baseColor* mix(1/PI, 0, metalness);
+    vec3 diff = mat_BaseColor* mix(1/PI, 0, metalness);
     vec3 spec = brdfCookTorrence();
     return diff + spec;
 }
 
 
 vec3 render(vec3 wPos, vec3 view) {
-	vec3 toLight = lightPos-wPos;
+	vec3 toLight = light_Pos-wPos;
     V = view;
     N = getNormal(wPos);
     L = normalize(toLight);
     H = normalize((V+L)/2.0);
     R = reflect(-L, N);
-    F0 = mix(vec3(0.24), baseColor, metalness);
+    F0 = mix(vec3(0.24), mat_BaseColor, metalness);
 
     NDL = max(0, dot(N,L));
     NDV = max(0, dot(N,V));
     NDH = max(0, dot(N,H));
     VDR = max(0, dot(V,R));
 
-    // return (NDL+pow(VDR, 1000))*baseColor;
+    // return (NDL+pow(VDR, 1000))*mat_BaseColor;
 
-	vec3 Li = lightInt*vec3(1)/dot(toLight,toLight);
+	vec3 Li = light_Int*vec3(1)/dot(toLight,toLight);
 
     return brdf() * Li * NDL;
 }
@@ -277,8 +277,8 @@ void convertLinearToSRGB( inout vec3 rgb ){
 void main()
 {
     vec2 uv = texCoord*2-vec2(1);
-    vec3 ro = cameraPos;
-    vec3 camFront = normalize( cameraPivot-cameraPos );
+    vec3 ro = camera_Pos;
+    vec3 camFront = normalize( cameraPivot-camera_Pos );
     vec3 camRight = normalize( cross(camFront, UP) );
     vec3 camUp = normalize( cross(camRight, camFront) );
     float eyeZ = 1/tan((PI/360)*cameraFovy);
@@ -293,7 +293,7 @@ void main()
         vec3 wPos = ro + rd*hitDist;
         updateMaterial(wPos);
         outColor = render( wPos, -rd );
-        outColor = baseColor;
+        outColor = mat_BaseColor;
     }
     
     // debug

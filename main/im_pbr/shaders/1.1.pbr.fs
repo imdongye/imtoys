@@ -3,7 +3,7 @@ in vec2 TexCoords;
 in vec3 WorldPos;
 in vec3 Normal;
 
-layout(location=0) out vec4 fragColor;
+layout(location=0) out vec4 FragColor;
 
 // material parameters
 uniform float ao;
@@ -16,8 +16,8 @@ uniform vec3 emissivity = vec3(0);
 uniform float beckmannGamma = 1.3;
 
 // lights
-uniform vec3 lightPosition;
-uniform vec3 lightColor;
+uniform vec3 light_Position;
+uniform vec3 light_Color;
 
 uniform vec3 camPos;
 
@@ -163,11 +163,11 @@ void main()
 	vec3 faceN = normalize(cross(dFdx(WorldPos), dFdy(WorldPos)));
     vec3 N = normalize(Normal);
     vec3 V = normalize(camPos - WorldPos);
-	vec3 L = normalize(lightPosition - WorldPos);
+	vec3 L = normalize(light_Position - WorldPos);
     vec3 H = normalize(V + L); // Half-way vector i.o. m: Microfacit
-    float dist = length(lightPosition - WorldPos);
+    float dist = length(light_Position - WorldPos);
     float attenuation = 1.0 / (dist * dist);
-    vec3 radiance = lightColor * attenuation;
+    vec3 radiance = light_Color * attenuation;
 	float NDV = dot(N,V);
 	float NDL = dot(N,L); // lambertian
 	float rough = roughness;
@@ -221,5 +221,5 @@ void main()
 
     color = color / (color + vec3(1.0)); // HDR tonemapping
     color = pow(color, vec3(1.0/2.2)); // gamma correct
-    fragColor = vec4(color, 1.0);
+    FragColor = vec4(color, 1.0);
 }

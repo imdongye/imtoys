@@ -8,7 +8,7 @@ void change(out vec3 color) {
     color = vec3(1);
 }
 
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
+void mainImage( out vec4 FragColor, in vec2 fragCoord )
 {
     vec2 uv = fragCoord/iResolution.xy;
     float gray = uv.x;
@@ -16,5 +16,5 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         gray = pow(gray, 1/2.2);
     vec3 color = vec3(1,0,0);
     change(color);
-    fragColor = vec4(vec3(color), 1);
+    FragColor = vec4(vec3(color), 1);
 }

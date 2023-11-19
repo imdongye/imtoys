@@ -66,15 +66,15 @@ namespace lim
 		prog.setUniform("camPos", cam.position);
 		prog.setUniform("projection", cam.proj_mat);
 
-		glm::vec3 lightPos = light_position + glm::vec3(sin(glfwGetTime() * 2.0) * 5.0, 0.0, 0.0);
-		if(!movedLight) lightPos = light_position;
-		prog.setUniform("lightPosition", lightPos);
-		prog.setUniform("lightColor", light_color);
+		glm::vec3 light_Pos = light_position + glm::vec3(sin(glfwGetTime() * 2.0) * 5.0, 0.0, 0.0);
+		if(!movedLight) light_Pos = light_position;
+		prog.setUniform("light_Position", light_Pos);
+		prog.setUniform("light_Color", light_color);
 
 		glm::mat4 modelMat;
 
 		///* draw light */
-		modelMat = glm::translate(glm::mat4(1), lightPos);
+		modelMat = glm::translate(glm::mat4(1), light_Pos);
 		modelMat = glm::scale(modelMat, glm::vec3(0.5f));
 		prog.setUniform("model", modelMat);
 		prog.setUniform("Kd", glm::vec3(1,1,1));

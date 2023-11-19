@@ -25,18 +25,20 @@ const int MF_MR         = 1<<9;
 const int MF_ARM        = 1<<10;
 const int MF_SHININESS  = 1<<11;
 
-uniform vec3 baseColor;
-uniform vec3 specColor;
-uniform vec3 ambientColor;
-uniform vec3 emissionColor;
+uniform vec3 mat_BaseColor;
+uniform vec3 mat_SpecColor;
+uniform vec3 mat_AmbientColor;
+uniform vec3 mat_EmissionColor;
+uniform vec3 mat_F0 = vec3(1);
 
-uniform float transmission;
-uniform float refraciti;
-uniform float opacity;
-uniform float shininess;
-uniform float roughness;
-uniform float metalness;
-uniform vec3 f0 = vec3(1);
+uniform float mat_Transmission;
+uniform float mat_Refraciti;
+uniform float mat_Opacity;
+uniform float mat_Shininess;
+uniform float mat_Roughness;
+uniform float mat_Metalness;
+uniform float mat_TexDelta;
+uniform float mat_BumpHeight;
 
 uniform int map_Flags;
 
@@ -49,22 +51,19 @@ uniform sampler2D map_Metalness;
 uniform sampler2D map_Emission;
 uniform sampler2D map_Opacity;
 
-uniform int useIBL;
+uniform int use_IBL;
 uniform sampler2D map_Light;
 
-uniform float texDelta;
-uniform float bumpHeight;
 
+uniform vec3 light_Pos;
+uniform vec3 light_Color;
+uniform float light_Int;
+uniform vec3 camera_Pos;
 
-uniform vec3 lightPos;
-uniform vec3 lightColor;
-uniform float lightInt;
-uniform vec3 cameraPos;
-
-uniform int model_idx = 0;
-uniform int D_idx = 0;
-uniform int G_idx = 0;
-uniform int F_idx = 0;
+uniform int idx_Brdf = 0;
+uniform int idx_D = 0;
+uniform int idx_G = 0;
+uniform int idx_F = 0;
 
 mat3 getTBN(vec3 N) {
 	vec3 Q1 = dFdx(wPos), Q2 = dFdy(wPos);
@@ -103,26 +102,26 @@ vec3 tonemap( vec3 rgb, mat3 csc, float gamma ){
 //*****************************************
 //            Rendering Equation
 //*****************************************
-vec3 N, w_i, w_o, R, H;
+vec3 N, L, V, R, H;
 
 vec3 LambertianBRDF() { // Diffuse
 	return vec3(1/PI);
 }
 
 vec3 PhongBRDF() { // Specular
-	float normalizeFactor = (shininess+1)/(2*PI);
-	return ambientColor + vec3(1) * normalizeFactor * pow( max(0,dot(R, w_o)), shininess );
+	float normalizeFactor = (mat_Shininess+1)/(2*PI);
+	return mat_AmbientColor + vec3(1) * normalizeFactor * pow( max(0,dot(R, V)), mat_Shininess );
 }
 vec3 BlinnPhongBRDF() { // Specular
-	float normalizeFactor = (shininess+1)/(2*PI);
-	return ambientColor + vec3(1) * normalizeFactor * pow( max(0,dot(N, H)), shininess );
+	float normalizeFactor = (mat_Shininess+1)/(2*PI);
+	return mat_AmbientColor + vec3(1) * normalizeFactor * pow( max(0,dot(N, H)), mat_Shininess );
 }
 vec3 OrenNayar(float r) {
-	float cosTi = dot(w_i, N);
-	float cosTr = dot(w_o, N);
-	float thetaI = acos(dot(w_i, N));
+	float cosTi = dot(L, N);
+	float cosTr = dot(V, N);
+	float thetaI = acos(dot(L, N));
 	float thetaO = acos(cosTr);
-	float cosPhi = dot( normalize(w_i-N*cosTi), normalize(w_o-N*cosTr) );
+	float cosPhi = dot( normalize(L-N*cosTi), normalize(V-N*cosTr) );
 	float alpha = max(thetaI, thetaO);
 	float beta = min(thetaI, thetaO);
 	float aa = r*r;
@@ -158,8 +157,8 @@ float BeckmannDistrobution(float r)
 	return D;
 }
 float CookTorranceGeometry() { // Cook-Torrance
-	float t1 = 2*dot(N,H)*dot(N,w_o)/dot(w_o,H);
-	float t2 = 2*dot(N,H)*dot(N,w_i)/dot(w_o,H);
+	float t1 = 2*dot(N,H)*dot(N,V)/dot(V,H);
+	float t2 = 2*dot(N,H)*dot(N,L)/dot(V,H);
 	return min(1, min(t1, t2));
 }
 vec3 SchlickFresnel(vec3 F0) { // Schlick’s // 다시
@@ -174,19 +173,19 @@ vec3 SchlickFresnel(vec3 F0) { // Schlick’s // 다시
 vec3 CookTorranceBRDF(float roughness, vec3 F0) {
 	float D, G;
 	vec3 F;
-	switch(D_idx) {
+	switch(idx_D) {
 		case 0: D = BlinnPhongDistribution(roughness); break;
 		case 1: D = GGX_Distribution(roughness); break;
 		case 2: D = BeckmannDistrobution(roughness); break;
 	}
-	switch(G_idx) {
+	switch(idx_G) {
 		case 0: G = CookTorranceGeometry(); break;
 	}
-	switch(F_idx) {
+	switch(idx_F) {
 		case 0: F = SchlickFresnel(F0); break;
 	}
 	//return F / (4*dot(w_i,N)*dot(w_o,N));
-	return D*G*F / (4*dot(w_i,N)*dot(w_o,N));
+	return D*G*F / (4*dot(L,N)*dot(V,N));
 }
 vec3 sampleIBL( vec3 r ) {
 	float theta = atan(r.z, r.x);
@@ -194,12 +193,12 @@ vec3 sampleIBL( vec3 r ) {
 	vec2 uv = vec2(1-theta/(2*PI), 0.5-phi/PI);
 	return texture(map_Light, uv).rgb;
 }
-vec3 brdf( vec3 baseColor, float roughness, float metalness, vec3 F0 ) {
+vec3 brdf( vec3 mat_BaseColor, float roughness, float metalness, vec3 F0 ) {
 	vec3 diffuse, specular;
 
-	diffuse = baseColor * mix(LambertianBRDF(), vec3(0), metalness);
+	diffuse = mat_BaseColor * mix(LambertianBRDF(), vec3(0), metalness);
 
-	switch(model_idx) {
+	switch(idx_Brdf) {
 		case 0: specular = PhongBRDF(); break;
 		case 1: specular = BlinnPhongBRDF(); break;
 		case 2: specular = CookTorranceBRDF(roughness, F0); break;
@@ -218,25 +217,25 @@ void main() {
     vec3 faceN = normalize( cross( dFdx(wPos), dFdy(wPos) ) );
 	N = (gl_FrontFacing)?normalize(wNor):normalize(-wNor);
 	//if( dot(N,faceN)<0 ) N = -N; // 모델의 내부에서 back face일때 노멀을 뒤집는다.
-	vec3 toLight = lightPos-wPos;
-	w_i = normalize( toLight );
-	w_o = normalize( cameraPos - wPos );
-	R = normalize(2*dot(N, w_i)*N-w_i);
-	H = normalize((w_i+w_o)/2);
+	vec3 toLight = light_Pos-wPos;
+	L = normalize( toLight );
+	V = normalize( camera_Pos - wPos );
+	R = normalize(2*dot(N, L)*N-L);
+	H = normalize((L+V)/2);
 
-	vec3 BaseColor = baseColor;
+	vec3 BaseColor = mat_BaseColor;
 	if( (map_Flags & MF_BASE_COLOR)>0 ) {
 		BaseColor = texture( map_BaseColor, mUv ).rgb;
 	}
-	float AmbOcc = ambientColor.r; // todo
+	float AmbOcc = mat_AmbientColor.r; // todo
 	if( (map_Flags & MF_ROUGHNESS)>0 ) {
 		AmbOcc = texture( map_AmbOcc, mUv ).r;
 	}
-	float Roughness = roughness;
+	float Roughness = mat_Roughness;
 	if( (map_Flags & MF_ROUGHNESS)>0 ) {
 		Roughness = texture( map_Roughness, mUv ).r;
 	}
-	float Metalness = metalness;
+	float Metalness = mat_Metalness;
 	if( (map_Flags & MF_METALNESS)>0 ) {
 		Metalness = texture( map_Metalness, mUv ).r;
 	}
@@ -250,8 +249,8 @@ void main() {
 		mat3 tbn = getTBN(N);
 		N = tbn* (texture( map_Bump, mUv ).rgb*2 - vec3(1));
 	}
-	vec3 Li = lightInt*lightColor/dot(toLight,toLight); // 빛은 거리 제곱에 반비례함
-	vec3 outColor = emission() + brdf( BaseColor, Roughness, Metalness, f0 ) * Li * dot(N,w_i);
+	vec3 Li = light_Int*light_Color/dot(toLight,toLight); // 빛은 거리 제곱에 반비례함
+	vec3 outColor = emission() + brdf( BaseColor, Roughness, Metalness, mat_F0 ) * Li * dot(N,L);
 
 	//debug
 	//outColor = vec3((map_Flags & MF_Kd));
@@ -261,5 +260,5 @@ void main() {
 	// gamma correction
 	outColor.rgb = tonemap(outColor.rgb,mat3(1),2.4);
 
-	FragColor = vec4(outColor, 1.f-opacity);
+	FragColor = vec4(outColor, 1.f-mat_Opacity);
 }

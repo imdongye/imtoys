@@ -67,32 +67,33 @@ namespace
 {
     inline int bindLightToProg(const Program& prog, const Light& lit, int activeSlot)
     {
-        prog.setUniform("lightPos", lit.position);
-        prog.setUniform("lightColor", lit.color);
-        prog.setUniform("lightInt", lit.intensity);
-        prog.setUniform("shadowEnabled", (lit.shadow_enabled)?1:0);
+        prog.setUniform("light_Pos", lit.position);
+        prog.setUniform("light_Color", lit.color);
+        prog.setUniform("light_Int", lit.intensity);
+
+        prog.setUniform("shadow_Enabled", (lit.shadow_enabled)?1:0);
         if( lit.shadow_enabled ) {
-            prog.setUniform("shadowVP", lit.shadow_vp_mat);
+            prog.setUniform("shadow_VP", lit.shadow_vp_mat);
             prog.setTexture("map_Shadow", lit.map_Shadow.getRenderedTex(), activeSlot++);
         }
         return activeSlot; // return next texture slot
     }
     inline int bindMatToProg(const Program& prog, const Material& mat, int activeSlot)
     {
-        prog.setUniform("baseColor", mat.baseColor);
-        prog.setUniform("specColor", mat.specColor);
-        prog.setUniform("ambientColor", mat.ambientColor);
-        prog.setUniform("emissionColor", mat.emissionColor);
+        prog.setUniform("mat_BaseColor", mat.baseColor);
+        prog.setUniform("mat_SpecColor", mat.specColor);
+        prog.setUniform("mat_AmbientColor", mat.ambientColor);
+        prog.setUniform("mat_EmissionColor", mat.emissionColor);
+        prog.setUniform("mat_F0", mat.F0);
 
-        prog.setUniform("transmission", mat.transmission);
-        prog.setUniform("refraciti", mat.refraciti);
-        prog.setUniform("opacity", mat.opacity);
-        prog.setUniform("shininess", mat.shininess);
-        prog.setUniform("roughness", mat.roughness);
-        prog.setUniform("metalness", mat.metalness);
-        prog.setUniform("f0", mat.f0);
-        prog.setUniform("bumpHeight", mat.metalness);
-        prog.setUniform("texDelta", mat.texDelta);
+        prog.setUniform("mat_Transmission", mat.transmission);
+        prog.setUniform("mat_Refraciti", mat.refraciti);
+        prog.setUniform("mat_Opacity", mat.opacity);
+        prog.setUniform("mat_Shininess", mat.shininess);
+        prog.setUniform("mat_Roughness", mat.roughness);
+        prog.setUniform("mat_Metalness", mat.metalness);
+        prog.setUniform("mat_TexDelta", mat.bumpHeight);
+        prog.setUniform("mat_BumpHeight", mat.texDelta);
 
 
         prog.setUniform("map_Flags", mat.map_Flags);
@@ -161,11 +162,11 @@ namespace
 
             lit.map_Shadow.bind();
 
-            depthProg.setUniform("viewMat", lit.shadow_view_mat);
-            depthProg.setUniform("projMat", lit.shadow_proj_mat);
+            depthProg.setUniform("view_Mat", lit.shadow_view_mat);
+            depthProg.setUniform("proj_Mat", lit.shadow_proj_mat);
             
             for( const Model* pMd : mds ) {
-                depthProg.setUniform("modelMat", pMd->model_mat);
+                depthProg.setUniform("model_Mat", pMd->model_mat);
                 dfsNodeTree(&pMd->root, [](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
                     ms->drawGL();
                 });
@@ -184,7 +185,7 @@ namespace lim
     {
         fb.bind();
         prog.use();
-        prog.setUniform("modelMat", md.model_mat);
+        prog.setUniform("model_Mat", md.model_mat);
 
         const Material* curMat = md.default_material;
 
@@ -210,10 +211,10 @@ namespace lim
         fb.bind();
         
         prog.use();
-        prog.setUniform("cameraPos", cam.position);
-        prog.setUniform("projMat", cam.proj_mat);
-        prog.setUniform("viewMat", cam.view_mat);
-        prog.setUniform("modelMat", md.model_mat);
+        prog.setUniform("camera_Pos", cam.position);
+        prog.setUniform("proj_Mat", cam.proj_mat);
+        prog.setUniform("view_Mat", cam.view_mat);
+        prog.setUniform("model_Mat", md.model_mat);
 
         int activeSlot = bindLightToProg(prog, lit, 0);
 
@@ -265,9 +266,9 @@ namespace lim
                     activeSlot = 0;
 
                     prog.use();
-                    prog.setUniform("cameraPos", cam.position);
-                    prog.setUniform("viewMat", cam.view_mat);
-                    prog.setUniform("projMat", cam.proj_mat);
+                    prog.setUniform("camera_Pos", cam.position);
+                    prog.setUniform("view_Mat", cam.view_mat);
+                    prog.setUniform("proj_Mat", cam.proj_mat);
 
                     for( const Light* pLit : scn.lights ) {
                         activeSlot = bindLightToProg(prog, *pLit, activeSlot);
@@ -289,7 +290,7 @@ namespace lim
                     curProg = nextProg;
                 }
 
-                curProg->setUniform("modelMat", md.model_mat); // Todo: hirachi trnasformation
+                curProg->setUniform("model_Mat", md.model_mat); // Todo: hirachi trnasformation
                 ms->drawGL();
             });
         }

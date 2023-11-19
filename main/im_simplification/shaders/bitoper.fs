@@ -20,7 +20,7 @@ const int MF_MR         = 1<<9;
 const int MF_ARM        = 1<<1;
 const int MF_SHININESS  = 1<<1;
 
-uniform vec3 baseColor;
+uniform vec3 mat_BaseColor;
 uniform vec3 specColor;
 uniform vec3 ambientColor;
 uniform vec3 emissionColor;
@@ -48,10 +48,10 @@ uniform float texDelta;
 uniform float bumpHeight;
 
 
-uniform vec3 lightPos;
-uniform vec3 lightColor;
-uniform float lightInt;
-uniform vec3 cameraPos;
+uniform vec3 light_Pos;
+uniform vec3 light_Color;
+uniform float light_Int;
+uniform vec3 camera_Pos;
 
 
 mat3 getTBN( vec3 N ) {
