@@ -267,10 +267,6 @@ vec3 render(vec3 wPos, vec3 view) {
     return brdf() * Li * NDL;
 }
 
-// tan(fovy/2) = 1/eyeZ
-// eyeZ = 1 / tan(fovy/2) 
-
-
 // gamma correction
 void convertLinearToSRGB( inout vec3 rgb ){
     rgb.r = rgb.r<0.0031308?(12.92*rgb.r):(1.055*pow(rgb.r,0.41667)-0.055);
@@ -297,6 +293,7 @@ void main()
         vec3 wPos = ro + rd*hitDist;
         updateMaterial(wPos);
         outColor = render( wPos, -rd );
+        outColor = baseColor;
     }
     
     // debug

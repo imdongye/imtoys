@@ -240,6 +240,16 @@ void lim::sdf::init(Camera* cam, Light* lit)
 {
     camera = cam;
     light = lit;
+
+    ImGui::GetIO().Fonts->AddFontFromFileTTF("im_sdf_modeler/fonts/SpoqaHanSansNeo-Medium.ttf", 16.0f);
+
+    ImFontConfig config;
+    config.MergeMode = true;
+    config.GlyphMinAdvanceX = 13.0f;
+    static ImWchar lIconRanges[] = { 0xE800, 0xE840, 0 };
+    ImGui::GetIO().Fonts->AddFontFromFileTTF("im_sdf_modeler/fonts/icons.ttf", 20.0f, &config, lIconRanges);
+
+
     addMaterial();
 
     root.name = "root";
@@ -531,17 +541,19 @@ void lim::sdf::drawGuizmo(const Viewport& vp) {
         ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoMove;
         const float PAD = 10.0f;
         ImVec2 workPos = ImGui::GetWindowPos();
-        ImVec2 windowPos = {workPos.x+PAD, workPos.y+PAD+PAD*1.8f};
+        ImVec2 windowPos = {workPos.x+PAD, workPos.y+PAD+PAD*2.3f};
         
         //ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
         //ImGui::SetNextWindowSizeConstraints(ImVec2(30.f, 120.f));
         ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always);
         ImGui::SetNextWindowViewport(ImGui::GetMainViewport()->ID); // 뷰포트가 안되도록
         ImGui::SetNextWindowBgAlpha(0.35f); // Transparent background
+        ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, {0.5f, 0.5f});
+        ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, {2.f, 2.f});
         if( ImGui::Begin("edit mode selector", nullptr, window_flags) )
         {
             static int selectedEditModeIdx = 1;
-            static const char* editModeStrs[] = { "Select", "Position", "Scale", "Rotate", "Transform" };
+            static const char* editModeStrs[] = {  u8"\uE820", u8"\uE806", u8"\uE807", u8"\uE811", u8"\uE805" };
             static const int   editModes[] = { 0, ImGuizmo::TRANSLATE, ImGuizmo::SCALE, ImGuizmo::ROTATE, ImGuizmo::UNIVERSAL };
             for(int i=0; i<5; i++) {
                 if( ImGui::Selectable(editModeStrs[i], selectedEditModeIdx==i, 0, {30, 30}) ) {
@@ -550,7 +562,8 @@ void lim::sdf::drawGuizmo(const Viewport& vp) {
                 }
             }
         }
-        //ImGui::PopStyleVar();
+        ImGui::PopStyleVar();
+        ImGui::PopStyleVar();
         ImGui::End();
     }
 }
