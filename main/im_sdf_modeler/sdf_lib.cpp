@@ -501,7 +501,7 @@ void lim::sdf::drawImGui()
         float w = glm::min(280.f, ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.y);
         ImGui::SetNextItemWidth(w);
         if( ImGui::ColorPicker3("##Base Color", glm::value_ptr(mat.base_color), flags) ) {
-            base_colors[selected_mat_idx] = mat.base_color;
+            base_colors[selected_mat_idx] = glm::convertSRGBToLinear(mat.base_color);
         }
         ImGui::End();
     }

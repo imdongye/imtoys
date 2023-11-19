@@ -247,9 +247,10 @@ vec3 brdf() {
 
 
 vec3 render(vec3 wPos, vec3 view) {
+	vec3 toLight = lightPos-wPos;
     V = view;
     N = getNormal(wPos);
-    L = normalize(lightPos - wPos);
+    L = normalize(toLight);
     H = normalize((V+L)/2.0);
     R = reflect(-L, N);
     F0 = mix(vec3(0.24), baseColor, metalness);
@@ -261,13 +262,21 @@ vec3 render(vec3 wPos, vec3 view) {
 
     // return (NDL+pow(VDR, 1000))*baseColor;
 
-	vec3 Li = lightInt*vec3(1)/dot(L,L);
+	vec3 Li = lightInt*vec3(1)/dot(toLight,toLight);
 
     return brdf() * Li * NDL;
 }
 
 // tan(fovy/2) = 1/eyeZ
 // eyeZ = 1 / tan(fovy/2) 
+
+
+// gamma correction
+void convertLinearToSRGB( inout vec3 rgb ){
+    rgb.r = rgb.r<0.0031308?(12.92*rgb.r):(1.055*pow(rgb.r,0.41667)-0.055);
+    rgb.g = rgb.g<0.0031308?(12.92*rgb.g):(1.055*pow(rgb.g,0.41667)-0.055);
+    rgb.b = rgb.b<0.0031308?(12.92*rgb.b):(1.055*pow(rgb.b,0.41667)-0.055);
+}
 
 void main()
 {
@@ -293,6 +302,6 @@ void main()
     // debug
     //outColor = vec3(1,0,0);
 
-    //outColor = pow(outColor, vec3(1/2.2));
+    convertLinearToSRGB(outColor);
     FragColor = vec4(outColor, 1);
 }  
