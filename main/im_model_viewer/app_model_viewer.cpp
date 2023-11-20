@@ -21,7 +21,7 @@ namespace
         float refIdx    = 1.45f; // index of refraction
         float roughness = 0.3f;  // brdf param
 		float metalness = 0.f;
-		float ambientInt = 0.01f;
+		float ambientInt = 0.03f;
 	};
 	std::vector<BrdfTestInfo> brdfTestInfos;
 
@@ -63,6 +63,12 @@ namespace lim
 		AssetLib::get().default_material.prog = &program;
 
 		addModelViewer("assets/models/objs/bunny.obj");
+
+		GLint tempInt;
+		glGetIntegerv(GL_MAX_INTEGER_SAMPLES, &tempInt);
+		log::pure("GL_MAX_INTEGER_SAMPLES : %d\n", tempInt);
+		glGetIntegerv(GL_MAX_SAMPLES, &tempInt);
+		log::pure("GL_MAX_SAMPLES : %d\n", tempInt);
 	}
 	AppModelViewer::~AppModelViewer()
 	{
@@ -91,7 +97,7 @@ namespace lim
 		scenes.emplace_back(std::move(scn));
 
 		char* vpName = fmtStrToBuf("%s##model_view", md->name.c_str());
-		viewports.emplace_back(vpName, new FramebufferMs(8));
+		viewports.emplace_back(vpName, new FramebufferMs(4));
 		viewports.back().camera.setViewMode(CameraManVp::VM_PIVOT);
 	}
 	void AppModelViewer::subModelViewer(int idx)

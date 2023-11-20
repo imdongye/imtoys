@@ -304,13 +304,11 @@ namespace lim
 		glGenTextures(1, &ms_color_tex_id);
 		glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, ms_color_tex_id);
 		glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, interFormat, width, height, GL_TRUE);
-		glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
 
 		if( ms_depth_rbo_id>0 ) { glDeleteRenderbuffers(1, &ms_depth_rbo_id); ms_depth_rbo_id=0; }
 		glGenRenderbuffers(1, &ms_depth_rbo_id);
 		glBindRenderbuffer(GL_RENDERBUFFER, ms_depth_rbo_id);
 		glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, GL_DEPTH_COMPONENT, width, height);
-		glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, ms_color_tex_id, 0);
@@ -319,8 +317,12 @@ namespace lim
 		std::vector<GLenum> drawBuffers ={GL_COLOR_ATTACHMENT0};
 		glDrawBuffers(1, drawBuffers.data());
 
+		glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+		glBindRenderbuffer(GL_RENDERBUFFER, 0);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 		GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-		if( status !=GL_FRAMEBUFFER_COMPLETE )
+		if( status != GL_FRAMEBUFFER_COMPLETE )
 			log::err("MsFramebuffer is not completed!! (%d)\n", status);
 
 		intermediate_fb.resize(width, height);

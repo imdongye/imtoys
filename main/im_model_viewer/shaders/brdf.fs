@@ -132,8 +132,19 @@ float distributionGGX() { // Todo: 하이라이트 중간 깨짐, 음수
 	float a = roughness*roughness;
 	float aa = a*a;
 	float theta = acos( NDH );
+	float num = aa;
 	float denom = PI * pow(NDH, 4)* pow(aa+pow(tan(theta),2) ,2);
-	return aa/max(denom,0.00001);
+	return num/max(denom,0.00001);
+}
+float distributionGGX2() {
+	float a = roughness*roughness;
+	float aa = a*a;
+	float mNDH = max(0, NDH);
+	float NDH2 = mNDH*mNDH;
+	float num = aa;
+	float denom = NDH2*(aa-1)+1;
+	denom = PI*denom*denom;
+	return num/denom;
 }
 float distributionBeckmann() 
 {
@@ -153,9 +164,25 @@ float geometryCookTorrance() { // GGX
 	return min(1, min(t1, t2));
 }
 
+float geometryShlickGGX(float num) {
+	float r = roughness+1;
+	float k = r*r/8.0;
+	float denom = num*(1-k)+k;
+	return num/denom;
+}
+float geometrySmith() {
+	float ggx2 = geometryShlickGGX(max(NDV, 0));
+	float ggx1 = geometryShlickGGX(max(NDL, 0));
+	return ggx1*ggx2;
+}
+
 vec3 fresnelSchlick() { // Schlick’s // 다시
 	float ratio = max(0,pow(1-NDV, 5));
 	return mix(F0, vec3(1), ratio);
+}
+vec3 fresnelSchlick2() {
+	float cosTheta = max(VDH,0);
+	return F0+ (1-F0)*pow(clamp(1-cosTheta, 0, 1), 5);
 }
 
 vec3 brdfCookTorrance() {
@@ -249,10 +276,10 @@ void main() {
 	VDH = dot(V,H);
 
 
-	vec3 Li = light_Int*light_Color/dot(toLight,toLight);
+	vec3 radiance = light_Int*light_Color/dot(toLight,toLight);
 	vec3 ambient = mat_AmbientColor*ambOcc*baseColor; // Todo: Occ의 의미를 왜 반대로 쓰지?
 
-	vec3 outColor = emission + brdf() * Li * max(0,NDL) + ambient;
+	vec3 outColor = emission + brdf() * radiance * max(0,NDL) + ambient;
 
 
 	//debug
@@ -265,6 +292,7 @@ void main() {
 	// outColor = vec3(NDV);
 	// outColor = vec3(distributionGGX());
 	// outColor = ambient;
+	outColor = fresnelSchlick();
 
 	convertLinearToSRGB(outColor);
 	FragColor = vec4(outColor, 1.0-mat_Opacity);
