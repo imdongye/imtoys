@@ -85,8 +85,8 @@ namespace
 		}
 		// pass AI_MATKEY_SHININESS_STRENGTH
 		if(src.factor_Flags & Material::FF_AMBIENT) {
-			temp3d = toAiC(src.ambientColor);
-			aiMat->AddProperty(&temp3d, 1, AI_MATKEY_COLOR_AMBIENT);
+			// temp3d = toAiC(src.ambientColor);
+			// aiMat->AddProperty(&temp3d, 1, AI_MATKEY_COLOR_AMBIENT);
 		}
 		if(src.factor_Flags & Material::FF_EMISSION) {
 			temp3d = toAiC(src.emissionColor);

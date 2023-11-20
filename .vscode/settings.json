@@ -4,7 +4,6 @@
     "cmake.debugConfig": {
         "cwd": "${workspaceFolder}/main",
         "console": "integratedTerminal",
-        //"externalConsole": true,
     },
 
     /* paste to global setting */

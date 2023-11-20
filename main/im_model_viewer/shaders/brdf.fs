@@ -20,7 +20,7 @@ const int MF_AMB_OCC    = 1<<4;
 const int MF_ROUGHNESS  = 1<<5;
 const int MF_METALNESS  = 1<<6;
 const int MF_EMISSION   = 1<<7;
-const int MF_Opacity    = 1<<8;
+const int MF_OPACITY    = 1<<8;
 const int MF_MR         = 1<<9;
 const int MF_ARM        = 1<<10;
 const int MF_SHININESS  = 1<<11;
@@ -29,7 +29,7 @@ uniform vec3 mat_BaseColor;
 uniform vec3 mat_SpecColor;
 uniform vec3 mat_AmbientColor;
 uniform vec3 mat_EmissionColor;
-uniform vec3 mat_F0 = vec3(1);
+uniform vec3 mat_F0;
 
 uniform float mat_Transmission;
 uniform float mat_Refraciti;
@@ -65,6 +65,13 @@ uniform int idx_D = 0;
 uniform int idx_G = 0;
 uniform int idx_F = 0;
 
+
+// gamma correction
+void convertLinearToSRGB( inout vec3 rgb ){
+    rgb.r = rgb.r<0.0031308?(12.92*rgb.r):(1.055*pow(rgb.r,0.41667)-0.055);
+    rgb.g = rgb.g<0.0031308?(12.92*rgb.g):(1.055*pow(rgb.g,0.41667)-0.055);
+    rgb.b = rgb.b<0.0031308?(12.92*rgb.b):(1.055*pow(rgb.b,0.41667)-0.055);
+}
 mat3 getTBN(vec3 N) {
 	vec3 Q1 = dFdx(wPos), Q2 = dFdy(wPos);
 	vec2 st1 = dFdx(mUv), st2 = dFdy(mUv);
@@ -73,50 +80,32 @@ mat3 getTBN(vec3 N) {
 				normalize((Q2*st1.s-Q1*st2.s)*D), N);
 }
 
-//***************************************************
-//            Color Space Conversion Functions
-//***************************************************
-float inverseTonemap_sRGB(float u) { 
-	float u_ = abs(u);
-	return u_>0.04045?(sign(u)*pow((u_+0.055)/1.055,2.4)):(u/12.92);
-}
-float tonemap_sRGB(float u) {
-	float u_ = abs(u);
-	return  u_>0.0031308?( sign(u)*1.055*pow( u_,0.41667)-0.055):(12.92*u);
-}
-// linearization
-vec3 inverseTonemap( vec3 rgb, mat3 csc, float gamma ){
-	if( abs( gamma-2.4) <0.01 ) // sRGB
-		return csc*vec3( inverseTonemap_sRGB(rgb.r), inverseTonemap_sRGB(rgb.g), inverseTonemap_sRGB(rgb.b) );
-	return csc*sign(rgb)*pow( abs(rgb), vec3(gamma) );
-}
-// gamma correction
-vec3 tonemap( vec3 rgb, mat3 csc, float gamma ){
-	vec3 rgb_ = csc*rgb;
-	if( abs( gamma-2.4) <0.01 ) // sRGB
-		return vec3( tonemap_sRGB(rgb_.r), tonemap_sRGB(rgb_.g), tonemap_sRGB(rgb_.b) );
-	return sign(rgb_)*pow( abs(rgb_), vec3(1./gamma) );
-}
-
 
 //*****************************************
 //            Rendering Equation
 //*****************************************
 vec3 N, L, V, R, H;
+float NDL, NDV, NDH, VDR, VDH;
+vec3 baseColor, F0, emission;
+float roughness, metalness, ambOcc;
 
-vec3 LambertianBRDF() { // Diffuse
+vec3 brdfLambertian() { // Diffuse
 	return vec3(1/PI);
 }
+vec3 brdfPhong() { // Specular
+	float normalizeFactor = (mat_Shininess+1)/(2*PI);
+	return mat_AmbientColor + vec3(1) * normalizeFactor * pow( VDR, mat_Shininess );
+}
+vec3 brdfBlinnPhong() { // Specular
+	// vec3 H = (V+L)/2; // 성능을위해 노멀라이즈 하지 않음.
+	// float NDH = max(0,dot(N, H));
+	float normalizeFactor = (mat_Shininess+1)/(2*PI);
+	return mat_AmbientColor + vec3(1) * normalizeFactor * pow( NDH, mat_Shininess );
+}
 
-vec3 PhongBRDF() { // Specular
-	float normalizeFactor = (mat_Shininess+1)/(2*PI);
-	return mat_AmbientColor + vec3(1) * normalizeFactor * pow( max(0,dot(R, V)), mat_Shininess );
-}
-vec3 BlinnPhongBRDF() { // Specular
-	float normalizeFactor = (mat_Shininess+1)/(2*PI);
-	return mat_AmbientColor + vec3(1) * normalizeFactor * pow( max(0,dot(N, H)), mat_Shininess );
-}
-vec3 OrenNayar(float r) {
+vec3 brdfOrenNayar() {
+	float a = roughness*roughness;
+	float aa = a*a;
 	float cosTi = dot(L, N);
 	float cosTr = dot(V, N);
 	float thetaI = acos(dot(L, N));
@@ -124,7 +113,6 @@ vec3 OrenNayar(float r) {
 	float cosPhi = dot( normalize(L-N*cosTi), normalize(V-N*cosTr) );
 	float alpha = max(thetaI, thetaO);
 	float beta = min(thetaI, thetaO);
-	float aa = r*r;
 	float sigmaa = aa/(aa+0.09);
 	float c1 = 1-0.5*aa/(aa+0.33);
 	float c2 = 0.25*sigmaa*(cosPhi>=0?sin(alpha):(sin(alpha)-pow(2*beta/PI,3)));
@@ -133,132 +121,151 @@ vec3 OrenNayar(float r) {
 	float l2 = 0.17*cosTi*(aa/(aa+0.13))*(1-cosPhi*pow(2*beta/PI,2));
 	return vec3(l1+l2);
 }
-float BlinnPhongDistribution(float r) {
-	float a = r*r;
+
+float distributionBlinnPhong() {
+	float a = roughness*roughness;
 	float k = 2/(a*a)-2; // instead of Ns(Shininess)
 	float normalizeFactor = 1/(PI*a*a); // for integral to 1
-	return normalizeFactor * pow( max(0,dot(N, H)), k );
+	return normalizeFactor * pow( NDH, k );
 }
-float GGX_Distribution(float r) {
-	float a = r*r;
+float distributionGGX() { // Todo: 하이라이트 중간 깨짐, 음수
+	float a = roughness*roughness;
 	float aa = a*a;
-	float theta = acos(dot(N,H));
-	return aa/( PI * pow(cos(theta),4) * pow(aa+pow(tan(theta),2),2) );
+	float theta = acos( NDH );
+	float denom = PI * pow(NDH, 4)* pow(aa+pow(tan(theta),2) ,2);
+	return aa/max(denom,0.00001);
 }
-float BeckmannDistrobution(float r) 
+float distributionBeckmann() 
 {
-	float a = r*r;
+	float a = roughness*roughness;
 	float aa = max(a*a, 0.0000001);
-	float cosTheta = max(dot(N, H), 0.0000001);
+	float cosTheta = NDH;
     float cos2Theta = cosTheta*cosTheta;
 	float cos4Theta = cos2Theta*cos2Theta;
 	float tan2Theta = (cos2Theta-1)/cos2Theta;
 	float D = exp(tan2Theta/aa) / (PI*aa*cos4Theta);
 	return D;
 }
-float CookTorranceGeometry() { // Cook-Torrance
-	float t1 = 2*dot(N,H)*dot(N,V)/dot(V,H);
-	float t2 = 2*dot(N,H)*dot(N,L)/dot(V,H);
+
+float geometryCookTorrance() { // GGX
+	float t1 = 2*NDH*NDV/VDH;
+	float t2 = 2*NDH*NDL/VDH;
 	return min(1, min(t1, t2));
 }
-vec3 SchlickFresnel(vec3 F0) { // Schlick’s // 다시
-	float theta = dot(N, H);
-	// theta = dot(R, w_o);
-	return F0+(vec3(1)-F0)*pow(1-cos(theta), 5);
 
-	// return mix(F0, vec3(1), pow(1-max(0,dot(w_i,N)), 5));
+vec3 fresnelSchlick() { // Schlick’s // 다시
+	float ratio = max(0,pow(1-NDV, 5));
+	return mix(F0, vec3(1), ratio);
 }
-// 오렌나야
 
-vec3 CookTorranceBRDF(float roughness, vec3 F0) {
+vec3 brdfCookTorrance() {
 	float D, G;
 	vec3 F;
 	switch(idx_D) {
-		case 0: D = BlinnPhongDistribution(roughness); break;
-		case 1: D = GGX_Distribution(roughness); break;
-		case 2: D = BeckmannDistrobution(roughness); break;
+		case 0: D = distributionBlinnPhong(); break;
+		case 1: D = distributionGGX(); break;
+		case 2: D = distributionBeckmann(); break;
 	}
 	switch(idx_G) {
-		case 0: G = CookTorranceGeometry(); break;
+		case 0: G = geometryCookTorrance(); break;
 	}
 	switch(idx_F) {
-		case 0: F = SchlickFresnel(F0); break;
+		case 0: F = fresnelSchlick(); break;
 	}
-	//return F / (4*dot(w_i,N)*dot(w_o,N));
-	return D*G*F / (4*dot(L,N)*dot(V,N));
+	return D*G*F / (4*NDL*NDV); // 내적 max하면 음수??
 }
-vec3 sampleIBL( vec3 r ) {
-	float theta = atan(r.z, r.x);
-	float phi = atan(r.y, length(r.xz));
+vec3 sampleIBL() {
+	float theta = atan(R.z, R.x);
+	float phi = atan(R.y, length(R.xz));
 	vec2 uv = vec2(1-theta/(2*PI), 0.5-phi/PI);
 	return texture(map_Light, uv).rgb;
 }
-vec3 brdf( vec3 mat_BaseColor, float roughness, float metalness, vec3 F0 ) {
+vec3 brdf() {
 	vec3 diffuse, specular;
-
-	diffuse = mat_BaseColor * mix(LambertianBRDF(), vec3(0), metalness);
+	if(idx_Brdf == 3) {
+		diffuse = baseColor*brdfLambertian()*brdfOrenNayar();
+	} else {
+		diffuse = baseColor * mix(brdfLambertian(), vec3(0), metalness);
+	}
 
 	switch(idx_Brdf) {
-		case 0: specular = PhongBRDF(); break;
-		case 1: specular = BlinnPhongBRDF(); break;
-		case 2: specular = CookTorranceBRDF(roughness, F0); break;
+		case 0: specular = brdfPhong(); break;
+		case 1: specular = brdfBlinnPhong(); break;
+		case 2: specular = brdfCookTorrance(); break;
+		case 3: specular = vec3(0); break;
 	}
 	//return sampleIBL(R);
 	return diffuse+specular;
 }
 
-vec3 emission() {
-	return vec3(0);
-}
-
- 
 
 void main() {
-    vec3 faceN = normalize( cross( dFdx(wPos), dFdy(wPos) ) );
+	// vec3 faceN = normalize( cross( dFdx(wPos), dFdy(wPos) ) );
+	// if( dot(N,faceN)<0 ) N = -N; // 모델의 내부에서 back face일때 노멀을 뒤집는다.
 	N = (gl_FrontFacing)?normalize(wNor):normalize(-wNor);
-	//if( dot(N,faceN)<0 ) N = -N; // 모델의 내부에서 back face일때 노멀을 뒤집는다.
-	vec3 toLight = light_Pos-wPos;
-	L = normalize( toLight );
-	V = normalize( camera_Pos - wPos );
-	R = normalize(2*dot(N, L)*N-L);
-	H = normalize((L+V)/2);
 
-	vec3 BaseColor = mat_BaseColor;
+	baseColor = mat_BaseColor;
 	if( (map_Flags & MF_BASE_COLOR)>0 ) {
-		BaseColor = texture( map_BaseColor, mUv ).rgb;
+		baseColor = texture( map_BaseColor, mUv ).rgb;
 	}
-	float AmbOcc = mat_AmbientColor.r; // todo
+	ambOcc = 1.f;
+	if( (map_Flags & MF_AMB_OCC)>0 ) {
+		ambOcc = texture( map_AmbOcc, mUv ).r;
+	}
+	roughness = mat_Roughness;
 	if( (map_Flags & MF_ROUGHNESS)>0 ) {
-		AmbOcc = texture( map_AmbOcc, mUv ).r;
+		roughness = texture( map_Roughness, mUv ).r;
 	}
-	float Roughness = mat_Roughness;
-	if( (map_Flags & MF_ROUGHNESS)>0 ) {
-		Roughness = texture( map_Roughness, mUv ).r;
-	}
-	float Metalness = mat_Metalness;
+	metalness = mat_Metalness;
 	if( (map_Flags & MF_METALNESS)>0 ) {
-		Metalness = texture( map_Metalness, mUv ).r;
+		metalness = texture( map_Metalness, mUv ).r;
+	}
+	emission = mat_EmissionColor;
+	if( (map_Flags & MF_EMISSION)>0 ) {
+		emission = texture( map_Emission, mUv ).rgb;
 	}
 	if( (map_Flags & MF_ARM)>0 ) {
 		vec3 texCol = texture( map_Roughness, mUv ).rgb;
-		AmbOcc 	  = texCol.r;
-		Roughness = texCol.g;
-		Metalness = texCol.b;
+		ambOcc 	  = texCol.r;
+		roughness = texCol.g;
+		metalness = texCol.b;
 	}
 	if( (map_Flags & MF_NOR)>0 ) {
 		mat3 tbn = getTBN(N);
 		N = tbn* (texture( map_Bump, mUv ).rgb*2 - vec3(1));
 	}
-	vec3 Li = light_Int*light_Color/dot(toLight,toLight); // 빛은 거리 제곱에 반비례함
-	vec3 outColor = emission() + brdf( BaseColor, Roughness, Metalness, mat_F0 ) * Li * dot(N,L);
+    F0 = mix(mat_F0, baseColor, metalness);
+
+	vec3 toLight = light_Pos-wPos;
+	L = normalize( toLight );
+	V = normalize( camera_Pos - wPos );
+	R = reflect(-L, N);//normalize(2*dot(N, L)*N-L);
+	H = normalize((L+V)/2);
+
+	NDL = dot(N,L);
+    NDV = dot(N,V);
+    NDH = dot(N,H);
+    VDR = dot(V,R);
+	VDH = dot(V,H);
+
+
+	vec3 Li = light_Int*light_Color/dot(toLight,toLight);
+	vec3 ambient = mat_AmbientColor*ambOcc*baseColor; // Todo: Occ의 의미를 왜 반대로 쓰지?
+
+	vec3 outColor = emission + brdf() * Li * max(0,NDL) + ambient;
+
 
 	//debug
 	//outColor = vec3((map_Flags & MF_Kd));
 	//outColor = albedo.rgb;
 	//outColor = vec3(Roughness);
+	// outColor = vec3(ambOcc, roughness, metalness);
+	// outColor = F0;
+	// outColor = fresnelSchlick();
+	// outColor = vec3(NDV);
+	// outColor = vec3(distributionGGX());
+	// outColor = ambient;
 
-	// gamma correction
-	outColor.rgb = tonemap(outColor.rgb,mat3(1),2.4);
-
-	FragColor = vec4(outColor, 1.f-mat_Opacity);
+	convertLinearToSRGB(outColor);
+	FragColor = vec4(outColor, 1.0-mat_Opacity);
 }

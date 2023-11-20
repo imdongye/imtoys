@@ -49,7 +49,7 @@ namespace lim
             MF_ROUGHNESS  = 1<<5, // 32
             MF_METALNESS  = 1<<6, // 64
             MF_EMISSION   = 1<<7, // 128
-            MF_Opacity    = 1<<8, // 256
+            MF_OPACITY    = 1<<8, // 256
             MF_MR         = 1<<9, // 518
             MF_ARM        = 1<<10,// 1026
             MF_SHININESS  = 1<<11,// 2052
@@ -57,9 +57,9 @@ namespace lim
 
         int factor_Flags = 0; // just for export
         glm::vec3 baseColor = {0.27f, 0.79f, 0.69f}; // 지구의 모든 물체는 반사율 0이 될수없음.
-        glm::vec3 specColor = {1.f, 1.f, 1.f};
-        glm::vec3 ambientColor = {0.0f, 0.0f, 0.0f};
-        glm::vec3 emissionColor = {0.f, 0.f, 0.f};
+        glm::vec3 specColor = glm::vec3(1.f);
+        glm::vec3 ambientColor = glm::vec3(0.01f);
+        glm::vec3 emissionColor = glm::vec3(0.f);
         float transmission = 0.f;
         float refraciti = 0.f;           // ior
         float opacity = 1.f;

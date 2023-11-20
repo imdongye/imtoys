@@ -13,14 +13,15 @@ namespace
 	struct BrdfTestInfo {
 		std::string ctrlName = "##modelview";
 		bool isRotated = false;
-		int idx_Brdf = 0;
-		int idx_D = 0;
+		int idx_Brdf = 2;
+		int idx_D = 1;
 		int idx_G = 0;
 		int idx_F = 0;
         float shininess = 100.f; // shininess
         float refIdx    = 1.45f; // index of refraction
         float roughness = 0.3f;  // brdf param
 		float metalness = 0.f;
+		float ambientInt = 0.01f;
 	};
 	std::vector<BrdfTestInfo> brdfTestInfos;
 
@@ -47,8 +48,8 @@ namespace lim
 		program.home_dir = APP_DIR;
 		program.attatch("mvp.vs").attatch("brdf.fs").link();
 
-		light.setRotate(35.f, -35.f, 5.f);
-		light.intensity = 15.f;
+		light.setRotate(35.f, -35.f, 7.f);
+		light.intensity = 55.f;
 
 		light_model.name = "light";
 		light_model.my_meshes.push_back(new MeshSphere(8, 4));
@@ -152,7 +153,7 @@ namespace lim
 				light_model.updateModelMat();
 			}
 			ImGui::Text("pos: %.1f %.1f %.1f", light.position.x, light.position.y, light.position.z);
-			ImGui::SliderFloat("intencity", &light.intensity, 0.5f, 60.f, "%.1f");
+			ImGui::SliderFloat("intencity", &light.intensity, 0.5f, 100.f, "%.1f");
 
 			if( ImGui::Button("relead shader") ) {
 				program.reload(GL_FRAGMENT_SHADER);
@@ -174,7 +175,7 @@ namespace lim
 					md.updateModelMat();
 				}
 				bool isInfoChanged = false;
-				static const char* modelStrs[]={"Phong", "BlinnPhong", "CookTorrance"};
+				static const char* modelStrs[]={"Phong", "BlinnPhong", "CookTorrance", "Oren-Nayar"};
 				if( ImGui::Combo("Model", &tInfo.idx_Brdf, modelStrs, IM_ARRAYSIZE(modelStrs)) ) {
 					isInfoChanged = true; 
 				}
@@ -206,6 +207,11 @@ namespace lim
 						for(Material* mat : md.my_materials) {
 							mat->metalness = tInfo.metalness;
 						}
+					}
+				}
+				if( ImGui::SliderFloat("ambient light", &tInfo.ambientInt, 0.000, 0.1) ) {
+					for(Material* mat : md.my_materials) {
+						mat->ambientColor = glm::vec3(1)*tInfo.ambientInt;
 					}
 				}
 				ImGui::End();

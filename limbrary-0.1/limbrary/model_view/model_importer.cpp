@@ -118,9 +118,9 @@ namespace
 			//mat.specColor *= tempFloat;
 		}
 		if( aiMat->Get(AI_MATKEY_COLOR_AMBIENT, temp3d) == AI_SUCCESS ) {
-			log::pure("ambient color: %.1f %.1f %.1f\n", temp3d.r, temp3d.g, temp3d.b);
-			mat.factor_Flags |= Material::FF_AMBIENT;
-			mat.ambientColor = toGLM(temp3d); 
+			// log::pure("ambient color: %.1f %.1f %.1f\n", temp3d.r, temp3d.g, temp3d.b);
+			// mat.factor_Flags |= Material::FF_AMBIENT;
+			// mat.ambientColor = toGLM(temp3d); 
 		}
 		if( aiMat->Get(AI_MATKEY_COLOR_EMISSIVE, temp3d) == AI_SUCCESS ) {
 			log::pure("emissive color: %.1f %.1f %.1f\n", temp3d.r, temp3d.g, temp3d.b);
@@ -202,7 +202,7 @@ namespace
 		}
 		if( aiMat->GetTexture(aiTextureType_OPACITY, 0, &tempStr) == AI_SUCCESS ) {
 			log::pure("map_Opacity: ");
-			mat.map_Flags |= Material::MF_Opacity;
+			mat.map_Flags |= Material::MF_OPACITY;
 			mat.map_Opacity = loadTexture(tempStr.C_Str(), GL_SRGB8);
 		}
 		if( aiMat->GetTexture(aiTextureType_SHININESS, 0, &tempStr) == AI_SUCCESS ) {

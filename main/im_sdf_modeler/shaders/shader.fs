@@ -48,7 +48,7 @@ uniform float blendnesses[MAX_OBJS];
 uniform float roundnesses[MAX_OBJS];
 
 float distToObjs[MAX_OBJS];
-vec3 mat_BaseColor = vec3(1);
+vec3 baseColor = vec3(1);
 float roughness;
 float metalness;
 
@@ -173,7 +173,7 @@ float updateMaterial(vec3 p) {
     float dist = far_distance; 
     dist = p.y; // plane
     
-    mat_BaseColor = vec3(1);
+    baseColor = vec3(1);
     roughness = 0;
     metalness = 0;
 
@@ -188,7 +188,7 @@ float updateMaterial(vec3 p) {
         // hard part
         int matIdx = mat_idxs[i];
         float percent = dist/(primDist+dist);
-        mat_BaseColor = mix(mat_BaseColor, base_colors[matIdx], percent);
+        baseColor = mix(baseColor, base_colors[matIdx], percent);
         roughness = mix(roughness, roughnesses[matIdx], percent);
         metalness = mix(metalness, metalnesses[matIdx], percent);
        
@@ -240,7 +240,7 @@ vec3 brdfCookTorrence() {
 
 vec3 brdf() {
     
-    vec3 diff = mat_BaseColor* mix(1/PI, 0, metalness);
+    vec3 diff = baseColor* mix(1/PI, 0, metalness);
     vec3 spec = brdfCookTorrence();
     return diff + spec;
 }
@@ -253,7 +253,7 @@ vec3 render(vec3 wPos, vec3 view) {
     L = normalize(toLight);
     H = normalize((V+L)/2.0);
     R = reflect(-L, N);
-    F0 = mix(vec3(0.24), mat_BaseColor, metalness);
+    F0 = mix(vec3(0.24), baseColor, metalness);
 
     NDL = max(0, dot(N,L));
     NDV = max(0, dot(N,V));
@@ -293,7 +293,7 @@ void main()
         vec3 wPos = ro + rd*hitDist;
         updateMaterial(wPos);
         outColor = render( wPos, -rd );
-        outColor = mat_BaseColor;
+        outColor = baseColor;
     }
     
     // debug
