@@ -94,7 +94,7 @@ namespace lim
 		scn.models.push_back(&light_model);
 		scn.addOwnModel(md);
 		scn.light_map = &light_map;
-		scenes.emplace_back(std::move(scn));
+		scenes.emplace_back(std::move(scn)); // vector move template error
 
 		char* vpName = fmtStrToBuf("%s##model_view", md->name.c_str());
 		viewports.emplace_back(vpName, new FramebufferMs(4));
@@ -150,8 +150,8 @@ namespace lim
 			static bool isLightDraged = false;
 
 			ImGui::Text("<light>");
-			isLightDraged |= ImGui::DragFloat("pitch", &litTheta, litThetaSpd, 0, 80, "%.3f");
 			isLightDraged |= ImGui::DragFloat("yaw", &litPhi, litPhiSpd, -FLT_MAX, +FLT_MAX, "%.3f");
+			isLightDraged |= ImGui::DragFloat("pitch", &litTheta, litThetaSpd, 0, 80, "%.3f");
 			isLightDraged |= ImGui::DragFloat("dist", &litDist, litDistSpd, 5.f, 50.f, "%.3f");
 			if( isLightDraged ) {
 				light.setRotate(litTheta, glm::fract(litPhi/360.f)*360.f, litDist);
@@ -159,7 +159,7 @@ namespace lim
 				light_model.updateModelMat();
 			}
 			ImGui::Text("pos: %.1f %.1f %.1f", light.position.x, light.position.y, light.position.z);
-			ImGui::SliderFloat("intencity", &light.intensity, 0.5f, 100.f, "%.1f");
+			ImGui::SliderFloat("intencity", &light.intensity, 0.5f, 200.f, "%.1f");
 
 			if( ImGui::Button("relead shader") ) {
 				program.reload(GL_FRAGMENT_SHADER);
@@ -188,9 +188,9 @@ namespace lim
 				if( tInfo.idx_Brdf==2 ) {
 					static const char* dStrs[]={"BlinnPhong", "GGX", "Beckmann"};
 					if( ImGui::Combo("D", &tInfo.idx_D, dStrs, IM_ARRAYSIZE(dStrs)) ) { isInfoChanged = true; }
-					static const char* gStrs[]={"CookTorrance"};
+					static const char* gStrs[]={"CookTorrance", "Smith"};
 					if( ImGui::Combo("G", &tInfo.idx_G, gStrs, IM_ARRAYSIZE(gStrs)) ) { isInfoChanged = true; }
-					static const char* fStrs[]={"Schlick"};
+					static const char* fStrs[]={"SchlickNDV", "SchlickNDH", "SchlickHDV"};
 					if( ImGui::Combo("F", &tInfo.idx_F, fStrs, IM_ARRAYSIZE(fStrs)) ) { isInfoChanged = true; }
 				}
 				if( isInfoChanged ) {

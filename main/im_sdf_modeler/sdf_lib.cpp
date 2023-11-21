@@ -9,6 +9,9 @@
 #include <limbrary/limgui.h>
 #include <misc/cpp/imgui_stdlib.h>
 #include <vector>
+#include <nlohmann/json.h>
+#include <fstream>
+
 
 using namespace lim;
 
@@ -90,8 +93,6 @@ struct Material {
 };
 
 
-
-
 /* glsl data */
 // todo: 1.uniform block   2.look up table texture
 namespace 
@@ -101,10 +102,10 @@ namespace
     constexpr int MAX_PRIMS = 32;
 
     // optimize options
-    int nr_march_steps = 100;
-    float far_distance = 100.0;
-    float hit_threshold = 0.01;
-    float diff_for_normal = 0.01;
+    int nr_march_steps = 200;
+    float far_distance = 80.0;
+    float hit_threshold = 0.0001;
+    float diff_for_normal = 0.0001;
 
     // env
     glm::vec3 sky_color = {0.01,0.001,0.3};
@@ -132,6 +133,8 @@ namespace
 /* application data */
 namespace 
 {
+    std::string model_name = "Untitled";
+
     Camera* camera = nullptr;
     Light* light = nullptr;
 
@@ -147,6 +150,7 @@ namespace
     ImGuizmo::OPERATION gzmo_edit_mode = ImGuizmo::OPERATION::TRANSLATE;
     ImGuizmo::MODE 		gzmo_space     = ImGuizmo::MODE::LOCAL;
 };
+
 ObjNode::ObjNode(PrimitiveType primType, ObjNode* p)
 {
     prim_type = primType;
@@ -211,6 +215,22 @@ void ObjNode::decomposeTransform() {
 
     updateTransformWithParent();
 }
+
+
+static void exportJson(std::filesystem::path path) {
+    std::ofstream ofile;
+    nlohmann::json ojson;
+    ojson["model_name"] = model_name;
+    try {
+        ofile.open(path);
+        ofile << std::setw(4) << ojson << std::endl;
+        ofile.close();
+    } catch( std::ofstream::failure& e ) {
+        log::err("fail write : %s, what? %s \n", path.c_str(), e.what());
+    }
+}
+
+
 
 static void addMaterial() {
     int idx = nr_mats++;
@@ -364,6 +384,104 @@ static void drawObjTree(ObjNode* pObj)
 
 void lim::sdf::drawImGui() 
 {
+    ImGuiIO io = ImGui::GetIO();
+    /* menu bar */
+    if( ImGui::BeginMainMenuBar() )
+    {
+        static bool isJsonExporterOpened = false;
+        static bool isMeshExporterOpened = false;
+        static constexpr ImVec2 popupSize = {300, 300};
+        static constexpr ImVec2 doneSize = {200, 100};
+
+        ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+        ImGuiWindowFlags popupWindowFlags = ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoResize;
+
+        if( ImGui::MenuItem("Export Json") ) {
+            ImGui::OpenPopup("JsonExporter");
+            isJsonExporterOpened = true;
+        }
+        ImGui::SetNextWindowPos(center, 0, ImVec2(0.5f, 0.5f));
+        ImGui::SetNextWindowSize(popupSize);
+        if( ImGui::BeginPopupModal("JsonExporter", &isJsonExporterOpened, popupWindowFlags) ) {
+            ImGui::InputText("File Name", &model_name, ImGuiInputTextFlags_AutoSelectAll);
+
+            ImGui::Text("program_dir/exports/%s.json", model_name.c_str());
+            
+            std::filesystem::path path = fmtStrToBuf("exports/%s.json", model_name.c_str());
+
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY()+ImGui::GetContentRegionAvail().y-ImGui::GetFontSize()*1.6f);
+            if( ImGui::Button("Export", {-1,0}) ) {
+                exportJson(path);
+                ImGui::OpenPopup("Done");
+            }
+            ImGui::SetNextWindowSize(doneSize);
+            ImGui::SetNextWindowPos(center, 0, ImVec2(0.5f, 0.5f));
+            if( ImGui::BeginPopupModal("Done",NULL,popupWindowFlags) ) {
+                ImGui::Text("%s", path.c_str());
+                
+                ImGui::SetCursorPosY(ImGui::GetCursorPosY()+ImGui::GetContentRegionAvail().y-ImGui::GetFontSize()*1.6f);
+                if( ImGui::Button("Close", {-1,0}) ) {
+                    ImGui::CloseCurrentPopup();
+                    isJsonExporterOpened = false;
+                }
+                ImGui::EndPopup();
+            }
+            ImGui::EndPopup();
+        }
+
+
+        if( ImGui::MenuItem("Export Mesh") ) {
+            ImGui::OpenPopup("MeshExporter");
+            isMeshExporterOpened = true;
+        }
+        ImGui::SetNextWindowPos(center, 0, ImVec2(0.5f, 0.5f));
+        ImGui::SetNextWindowSize(popupSize);
+        if( ImGui::BeginPopupModal("MeshExporter", &isMeshExporterOpened, popupWindowFlags) ) {
+            static int sampleRate = 200;
+            ImGui::InputText("File Name", &model_name, ImGuiInputTextFlags_AutoSelectAll);
+
+            ImGui::Text("program_dir/exports/%s.obj", model_name.c_str());
+            
+            std::filesystem::path path = fmtStrToBuf("exports/%s.obj", model_name.c_str());
+            
+            ImGui::SliderInt("Sample", &sampleRate, 50, 1000);
+            ImGui::Text("%dx%dx%d", sampleRate, sampleRate, sampleRate);
+
+
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY()+ImGui::GetContentRegionAvail().y-ImGui::GetFontSize()*1.6f);
+            if( ImGui::Button("Export", {-1,0}) ) {
+                ImGui::OpenPopup("Done");
+            }
+            ImGui::SetNextWindowSize(doneSize);
+            ImGui::SetNextWindowPos(center, 0, ImVec2(0.5f, 0.5f));
+            if( ImGui::BeginPopupModal("Done",NULL,popupWindowFlags) ) {
+                ImGui::Text("%s", path.c_str());
+                
+                ImGui::SetCursorPosY(ImGui::GetCursorPosY()+ImGui::GetContentRegionAvail().y-ImGui::GetFontSize()*1.6f);
+                if( ImGui::Button("Close", {-1,0}) ) {
+                    ImGui::CloseCurrentPopup();
+                    isMeshExporterOpened = false;
+                }
+                ImGui::EndPopup();
+            }
+            ImGui::EndPopup();
+        }
+
+        if( ImGui::BeginMenu("Help") ) {
+            ImGui::Text("drag and drop json file to import model");
+            ImGui::Text("you can use my model viewer if you want viewing exported mesh model");
+            ImGui::EndMenu();
+        }
+        if( ImGui::BeginMenu("Contact") ) {
+            ImGui::Text("hi my name is imdongye. nice to meet you");
+            ImGui::Text("my email is imdongye@naver.com");
+            ImGui::EndMenu();
+        }
+        ImGui::EndMainMenuBar();
+    }
+	
+   
+
     /* Scene Hierarchy */
     {
         ImGui::Begin("Scene##sdf");
@@ -398,7 +516,7 @@ void lim::sdf::drawImGui()
             return;
         }
         ObjNode& obj = *selected_obj;
-        ImGui::InputText("Name", &obj.name);
+        ImGui::InputText("Name", &obj.name, ImGuiInputTextFlags_AutoSelectAll);
 
         static const float slide_pos_spd = 4/500.f;
         static const float slide_scale_spd = 4/500.f;
@@ -446,8 +564,8 @@ void lim::sdf::drawImGui()
         ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.5f);
         ImGui::SliderInt("# March Steps", &nr_march_steps, 20, 300, "%d");
         ImGui::SliderFloat("Far Distance", &far_distance, 20, 300, "%.0f");
-        ImGui::SliderFloat("Hit Threshold", &hit_threshold, 0.0001, 0.1, "%.4f");
-        ImGui::SliderFloat("Diff for Normal", &diff_for_normal, 0.0001, 0.1, "%.4f");
+        ImGui::SliderFloat("Hit Threshold", &hit_threshold, 0.00001, 0.001, "%.5f");
+        ImGui::SliderFloat("Diff for Normal", &diff_for_normal, 0.00001, 0.001, "%.5f");
         ImGui::Separator();
 
         ImGui::Text("<light>");
@@ -458,14 +576,14 @@ void lim::sdf::drawImGui()
         static float litDist = glm::length(light->position);
         const static float litDistSpd = 45.f * 0.001;
         bool isLightDraged = false;
-        isLightDraged |= ImGui::DragFloat("pitch", &litTheta, litThetaSpd, 0, 80, "%.3f");
         isLightDraged |= ImGui::DragFloat("yaw", &litPhi, litPhiSpd, -FLT_MAX, +FLT_MAX, "%.3f");
-        isLightDraged |= ImGui::DragFloat("dist", &litDist, litDistSpd, 5.f, 50.f, "%.3f");
+        isLightDraged |= ImGui::DragFloat("pitch", &litTheta, litThetaSpd, 0, 80, "%.3f");
+        isLightDraged |= ImGui::DragFloat("dist", &litDist, litDistSpd, 5.f, 20.f, "%.3f");
         if( isLightDraged ) {
             light->setRotate(litTheta, glm::fract(litPhi/360.f)*360.f, litDist);
         }
         ImGui::Text("pos: %.1f %.1f %.1f", light->position.x, light->position.y, light->position.z);
-        ImGui::SliderFloat("intencity", &light->intensity, 0.5f, 60.f, "%.1f");
+        ImGui::SliderFloat("intencity", &light->intensity, 0.0f, 200.f, "%.1f");
         
         ImGui::PopItemWidth();
         ImGui::End();
@@ -499,7 +617,7 @@ void lim::sdf::drawImGui()
     {
         ImGui::Begin("Mat Editor##sdf");
         Material& mat = materials[selected_mat_idx];
-        ImGui::InputText("Name", &mat.name);
+        ImGui::InputText("Name", &mat.name, ImGuiInputTextFlags_AutoSelectAll);
         if( ImGui::SliderFloat("Roughness", &mat.roughness, 0.001, 1.0) ) {
             roughnesses[selected_mat_idx] = mat.roughness;
         }

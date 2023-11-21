@@ -66,8 +66,8 @@ namespace lim
 			ofile.open(FILE_PATH);
 			ofile << std::setw(4) << ojson << std::endl;
 			ofile.close();
-		} catch( std::ifstream::failure& e ) {
-			log::err("fail read : %s, what? %s \n", FILE_PATH, e.what());
+		} catch( std::ofstream::failure& e ) {
+			log::err("fail write : %s, what? %s \n", FILE_PATH, e.what());
 		}
 
 		//std::string temp = ojson.dump(2);

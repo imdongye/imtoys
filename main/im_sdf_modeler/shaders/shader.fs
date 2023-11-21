@@ -48,12 +48,12 @@ uniform float blendnesses[MAX_OBJS];
 uniform float roundnesses[MAX_OBJS];
 
 float distToObjs[MAX_OBJS];
-vec3 baseColor = vec3(1);
-float roughness;
-float metalness;
 
-vec3 N, L, V, R, H, F0;
-float NDL, NDV, NDH, VDR;
+vec3 N, L, V, R, H;
+float NDL, NDV, NDH, VDR, HDV;
+vec3 baseColor, F0;
+float roughness, metalness;
+
 
 float sdSphere( vec3 p ) {
     return length(p) - 0.5f;
@@ -214,21 +214,23 @@ vec3 getNormal(vec3 p) {
     // return normalize(cross(dPdx, dPdy));
 }
 
-float distributionGGX() {
-    float a = roughness*roughness;
+float distributionGGX() { // Todo: 하이라이트 중간 깨짐, 음수
+	float a = roughness*roughness;
 	float aa = a*a;
-	float theta = acos(NDH);
-	return aa/( PI * pow(cos(theta),4) * pow(aa+pow(tan(theta),2),2) );
+	float theta = acos( NDH );
+	float num = aa;
+	float denom = PI * pow(NDH, 4)* pow(aa+pow(tan(theta),2) ,2);
+	return num/max(denom,0.00001);
 }
-float geometryCookTorrance() {
-    float t1 = 2*NDH*NDV/dot(V,H);
-	float t2 = 2*NDH*NDL/dot(V,H);
+float geometryCookTorrance() { // GGX
+	float t1 = 2*NDH*NDV/HDV;
+	float t2 = 2*NDH*NDL/HDV;
 	return min(1, min(t1, t2));
 }
 vec3 fresnelSchlick() {
-    float theta = NDH;
-	// theta = dot(R, w_o);
-	return F0+(vec3(1)-F0)*pow(1-cos(theta), 5);
+	float cosTheta = NDV; // NDH HDV
+	float ratio = max(0,pow(1-cosTheta, 5));
+	return mix(F0, vec3(1), ratio);
 }
 
 vec3 brdfCookTorrence() {
@@ -248,23 +250,28 @@ vec3 brdf() {
 
 vec3 render(vec3 wPos, vec3 view) {
 	vec3 toLight = light_Pos-wPos;
-    V = view;
     N = getNormal(wPos);
+    V = view;
     L = normalize(toLight);
-    H = normalize((V+L)/2.0);
     R = reflect(-L, N);
+    H = normalize(L+V);
+
+    updateMaterial(wPos);
     F0 = mix(vec3(0.24), baseColor, metalness);
 
-    NDL = max(0, dot(N,L));
-    NDV = max(0, dot(N,V));
-    NDH = max(0, dot(N,H));
-    VDR = max(0, dot(V,R));
+    NDL = dot(N,L);
+    NDV = dot(N,V);
+    NDH = dot(N,H);
+    VDR = dot(V,R);
+	HDV = dot(V,H);
 
     // return (NDL+pow(VDR, 1000))*mat_BaseColor;
 
-	vec3 Li = light_Int*vec3(1)/dot(toLight,toLight);
 
-    return brdf() * Li * NDL;
+	vec3 Li = light_Int*vec3(1)/dot(toLight,toLight);
+	vec3 ambient = 0.01*1.0*baseColor; // 1.0 is ambOcc
+
+    return brdf() * Li * max(0,NDL) + ambient;
 }
 
 // gamma correction
@@ -291,13 +298,12 @@ void main()
     }
     else {
         vec3 wPos = ro + rd*hitDist;
-        updateMaterial(wPos);
         outColor = render( wPos, -rd );
-        outColor = baseColor;
+
+        // debug
+        // outColor = baseColor;
+
     }
-    
-    // debug
-    //outColor = vec3(1,0,0);
 
     convertLinearToSRGB(outColor);
     FragColor = vec4(outColor, 1);

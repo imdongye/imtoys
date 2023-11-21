@@ -32,10 +32,10 @@ namespace lim
 
 		bool shadow_enabled = false;
 		glm::vec3 color = {1,1,1};
-		float intensity = 9.f;
+		float intensity = 120.f;
 		
 		glm::vec3 pivot = {0,0,0};
-		glm::vec3 position = {50,50,50};
+		glm::vec3 position = {3.3f,5.7f,2.3f};
 
 		FramebufferTexDepth map_Shadow;
 		glm::mat4 shadow_view_mat;
