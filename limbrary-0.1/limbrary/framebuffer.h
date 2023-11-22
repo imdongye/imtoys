@@ -155,7 +155,7 @@ namespace lim
 		GLuint ms_color_tex_id = 0;
 		GLuint ms_depth_rbo_id = 0;
 	public:
-		FramebufferMs(int samples = 8, int nrChannels = 3, int bitPerChannel = 8);
+		FramebufferMs(int samples = 4, int nrChannels = 3, int bitPerChannel = 8);
 		FramebufferMs(FramebufferMs&& src) noexcept;
 		FramebufferMs& operator=(FramebufferMs&& src) noexcept;
 		~FramebufferMs() noexcept;

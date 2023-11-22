@@ -384,7 +384,6 @@ static void drawObjTree(ObjNode* pObj)
 
 void lim::sdf::drawImGui() 
 {
-    ImGuiIO io = ImGui::GetIO();
     /* menu bar */
     if( ImGui::BeginMainMenuBar() )
     {
