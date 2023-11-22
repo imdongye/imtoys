@@ -20,7 +20,15 @@ lim::AppSdfModeler::AppSdfModeler(): AppBase(1373, 783, APP_NAME, false)
 	glGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_COMPONENTS, &tempInt);
 	log::pure("GL_MAX_FRAGMENT_UNIFORM_COMPONENTS : %d\n", tempInt);
 
-	viewport.use_guizmo = true;
+	ImGui::GetIO().Fonts->AddFontFromFileTTF("im_sdf_modeler/fonts/SpoqaHanSansNeo-Medium.ttf", 16.0f);
+
+    ImFontConfig config;
+    config.MergeMode = true;
+    config.GlyphMinAdvanceX = 13.0f;
+    static ImWchar lIconRanges[] = { 0xE800, 0xE840, 0 };
+    ImGui::GetIO().Fonts->AddFontFromFileTTF("im_sdf_modeler/fonts/icons.ttf", 20.0f, &config, lIconRanges);
+
+
 	viewport.camera.pivot = glm::vec3(0,1,0);
 	viewport.camera.position = glm::vec3(0,1,5);
 	viewport.camera.updateViewMat();

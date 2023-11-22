@@ -139,7 +139,6 @@ namespace lim
 	class ViewportWithCamera : public Viewport
 	{
 	public:
-		bool use_guizmo = false;
 		CameraManVp camera;
 	private:
 		ViewportWithCamera(const ViewportWithCamera&) = delete;

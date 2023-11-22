@@ -11,9 +11,11 @@
 #include <vector>
 #include <nlohmann/json.h>
 #include <fstream>
+#include <stack>
 
 
 using namespace lim;
+using Json = nlohmann::json;
 
 
 namespace 
@@ -73,9 +75,9 @@ struct ObjNode {
     glm::vec3 scale = glm::vec3(1);
     glm::vec3 euler_angles = glm::vec3(0);
     glm::mat4 my_transform = glm::mat4(1); // local transform
+    glm::bvec3 mirror = {0,0,0};
     ObjNode* parent = nullptr;
     std::vector<ObjNode> children;
-    glm::bvec3 mirror = {0,0,0};
 
     ObjNode() = default;
     ObjNode(PrimitiveType primType, ObjNode* parent = nullptr);
@@ -111,13 +113,12 @@ namespace
     glm::vec3 sky_color = {0.01,0.001,0.3};
 
     // mat
-    glm::vec3 base_colors[MAX_MATS];
+    glm::vec3 base_colors[MAX_MATS]; // linear space
     float roughnesses[MAX_MATS];
     float metalnesses[MAX_MATS];
 
     // obj
-    int nr_objs = 0;
-    glm::mat4 transforms[2*MAX_OBJS];
+    glm::mat4 transforms[2*MAX_OBJS]; // inversed
     int mat_idxs[2*MAX_OBJS];
     int op_types[2*MAX_OBJS];   // Todo: runtime edit shader
     int prim_types[2*MAX_OBJS]; // Todo: runtime edit shader
@@ -133,22 +134,24 @@ namespace
 /* application data */
 namespace 
 {
-    std::string model_name = "Untitled";
-
-    Camera* camera = nullptr;
-    Light* light = nullptr;
+    int nr_objs = 0; // glsl에서도 쓰임.
+    int nr_groups = 0;
+    int nr_mats = 0;
 
     ObjNode root;
     ObjNode* selected_obj = nullptr;
     int nr_prims[nr_prim_types] = {0,};
 
-    int nr_mats = 0;
-    Material materials[MAX_MATS];
+    Material materials[MAX_MATS]; // SRGB space
     const char* mat_names[MAX_MATS]; // for gui
     int selected_mat_idx = 0;
 
     ImGuizmo::OPERATION gzmo_edit_mode = ImGuizmo::OPERATION::TRANSLATE;
     ImGuizmo::MODE 		gzmo_space     = ImGuizmo::MODE::LOCAL;
+
+    std::string model_name = "Untitled";
+    Camera* camera = nullptr;
+    Light* light = nullptr;
 };
 
 ObjNode::ObjNode(PrimitiveType primType, ObjNode* p)
@@ -159,6 +162,7 @@ ObjNode::ObjNode(PrimitiveType primType, ObjNode* p)
     parent = p;
 
     if( prim_type == PT_GROUP ) {
+        obj_idx = nr_groups++;
         return;
     }
     obj_idx = nr_objs++;
@@ -185,7 +189,7 @@ void ObjNode::updateTransformWithParent() {
     if(parent) {
         transform = parent->transform * my_transform;
     }
-    if(obj_idx<0) {
+    if(prim_type==PT_GROUP) {
         for(ObjNode& child : children) {
             child.updateTransformWithParent();
         }
@@ -217,10 +221,87 @@ void ObjNode::decomposeTransform() {
 }
 
 
+
+static Json makeJson(const glm::vec3& v) {
+    return {v.x, v.y, v.z};
+}
+
+static Json makeJson(const glm::bvec3& v) {
+    return {v.x, v.y, v.z};
+}
+static Json makeJson(const glm::mat4& m) {
+    return {
+        {m[0][0], m[0][1], m[0][2], m[0][3]},
+        {m[1][0], m[1][1], m[1][2], m[1][3]},
+        {m[2][0], m[2][1], m[2][2], m[2][3]},
+        {m[3][0], m[3][1], m[3][2], m[3][3]},
+    };
+}
+static Json makeJson(const Material& mat) {
+    Json rst;
+    rst["name"]       = mat.name;
+    rst["base_color"] = makeJson(mat.base_color);
+    rst["metalness"]  = mat.metalness;
+    rst["roughness"]  = mat.roughness;
+    return rst;
+}
+// static void fromJson(const Json& json) {
+
+// }
+static Json makeJson(const ObjNode& obj) {
+    Json rst;
+    rst["obj_idx"]      = obj.obj_idx;
+    rst["prim_type"]    = obj.prim_type;
+    rst["op_group"]     = obj.op_group;
+    rst["op_spec"]      = obj.op_spec;
+    rst["blendness"]    = obj.blendness;
+    rst["roundness"]    = obj.roundness;
+    rst["name"]         = obj.name;
+    rst["position"]     = makeJson(obj.position);
+    rst["scale"]        = makeJson(obj.scale);
+    rst["euler_angles"] = makeJson(obj.euler_angles);
+    rst["my_transform"] = makeJson(obj.my_transform);
+    rst["mirror"]       = makeJson(obj.mirror);
+    // parents는 read할때 생성
+    for(const ObjNode& child: obj.children) {
+        rst["children"].push_back(makeJson(child));
+    }
+    return rst;
+}
+static Json makeJson(const Camera& cam) {
+    Json rst;
+    rst["position"] = makeJson(cam.position);
+    rst["pivot"]    = makeJson(cam.pivot);
+    rst["fovy"]     = cam.fovy;
+    return rst;
+}
+static Json makeJson(const Light& lit) {
+    Json rst;
+    rst["position"] = makeJson(lit.position);
+    rst["pivot"]    = makeJson(lit.pivot);
+    rst["color"]    = makeJson(lit.color);
+    rst["intensity"]= lit.intensity;
+    return rst;
+}
+
+// static void from_json(const Json& j, person& p) {
+//     j.at("name").get_to(p.name);
+//     j.at("address").get_to(p.address);
+//     j.at("age").get_to(p.age);
+// }
+
 static void exportJson(std::filesystem::path path) {
     std::ofstream ofile;
-    nlohmann::json ojson;
+    Json ojson;
+
     ojson["model_name"] = model_name;
+    for(int i=0; i<nr_mats; i++) {
+        ojson["materials"][i] = makeJson(materials[i]);
+    }
+    ojson["root"] = makeJson(root);
+    ojson["camera"] = makeJson(*camera);
+    ojson["light"] = makeJson(*light);
+
     try {
         ofile.open(path);
         ofile << std::setw(4) << ojson << std::endl;
@@ -229,8 +310,31 @@ static void exportJson(std::filesystem::path path) {
         log::err("fail write : %s, what? %s \n", path.c_str(), e.what());
     }
 }
+static void importJson(std::filesystem::path path) {
+    std::ifstream ifile;
+    Json ijson;
+    sdf::deinit();
+    try {
+        ifile.open(path);
+        ifile >> ijson;
+    } catch( std::ifstream::failure& e ) {
+        log::err("fail read : %s, what? %s \n", path.c_str(), e.what());
+    }
+
+    model_name = ijson["model_name"];
+    nr_mats = ijson["materials"].size();
+    for(int i=0; i<nr_mats; i++) {
+        Material& mat = materials[i];
+        Json jmat = ijson["materials"][i];
+        materials[i].name = jmat["name"];
+        materials[i].name = jmat["name"];
+        materials[i].name = jmat["name"];
+        materials[i].name = jmat["name"];
+    }
 
 
+    selected_obj = &root.children.back();
+}
 
 static void addMaterial() {
     int idx = nr_mats++;
@@ -261,15 +365,6 @@ void lim::sdf::init(Camera* cam, Light* lit)
     camera = cam;
     light = lit;
 
-    ImGui::GetIO().Fonts->AddFontFromFileTTF("im_sdf_modeler/fonts/SpoqaHanSansNeo-Medium.ttf", 16.0f);
-
-    ImFontConfig config;
-    config.MergeMode = true;
-    config.GlyphMinAdvanceX = 13.0f;
-    static ImWchar lIconRanges[] = { 0xE800, 0xE840, 0 };
-    ImGui::GetIO().Fonts->AddFontFromFileTTF("im_sdf_modeler/fonts/icons.ttf", 20.0f, &config, lIconRanges);
-
-
     addMaterial();
 
     root.name = "root";
@@ -281,6 +376,7 @@ void lim::sdf::deinit()
 {
     root = ObjNode();
     nr_objs = 0;
+    nr_groups = 0;
     nr_mats = 0;
     selected_obj = nullptr;
     for(int i=0;i<nr_prim_types;i++) {
