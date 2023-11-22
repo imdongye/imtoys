@@ -12,6 +12,9 @@
 #include <nlohmann/json.h>
 #include <fstream>
 #include <stack>
+#if defined(_WIN32)
+// #include <commdlg.h>
+#endif
 
 
 using namespace lim;
@@ -27,7 +30,6 @@ namespace
     const char* prim_type_names[nr_prim_types] = {
         "Group", "Sphere", "Box", "Pipe", "Donut"
     };
-
 
     enum OperationGroup {
         OG_ADDITION,
@@ -77,11 +79,13 @@ struct ObjNode {
     glm::mat4 my_transform = glm::mat4(1); // local transform
     glm::bvec3 mirror = {0,0,0};
     ObjNode* parent = nullptr;
-    std::vector<ObjNode> children;
+    std::vector<ObjNode*> children;
 
     ObjNode() = default;
-    ObjNode(PrimitiveType primType, ObjNode* parent = nullptr);
+    ObjNode(PrimitiveType primType, ObjNode* parent);
+    ~ObjNode();
     void addChild(PrimitiveType primType);
+    void updateGlsl(); // without transform
     void updateTransformWithParent();
     void composeTransform();
     void decomposeTransform();
@@ -89,9 +93,12 @@ struct ObjNode {
 
 struct Material {
     std::string name = "sdf_mat";
+    int idx = 0;
     glm::vec3 base_color = {0.2, 0.13, 0.87};
     float roughness = 1.f;
     float metalness = 0.f;
+
+    void updateGlsl();
 };
 
 
@@ -138,7 +145,7 @@ namespace
     int nr_groups = 0;
     int nr_mats = 0;
 
-    ObjNode root;
+    ObjNode root(PT_GROUP, nullptr);
     ObjNode* selected_obj = nullptr;
     int nr_prims[nr_prim_types] = {0,};
 
@@ -154,8 +161,7 @@ namespace
     Light* light = nullptr;
 };
 
-ObjNode::ObjNode(PrimitiveType primType, ObjNode* p)
-{
+ObjNode::ObjNode(PrimitiveType primType, ObjNode* p) {
     prim_type = primType;
     name = fmtStrToBuf("%s_%d", prim_type_names[primType], nr_prims[primType]);
     prim_idx = nr_prims[prim_type]++;
@@ -171,27 +177,37 @@ ObjNode::ObjNode(PrimitiveType primType, ObjNode* p)
         exit(1);
     }
 
+    updateGlsl();
+
+    composeTransform();
+}
+ObjNode::~ObjNode() {
+    for(ObjNode* child: children) {
+        delete child;
+    }
+}
+
+void ObjNode::addChild(PrimitiveType primType)
+{
+    ObjNode* child = new ObjNode(primType, this);
+    children.push_back(child);
+    selected_obj = child;
+}
+void ObjNode::updateGlsl() {
     mat_idxs[obj_idx] = mat_idx;
     prim_types[obj_idx] = prim_type;
     prim_idxs[obj_idx] = prim_idx;
     op_types[obj_idx] = op_group*2 + op_spec;
     blendnesses[obj_idx] = blendness;
     roundnesses[obj_idx] = roundness;
-
-    composeTransform();
-}
-void ObjNode::addChild(PrimitiveType primType)
-{
-    children.emplace_back(primType, this);
-    selected_obj = &children.back();
 }
 void ObjNode::updateTransformWithParent() {
     if(parent) {
         transform = parent->transform * my_transform;
     }
     if(prim_type==PT_GROUP) {
-        for(ObjNode& child : children) {
-            child.updateTransformWithParent();
+        for(ObjNode* child : children) {
+            child->updateTransformWithParent();
         }
     }
     else {
@@ -221,33 +237,59 @@ void ObjNode::decomposeTransform() {
 }
 
 
+void Material::updateGlsl() {
+    base_colors[idx] = glm::convertSRGBToLinear(base_color);
+    roughnesses[idx] = roughness;
+    metalnesses[idx] = metalness;
+}
+
+
 
 static Json makeJson(const glm::vec3& v) {
     return {v.x, v.y, v.z};
 }
-
+static void fromJson(glm::vec3& v, const Json& json) {
+    v = { json[0], json[1], json[2]} ;
+}
 static Json makeJson(const glm::bvec3& v) {
     return {v.x, v.y, v.z};
 }
-static Json makeJson(const glm::mat4& m) {
-    return {
-        {m[0][0], m[0][1], m[0][2], m[0][3]},
-        {m[1][0], m[1][1], m[1][2], m[1][3]},
-        {m[2][0], m[2][1], m[2][2], m[2][3]},
-        {m[3][0], m[3][1], m[3][2], m[3][3]},
-    };
+static void fromJson(glm::bvec3& v, const Json& json) {
+    v = { json[0], json[1], json[2]} ;
 }
+// static Json makeJson(const glm::mat4& m) {
+//     return {
+//         {m[0][0], m[0][1], m[0][2], m[0][3]},
+//         {m[1][0], m[1][1], m[1][2], m[1][3]},
+//         {m[2][0], m[2][1], m[2][2], m[2][3]},
+//         {m[3][0], m[3][1], m[3][2], m[3][3]},
+//     };
+// }
+// static void fromJson(glm::mat4& m, const Json& j) {
+//     m = {
+//         {j[0][0], j[0][1], j[0][2], j[0][3]},
+//         {j[1][0], j[1][1], j[1][2], j[1][3]},
+//         {j[2][0], j[2][1], j[2][2], j[2][3]},
+//         {j[3][0], j[3][1], j[3][2], j[3][3]},
+//     };
+// }
 static Json makeJson(const Material& mat) {
     Json rst;
     rst["name"]       = mat.name;
+    rst["idx"]        = mat.idx;
     rst["base_color"] = makeJson(mat.base_color);
     rst["metalness"]  = mat.metalness;
     rst["roughness"]  = mat.roughness;
     return rst;
 }
-// static void fromJson(const Json& json) {
-
-// }
+static void fromJson(Material& mat, const Json& json) {
+    mat.name = json["name"];
+    mat.idx = json["idx"];
+    fromJson(mat.base_color, json["base_color"]);
+    mat.metalness = json["metalness"];
+    mat.roughness = json["roughness"];
+    mat.updateGlsl();
+}
 static Json makeJson(const ObjNode& obj) {
     Json rst;
     rst["obj_idx"]      = obj.obj_idx;
@@ -260,13 +302,36 @@ static Json makeJson(const ObjNode& obj) {
     rst["position"]     = makeJson(obj.position);
     rst["scale"]        = makeJson(obj.scale);
     rst["euler_angles"] = makeJson(obj.euler_angles);
-    rst["my_transform"] = makeJson(obj.my_transform);
     rst["mirror"]       = makeJson(obj.mirror);
-    // parents는 read할때 생성
-    for(const ObjNode& child: obj.children) {
-        rst["children"].push_back(makeJson(child));
+
+    for(const ObjNode* child: obj.children) {
+        rst["children"].push_back(makeJson(*child));
     }
     return rst;
+}
+static void fromJson(ObjNode& obj, const Json& json) {
+    obj.obj_idx =   json["obj_idx"];
+    obj.prim_type = json["prim_type"];
+    obj.op_group =  json["op_group"];
+    obj.op_spec =   json["op_spec"];
+    obj.blendness = json["blendness"];
+    obj.roundness = json["roundness"];
+    obj.name =      json["name"];
+    fromJson(obj.position,      json["position"]);
+    fromJson(obj.scale,         json["scale"]);
+    fromJson(obj.euler_angles,  json["euler_angles"]);
+    fromJson(obj.mirror,        json["mirror"]);
+    obj.composeTransform();
+    obj.updateGlsl();
+
+    if(obj.prim_type!=PT_GROUP)
+        return;
+        
+    int nr_child = json["children"].size();
+    for( int i=0; i<nr_child; i++ ) {
+        obj.addChild(PT_GROUP); // temporary
+        fromJson(*obj.children.back(), json["children"][i]);
+    }
 }
 static Json makeJson(const Camera& cam) {
     Json rst;
@@ -275,6 +340,13 @@ static Json makeJson(const Camera& cam) {
     rst["fovy"]     = cam.fovy;
     return rst;
 }
+static void fromJson(Camera& cam, const Json& json) {
+    fromJson(cam.position,  json["position"]);
+    fromJson(cam.pivot,     json["pivot"]);
+    cam.fovy =              json["fovy"];
+    cam.updateViewMat();
+    cam.updateProjMat();
+}
 static Json makeJson(const Light& lit) {
     Json rst;
     rst["position"] = makeJson(lit.position);
@@ -282,6 +354,12 @@ static Json makeJson(const Light& lit) {
     rst["color"]    = makeJson(lit.color);
     rst["intensity"]= lit.intensity;
     return rst;
+}
+static void fromJson(Light& lit, const Json& json) {
+    fromJson(lit.position,  json["position"]);
+    fromJson(lit.pivot,     json["pivot"]);
+    fromJson(lit.color,     json["color"]);
+    lit.intensity =         json["intensity"];
 }
 
 // static void from_json(const Json& j, person& p) {
@@ -293,10 +371,13 @@ static Json makeJson(const Light& lit) {
 static void exportJson(std::filesystem::path path) {
     std::ofstream ofile;
     Json ojson;
-
+    ojson["nr_objs"] = nr_objs;
+    ojson["nr_groups"] = nr_groups;
+    ojson["nr_mats"] = nr_mats;
     ojson["model_name"] = model_name;
+
     for(int i=0; i<nr_mats; i++) {
-        ojson["materials"][i] = makeJson(materials[i]);
+        ojson["materials"].push_back( makeJson(materials[i]) );
     }
     ojson["root"] = makeJson(root);
     ojson["camera"] = makeJson(*camera);
@@ -320,20 +401,19 @@ static void importJson(std::filesystem::path path) {
     } catch( std::ifstream::failure& e ) {
         log::err("fail read : %s, what? %s \n", path.c_str(), e.what());
     }
-
+    nr_objs = ijson["nr_objs"];
+    nr_groups = ijson["nr_groups"];
+    nr_mats = ijson["nr_mats"];
     model_name = ijson["model_name"];
-    nr_mats = ijson["materials"].size();
+    
     for(int i=0; i<nr_mats; i++) {
-        Material& mat = materials[i];
-        Json jmat = ijson["materials"][i];
-        materials[i].name = jmat["name"];
-        materials[i].name = jmat["name"];
-        materials[i].name = jmat["name"];
-        materials[i].name = jmat["name"];
+        fromJson(materials[i], ijson["materials"][i]);
     }
+    fromJson(root, ijson["root"]);
+    fromJson(*camera, ijson["camera"]);
+    fromJson(*light, ijson["light"]);
 
-
-    selected_obj = &root.children.back();
+    selected_obj = ( root.children.size()>0 )?root.children.back():&root;
 }
 
 static void addMaterial() {
@@ -341,6 +421,7 @@ static void addMaterial() {
     Material& mat = materials[idx];
     selected_mat_idx = idx;
 
+    mat.idx = idx;
     mat.name = fmtStrToBuf("Material_%d", idx);
     mat_names[idx] = mat.name.c_str();
     mat_names[idx+1] = "Add New Material";
@@ -370,7 +451,7 @@ void lim::sdf::init(Camera* cam, Light* lit)
     root.name = "root";
 
     root.addChild(PT_BOX);
-    selected_obj = &root.children.back();
+    selected_obj = root.children.back();
 }
 void lim::sdf::deinit() 
 {
@@ -411,9 +492,8 @@ void lim::sdf::bindSdfData(const Program& prog)
     prog.setUniform("roundnesses", MAX_OBJS, roundnesses);
 }
 
-static void drawObjTree(ObjNode* pObj) 
+static void drawObjTree(ObjNode& obj) 
 {
-    ObjNode& obj = *pObj;
     bool isGroup = obj.prim_type==PT_GROUP;
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_None;
     if( isGroup) {
@@ -422,15 +502,15 @@ static void drawObjTree(ObjNode* pObj)
     else {
         flags |= ImGuiTreeNodeFlags_Leaf|ImGuiTreeNodeFlags_NoTreePushOnOpen|ImGuiTreeNodeFlags_Bullet;
     }
-    if(selected_obj == pObj) {
+    if(selected_obj == &obj) {
         flags |= ImGuiTreeNodeFlags_Selected;
     }
 
-    bool isOpen = ImGui::TreeNodeEx(pObj, flags, "%s", obj.name.c_str());
+    bool isOpen = ImGui::TreeNodeEx(&obj, flags, "%s", obj.name.c_str());
 
-    if( selected_obj!=pObj &&(ImGui::IsItemClicked(0)||ImGui::IsItemClicked(1))) {
-        selected_obj = pObj;
-        selected_mat_idx = pObj->mat_idx;
+    if( selected_obj!=&obj &&(ImGui::IsItemClicked(0)||ImGui::IsItemClicked(1))) {
+        selected_obj = &obj;
+        selected_mat_idx = obj.mat_idx;
     }
 
     if( ImGui::BeginPopupContextItem() ) {
@@ -449,7 +529,7 @@ static void drawObjTree(ObjNode* pObj)
     }
 
     if( ImGui::BeginDragDropSource(ImGuiDragDropFlags_None) ) {
-        ImGui::SetDragDropPayload("DND_SCENE_CELL", pObj, sizeof(ObjNode));
+        ImGui::SetDragDropPayload("DND_SCENE_CELL", &obj, sizeof(ObjNode));
 
         ImGui::Text("Move %s", obj.name.c_str());
 
@@ -471,8 +551,8 @@ static void drawObjTree(ObjNode* pObj)
     }
 
     if( isGroup&&isOpen ) {
-        for( ObjNode& child: obj.children) {
-            drawObjTree(&child);
+        for( ObjNode* child: obj.children) {
+            drawObjTree(*child);
         }
         ImGui::TreePop();
     }
@@ -562,6 +642,11 @@ void lim::sdf::drawImGui()
             ImGui::EndPopup();
         }
 
+        if( ImGui::MenuItem("Import") ) {
+            // Todo: 윈도우 파일 오픈 다이얼로그
+        }
+
+
         if( ImGui::BeginMenu("Help") ) {
             ImGui::Text("drag and drop json file to import model");
             ImGui::Text("you can use my model viewer if you want viewing exported mesh model");
@@ -581,7 +666,7 @@ void lim::sdf::drawImGui()
     {
         ImGui::Begin("Scene##sdf");
 
-        drawObjTree(&root);
+        drawObjTree(root);
 
         // ImGui::SetCursorPosY(ImGui::GetCursorPosY()+ImGui::GetContentRegionAvail().y-ImGui::GetFontSize()*2.3f);
         // ImGui::Separator();
@@ -779,4 +864,7 @@ void lim::sdf::drawGuizmo(const Viewport& vp) {
         ImGui::PopStyleVar();
         ImGui::End();
     }
+}
+void lim::sdf::dndCallback(int count, const char **paths) {
+    importJson(paths[0]);
 }

@@ -10,4 +10,5 @@ namespace lim { namespace sdf
     void bindSdfData(const Program& prog);
     void drawImGui();
 	void drawGuizmo(const Viewport& vp);
+    void dndCallback(int count, const char **paths);
 }}

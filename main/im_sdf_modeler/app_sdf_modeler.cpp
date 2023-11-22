@@ -73,3 +73,6 @@ void lim::AppSdfModeler::keyCallback(int key, int scancode, int action, int mods
 		prog.reload(GL_FRAGMENT_SHADER);
 	}
 }
+void lim::AppSdfModeler::dndCallback(int count, const char **paths) {
+	sdf::dndCallback(count, paths);
+}
