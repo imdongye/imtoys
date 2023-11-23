@@ -125,13 +125,14 @@ namespace
     float metalnesses[MAX_MATS];
 
     // obj
-    glm::mat4 transforms[2*MAX_OBJS]; // inversed
-    int mat_idxs[2*MAX_OBJS];
-    int op_types[2*MAX_OBJS];   // Todo: runtime edit shader
-    int prim_types[2*MAX_OBJS]; // Todo: runtime edit shader
-    int prim_idxs[2*MAX_OBJS];
-    float blendnesses[2*MAX_OBJS];
-    float roundnesses[2*MAX_OBJS];
+    glm::mat4 transforms[MAX_OBJS]; // inversed
+    float scaling_factors[MAX_OBJS];
+    int mat_idxs[MAX_OBJS];
+    int op_types[MAX_OBJS];   // Todo: runtime edit shader
+    int prim_types[MAX_OBJS]; // Todo: runtime edit shader
+    int prim_idxs[MAX_OBJS];
+    float blendnesses[MAX_OBJS];
+    float roundnesses[MAX_OBJS];
 
     // each prim ...
     float donuts[MAX_PRIMS];
@@ -153,7 +154,8 @@ namespace
     const char* mat_names[MAX_MATS]; // for gui
     int selected_mat_idx = 0;
 
-    ImGuizmo::OPERATION gzmo_edit_mode = ImGuizmo::OPERATION::TRANSLATE;
+    ImGuizmo::OPERATION gzmo_edit_modes[] = { (ImGuizmo::OPERATION)0, ImGuizmo::TRANSLATE, ImGuizmo::SCALE, ImGuizmo::ROTATE, ImGuizmo::UNIVERSAL };
+    int                 selected_edit_mode_idx = 1;
     ImGuizmo::MODE 		gzmo_space     = ImGuizmo::MODE::LOCAL;
 
     std::string model_name = "Untitled";
@@ -212,6 +214,7 @@ void ObjNode::updateTransformWithParent() {
     }
     else {
         transforms[obj_idx] = glm::inverse(transform);
+        scaling_factors[obj_idx] = glm::min(scale.x, glm::min(scale.y, scale.z));
     }
 }
 void ObjNode::composeTransform() {
@@ -485,6 +488,7 @@ void lim::sdf::bindSdfData(const Program& prog)
     
     prog.setUniform("nr_objs", nr_objs);
     prog.setUniform("transforms", MAX_OBJS, transforms);
+    prog.setUniform("scaling_factors", MAX_OBJS, scaling_factors);
     prog.setUniform("mat_idxs", MAX_OBJS, mat_idxs);
     prog.setUniform("prim_types", MAX_OBJS, prim_types);
     prog.setUniform("op_types", MAX_OBJS, op_types);
@@ -822,9 +826,9 @@ void lim::sdf::drawGuizmo(const Viewport& vp) {
     ImGuizmo::SetRect(pos.x, pos.y, size.x, size.y);
 
     ImGuizmo::SetOrthographic(false);
-    if(gzmo_edit_mode>0) {
+    if(selected_edit_mode_idx>0) {
         ImGuizmo::Manipulate( glm::value_ptr(cam.view_mat), glm::value_ptr(cam.proj_mat)
-                            , gzmo_edit_mode, gzmo_space, glm::value_ptr(selected_obj->transform)
+                            , gzmo_edit_modes[selected_edit_mode_idx], gzmo_space, glm::value_ptr(selected_obj->transform)
                             , nullptr, nullptr, nullptr);
     }
     
@@ -850,19 +854,34 @@ void lim::sdf::drawGuizmo(const Viewport& vp) {
         ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, {2.f, 2.f});
         if( ImGui::Begin("edit mode selector", nullptr, window_flags) )
         {
-            static int selectedEditModeIdx = 1;
             static const char* editModeStrs[] = {  u8"\uE820", u8"\uE806", u8"\uE807", u8"\uE811", u8"\uE805" };
-            static const int   editModes[] = { 0, ImGuizmo::TRANSLATE, ImGuizmo::SCALE, ImGuizmo::ROTATE, ImGuizmo::UNIVERSAL };
             for(int i=0; i<5; i++) {
-                if( ImGui::Selectable(editModeStrs[i], selectedEditModeIdx==i, 0, {30, 30}) ) {
-                    selectedEditModeIdx = i;
-                    gzmo_edit_mode = (ImGuizmo::OPERATION)editModes[i];
+                if( ImGui::Selectable(editModeStrs[i], selected_edit_mode_idx==i, 0, {30, 30}) ) {
+                    selected_edit_mode_idx = i;
                 }
             }
         }
         ImGui::PopStyleVar();
         ImGui::PopStyleVar();
         ImGui::End();
+    }
+    /* short cut */
+    {
+        if( ImGui::IsKeyPressed(ImGuiKey_1, false) ) {
+			selected_edit_mode_idx = 0;
+		}
+        if( ImGui::IsKeyPressed(ImGuiKey_2, false) ) {
+			selected_edit_mode_idx = 1;
+		}
+        if( ImGui::IsKeyPressed(ImGuiKey_3, false) ) {
+			selected_edit_mode_idx = 2;
+		}
+        if( ImGui::IsKeyPressed(ImGuiKey_4, false) ) {
+			selected_edit_mode_idx = 3;
+		}
+        if( ImGui::IsKeyPressed(ImGuiKey_5, false) ) {
+			selected_edit_mode_idx = 4;
+		}
     }
 }
 void lim::sdf::dndCallback(int count, const char **paths) {

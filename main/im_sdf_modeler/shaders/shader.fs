@@ -40,6 +40,7 @@ uniform float metalnesses[MAX_MATS];
 
 uniform int nr_objs;
 uniform mat4 transforms[MAX_OBJS];
+uniform float scaling_factors[MAX_OBJS];
 uniform int mat_idxs[MAX_OBJS];
 uniform int prim_types[MAX_OBJS];
 uniform int prim_idxs[MAX_OBJS];
@@ -108,6 +109,7 @@ float fOpDifferenceRound (float a, float b, float r) {
 
 /********************************   hg_sdf.glsl part   ********************************/
 
+// model space distance
 float getPrimDist(int primType, vec3 mPos) {
     switch(primType)
     {
@@ -120,6 +122,12 @@ float getPrimDist(int primType, vec3 mPos) {
     case PM_DONUT:
         return sdDonut(mPos, 1);
     }
+}
+float getObjDist(int objIdx, vec3 wPos) {
+    mat4 transform = transforms[objIdx];
+    vec3 mPos = (transform*vec4(wPos,1)).xyz;
+    float primDist = getPrimDist(prim_types[objIdx], mPos);
+    return primDist * scaling_factors[objIdx];
 }
 float operateDist(int opType, float a, float b, float blendness) {
     switch(opType)
@@ -139,17 +147,15 @@ float operateDist(int opType, float a, float b, float blendness) {
     }
 }
 
-float sdWorld(vec3 p) {
+float sdWorld(vec3 wPos) {
     float dist = far_distance; 
-    dist = p.y; // plane
+    dist = wPos.y; // plane
 
     for( int i=0; i<nr_objs; i++ ) 
     {
         float blendness = blendnesses[i];
-        mat4 transform = transforms[i];
-        vec3 mPos = (transform*vec4(p,1)).xyz;
-        float primDist = getPrimDist(prim_types[i], mPos);
-        float tempDist = operateDist(op_types[i], dist, primDist, blendness);
+        float objDist = getObjDist(i, wPos);
+        float tempDist = operateDist(op_types[i], dist, objDist, blendness);
         dist = tempDist;
     }
     return dist;
