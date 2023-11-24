@@ -7,6 +7,7 @@
 #include "sdf_global.h"
 #include <vector>
 #include <fstream>
+#include <filesystem>
 #include <limbrary/model_view/model.h>
 #include <limbrary/log.h>
 

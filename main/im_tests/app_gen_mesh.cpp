@@ -158,34 +158,28 @@ namespace lim
 		
 
 		/* controller */
-		if (false && ImGui::Begin("controller##genMesh"))
-		{
-			ImGui::SliderFloat("vs_t", &vs_t, 0.f, 1.f);
+		ImGui::Begin("controller##genMesh");
+		ImGui::SliderFloat("vs_t", &vs_t, 0.f, 1.f);
+		ImGui::Text("<light>");
+		const static float litThetaSpd = 70 * 0.001;
+		const static float litPiSpd = 360 * 0.001;
+		static float litTheta = 30.f;
+		static float litPi = 30.f;
+		if( ImGui::DragFloat("light yaw", &litPi, litPiSpd, 0, 360, "%.3f") ||
+			ImGui::DragFloat("light pitch", &litTheta, litThetaSpd, 0, 180, "%.3f") ) {
 
-			ImGui::Text("<light>");
-			const static float litThetaSpd = 70 * 0.001;
-			const static float litPiSpd = 360 * 0.001;
-			static float litTheta = 30.f;
-			static float litPi = 30.f;
-			if( ImGui::DragFloat("light yaw", &litPi, litPiSpd, 0, 360, "%.3f") ||
-				ImGui::DragFloat("light pitch", &litTheta, litThetaSpd, 0, 180, "%.3f") ) {
-
-				light->setRotate(litTheta, litPi);
-				light_model->position = light->position;
-				light_model->updateModelMat();
-			}
-			ImGui::Text("pos %f %f %f", light->position.x, light->position.y, light->position.z);
-
-			ImGui::End();
+			light->setRotate(litTheta, litPi);
+			light_model->position = light->position;
+			light_model->updateModelMat();
 		}
+		ImGui::Text("pos %f %f %f", light->position.x, light->position.y, light->position.z);
+		ImGui::End();
 
 		/* state view */
-		if (ImGui::Begin("camera##genMesh"))
-		{
-			static float rad = F_PI;
-			ImGui::SliderAngle("rad", &rad);
-			ImGui::End();
-		}
+		ImGui::Begin("camera##genMesh");
+		static float rad = F_PI;
+		ImGui::SliderAngle("rad", &rad);
+		ImGui::End();
 	}
 	void AppGenMesh::processInput(GLFWwindow *window)
 	{
