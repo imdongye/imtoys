@@ -12,6 +12,8 @@
 #include <nlohmann/json.h>
 #include <fstream>
 #include <stack>
+#include <limbrary/model_view/model.h>
+
 #if defined(_WIN32)
 // #include <commdlg.h>
 #endif
@@ -86,12 +88,13 @@ struct ObjNode {
     ~ObjNode();
     void addChild(PrimitiveType primType);
     void updateGlsl(); // without transform
+    float getScaleFactor();
     void updateTransformWithParent();
     void composeTransform();
     void decomposeTransform();
 };
 
-struct Material {
+struct SdfMaterial {
     std::string name = "sdf_mat";
     int idx = 0;
     glm::vec3 base_color = {0.2, 0.13, 0.87};
@@ -150,7 +153,7 @@ namespace
     ObjNode* selected_obj = nullptr;
     int nr_prims[nr_prim_types] = {0,};
 
-    Material materials[MAX_MATS]; // SRGB space
+    SdfMaterial materials[MAX_MATS]; // SRGB space
     const char* mat_names[MAX_MATS]; // for gui
     int selected_mat_idx = 0;
 
@@ -159,7 +162,7 @@ namespace
     ImGuizmo::MODE 		gzmo_space     = ImGuizmo::MODE::LOCAL;
 
     std::string model_name = "Untitled";
-    Camera* camera = nullptr;
+    CameraController* camera = nullptr;
     Light* light = nullptr;
 };
 
@@ -203,6 +206,10 @@ void ObjNode::updateGlsl() {
     blendnesses[obj_idx] = blendness;
     roundnesses[obj_idx] = roundness;
 }
+float ObjNode::getScaleFactor() {
+    float parentFactor = (parent)?parent->getScaleFactor():1.f;
+    return parentFactor * glm::min(scale.x, glm::min(scale.y, scale.z));
+}
 void ObjNode::updateTransformWithParent() {
     if(parent) {
         transform = parent->transform * my_transform;
@@ -214,7 +221,7 @@ void ObjNode::updateTransformWithParent() {
     }
     else {
         transforms[obj_idx] = glm::inverse(transform);
-        scaling_factors[obj_idx] = glm::min(scale.x, glm::min(scale.y, scale.z));
+        scaling_factors[obj_idx] = getScaleFactor();
     }
 }
 void ObjNode::composeTransform() {
@@ -240,7 +247,7 @@ void ObjNode::decomposeTransform() {
 }
 
 
-void Material::updateGlsl() {
+void SdfMaterial::updateGlsl() {
     base_colors[idx] = glm::convertSRGBToLinear(base_color);
     roughnesses[idx] = roughness;
     metalnesses[idx] = metalness;
@@ -276,7 +283,7 @@ static void fromJson(glm::bvec3& v, const Json& json) {
 //         {j[3][0], j[3][1], j[3][2], j[3][3]},
 //     };
 // }
-static Json makeJson(const Material& mat) {
+static Json makeJson(const SdfMaterial& mat) {
     Json rst;
     rst["name"]       = mat.name;
     rst["idx"]        = mat.idx;
@@ -285,7 +292,7 @@ static Json makeJson(const Material& mat) {
     rst["roughness"]  = mat.roughness;
     return rst;
 }
-static void fromJson(Material& mat, const Json& json) {
+static void fromJson(SdfMaterial& mat, const Json& json) {
     mat.name = json["name"];
     mat.idx = json["idx"];
     fromJson(mat.base_color, json["base_color"]);
@@ -296,6 +303,7 @@ static void fromJson(Material& mat, const Json& json) {
 static Json makeJson(const ObjNode& obj) {
     Json rst;
     rst["obj_idx"]      = obj.obj_idx;
+    rst["mat_idx"]      = obj.mat_idx;
     rst["prim_type"]    = obj.prim_type;
     rst["op_group"]     = obj.op_group;
     rst["op_spec"]      = obj.op_spec;
@@ -314,6 +322,7 @@ static Json makeJson(const ObjNode& obj) {
 }
 static void fromJson(ObjNode& obj, const Json& json) {
     obj.obj_idx =   json["obj_idx"];
+    obj.mat_idx =   json["mat_idx"];
     obj.prim_type = json["prim_type"];
     obj.op_group =  json["op_group"];
     obj.op_spec =   json["op_spec"];
@@ -336,14 +345,14 @@ static void fromJson(ObjNode& obj, const Json& json) {
         fromJson(*obj.children.back(), json["children"][i]);
     }
 }
-static Json makeJson(const Camera& cam) {
+static Json makeJson(const CameraController& cam) {
     Json rst;
     rst["position"] = makeJson(cam.position);
     rst["pivot"]    = makeJson(cam.pivot);
     rst["fovy"]     = cam.fovy;
     return rst;
 }
-static void fromJson(Camera& cam, const Json& json) {
+static void fromJson(CameraController& cam, const Json& json) {
     fromJson(cam.position,  json["position"]);
     fromJson(cam.pivot,     json["pivot"]);
     cam.fovy =              json["fovy"];
@@ -418,10 +427,39 @@ static void importJson(std::filesystem::path path) {
 
     selected_obj = ( root.children.size()>0 )?root.children.back():&root;
 }
+// from
+// https://github.com/nihaljn/marching-cubes/blob/main/include/marching_cubes.hpp
+
+static int getCubeIdx(glm::vec3 wPos, float radius) {
+    int idx;
+    for(int x=0; x<2; x++) for(int y=0; y<2; y++) for(int z=0; z<2; z++) {
+        glm::vec3 samplePoint = wPos;
+        samplePoint.x += ((x>0)?1.f:-1.f)*radius;
+        samplePoint.y += ((y>0)?1.f:-1.f)*radius;
+        samplePoint.z += ((z>0)?1.f:-1.f)*radius;
+        if( sdWorld(samplePoint)<0 ) {
+            idx += 1<<i;
+        }
+    }
+    return idx;
+}
+
+static void exportMesh(std::filesystem::path path, int sampleRate) {
+    Model model;
+    model.my_meshes.push_back(new Mesh());
+    model.root.addMeshWithMat(model.my_meshes.back());
+    Mesh& mesh = *model.my_meshes.back();
+
+    for(int x=0; x<sampleRate; x++) for(int y=0; y<sampleRate; y++) for(int z=0; z<sampleRate; z++)
+    {
+        mesh.poss.push_back();
+        mesh.tris.push_back();
+    }
+}
 
 static void addMaterial() {
     int idx = nr_mats++;
-    Material& mat = materials[idx];
+    SdfMaterial& mat = materials[idx];
     selected_mat_idx = idx;
 
     mat.idx = idx;
@@ -444,7 +482,7 @@ static void makeSpaceInGlslObjData(int pos, int len) {
     memcpy((float*)&roundnesses[pos+len], (float*)&roundnesses[pos], sizeof(float)*nr_rights);
 }
 
-void lim::sdf::init(Camera* cam, Light* lit) 
+void lim::sdf::init(CameraController* cam, Light* lit) 
 {
     camera = cam;
     light = lit;
@@ -629,6 +667,7 @@ void lim::sdf::drawImGui()
 
             ImGui::SetCursorPosY(ImGui::GetCursorPosY()+ImGui::GetContentRegionAvail().y-ImGui::GetFontSize()*1.6f);
             if( ImGui::Button("Export", {-1,0}) ) {
+                expoprtMesh(path, sampleRate);
                 ImGui::OpenPopup("Done");
             }
             ImGui::SetNextWindowSize(doneSize);
@@ -752,7 +791,7 @@ void lim::sdf::drawImGui()
         ImGui::SliderFloat("Diff for Normal", &diff_for_normal, 0.00001, 0.001, "%.5f");
         ImGui::Separator();
 
-        ImGui::Text("<light>");
+        ImGui::Text("<Light>");
         static float litTheta = 90.f-glm::degrees(glm::acos(glm::dot(glm::normalize(light->position), glm::normalize(glm::vec3(light->position.x, 0, light->position.z)))));
         const static float litThetaSpd = 70 * 0.001;
         static float litPhi = 90.f-glm::degrees(glm::atan(light->position.x,-light->position.z));
@@ -760,14 +799,21 @@ void lim::sdf::drawImGui()
         static float litDist = glm::length(light->position);
         const static float litDistSpd = 45.f * 0.001;
         bool isLightDraged = false;
-        isLightDraged |= ImGui::DragFloat("yaw", &litPhi, litPhiSpd, -FLT_MAX, +FLT_MAX, "%.3f");
-        isLightDraged |= ImGui::DragFloat("pitch", &litTheta, litThetaSpd, 0, 80, "%.3f");
-        isLightDraged |= ImGui::DragFloat("dist", &litDist, litDistSpd, 5.f, 20.f, "%.3f");
+        isLightDraged |= ImGui::DragFloat("Yaw", &litPhi, litPhiSpd, -FLT_MAX, +FLT_MAX, "%.3f");
+        isLightDraged |= ImGui::DragFloat("Pitch", &litTheta, litThetaSpd, 0, 80, "%.3f");
+        isLightDraged |= ImGui::DragFloat("Distance", &litDist, litDistSpd, 5.f, 20.f, "%.3f");
         if( isLightDraged ) {
             light->setRotate(litTheta, glm::fract(litPhi/360.f)*360.f, litDist);
         }
-        ImGui::Text("pos: %.1f %.1f %.1f", light->position.x, light->position.y, light->position.z);
-        ImGui::SliderFloat("intencity", &light->intensity, 0.0f, 200.f, "%.1f");
+        ImGui::Text("Pos: %.1f %.1f %.1f", light->position.x, light->position.y, light->position.z);
+        ImGui::SliderFloat("Intencity", &light->intensity, 0.0f, 200.f, "%.1f");
+        ImGui::Separator();
+        ImGui::Text("<Camera>");
+        static int viewingMode = 0;
+        static const char* viewingModeNames[] = {"Free", "Pivoted"};
+        if( ImGui::Combo("Mode",  &viewingMode, viewingModeNames, 3) ) {
+            camera->setViewMode((CameraController::VIEWING_MODE)viewingMode);
+        }
         
         ImGui::PopItemWidth();
         ImGui::End();
@@ -781,7 +827,7 @@ void lim::sdf::drawImGui()
             if( selected_mat_idx == i ) {
                 flags |= ImGuiTreeNodeFlags_Selected;
             }
-            Material& mat = materials[i];
+            SdfMaterial& mat = materials[i];
             if( ImGui::TreeNodeEx("MatList", flags, "%s", mat.name.c_str()) ) {
                 if( selected_mat_idx != i &&(ImGui::IsItemClicked(0)||ImGui::IsItemClicked(1))) {
                     selected_mat_idx = i;
@@ -800,7 +846,7 @@ void lim::sdf::drawImGui()
     /* Mat Editor */
     {
         ImGui::Begin("Mat Editor##sdf");
-        Material& mat = materials[selected_mat_idx];
+        SdfMaterial& mat = materials[selected_mat_idx];
         ImGui::InputText("Name", &mat.name, ImGuiInputTextFlags_AutoSelectAll);
         if( ImGui::SliderFloat("Roughness", &mat.roughness, 0.001, 1.0) ) {
             roughnesses[selected_mat_idx] = mat.roughness;
@@ -847,11 +893,13 @@ void lim::sdf::drawGuizmo(const Viewport& vp) {
         
         //ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
         //ImGui::SetNextWindowSizeConstraints(ImVec2(30.f, 120.f));
-        ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always);
-        ImGui::SetNextWindowViewport(ImGui::GetMainViewport()->ID); // 뷰포트가 안되도록
-        ImGui::SetNextWindowBgAlpha(0.35f); // Transparent background
         ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, {0.5f, 0.5f});
         ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, {2.f, 2.f});
+        ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, {0.5f, 0.7f});
+
+        ImGui::SetNextWindowViewport(ImGui::GetMainViewport()->ID); // 뷰포트가 안되도록
+        ImGui::SetNextWindowBgAlpha(0.35f); // Transparent background
+        ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always);
         if( ImGui::Begin("edit mode selector", nullptr, window_flags) )
         {
             static const char* editModeStrs[] = {  u8"\uE820", u8"\uE806", u8"\uE807", u8"\uE811", u8"\uE805" };
@@ -860,10 +908,26 @@ void lim::sdf::drawGuizmo(const Viewport& vp) {
                     selected_edit_mode_idx = i;
                 }
             }
+            ImGui::End();
+        }
+        if( selected_edit_mode_idx!=0 && selected_edit_mode_idx!=2 ) {
+            ImGui::SetNextWindowViewport(ImGui::GetMainViewport()->ID); // 뷰포트가 안되도록
+            ImGui::SetNextWindowBgAlpha(0.35f); // Transparent background
+            ImGui::SetNextWindowPos({windowPos.x, windowPos.y+180}, ImGuiCond_Always);
+            if( ImGui::Begin("edit space selector", nullptr, window_flags) )
+            {
+                if( ImGui::Selectable(u8"\uE832", gzmo_space==ImGuizmo::WORLD, 0, {30, 30}) ) {
+                    gzmo_space = ImGuizmo::WORLD;
+                }
+                if( ImGui::Selectable(u8"\uE808", gzmo_space==ImGuizmo::LOCAL, 0, {30, 30}) ) {
+                    gzmo_space = ImGuizmo::LOCAL;
+                }
+                ImGui::End();
+            }
         }
         ImGui::PopStyleVar();
         ImGui::PopStyleVar();
-        ImGui::End();
+        ImGui::PopStyleVar();
     }
     /* short cut */
     {

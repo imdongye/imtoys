@@ -48,9 +48,13 @@ namespace lim
 	CameraController::~CameraController() noexcept
 	{
 	}
-	void CameraController::setViewMode(int vm)
+	void CameraController::setViewMode(VIEWING_MODE vm)
 	{
 		viewing_mode = vm%3;
+	}
+	CameraController::VIEWING_MODE CameraController::getViewMode()
+	{
+		return (VIEWING_MODE)viewing_mode;
 	}
 	void CameraController::updateFreeMode()
 	{
@@ -181,7 +185,7 @@ namespace lim
 	void CameraController::updateFromInput()
 	{
 		if( ImGui::IsKeyPressed(ImGuiKey_Tab, false) ) {
-			setViewMode(viewing_mode+1);
+			setViewMode((VIEWING_MODE)(viewing_mode+1));
 		}
 		switch( viewing_mode ) {
 			case VM_PIVOT:  updatePivotMode(); break;

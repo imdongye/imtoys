@@ -26,7 +26,7 @@ lim::AppSdfModeler::AppSdfModeler(): AppBase(1373, 783, APP_NAME, false)
     config.MergeMode = true;
     config.GlyphMinAdvanceX = 13.0f;
     static ImWchar lIconRanges[] = { 0xE800, 0xE840, 0 };
-    ImGui::GetIO().Fonts->AddFontFromFileTTF("im_sdf_modeler/fonts/icons.ttf", 20.0f, &config, lIconRanges);
+    ImGui::GetIO().Fonts->AddFontFromFileTTF("im_sdf_modeler/fonts/icons.ttf", 20.f, &config, lIconRanges);
 
 
 	viewport.camera.pivot = glm::vec3(0,1,0);

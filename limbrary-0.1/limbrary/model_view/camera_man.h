@@ -91,7 +91,9 @@ namespace lim
 		CameraController(CameraController&& src) noexcept;
 		CameraController& operator=(CameraController&& src) noexcept;
 		virtual ~CameraController() noexcept;
-		void setViewMode(int vm);
+		void setViewMode(VIEWING_MODE vm);
+		VIEWING_MODE getViewMode();
+
 		void updateFromInput();
 	private:
 		void updateFreeMode();

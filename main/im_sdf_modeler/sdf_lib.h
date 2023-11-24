@@ -5,7 +5,7 @@
 
 namespace lim { namespace sdf
 {
-	void init(Camera* cam, Light* lit);
+	void init(CameraController* cam, Light* lit);
     void deinit();
     void bindSdfData(const Program& prog);
     void drawImGui();
