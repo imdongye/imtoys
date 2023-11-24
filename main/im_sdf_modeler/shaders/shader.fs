@@ -1,3 +1,13 @@
+/*
+
+2023-11-24 / imdongye
+
+operation and primitive function is ref from
+    https://iquilezles.org/articles/smin/
+    and
+    https://mercury.sexy/hg_sdf/
+*/
+
 #version 410 core
 layout (location = 0) out vec4 FragColor;
 
@@ -16,10 +26,10 @@ uniform float light_Int;
 const int MAX_MATS = 32;
 const int MAX_OBJS = 32;
 
-const int PM_SPHERE = 1;
-const int PM_BOX    = 2;
-const int PM_PIPE   = 3;
-const int PM_DONUT  = 4;
+const int PT_SPHERE = 1;
+const int PT_BOX    = 2;
+const int PT_PIPE   = 3;
+const int PT_DONUT  = 4;
 
 const int OT_ADD_ROUND  = 0;
 const int OT_ADD_EDGE   = 1;
@@ -55,7 +65,7 @@ float NDL, NDV, NDH, VDR, HDV;
 vec3 baseColor, F0;
 float roughness, metalness;
 
-
+/************** used marching cube too ***************/
 float sdSphere( vec3 p ) {
     return length(p) - 0.5f;
 }
@@ -78,20 +88,13 @@ float sdDonut( vec3 p, float r ) {
 //     return -log(exp(-k*a) + exp(-k*b)) / k;
 // }
 
-/********************************   hg_sdf.glsl part   ********************************/
-// https://iquilezles.org/articles/smin/
-// The "Chamfer" flavour makes a 45-degree chamfered edge (the diagonal of a square of size <r>):
 float fOpUnionChamfer(float a, float b, float r) {
 	return min(min(a, b), (a - r + b)*sqrt(0.5));
 }
-// The "Round" variant uses a quarter-circle to join the two objects smoothly:
 float fOpUnionRound(float a, float b, float r) {
 	vec2 u = max(vec2(r - a,r - b), vec2(0));
 	return max(r, min (a, b)) - length(u);
 }
-// Intersection has to deal with what is normally the inside of the resulting object
-// when using union, which we normally don't care about too much. Thus, intersection
-// implementations sometimes differ from union implementations.
 float fOpIntersectionChamfer(float a, float b, float r) {
 	return max(max(a, b), (a + r + b)*sqrt(0.5));
 }
@@ -99,7 +102,6 @@ float fOpIntersectionRound(float a, float b, float r) {
 	vec2 u = max(vec2(r + a,r + b), vec2(0));
 	return min(-r, max (a, b)) + length(u);
 }
-// Difference can be built from Intersection or Union:
 float fOpDifferenceChamfer (float a, float b, float r) {
 	return fOpIntersectionChamfer(a, -b, r);
 }
@@ -107,19 +109,17 @@ float fOpDifferenceRound (float a, float b, float r) {
 	return fOpIntersectionRound(a, -b, r);
 }
 
-/********************************   hg_sdf.glsl part   ********************************/
-
 // model space distance
 float getPrimDist(int primType, vec3 mPos) {
     switch(primType)
     {
-    case PM_SPHERE:
+    case PT_SPHERE:
         return sdSphere(mPos);
-    case PM_BOX:
+    case PT_BOX:
         return sdBox(mPos);
-    case PM_PIPE:
+    case PT_PIPE:
         return sdPipe(mPos);
-    case PM_DONUT:
+    case PT_DONUT:
         return sdDonut(mPos, 1);
     }
 }
@@ -160,6 +160,9 @@ float sdWorld(vec3 wPos) {
     }
     return dist;
 }
+/************** ****************** ***************/
+
+
 float rayMarch(vec3 origin, vec3 dir, float maxDist) {
     float dist = 0;
     for( int i=0; i<nr_march_steps; i++ )

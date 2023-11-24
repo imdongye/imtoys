@@ -12,7 +12,7 @@
 #include <nlohmann/json.h>
 #include <fstream>
 #include <stack>
-#include <limbrary/model_view/model.h>
+#include "sdf_global.h"
 
 #if defined(_WIN32)
 // #include <commdlg.h>
@@ -23,43 +23,7 @@ using namespace lim;
 using Json = nlohmann::json;
 
 
-namespace 
-{
-    enum PrimitiveType {
-        PT_GROUP, PT_SPHERE, PT_BOX, PT_PIPE, PT_DONUT
-    };
-    constexpr int nr_prim_types = 5;
-    const char* prim_type_names[nr_prim_types] = {
-        "Group", "Sphere", "Box", "Pipe", "Donut"
-    };
 
-    enum OperationGroup {
-        OG_ADDITION,
-        OG_SUBTITUTION,
-        OG_INTERSECTION,
-    };
-    constexpr int nr_prim_oper_groups = 3;
-    const char* prim_oper_group_names[nr_prim_oper_groups] = {
-        "Addition", "Subtitution", "Intersection"
-    };
-    enum OperationSpec {
-        OS_ROUND,
-        OS_EDGE,
-    };
-    constexpr int nr_prim_oper_specs = 2;
-    const char* prim_oper_spec_names[nr_prim_oper_specs] = {
-        "Round", "Edge",
-    };
-
-    enum OperationType {
-        OT_ADD_ROUND, // addition
-        OT_ADD_EDGE,
-        OT_SUB_ROUND, // subtitution
-        OT_SUB_EDGE,
-        OT_INT_ROUND, // intersection
-        OT_INT_EDGE,
-    };
-}
 
 struct ObjNode {
     int obj_idx = -1;
@@ -107,45 +71,39 @@ struct SdfMaterial {
 
 /* glsl data */
 // todo: 1.uniform block   2.look up table texture
-namespace 
-{
-    constexpr int MAX_MATS = 32;
-    constexpr int MAX_OBJS = 32;
-    constexpr int MAX_PRIMS = 32;
+// optimize options
+int nr_march_steps = 200;
+float far_distance = 80.0;
+float hit_threshold = 0.0001;
+float diff_for_normal = 0.0001;
 
-    // optimize options
-    int nr_march_steps = 200;
-    float far_distance = 80.0;
-    float hit_threshold = 0.0001;
-    float diff_for_normal = 0.0001;
+// env
+glm::vec3 sky_color = {0.01,0.001,0.3};
 
-    // env
-    glm::vec3 sky_color = {0.01,0.001,0.3};
+// mat
+glm::vec3 base_colors[MAX_MATS]; // linear space
+float roughnesses[MAX_MATS];
+float metalnesses[MAX_MATS];
 
-    // mat
-    glm::vec3 base_colors[MAX_MATS]; // linear space
-    float roughnesses[MAX_MATS];
-    float metalnesses[MAX_MATS];
+// obj
+int nr_objs = 0;
+glm::mat4 transforms[MAX_OBJS]; // inversed
+float scaling_factors[MAX_OBJS];
+int mat_idxs[MAX_OBJS];
+int op_types[MAX_OBJS];   // Todo: runtime edit shader
+int prim_types[MAX_OBJS]; // Todo: runtime edit shader
+int prim_idxs[MAX_OBJS];
+float blendnesses[MAX_OBJS];
+float roundnesses[MAX_OBJS];
 
-    // obj
-    glm::mat4 transforms[MAX_OBJS]; // inversed
-    float scaling_factors[MAX_OBJS];
-    int mat_idxs[MAX_OBJS];
-    int op_types[MAX_OBJS];   // Todo: runtime edit shader
-    int prim_types[MAX_OBJS]; // Todo: runtime edit shader
-    int prim_idxs[MAX_OBJS];
-    float blendnesses[MAX_OBJS];
-    float roundnesses[MAX_OBJS];
+// each prim ...
+float donuts[MAX_PRIMS];
+float cylinder[MAX_PRIMS];
 
-    // each prim ...
-    float donuts[MAX_PRIMS];
-    float cylinder[MAX_PRIMS];
-}
 
 /* application data */
 namespace 
 {
-    int nr_objs = 0; // glsl에서도 쓰임.
     int nr_groups = 0;
     int nr_mats = 0;
 
@@ -427,35 +385,6 @@ static void importJson(std::filesystem::path path) {
 
     selected_obj = ( root.children.size()>0 )?root.children.back():&root;
 }
-// from
-// https://github.com/nihaljn/marching-cubes/blob/main/include/marching_cubes.hpp
-
-static int getCubeIdx(glm::vec3 wPos, float radius) {
-    int idx;
-    for(int x=0; x<2; x++) for(int y=0; y<2; y++) for(int z=0; z<2; z++) {
-        glm::vec3 samplePoint = wPos;
-        samplePoint.x += ((x>0)?1.f:-1.f)*radius;
-        samplePoint.y += ((y>0)?1.f:-1.f)*radius;
-        samplePoint.z += ((z>0)?1.f:-1.f)*radius;
-        if( sdWorld(samplePoint)<0 ) {
-            idx += 1<<i;
-        }
-    }
-    return idx;
-}
-
-static void exportMesh(std::filesystem::path path, int sampleRate) {
-    Model model;
-    model.my_meshes.push_back(new Mesh());
-    model.root.addMeshWithMat(model.my_meshes.back());
-    Mesh& mesh = *model.my_meshes.back();
-
-    for(int x=0; x<sampleRate; x++) for(int y=0; y<sampleRate; y++) for(int z=0; z<sampleRate; z++)
-    {
-        mesh.poss.push_back();
-        mesh.tris.push_back();
-    }
-}
 
 static void addMaterial() {
     int idx = nr_mats++;
@@ -599,6 +528,7 @@ static void drawObjTree(ObjNode& obj)
         ImGui::TreePop();
     }
 }
+extern void exportMesh(std::filesystem::path path, int sampleRate);
 
 void lim::sdf::drawImGui() 
 {
@@ -667,7 +597,7 @@ void lim::sdf::drawImGui()
 
             ImGui::SetCursorPosY(ImGui::GetCursorPosY()+ImGui::GetContentRegionAvail().y-ImGui::GetFontSize()*1.6f);
             if( ImGui::Button("Export", {-1,0}) ) {
-                expoprtMesh(path, sampleRate);
+                exportMesh(path, sampleRate);
                 ImGui::OpenPopup("Done");
             }
             ImGui::SetNextWindowSize(doneSize);
