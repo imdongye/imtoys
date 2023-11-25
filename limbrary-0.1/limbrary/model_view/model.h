@@ -45,6 +45,7 @@ namespace lim
 			std::vector<const Mesh*> meshes;
 			std::vector<const Material*> mats;
 		public:
+			// if mat is null then mesh rendered with past material
 			void addMeshWithMat(const Mesh* ms, const Material* mat = nullptr) {
 				meshes.push_back(ms);
 				mats.push_back(mat);
@@ -98,7 +99,8 @@ namespace lim
 		void updateNrAndBoundary();
 
 		bool importFromFile(std::string_view modelPath, bool unitScaleAndPivot = false, bool withMaterial = true);
-		bool exportToFile(size_t pIndex, std::string_view exportPath);
+		// render tree에서 사용하는 mesh와 material은 모두 my_에 포함되어있어야 export가능.
+		bool exportToFile(size_t pIndex, std::string_view exportDir); // dir without last slash
 
 		void releaseResource();
 	public:

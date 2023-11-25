@@ -528,7 +528,8 @@ static void drawObjTree(ObjNode& obj)
         ImGui::TreePop();
     }
 }
-extern void exportMesh(std::filesystem::path path, int sampleRate);
+
+extern void exportMesh(std::string_view dir, std::string_view modelName,  int sampleRate);
 
 void lim::sdf::drawImGui() 
 {
@@ -585,25 +586,23 @@ void lim::sdf::drawImGui()
         ImGui::SetNextWindowSize(popupSize);
         if( ImGui::BeginPopupModal("MeshExporter", &isMeshExporterOpened, popupWindowFlags) ) {
             static int sampleRate = 200;
+            std::string exportPath = fmtStrToBuf("program_dir/exports/%s/%s.obj", model_name.c_str(), model_name.c_str());
             ImGui::InputText("File Name", &model_name, ImGuiInputTextFlags_AutoSelectAll);
-
-            ImGui::Text("program_dir/exports/%s.obj", model_name.c_str());
-            
-            std::filesystem::path path = fmtStrToBuf("exports/%s.obj", model_name.c_str());
-            
+            ImGui::TextUnformatted(exportPath.c_str());
+        
             ImGui::SliderInt("Sample", &sampleRate, 50, 1000);
             ImGui::Text("%dx%dx%d", sampleRate, sampleRate, sampleRate);
 
 
             ImGui::SetCursorPosY(ImGui::GetCursorPosY()+ImGui::GetContentRegionAvail().y-ImGui::GetFontSize()*1.6f);
             if( ImGui::Button("Export", {-1,0}) ) {
-                exportMesh(path, sampleRate);
+                exportMesh("exports", model_name.c_str(), sampleRate);
                 ImGui::OpenPopup("Done");
             }
             ImGui::SetNextWindowSize(doneSize);
             ImGui::SetNextWindowPos(center, 0, ImVec2(0.5f, 0.5f));
             if( ImGui::BeginPopupModal("Done",NULL,popupWindowFlags) ) {
-                ImGui::Text("%s", path.c_str());
+                ImGui::TextUnformatted(exportPath.c_str());
                 
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY()+ImGui::GetContentRegionAvail().y-ImGui::GetFontSize()*1.6f);
                 if( ImGui::Button("Close", {-1,0}) ) {

@@ -94,13 +94,13 @@ vec3 brdfLambertian() { // Diffuse
 }
 vec3 brdfPhong() { // Specular
 	float normalizeFactor = (mat_Shininess+1)/(2*PI);
-	return mat_AmbientColor + vec3(1) * normalizeFactor * pow( VDR, mat_Shininess );
+	return mat_AmbientColor + vec3(1) * normalizeFactor * pow( max(0,VDR), mat_Shininess );
 }
 vec3 brdfBlinnPhong() { // Specular
 	// vec3 H = (V+L)/2; // 성능을위해 노멀라이즈 하지 않음.
 	// float NDH = max(0,dot(N, H));
 	float normalizeFactor = (mat_Shininess+1)/(2*PI);
-	return mat_AmbientColor + vec3(1) * normalizeFactor * pow( NDH, mat_Shininess );
+	return mat_AmbientColor + vec3(1) * normalizeFactor * pow( max(0,NDH), mat_Shininess );
 }
 
 vec3 brdfOrenNayar() {

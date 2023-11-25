@@ -81,12 +81,12 @@ namespace lim
 		if( md->importFromFile(findModelInDirectory(path), true)==false )
 			return;
 
+		brdfTestInfos.push_back({});
+		brdfTestInfos.back().ctrlName = md->name+" ctrl ##modelviewer";
+
 		md->my_materials.push_back(new Material());
 		md->default_material = md->my_materials.back();
 		md->default_material->prog = &program;
-
-		brdfTestInfos.push_back({});
-		brdfTestInfos.back().ctrlName = md->name+" ctrl ##modelviewer";
 		md->default_material->set_prog = makeSetProg(brdfTestInfos.back());
 
 		Scene scn;

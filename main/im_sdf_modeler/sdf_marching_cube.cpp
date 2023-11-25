@@ -9,6 +9,7 @@
 #include <fstream>
 #include <filesystem>
 #include <limbrary/model_view/model.h>
+#include <limbrary/model_view/model_io_helper.h>
 #include <limbrary/log.h>
 
 using namespace glm;
@@ -132,8 +133,8 @@ vec3 cubeVerts[8] = {
 };
 vec3 cubeEdgeCenters[12] = {
     { 0,-1,-1}, {1, 0,-1}, {0,1,-1}, {-1,0,-1},
-    {-1,-1, 0}, {1,-1, 0}, {1,1, 0}, {-1,1, 0},
     { 0,-1, 1}, {1, 0, 1}, {0,1, 1}, {-1,0, 1},
+    {-1,-1, 0}, {1,-1, 0}, {1,1, 0}, {-1,1, 0},
 };
 int edgeTable[256] = {
     0x0  , 0x109, 0x203, 0x30a, 0x406, 0x50f, 0x605, 0x70c,
@@ -428,20 +429,21 @@ int triTable[256][16] = {
     {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 };
 
-static int getCubeIdx(vec3 wPos, vec3 radius) {
+static int getCubeInfoIdx(vec3 wPos, vec3 radius) {
     int idx = 0;
     for(int i=0; i<8; i++) {
         vec3 samplePos = wPos + radius*cubeVerts[i];
         if( sdWorld(samplePos) < 0.f ) {
-            idx += i<<i;
+            idx |= 1<<i;
         }
     }
     return idx;
 }
 
 
-void exportMesh(std::filesystem::path path, int sampleRate) {
+void exportMesh(std::string_view dir, std::string_view modelName,  int sampleRate) {
     lim::Model model;
+    model.name = modelName;
     model.my_meshes.push_back(new lim::Mesh());
     model.root.addMeshWithMat(model.my_meshes.back());
     lim::Mesh& mesh = *model.my_meshes.back();
@@ -457,17 +459,35 @@ void exportMesh(std::filesystem::path path, int sampleRate) {
 
     for(int x=0; x<sampleRate; x++) for(int y=0; y<sampleRate; y++) for(int z=0; z<sampleRate; z++)
     {
-        vec3 cubePos = volumeMin+radius;
-        cubePos += vec3(x,y,z)*vec3(2)*radius;
-        int idx = getCubeIdx(cubePos, radius);
+        vec3 cubePos = volumeMin+radius + vec3(x,y,z)*vec3(2)*radius;
+        int idx = getCubeInfoIdx(cubePos, radius);
         int edgeInfo = edgeTable[idx];
         int* triInfo = triTable[idx];
+        int vertIdxs[12];
         for(int i=0; i<12; i++) {
-            if(edgeInfo&1) {
-                vec3 edgeCenter = cubeEdgeCenters[i];
-                // edgeCen
-                // mesh.poss.push_back()
+            if( edgeInfo&1>0 ) {
+                vec3 edgeCenter = radius*cubeEdgeCenters[i] + cubePos;
+                vertIdxs[i] = mesh.poss.size();
+                mesh.poss.push_back(edgeCenter);
             }
+            edgeInfo >>= 1;
+        }
+        for(int i=0; i<15; i+=3) {
+            if( triInfo[i]<0 )
+                break;
+            ivec3 tri = { vertIdxs[triInfo[i]], 
+                          vertIdxs[triInfo[i+1]],
+                          vertIdxs[triInfo[i+2]] };
+            mesh.tris.push_back( tri );
         }
     }
+    int formatIdx = 0;
+    int nrExportForamts = lim::getNrExportFormats();
+    for(int i=0; i<nrExportForamts; i++) {
+        if( strcmp(lim::getExportFormatInfo(i)->fileExtension,"obj")==0 ) {
+            formatIdx = i;
+            break;
+        }
+    }
+    model.exportToFile(formatIdx, dir);
 }

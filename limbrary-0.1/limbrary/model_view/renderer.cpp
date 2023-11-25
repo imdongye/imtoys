@@ -1,7 +1,7 @@
 /*
 
 Todo:
-지금 render node에 material없을때 dfs에서 이전에 사용된 mat쓰는데 원래 부모의 mat을 사용하게 해야됨.
+지금 render node의 메쉬에 해당하는 material이 null일때 default를 사용함.
 
 */
 
@@ -244,6 +244,7 @@ namespace lim
         const Material* nextMat = nullptr;
         const Program* curProg = nullptr;
         const Program* nextProg = nullptr;
+        // 
         std::function<void(const Program&)> curSetProg;
         int activeSlot = 0;
 
@@ -254,13 +255,12 @@ namespace lim
             curSetProg = md.default_material->set_prog;
 
             dfsNodeTree(&md.root, [&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
-                if( mat!=nullptr ) {
-                     nextMat = mat;
-                    if( nextMat->prog != nullptr )
-                        nextProg = nextMat->prog;
-                    if( nextMat->set_prog )
-                        curSetProg = nextMat->set_prog;
-                }
+                nextMat = (mat!=nullptr)?mat:md.default_material;
+                if( nextMat->prog != nullptr )
+                    nextProg = nextMat->prog;
+                if( nextMat->set_prog )
+                    curSetProg = nextMat->set_prog;
+
                 if( curProg != nextProg ) {
                     const Program& prog = *nextProg;
                     activeSlot = 0;
@@ -274,13 +274,13 @@ namespace lim
                         activeSlot = bindLightToProg(prog, *pLit, activeSlot);
                         break; //  Todo: 지금은 라이트 하나만
                     }
-                    prog.setUniform("useIBL", ( scn.light_map )?1:-1);
+                    prog.setUniform("use_IBL", ( scn.light_map )?1:-1);
                     if( scn.light_map ) {
                         prog.setTexture("map_Light", scn.light_map->tex_id, activeSlot++);
                     }
                 }
 
-                if(  curProg != nextProg || curMat != nextMat ) {
+                if( curProg != nextProg || curMat != nextMat ) {
                     curSetProg(*nextProg);
                     bindMatToProg(*nextProg, *nextMat, activeSlot);
                     curMat = nextMat;

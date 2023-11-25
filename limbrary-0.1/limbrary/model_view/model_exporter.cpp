@@ -173,6 +173,11 @@ namespace
 		aiMs->mPrimitiveTypes = aiPrimitiveType_TRIANGLE;
 		if(srcMat) {
 			GLuint idxOfMat = findIdx(_src_md->my_materials, (Material*)srcMat);
+			if(idxOfMat<0) {
+				// 머테리얼이 my_materials에 없거나 null값인경우 makeScene에서 만들어주는 
+				// 마지막위치의 defaultMaterial을 사용하기 위함.
+				idxOfMat = _src_md->my_materials.size();
+			}
 			aiMs->mMaterialIndex = idxOfMat;
 		} else {
 			aiMs->mMaterialIndex = 0;
@@ -266,32 +271,54 @@ namespace
 
 	aiScene* makeScene(const Model& md)
 	{
-		aiScene *scene = new aiScene();
+		aiScene* scene = new aiScene();
 
 		scene->mFlags = md.ai_backup_flags;
 
-		// only one marerial
-		const GLuint nrMats = md.my_materials.size();
-		scene->mNumMaterials = nrMats;
-		scene->mMaterials = new aiMaterial*[nrMats];
-		for( int i = 0; i<nrMats; i++ ) {
-			scene->mMaterials[i] = convertMaterial(*md.my_materials[i]);
-		}
+		// assimp에서는 mesh안에 material index가 포함되어있어서
+		// 사용하는 material마다 같은 mesh를 생성해야한다.
+		// limbrary의 render tree에서 material의 null값을 허용하기때문에 null이 있을경우
+		// my_material마지막에 default_material을 넣어주고 indexing해서 assimp scene을 업데이트한다.
+		// export후 default material은 다시 빼주어야한다.
+		bool isUseDefaultMat = false;
 		GLuint nrAiMeshes = 0;
-		const GLuint nrMeshes = md.my_meshes.size();
-		scene->mNumMeshes = nrMeshes;
-		scene->mMeshes = new aiMesh*[nrMeshes];
 		_index_cache.clear();
-		for( int i=0; i<nrMeshes; i++ ) {
-			std::vector<const Material*> mats = findMatsOfMesh(md.my_meshes[i], md.root);
+		for( Mesh* ms: md.my_meshes ) {
+			std::vector<const Material*> mats = findMatsOfMesh(ms, md.root);
 			for( const Material* mat : mats ) {
-				_index_cache.push_back(std::make_pair(md.my_meshes[i], mat));
-				scene->mMeshes[nrAiMeshes++] = convertMesh(*md.my_meshes[i], mat);
+				if(mat==nullptr) {
+					isUseDefaultMat = true;
+				}
+				_index_cache.push_back(std::make_pair(ms, mat));
+				nrAiMeshes++;
 			}
 		}
 		
+		const GLuint nrMats = md.my_materials.size();
+		if(isUseDefaultMat) {
+			scene->mNumMaterials = nrMats+1;
+			scene->mMaterials = new aiMaterial*[nrMats+1];
+			scene->mMaterials[nrMats] = convertMaterial(*md.default_material);
+		}
+		else {
+			scene->mNumMaterials = nrMats;
+			scene->mMaterials = new aiMaterial*[nrMats];
+		}
+		for( int i = 0; i<nrMats; i++ ) {
+			scene->mMaterials[i] = convertMaterial(*md.my_materials[i]);
+		}
+
+
+		scene->mNumMeshes = nrAiMeshes;
+		scene->mMeshes = new aiMesh*[nrAiMeshes];
+		for(int i=0; i<nrAiMeshes; i++) {
+			auto [ms, mat] = _index_cache[i];
+			scene->mMeshes[i] = convertMesh(*ms, mat);
+		}
 		scene->mRootNode = recursiveConvertTree(md.root);
 		_index_cache.clear();
+		
+		
 		return scene;
 	}
 };
@@ -313,12 +340,12 @@ namespace lim
 		return _formats[idx];
 	}
 
-	bool Model::exportToFile(size_t pIndex, std::string_view exportPath)
+	bool Model::exportToFile(size_t pIndex, std::string_view exportDir)
 	{
 		namespace fs = std::filesystem;
 		const aiExportFormatDesc *format = _formats[pIndex];
 		_src_md = this;
-		std::string md_dir(exportPath);
+		std::string md_dir(exportDir);
 		md_dir += "/"+name+"_"+format->fileExtension;
 
 		fs::path createdDir(md_dir);
