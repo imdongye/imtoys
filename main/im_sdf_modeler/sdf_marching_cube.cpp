@@ -11,6 +11,7 @@
 #include <limbrary/model_view/model.h>
 #include <limbrary/model_view/model_io_helper.h>
 #include <limbrary/log.h>
+#include <GLFW/glfw3.h>
 
 using namespace glm;
 
@@ -453,8 +454,7 @@ void exportMesh(std::string_view dir, std::string_view modelName,  int sampleRat
     vec3 volumeSize = volumeMax - volumeMin;
     vec3 radius = volumeSize/vec3(2*sampleRate);
 
-
-    lim::log::pure("%f\n", volumeSize.x);
+    float elapsedTime = glfwGetTime();
 
 
     for(int x=0; x<sampleRate; x++) for(int y=0; y<sampleRate; y++) for(int z=0; z<sampleRate; z++)
@@ -489,5 +489,7 @@ void exportMesh(std::string_view dir, std::string_view modelName,  int sampleRat
             break;
         }
     }
+    lim::log::pure("done! marching cube %.2fsec\n\n", glfwGetTime()-elapsedTime);
     model.exportToFile(formatIdx, dir);
+
 }

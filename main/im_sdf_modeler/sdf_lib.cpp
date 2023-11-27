@@ -48,9 +48,11 @@ struct ObjNode {
     std::vector<ObjNode*> children;
 
     ObjNode() = default;
-    ObjNode(PrimitiveType primType, ObjNode* parent);
+    ObjNode(std::string_view _name, PrimitiveType primType, ObjNode* parent);
     ~ObjNode();
-    void addChild(PrimitiveType primType);
+
+    void toJson(Json& json);
+    void fromJson(const Json& json);
     void updateGlsl(); // without transform
     float getScaleFactor();
     void updateTransformWithParent();
@@ -64,7 +66,11 @@ struct SdfMaterial {
     glm::vec3 base_color = {0.2, 0.13, 0.87};
     float roughness = 1.f;
     float metalness = 0.f;
-
+    
+    SdfMaterial() = default;
+    SdfMaterial(std::string_view _name);
+    void toJson(Json& json);
+    void fromJson(const Json& json);
     void updateGlsl();
 };
 
@@ -98,7 +104,6 @@ float roundnesses[MAX_OBJS];
 
 // each prim ...
 float donuts[MAX_PRIMS];
-float cylinder[MAX_PRIMS];
 
 
 /* application data */
@@ -107,12 +112,12 @@ namespace
     int nr_groups = 0;
     int nr_mats = 0;
 
-    ObjNode root(PT_GROUP, nullptr);
+    ObjNode root("root", PT_GROUP, nullptr);
     ObjNode* selected_obj = nullptr;
     int nr_prims[nr_prim_types] = {0,};
 
     SdfMaterial materials[MAX_MATS]; // SRGB space
-    const char* mat_names[MAX_MATS]; // for gui
+    const char* mat_names[MAX_MATS]; // cache for gui
     int selected_mat_idx = 0;
 
     ImGuizmo::OPERATION gzmo_edit_modes[] = { (ImGuizmo::OPERATION)0, ImGuizmo::TRANSLATE, ImGuizmo::SCALE, ImGuizmo::ROTATE, ImGuizmo::UNIVERSAL };
@@ -124,9 +129,9 @@ namespace
     Light* light = nullptr;
 };
 
-ObjNode::ObjNode(PrimitiveType primType, ObjNode* p) {
+ObjNode::ObjNode(std::string_view _name, PrimitiveType primType, ObjNode* p) {
+    name = _name;
     prim_type = primType;
-    name = fmtStrToBuf("%s_%d", prim_type_names[primType], nr_prims[primType]);
     prim_idx = nr_prims[prim_type]++;
     parent = p;
 
@@ -134,6 +139,7 @@ ObjNode::ObjNode(PrimitiveType primType, ObjNode* p) {
         obj_idx = nr_groups++;
         return;
     }
+
     obj_idx = nr_objs++;
     if( nr_objs==MAX_OBJS)  {
         log::err("maximum of primitives\n");
@@ -148,13 +154,6 @@ ObjNode::~ObjNode() {
     for(ObjNode* child: children) {
         delete child;
     }
-}
-
-void ObjNode::addChild(PrimitiveType primType)
-{
-    ObjNode* child = new ObjNode(primType, this);
-    children.push_back(child);
-    selected_obj = child;
 }
 void ObjNode::updateGlsl() {
     mat_idxs[obj_idx] = mat_idx;
@@ -205,110 +204,99 @@ void ObjNode::decomposeTransform() {
 }
 
 
+
+static void toJson(const glm::vec3& v, Json& json) {
+    json = {v.x, v.y, v.z};
+}
+static void fromJson(glm::vec3& v, const Json& json) {
+    v = { json[0], json[1], json[2]} ;
+}
+static void toJson(const glm::bvec3& v, Json& json) {
+    json = {v.x, v.y, v.z};
+}
+static void fromJson(glm::bvec3& v, const Json& json) {
+    v = { json[0], json[1], json[2]} ;
+}
+void ObjNode::toJson(Json& json) {
+    json["mat_idx"]      = mat_idx;
+    json["prim_type"]    = prim_type;
+    json["op_group"]     = op_group;
+    json["op_spec"]      = op_spec;
+    json["blendness"]    = blendness;
+    json["roundness"]    = roundness;
+    json["name"]         = name;
+    ::toJson(position,      json["position"]);
+    ::toJson(scale,         json["scale"]);
+    ::toJson(euler_angles,  json["euler_angles"]);
+    ::toJson(mirror,        json["mirror"]);
+
+    for(int i=0; i<children.size(); i++) {
+        children[i]->toJson(json["children"][i]);
+    }
+}
+
+void ObjNode::fromJson(const Json& json) {
+    mat_idx =   json["mat_idx"];
+    op_group =  json["op_group"];
+    op_spec =   json["op_spec"];
+    blendness = json["blendness"];
+    roundness = json["roundness"];
+    ::fromJson(position,      json["position"]);
+    ::fromJson(scale,         json["scale"]);
+    ::fromJson(euler_angles,  json["euler_angles"]);
+    ::fromJson(mirror,        json["mirror"]);
+    composeTransform();
+
+    if( prim_type!=PT_GROUP ) {
+        updateGlsl();
+    }
+
+    if( !json.contains("children") ) {
+        return;
+    }
+    Json jchildren;
+    for( int i=0; i<jchildren.size(); i++ ) {
+        Json jchild = jchildren[i];
+        std::string childName = jchild["name"];
+        PrimitiveType childPrimType = jchild["prim_type"];
+        children.push_back( new ObjNode(childName, childPrimType, this) );
+        children.back()->fromJson(jchild);
+    }
+}
+
+
+SdfMaterial::SdfMaterial(std::string_view _name) {
+    name = _name;
+    idx = nr_mats++;
+}
 void SdfMaterial::updateGlsl() {
+    mat_names[idx] = name.c_str();
+    mat_names[idx+1] = "Add New Material";
     base_colors[idx] = glm::convertSRGBToLinear(base_color);
     roughnesses[idx] = roughness;
     metalnesses[idx] = metalness;
 }
 
+void SdfMaterial::toJson(Json& json) {
+    json["name"]       = name;
+    json["idx"]        = idx;
+    ::toJson(base_color, json["base_color"]);
+    json["metalness"]  = metalness;
+    json["roughness"]  = roughness;
+}
+void SdfMaterial::fromJson(const Json& json) {
+    name = json["name"];
+    idx = json["idx"];
+    ::fromJson(base_color, json["base_color"]);
+    metalness = json["metalness"];
+    roughness = json["roughness"];
+    updateGlsl();
+}
 
-
-static Json makeJson(const glm::vec3& v) {
-    return {v.x, v.y, v.z};
-}
-static void fromJson(glm::vec3& v, const Json& json) {
-    v = { json[0], json[1], json[2]} ;
-}
-static Json makeJson(const glm::bvec3& v) {
-    return {v.x, v.y, v.z};
-}
-static void fromJson(glm::bvec3& v, const Json& json) {
-    v = { json[0], json[1], json[2]} ;
-}
-// static Json makeJson(const glm::mat4& m) {
-//     return {
-//         {m[0][0], m[0][1], m[0][2], m[0][3]},
-//         {m[1][0], m[1][1], m[1][2], m[1][3]},
-//         {m[2][0], m[2][1], m[2][2], m[2][3]},
-//         {m[3][0], m[3][1], m[3][2], m[3][3]},
-//     };
-// }
-// static void fromJson(glm::mat4& m, const Json& j) {
-//     m = {
-//         {j[0][0], j[0][1], j[0][2], j[0][3]},
-//         {j[1][0], j[1][1], j[1][2], j[1][3]},
-//         {j[2][0], j[2][1], j[2][2], j[2][3]},
-//         {j[3][0], j[3][1], j[3][2], j[3][3]},
-//     };
-// }
-static Json makeJson(const SdfMaterial& mat) {
-    Json rst;
-    rst["name"]       = mat.name;
-    rst["idx"]        = mat.idx;
-    rst["base_color"] = makeJson(mat.base_color);
-    rst["metalness"]  = mat.metalness;
-    rst["roughness"]  = mat.roughness;
-    return rst;
-}
-static void fromJson(SdfMaterial& mat, const Json& json) {
-    mat.name = json["name"];
-    mat.idx = json["idx"];
-    fromJson(mat.base_color, json["base_color"]);
-    mat.metalness = json["metalness"];
-    mat.roughness = json["roughness"];
-    mat.updateGlsl();
-}
-static Json makeJson(const ObjNode& obj) {
-    Json rst;
-    rst["obj_idx"]      = obj.obj_idx;
-    rst["mat_idx"]      = obj.mat_idx;
-    rst["prim_type"]    = obj.prim_type;
-    rst["op_group"]     = obj.op_group;
-    rst["op_spec"]      = obj.op_spec;
-    rst["blendness"]    = obj.blendness;
-    rst["roundness"]    = obj.roundness;
-    rst["name"]         = obj.name;
-    rst["position"]     = makeJson(obj.position);
-    rst["scale"]        = makeJson(obj.scale);
-    rst["euler_angles"] = makeJson(obj.euler_angles);
-    rst["mirror"]       = makeJson(obj.mirror);
-
-    for(const ObjNode* child: obj.children) {
-        rst["children"].push_back(makeJson(*child));
-    }
-    return rst;
-}
-static void fromJson(ObjNode& obj, const Json& json) {
-    obj.obj_idx =   json["obj_idx"];
-    obj.mat_idx =   json["mat_idx"];
-    obj.prim_type = json["prim_type"];
-    obj.op_group =  json["op_group"];
-    obj.op_spec =   json["op_spec"];
-    obj.blendness = json["blendness"];
-    obj.roundness = json["roundness"];
-    obj.name =      json["name"];
-    fromJson(obj.position,      json["position"]);
-    fromJson(obj.scale,         json["scale"]);
-    fromJson(obj.euler_angles,  json["euler_angles"]);
-    fromJson(obj.mirror,        json["mirror"]);
-    obj.composeTransform();
-    obj.updateGlsl();
-
-    if(obj.prim_type!=PT_GROUP)
-        return;
-        
-    int nr_child = json["children"].size();
-    for( int i=0; i<nr_child; i++ ) {
-        obj.addChild(PT_GROUP); // temporary
-        fromJson(*obj.children.back(), json["children"][i]);
-    }
-}
-static Json makeJson(const CameraController& cam) {
-    Json rst;
-    rst["position"] = makeJson(cam.position);
-    rst["pivot"]    = makeJson(cam.pivot);
-    rst["fovy"]     = cam.fovy;
-    return rst;
+static void toJson(const CameraController& cam, Json& json) {
+    toJson(cam.position,  json["position"]);
+    toJson(cam.pivot,     json["pivot"]);
+    json["fovy"] = cam.fovy;
 }
 static void fromJson(CameraController& cam, const Json& json) {
     fromJson(cam.position,  json["position"]);
@@ -317,13 +305,11 @@ static void fromJson(CameraController& cam, const Json& json) {
     cam.updateViewMat();
     cam.updateProjMat();
 }
-static Json makeJson(const Light& lit) {
-    Json rst;
-    rst["position"] = makeJson(lit.position);
-    rst["pivot"]    = makeJson(lit.pivot);
-    rst["color"]    = makeJson(lit.color);
-    rst["intensity"]= lit.intensity;
-    return rst;
+static void toJson(const Light& lit, Json& json) {
+    toJson(lit.position,  json["position"]);
+    toJson(lit.pivot,     json["pivot"]);
+    toJson(lit.color,     json["color"]);
+    json["intensity"]= lit.intensity;
 }
 static void fromJson(Light& lit, const Json& json) {
     fromJson(lit.position,  json["position"]);
@@ -331,12 +317,6 @@ static void fromJson(Light& lit, const Json& json) {
     fromJson(lit.color,     json["color"]);
     lit.intensity =         json["intensity"];
 }
-
-// static void from_json(const Json& j, person& p) {
-//     j.at("name").get_to(p.name);
-//     j.at("address").get_to(p.address);
-//     j.at("age").get_to(p.age);
-// }
 
 static void exportJson(std::filesystem::path path) {
     std::ofstream ofile;
@@ -347,11 +327,11 @@ static void exportJson(std::filesystem::path path) {
     ojson["model_name"] = model_name;
 
     for(int i=0; i<nr_mats; i++) {
-        ojson["materials"].push_back( makeJson(materials[i]) );
+        materials[i].toJson(ojson["materials"][i]);
     }
-    ojson["root"] = makeJson(root);
-    ojson["camera"] = makeJson(*camera);
-    ojson["light"] = makeJson(*light);
+    root.toJson(ojson["root"]);
+    toJson(*camera, ojson["camera"]);
+    toJson(*light, ojson["light"]);
 
     try {
         ofile.open(path);
@@ -377,9 +357,9 @@ static void importJson(std::filesystem::path path) {
     model_name = ijson["model_name"];
     
     for(int i=0; i<nr_mats; i++) {
-        fromJson(materials[i], ijson["materials"][i]);
+        materials[i].fromJson(ijson["materials"][i]);
     }
-    fromJson(root, ijson["root"]);
+    root.fromJson(ijson["root"]);
     fromJson(*camera, ijson["camera"]);
     fromJson(*light, ijson["light"]);
 
@@ -393,11 +373,7 @@ static void addMaterial() {
 
     mat.idx = idx;
     mat.name = fmtStrToBuf("Material_%d", idx);
-    mat_names[idx] = mat.name.c_str();
-    mat_names[idx+1] = "Add New Material";
-    base_colors[idx] = glm::convertSRGBToLinear(mat.base_color);
-    roughnesses[idx] = mat.roughness;
-    metalnesses[idx] = mat.metalness;
+    mat.updateGlsl();
 }
 
 static void makeSpaceInGlslObjData(int pos, int len) {
@@ -419,8 +395,10 @@ void lim::sdf::init(CameraController* cam, Light* lit)
     addMaterial();
 
     root.name = "root";
+    root.prim_type = PT_GROUP;
 
-    root.addChild(PT_BOX);
+
+    root.children.push_back(new ObjNode(fmtStrToBuf("%s_%d", prim_type_names[PT_BOX], nr_prims[PT_BOX]), PT_BOX, &root));
     selected_obj = root.children.back();
 }
 void lim::sdf::deinit() 
@@ -488,7 +466,8 @@ static void drawObjTree(ObjNode& obj)
         if( obj.prim_type==PT_GROUP && ImGui::BeginMenu("Add") ) {
             for(int i=0; i<nr_prim_types; i++) {
                 if( ImGui::MenuItem(prim_type_names[i], fmtStrToBuf("Ctrl+%d",i), false, true) ) {
-                    obj.addChild((PrimitiveType)i);
+                    obj.children.push_back(new ObjNode(fmtStrToBuf("%s_%d", prim_type_names[i], nr_prims[i]), (PrimitiveType)i, &obj));
+                    selected_obj = obj.children.back();
                 }
             }
             ImGui::EndMenu();
@@ -652,7 +631,8 @@ void lim::sdf::drawImGui()
             }
             for(int i=0; i<nr_prim_types; i++) {
                 if( ImGui::Selectable(prim_type_names[i]) ) {
-                    selected_obj->addChild((PrimitiveType)i);
+                    selected_obj->children.push_back(new ObjNode(fmtStrToBuf("%s_%d", prim_type_names[i], nr_prims[i]), (PrimitiveType)i, selected_obj));
+                    selected_obj = selected_obj->children.back();
                 }
             }
             ImGui::EndPopup();
