@@ -14,6 +14,8 @@ and there are several toys that use limbrary
 
 -   astar visualizer
 
+-   SDF modeler [report](https://drive.google.com/file/d/1fsZAitytSMygLGITExE0Y6ucwJFRNriO/view?usp=sharing) [presentation](https://youtu.be/KKeihZ03pAs)
+
 ## Note
 
 The reason why inherit an application class and write a program is because when you run multiple programs on this one project To make explicite life cycle with constructor and deconstructor and use less data area by reducing global variables, and to manage memory leaks in the heap space by allocating and deleting memory of member variables.
