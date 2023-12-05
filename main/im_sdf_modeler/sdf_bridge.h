@@ -1,7 +1,10 @@
-#include <limbrary/model_view/camera_man.h>
+#ifndef __sdf_bridge_h_
+#define __sdf_bridge_h_
+
 #include <limbrary/program.h>
 #include <limbrary/model_view/light.h>
-#include <limbrary/model_view/camera.h>
+#include <limbrary/model_view/camera_man.h>
+#include <filesystem>
 
 namespace lim { namespace sdf
 {
@@ -10,5 +13,8 @@ namespace lim { namespace sdf
     void bindSdfData(const Program& prog);
     void drawImGui();
 	void drawGuizmo(const Viewport& vp);
-    void dndCallback(int count, const char **paths);
+    void exportJson(std::filesystem::path path);
+    void importJson(std::filesystem::path path);
 }}
+
+#endif

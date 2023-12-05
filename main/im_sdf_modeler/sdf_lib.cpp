@@ -1,95 +1,36 @@
-#include "sdf_lib.h"
-#include <imgui.h>
+#include "sdf_bridge.h"
+#include "sdf_global.h"
+
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/color_space.hpp>
-#include <imguizmo/ImGuizmo.h>
 #include <limbrary/limgui.h>
 #include <misc/cpp/imgui_stdlib.h>
 #include <vector>
-#include <nlohmann/json.h>
 #include <fstream>
 #include <stack>
-#include "sdf_global.h"
 
 #if defined(_WIN32)
 // #include <commdlg.h>
 #endif
 
-
 using namespace lim;
-using Json = nlohmann::json;
 
-
-
-
-struct ObjNode {
-    int obj_idx = -1;
-
-    // 7개의 속성은 group이 아니라면 부모에 따라 수정되어 glsl data에 복사됨.
-    glm::mat4 transform = glm::mat4(1); // global transform
-    int mat_idx = 0;
-    PrimitiveType prim_type = PT_GROUP;
-    int prim_idx = 0;
-    OperationGroup op_group = OG_ADDITION; // addition
-    OperationSpec op_spec = OS_ROUND;  // round
-    float blendness = 0.f;
-    float roundness = 0.f;
-
-    std::string name = "sdf_obj";
-    glm::vec3 position = {0,0,0};
-    glm::vec3 scale = glm::vec3(1);
-    glm::vec3 euler_angles = glm::vec3(0);
-    glm::mat4 my_transform = glm::mat4(1); // local transform
-    glm::bvec3 mirror = {0,0,0};
-    ObjNode* parent = nullptr;
-    std::vector<ObjNode*> children;
-
-    ObjNode() = default;
-    ObjNode(std::string_view _name, PrimitiveType primType, ObjNode* parent);
-    ~ObjNode();
-
-    void toJson(Json& json);
-    void fromJson(const Json& json);
-    void updateGlsl(); // without transform
-    float getScaleFactor();
-    void updateTransformWithParent();
-    void composeTransform();
-    void decomposeTransform();
-};
-
-struct SdfMaterial {
-    std::string name = "sdf_mat";
-    int idx = 0;
-    glm::vec3 base_color = {0.2, 0.13, 0.87};
-    float roughness = 1.f;
-    float metalness = 0.f;
-    
-    SdfMaterial() = default;
-    SdfMaterial(std::string_view _name);
-    void toJson(Json& json);
-    void fromJson(const Json& json);
-    void updateGlsl();
-};
-
-
-/* glsl data */
 // todo: 1.uniform block   2.look up table texture
+/************* glsl data **************/
 // optimize options
 int nr_march_steps = 200;
 float far_distance = 80.0;
 float hit_threshold = 0.0001;
 float diff_for_normal = 0.0001;
 
-// env
-glm::vec3 sky_color = {0.01,0.001,0.3};
-
 // mat
 glm::vec3 base_colors[MAX_MATS]; // linear space
 float roughnesses[MAX_MATS];
 float metalnesses[MAX_MATS];
+glm::vec3 sky_color = {0.01,0.001,0.3};
 
 // obj
 int nr_objs = 0;
@@ -103,51 +44,47 @@ float blendnesses[MAX_OBJS];
 float roundnesses[MAX_OBJS];
 
 // each prim ...
-float donuts[MAX_PRIMS];
+glm::vec2 donuts[MAX_PRIMS];
+float capsules[MAX_PRIMS];
+/*******************************************/
 
 
-/* application data */
-namespace 
-{
-    int nr_groups = 0;
-    int nr_mats = 0;
 
-    ObjNode root("root", PT_GROUP, nullptr);
-    ObjNode* selected_obj = nullptr;
-    int nr_prims[nr_prim_types] = {0,};
+/***************** application data ****************/
+int nr_groups = 0;
+int nr_mats = 0;
 
-    SdfMaterial materials[MAX_MATS]; // SRGB space
-    const char* mat_names[MAX_MATS]; // cache for gui
-    int selected_mat_idx = 0;
+ObjNode root("root", PT_GROUP, nullptr);
+ObjNode* selected_obj = nullptr;
+int nr_prims[nr_prim_types] = {0,};
 
-    ImGuizmo::OPERATION gzmo_edit_modes[] = { (ImGuizmo::OPERATION)0, ImGuizmo::TRANSLATE, ImGuizmo::SCALE, ImGuizmo::ROTATE, ImGuizmo::UNIVERSAL };
-    int                 selected_edit_mode_idx = 1;
-    ImGuizmo::MODE 		gzmo_space     = ImGuizmo::MODE::LOCAL;
+SdfMaterial materials[MAX_MATS]; // SRGB space
+const char* mat_names[MAX_MATS]; // cache for gui
+int selected_mat_idx = 0;
 
-    std::string model_name = "Untitled";
-    CameraController* camera = nullptr;
-    Light* light = nullptr;
-};
+int                 selected_edit_mode_idx = 1;
+ImGuizmo::MODE 		gzmo_space     = ImGuizmo::MODE::LOCAL;
+
+std::string model_name = "Untitled";
+CameraController* camera = nullptr;
+Light* light = nullptr;
+/*****************************************************/
+
 
 ObjNode::ObjNode(std::string_view _name, PrimitiveType primType, ObjNode* p) {
     name = _name;
     prim_type = primType;
     prim_idx = nr_prims[prim_type]++;
     parent = p;
-
     if( prim_type == PT_GROUP ) {
-        obj_idx = nr_groups++;
         return;
     }
-
     obj_idx = nr_objs++;
-    if( nr_objs==MAX_OBJS)  {
+    if( nr_objs==MAX_OBJS ) {
         log::err("maximum of primitives\n");
         exit(1);
     }
-
     updateGlsl();
-
     composeTransform();
 }
 ObjNode::~ObjNode() {
@@ -170,98 +107,39 @@ float ObjNode::getScaleFactor() {
 void ObjNode::updateTransformWithParent() {
     if(parent) {
         transform = parent->transform * my_transform;
+    } else {
+        transform = my_transform;
     }
     if(prim_type==PT_GROUP) {
         for(ObjNode* child : children) {
             child->updateTransformWithParent();
         }
-    }
-    else {
+    } else {
         transforms[obj_idx] = glm::inverse(transform);
         scaling_factors[obj_idx] = getScaleFactor();
     }
 }
+// local info to world transform
 void ObjNode::composeTransform() {
+    // 인스펙터에서 로컬로 조작한다.
     ImGuizmo::RecomposeMatrixFromComponents(
                 glm::value_ptr(position)
                 ,glm::value_ptr(euler_angles)
                 ,glm::value_ptr(scale)
-                ,glm::value_ptr(transform));
-    
-    my_transform = (parent)? glm::inverse(parent->transform)*transform : transform;
+                ,glm::value_ptr(my_transform));
     updateTransformWithParent();
 }
+// world transform to local info
 void ObjNode::decomposeTransform() {
     my_transform = (parent)? glm::inverse(parent->transform)*transform : transform;
 
     ImGuizmo::DecomposeMatrixToComponents(
-                glm::value_ptr(transform)
+                glm::value_ptr(my_transform)
                 ,glm::value_ptr(position)
                 ,glm::value_ptr(euler_angles)
                 ,glm::value_ptr(scale));
 
     updateTransformWithParent();
-}
-
-
-
-static void toJson(const glm::vec3& v, Json& json) {
-    json = {v.x, v.y, v.z};
-}
-static void fromJson(glm::vec3& v, const Json& json) {
-    v = { json[0], json[1], json[2]} ;
-}
-static void toJson(const glm::bvec3& v, Json& json) {
-    json = {v.x, v.y, v.z};
-}
-static void fromJson(glm::bvec3& v, const Json& json) {
-    v = { json[0], json[1], json[2]} ;
-}
-void ObjNode::toJson(Json& json) {
-    json["mat_idx"]      = mat_idx;
-    json["prim_type"]    = prim_type;
-    json["op_group"]     = op_group;
-    json["op_spec"]      = op_spec;
-    json["blendness"]    = blendness;
-    json["roundness"]    = roundness;
-    json["name"]         = name;
-    ::toJson(position,      json["position"]);
-    ::toJson(scale,         json["scale"]);
-    ::toJson(euler_angles,  json["euler_angles"]);
-    ::toJson(mirror,        json["mirror"]);
-
-    for(int i=0; i<children.size(); i++) {
-        children[i]->toJson(json["children"][i]);
-    }
-}
-
-void ObjNode::fromJson(const Json& json) {
-    mat_idx =   json["mat_idx"];
-    op_group =  json["op_group"];
-    op_spec =   json["op_spec"];
-    blendness = json["blendness"];
-    roundness = json["roundness"];
-    ::fromJson(position,      json["position"]);
-    ::fromJson(scale,         json["scale"]);
-    ::fromJson(euler_angles,  json["euler_angles"]);
-    ::fromJson(mirror,        json["mirror"]);
-    composeTransform();
-
-    if( prim_type!=PT_GROUP ) {
-        updateGlsl();
-    }
-
-    if( !json.contains("children") ) {
-        return;
-    }
-    Json jchildren;
-    for( int i=0; i<jchildren.size(); i++ ) {
-        Json jchild = jchildren[i];
-        std::string childName = jchild["name"];
-        PrimitiveType childPrimType = jchild["prim_type"];
-        children.push_back( new ObjNode(childName, childPrimType, this) );
-        children.back()->fromJson(jchild);
-    }
 }
 
 
@@ -275,95 +153,6 @@ void SdfMaterial::updateGlsl() {
     base_colors[idx] = glm::convertSRGBToLinear(base_color);
     roughnesses[idx] = roughness;
     metalnesses[idx] = metalness;
-}
-
-void SdfMaterial::toJson(Json& json) {
-    json["name"]       = name;
-    json["idx"]        = idx;
-    ::toJson(base_color, json["base_color"]);
-    json["metalness"]  = metalness;
-    json["roughness"]  = roughness;
-}
-void SdfMaterial::fromJson(const Json& json) {
-    name = json["name"];
-    idx = json["idx"];
-    ::fromJson(base_color, json["base_color"]);
-    metalness = json["metalness"];
-    roughness = json["roughness"];
-    updateGlsl();
-}
-
-static void toJson(const CameraController& cam, Json& json) {
-    toJson(cam.position,  json["position"]);
-    toJson(cam.pivot,     json["pivot"]);
-    json["fovy"] = cam.fovy;
-}
-static void fromJson(CameraController& cam, const Json& json) {
-    fromJson(cam.position,  json["position"]);
-    fromJson(cam.pivot,     json["pivot"]);
-    cam.fovy =              json["fovy"];
-    cam.updateViewMat();
-    cam.updateProjMat();
-}
-static void toJson(const Light& lit, Json& json) {
-    toJson(lit.position,  json["position"]);
-    toJson(lit.pivot,     json["pivot"]);
-    toJson(lit.color,     json["color"]);
-    json["intensity"]= lit.intensity;
-}
-static void fromJson(Light& lit, const Json& json) {
-    fromJson(lit.position,  json["position"]);
-    fromJson(lit.pivot,     json["pivot"]);
-    fromJson(lit.color,     json["color"]);
-    lit.intensity =         json["intensity"];
-}
-
-static void exportJson(std::filesystem::path path) {
-    std::ofstream ofile;
-    Json ojson;
-    ojson["nr_objs"] = nr_objs;
-    ojson["nr_groups"] = nr_groups;
-    ojson["nr_mats"] = nr_mats;
-    ojson["model_name"] = model_name;
-
-    for(int i=0; i<nr_mats; i++) {
-        materials[i].toJson(ojson["materials"][i]);
-    }
-    root.toJson(ojson["root"]);
-    toJson(*camera, ojson["camera"]);
-    toJson(*light, ojson["light"]);
-
-    try {
-        ofile.open(path);
-        ofile << std::setw(4) << ojson << std::endl;
-        ofile.close();
-    } catch( std::ofstream::failure& e ) {
-        log::err("fail write : %s, what? %s \n", path.c_str(), e.what());
-    }
-}
-static void importJson(std::filesystem::path path) {
-    std::ifstream ifile;
-    Json ijson;
-    sdf::deinit();
-    try {
-        ifile.open(path);
-        ifile >> ijson;
-    } catch( std::ifstream::failure& e ) {
-        log::err("fail read : %s, what? %s \n", path.c_str(), e.what());
-    }
-    nr_objs = ijson["nr_objs"];
-    nr_groups = ijson["nr_groups"];
-    nr_mats = ijson["nr_mats"];
-    model_name = ijson["model_name"];
-    
-    for(int i=0; i<nr_mats; i++) {
-        materials[i].fromJson(ijson["materials"][i]);
-    }
-    root.fromJson(ijson["root"]);
-    fromJson(*camera, ijson["camera"]);
-    fromJson(*light, ijson["light"]);
-
-    selected_obj = ( root.children.size()>0 )?root.children.back():&root;
 }
 
 static void addMaterial() {
@@ -414,13 +203,12 @@ void lim::sdf::deinit()
 }
 void lim::sdf::bindSdfData(const Program& prog) 
 {
+    prog.setUniform("camera_Aspect", camera->aspect);
+	prog.setUniform("camera_Fovy", camera->fovy);
+	prog.setUniform("camera_Pos", camera->position);
+	prog.setUniform("camera_Pivot", camera->pivot);
     prog.setUniform("light_Pos", light->position);
     prog.setUniform("light_Int", light->intensity);
-    prog.setUniform("cameraAspect", camera->aspect);
-	prog.setUniform("cameraFovy", camera->fovy);
-	prog.setUniform("cameraOrthWidth", 0.f);
-	prog.setUniform("camera_Pos", camera->position);
-	prog.setUniform("cameraPivot", camera->pivot);
 
     prog.setUniform("nr_march_steps", nr_march_steps);
     prog.setUniform("far_distance", far_distance);
@@ -430,6 +218,7 @@ void lim::sdf::bindSdfData(const Program& prog)
     prog.setUniform("base_colors", MAX_OBJS, base_colors);
     prog.setUniform("roughnesses", MAX_MATS, roughnesses);
     prog.setUniform("metalnesses", MAX_MATS, metalnesses);
+    prog.setUniform("sky_color", sky_color);
     
     prog.setUniform("nr_objs", nr_objs);
     prog.setUniform("transforms", MAX_OBJS, transforms);
@@ -439,6 +228,9 @@ void lim::sdf::bindSdfData(const Program& prog)
     prog.setUniform("op_types", MAX_OBJS, op_types);
     prog.setUniform("blendnesses", MAX_OBJS, blendnesses);
     prog.setUniform("roundnesses", MAX_OBJS, roundnesses);
+
+    prog.setUniform("donuts", MAX_PRIMS, donuts);
+    prog.setUniform("capsules", MAX_PRIMS, capsules);
 }
 
 static void drawObjTree(ObjNode& obj) 
@@ -508,7 +300,7 @@ static void drawObjTree(ObjNode& obj)
     }
 }
 
-extern void exportMesh(std::string_view dir, std::string_view modelName,  int sampleRate);
+extern void exportMesh(std::string_view dir, std::string_view modelName, int sampleRate);
 
 void lim::sdf::drawImGui() 
 {
@@ -856,7 +648,4 @@ void lim::sdf::drawGuizmo(const Viewport& vp) {
 			selected_edit_mode_idx = 4;
 		}
     }
-}
-void lim::sdf::dndCallback(int count, const char **paths) {
-    importJson(paths[0]);
 }

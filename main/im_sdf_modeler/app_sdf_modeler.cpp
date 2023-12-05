@@ -6,7 +6,7 @@
 */
 
 #include "app_sdf_modeler.h"
-#include "sdf_lib.h"
+#include "sdf_bridge.h"
 #include <limbrary/asset_lib.h>
 #include <imgui.h>
 
@@ -53,7 +53,9 @@ void lim::AppSdfModeler::update()
 	Camera& cam = viewport.camera;
 	viewport.getFb().bind();
 	prog.use();
+
 	sdf::bindSdfData(prog);
+
 
 	AssetLib::get().screen_quad.drawGL();
 	viewport.getFb().unbind();
@@ -74,5 +76,5 @@ void lim::AppSdfModeler::keyCallback(int key, int scancode, int action, int mods
 	}
 }
 void lim::AppSdfModeler::dndCallback(int count, const char **paths) {
-	sdf::dndCallback(count, paths);
+	sdf::importJson(paths[0]);
 }

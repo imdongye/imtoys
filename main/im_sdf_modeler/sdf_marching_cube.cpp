@@ -5,6 +5,7 @@
 #
 #define GLM_FORCE_SWIZZLE
 #include "sdf_global.h"
+
 #include <vector>
 #include <fstream>
 #include <filesystem>
@@ -465,7 +466,7 @@ void exportMesh(std::string_view dir, std::string_view modelName,  int sampleRat
         int* triInfo = triTable[idx];
         int vertIdxs[12];
         for(int i=0; i<12; i++) {
-            if( edgeInfo&1>0 ) {
+            if( (edgeInfo&1)>0 ) {
                 vec3 edgeCenter = radius*cubeEdgeCenters[i] + cubePos;
                 vertIdxs[i] = mesh.poss.size();
                 mesh.poss.push_back(edgeCenter);

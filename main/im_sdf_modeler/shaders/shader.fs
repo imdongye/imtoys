@@ -16,15 +16,12 @@ in vec2 texCoord;
 const float PI = 3.1415926535;
 const vec3 UP = vec3(0,1,0);
 
-uniform float cameraAspect;
+uniform float camera_Aspect;
 uniform vec3 camera_Pos;
-uniform float cameraFovy;
-uniform vec3 cameraPivot;
+uniform float camera_Fovy;
+uniform vec3 camera_Pivot;
 uniform vec3 light_Pos;
 uniform float light_Int;
-
-const int MAX_MATS = 32;
-const int MAX_OBJS = 32;
 
 const int PT_SPHERE = 1;
 const int PT_BOX    = 2;
@@ -39,14 +36,19 @@ const int OT_INT_ROUND  = 4;
 const int OT_INT_EDGE   = 5;
 
 
-uniform int nr_march_steps = 100;
-uniform float far_distance = 100.0;
-uniform float hit_threshold = 0.01;
-uniform float diff_for_normal = 0.01;
+const int MAX_MATS = 32;
+const int MAX_OBJS = 32;
+const int MAX_PRIMS = 32;
+
+uniform int nr_march_steps;
+uniform float far_distance;
+uniform float hit_threshold;
+uniform float diff_for_normal;
 
 uniform vec3 base_colors[MAX_MATS];
 uniform float roughnesses[MAX_MATS];
 uniform float metalnesses[MAX_MATS];
+uniform vec3 sky_color;
 
 uniform int nr_objs;
 uniform mat4 transforms[MAX_OBJS];
@@ -57,6 +59,9 @@ uniform int prim_idxs[MAX_OBJS];
 uniform int op_types[MAX_OBJS];
 uniform float blendnesses[MAX_OBJS];
 uniform float roundnesses[MAX_OBJS];
+
+uniform vec2 donuts[MAX_PRIMS];
+uniform float capsules[MAX_PRIMS];
 
 float distToObjs[MAX_OBJS];
 
@@ -294,11 +299,11 @@ void main()
 {
     vec2 uv = texCoord*2-vec2(1);
     vec3 ro = camera_Pos;
-    vec3 camFront = normalize( cameraPivot-camera_Pos );
+    vec3 camFront = normalize( camera_Pivot-camera_Pos );
     vec3 camRight = normalize( cross(camFront, UP) );
     vec3 camUp = normalize( cross(camRight, camFront) );
-    float eyeZ = 1/tan((PI/360)*cameraFovy);
-    vec3 rd = normalize( cameraAspect*uv.x*camRight + uv.y*camUp + eyeZ*camFront );
+    float eyeZ = 1/tan((PI/360)*camera_Fovy);
+    vec3 rd = normalize( camera_Aspect*uv.x*camRight + uv.y*camUp + eyeZ*camFront );
     float hitDist = rayMarch(ro, rd, far_distance);
     vec3 outColor;
     

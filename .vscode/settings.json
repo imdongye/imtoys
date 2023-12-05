@@ -129,6 +129,7 @@
         "xtree": "cpp",
         "xutility": "cpp",
         "memory_resource": "cpp",
-        "xstddef": "cpp"
+        "xstddef": "cpp",
+        "__verbose_abort": "cpp"
     },
 }
