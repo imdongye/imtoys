@@ -46,7 +46,6 @@ float roundnesses[MAX_OBJS];
 // each prim ...
 glm::vec2 donuts[MAX_PRIMS];
 float capsules[MAX_PRIMS];
-/*******************************************/
 
 
 
@@ -68,9 +67,10 @@ ImGuizmo::MODE 		gzmo_space     = ImGuizmo::MODE::LOCAL;
 std::string model_name = "Untitled";
 CameraController* camera = nullptr;
 Light* light = nullptr;
-/*****************************************************/
 
 
+
+/********************** sdf_obj.h ***********************/
 ObjNode::ObjNode(std::string_view _name, PrimitiveType primType, ObjNode* p) {
     name = _name;
     prim_type = primType;
@@ -142,11 +142,6 @@ void ObjNode::decomposeTransform() {
     updateTransformWithParent();
 }
 
-
-SdfMaterial::SdfMaterial(std::string_view _name) {
-    name = _name;
-    idx = nr_mats++;
-}
 void SdfMaterial::updateGlsl() {
     mat_names[idx] = name.c_str();
     mat_names[idx+1] = "Add New Material";
@@ -165,16 +160,18 @@ static void addMaterial() {
     mat.updateGlsl();
 }
 
-static void makeSpaceInGlslObjData(int pos, int len) {
+static void shiftGlslData(int pos, int off) {
     int nr_rights = nr_objs - pos;
-    memcpy((float*)&transforms[pos+len], (float*)&transforms[pos], sizeof(glm::mat4)*nr_rights);
-    memcpy((int*)&mat_idxs[pos+len], (int*)&mat_idxs[pos], sizeof(int)*nr_rights);
-    memcpy((int*)&prim_types[pos+len], (int*)&prim_types[pos], sizeof(int)*nr_rights);
-    memcpy((int*)&prim_idxs[pos+len], (int*)&prim_idxs[pos], sizeof(int)*nr_rights);
-    memcpy((int*)&op_types[pos+len], (int*)&op_types[pos], sizeof(int)*nr_rights);
-    memcpy((float*)&blendnesses[pos+len], (float*)&blendnesses[pos], sizeof(float)*nr_rights);
-    memcpy((float*)&roundnesses[pos+len], (float*)&roundnesses[pos], sizeof(float)*nr_rights);
+    memcpy((float*)&transforms[pos+off], (float*)&transforms[pos], sizeof(glm::mat4)*nr_rights);
+    memcpy((int*)&mat_idxs[pos+off], (int*)&mat_idxs[pos], sizeof(int)*nr_rights);
+    memcpy((int*)&prim_types[pos+off], (int*)&prim_types[pos], sizeof(int)*nr_rights);
+    memcpy((int*)&prim_idxs[pos+off], (int*)&prim_idxs[pos], sizeof(int)*nr_rights);
+    memcpy((int*)&op_types[pos+off], (int*)&op_types[pos], sizeof(int)*nr_rights);
+    memcpy((float*)&blendnesses[pos+off], (float*)&blendnesses[pos], sizeof(float)*nr_rights);
+    memcpy((float*)&roundnesses[pos+off], (float*)&roundnesses[pos], sizeof(float)*nr_rights);
 }
+
+/******************************** sdf_bridge.h **********************************/
 
 void lim::sdf::init(CameraController* cam, Light* lit) 
 {
@@ -565,6 +562,7 @@ void lim::sdf::drawImGui()
         ImGui::End();
     }
 }
+
 void lim::sdf::drawGuizmo(const Viewport& vp) {
     Camera& cam = *camera;
     const auto& pos = ImGui::GetItemRectMin();

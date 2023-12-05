@@ -80,8 +80,6 @@ struct SdfMaterial {
     float roughness = 1.f;
     float metalness = 0.f;
     
-    SdfMaterial() = default;
-    SdfMaterial(std::string_view _name);
     void updateGlsl();
 };
 
