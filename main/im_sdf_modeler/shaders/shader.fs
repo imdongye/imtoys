@@ -23,10 +23,10 @@ uniform vec3 camera_Pivot;
 uniform vec3 light_Pos;
 uniform float light_Int;
 
-const int PT_SPHERE = 1;
-const int PT_BOX    = 2;
-const int PT_PIPE   = 3;
-const int PT_DONUT  = 4;
+const int PT_SPHERE = 0;
+const int PT_BOX    = 1;
+const int PT_PIPE   = 2;
+const int PT_DONUT  = 3;
 
 const int OT_ADD_ROUND  = 0;
 const int OT_ADD_EDGE   = 1;

@@ -29,7 +29,7 @@ extern float metalnesses[MAX_MATS];
 extern glm::vec3 sky_color;
 
 // obj
-extern int nr_objs;
+// nr_objs = serialized_objs.size()
 extern glm::mat4 transforms[MAX_OBJS]; // inversed
 extern float scaling_factors[MAX_OBJS];
 extern int mat_idxs[MAX_OBJS];
@@ -45,15 +45,16 @@ extern float capsules[MAX_PRIMS];
 
 
 /***************** application data ****************/
-extern int nr_mats;
+extern int nr_each_prim_types[nr_prim_types];
+extern int nr_groups;
+extern std::vector<sdf::Object*> serialized_objs;
+extern sdf::Node* selected_obj;
+extern sdf::Material* selected_mat;
 
-extern ObjNode root;
-extern ObjNode* selected_obj;
-extern int nr_prims[nr_prim_types];
+extern sdf::Group* root;
 
-extern SdfMaterial materials[MAX_MATS];
+extern std::vector<sdf::Material*> materials;
 extern const char* mat_names[MAX_MATS];
-extern int selected_mat_idx;
 
 constexpr ImGuizmo::OPERATION gzmo_edit_modes[] = { 
     (ImGuizmo::OPERATION)0, ImGuizmo::TRANSLATE, 

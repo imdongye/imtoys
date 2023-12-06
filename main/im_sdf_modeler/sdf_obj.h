@@ -5,11 +5,11 @@
 #include <glm/glm.hpp>
 
 enum PrimitiveType {
-    PT_GROUP, PT_SPHERE, PT_BOX, PT_PIPE, PT_DONUT
+    PT_SPHERE, PT_BOX, PT_PIPE, PT_DONUT
 };
-constexpr int nr_prim_types = 5;
+constexpr int nr_prim_types = 4;
 inline const char* prim_type_names[nr_prim_types] = {
-    "Group", "Sphere", "Box", "Pipe", "Donut"
+    "Sphere", "Box", "Pipe", "Donut"
 };
 
 enum OperationGroup {
@@ -39,51 +39,61 @@ enum OperationType {
     OT_INT_EDGE,
 };
 
-struct ObjNode {
-    int obj_idx = -1;
+namespace sdf 
+{
+    struct Material {
+        std::string name = "sdf_mat";
+        int idx;
+        glm::vec3 base_color = {0.2, 0.13, 0.87};
+        float roughness = 1.f;
+        float metalness = 0.f;
+        void updateShaderData();
+    };
+    struct Group;
+    struct Node {
+        std::string name = "sdf_obj";
+        bool is_group = true;
 
-    // 7개의 속성은 group이 아니라면 부모에 따라 수정되어 glsl data에 복사됨.
-    int mat_idx = 0;
-    int prim_type = PT_GROUP;
-    int prim_idx = 0;
-    int op_group = OG_ADDITION; // addition
-    int op_spec = OS_ROUND;  // round
-    float blendness = 0.f;
-    float roundness = 0.f;
-    // RecomposeMatrixFromComponents로 생성됨.
-    glm::mat4 transform = glm::mat4(1); // global transform
+        Group* parent = nullptr;
+        glm::mat4 transform = glm::mat4(1); // global transform
+        glm::vec3 position = {0,0,0};
+        glm::vec3 scale = glm::vec3(1);
+        glm::vec3 euler_angles = glm::vec3(0);
+        glm::mat4 my_transform = glm::mat4(1); // local transform
+        glm::bvec3 mirror = {0,0,0};
+        int op_group = OG_ADDITION; // addition
+        int op_spec = OS_ROUND;  // round
+        float blendness = 0.f;
+        float roundness = 0.f;
 
-    std::string name = "sdf_obj";
-    glm::vec3 position = {0,0,0};
-    glm::vec3 scale = glm::vec3(1);
-    glm::vec3 euler_angles = glm::vec3(0);
-    glm::mat4 my_transform = glm::mat4(1); // local transform
-    glm::bvec3 mirror = {0,0,0};
-    ObjNode* parent = nullptr;
-    std::vector<ObjNode*> children;
+        Node() = default;
+        Node(Group* parent);
+        virtual ~Node() = default;
+        void updateTransformWithParent();
+        void composeTransform();
+        void decomposeTransform();
+        float getScaleFactor();
+    };
 
-    ObjNode() = default;
-    ObjNode(std::string_view _name, PrimitiveType primType, ObjNode* parent);
-    ~ObjNode();
+    struct Group: public Node {
+        std::vector<Node*> children;
+        Group(Group* parent);
+        ~Group();
+        void addGroupToBack();
+        void addObjectToBack(PrimitiveType pt);
+        void rmChild(int idx);
+    };
 
-    void updateGlsl();
-    float getScaleFactor();
-    void updateTransformWithParent();
-    void composeTransform();
-    void decomposeTransform();
-    int getTotalObjLength();
-    int getSerializedIdx();
-    void moveGlslData(int offset);
-};
+    struct Object: public Node {
+        int idx = 0;
+        int prim_type = PT_BOX;
+        Material* p_mat = nullptr;
+        int prim_idx = 0;
 
-struct SdfMaterial {
-    std::string name = "sdf_mat";
-    int idx = 0;
-    glm::vec3 base_color = {0.2, 0.13, 0.87};
-    float roughness = 1.f;
-    float metalness = 0.f;
-    
-    void updateGlsl();
-};
+        Object(Group* parent, PrimitiveType pt);
+        ~Object();
+        void updateShaderData();
+    };
+}
 
 #endif

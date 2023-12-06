@@ -6,15 +6,15 @@
 #include <limbrary/model_view/camera_man.h>
 #include <filesystem>
 
-namespace lim { namespace sdf
+namespace sdf
 {
-	void init(CameraController* cam, Light* lit);
-    void deinit();
-    void bindSdfData(const Program& prog);
+    void clear();
+	void init(lim::CameraController* cam, lim::Light* lit);
+    void bindSdfData(const lim::Program& prog);
     void drawImGui();
-	void drawGuizmo(const Viewport& vp);
+	void drawGuizmo(const lim::Viewport& vp);
     void exportJson(std::filesystem::path path);
     void importJson(std::filesystem::path path);
-}}
+}
 
 #endif

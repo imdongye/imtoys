@@ -40,7 +40,7 @@ lim::AppSdfModeler::AppSdfModeler(): AppBase(1373, 783, APP_NAME, false)
 }
 lim::AppSdfModeler::~AppSdfModeler()
 {
-	sdf::deinit();
+	sdf::clear();
 }
 void lim::AppSdfModeler::update()
 {

@@ -2,7 +2,7 @@
 
     2023.12.05 / im dongye
 
-    SDFF signed distance fields formats
+    SDFF signed distance fields formats with JSON
 
     version : 0.1
 
@@ -16,7 +16,7 @@
 using Json = nlohmann::json;
 
 
-static const char* sdff_version = "0.1";
+static const char* sdff_version = "0.2";
 
 
 static void toJson(const glm::vec3& v, Json& json) {
@@ -31,66 +31,87 @@ static void toJson(const glm::bvec3& v, Json& json) {
 static void fromJson(glm::bvec3& v, const Json& json) {
     v = { json[0], json[1], json[2]} ;
 }
-static void toJson(const ObjNode& obj, Json& json) {
-    json["prim_type"]    = obj.prim_type;
-    json["op_group"]     = obj.op_group;
-    json["op_spec"]      = obj.op_spec;
-    json["blendness"]    = obj.blendness;
-    json["name"]         = obj.name;
-    toJson(obj.position,      json["position"]);
-    toJson(obj.scale,         json["scale"]);
-    toJson(obj.euler_angles,  json["euler_angles"]);
-    toJson(obj.mirror,        json["mirror"]);
+static void toJson(const sdf::Node* nod, Json& json) {
+    toJson(nod->position,      json["position"]);
+    toJson(nod->scale,         json["scale"]);
+    toJson(nod->euler_angles,  json["euler_angles"]);
+    toJson(nod->mirror,        json["mirror"]);
+    json["op_group"]     = nod->op_group;
+    json["op_spec"]      = nod->op_spec;
+    json["blendness"]    = nod->blendness;
+    json["roundness"]    = nod->roundness;
 
-    if( obj.prim_type!=PT_GROUP ) {
-        json["roundness"] = obj.roundness;
-        json["mat_idx"] = obj.mat_idx;
-        return;
+    json["name"]         = nod->name;
+    json["is_group"]     = nod->is_group;
+
+    if( nod->is_group ) {
+        sdf::Group* grp = (sdf::Group*)nod;
+
+        for(int i=0; i<grp->children.size(); i++) {
+            toJson(grp->children[i], json["children"][i]);
+        }
     }
-    for(int i=0; i<obj.children.size(); i++) {
-        toJson(*obj.children[i], json["children"][i]);
+    else {
+        sdf::Object* obj = (sdf::Object*)nod;
+        json["prim_type"] = obj->prim_type;
+        json["mat_idx"] = obj->p_mat->idx;
+        json["prim_idx"] = obj->prim_idx;
     }
 }
-void fromJson(ObjNode& obj, const Json& json) {
-    obj.op_group =  json["op_group"];
-    obj.op_spec =   json["op_spec"];
-    obj.blendness = json["blendness"];
-    fromJson(obj.position,      json["position"]);
-    fromJson(obj.scale,         json["scale"]);
-    fromJson(obj.euler_angles,  json["euler_angles"]);
-    fromJson(obj.mirror,        json["mirror"]);
-    obj.composeTransform();
+void fromJson(sdf::Node* nod, const Json& json) {
+    fromJson(nod->position,      json["position"]);
+    fromJson(nod->scale,         json["scale"]);
+    fromJson(nod->euler_angles,  json["euler_angles"]);
+    fromJson(nod->mirror,        json["mirror"]);
+    nod->op_group =  json["op_group"];
+    nod->op_spec =   json["op_spec"];
+    nod->blendness = json["blendness"];
+    nod->roundness = json["roundness"];
+
+    nod->name = json["name"];
+    nod->is_group = json["is_group"];
+
+    nod->composeTransform();
     
-    if( obj.prim_type!=PT_GROUP ) {
-        obj.mat_idx = json["mat_idx"];
-        obj.roundness = json["roundness"];
-        obj.updateGlsl();
+    if( nod->is_group && json.contains("children") ) {
+        Json jchildren = json["children"];
+        sdf::Group* grp = (sdf::Group*)nod;
+
+        for( int i=0; i<jchildren.size(); i++ ) {
+            Json jchild = jchildren[i];
+            if(jchild["is_group"])
+                grp->addGroupToBack();
+            else
+                grp->addObjectToBack(jchild["prim_type"]);
+
+            fromJson(grp->children.back(), jchild);
+        }
+    }
+    else {
+        sdf::Object* obj = (sdf::Object*)nod;
+        obj->prim_type = json["prim_type"];
+        obj->p_mat = materials[json["mat_idx"]];
+        obj->prim_idx = json["prim_idx"];
+        obj->updateShaderData();
         return;
     }
 
-    Json jchildren = json["children"];
-    for( int i=0; i<jchildren.size(); i++ ) {
-        Json jchild = jchildren[i];
-        std::string childName = jchild["name"];
-        PrimitiveType childPrimType = jchild["prim_type"];
-        obj.children.push_back( new ObjNode(childName, childPrimType, &obj) );
-        fromJson(*obj.children.back(), jchild);
-    }
+    
 }
-void toJson(const SdfMaterial& mat, Json& json) {
+void toJson(const sdf::Material& mat, Json& json) {
     json["name"]       = mat.name;
     json["idx"]        = mat.idx;
     toJson(mat.base_color, json["base_color"]);
     json["metalness"]  = mat.metalness;
     json["roughness"]  = mat.roughness;
 }
-void fromJson(SdfMaterial& mat, const Json& json) {
+void fromJson(sdf::Material& mat, const Json& json) {
     mat.name = json["name"];
     mat.idx = json["idx"];
     fromJson(mat.base_color, json["base_color"]);
     mat.metalness = json["metalness"];
     mat.roughness = json["roughness"];
-    mat.updateGlsl();
+    mat.updateShaderData();
 }
 static void toJson(const lim::CameraController& cam, Json& json) {
     toJson(cam.position,  json["position"]);
@@ -117,15 +138,16 @@ static void fromJson(lim::Light& lit, const Json& json) {
     lit.intensity =         json["intensity"];
 }
 
-void lim::sdf::exportJson(std::filesystem::path path) {
+void sdf::exportJson(std::filesystem::path path) {
     std::ofstream ofile;
     Json ojson;
 
     ojson["sdff_version"] = sdff_version;
     ojson["model_name"] = model_name;
 
-    for(int i=0; i<nr_mats; i++) {
-        toJson(materials[i], ojson["materials"][i]);
+    for(int i=0; i<materials.size(); i++) {
+        toJson(*materials[i], ojson["materials"][i]);
+        materials[i]->updateShaderData();
     }
     toJson(root, ojson["root"]);
     toJson(*camera, ojson["camera"]);
@@ -139,13 +161,14 @@ void lim::sdf::exportJson(std::filesystem::path path) {
         lim::log::err("fail write : %s, what? %s \n", path.c_str(), e.what());
     }
 }
-void lim::sdf::importJson(std::filesystem::path path) {
+void sdf::importJson(std::filesystem::path path) {
     std::ifstream ifile;
     Json ijson;
 
     lim::log::pure("sdff importer version %s\n", sdff_version);
 
-    lim::sdf::deinit();
+    sdf::clear();
+
     try {
         ifile.open(path);
         ifile >> ijson;
@@ -158,12 +181,14 @@ void lim::sdf::importJson(std::filesystem::path path) {
 
     model_name = ijson["model_name"];
     
+    int nr_mats = ijson["materials"].size();
     for(int i=0; i<nr_mats; i++) {
-        fromJson(materials[i], ijson["materials"][i]);
+        materials.push_back(new Material());
+        fromJson(*materials[i], ijson["materials"][i]);
     }
     fromJson(root, ijson["root"]);
     fromJson(*camera, ijson["camera"]);
     fromJson(*light, ijson["light"]);
 
-    selected_obj = ( root.children.size()>0 )?root.children.back():&root;
+    selected_obj = ( root->children.size()>0 )?root->children.back():root;
 }

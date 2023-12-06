@@ -110,7 +110,7 @@ namespace {
         float dist = far_distance; 
         dist = wPos.y; // plane
 
-        for( int i=0; i<nr_objs; i++ ) 
+        for( int i=0; i<serialized_objs.size(); i++ ) 
         {
             float blendness = blendnesses[i];
             float objDist = getObjDist(i, wPos);
