@@ -66,11 +66,14 @@ struct ObjNode {
     ObjNode(std::string_view _name, PrimitiveType primType, ObjNode* parent);
     ~ObjNode();
 
-    void updateGlsl(); // without transform
+    void updateGlsl();
     float getScaleFactor();
     void updateTransformWithParent();
     void composeTransform();
     void decomposeTransform();
+    int getTotalObjLength();
+    int getSerializedIdx();
+    void moveGlslData(int offset);
 };
 
 struct SdfMaterial {

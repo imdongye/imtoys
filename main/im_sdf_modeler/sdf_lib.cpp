@@ -1,3 +1,16 @@
+/*
+
+    2023.12.06 / im dongye
+
+    Todo:
+    delete
+    move
+    select
+    ctrl c v
+    mirror
+    clear
+
+*/
 #include "sdf_bridge.h"
 #include "sdf_global.h"
 
@@ -94,6 +107,8 @@ ObjNode::~ObjNode() {
 }
 void ObjNode::updateGlsl() {
     mat_idxs[obj_idx] = mat_idx;
+    transforms[obj_idx] = glm::inverse(transform);
+    scaling_factors[obj_idx] = getScaleFactor();
     prim_types[obj_idx] = prim_type;
     prim_idxs[obj_idx] = prim_idx;
     op_types[obj_idx] = op_group*2 + op_spec;
@@ -149,6 +164,36 @@ void SdfMaterial::updateGlsl() {
     roughnesses[idx] = roughness;
     metalnesses[idx] = metalness;
 }
+int ObjNode::getTotalObjLength() {
+    if(prim_type!=PT_GROUP) {
+        return 1;
+    }
+    int len = 0;
+    for(ObjNode* child: children) {
+        len += child->getTotalObjLength();
+    }
+    return len;
+}
+// dfs로 찾으면 glsl data의 첫번째 위치를 찾을수있다. 
+int ObjNode::getSerializedIdx() {
+    if(prim_type!=PT_GROUP) {
+        return obj_idx;
+    }
+    for(ObjNode* child: children) {
+        int idx = child->getSerializedIdx();
+        if(idx>=0)
+            return idx;
+    }
+    return -1;
+}
+void ObjNode::moveGlslData(int offset) {
+    obj_idx = obj_idx+offset;
+    updateGlsl();
+    for(ObjNode* child: children) {
+        child->moveGlslData(offset);
+    }
+}
+
 
 static void addMaterial() {
     int idx = nr_mats++;
@@ -160,16 +205,20 @@ static void addMaterial() {
     mat.updateGlsl();
 }
 
-static void shiftGlslData(int pos, int off) {
-    int nr_rights = nr_objs - pos;
-    memcpy((float*)&transforms[pos+off], (float*)&transforms[pos], sizeof(glm::mat4)*nr_rights);
-    memcpy((int*)&mat_idxs[pos+off], (int*)&mat_idxs[pos], sizeof(int)*nr_rights);
-    memcpy((int*)&prim_types[pos+off], (int*)&prim_types[pos], sizeof(int)*nr_rights);
-    memcpy((int*)&prim_idxs[pos+off], (int*)&prim_idxs[pos], sizeof(int)*nr_rights);
-    memcpy((int*)&op_types[pos+off], (int*)&op_types[pos], sizeof(int)*nr_rights);
-    memcpy((float*)&blendnesses[pos+off], (float*)&blendnesses[pos], sizeof(float)*nr_rights);
-    memcpy((float*)&roundnesses[pos+off], (float*)&roundnesses[pos], sizeof(float)*nr_rights);
-}
+// static void shiftGlslData(int pos, int off) {
+//     int nr_rights = nr_objs - pos;
+//     memcpy((float*)&transforms[pos+off], (float*)&transforms[pos], sizeof(glm::mat4)*nr_rights);
+//     memcpy((int*)&mat_idxs[pos+off], (int*)&mat_idxs[pos], sizeof(int)*nr_rights);
+//     memcpy((int*)&prim_types[pos+off], (int*)&prim_types[pos], sizeof(int)*nr_rights);
+//     memcpy((int*)&prim_idxs[pos+off], (int*)&prim_idxs[pos], sizeof(int)*nr_rights);
+//     memcpy((int*)&op_types[pos+off], (int*)&op_types[pos], sizeof(int)*nr_rights);
+//     memcpy((float*)&blendnesses[pos+off], (float*)&blendnesses[pos], sizeof(float)*nr_rights);
+//     memcpy((float*)&roundnesses[pos+off], (float*)&roundnesses[pos], sizeof(float)*nr_rights);
+// }
+
+
+
+
 
 /******************************** sdf_bridge.h **********************************/
 
@@ -230,8 +279,12 @@ void lim::sdf::bindSdfData(const Program& prog)
     prog.setUniform("capsules", MAX_PRIMS, capsules);
 }
 
-static void drawObjTree(ObjNode& obj) 
+// return is have to delete
+// true : this obj have to delete
+// falue : do not delete
+static bool drawObjTree(ObjNode& obj) 
 {
+    bool haveToDeleteSelf = false;
     bool isGroup = obj.prim_type==PT_GROUP;
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_None;
     if( isGroup) {
@@ -261,7 +314,8 @@ static void drawObjTree(ObjNode& obj)
             }
             ImGui::EndMenu();
         }
-        if( ImGui::MenuItem("Delete", "Backspace", false, true) ) {
+        if( obj.parent!=nullptr && ImGui::MenuItem("Delete", "Backspace", false, true) ) {
+            haveToDeleteSelf = true;
             log::pure("delelte\n");
         }
         ImGui::EndPopup();
@@ -290,11 +344,26 @@ static void drawObjTree(ObjNode& obj)
     }
 
     if( isGroup&&isOpen ) {
-        for( ObjNode* child: obj.children) {
-            drawObjTree(*child);
+        for( int i=0; i<obj.children.size(); )
+        {
+            ObjNode* child = obj.children[i];
+            // 하위 트리 그리기, 삭제여부
+            if( drawObjTree( *child ) ) {
+                int len = child->getTotalObjLength();
+                delete child;
+                obj.children.erase(obj.children.begin()+i);
+                nr_objs -= len;
+                for(int j=i; j<obj.children.size(); j++) {
+                    obj.children[j]->moveGlslData(-len);
+                }
+                selected_obj = &obj;
+            } else {
+                i++;
+            }
         }
         ImGui::TreePop();
     }
+    return haveToDeleteSelf;
 }
 
 extern void exportMesh(std::string_view dir, std::string_view modelName, int sampleRate);
