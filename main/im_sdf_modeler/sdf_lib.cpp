@@ -156,7 +156,6 @@ void sdf::Object::updateShaderData() {
 sdf::Node::Node(std::string_view _name, Group* _parent) {
     parent = _parent;
     name = _name;
-    composeTransform();
 } 
 void sdf::Node::updateTransformWithParent() {
     if(parent) {
@@ -218,6 +217,7 @@ sdf::Group::~Group() {
 }
 void sdf::Group::addGroupToBack() {
     Group* child = new Group(fmtStrToBuf("Group_%d", nr_groups), this);
+    child->composeTransform();
     children.push_back((Node*)child);
     //serializeModel();
 }
