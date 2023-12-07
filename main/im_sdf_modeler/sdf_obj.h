@@ -3,6 +3,7 @@
 
 #include <string>
 #include <glm/glm.hpp>
+#include <vector>
 
 enum PrimitiveType {
     PT_SPHERE, PT_BOX, PT_PIPE, PT_DONUT
@@ -53,7 +54,7 @@ namespace sdf
     struct Group;
     struct Node {
         std::string name = "sdf_obj";
-        bool is_group = true;
+        bool is_group = false;
 
         Group* parent = nullptr;
         glm::mat4 transform = glm::mat4(1); // global transform

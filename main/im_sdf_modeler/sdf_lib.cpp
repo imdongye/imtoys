@@ -204,7 +204,7 @@ float sdf::Node::getScaleFactor() {
 }
 
 sdf::Group::Group(std::string_view _name, Group* _parent)
-    : Node(_name, _parent) 
+    : Node(_name, _parent)
 {
     is_group = true;
     nr_groups++;

@@ -149,7 +149,7 @@ void sdf::exportJson(std::filesystem::path path) {
         toJson(*materials[i], ojson["materials"][i]);
         materials[i]->updateShaderData();
     }
-    toJson(root, ojson["root"]);
+    toJson((sdf::Object*)root, ojson["root"]);
     toJson(*camera, ojson["camera"]);
     toJson(*light, ojson["light"]);
 
@@ -187,7 +187,7 @@ void sdf::importJson(std::filesystem::path path) {
         fromJson(*materials[i], ijson["materials"][i]);
     }
     root = new Group("root", nullptr);
-    fromJson(root, ijson["root"]);
+    fromJson((sdf::Object*)root, ijson["root"]);
     fromJson(*camera, ijson["camera"]);
     fromJson(*light, ijson["light"]);
 }
