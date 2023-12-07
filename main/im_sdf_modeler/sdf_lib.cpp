@@ -217,13 +217,14 @@ sdf::Group::~Group() {
     }
 }
 void sdf::Group::addGroupToBack() {
-    children.push_back(new Group(fmtStrToBuf("Group_%d", nr_groups), this));
+    Group* child = new Group(fmtStrToBuf("Group_%d", nr_groups), this);
+    children.push_back((Node*)child);
     //serializeModel();
 }
 void sdf::Group::addObjectToBack(PrimitiveType pt) {
     const char* cname = fmtStrToBuf("%s_%d", prim_type_names[pt], nr_each_prim_types[pt]);
-    children.push_back(new Object(cname, this, pt));
-    children.back()->name = cname;
+    Object* child = new Object(cname, this, pt);
+    children.push_back((Node*)child);
     serializeModel();
 }
 void sdf::Group::rmChild(int idx) {
