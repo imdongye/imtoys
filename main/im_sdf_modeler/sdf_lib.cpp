@@ -64,23 +64,23 @@ float capsules[MAX_PRIMS];
 
 
 /***************** application data ****************/
-int nr_each_prim_types[nr_prim_types]; // 이름 만들때만 사용. delete동기화 안됨.
-int nr_groups;
+int nr_each_prim_types[nr_prim_types] = {0,}; // 이름 만들때만 사용. delete동기화 안됨.
+int nr_groups = 0;
 std::vector<sdf::Object*> serialized_objs;
-sdf::Node* selected_obj;
-sdf::Material* selected_mat;
+sdf::Node* selected_obj = nullptr;
+sdf::Material* selected_mat = nullptr;
 
-sdf::Group* root;
+sdf::Group* root = nullptr;
 
 std::vector<sdf::Material*> materials;
 const char* mat_names[MAX_MATS]; // gui를 위한 cache
 
-int selected_edit_mode_idx;
-ImGuizmo::MODE gzmo_space;
+int selected_edit_mode_idx = 1;
+ImGuizmo::MODE gzmo_space = ImGuizmo::MODE::LOCAL;
 
-std::string model_name;
-CameraController* camera;
-Light* light;
+std::string model_name = "Untitled";
+CameraController* camera = nullptr;
+Light* light = nullptr;
 
 
 /********************** global func **********************/
@@ -153,8 +153,9 @@ void sdf::Object::updateShaderData() {
     roundnesses[idx]    = roundness;
 }
 
-sdf::Node::Node(Group* _parent) {
+sdf::Node::Node(std::string_view _name, Group* _parent) {
     parent = _parent;
+    name = _name;
     composeTransform();
 } 
 void sdf::Node::updateTransformWithParent() {
@@ -165,10 +166,14 @@ void sdf::Node::updateTransformWithParent() {
     }
     if(is_group) {
         Group* grp = (Group*)this;
-        lim::log::pure("fuck%d\n",grp->children.size() );
         for(Node* child : grp->children) {
             child->updateTransformWithParent();
         }
+    }
+    else {
+        Object* obj = (Object*)this;
+        transforms[obj->idx] = glm::inverse(obj->transform);
+        scaling_factors[obj->idx] = obj->getScaleFactor(); // Todo: 미리 캐슁
     }
 }
 // local info to world transform
@@ -198,10 +203,13 @@ float sdf::Node::getScaleFactor() {
     return parentFactor * glm::min(scale.x, glm::min(scale.y, scale.z));
 }
 
-sdf::Group::Group(Group* _parent): Node(_parent) {
+sdf::Group::Group(std::string_view _name, Group* _parent)
+    : Node(_name, _parent) 
+{
     is_group = true;
     nr_groups++;
     children.clear();
+    selected_obj = this;
 }
 sdf::Group::~Group() {
     for(Node* node: children) {
@@ -209,17 +217,13 @@ sdf::Group::~Group() {
     }
 }
 void sdf::Group::addGroupToBack() {
-    std::string cname = fmtStrToBuf("Group_%d", nr_groups);
-    children.push_back(new Group(this));
-    children.back()->name = cname;
-    selected_obj = children.back();
-    serializeModel();
+    children.push_back(new Group(fmtStrToBuf("Group_%d", nr_groups), this));
+    //serializeModel();
 }
 void sdf::Group::addObjectToBack(PrimitiveType pt) {
-    std::string cname = fmtStrToBuf("%s_%d", prim_type_names[pt], nr_each_prim_types[pt]);
-    children.push_back(new Object(this, pt));
+    const char* cname = fmtStrToBuf("%s_%d", prim_type_names[pt], nr_each_prim_types[pt]);
+    children.push_back(new Object(cname, this, pt));
     children.back()->name = cname;
-    selected_obj = children.back();
     serializeModel();
 }
 void sdf::Group::rmChild(int idx) {
@@ -230,7 +234,9 @@ void sdf::Group::rmChild(int idx) {
 }
 
 
-sdf::Object::Object(Group* _parent, PrimitiveType pt): Node(_parent) {
+sdf::Object::Object(std::string_view _name, Group* _parent, PrimitiveType pt)
+    : Node(_name, _parent) 
+{
     if( serialized_objs.size()==MAX_OBJS ) {
         log::err("maximum of primitives\n");
         exit(1);
@@ -240,6 +246,7 @@ sdf::Object::Object(Group* _parent, PrimitiveType pt): Node(_parent) {
     p_mat = selected_mat;
     prim_idx = 0;
     nr_each_prim_types[pt]++;
+    selected_obj = this;
 }
 sdf::Object::~Object() {
 
@@ -253,16 +260,17 @@ void sdf::clear()
     std::fill_n(nr_each_prim_types, nr_prim_types, 0);
     nr_groups = 0;
     serialized_objs.clear();
+    if(root) {
+        delete root;
+        root = nullptr;
+    }
 
-    root = new Group(nullptr);
-    root->name = "root";
-    
     materials.clear();
     for(Material* mat: materials) {
         delete mat;
     }
 
-    selected_edit_mode_idx = gzmo_edit_modes[1];
+    selected_edit_mode_idx = 1;
     gzmo_space = ImGuizmo::MODE::LOCAL;
 
     model_name = "Untitled";
@@ -274,6 +282,9 @@ void sdf::init(CameraController* cam, Light* lit) {
     light = lit;
 
     addMaterial();
+
+    root = new Group("root", nullptr);
+
 
     root->addObjectToBack(PT_BOX);
 }
@@ -316,11 +327,10 @@ static int sdf_group_bytes = sizeof(sdf::Group);
 // return is have to delete
 // true : this obj have to delete
 // falue : do not delete
-static bool drawHierarchyView(sdf::Node* pNod) 
+static bool drawHierarchyView(sdf::Node* nod) 
 {
-    sdf::Node& nod = *pNod;
     bool haveToDeleteSelf = false;
-    bool isGroup = nod.is_group;
+    bool isGroup = nod->is_group;
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_None;
     if( isGroup) {
         flags |= ImGuiTreeNodeFlags_OpenOnArrow|ImGuiTreeNodeFlags_DefaultOpen;
@@ -328,32 +338,33 @@ static bool drawHierarchyView(sdf::Node* pNod)
     else {
         flags |= ImGuiTreeNodeFlags_Leaf|ImGuiTreeNodeFlags_NoTreePushOnOpen|ImGuiTreeNodeFlags_Bullet;
     }
-    if(selected_obj == &nod) {
+    if(selected_obj == nod) {
         flags |= ImGuiTreeNodeFlags_Selected;
     }
 
-    bool isOpen = ImGui::TreeNodeEx(&nod, flags, "%s", nod.name.c_str());
+    bool isOpen = ImGui::TreeNodeEx(nod, flags, "%s", nod->name.c_str());
 
-    if( selected_obj!=&nod &&(ImGui::IsItemClicked(0)||ImGui::IsItemClicked(1))) {
-        selected_obj = &nod;
-        if(!isGroup)
-            selected_mat = ((sdf::Object*)pNod)->p_mat;
+    if( selected_obj!=nod &&(ImGui::IsItemClicked(0)||ImGui::IsItemClicked(1))) {
+        selected_obj = nod;
+        if(!isGroup) {
+            selected_mat = ((sdf::Object*)nod)->p_mat;
+        }
     }
 
     if( ImGui::BeginPopupContextItem() ) {
         if( isGroup && ImGui::BeginMenu("Add") ) {
             if( ImGui::MenuItem("Group", "Ctrl+G", false, true) ) {
-                ((sdf::Group*)pNod)->addGroupToBack();
+                ((sdf::Group*)nod)->addGroupToBack();
             }
             for(int i=0; i<nr_prim_types; i++) {
                 if( ImGui::MenuItem(prim_type_names[i], fmtStrToBuf("Ctrl+%d",i), false, true) ) {
-                    ((sdf::Group*)pNod)->addObjectToBack((PrimitiveType)i);
+                    ((sdf::Group*)nod)->addObjectToBack((PrimitiveType)i);
                 }
             }
             ImGui::EndMenu();
         }
         // root 삭제 불가능
-        if( nod.parent && ImGui::MenuItem("Delete", "Backspace", false, true) ) {
+        if( nod->parent && ImGui::MenuItem("Delete", "Backspace", false, true) ) {
             haveToDeleteSelf = true;
             log::pure("delete\n");
         }
@@ -361,11 +372,11 @@ static bool drawHierarchyView(sdf::Node* pNod)
     }
 
     // root 옮기기 불가능
-    if( nod.parent && ImGui::BeginDragDropSource(ImGuiDragDropFlags_None) ) {
+    if( nod->parent && ImGui::BeginDragDropSource(ImGuiDragDropFlags_None) ) {
         if(isGroup)
-            ImGui::SetDragDropPayload("DND_SCENE_CELL", pNod, sdf_group_bytes);
+            ImGui::SetDragDropPayload("DND_SCENE_CELL", nod, sdf_group_bytes);
         else
-            ImGui::SetDragDropPayload("DND_SCENE_CELL", pNod, sdf_object_bytes);
+            ImGui::SetDragDropPayload("DND_SCENE_CELL", nod, sdf_object_bytes);
 
         ImGui::EndDragDropSource();
     }
@@ -374,8 +385,8 @@ static bool drawHierarchyView(sdf::Node* pNod)
         if( const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_SCENE_CELL") )
         {
             //assert(payload->DataSize == sizeof(ObjNode));
-            sdf::Node& srcNod = *(sdf::Node*)payload->Data;
-            log::pure("%s to %s\n",srcNod.name.c_str(), nod.name.c_str());
+            sdf::Node* srcNod = (sdf::Node*)payload->Data;
+            log::pure("%s to %s\n",srcNod->name.c_str(), nod->name.c_str());
             
             // Todo
             // makeSpaceInGlslObjData()
@@ -384,13 +395,13 @@ static bool drawHierarchyView(sdf::Node* pNod)
     }
 
     if( isGroup&&isOpen ) {
-        sdf::Group grp = *(sdf::Group*)pNod;
-        for( int i=0; i<grp.children.size(); )
+        sdf::Group* grp = (sdf::Group*)nod;
+        for( int i=0; i<grp->children.size(); )
         {
-            sdf::Node* child = grp.children[i];
+            sdf::Node* child = grp->children[i];
             // 하위 트리 그리기, 삭제여부
             if( drawHierarchyView( child ) ) {
-                grp.rmChild(i);
+                grp->rmChild(i);
             } else {
                 i++;
             }
@@ -448,7 +459,6 @@ void sdf::drawImGui()
             ImGui::EndPopup();
         }
 
-
         if( ImGui::MenuItem("Export Mesh") ) {
             ImGui::OpenPopup("MeshExporter");
             isMeshExporterOpened = true;
@@ -456,7 +466,7 @@ void sdf::drawImGui()
         ImGui::SetNextWindowPos(center, 0, ImVec2(0.5f, 0.5f));
         ImGui::SetNextWindowSize(popupSize);
         if( ImGui::BeginPopupModal("MeshExporter", &isMeshExporterOpened, popupWindowFlags) ) {
-            static int sampleRate = 200;
+            static int sampleRate = 50;
             std::string exportPath = fmtStrToBuf("program_dir/exports/%s/%s.obj", model_name.c_str(), model_name.c_str());
             ImGui::InputText("File Name", &model_name, ImGuiInputTextFlags_AutoSelectAll);
             ImGui::TextUnformatted(exportPath.c_str());
@@ -487,6 +497,12 @@ void sdf::drawImGui()
 
         if( ImGui::MenuItem("Import") ) {
             // Todo: 윈도우 파일 오픈 다이얼로그
+        }
+
+        if( ImGui::MenuItem("Clear") ) {
+            init(camera, light);
+            ImGui::EndMainMenuBar();
+            return;
         }
 
 
@@ -542,37 +558,37 @@ void sdf::drawImGui()
             ImGui::End();
             return;
         }
-        sdf::Node& nod = *selected_obj;
-        ImGui::InputText("Name", &nod.name, ImGuiInputTextFlags_AutoSelectAll);
+        sdf::Node* nod = selected_obj;
+        ImGui::InputText("Name", &nod->name, ImGuiInputTextFlags_AutoSelectAll);
 
         static const float slide_pos_spd = 4/500.f;
         static const float slide_scale_spd = 4/500.f;
         static const float slide_rot_spd = 180/500.f;
-        if(ImGui::DragFloat3("Position", glm::value_ptr(nod.position), slide_pos_spd, -FLT_MAX, +FLT_MAX)) {
-            nod.composeTransform();
+        if(ImGui::DragFloat3("Position", glm::value_ptr(nod->position), slide_pos_spd, -FLT_MAX, +FLT_MAX)) {
+            nod->composeTransform();
         }
-        if(ImGui::DragFloat3("Scale", glm::value_ptr(nod.scale), slide_scale_spd, -FLT_MAX, +FLT_MAX)) {
-            nod.composeTransform();
+        if(ImGui::DragFloat3("Scale", glm::value_ptr(nod->scale), slide_scale_spd, -FLT_MAX, +FLT_MAX)) {
+            nod->composeTransform();
         }
-        if(ImGui::DragFloat3("Rotate", glm::value_ptr(nod.euler_angles), slide_rot_spd, -FLT_MAX, +FLT_MAX)) {
-            nod.composeTransform();
+        if(ImGui::DragFloat3("Rotate", glm::value_ptr(nod->euler_angles), slide_rot_spd, -FLT_MAX, +FLT_MAX)) {
+            nod->composeTransform();
         }
-        if( LimGui::CheckBox3("Mirror", glm::value_ptr(nod.mirror)) ) {
+        if( LimGui::CheckBox3("Mirror", glm::value_ptr(nod->mirror)) ) {
 
         }
-        if( !nod.is_group ) {
+        if( !nod->is_group ) {
             sdf::Object& obj = *((sdf::Object*)selected_obj);
-            if( ImGui::Combo("OperGroup", (int*)&nod.op_group, prim_oper_group_names, nr_prim_oper_groups) ) {
-                op_types[obj.idx] = nod.op_group*2 + nod.op_spec;
+            if( ImGui::Combo("OperGroup", (int*)&nod->op_group, prim_oper_group_names, nr_prim_oper_groups) ) {
+                op_types[obj.idx] = nod->op_group*2 + nod->op_spec;
             }
-            if( ImGui::Combo("OperSpec", (int*)&nod.op_spec, prim_oper_spec_names, nr_prim_oper_specs) ) {
-                op_types[obj.idx] = nod.op_group*2 + nod.op_spec;
+            if( ImGui::Combo("OperSpec", (int*)&nod->op_spec, prim_oper_spec_names, nr_prim_oper_specs) ) {
+                op_types[obj.idx] = nod->op_group*2 + nod->op_spec;
             }
-            if( ImGui::SliderFloat("Blendness", &nod.blendness, 0.f, 1.f) ) {
-                blendnesses[obj.idx] = nod.blendness;
+            if( ImGui::SliderFloat("Blendness", &nod->blendness, 0.f, 1.f) ) {
+                blendnesses[obj.idx] = nod->blendness;
             }
-            if( ImGui::SliderFloat("Roundness", &nod.roundness, 0.f, 1.f) ) {
-                roundnesses[obj.idx] = nod.roundness;
+            if( ImGui::SliderFloat("Roundness", &nod->roundness, 0.f, 1.f) ) {
+                roundnesses[obj.idx] = nod->roundness;
             }
             int matIdx = obj.p_mat->idx;
             if( ImGui::Combo("Material", &matIdx, mat_names, materials.size()+1) ) {

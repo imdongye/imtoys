@@ -186,9 +186,8 @@ void sdf::importJson(std::filesystem::path path) {
         materials.push_back(new Material());
         fromJson(*materials[i], ijson["materials"][i]);
     }
+    root = new Group("root", nullptr);
     fromJson(root, ijson["root"]);
     fromJson(*camera, ijson["camera"]);
     fromJson(*light, ijson["light"]);
-
-    selected_obj = ( root->children.size()>0 )?root->children.back():root;
 }

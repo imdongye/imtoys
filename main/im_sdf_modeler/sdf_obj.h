@@ -49,6 +49,7 @@ namespace sdf
         float metalness = 0.f;
         void updateShaderData();
     };
+    
     struct Group;
     struct Node {
         std::string name = "sdf_obj";
@@ -67,7 +68,7 @@ namespace sdf
         float roundness = 0.f;
 
         Node() = default;
-        Node(Group* parent);
+        Node(std::string_view name, Group* parent);
         virtual ~Node() = default;
         void updateTransformWithParent();
         void composeTransform();
@@ -77,7 +78,7 @@ namespace sdf
 
     struct Group: public Node {
         std::vector<Node*> children;
-        Group(Group* parent);
+        Group(std::string_view name, Group* parent);
         ~Group();
         void addGroupToBack();
         void addObjectToBack(PrimitiveType pt);
@@ -90,7 +91,7 @@ namespace sdf
         Material* p_mat = nullptr;
         int prim_idx = 0;
 
-        Object(Group* parent, PrimitiveType pt);
+        Object(std::string_view name, Group* parent, PrimitiveType pt);
         ~Object();
         void updateShaderData();
     };
