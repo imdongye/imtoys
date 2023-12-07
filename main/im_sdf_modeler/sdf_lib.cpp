@@ -228,9 +228,17 @@ void sdf::Group::addObjectToBack(PrimitiveType pt) {
     serializeModel();
 }
 void sdf::Group::rmChild(int idx) {
-    delete children[idx];
+    Node* child = children[idx];
+    delete child;
     children.erase(children.begin()+idx);
-    selected_obj = parent; // 부모 선택
+    if(children.size()>idx) {
+        selected_obj = children[idx];
+    }
+    else if(children.size()>0) {
+        selected_obj = children[idx-1];
+    } else {
+        selected_obj = this;
+    }
     serializeModel();
 }
 
