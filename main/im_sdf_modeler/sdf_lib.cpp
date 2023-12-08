@@ -3,7 +3,6 @@
     2023.12.06 / im dongye
 
     Todo:
-    delete
     move
     select
     ctrl c v
@@ -227,18 +226,30 @@ void sdf::Group::addObjectToBack(PrimitiveType pt) {
     children.push_back((Node*)child);
     serializeModel();
 }
-void sdf::Group::rmChild(int idx) {
-    Node* child = children[idx];
-    delete child;
-    children.erase(children.begin()+idx);
-    if(children.size()>idx) {
-        selected_obj = children[idx];
-    }
-    else if(children.size()>0) {
-        selected_obj = children[idx-1];
-    } else {
+void sdf::Group::rmChild(sdf::Node* child) {
+    auto it = std::find(children.begin(), children.end(), child);
+    if(it == children.end())
+        return;
+    
+    if(children.size()==1) {
         selected_obj = this;
+    } else if(it+1 == children.end()) {
+        selected_obj = *(it-1);
+    } else {
+        selected_obj = *(it+1);
     }
+
+    children.erase(it);
+    delete child;
+
+    serializeModel();
+}
+void sdf::Group::getOtherChild(sdf::Node* child) {
+    auto it = std::find(child->parent->children.begin(), child->parent->children.end(), child);
+    child->parent->children.erase(it);
+
+    children.push_back(child);
+
     serializeModel();
 }
 
@@ -332,13 +343,15 @@ void sdf::bindSdfData(const Program& prog)
 
 static int sdf_object_bytes = sizeof(sdf::Object);
 static int sdf_group_bytes = sizeof(sdf::Group);
+static sdf::Node* toMoveHirarchySrc = nullptr;
+static sdf::Group* toMoveHirarchyDst = nullptr;
+static sdf::Node* toDelHirarchySrc = nullptr;
 
 // return is have to delete
 // true : this obj have to delete
 // falue : do not delete
-static bool drawHierarchyView(sdf::Node* nod) 
+static void drawHierarchyView(sdf::Node* nod) 
 {
-    bool haveToDeleteSelf = false;
     bool isGroup = nod->is_group;
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_None;
     if( isGroup) {
@@ -374,7 +387,7 @@ static bool drawHierarchyView(sdf::Node* nod)
         }
         // root 삭제 불가능
         if( nod->parent && ImGui::MenuItem("Delete", "Backspace", false, true) ) {
-            haveToDeleteSelf = true;
+            toDelHirarchySrc = nod;
             log::pure("delete\n");
         }
         ImGui::EndPopup();
@@ -382,42 +395,28 @@ static bool drawHierarchyView(sdf::Node* nod)
 
     // root 옮기기 불가능
     if( nod->parent && ImGui::BeginDragDropSource(ImGuiDragDropFlags_None) ) {
-        if(isGroup)
-            ImGui::SetDragDropPayload("DND_SCENE_CELL", nod, sdf_group_bytes);
-        else
-            ImGui::SetDragDropPayload("DND_SCENE_CELL", nod, sdf_object_bytes);
+        toMoveHirarchySrc = nod;
+        ImGui::SetDragDropPayload("DND_SCENE_CELL", nod, 0);
 
         ImGui::EndDragDropSource();
     }
-
     if( isGroup && ImGui::BeginDragDropTarget() ) {
-        if( const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_SCENE_CELL") )
-        {
-            //assert(payload->DataSize == sizeof(ObjNode));
-            sdf::Node* srcNod = (sdf::Node*)payload->Data;
-            log::pure("%s to %s\n",srcNod->name.c_str(), nod->name.c_str());
-            
-            // Todo
-            // makeSpaceInGlslObjData()
+        if(ImGui::AcceptDragDropPayload("DND_SCENE_CELL")) {
+            toMoveHirarchyDst = (sdf::Group*)nod;
+            lim::log::pure("%s to %s\n",toMoveHirarchySrc->name.c_str(), toMoveHirarchyDst->name.c_str());
         }
         ImGui::EndDragDropTarget();
     }
+    
 
     if( isGroup&&isOpen ) {
         sdf::Group* grp = (sdf::Group*)nod;
-        for( int i=0; i<grp->children.size(); )
+        for( sdf::Node* child: grp->children )
         {
-            sdf::Node* child = grp->children[i];
-            // 하위 트리 그리기, 삭제여부
-            if( drawHierarchyView( child ) ) {
-                grp->rmChild(i);
-            } else {
-                i++;
-            }
+            drawHierarchyView( child );
         }
         ImGui::TreePop();
     }
-    return haveToDeleteSelf;
 }
 
 extern void exportMesh(std::string_view dir, std::string_view modelName, int sampleRate);
@@ -535,6 +534,15 @@ void sdf::drawImGui()
         ImGui::Begin("Scene##sdf");
 
         drawHierarchyView(root);
+        if(toDelHirarchySrc) {
+            root->rmChild(toDelHirarchySrc);
+            toDelHirarchySrc = nullptr;
+        }
+        if(toMoveHirarchyDst&&toMoveHirarchySrc) {
+            toMoveHirarchyDst->getOtherChild(toMoveHirarchySrc);
+            toMoveHirarchyDst = nullptr;
+            toMoveHirarchySrc = nullptr;
+        }
 
         // ImGui::SetCursorPosY(ImGui::GetCursorPosY()+ImGui::GetContentRegionAvail().y-ImGui::GetFontSize()*2.3f);
         // ImGui::Separator();

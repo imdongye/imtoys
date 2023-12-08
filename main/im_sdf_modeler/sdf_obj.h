@@ -83,7 +83,9 @@ namespace sdf
         ~Group();
         void addGroupToBack();
         void addObjectToBack(PrimitiveType pt);
-        void rmChild(int idx);
+        void rmChild(sdf::Node* child);
+        // to move
+        void getOtherChild(sdf::Node* child);
     };
 
     struct Object: public Node {
