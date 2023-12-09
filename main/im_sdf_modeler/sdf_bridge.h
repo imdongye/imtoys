@@ -15,6 +15,7 @@ namespace sdf
 	void drawGuizmo(const lim::Viewport& vp);
     void exportJson(std::filesystem::path path);
     void importJson(std::filesystem::path path);
+    void clickCallback(int btn, glm::vec2 uv);
 }
 
 #endif

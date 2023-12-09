@@ -55,6 +55,7 @@ namespace lim
 		bool is_dragged = false;
 		bool is_scrolled = false;
 		glm::vec2 mouse_pos = {0,0};
+		glm::vec2 mouse_uv_pos = {0,0};
 		glm::vec2 mouse_off = {0,0};
 		glm::vec2 scroll_off = {0,0};
 		Callbacks<void(int, int)> resize_callbacks;

@@ -78,3 +78,8 @@ void lim::AppSdfModeler::keyCallback(int key, int scancode, int action, int mods
 void lim::AppSdfModeler::dndCallback(int count, const char **paths) {
 	sdf::importJson(paths[0]);
 }
+void lim::AppSdfModeler::mouseBtnCallback(int button, int action, int mods) {
+	if(viewport.is_hovered&& action==GLFW_PRESS) {
+		sdf::clickCallback(button, viewport.mouse_uv_pos);
+	}
+}

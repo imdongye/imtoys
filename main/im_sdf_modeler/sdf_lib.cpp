@@ -3,7 +3,6 @@
     2023.12.06 / im dongye
 
     Todo:
-    move
     select
     ctrl c v
     mirror
@@ -429,7 +428,7 @@ void sdf::drawImGui()
         static bool isJsonExporterOpened = false;
         static bool isMeshExporterOpened = false;
         static constexpr ImVec2 popupSize = {300, 300};
-        static constexpr ImVec2 doneSize = {200, 100};
+        static constexpr ImVec2 doneSize = {280, 100};
 
         ImVec2 center = ImGui::GetMainViewport()->GetCenter();
         ImGuiWindowFlags popupWindowFlags = ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoResize;
@@ -787,5 +786,40 @@ void sdf::drawGuizmo(const Viewport& vp) {
         if( ImGui::IsKeyPressed(ImGuiKey_5, false) ) {
 			selected_edit_mode_idx = 4;
 		}
+    }
+}
+
+void sdf::clickCallback(int btn, glm::vec2 uv) {
+    if(selected_edit_mode_idx!=0)
+        return;
+
+    float eyeZ = 1/tan(glm::radians(camera->fovy));
+    glm::vec3 ro, rd, front, right, up;
+    ro = camera->position;
+    front = glm::normalize(camera->pivot - camera->position);
+    right = glm::normalize( glm::cross(front, {0,1,0}) );
+    up = glm::normalize( glm::cross(right, front) );
+    uv = uv*2.f-glm::vec2(1);
+    rd = glm::normalize( camera->aspect*uv.x*right + uv.y*up + eyeZ*front );
+    lim::log::pure("%f %f %f\n", rd.x, rd.y, rd.z);
+
+    float minDist = 999999.f;
+    for(Object* obj: serialized_objs) {
+        glm::vec3 p = obj->transform[3];
+        lim::log::pure("+%f %f %f\n", p.x, p.y, p.z);
+        p -= ro; // camera origin
+        float rr = obj->getScaleFactor();
+        rr *= rr;
+        float distFromLine2 = glm::length2( glm::cross(rd, p) );
+        float distProjLine = glm::dot(rd, p);
+
+        lim::log::pure("-%f %f %f\n", rr, distFromLine2, distProjLine);
+
+
+        if( distFromLine2 < rr ) {
+            if( distProjLine>0 && distProjLine<minDist ) {
+                selected_obj = obj;
+            }
+        }
     }
 }

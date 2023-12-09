@@ -30,6 +30,7 @@ namespace lim
 		virtual void renderImGui() final;
 		virtual void keyCallback(int key, int scancode, int action, int mods) override;
 		virtual void dndCallback(int count, const char **paths) override;
+		virtual void mouseBtnCallback(int button, int action, int mods) override;
 	};
 }
 

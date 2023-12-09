@@ -29,6 +29,7 @@ namespace lim
 			is_focused 		 = src.is_focused;
 			is_dragged 		 = src.is_dragged;
 			mouse_pos 		 = src.mouse_pos;
+			mouse_uv_pos     = src.mouse_uv_pos;
 			is_scrolled = src.is_scrolled;
 			scroll_off  = src.scroll_off;
 
@@ -100,6 +101,7 @@ namespace lim
 		prev_mouse_pos = mouse_pos;
 		ImVec2 imMousePos = ImGui::GetMousePos() - ImGui::GetWindowPos() - ImVec2(0, ImGui::GetFrameHeight());
 		mouse_pos = {imMousePos.x, imMousePos.y};
+		mouse_uv_pos = {imMousePos.x/contentSize.x, imMousePos.y/contentSize.y};
 		mouse_off = mouse_pos - prev_mouse_pos;
 		prev_mouse_pos = mouse_pos;
 
