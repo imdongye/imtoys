@@ -788,37 +788,32 @@ void sdf::drawGuizmo(const Viewport& vp) {
 		}
     }
 }
-
+// Todo : picking with framebuffer
 void sdf::clickCallback(int btn, glm::vec2 uv) {
     if(selected_edit_mode_idx!=0)
         return;
 
-    float eyeZ = 1/tan(glm::radians(camera->fovy));
-    glm::vec3 ro, rd, front, right, up;
-    ro = camera->position;
+    float eyeZ = 1.f/tan(glm::radians(camera->fovy)/2.f);
+    glm::vec3 pickDir, front, right, up;
     front = glm::normalize(camera->pivot - camera->position);
     right = glm::normalize( glm::cross(front, {0,1,0}) );
     up = glm::normalize( glm::cross(right, front) );
     uv = uv*2.f-glm::vec2(1);
-    rd = glm::normalize( camera->aspect*uv.x*right + uv.y*up + eyeZ*front );
-    lim::log::pure("%f %f %f\n", rd.x, rd.y, rd.z);
+    uv *= glm::vec2(camera->aspect,-1);
+    pickDir = glm::normalize( uv.x*right + uv.y*up + eyeZ*front );
+    
 
     float minDist = 999999.f;
     for(Object* obj: serialized_objs) {
-        glm::vec3 p = obj->transform[3];
-        lim::log::pure("+%f %f %f\n", p.x, p.y, p.z);
-        p -= ro; // camera origin
-        float rr = obj->getScaleFactor();
-        rr *= rr;
-        float distFromLine2 = glm::length2( glm::cross(rd, p) );
-        float distProjLine = glm::dot(rd, p);
-
-        lim::log::pure("-%f %f %f\n", rr, distFromLine2, distProjLine);
-
+        glm::vec3 toObj = glm::vec3(obj->transform[3])-camera->position;
+        float rr = obj->getScaleFactor(); rr *= rr;
+        float distFromLine2 = glm::length2( glm::cross(pickDir, toObj) );
+        float distProjLine = glm::dot(pickDir, toObj);
 
         if( distFromLine2 < rr ) {
             if( distProjLine>0 && distProjLine<minDist ) {
                 selected_obj = obj;
+                selected_edit_mode_idx = 1;
             }
         }
     }
