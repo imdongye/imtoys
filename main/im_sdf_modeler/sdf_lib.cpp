@@ -217,13 +217,11 @@ void sdf::Group::addGroupToBack() {
     Group* child = new Group(fmtStrToBuf("Group_%d", nr_groups), this);
     child->composeTransform();
     children.push_back((Node*)child);
-    //serializeModel();
 }
 void sdf::Group::addObjectToBack(PrimitiveType pt) {
     const char* cname = fmtStrToBuf("%s_%d", prim_type_names[pt], nr_each_prim_types[pt]);
     Object* child = new Object(cname, this, pt);
     children.push_back((Node*)child);
-    serializeModel();
 }
 void sdf::Group::rmChild(sdf::Node* child) {
     auto it = std::find(children.begin(), children.end(), child);
@@ -247,10 +245,43 @@ void sdf::Group::getOtherChild(sdf::Node* child) {
     auto it = std::find(child->parent->children.begin(), child->parent->children.end(), child);
     child->parent->children.erase(it);
 
+    child->parent = this;
     children.push_back(child);
 
     serializeModel();
 }
+
+void sdf::Node::copyDataTo(Node* dst) {
+    dst->name = name+"_copied";
+    dst->transform = transform;
+    dst->decomposeTransform();
+    dst->mirror = mirror;
+    dst->op_group = op_group;
+    dst->op_spec = op_spec;
+    dst->blendness = blendness;
+    dst->roundness = roundness;
+}
+
+void sdf::Group::copyToGroup(Group* group) {
+    const int nrChildren = children.size();
+    group->addGroupToBack();
+    Group* dst = (Group*)group->children.back();
+    copyDataTo(dst);
+    
+    for(int i=0; i<nrChildren; i++) {
+        children[i]->copyToGroup(dst);
+    }
+}
+
+void sdf::Object::copyToGroup(Group* group) {
+    group->addObjectToBack((PrimitiveType)prim_type);
+    Object* dst = (Object*)group->children.back();
+    copyDataTo(dst);
+
+    dst->p_mat = p_mat;
+    dst->prim_idx = prim_idx;
+}
+
 
 
 sdf::Object::Object(std::string_view _name, Group* _parent, PrimitiveType pt)
@@ -306,6 +337,7 @@ void sdf::init(CameraController* cam, Light* lit) {
 
 
     root->addObjectToBack(PT_BOX);
+    serializeModel();
 }
 void sdf::bindSdfData(const Program& prog) 
 {
@@ -380,6 +412,7 @@ static void drawHierarchyView(sdf::Node* nod)
             for(int i=0; i<nr_prim_types; i++) {
                 if( ImGui::MenuItem(prim_type_names[i], fmtStrToBuf("Ctrl+%d",i), false, true) ) {
                     ((sdf::Group*)nod)->addObjectToBack((PrimitiveType)i);
+                    serializeModel();
                 }
             }
             ImGui::EndMenu();
@@ -534,13 +567,14 @@ void sdf::drawImGui()
 
         drawHierarchyView(root);
         if(toDelHirarchySrc) {
-            root->rmChild(toDelHirarchySrc);
+            toDelHirarchySrc->parent->rmChild(toDelHirarchySrc);
             toDelHirarchySrc = nullptr;
         }
         if(toMoveHirarchyDst&&toMoveHirarchySrc) {
             toMoveHirarchyDst->getOtherChild(toMoveHirarchySrc);
             toMoveHirarchyDst = nullptr;
             toMoveHirarchySrc = nullptr;
+            serializeModel();
         }
 
         // ImGui::SetCursorPosY(ImGui::GetCursorPosY()+ImGui::GetContentRegionAvail().y-ImGui::GetFontSize()*2.3f);
@@ -560,6 +594,7 @@ void sdf::drawImGui()
             for(int i=0; i<nr_prim_types; i++) {
                 if( ImGui::Selectable(prim_type_names[i]) ) {
                     grp->addObjectToBack((PrimitiveType)i);
+                    serializeModel();
                 }
             }
             ImGui::EndPopup();
@@ -769,25 +804,9 @@ void sdf::drawGuizmo(const Viewport& vp) {
         ImGui::PopStyleVar();
         ImGui::PopStyleVar();
     }
-    /* short cut */
-    {
-        if( ImGui::IsKeyPressed(ImGuiKey_1, false) ) {
-			selected_edit_mode_idx = 0;
-		}
-        if( ImGui::IsKeyPressed(ImGuiKey_2, false) ) {
-			selected_edit_mode_idx = 1;
-		}
-        if( ImGui::IsKeyPressed(ImGuiKey_3, false) ) {
-			selected_edit_mode_idx = 2;
-		}
-        if( ImGui::IsKeyPressed(ImGuiKey_4, false) ) {
-			selected_edit_mode_idx = 3;
-		}
-        if( ImGui::IsKeyPressed(ImGuiKey_5, false) ) {
-			selected_edit_mode_idx = 4;
-		}
-    }
 }
+
+
 // Todo : picking with framebuffer
 void sdf::clickCallback(int btn, glm::vec2 uv) {
     if(selected_edit_mode_idx!=0)
@@ -815,6 +834,38 @@ void sdf::clickCallback(int btn, glm::vec2 uv) {
                 selected_obj = obj;
                 selected_edit_mode_idx = 1;
             }
+        }
+    }
+}
+
+static sdf::Node* copied_sdf_node = nullptr;
+
+void sdf::keyCallback(int key, int scancode, int action, int mods) {
+    if( action!=GLFW_PRESS )
+        return;
+    if( mods==0 ) {
+        switch(key) {
+        case GLFW_KEY_Z: selected_edit_mode_idx = 0; break;
+        case GLFW_KEY_X: selected_edit_mode_idx = 1; break;
+        case GLFW_KEY_C: selected_edit_mode_idx = 2; break;
+        case GLFW_KEY_V: selected_edit_mode_idx = 3; break;
+        case GLFW_KEY_B: selected_edit_mode_idx = 4; break;
+        }
+    }
+    else if( mods==GLFW_MOD_CONTROL ) {
+        switch(key) {
+        case GLFW_KEY_C:
+            copied_sdf_node = selected_obj;
+            break;
+        case GLFW_KEY_V:
+            Group* dstGroup;
+            if(selected_obj->is_group)
+                dstGroup = (Group*)selected_obj;
+            else 
+                dstGroup = selected_obj->parent;
+            copied_sdf_node->copyToGroup(dstGroup);
+            serializeModel();
+            break;
         }
     }
 }

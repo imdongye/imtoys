@@ -74,6 +74,9 @@ void lim::AppSdfModeler::keyCallback(int key, int scancode, int action, int mods
 	if( action==GLFW_PRESS && GLFW_MOD_CONTROL== mods && key=='R' ) {
 		prog.reload(GL_FRAGMENT_SHADER);
 	}
+	else {
+		sdf::keyCallback(key, scancode, action, mods);
+	}
 }
 void lim::AppSdfModeler::dndCallback(int count, const char **paths) {
 	sdf::importJson(paths[0]);

@@ -16,6 +16,7 @@ namespace sdf
     void exportJson(std::filesystem::path path);
     void importJson(std::filesystem::path path);
     void clickCallback(int btn, glm::vec2 uv);
+    void keyCallback(int key, int scancode, int action, int mods);
 }
 
 #endif

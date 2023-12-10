@@ -75,6 +75,9 @@ namespace sdf
         void composeTransform();
         void decomposeTransform();
         float getScaleFactor();
+        void copyDataTo(Node* dst);
+        // you must call serializeModel() after call this func
+        virtual void copyToGroup(Group* group) = 0;
     };
 
     struct Group: public Node {
@@ -86,6 +89,7 @@ namespace sdf
         void rmChild(sdf::Node* child);
         // to move
         void getOtherChild(sdf::Node* child);
+        virtual void copyToGroup(Group* group) override;
     };
 
     struct Object: public Node {
@@ -97,6 +101,7 @@ namespace sdf
         Object(std::string_view name, Group* parent, PrimitiveType pt);
         ~Object();
         void updateShaderData();
+        virtual void copyToGroup(Group* group) override;
     };
 }
 
