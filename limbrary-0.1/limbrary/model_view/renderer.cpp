@@ -31,10 +31,7 @@ namespace lim
     }
     Scene::Scene(Scene&& src) noexcept
     {
-        my_mds = std::move(src.my_mds);
-        models = std::move(src.models);
-        my_lits =std::move(src.my_lits);
-        lights = std::move(src.lights);
+        *this = std::move(src);
     }
     Scene& Scene::operator=(Scene&& src) noexcept {
         if(this!=&src) {
@@ -274,9 +271,14 @@ namespace lim
                         activeSlot = bindLightToProg(prog, *pLit, activeSlot);
                         break; //  Todo: 지금은 라이트 하나만
                     }
-                    prog.setUniform("use_IBL", ( scn.light_map )?1:-1);
-                    if( scn.light_map ) {
-                        prog.setTexture("map_Light", scn.light_map->tex_id, activeSlot++);
+                    prog.setUniform("use_IBL", ( scn.map_Light )?true:false);
+                    if( scn.map_Light ) {
+                        prog.setTexture("map_Light", scn.map_Light->tex_id, activeSlot++);
+                        prog.setUniform("use_IBL", true);
+
+                    } else {
+                        prog.setUniform("use_IBL", false);
+                        
                     }
                 }
 

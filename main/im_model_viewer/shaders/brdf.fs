@@ -51,7 +51,7 @@ uniform sampler2D map_Metalness;
 uniform sampler2D map_Emission;
 uniform sampler2D map_Opacity;
 
-uniform int use_IBL;
+uniform bool use_IBL;
 uniform sampler2D map_Light;
 
 

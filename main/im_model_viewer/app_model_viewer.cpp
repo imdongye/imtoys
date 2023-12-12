@@ -58,7 +58,7 @@ namespace lim
 		light_model.scale = glm::vec3(0.3f);
 		light_model.updateModelMat();
 
-		light_map.initFromFile("assets/ibls/meadow_2_4k.hdr", false);
+		light_map.initFromFile("assets/ibls/artist_workshop_4k.hdr", false);
 
 		AssetLib::get().default_material.prog = &program;
 
@@ -89,18 +89,30 @@ namespace lim
 		md->default_material->prog = &program;
 		md->default_material->set_prog = makeSetProg(brdfTestInfos.back());
 
+		Model* floor = new Model("floor");
+		floor->my_meshes.push_back(new MeshPlane(1));
+		floor->root.addMeshWithMat(floor->my_meshes.back());
+		floor->scale = glm::vec3(5.f);
+		floor->position = {0,-md->pivoted_scaled_bottom_height,0};
+		floor->updateModelMat();
+		floor->my_materials.push_back(new Material());
+		floor->default_material = floor->my_materials.back();
+		floor->default_material->prog = &program;
+		floor->default_material->set_prog = makeSetProg(brdfTestInfos.back());
+
 		Scene scn;
 		scn.lights.push_back(&light);
 		scn.models.push_back(&light_model);
 		scn.addOwnModel(md);
-		scn.light_map = &light_map;
+		scn.addOwnModel(floor);
+		scn.map_Light = &light_map;
 		scenes.emplace_back(std::move(scn)); // vector move template error
 
 		char* vpName = fmtStrToBuf("%s##model_view", md->name.c_str());
 		viewports.emplace_back(vpName, new FramebufferMs(4));
 		viewports.back().camera.setViewMode(CameraManVp::VM_PIVOT);
 	}
-	void AppModelViewer::subModelViewer(int idx)
+	void AppModelViewer::rmModelViewer(int idx)
 	{
 		scenes.erase(scenes.begin()+idx);
 		viewports.erase(viewports.begin()+idx);
@@ -114,7 +126,7 @@ namespace lim
 			render(viewports[i].getFb(), viewports[i].camera, scenes[i]);
 
 			if( !viewports[i].is_opened ) {
-				subModelViewer(i);
+				rmModelViewer(i);
 				i--;
 				continue;
 			}

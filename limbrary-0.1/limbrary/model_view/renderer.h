@@ -28,9 +28,9 @@ namespace lim
   	public:
 		std::vector<Model*> my_mds;
         std::vector<Light*> my_lits;
+        const Texture* map_Light = nullptr;
 		std::vector<const Model*> models;
 		std::vector<const Light*> lights;
-        const Texture* light_map = nullptr;
     public:
         void addOwnModel(Model* md);
         void addOwnLight(Light* lit);
