@@ -129,7 +129,7 @@ static void serializeNode(sdf::Node* node) {
     }
 }
 
-static void serializeModel() {
+void sdf::serializeModel() {
     serialized_objs.clear();
     serializeNode(root);
 }
@@ -372,8 +372,6 @@ void sdf::bindSdfData(const Program& prog)
 }
 
 
-static int sdf_object_bytes = sizeof(sdf::Object);
-static int sdf_group_bytes = sizeof(sdf::Group);
 static sdf::Node* toMoveHirarchySrc = nullptr;
 static sdf::Group* toMoveHirarchyDst = nullptr;
 static sdf::Node* toDelHirarchySrc = nullptr;
@@ -412,7 +410,7 @@ static void drawHierarchyView(sdf::Node* nod)
             for(int i=0; i<nr_prim_types; i++) {
                 if( ImGui::MenuItem(prim_type_names[i], fmtStrToBuf("Ctrl+%d",i), false, true) ) {
                     ((sdf::Group*)nod)->addObjectToBack((PrimitiveType)i);
-                    serializeModel();
+                    sdf::serializeModel();
                 }
             }
             ImGui::EndMenu();
@@ -428,7 +426,7 @@ static void drawHierarchyView(sdf::Node* nod)
     // root 옮기기 불가능
     if( nod->parent && ImGui::BeginDragDropSource(ImGuiDragDropFlags_None) ) {
         toMoveHirarchySrc = nod;
-        ImGui::SetDragDropPayload("DND_SCENE_CELL", nod, 0);
+        ImGui::SetDragDropPayload("DND_SCENE_CELL", nod, 1);
 
         ImGui::EndDragDropSource();
     }

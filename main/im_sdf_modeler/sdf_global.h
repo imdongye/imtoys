@@ -67,5 +67,9 @@ extern std::string model_name;
 extern lim::CameraController* camera;
 extern lim::Light* light;
 
+namespace sdf {
+    void serializeModel();
+}
+
 
 #endif
