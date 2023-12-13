@@ -3,11 +3,11 @@
     2023.12.06 / im dongye
 
     Todo:
-    select
-    ctrl c v
     mirror
-    clear
     그룹 연산자 하위 전파
+    콘, ... 프리미티브 추가
+    그림자, AO
+    단축키
 
 */
 #include "sdf_bridge.h"
@@ -56,7 +56,7 @@ float blendnesses[MAX_OBJS];
 float roundnesses[MAX_OBJS];
 
 // each prim ...
-glm::vec2 donuts[MAX_PRIMS];
+float donuts[MAX_PRIMS];
 float capsules[MAX_PRIMS];
 
 
@@ -221,6 +221,7 @@ void sdf::Group::addGroupToBack() {
 void sdf::Group::addObjectToBack(PrimitiveType pt) {
     const char* cname = fmtStrToBuf("%s_%d", prim_type_names[pt], nr_each_prim_types[pt]);
     Object* child = new Object(cname, this, pt);
+    child->composeTransform();
     children.push_back((Node*)child);
 }
 void sdf::Group::rmChild(sdf::Node* child) {
@@ -294,8 +295,12 @@ sdf::Object::Object(std::string_view _name, Group* _parent, PrimitiveType pt)
     is_group = false;
     prim_type = pt;
     p_mat = selected_mat;
-    prim_idx = 0;
-    nr_each_prim_types[pt]++;
+    prim_idx = nr_each_prim_types[pt]++;
+    switch(prim_type) {
+    case PT_DONUT:
+        donuts[prim_idx] = 1.f;
+        break;
+    }
     selected_obj = this;
 }
 sdf::Object::~Object() {
@@ -418,6 +423,7 @@ static void drawHierarchyView(sdf::Node* nod)
         // root 삭제 불가능
         if( nod->parent && ImGui::MenuItem("Delete", "Backspace", false, true) ) {
             toDelHirarchySrc = nod;
+            ImGui::TextUnformatted(nod->name.c_str());
             log::pure("delete\n");
         }
         ImGui::EndPopup();
@@ -426,7 +432,7 @@ static void drawHierarchyView(sdf::Node* nod)
     // root 옮기기 불가능
     if( nod->parent && ImGui::BeginDragDropSource(ImGuiDragDropFlags_None) ) {
         toMoveHirarchySrc = nod;
-        ImGui::SetDragDropPayload("DND_SCENE_CELL", nod, 1);
+        ImGui::SetDragDropPayload("DND_SCENE_CELL", nullptr, 0);
 
         ImGui::EndDragDropSource();
     }
@@ -636,9 +642,9 @@ void sdf::drawImGui()
             if( ImGui::SliderFloat("Blendness", &nod->blendness, 0.f, 1.f) ) {
                 blendnesses[obj.idx] = nod->blendness;
             }
-            if( ImGui::SliderFloat("Roundness", &nod->roundness, 0.f, 1.f) ) {
-                roundnesses[obj.idx] = nod->roundness;
-            }
+            // if( ImGui::SliderFloat("Roundness", &nod->roundness, 0.f, 1.f) ) {
+            //     roundnesses[obj.idx] = nod->roundness;
+            // }
             int matIdx = obj.p_mat->idx;
             if( ImGui::Combo("Material", &matIdx, mat_names, materials.size()+1) ) {
                 if( matIdx<materials.size() ) {
@@ -649,6 +655,12 @@ void sdf::drawImGui()
                 obj.p_mat = selected_mat;
                 mat_idxs[obj.idx] = matIdx;
             } 
+            ImGui::Separator();
+            switch(obj.prim_type) {
+            case PT_DONUT:
+                ImGui::DragFloat("radius", &donuts[obj.prim_idx], 0.02f, 0.1f, 5.f);
+                break;
+            }
         }
         
         ImGui::End();

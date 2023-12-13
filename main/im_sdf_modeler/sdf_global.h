@@ -40,7 +40,7 @@ extern float blendnesses[MAX_OBJS];
 extern float roundnesses[MAX_OBJS];
 
 // each prim ...
-extern glm::vec2 donuts[MAX_PRIMS];
+extern float donuts[MAX_PRIMS];
 extern float capsules[MAX_PRIMS];
 
 
