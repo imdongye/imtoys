@@ -40,7 +40,7 @@ extern float blendnesses[MAX_OBJS];
 extern float roundnesses[MAX_OBJS];
 
 // each prim ...
-extern glm::vec2 donuts[MAX_PRIMS];
+extern float donuts[MAX_PRIMS];
 extern float capsules[MAX_PRIMS];
 
 
@@ -66,6 +66,10 @@ extern ImGuizmo::MODE gzmo_space;
 extern std::string model_name;
 extern lim::CameraController* camera;
 extern lim::Light* light;
+
+namespace sdf {
+    void serializeModel();
+}
 
 
 #endif

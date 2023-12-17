@@ -188,6 +188,7 @@ void sdf::importJson(std::filesystem::path path) {
     }
     root = new Group("root", nullptr);
     fromJson((sdf::Object*)root, ijson["root"]);
+    serializeModel();
     fromJson(*camera, ijson["camera"]);
     fromJson(*light, ijson["light"]);
 }

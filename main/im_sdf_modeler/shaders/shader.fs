@@ -60,7 +60,7 @@ uniform int op_types[MAX_OBJS];
 uniform float blendnesses[MAX_OBJS];
 uniform float roundnesses[MAX_OBJS];
 
-uniform vec2 donuts[MAX_PRIMS];
+uniform float donuts[MAX_PRIMS];
 uniform float capsules[MAX_PRIMS];
 
 float distToObjs[MAX_OBJS];
@@ -80,11 +80,11 @@ float sdBox( vec3 p ) {
 }
 float sdPipe( vec3 p ) {
     float d = length(p.xz) - 0.5f;
-	return max(d, abs(p.y) - 1.f);
+	return max(d, abs(p.y) - 0.5f);
 }
 float sdDonut( vec3 p, float r ) {
     vec2 q = vec2(length(p.xz)-r,p.y);
-    return length(q);
+    return length(q)-0.5f;
 }
 // float sdPlane(vec3 p, vec3 n, float h) {
 //     return dot(n,p) - h;
@@ -113,43 +113,33 @@ float fOpDifferenceChamfer (float a, float b, float r) {
 float fOpDifferenceRound (float a, float b, float r) {
 	return fOpIntersectionRound(a, -b, r);
 }
-
-// model space distance
-float getPrimDist(int primType, vec3 mPos) {
-    switch(primType)
-    {
-    case PT_SPHERE:
-        return sdSphere(mPos);
-    case PT_BOX:
-        return sdBox(mPos);
-    case PT_PIPE:
-        return sdPipe(mPos);
-    case PT_DONUT:
-        return sdDonut(mPos, 1);
-    }
-}
 float getObjDist(int objIdx, vec3 wPos) {
     mat4 transform = transforms[objIdx];
     vec3 mPos = (transform*vec4(wPos,1)).xyz;
-    float primDist = getPrimDist(prim_types[objIdx], mPos);
-    return primDist * scaling_factors[objIdx];
+    float minScale = scaling_factors[objIdx];
+    int primIdx = prim_idxs[objIdx];
+    float primDist = 0;
+    switch(prim_types[objIdx])
+    {
+    case PT_SPHERE: return minScale * sdSphere(mPos);
+    case PT_BOX:    return minScale * sdBox(mPos);
+    case PT_PIPE:   return minScale * sdPipe(mPos);
+    case PT_DONUT:
+        return minScale * sdDonut(mPos, donuts[prim_idxs[objIdx]]);  
+    }
+    return 0;
 }
 float operateDist(int opType, float a, float b, float blendness) {
     switch(opType)
     {
-    case OT_ADD_ROUND:
-        return fOpUnionRound(a, b, blendness);
-    case OT_ADD_EDGE:
-        return fOpUnionChamfer(a, b, blendness);
-    case OT_SUB_ROUND:
-        return fOpDifferenceRound(a, b, blendness);
-    case OT_SUB_EDGE:
-        return fOpDifferenceChamfer(a, b, blendness);
-    case OT_INT_ROUND:
-        return fOpIntersectionRound(a, b, blendness);
-    case OT_INT_EDGE:
-        return fOpIntersectionChamfer(a, b, blendness);
+    case OT_ADD_ROUND:  return fOpUnionRound(a, b, blendness);
+    case OT_ADD_EDGE:   return fOpUnionChamfer(a, b, blendness);
+    case OT_SUB_ROUND:  return fOpDifferenceRound(a, b, blendness);
+    case OT_SUB_EDGE:   return fOpDifferenceChamfer(a, b, blendness);
+    case OT_INT_ROUND:  return fOpIntersectionRound(a, b, blendness);
+    case OT_INT_EDGE:   return fOpIntersectionChamfer(a, b, blendness);
     }
+    return 0;
 }
 
 float sdWorld(vec3 wPos) {
@@ -183,9 +173,9 @@ float rayMarch(vec3 origin, vec3 dir, float maxDist) {
     }
     return dist;
 }
-float updateMaterial(vec3 p) {
+float updateMaterial(vec3 wPos) {
     float dist = far_distance; 
-    dist = p.y; // plane
+    dist = wPos.y; // plane
     
     baseColor = vec3(1);
     roughness = 0;
@@ -193,15 +183,12 @@ float updateMaterial(vec3 p) {
 
     for( int i=0; i<nr_objs; i++ ) 
     {
-        float blendness = blendnesses[i];
-        mat4 transform = transforms[i];
-        vec3 mPos = (transform*vec4(p,1)).xyz;
-        float primDist = getPrimDist(prim_types[i], mPos);
-        float tempDist = operateDist(op_types[i], dist, primDist, blendness);
+        float objDist = getObjDist(i, wPos);
+        float tempDist = operateDist(op_types[i], dist, objDist, blendnesses[i]);
        
         // hard part
         int matIdx = mat_idxs[i];
-        float percent = dist/(primDist+dist);
+        float percent = dist/(objDist+dist);
         baseColor = mix(baseColor, base_colors[matIdx], percent);
         roughness = mix(roughness, roughnesses[matIdx], percent);
         metalness = mix(metalness, metalnesses[matIdx], percent);
