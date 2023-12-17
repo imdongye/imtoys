@@ -1,3 +1,12 @@
+/*
+Todo:
+1. Assimp 로딩속도 느림
+2. 투명도 GL_BLEND적용안됨
+
+
+*/
+
+
 #include "app_model_viewer.h"
 #include <imgui.h>
 #include <limbrary/model_view/model_io_helper.h>
@@ -44,13 +53,6 @@ namespace
 
 lim::AppModelViewer::AppModelViewer() : AppBase(1373, 780, APP_NAME, false)
 {
-	GLint tempInt;
-	glGetIntegerv(GL_MAX_INTEGER_SAMPLES, &tempInt);
-	log::pure("GL_MAX_INTEGER_SAMPLES : %d\n", tempInt);
-	glGetIntegerv(GL_MAX_SAMPLES, &tempInt);
-	log::pure("GL_MAX_SAMPLES : %d\n", tempInt);
-
-
 	viewports.reserve(5);
 	scenes.reserve(5);
 	
@@ -71,8 +73,8 @@ lim::AppModelViewer::AppModelViewer() : AppBase(1373, 780, APP_NAME, false)
 	
 	AssetLib::get().default_material.prog = &program;
 
-	// addModelViewer("assets/models/objs/bunny.obj");
-	addModelViewer("assets/models/helmet/FlightHelmet/FlightHelmet.gltf");
+	addModelViewer("assets/models/objs/bunny.obj");
+	// addModelViewer("assets/models/helmet/FlightHelmet/FlightHelmet.gltf");
 }
 
 lim::AppModelViewer::~AppModelViewer()
@@ -116,7 +118,10 @@ void lim::AppModelViewer::addModelViewer(string path)
 	scenes.emplace_back(std::move(scn)); // vector move template error
 
 	char* vpName = fmtStrToBuf("%s##model_view", md->name.c_str());
-	viewports.emplace_back(vpName, new FramebufferMs(4));
+	IFramebuffer* fb = new FramebufferMs(glm::max(utils::getMsMaxSamples(), 16), 4, 8);
+	// IFramebuffer* fb = new FramebufferTexDepth(4, 8);
+	fb->blendable = true;
+	viewports.emplace_back(vpName, fb);
 	viewports.back().camera.setViewMode(CameraManVp::VM_PIVOT);
 }
 void lim::AppModelViewer::rmModelViewer(int idx)
@@ -250,7 +255,7 @@ void lim::AppModelViewer::renderImGui()
 					}
 				}
 			}
-			if( ImGui::SliderFloat("ambient light", &tInfo.ambientInt, 0.000, 0.1) ) {
+			if( ImGui::SliderFloat("ambient light", &tInfo.ambientInt, 0.000, 0.05) ) {
 				for(Material* mat : md.my_materials) {
 					mat->ambientColor = glm::vec3(1)*tInfo.ambientInt;
 				}

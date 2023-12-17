@@ -81,7 +81,7 @@ mat3 getTBN0(vec3 N) {
 				normalize((Q2*st1.s-Q1*st2.s)*D), N);
 }
 // https://gamedev.stackexchange.com/questions/86530/is-it-possible-to-calculate-the-tbn-matrix-in-the-fragment-shader
-// Todo: TB의 Precompute, Geometry, Fragment 성능 비교
+// Todo: TB의 Precompute, Geometry(victor), Fragment 성능 비교
 mat3 getTBN(vec3 N) {
 	vec3 dp1 = dFdx( wPos );
     vec3 dp2 = dFdy( wPos );
@@ -107,19 +107,6 @@ float NDL, NDV, NDH, VDR, HDV;
 vec3 baseColor, F0, emission;
 float roughness, metalness, ambOcc;
 
-vec3 brdfLambertian() { // Diffuse
-	return vec3(1/PI);
-}
-vec3 brdfPhong() { // Specular
-	float normalizeFactor = (mat_Shininess+1)/(2*PI);
-	return mat_AmbientColor + vec3(1) * normalizeFactor * pow( max(0,VDR), mat_Shininess );
-}
-vec3 brdfBlinnPhong() { // Specular
-	// vec3 H = (V+L)/2; // 성능을위해 노멀라이즈 하지 않음.
-	// float NDH = max(0,dot(N, H));
-	float normalizeFactor = (mat_Shininess+1)/(2*PI);
-	return mat_AmbientColor + vec3(1) * normalizeFactor * pow( max(0,NDH), mat_Shininess );
-}
 
 vec3 OrenNayar() {
 	float a = roughness*roughness;
@@ -139,6 +126,22 @@ vec3 OrenNayar() {
 	vec3 l2 = 0.17*baseColor*cosTi*(aa/(aa+0.13))*(1-cosPhi*pow(2*beta/PI,2));
 	return vec3(l1)+l2;
 }
+
+vec3 brdfLambertian() { // Diffuse
+	return vec3(1/PI);
+}
+vec3 brdfPhong() { // Specular
+	float normalizeFactor = (mat_Shininess+1)/(2*PI);
+	return mat_AmbientColor + vec3(1) * normalizeFactor * pow( max(0,VDR), mat_Shininess );
+}
+vec3 brdfBlinnPhong() { // Specular
+	// vec3 H = (V+L)/2; // 성능을위해 노멀라이즈 하지 않음.
+	// float NDH = max(0,dot(N, H));
+	float normalizeFactor = (mat_Shininess+1)/(2*PI);
+	return mat_AmbientColor + vec3(1) * normalizeFactor * pow( max(0,NDH), mat_Shininess );
+}
+
+
 
 float distributionBlinnPhong() {
 	float a = roughness*roughness;
@@ -252,11 +255,14 @@ vec3 brdf() {
 void main() {
 	// vec3 faceN = normalize( cross( dFdx(wPos), dFdy(wPos) ) );
 	// if( dot(N,faceN)<0 ) N = -N; // 모델의 내부에서 back face일때 노멀을 뒤집는다.
+	float alpha = 1.0;
 	N = (gl_FrontFacing)?normalize(wNor):normalize(-wNor);
 
 	baseColor = mat_BaseColor;
 	if( (map_Flags & MF_BASE_COLOR)>0 ) {
-		baseColor = texture( map_BaseColor, mUv ).rgb;
+		vec4 rgba = texture( map_BaseColor, mUv );
+		baseColor = rgba.rgb;
+		alpha = rgba.a;
 	}
 	ambOcc = 1.f;
 	if( (map_Flags & MF_AMB_OCC)>0 ) {
@@ -323,5 +329,5 @@ void main() {
 	// outColor = vec3(NDV);
 
 	convertLinearToSRGB(outColor);
-	FragColor = vec4(outColor, 1.0-mat_Opacity);
+	FragColor = vec4(outColor, alpha);
 }

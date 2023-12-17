@@ -7,6 +7,7 @@
 
 static lim::Program* env_prog;
 static lim::Model* env_sphere;
+static int ms_max_samples = 2;
 
 lim::AssetLib::AssetLib()
 	: screen_quad(false, false)
@@ -32,8 +33,12 @@ lim::AssetLib::AssetLib()
 
 	env_sphere = new Model("env");
 	env_sphere->my_meshes.push_back(new MeshEnvSphere());
-	env_sphere->scale = glm::vec3(50.f);
+	env_sphere->scale = glm::vec3(10.f);
 	env_sphere->updateModelMat();
+
+
+	glGetIntegerv(GL_MAX_SAMPLES, &ms_max_samples);
+	log::pure("GL_MAX_SAMPLES : %d\n", ms_max_samples);
 }
 lim::AssetLib::~AssetLib()
 {
@@ -67,4 +72,15 @@ void lim::utils::drawEnvSphere(const Texture& map, const glm::mat4& viewMat, con
 	env_prog->setUniform("proj_Mat", projMat);
 	env_prog->setTexture("map_BaseColor", map.tex_id, 0);
 	env_sphere->my_meshes.back()->drawGL();
+}
+
+int lim::utils::getMsMaxSamples() {
+	return ms_max_samples;
+}
+
+void lim::utils::glErr( std::string_view msg ) {
+	GLint err = glGetError();
+	if( err != GL_NO_ERROR ) {
+		lim::log::err("GL %08x : %s\n", msg.data());
+	}
 }

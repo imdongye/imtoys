@@ -49,12 +49,13 @@ namespace lim
 		GLuint height = 0;
 		float aspect = 1.f;
 		glm::vec4 clear_color = {0.05f, 0.09f, 0.11f, 1.0f};
+		bool blendable = false;
 	public:
-		IFramebuffer();
+		IFramebuffer() = default;
 		IFramebuffer(IFramebuffer&& src) noexcept;
 		IFramebuffer& operator=(IFramebuffer&& src) noexcept;
 		// 자식 소멸자에서 deinit호출해줘야함.
-		virtual ~IFramebuffer() noexcept; 
+		virtual ~IFramebuffer() noexcept = default; 
 		
 		// height -1 is square
 		bool resize(GLuint _width, GLuint _height=-1);
@@ -75,6 +76,56 @@ namespace lim
 	private:
 		IFramebuffer(const IFramebuffer&) = delete;
 		IFramebuffer& operator=(const IFramebuffer&) = delete;
+		private:
+		// Created by Hyun Joon Shin on 2021/10/29.
+		struct _PrevState {
+			GLint  fboId, drawFboId, readFboId;
+			GLint  viewport[4];
+			GLint  scissor[4];
+			bool  cullFace = GL_FALSE;
+			GLint  frontFace = GL_CCW;
+			GLint  cullMode = GL_BACK;
+			bool  depthTest = GL_FALSE;
+			bool  scissorTest = GL_FALSE;
+			bool blend = GL_FALSE;
+			GLint bsrcRGB, bdstRGB, bsrcAlpha, bdstAlpha; 
+			
+			void capture() {
+				glGetIntegerv(GL_FRAMEBUFFER, &fboId);
+				glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFboId);
+				glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &readFboId);
+				glGetIntegerv(GL_VIEWPORT, viewport);
+				glGetIntegerv(GL_SCISSOR_BOX, scissor);
+				glGetIntegerv(GL_FRONT_FACE, &frontFace );
+				glGetIntegerv(GL_FRONT_FACE, &frontFace );
+
+				cullFace = glIsEnabled(GL_CULL_FACE);
+				glGetIntegerv(GL_CULL_FACE_MODE, &cullMode );
+				depthTest = glIsEnabled(GL_DEPTH_TEST);
+				scissorTest = glIsEnabled(GL_SCISSOR_TEST);
+				blend = glIsEnabled(GL_BLEND);
+				glGetIntegerv(GL_BLEND_SRC_RGB, &bsrcRGB );
+				glGetIntegerv(GL_BLEND_DST_RGB, &bdstRGB );
+				glGetIntegerv(GL_BLEND_SRC_ALPHA, &bsrcAlpha );
+				glGetIntegerv(GL_BLEND_DST_ALPHA, &bdstAlpha );
+			}
+			void restore() {
+				glBindFramebuffer( GL_DRAW_FRAMEBUFFER, drawFboId );
+				glBindFramebuffer( GL_READ_FRAMEBUFFER, readFboId );
+				glViewport( viewport[0], viewport[1], viewport[2], viewport[3] );
+				glScissor( scissor[0], scissor[1], scissor[2], scissor[3] );
+
+				if( cullFace ){ glEnable ( GL_CULL_FACE ); glCullFace( cullMode ); glFrontFace( frontFace ); }
+				else			glDisable( GL_CULL_FACE );
+				if( depthTest )	glEnable ( GL_DEPTH_TEST );
+				else			glDisable( GL_DEPTH_TEST );
+				if(scissorTest) glEnable ( GL_SCISSOR_TEST );
+				else			glDisable( GL_SCISSOR_TEST );
+				if( blend )   { glEnable ( GL_BLEND ); glBlendFuncSeparate(bsrcRGB, bdstRGB, bsrcAlpha, bdstAlpha);}
+				else			glDisable( GL_BLEND );
+			}
+		};
+		mutable _PrevState prevState;
 	};
 
 	// depth attachment 없음

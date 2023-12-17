@@ -50,6 +50,8 @@ namespace lim
 	
 	namespace utils
 	{
+		void glErr( std::string_view msg );
+		int getMsMaxSamples();
 		void drawEnvSphere(const Texture& map, const glm::mat4& viewMat, const glm::mat4& projMat);
 	}
 }
