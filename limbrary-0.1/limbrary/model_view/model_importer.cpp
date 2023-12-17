@@ -68,7 +68,7 @@ namespace
 	};
 
 	// 중복 load 막기
-	Texture* loadTexture(string texPath, GLint internalFormat=GL_RGB8)
+	Texture* loadTexture(string texPath, bool convertLinear)
 	{
 		Texture* rst = nullptr;
 		std::vector<Texture*>& loadedTexs = _rst_md->my_textures; 
@@ -84,14 +84,13 @@ namespace
 		}
 		if( !rst ) {
 			loadedTexs.push_back(new Texture());
-			loadedTexs.back()->internal_format = internalFormat;
-			loadedTexs.back()->initFromFile(texPath);
+			loadedTexs.back()->initFromFile(texPath, convertLinear);
 			rst = loadedTexs.back();
 		}
 		return rst;
 	}
 
-	Material* convertMaterial(aiMaterial* aiMat)
+	Material* convertMaterial(aiMaterial* aiMat, bool verbose = false)
 	{
 		Material* rst = new Material();
 		Material& mat = *rst;
@@ -101,20 +100,20 @@ namespace
 		float tempFloat;
 
 		mat.prog = nullptr;
-		log::pure("<load factors>\n");
+		if(verbose) log::pure("<load factors>\n");
 		mat.factor_Flags = Material::FF_NONE;
 		if( aiMat->Get(AI_MATKEY_COLOR_DIFFUSE, temp3d) == AI_SUCCESS ) {
-			log::pure("base color: %.1f %.1f %.1f\n", temp3d.r, temp3d.g, temp3d.b);
+			if(verbose) log::pure("base color: %.1f %.1f %.1f\n", temp3d.r, temp3d.g, temp3d.b);
 			mat.factor_Flags |= Material::FF_BASE_COLOR;
 			mat.baseColor = toGLM(temp3d); 
 		}
 		if( aiMat->Get(AI_MATKEY_COLOR_SPECULAR, temp3d) == AI_SUCCESS ) {
-			log::pure("specular color: %.1f %.1f %.1f\n", temp3d.r, temp3d.g, temp3d.b);
+			if(verbose) log::pure("specular color: %.1f %.1f %.1f\n", temp3d.r, temp3d.g, temp3d.b);
 			mat.factor_Flags |= Material::FF_SPECULAR;
 			mat.specColor = toGLM(temp3d); 
 		}
 		if( aiMat->Get(AI_MATKEY_SHININESS_STRENGTH, tempFloat ) != AI_SUCCESS ) {
-			log::pure("*pass wrong shininess strength: %.1f\n", tempFloat);
+			if(verbose) log::pure("*pass wrong shininess strength: %.1f\n", tempFloat);
 			//mat.specColor *= tempFloat;
 		}
 		if( aiMat->Get(AI_MATKEY_COLOR_AMBIENT, temp3d) == AI_SUCCESS ) {
@@ -123,90 +122,90 @@ namespace
 			// mat.ambientColor = toGLM(temp3d); 
 		}
 		if( aiMat->Get(AI_MATKEY_COLOR_EMISSIVE, temp3d) == AI_SUCCESS ) {
-			log::pure("emissive color: %.1f %.1f %.1f\n", temp3d.r, temp3d.g, temp3d.b);
+			if(verbose) log::pure("emissive color: %.1f %.1f %.1f\n", temp3d.r, temp3d.g, temp3d.b);
 			mat.factor_Flags |= Material::FF_EMISSION;
 			mat.emissionColor = toGLM(temp3d); 
 		}
 		if( aiMat->Get(AI_MATKEY_TRANSMISSION_FACTOR, tempFloat) == AI_SUCCESS ) {
-			log::pure("transmission: %.1f\n", tempFloat);
+			if(verbose) log::pure("transmission: %.1f\n", tempFloat);
 			mat.factor_Flags |= Material::FF_TRANSMISSION;
 			mat.transmission = tempFloat; 
 		}
 		if( aiMat->Get(AI_MATKEY_REFRACTI, tempFloat) == AI_SUCCESS ) {
-			log::pure("refraciti: %.1f\n", tempFloat);
+			if(verbose) log::pure("refraciti: %.1f\n", tempFloat);
 			mat.factor_Flags |= Material::FF_REFRACITI;
 			mat.refraciti = tempFloat; 
 		}
 		if( aiMat->Get(AI_MATKEY_OPACITY, tempFloat) == AI_SUCCESS ) {
-			log::pure("opacity: %.1f\n", tempFloat);
+			if(verbose) log::pure("opacity: %.1f\n", tempFloat);
 			mat.factor_Flags |= Material::FF_OPACITY;
 			mat.opacity = tempFloat; 
 		}
 		if( aiMat->Get(AI_MATKEY_SHININESS, tempFloat) == AI_SUCCESS ) {
-			log::pure("*pass wrong shininess: %.1f\n", tempFloat);
+			if(verbose) log::pure("*pass wrong shininess: %.1f\n", tempFloat);
 			//mat.shininess = tempFloat;
 		}
 		if( aiMat->Get(AI_MATKEY_ROUGHNESS_FACTOR, tempFloat) == AI_SUCCESS ) {
-			log::pure("roughness: %.1f\n", tempFloat);
+			if(verbose) log::pure("roughness: %.1f\n", tempFloat);
 			mat.factor_Flags |= Material::FF_ROUGHNESS;
 			mat.roughness = tempFloat;
 		}
 		if( aiMat->Get(AI_MATKEY_METALLIC_FACTOR, tempFloat) == AI_SUCCESS ) {
-			log::pure("metalness: %.1f\n", tempFloat);
+			if(verbose) log::pure("metalness: %.1f\n", tempFloat);
 			mat.factor_Flags |= Material::FF_METALNESS;
 			mat.metalness = tempFloat; 
 		}
 
 		// normal, metalness, roughness, occlusion 은 linear space다.
-		log::pure("<load maps>\n");
+		if(verbose) log::pure("<load maps>\n");
 		mat.map_Flags = Material::MF_NONE;
 		if( aiMat->GetTexture(aiTextureType_DIFFUSE, 0, &tempStr) == AI_SUCCESS ) {
-			log::pure("map_BaseColor: ");
+			if(verbose) log::pure("map_BaseColor: ");
 			mat.map_Flags |= Material::MF_BASE_COLOR;
-			mat.map_BaseColor = loadTexture(tempStr.C_Str(), GL_SRGB8); // kd일때만 linear space변환
+			mat.map_BaseColor = loadTexture(tempStr.C_Str(), true); // kd일때만 linear space변환
 		}
 		if( aiMat->GetTexture(aiTextureType_SPECULAR, 0, &tempStr) == AI_SUCCESS ) {
-			log::pure("map_Specular: ");
+			if(verbose) log::pure("map_Specular: ");
 			mat.map_Flags |= Material::MF_SPECULAR;
-			mat.map_Specular = loadTexture(tempStr.C_Str(), GL_SRGB8); // Todo: Ka Ks map 에서도 해야하나?
+			mat.map_Specular = loadTexture(tempStr.C_Str(), true); // Todo: Ka Ks map 에서도 해야하나?
 		}
 		if( aiMat->GetTexture(aiTextureType_HEIGHT, 0, &tempStr) == AI_SUCCESS ) {
-			log::pure("map_Bump(Height): ");
+			if(verbose) log::pure("map_Bump(Height): ");
            	mat.map_Flags |= Material::MF_HEIGHT;
-			mat.map_Bump = loadTexture(tempStr.C_Str(), GL_RGB8);
+			mat.map_Bump = loadTexture(tempStr.C_Str(), false);
 		}
 		if( aiMat->GetTexture(aiTextureType_NORMALS, 0, &tempStr) == AI_SUCCESS ) {
-			log::pure("map_Bump(Nor): ");
+			if(verbose) log::pure("map_Bump(Nor): ");
            	mat.map_Flags |= Material::MF_NOR;
-			mat.map_Bump = loadTexture(tempStr.C_Str(), GL_RGB8);
+			mat.map_Bump = loadTexture(tempStr.C_Str(), false);
 		}
 		if( aiMat->GetTexture(aiTextureType_AMBIENT, 0, &tempStr) == AI_SUCCESS ) {
-			log::pure("map_AmbOcc: ");
+			if(verbose) log::pure("map_AmbOcc: ");
 			mat.map_Flags |= Material::MF_AMB_OCC;
-			mat.map_AmbOcc = loadTexture(tempStr.C_Str(), GL_RGB8);
+			mat.map_AmbOcc = loadTexture(tempStr.C_Str(), false);
 		}
 		if( aiMat->GetTexture(aiTextureType_DIFFUSE_ROUGHNESS, 0, &tempStr) == AI_SUCCESS ) {
-			log::pure("*pass map_Roughness(ROUGHNESS): %s\n", tempStr.C_Str());
+			if(verbose) log::pure("*pass map_Roughness(ROUGHNESS): %s\n", tempStr.C_Str());
 			// mat.map_Flags |= Material::MF_ROUGHNESS;
-			// mat.map_Roughness = loadTexture(tempStr.C_Str(), GL_SRGB8);
+			// mat.map_Roughness = loadTexture(tempStr.C_Str(), false);
 		}
 		if( aiMat->GetTexture(aiTextureType_METALNESS, 0, &tempStr) == AI_SUCCESS ) {
-			log::pure("*pass map_Metalness: %s\n", tempStr.C_Str());
+			if(verbose) log::pure("*pass map_Metalness: %s\n", tempStr.C_Str());
 			// mat.map_Flags |= Material::MF_METALNESS;
-			// mat.map_Metalness = loadTexture(tempStr.C_Str(), GL_RGB8);
+			// mat.map_Metalness = loadTexture(tempStr.C_Str(), false);
 		}
 		if( aiMat->GetTexture(aiTextureType_EMISSION_COLOR, 0, &tempStr) == AI_SUCCESS ) {
-			log::pure("map_Emission: ");
+			if(verbose) log::pure("map_Emission: ");
 			mat.map_Flags |= Material::MF_EMISSION;
-			mat.map_Emission = loadTexture(tempStr.C_Str(), GL_SRGB8);
+			mat.map_Emission = loadTexture(tempStr.C_Str(), true);
 		}
 		if( aiMat->GetTexture(aiTextureType_OPACITY, 0, &tempStr) == AI_SUCCESS ) {
-			log::pure("map_Opacity: ");
+			if(verbose) log::pure("map_Opacity: ");
 			mat.map_Flags |= Material::MF_OPACITY;
-			mat.map_Opacity = loadTexture(tempStr.C_Str(), GL_SRGB8);
+			mat.map_Opacity = loadTexture(tempStr.C_Str(), true); // 리니어??
 		}
 		if( aiMat->GetTexture(aiTextureType_SHININESS, 0, &tempStr) == AI_SUCCESS ) {
-			log::pure("*pass map_Roughness(SHININESS): %s\n", tempStr.C_Str());
+			if(verbose) log::pure("*pass map_Roughness(SHININESS): %s\n", tempStr.C_Str());
 			// if(	mat.map_Flags&Material::MF_ROUGHNESS ) {
 			// 	log::err("conflict map_Roughness(Shininess)\n");
 			// 	std::exit(1);
@@ -218,13 +217,13 @@ namespace
 		// 파일이름 분해해서 어떤 텍스쳐가 어떤순서로 있는지 찾아야함.
 		// https://stackoverflow.com/questions/54116869/how-do-i-load-roughness-metallic-map-with-assimp-using-gltf-format
 		if( aiMat->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &tempStr) == AI_SUCCESS ) {
-			log::pure("map_Roughness(AMR): ");
+			if(verbose) log::pure("map_Roughness(AMR): ");
 			if(	mat.map_Flags&(Material::MF_ROUGHNESS|Material::MF_SHININESS) ) {
-				log::err("conflict map_Roughness(Roughness or Shininess)\n");
+				if(verbose) log::err("conflict map_Roughness(Roughness or Shininess)\n");
 				std::exit(1);
 			}
            	mat.map_Flags |= Material::MF_ARM;
-			mat.map_Roughness = loadTexture(tempStr.C_Str(), GL_RGB8);
+			mat.map_Roughness = loadTexture(tempStr.C_Str(), false);
 		}
 
 		return rst;

@@ -42,8 +42,10 @@ namespace lim
             releaseData();
             my_mds = std::move(src.my_mds);
             models = std::move(src.models);
-            my_lits =std::move(src.my_lits);
+            my_lits= std::move(src.my_lits);
             lights = std::move(src.lights);
+            is_draw_env_map = src.is_draw_env_map;
+            map_Light = src.map_Light;
         }
         return *this;
     }
@@ -248,6 +250,10 @@ namespace lim
         // 
         std::function<void(const Program&)> curSetProg;
         int activeSlot = 0;
+
+        if(scn.is_draw_env_map) {
+            utils::drawEnvSphere(*scn.map_Light, cam.view_mat, cam.proj_mat);
+        }
 
         for( const Model* pMd : scn.models ) {
             const Model& md = *pMd;

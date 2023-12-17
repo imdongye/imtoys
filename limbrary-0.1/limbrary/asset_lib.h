@@ -2,6 +2,8 @@
 
 2022-12-30 / im dong ye
 
+utils : AssetLib의 라이프사이클을 빌린 툴
+
 */
 
 #ifndef __asset_lib_h_
@@ -15,10 +17,6 @@
 namespace lim
 {
 	class AppBase;
-	class Program;
-	class Mesh;
-	struct Material;
-	class Texture;
 
 	class AssetLib
 	{
@@ -45,9 +43,15 @@ namespace lim
 		~AssetLib();
 	public:
 		static void create(AppBase* app);
-		static AssetLib& get();
 		static void destroy();
+		static AssetLib& get();
 	};
+
+	
+	namespace utils
+	{
+		void drawEnvSphere(const Texture& map, const glm::mat4& viewMat, const glm::mat4& projMat);
+	}
 }
 
 #endif

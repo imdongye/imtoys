@@ -11,14 +11,15 @@ using namespace glm;
 namespace
 {
 	struct BrdfTestInfo {
-		std::string ctrlName = "##modelview";
-		bool isRotated = false;
-		bool onGround = false;
-		lim::Model* tempGroundMd = nullptr;
+		std::string ctrl_name = "##modelview";
+		bool is_rotate_md = false;
+		bool is_draw_floor = false;
+		lim::Model* temp_floor_md = nullptr;
 		int idx_Brdf = 2;
 		int idx_D = 1;
 		int idx_G = 0;
 		int idx_F = 0;
+		int idx_LitMod = 0;
         float shininess = 100.f; // shininess
         float refIdx    = 1.45f; // index of refraction
         float roughness = 0.3f;  // brdf param
@@ -33,6 +34,7 @@ namespace
 			prog.setUniform("idx_D", tInfo.idx_D);
 			prog.setUniform("idx_G", tInfo.idx_G);
 			prog.setUniform("idx_F", tInfo.idx_F);
+			prog.setUniform("idx_LitMod", tInfo.idx_LitMod);
 		};
 	}
 }
@@ -40,14 +42,20 @@ namespace
 
 
 
-lim::AppModelViewer::AppModelViewer() : AppBase(780, 780, APP_NAME, false)
+lim::AppModelViewer::AppModelViewer() : AppBase(1373, 780, APP_NAME, false)
 {
+	GLint tempInt;
+	glGetIntegerv(GL_MAX_INTEGER_SAMPLES, &tempInt);
+	log::pure("GL_MAX_INTEGER_SAMPLES : %d\n", tempInt);
+	glGetIntegerv(GL_MAX_SAMPLES, &tempInt);
+	log::pure("GL_MAX_SAMPLES : %d\n", tempInt);
+
+
 	viewports.reserve(5);
 	scenes.reserve(5);
 	
 	program.name = "brdf_prog";
-	program.home_dir = APP_DIR;
-	program.attatch("mvp.vs").attatch("brdf.fs").link();
+	program.attatch("mvp.vs").attatch("im_model_viewer/shaders/brdf.fs").link();
 
 	light.setRotate(35.f, -35.f, 7.f);
 	light.intensity = 55.f;
@@ -63,13 +71,8 @@ lim::AppModelViewer::AppModelViewer() : AppBase(780, 780, APP_NAME, false)
 	
 	AssetLib::get().default_material.prog = &program;
 
-	addModelViewer("assets/models/objs/bunny.obj");
-
-	GLint tempInt;
-	glGetIntegerv(GL_MAX_INTEGER_SAMPLES, &tempInt);
-	log::pure("GL_MAX_INTEGER_SAMPLES : %d\n", tempInt);
-	glGetIntegerv(GL_MAX_SAMPLES, &tempInt);
-	log::pure("GL_MAX_SAMPLES : %d\n", tempInt);
+	// addModelViewer("assets/models/objs/bunny.obj");
+	addModelViewer("assets/models/helmet/FlightHelmet/FlightHelmet.gltf");
 }
 
 lim::AppModelViewer::~AppModelViewer()
@@ -84,30 +87,30 @@ void lim::AppModelViewer::addModelViewer(string path)
 		return;
 
 	brdf_test_infos.push_back({});
-	brdf_test_infos.back().ctrlName = md->name+" ctrl ##modelviewer";
+	brdf_test_infos.back().ctrl_name = md->name+" ctrl ##modelviewer";
 
 	md->my_materials.push_back(new Material());
 	md->default_material = md->my_materials.back();
 	md->default_material->prog = &program;
 	md->default_material->set_prog = makeSetProg(brdf_test_infos.back());
 
-	Model* ground = new Model("ground");
-	ground->my_meshes.push_back(new MeshPlane(1));
-	ground->root.addMeshWithMat(ground->my_meshes.back());
-	ground->scale = glm::vec3(50.f);
-	ground->position = {0,-md->pivoted_scaled_bottom_height,0};
-	ground->updateModelMat();
-	ground->my_materials.push_back(new Material());
-	ground->default_material = ground->my_materials.back();
-	ground->default_material->prog = &program;
-	ground->default_material->set_prog = makeSetProg(brdf_test_infos.back());
-	brdf_test_infos.back().tempGroundMd = ground;
+	Model* floor = new Model("floor");
+	floor->my_meshes.push_back(new MeshPlane(1));
+	floor->root.addMeshWithMat(floor->my_meshes.back());
+	floor->scale = glm::vec3(5.f);
+	floor->position = {0,-md->pivoted_scaled_bottom_height,0};
+	floor->updateModelMat();
+	floor->my_materials.push_back(new Material());
+	floor->default_material = floor->my_materials.back();
+	floor->default_material->prog = &program;
+	floor->default_material->set_prog = makeSetProg(brdf_test_infos.back());
+	brdf_test_infos.back().temp_floor_md = floor;
 
 	Scene scn;
 	scn.lights.push_back(&light);
 	scn.models.push_back(&light_model);
 	scn.addOwnModel(md);
-	scn.addOwnModel(ground);
+	scn.addOwnModel(floor);
 	scn.models.pop_back();
 	scn.map_Light = &light_map;
 	scenes.emplace_back(std::move(scn)); // vector move template error
@@ -152,7 +155,7 @@ void lim::AppModelViewer::renderImGui()
 {
 	ImGui::DockSpaceOverViewport();
 
-	log::drawViewer("logger##model_viewer");
+	// log::drawViewer("logger##model_viewer");
 
 	// draw common ctrl
 	{
@@ -190,22 +193,29 @@ void lim::AppModelViewer::renderImGui()
 			Model& md = *scenes[i].my_mds[0]; 
 			BrdfTestInfo& tInfo = brdf_test_infos[i];
 
-			ImGui::Begin(tInfo.ctrlName.c_str());
-			ImGui::Checkbox("rotate", &tInfo.isRotated);
-			if( tInfo.isRotated ) {
+			ImGui::Begin(tInfo.ctrl_name.c_str());
+			ImGui::Checkbox("rotate", &tInfo.is_rotate_md);
+			if( tInfo.is_rotate_md ) {
 				md.orientation = glm::rotate(md.orientation, Q_PI*delta_time, {0,1,0});
 				md.updateModelMat();
 			}
 			
-			if( ImGui::Checkbox("ground", &tInfo.onGround) ) {
-				if(tInfo.onGround) {
-					scenes[i].models.push_back(tInfo.tempGroundMd);
+			if( ImGui::Checkbox("floor", &tInfo.is_draw_floor) ) {
+				if(tInfo.is_draw_floor) {
+					scenes[i].models.push_back(tInfo.temp_floor_md);
 				}
 				else {
 					scenes[i].models.pop_back();
 				}
 			}
+
+			ImGui::Checkbox("draw envMap", &scenes[i].is_draw_env_map);
+
 			bool isInfoChanged = false;
+			static const char* litModStrs[]={"point", "IBL"};
+			if( ImGui::Combo("Light", &tInfo.idx_LitMod, litModStrs, IM_ARRAYSIZE(litModStrs)) ) {
+				isInfoChanged = true; 
+			}
 			static const char* modelStrs[]={"Phong", "BlinnPhong", "CookTorrance", "Oren-Nayar"};
 			if( ImGui::Combo("Model", &tInfo.idx_Brdf, modelStrs, IM_ARRAYSIZE(modelStrs)) ) {
 				isInfoChanged = true; 

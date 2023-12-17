@@ -140,8 +140,8 @@ namespace lim
 		if( convertLinear ) {
 			if(bit_per_channel==8) {
 				switch(nr_channels) {
-					case 3: internal_format = GL_SRGB8; 		log::pure("GL_SRGB8"); break;
-					case 4: internal_format = GL_SRGB8_ALPHA8; 	log::pure("GL_SRGB8_ALPHA8"); break;
+					case 3: internal_format = GL_SRGB8; 		log::pure("GL_SRGB8 "); break;
+					case 4: internal_format = GL_SRGB8_ALPHA8; 	log::pure("GL_SRGB8_ALPHA8 "); break;
 					default:
 						log::err("no matched srgb format nr channel %d\n", nr_channels);
 						return false;
@@ -155,26 +155,26 @@ namespace lim
 		else {
 			if(bit_per_channel==8) {
 				switch(nr_channels) {
-				case 1: internal_format = GL_R8; 	log::pure("GL_R8"); break;
-				case 2: internal_format = GL_RG8; 	log::pure("GL_RG8"); break;
-				case 3: internal_format = GL_RGB8; 	log::pure("GL_RGB8"); break;
-				case 4: internal_format = GL_RGBA8; log::pure("GL_RGBA8"); break;
+				case 1: internal_format = GL_R8; 	log::pure("GL_R8 "); break;
+				case 2: internal_format = GL_RG8; 	log::pure("GL_RG8 "); break;
+				case 3: internal_format = GL_RGB8; 	log::pure("GL_RGB8 "); break;
+				case 4: internal_format = GL_RGBA8; log::pure("GL_RGBA8 "); break;
 				}
 			}
 			else if(bit_per_channel==16) {
 				switch(nr_channels) {
-				case 1: internal_format = GL_R16; 	log::pure("GL_R16"); break;
-				case 2: internal_format = GL_RG16; 	log::pure("GL_RG16"); break;
-				case 3: internal_format = GL_RGB16; log::pure("GL_RGB16"); break;
-				case 4: internal_format = GL_RGBA16;log::pure("GL_RGBA16"); break;
+				case 1: internal_format = GL_R16; 	log::pure("GL_R16 "); break;
+				case 2: internal_format = GL_RG16; 	log::pure("GL_RG16 "); break;
+				case 3: internal_format = GL_RGB16; log::pure("GL_RGB16 "); break;
+				case 4: internal_format = GL_RGBA16;log::pure("GL_RGBA16 "); break;
 				}
 			}
 			else if(bit_per_channel==32) {
 				switch(nr_channels) {
-				case 1: internal_format = GL_R32F; 	 log::pure("GL_R32F"); break;
-				case 2: internal_format = GL_RG32F;  log::pure("GL_RG32F"); break;
-				case 3: internal_format = GL_RGB32F; log::pure("GL_RGB32F"); break;
-				case 4: internal_format = GL_RGBA32F;log::pure("GL_RGBA32F"); break;
+				case 1: internal_format = GL_R32F; 	 log::pure("GL_R32F "); break;
+				case 2: internal_format = GL_RG32F;  log::pure("GL_RG32F "); break;
+				case 3: internal_format = GL_RGB32F; log::pure("GL_RGB32F "); break;
+				case 4: internal_format = GL_RGBA32F;log::pure("GL_RGBA32F "); break;
 				}
 			}
 		}

@@ -64,6 +64,7 @@ uniform int idx_Brdf = 0;
 uniform int idx_D = 0;
 uniform int idx_G = 0;
 uniform int idx_F = 0;
+uniform int idx_LitMod = 0;
 
 
 // gamma correction
@@ -72,14 +73,31 @@ void convertLinearToSRGB( inout vec3 rgb ){
     rgb.g = rgb.g<0.0031308?(12.92*rgb.g):(1.055*pow(rgb.g,0.41667)-0.055);
     rgb.b = rgb.b<0.0031308?(12.92*rgb.b):(1.055*pow(rgb.b,0.41667)-0.055);
 }
-mat3 getTBN(vec3 N) {
+mat3 getTBN0(vec3 N) {
 	vec3 Q1 = dFdx(wPos), Q2 = dFdy(wPos);
 	vec2 st1 = dFdx(mUv), st2 = dFdy(mUv);
 	float D = st1.s*st2.t-st2.s*st1.t;
 	return mat3(normalize((Q1*st2.t-Q2*st1.t)*D),
 				normalize((Q2*st1.s-Q1*st2.s)*D), N);
 }
+// https://gamedev.stackexchange.com/questions/86530/is-it-possible-to-calculate-the-tbn-matrix-in-the-fragment-shader
+// Todo: TB의 Precompute, Geometry, Fragment 성능 비교
+mat3 getTBN(vec3 N) {
+	vec3 dp1 = dFdx( wPos );
+    vec3 dp2 = dFdy( wPos );
+    vec2 duv1 = dFdx( mUv );
+    vec2 duv2 = dFdy( mUv );
 
+    // solve the linear system
+    vec3 dp2perp = cross( dp2, N );
+    vec3 dp1perp = cross( N, dp1 );
+    vec3 T = dp2perp * duv1.x + dp1perp * duv2.x;
+    vec3 B = dp2perp * duv1.y + dp1perp * duv2.y;
+
+    // construct a scale-invariant frame 
+    float invmax = inversesqrt( max( dot(T,T), dot(B,B) ) );
+    return mat3( T * invmax, B * invmax, N );
+}
 
 //*****************************************
 //            Rendering Equation
@@ -103,7 +121,7 @@ vec3 brdfBlinnPhong() { // Specular
 	return mat_AmbientColor + vec3(1) * normalizeFactor * pow( max(0,NDH), mat_Shininess );
 }
 
-vec3 brdfOrenNayar() {
+vec3 OrenNayar() {
 	float a = roughness*roughness;
 	float aa = a*a;
 	float cosTi = dot(L, N);
@@ -118,8 +136,8 @@ vec3 brdfOrenNayar() {
 	float c2 = 0.25*sigmaa*(cosPhi>=0?sin(alpha):(sin(alpha)-pow(2*beta/PI,3)));
 	float c3 = 0.125*sigmaa*pow(4*alpha*beta/(PI*PI),2);
 	float l1 = cosTi*(c1+c2*cosPhi*tan(beta)+c3*(1-abs(cosPhi))*tan((alpha+beta)/2));
-	float l2 = 0.17*cosTi*(aa/(aa+0.13))*(1-cosPhi*pow(2*beta/PI,2));
-	return vec3(l1+l2);
+	vec3 l2 = 0.17*baseColor*cosTi*(aa/(aa+0.13))*(1-cosPhi*pow(2*beta/PI,2));
+	return vec3(l1)+l2;
 }
 
 float distributionBlinnPhong() {
@@ -128,13 +146,20 @@ float distributionBlinnPhong() {
 	float normalizeFactor = 1/(PI*a*a); // for integral to 1
 	return normalizeFactor * pow( max(0,NDH), k );
 }
-float distributionGGX() { // Todo: 하이라이트 중간 깨짐, 음수
+
+float distributionGG1() { // Todo: NDH 큰부분에서 음수 왜그런지 모르겠음
 	float a = roughness*roughness;
 	float aa = a*a;
-	float theta = acos( NDH );
-	float num = aa;
-	float denom = PI * pow(NDH, 4)* pow(aa+pow(tan(theta),2) ,2);
-	return num/max(denom,0.00001);
+	float theta = acos(NDH);
+	float denom = PI * pow(NDH,4) * pow(aa+pow(tan(theta),2),2);
+	return aa/denom;
+}
+// http://cwyman.org/code/dxrTutors/tutors/Tutor14/tutorial14.md.html
+float distributionGGX() {
+	float a = roughness*roughness;
+	float aa = a*a;
+	float d = (NDH*aa - NDH)*NDH + 1.0;
+	return aa/(d*d*PI);
 }
 float distributionGGX2() {
 	float a = roughness*roughness;
@@ -200,6 +225,7 @@ vec3 brdfCookTorrance() {
 	}
 	// return F;
 	// return D*G*F / (4*max(NDL,0)*max(NDV,0)); // 내적 max하면 음수??
+	return D*F;
 	return D*G*F / (4*NDL*NDV);
 }
 vec3 sampleIBL() {
@@ -209,14 +235,14 @@ vec3 sampleIBL() {
 	return texture(map_Light, uv).rgb;
 }
 vec3 brdf() {
-	vec3 diffuse= baseColor * mix(brdfLambertian(), vec3(0), metalness);
+	vec3 diffuse = baseColor * mix(brdfLambertian(), vec3(0), metalness);
 
 	vec3 specular = vec3(0);
 	switch(idx_Brdf) {
 		case 0: specular = brdfPhong(); break;
 		case 1: specular = brdfBlinnPhong(); break;
 		case 2: specular = brdfCookTorrance(); break;
-		case 3: diffuse = baseColor*brdfLambertian()*brdfOrenNayar(); break;
+		case 3: specular = OrenNayar(); break;
 	}
 	//return sampleIBL(R);
 	return diffuse+specular;
@@ -294,6 +320,7 @@ void main() {
 	// outColor = fresnelSchlick();
 	// outColor = vec3(NDH);
 	// outColor = fresnelSchlick(HDV);
+	// outColor = vec3(NDV);
 
 	convertLinearToSRGB(outColor);
 	FragColor = vec4(outColor, 1.0-mat_Opacity);
