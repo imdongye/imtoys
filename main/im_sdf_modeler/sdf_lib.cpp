@@ -739,6 +739,7 @@ void sdf::drawImGui()
     }
 }
 
+
 void sdf::drawGuizmo(const Viewport& vp) {
     Camera& cam = *camera;
     const auto& pos = ImGui::GetItemRectMin();
@@ -752,12 +753,13 @@ void sdf::drawGuizmo(const Viewport& vp) {
                             , gzmo_edit_modes[selected_edit_mode_idx], gzmo_space, glm::value_ptr(selected_obj->transform)
                             , nullptr, nullptr, nullptr);
     }
-    
     if( ImGuizmo::IsUsing() ) {
         selected_obj->decomposeTransform();
     }
+    
     // Axis
-    ImGuizmo::ViewManipulate( glm::value_ptr(cam.view_mat), 8.0f, ImVec2{pos.x+size.x-128, pos.y}, ImVec2{128, 128}, (ImU32)0x10101010 );
+    // ImGuizmo::ViewManipulate( glm::value_ptr(cam.view_mat), 8.0f, ImVec2{pos.x+size.x-128, pos.y}, ImVec2{128, 128}, (ImU32)0x10101010 );
+
 
     /* Edit option */
     {

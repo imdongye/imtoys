@@ -1,15 +1,18 @@
-//
-//	for generate mesh of general shape
-//  2023-01-17 / im dong ye
-//
-//	uv : upper left
-//	st : down left
-//
-//	todo :
-//	1. bumpmap normalmap확인
-//	2. https://modoocode.com/129
-// 	3. 최소 최대 slice 예외처리
-//
+/*
+	for generate mesh of general shape
+ 	2023-01-17 / im dong ye
+
+	uv : upper left
+	st : down left
+
+	Note:
+	texture repeat가정
+
+	todo :
+	1. bumpmap normalmap확인
+	2. https://modoocode.com/129
+	3. 최소 최대 slice 예외처리
+*/
 
 #include <limbrary/model_view/mesh_maked.h>
 #include <limbrary/texture.h>
@@ -171,7 +174,7 @@ namespace lim
 					nors.push_back(normalize(pos));
 				}
 				if( genUvs ) {
-					uvs.push_back({ fract(2.f*slice/(float)nrSlices), 1.f - stack/(float)nrStacks });
+					uvs.push_back({ 2.f*slice/(float)nrSlices, 1.f - stack/(float)nrStacks });
 				}
 			}
 		}
@@ -191,6 +194,52 @@ namespace lim
 				}
 				if( stack > 0 ) { // lower
 					tris.push_back({ curRow+cur_col, nextRow+next_col, curRow+next_col });
+				}
+			}
+		}
+
+		initGL();
+	}
+	MeshEnvSphere::MeshEnvSphere(int nrSlices, int nrStacks)
+	{
+		name = fmtStrToBuf("env_sphere_sl%d_st%d", nrSlices, nrStacks);
+		
+		const float radius = 1.f;
+
+		// phi : angle form xy-plane [-pi/2, pi/2]
+		// theta : y-axis angle [0, 2pi]
+		for (int stack = 0; stack <= nrStacks; stack++)
+		{
+			float phi = H_PI - F_PI * stack / (float)nrStacks;
+			float y = sin(phi);
+			float rcos = radius * cos(phi);
+			for (int slice = 0; slice <= nrSlices; slice++)
+			{
+				float theta = D_PI * slice / (float)nrSlices;
+				float x = rcos * cos(theta);
+				float z = -rcos * sin(theta);
+				vec3 pos = {x, y, z};
+				poss.push_back(pos);
+				nors.push_back(normalize(-pos));
+				uvs.push_back({ slice/(float)nrSlices, 1.f - stack/(float)nrStacks });
+			}
+		}
+
+		const int nrCols = nrSlices + 1;
+
+		for (int stack = 0; stack < nrStacks; stack++)
+		{
+			int curRow = nrCols * stack;
+			int nextRow = nrCols * (stack + 1);
+			for (int slice = 0; slice < nrSlices; slice++)
+			{
+				int cur_col = slice;
+				int next_col = slice + 1;
+				if( stack < nrStacks ){ // upper
+					tris.push_back({ curRow+cur_col, nextRow+next_col, nextRow+cur_col });
+				}
+				if( stack > 0 ) { // lower
+					tris.push_back({ curRow+cur_col, curRow+next_col, nextRow+next_col });
 				}
 			}
 		}
@@ -498,7 +547,7 @@ namespace lim
 				float z = -rcos * sin(theta);
 				vec3 pos = {x, y, z};
 				vec3 nor = normalize(pos);
-				vec2 uv = { fract(1.f*slice/(float)nrSlices), (1.f-stack/(float)(nrStacks-1)) };
+				vec2 uv = { 1.f*slice/(float)nrSlices, (1.f-stack/(float)(nrStacks-1)) };
 				pos.y += (stack<halfStacks)? halfSylinder : (-halfSylinder);
 				uv.y += (stack<halfStacks)? 0.5f : -0.5f;
 				uv.y = fract(uv.y);
@@ -553,7 +602,7 @@ namespace lim
 
 				poss.push_back({ x,y,z });
 				if( genNors ) nors.push_back( normalize(poss.back()));
-				if( genUvs )  uvs.push_back({ fract(2.f*slice/(float)nrSlices), rv/(float)nrRingVerts });
+				if( genUvs )  uvs.push_back({ 2.f*slice/(float)nrSlices, rv/(float)nrRingVerts });
 			}
 		}
 

@@ -32,6 +32,8 @@ namespace lim
 		std::vector<const Model*> models;
 		std::vector<const Light*> lights;
     public:
+        void addModel(Model* md);
+        void addLight(Light* lit);
         void addOwnModel(Model* md);
         void addOwnLight(Light* lit);
   	private:

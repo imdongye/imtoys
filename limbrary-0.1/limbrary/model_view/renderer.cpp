@@ -16,13 +16,17 @@ using namespace lim;
 
 namespace lim
 {
-    void Scene::addOwnModel(Model* md)
-    {
+    void Scene::addModel(Model* md)  {
+        models.push_back(md);
+    }
+    void Scene::addLight(Light* lit) {
+        lights.push_back(lit);
+    }
+    void Scene::addOwnModel(Model* md)  {
         models.push_back(md);
         my_mds.push_back(md);
     }
-    void Scene::addOwnLight(Light* lit)
-    {
+    void Scene::addOwnLight(Light* lit) {
         lights.push_back(lit);
         my_lits.push_back(lit);
     }

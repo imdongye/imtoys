@@ -25,7 +25,11 @@ namespace lim
 		viewport->camera.spd_free_move = 4.f;
 		/* gen models */
 		models.push_back(new Model("sphere"));
-		models.back()->my_meshes.push_back(new MeshSphere(50, 25));
+		models.back()->my_meshes.push_back(new MeshSphere(10, 25));
+		models.back()->root.addMeshWithMat(models.back()->my_meshes.back());
+
+		models.push_back(new Model("env sphere"));
+		models.back()->my_meshes.push_back(new MeshEnvSphere(10));
 		models.back()->root.addMeshWithMat(models.back()->my_meshes.back());
 
 		models.push_back(new Model("donut"));
@@ -41,7 +45,7 @@ namespace lim
 		models.back()->root.addMeshWithMat(models.back()->my_meshes.back());
 
 		models.push_back(new Model("ico sphere2"));
-		models.back()->my_meshes.push_back(new MeshIcoSphere(1)); // 구멍뭐지
+		models.back()->my_meshes.push_back(new MeshIcoSphere(1));
 		models.back()->root.addMeshWithMat(models.back()->my_meshes.back());
 
 		models.push_back(new Model("ico sphere2"));
@@ -108,8 +112,8 @@ namespace lim
 		}
 
 		debugging_tex = new Texture();
-		debugging_tex->initFromFile("assets/images/uv_grid.jpg", true);
 		debugging_tex->wrap_param = GL_REPEAT;
+		debugging_tex->initFromFile("assets/images/uv_grid.jpg", true);
 
 		program = new Program();
 		program->name = "debugging";
@@ -141,6 +145,7 @@ namespace lim
 
 		// clear backbuffer
 		glEnable(GL_DEPTH_TEST);
+		glEnable(GL_CULL_FACE);
 		glDisable(GL_MULTISAMPLE);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glViewport(0, 0, fb_width, fb_height);
