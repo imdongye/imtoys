@@ -30,6 +30,7 @@ namespace
 		int idx_G = 0;
 		int idx_F = 0;
 		int idx_LitMod = 0;
+		int nr_ibl_w_samples = 30;
         float shininess = 100.f; // shininess
         float refIdx    = 1.45f; // index of refraction
         float roughness = 0.3f;  // brdf param
@@ -45,6 +46,7 @@ namespace
 			prog.setUniform("idx_G", tInfo.idx_G);
 			prog.setUniform("idx_F", tInfo.idx_F);
 			prog.setUniform("idx_LitMod", tInfo.idx_LitMod);
+			prog.setUniform("nr_ibl_w_samples", tInfo.nr_ibl_w_samples);
 		};
 	}
 
@@ -124,7 +126,7 @@ void lim::AppModelViewer::addModelViewer(string path)
 	char* vpName = fmtStrToBuf("%s##model_view", md->name.c_str());
 	IFramebuffer* fb = new FramebufferMs(glm::max(utils::getMsMaxSamples(), 16), 4, 8);
 	// IFramebuffer* fb = new FramebufferTexDepth(4, 8);
-	fb->blendable = true;
+	// fb->blendable = true;
 	viewports.emplace_back(vpName, fb);
 	viewports.back().camera.setViewMode(CameraManVp::VM_PIVOT);
 }
@@ -227,12 +229,21 @@ void lim::AppModelViewer::renderImGui()
 		}
 
 		ImGui::Checkbox("draw envMap", &scenes[i].is_draw_env_map);
-
+		ImGui::Separator();
 		bool isInfoChanged = false;
-		static const char* litModStrs[]={"point", "IBL(sampling)","IBL(pre-filtering)"};
+		static const char* litModStrs[]={"point", "IBL(sampling)", "IBL(imp sampling)","IBL(pre-filtering)"};
 		if( ImGui::Combo("Light", &tInfo.idx_LitMod, litModStrs, IM_ARRAYSIZE(litModStrs)) ) {
 			isInfoChanged = true; 
 		}
+		if(tInfo.idx_LitMod==1||tInfo.idx_LitMod==2) {
+			int nrSamples = tInfo.nr_ibl_w_samples*tInfo.nr_ibl_w_samples;
+			if( ImGui::SliderInt("ibl samples", &nrSamples, 1, 2500, "%d") ) {
+				tInfo.nr_ibl_w_samples = glm::sqrt(nrSamples);
+				isInfoChanged = true; 
+			}
+			ImGui::Text("nr width samples %d", tInfo.nr_ibl_w_samples);
+		}
+		ImGui::Separator();
 		static const char* modelStrs[]={"Phong", "BlinnPhong", "CookTorrance", "Oren-Nayar"};
 		if( ImGui::Combo("Model", &tInfo.idx_Brdf, modelStrs, IM_ARRAYSIZE(modelStrs)) ) {
 			isInfoChanged = true; 

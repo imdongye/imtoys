@@ -65,6 +65,7 @@ uniform int idx_D = 0;
 uniform int idx_G = 0;
 uniform int idx_F = 0;
 uniform int idx_LitMod = 0;
+uniform int nr_ibl_w_samples = 50;
 
 
 // gamma correction
@@ -198,15 +199,15 @@ float geometryCookTorrance() { // GGX
 	return min(1, min(t1, t2));
 }
 
-float geometryShlickGGX(float num) {
+float _geometryShlickGGX(float num) {
 	float r = roughness+1;
 	float k = r*r/8.0;
 	float denom = num*(1-k)+k;
 	return num/denom;
 }
 float geometrySmith() {
-	float ggx2 = geometryShlickGGX(max(NDV, 0));
-	float ggx1 = geometryShlickGGX(max(NDL, 0));
+	float ggx2 = _geometryShlickGGX(max(NDV, 0));
+	float ggx1 = _geometryShlickGGX(max(NDL, 0));
 	return ggx1*ggx2;
 }
 
@@ -232,9 +233,7 @@ vec3 brdfCookTorrance() {
 	case 1: F = fresnelSchlick(NDH); break;
 	case 2: F = fresnelSchlick(VDH); break;
 	}
-	// return F;
 	// return D*G*F / (4*max(NDL,0)*max(NDV,0)); // 내적 max하면 음수??
-	return D*F;
 	return D*G*F / (4*NDL*NDV);
 }
 vec3 brdfPoint() {
@@ -277,18 +276,16 @@ vec2 uvFromDir(vec3 v) {
     return uv;
 }
 vec3 dirFromUv(vec2 uv) {
-	float theta = uv.x*2*PI;
-	float phi = (uv.y-0.5)*PI;
+	float theta = 2*PI*uv.x;
+	float phi = PI*(uv.y-0.5);
 	return vec3( cos(theta)*cos(phi), sin(phi), sin(theta)*cos(phi) );
 }
-
-const int nrIblSamples = 50;
 vec3 ibSamplingLighting() {
 	vec3 ambient = mat_AmbientColor*ambOcc*baseColor;
 	vec3 sum = vec3(0);
 
-	for(int i=0; i<nrIblSamples; i++) for(int j=0; j<nrIblSamples; j++) {
-		vec2 uv = vec2( i/float(nrIblSamples), j/float(nrIblSamples) );
+	for(int i=0; i<nr_ibl_w_samples; i++) for(int j=0; j<nr_ibl_w_samples; j++) {
+		vec2 uv = vec2( i/float(nr_ibl_w_samples), j/float(nr_ibl_w_samples) ); // Todo 레귤러렌덤
 
 		L = dirFromUv(uv);
 		Rl = reflect(-L, N);//normalize(2*dot(N, L)*N-L);
@@ -303,15 +300,82 @@ vec3 ibSamplingLighting() {
 			continue;
 
 		float phi = (uv.y-0.5)*PI; // Todo: rm dup
-		vec3 Li = texture(map_Light, uv).rgb*light_Int;
+		vec3 Li = light_Int * texture(map_Light, uv).rgb;
 		
-		sum += brdfPoint() *Li*NDL*cos(phi);
+		sum += brdfPoint()*Li*NDL*cos(phi);
 	}
 	float dist2 = 10; // radiance
-	vec3 integ = sum/(nrIblSamples*nrIblSamples * dist2);
+	vec3 integ = sum/(nr_ibl_w_samples*nr_ibl_w_samples * dist2);
 	return emission + integ + ambient;
 }
 
+
+// 노멀기준에서 roughness에 따라 샘플링 분포 설정(GGX)
+vec3 importanceSampleGGX(vec2 uv) {
+	float a = roughness*roughness;
+	float theta = 2*PI*uv.x;
+	float cosPhi = sqrt( (1-uv.y)/(1+(a*a-1)*uv.y) );
+	float sinPhi = sqrt( 1-cosPhi*cosPhi );
+	// tangent space
+	vec3 tH = vec3(sinPhi*cos(theta), sinPhi*sin(theta), cosPhi);
+	// world space
+	vec3 up = abs(N.z)<0.999? vec3(0,0,1) : vec3(1,0,0);
+	vec3 tanX = normalize(cross(up, N));
+	vec3 tanY = cross(N, tanX);
+	return tanX*tH.x + tanY*tH.y + N*tH.z;
+}
+// Rodrigues ver https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula
+vec3 importanceSampleGGX2(vec2 uv) {
+	float a = roughness*roughness;
+	float theta = 2*PI*uv.x;
+	float phi = PI*(uv.y-0.5);
+	float cosPhi = sqrt( (1-uv.y)/(1+(a*a-1)*uv.y) );
+	float sinPhi = sqrt( 1-cosPhi*cosPhi );
+	// tangent space
+	vec3 tH = vec3(sinPhi*cos(theta), sinPhi*sin(theta), cosPhi);
+	// tangent space z axis to N with rotate kap
+	vec3 up = abs(N.z)<0.999? vec3(0,0,1) : vec3(1,0,0);
+	vec3 k = normalize(cross(up, N));
+	float cosKap = N.z; // dot(N, up)
+	float sinKap = length(N.xy);
+	return tH*cosKap + cross(k,tH)*sinKap + k*dot(k,tH)*(1-cosKap);
+}
+
+vec3 ibImportanceSamplingLighting() {
+	vec3 ambient = mat_AmbientColor*ambOcc*baseColor;
+	vec3 sum = vec3(0);
+
+	for(int i=0; i<nr_ibl_w_samples; i++) for(int j=0; j<nr_ibl_w_samples; j++) {
+		vec2 uv = vec2( i/float(nr_ibl_w_samples), j/float(nr_ibl_w_samples) );
+		uv = rand(uv, i);
+
+		H = importanceSampleGGX2(uv);
+		L = reflect(-V, H);
+		Rl = reflect(-L, N);
+
+		NDL = dot(N,L);
+		NDH = dot(N,H);
+		VDRl = dot(V,Rl);
+		VDH = dot(V,H);
+
+		if( NDL<0 ) // out of hemisphere
+			continue;
+
+		float phi = (uv.y-0.5)*PI; // Todo: rm dup
+		vec3 Li = light_Int * texture(map_Light, uvFromDir(L)).rgb;
+
+		// brdfPoint에서 distributionGGX와 분모, cos(phi)와 brdf의 NDH 없애서 최적화 가능
+		// brdf 여러개 써보기 위해서 일단 ggx ndf로 나눈다. 
+		sum += brdfPoint()*Li*NDL*cos(phi) / distributionGGX(); // Todo: 분모 p가 제대로 적용 안돼서 아티펙트 보이는것 같음.
+
+		// vec3 spec = Li/(4*NDV);
+		// sum += spec;
+		// sum += Li;
+	}
+	float dist2 = 10; // radiance
+	vec3 integ = sum/(nr_ibl_w_samples*nr_ibl_w_samples * dist2);
+	return emission + integ + ambient;
+}
 
 void main() {
 	vec3 faceN = normalize( cross( dFdx(wPos), dFdy(wPos) ) );
@@ -361,7 +425,8 @@ void main() {
 	switch(idx_LitMod) {
 	case 0: outColor = pointLighting(); break;
 	case 1: outColor = ibSamplingLighting(); break;
-	case 2: outColor = ibSamplingLighting(); break;
+	case 2: outColor = ibImportanceSamplingLighting(); break;
+	case 3: outColor = ibSamplingLighting(); break;
 	}
 
 	//debug
