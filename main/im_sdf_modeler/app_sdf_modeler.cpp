@@ -33,8 +33,7 @@ lim::AppSdfModeler::AppSdfModeler(): AppBase(1373, 783, APP_NAME, false)
 	viewport.camera.position = glm::vec3(0,1,5);
 	viewport.camera.updateViewMat();
 	prog.name = "sdf and ray marching";
-	prog.home_dir = APP_DIR;
-	prog.attatch("canvas.vs").attatch("shader.fs").link();
+	prog.attatch("canvas.vs").attatch("im_sdf_modeler/shaders/shader.fs").link();
 
 	sdf::init(&viewport.camera, &light);
 }

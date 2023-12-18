@@ -74,7 +74,10 @@ lim::AppModelViewer::AppModelViewer() : AppBase(1373, 780, APP_NAME, false)
 	light_model.scale = glm::vec3(0.3f);
 	light_model.updateModelMat();
 
-	light_map.initFromFile("assets/ibls/artist_workshop_4k.hdr", false);
+	irr_prog.name = "irr baker";
+	irr_prog.attatch("canvas.vs").attatch("im_model_viewer/shaders/irr_map.fs").link();
+	setIBL("assets/ibls/artist_workshop_4k.hdr");
+
 	
 	AssetLib::get().default_material.prog = &program;
 
@@ -121,6 +124,7 @@ void lim::AppModelViewer::addModelViewer(string path)
 	scn.addOwnModel(floor);
 	scn.models.pop_back();
 	scn.map_Light = &light_map;
+	scn.map_Irradiance = &irradiance_fb.color_tex;
 	scenes.emplace_back(std::move(scn)); // vector move template error
 
 	char* vpName = fmtStrToBuf("%s##model_view", md->name.c_str());
@@ -146,6 +150,11 @@ void lim::AppModelViewer::drawModelsToViewports()
 			selected_vp_idx = i;
 			
 		render(vp.getFb(), vp.camera, scenes[i]);
+
+		// vp.getFb().bind();
+		// drawTexToQuad(irradiance_fb.getRenderedTex(),1.f);
+		// drawTexToQuad(light_map.tex_id, 1.f);
+		// vp.getFb().unbind();
 
 		if( !vp.is_opened ) {
 			rmModelViewer(i);
@@ -296,13 +305,29 @@ void lim::AppModelViewer::keyCallback(int key, int scancode, int action, int mod
 void lim::AppModelViewer::cursorPosCallback(double xPos, double yPos)
 {
 }
+
+void lim::AppModelViewer::setIBL(const char* path) {
+	light_map.initFromFile(path, false);
+
+	irradiance_fb.color_tex.updateFormat(3,32,false, true);
+	irradiance_fb.resize(256, 128);
+	lim::log::pure(": map Irr format\n\n");
+
+	irradiance_fb.bind();
+	irr_prog.use();
+	irr_prog.setTexture("map_Light", light_map.tex_id, 0);
+	AssetLib::get().screen_quad.drawGL();
+	irradiance_fb.unbind();
+}
 void lim::AppModelViewer::dndCallback(int count, const char **paths)
 {
 	for( int i=0; i<count; i++ ) {
 		const char* path = paths[i];
 		if(strIsSame(getExtension(path),"hdr")) {
-			light_map.initFromFile(path, false);
+			setIBL(path);
 		}
-		addModelViewer(path);
+		else {
+			addModelViewer(path);
+		}
 	}
 }

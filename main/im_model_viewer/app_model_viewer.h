@@ -24,6 +24,9 @@ namespace lim
 		std::vector<Scene> scenes;
 
 		Texture light_map;
+		Program irr_prog;
+		FramebufferNoDepth irradiance_fb;
+
 		ProgramReloadable program;
 		Light light;
 		Model light_model;
@@ -35,6 +38,7 @@ namespace lim
 		void addModelViewer(std::string path);
 		void rmModelViewer(int idx);
 		void drawModelsToViewports();
+		void setIBL(const char* path);
 
 		virtual void update() override;
 		virtual void renderImGui() override;

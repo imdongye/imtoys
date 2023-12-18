@@ -51,8 +51,9 @@ uniform sampler2D map_Metalness;
 uniform sampler2D map_Emission;
 uniform sampler2D map_Opacity;
 
-uniform bool use_IBL;
 uniform sampler2D map_Light;
+uniform sampler2D map_Irradiance;
+
 
 
 uniform vec3 light_Pos;
@@ -270,9 +271,9 @@ vec3 pointLighting() {
 // phi of up vector is 0 
 const vec2 invAtan = vec2(0.1591, 0.3183);
 vec2 uvFromDir(vec3 v) {
-    vec2 uv = vec2(atan(v.z, v.x), asin(v.y));
-    uv *= invAtan;
-    uv.y += 0.5;
+	float theta = atan(-v.z, v.x);
+	float phi = asin(v.y);
+    vec2 uv = vec2(theta/(2*PI), 0.5-phi/PI);
     return uv;
 }
 vec3 dirFromUv(vec2 uv) {
@@ -377,6 +378,13 @@ vec3 ibImportanceSamplingLighting() {
 	return emission + integ + ambient;
 }
 
+vec3 ibPrefilteredLighting() {
+	vec2 uvIrr = uvFromDir(N);
+	return vec3(uvIrr.x,0, 0);
+	// return uvIrr.xyy;
+	return texture(map_Irradiance, uvIrr).rgb*light_Int;
+}
+
 void main() {
 	vec3 faceN = normalize( cross( dFdx(wPos), dFdy(wPos) ) );
 	if( dot(N,faceN)<0 ) N = -N; // 모델의 내부에서 back face일때 노멀을 뒤집는다.
@@ -426,7 +434,7 @@ void main() {
 	case 0: outColor = pointLighting(); break;
 	case 1: outColor = ibSamplingLighting(); break;
 	case 2: outColor = ibImportanceSamplingLighting(); break;
-	case 3: outColor = ibSamplingLighting(); break;
+	case 3: outColor = ibPrefilteredLighting(); break;
 	}
 
 	//debug

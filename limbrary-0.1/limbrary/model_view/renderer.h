@@ -32,6 +32,7 @@ namespace lim
 		std::vector<const Light*> lights;
         bool is_draw_env_map = false;
         const Texture* map_Light = nullptr;
+        const Texture* map_Irradiance = nullptr;
     public:
         void addModel(Model* md);
         void addLight(Light* lit);

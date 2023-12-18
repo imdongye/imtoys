@@ -114,11 +114,9 @@ namespace lim
 		if( stbi_is_hdr(file_path.c_str()) ) {
 			data=stbi_loadf(file_path.c_str(), &width, &height, &nr_channels, 0);
 			if( stbi_is_16_bit(file_path.c_str()) ) {
-				
 				bit_per_channel = 16;
 			}
 			else {
-				
 				bit_per_channel = 32;
 			}
 		}
@@ -133,15 +131,17 @@ namespace lim
 		}
 		return data;
 	}
-	bool Texture::updateFormat(int nrChannels, int bitPerChannel, bool convertLinear) {
+	bool Texture::updateFormat(int nrChannels, int bitPerChannel, bool convertLinear, bool verbose) {
+		const char* fmStr = nullptr;
+
 		nr_channels = nrChannels;
 		bit_per_channel = bitPerChannel;
 
 		if( convertLinear ) {
 			if(bit_per_channel==8) {
 				switch(nr_channels) {
-					case 3: internal_format = GL_SRGB8; 		log::pure("GL_SRGB8 "); break;
-					case 4: internal_format = GL_SRGB8_ALPHA8; 	log::pure("GL_SRGB8_ALPHA8 "); break;
+					case 3: internal_format = GL_SRGB8; 		fmStr = "GL_SRGB8"; break;
+					case 4: internal_format = GL_SRGB8_ALPHA8; 	fmStr = "GL_SRGB8_ALPHA8"; break;
 					default:
 						log::err("no matched srgb format nr channel %d\n", nr_channels);
 						return false;
@@ -155,26 +155,26 @@ namespace lim
 		else {
 			if(bit_per_channel==8) {
 				switch(nr_channels) {
-				case 1: internal_format = GL_R8; 	log::pure("GL_R8 "); break;
-				case 2: internal_format = GL_RG8; 	log::pure("GL_RG8 "); break;
-				case 3: internal_format = GL_RGB8; 	log::pure("GL_RGB8 "); break;
-				case 4: internal_format = GL_RGBA8; log::pure("GL_RGBA8 "); break;
+				case 1: internal_format = GL_R8; 	fmStr = "GL_R8"; break;
+				case 2: internal_format = GL_RG8; 	fmStr = "GL_RG8"; break;
+				case 3: internal_format = GL_RGB8; 	fmStr = "GL_RGB8"; break;
+				case 4: internal_format = GL_RGBA8; fmStr = "GL_RGBA8"; break;
 				}
 			}
 			else if(bit_per_channel==16) {
 				switch(nr_channels) {
-				case 1: internal_format = GL_R16; 	log::pure("GL_R16 "); break;
-				case 2: internal_format = GL_RG16; 	log::pure("GL_RG16 "); break;
-				case 3: internal_format = GL_RGB16; log::pure("GL_RGB16 "); break;
-				case 4: internal_format = GL_RGBA16;log::pure("GL_RGBA16 "); break;
+				case 1: internal_format = GL_R16; 	fmStr = "GL_R16"; break;
+				case 2: internal_format = GL_RG16; 	fmStr = "GL_RG16"; break;
+				case 3: internal_format = GL_RGB16; fmStr = "GL_RGB16"; break;
+				case 4: internal_format = GL_RGBA16;fmStr = "GL_RGBA16"; break;
 				}
 			}
 			else if(bit_per_channel==32) {
 				switch(nr_channels) {
-				case 1: internal_format = GL_R32F; 	 log::pure("GL_R32F "); break;
-				case 2: internal_format = GL_RG32F;  log::pure("GL_RG32F "); break;
-				case 3: internal_format = GL_RGB32F; log::pure("GL_RGB32F "); break;
-				case 4: internal_format = GL_RGBA32F;log::pure("GL_RGBA32F "); break;
+				case 1: internal_format = GL_R32F; 	 fmStr = "GL_R32F"; break;
+				case 2: internal_format = GL_RG32F;  fmStr = "GL_RG32F"; break;
+				case 3: internal_format = GL_RGB32F; fmStr = "GL_RGB32F"; break;
+				case 4: internal_format = GL_RGBA32F;fmStr = "GL_RGBA32F"; break;
 				}
 			}
 		}
@@ -195,6 +195,9 @@ namespace lim
 			log::err("no machec bit per channel\n");
 			return false;
 		}
+		if(verbose) {
+			log::pure("%s ", fmStr);
+		}
 		return true;
 	}
 
@@ -204,7 +207,7 @@ namespace lim
 		if(!data)
 			return false;
 
-		if( !updateFormat(nr_channels, bit_per_channel, convertLinear) ) {
+		if( !updateFormat(nr_channels, bit_per_channel, convertLinear, true) ) {
 			log::err("no mached format\n");
 			stbi_image_free(data);
 			return false;

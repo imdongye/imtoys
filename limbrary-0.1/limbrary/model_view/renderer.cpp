@@ -46,6 +46,7 @@ namespace lim
             lights = std::move(src.lights);
             is_draw_env_map = src.is_draw_env_map;
             map_Light = src.map_Light;
+            map_Irradiance = src.map_Irradiance;
         }
         return *this;
     }
@@ -281,14 +282,11 @@ namespace lim
                         activeSlot = bindLightToProg(prog, *pLit, activeSlot);
                         break; //  Todo: 지금은 라이트 하나만
                     }
-                    prog.setUniform("use_IBL", ( scn.map_Light )?true:false);
+
                     if( scn.map_Light ) {
                         prog.setTexture("map_Light", scn.map_Light->tex_id, activeSlot++);
-                        prog.setUniform("use_IBL", true);
+                        prog.setTexture("map_Irradiance", scn.map_Irradiance->tex_id, activeSlot++);
 
-                    } else {
-                        prog.setUniform("use_IBL", false);
-                        
                     }
                 }
 

@@ -55,7 +55,7 @@ namespace lim
 	private:
 		void* getDataAndPropsFromFile(std::string_view path);
 	public:
-		bool updateFormat(int nrChannels = 3, int bitPerChannel = 8, bool convertLinear = false);
+		bool updateFormat(int nrChannels = 3, int bitPerChannel = 8, bool convertLinear = false, bool verbose = false);
 		void initGL(void* data = nullptr);
 		bool initFromFile(std::string_view path, bool convertLinear = false);
 		void deinitGL();
