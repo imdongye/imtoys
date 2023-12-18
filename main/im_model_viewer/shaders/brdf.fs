@@ -98,12 +98,18 @@ mat3 getTBN(vec3 N) {
     float invmax = inversesqrt( max( dot(T,T), dot(B,B) ) );
     return mat3( T * invmax, B * invmax, N );
 }
+vec2 rand(vec2 st, int i) {
+    return vec2( 
+		fract(sin(dot(st+i*4.1233, vec2(12.9898, 78.2336))) * 43758.5453),
+    	fract(sin(dot(st+i*6.8233, vec2(39.8793, 83.2402))) * 22209.2896)
+	);
+}
 
 //*****************************************
 //            Rendering Equation
 //*****************************************
-vec3 N, L, V, R, H;
-float NDL, NDV, NDH, VDR, HDV;
+vec3 N, L, V, H, Rl, Rv;
+float NDL, NDV, NDH, VDRl, VDH;
 vec3 baseColor, F0, emission;
 float roughness, metalness, ambOcc;
 
@@ -132,7 +138,7 @@ vec3 brdfLambertian() { // Diffuse
 }
 vec3 brdfPhong() { // Specular
 	float normalizeFactor = (mat_Shininess+1)/(2*PI);
-	return mat_AmbientColor + vec3(1) * normalizeFactor * pow( max(0,VDR), mat_Shininess );
+	return mat_AmbientColor + vec3(1) * normalizeFactor * pow( max(0,VDRl), mat_Shininess );
 }
 vec3 brdfBlinnPhong() { // Specular
 	// vec3 H = (V+L)/2; // 성능을위해 노멀라이즈 하지 않음.
@@ -187,8 +193,8 @@ float distributionBeckmann()
 }
 
 float geometryCookTorrance() { // GGX
-	float t1 = 2*NDH*NDV/HDV;
-	float t2 = 2*NDH*NDL/HDV;
+	float t1 = 2*NDH*NDV/VDH;
+	float t2 = 2*NDH*NDL/VDH;
 	return min(1, min(t1, t2));
 }
 
@@ -213,48 +219,103 @@ vec3 brdfCookTorrance() {
 	float D, G;
 	vec3 F;
 	switch(idx_D) {
-		case 0: D = distributionBlinnPhong(); break;
-		case 1: D = distributionGGX(); break;
-		case 2: D = distributionBeckmann(); break;
+	case 0: D = distributionBlinnPhong(); break;
+	case 1: D = distributionGGX(); break;
+	case 2: D = distributionBeckmann(); break;
 	}
 	switch(idx_G) {
-		case 0: G = geometryCookTorrance(); break;
-		case 1: G = geometrySmith(); break;
+	case 0: G = geometryCookTorrance(); break;
+	case 1: G = geometrySmith(); break;
 	}
 	switch(idx_F) {
-		case 0: F = fresnelSchlick(NDV); break;
-		case 1: F = fresnelSchlick(NDH); break;
-		case 2: F = fresnelSchlick(HDV); break;
+	case 0: F = fresnelSchlick(NDV); break;
+	case 1: F = fresnelSchlick(NDH); break;
+	case 2: F = fresnelSchlick(VDH); break;
 	}
 	// return F;
 	// return D*G*F / (4*max(NDL,0)*max(NDV,0)); // 내적 max하면 음수??
 	return D*F;
 	return D*G*F / (4*NDL*NDV);
 }
-vec3 sampleIBL() {
-	float theta = atan(R.z, R.x);
-	float phi = atan(R.y, length(R.xz));
-	vec2 uv = vec2(1-theta/(2*PI), 0.5-phi/PI);
-	return texture(map_Light, uv).rgb;
-}
-vec3 brdf() {
+vec3 brdfPoint() {
 	vec3 diffuse = baseColor * mix(brdfLambertian(), vec3(0), metalness);
 
 	vec3 specular = vec3(0);
 	switch(idx_Brdf) {
-		case 0: specular = brdfPhong(); break;
-		case 1: specular = brdfBlinnPhong(); break;
-		case 2: specular = brdfCookTorrance(); break;
-		case 3: specular = OrenNayar(); break;
+	case 0: specular = brdfPhong(); break;
+	case 1: specular = brdfBlinnPhong(); break;
+	case 2: specular = brdfCookTorrance(); break;
+	case 3: specular = OrenNayar(); break;
 	}
-	//return sampleIBL(R);
 	return diffuse+specular;
+}
+vec3 pointLighting() {
+	vec3 toLight = light_Pos-wPos;
+	L = normalize( toLight );
+	Rl = reflect(-L, N);//normalize(2*dot(N, L)*N-L);
+	H = normalize(L+V);
+
+	NDL = dot(N,L);
+    NDH = dot(N,H);
+    VDRl = dot(V,Rl);
+	VDH = dot(V,H);
+
+	vec3 Li = light_Int*light_Color/dot(toLight,toLight); // radiance
+	vec3 ambient = mat_AmbientColor*ambOcc*baseColor;
+
+	return emission + brdfPoint() * Li * max(0,NDL) + ambient;
+}
+
+/* spherical coordinate convertion */
+// theta of right vector is 0
+// phi of up vector is 0 
+const vec2 invAtan = vec2(0.1591, 0.3183);
+vec2 uvFromDir(vec3 v) {
+    vec2 uv = vec2(atan(v.z, v.x), asin(v.y));
+    uv *= invAtan;
+    uv.y += 0.5;
+    return uv;
+}
+vec3 dirFromUv(vec2 uv) {
+	float theta = uv.x*2*PI;
+	float phi = (uv.y-0.5)*PI;
+	return vec3( cos(theta)*cos(phi), sin(phi), sin(theta)*cos(phi) );
+}
+
+const int nrIblSamples = 50;
+vec3 ibSamplingLighting() {
+	vec3 ambient = mat_AmbientColor*ambOcc*baseColor;
+	vec3 sum = vec3(0);
+
+	for(int i=0; i<nrIblSamples; i++) for(int j=0; j<nrIblSamples; j++) {
+		vec2 uv = vec2( i/float(nrIblSamples), j/float(nrIblSamples) );
+
+		L = dirFromUv(uv);
+		Rl = reflect(-L, N);//normalize(2*dot(N, L)*N-L);
+		H = normalize(L+V);
+
+		NDL = dot(N,L);
+		NDH = dot(N,H);
+		VDRl = dot(V,Rl);
+		VDH = dot(V,H);
+
+		if( NDL<0 ) // out of hemisphere
+			continue;
+
+		float phi = (uv.y-0.5)*PI; // Todo: rm dup
+		vec3 Li = texture(map_Light, uv).rgb*light_Int;
+		
+		sum += brdfPoint() *Li*NDL*cos(phi);
+	}
+	float dist2 = 10; // radiance
+	vec3 integ = sum/(nrIblSamples*nrIblSamples * dist2);
+	return emission + integ + ambient;
 }
 
 
 void main() {
-	// vec3 faceN = normalize( cross( dFdx(wPos), dFdy(wPos) ) );
-	// if( dot(N,faceN)<0 ) N = -N; // 모델의 내부에서 back face일때 노멀을 뒤집는다.
+	vec3 faceN = normalize( cross( dFdx(wPos), dFdy(wPos) ) );
+	if( dot(N,faceN)<0 ) N = -N; // 모델의 내부에서 back face일때 노멀을 뒤집는다.
 	float alpha = 1.0;
 	N = (gl_FrontFacing)?normalize(wNor):normalize(-wNor);
 
@@ -276,7 +337,8 @@ void main() {
 	if( (map_Flags & MF_METALNESS)>0 ) {
 		metalness = texture( map_Metalness, mUv ).r;
 	}
-	emission = mat_EmissionColor;
+	// emission = mat_EmissionColor;
+	emission = vec3(0);
 	if( (map_Flags & MF_EMISSION)>0 ) {
 		emission = texture( map_Emission, mUv ).rgb;
 	}
@@ -291,30 +353,20 @@ void main() {
 		N = tbn* (texture( map_Bump, mUv ).rgb*2 - vec3(1));
 	}
     F0 = mix(mat_F0, baseColor, metalness);
-
-	vec3 toLight = light_Pos-wPos;
-	L = normalize( toLight );
 	V = normalize( camera_Pos - wPos );
-	R = reflect(-L, N);//normalize(2*dot(N, L)*N-L);
-	H = normalize(L+V);
-
-	NDL = dot(N,L);
     NDV = dot(N,V);
-    NDH = dot(N,H);
-    VDR = dot(V,R);
-	HDV = dot(V,H);
+	Rv = reflect(-V, N);
 
-
-	vec3 Li = light_Int*light_Color/dot(toLight,toLight); // radiance
-	vec3 ambient = mat_AmbientColor*ambOcc*baseColor; // Todo: Occ의 의미를 왜 반대로 쓰지?
-
-	vec3 outColor = emission + brdf() * Li * max(0,NDL) + ambient;
-
+	vec3 outColor;
+	switch(idx_LitMod) {
+	case 0: outColor = pointLighting(); break;
+	case 1: outColor = ibSamplingLighting(); break;
+	case 2: outColor = ibSamplingLighting(); break;
+	}
 
 	//debug
 	//outColor = vec3((map_Flags & MF_Kd));
 	//outColor = albedo.rgb;
-	//outColor = vec3(Roughness);
 	// outColor = vec3(ambOcc, roughness, metalness);
 	// outColor = F0;
 	// outColor = fresnelSchlick();
@@ -327,6 +379,11 @@ void main() {
 	// outColor = vec3(NDH);
 	// outColor = fresnelSchlick(HDV);
 	// outColor = vec3(NDV);
+	// outColor = emission;
+	// outColor = vec3(roughness);
+	// outColor = texture(map_Light, uvFromDir(Rv)).rgb;
+	// outColor = texture(map_Light, uvFromDir(dirFromUv(uvFromDir(Rv)))).rgb;
+	// outColor = Rv*0.5+0.5;
 
 	convertLinearToSRGB(outColor);
 	FragColor = vec4(outColor, alpha);

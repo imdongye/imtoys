@@ -68,7 +68,7 @@ namespace
 	};
 
 	// 중복 load 막기
-	Texture* loadTexture(string texPath, bool convertLinear)
+	Texture* loadTexture(string texPath, bool convertLinear, const char* msg)
 	{
 		Texture* rst = nullptr;
 		std::vector<Texture*>& loadedTexs = _rst_md->my_textures; 
@@ -84,6 +84,7 @@ namespace
 		}
 		if( !rst ) {
 			loadedTexs.push_back(new Texture());
+			lim::log::pure("%s ", msg);
 			loadedTexs.back()->initFromFile(texPath, convertLinear);
 			rst = loadedTexs.back();
 		}
@@ -158,31 +159,31 @@ namespace
 
 		// normal, metalness, roughness, occlusion 은 linear space다.
 		if(verbose) log::pure("<load maps>\n");
+		// verbose = true;
 		mat.map_Flags = Material::MF_NONE;
 		if( aiMat->GetTexture(aiTextureType_DIFFUSE, 0, &tempStr) == AI_SUCCESS ) {
-			if(verbose) log::pure("map_BaseColor: ");
 			mat.map_Flags |= Material::MF_BASE_COLOR;
-			mat.map_BaseColor = loadTexture(tempStr.C_Str(), true); // kd일때만 linear space변환
+			mat.map_BaseColor = loadTexture(tempStr.C_Str(), true, "map_BaseColor"); // kd일때만 linear space변환
+		}
+		if( aiMat->GetTexture(aiTextureType_BASE_COLOR, 0, &tempStr) == AI_SUCCESS ) {
+			mat.map_Flags |= Material::MF_BASE_COLOR;
+			mat.map_BaseColor = loadTexture(tempStr.C_Str(), true, "map_BaseColor"); // kd일때만 linear space변환
 		}
 		if( aiMat->GetTexture(aiTextureType_SPECULAR, 0, &tempStr) == AI_SUCCESS ) {
-			if(verbose) log::pure("map_Specular: ");
 			mat.map_Flags |= Material::MF_SPECULAR;
-			mat.map_Specular = loadTexture(tempStr.C_Str(), true); // Todo: Ka Ks map 에서도 해야하나?
+			mat.map_Specular = loadTexture(tempStr.C_Str(), true, "map_Specular"); // Todo: Ka Ks map 에서도 해야하나?
 		}
 		if( aiMat->GetTexture(aiTextureType_HEIGHT, 0, &tempStr) == AI_SUCCESS ) {
-			if(verbose) log::pure("map_Bump(Height): ");
            	mat.map_Flags |= Material::MF_HEIGHT;
-			mat.map_Bump = loadTexture(tempStr.C_Str(), false);
+			mat.map_Bump = loadTexture(tempStr.C_Str(), false, "map_Bump");
 		}
 		if( aiMat->GetTexture(aiTextureType_NORMALS, 0, &tempStr) == AI_SUCCESS ) {
-			if(verbose) log::pure("map_Bump(Nor): ");
            	mat.map_Flags |= Material::MF_NOR;
-			mat.map_Bump = loadTexture(tempStr.C_Str(), false);
+			mat.map_Bump = loadTexture(tempStr.C_Str(), false, "map_Bump(Nor)");
 		}
 		if( aiMat->GetTexture(aiTextureType_AMBIENT, 0, &tempStr) == AI_SUCCESS ) {
-			if(verbose) log::pure("map_AmbOcc: ");
 			mat.map_Flags |= Material::MF_AMB_OCC;
-			mat.map_AmbOcc = loadTexture(tempStr.C_Str(), false);
+			mat.map_AmbOcc = loadTexture(tempStr.C_Str(), false, "map_AmbOcc");
 		}
 		if( aiMat->GetTexture(aiTextureType_DIFFUSE_ROUGHNESS, 0, &tempStr) == AI_SUCCESS ) {
 			if(verbose) log::pure("*pass map_Roughness(ROUGHNESS): %s\n", tempStr.C_Str());
@@ -194,15 +195,17 @@ namespace
 			// mat.map_Flags |= Material::MF_METALNESS;
 			// mat.map_Metalness = loadTexture(tempStr.C_Str(), false);
 		}
-		if( aiMat->GetTexture(aiTextureType_EMISSION_COLOR, 0, &tempStr) == AI_SUCCESS ) {
-			if(verbose) log::pure("map_Emission: ");
+		if( aiMat->GetTexture(aiTextureType_EMISSIVE, 0, &tempStr) == AI_SUCCESS ) {
 			mat.map_Flags |= Material::MF_EMISSION;
-			mat.map_Emission = loadTexture(tempStr.C_Str(), true);
+			mat.map_Emission = loadTexture(tempStr.C_Str(), true, "map_Emission(Emissive)");
+		}
+		if( aiMat->GetTexture(aiTextureType_EMISSION_COLOR, 0, &tempStr) == AI_SUCCESS ) {
+			mat.map_Flags |= Material::MF_EMISSION;
+			mat.map_Emission = loadTexture(tempStr.C_Str(), true, "map_Emission(EmissionSolor)");
 		}
 		if( aiMat->GetTexture(aiTextureType_OPACITY, 0, &tempStr) == AI_SUCCESS ) {
-			if(verbose) log::pure("map_Opacity: ");
 			mat.map_Flags |= Material::MF_OPACITY;
-			mat.map_Opacity = loadTexture(tempStr.C_Str(), true); // 리니어??
+			mat.map_Opacity = loadTexture(tempStr.C_Str(), true, "map_Opacity"); // 리니어??
 		}
 		if( aiMat->GetTexture(aiTextureType_SHININESS, 0, &tempStr) == AI_SUCCESS ) {
 			if(verbose) log::pure("*pass map_Roughness(SHININESS): %s\n", tempStr.C_Str());
@@ -217,13 +220,12 @@ namespace
 		// 파일이름 분해해서 어떤 텍스쳐가 어떤순서로 있는지 찾아야함.
 		// https://stackoverflow.com/questions/54116869/how-do-i-load-roughness-metallic-map-with-assimp-using-gltf-format
 		if( aiMat->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &tempStr) == AI_SUCCESS ) {
-			if(verbose) log::pure("map_Roughness(AMR): ");
-			if(	mat.map_Flags&(Material::MF_ROUGHNESS|Material::MF_SHININESS) ) {
-				if(verbose) log::err("conflict map_Roughness(Roughness or Shininess)\n");
+			if(	mat.map_Flags&(Material::MF_AMB_OCC|Material::MF_ROUGHNESS|Material::MF_METALNESS|Material::MF_SHININESS) ) {
+				if(verbose) log::err("conflict ARM\n");
 				std::exit(1);
 			}
            	mat.map_Flags |= Material::MF_ARM;
-			mat.map_Roughness = loadTexture(tempStr.C_Str(), false);
+			mat.map_Roughness = loadTexture(tempStr.C_Str(), false, "map_Roughness(AMR)");
 		}
 
 		return rst;

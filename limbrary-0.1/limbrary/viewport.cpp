@@ -97,6 +97,7 @@ namespace lim
 		is_hovered = ImGui::IsItemHovered();
 		is_dragged = isWindowActivated && !isHoveredOnTitle && ImGui::IsMouseDown(0);
 		is_dragged |= (is_hovered||is_focused)&&(ImGui::IsMouseDown(1)||ImGui::IsMouseDown(2));
+		is_appearing = ImGui::IsWindowAppearing();
 
 		prev_mouse_pos = mouse_pos;
 		ImVec2 imMousePos = ImGui::GetMousePos() - ImGui::GetWindowPos() - ImVec2(0, ImGui::GetFrameHeight());

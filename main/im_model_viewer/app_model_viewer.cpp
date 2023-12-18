@@ -12,6 +12,7 @@ Todo:
 #include <limbrary/model_view/model_io_helper.h>
 #include <limbrary/model_view/renderer.h>
 #include <limbrary/asset_lib.h>
+#include <glad/glad.h>
 
 using namespace lim;
 using namespace std;
@@ -46,6 +47,8 @@ namespace
 			prog.setUniform("idx_LitMod", tInfo.idx_LitMod);
 		};
 	}
+
+	int selected_vp_idx = 0;
 }
 
 
@@ -74,7 +77,8 @@ lim::AppModelViewer::AppModelViewer() : AppBase(1373, 780, APP_NAME, false)
 	AssetLib::get().default_material.prog = &program;
 
 	addModelViewer("assets/models/objs/bunny.obj");
-	// addModelViewer("assets/models/helmet/FlightHelmet/FlightHelmet.gltf");
+	addModelViewer("assets/models/objs/sphere20.obj");
+	addModelViewer("assets/models/helmet/FlightHelmet/FlightHelmet.gltf");
 }
 
 lim::AppModelViewer::~AppModelViewer()
@@ -135,9 +139,13 @@ void lim::AppModelViewer::drawModelsToViewports()
 {
 	for(int i=0; i<viewports.size(); i++ )
 	{
-		render(viewports[i].getFb(), viewports[i].camera, scenes[i]);
+		ViewportWithCamera& vp = viewports[i];
+		if(selected_vp_idx!=i&&vp.is_focused)
+			selected_vp_idx = i;
+			
+		render(vp.getFb(), vp.camera, scenes[i]);
 
-		if( !viewports[i].is_opened ) {
+		if( !vp.is_opened ) {
 			rmModelViewer(i);
 			i--;
 			continue;
@@ -193,78 +201,78 @@ void lim::AppModelViewer::renderImGui()
 
 	for(int i=0; i<scenes.size(); i++) 
 	{
-		// draw model ctrl
-		{
-			Model& md = *scenes[i].my_mds[0]; 
-			BrdfTestInfo& tInfo = brdf_test_infos[i];
-
-			ImGui::Begin(tInfo.ctrl_name.c_str());
-			ImGui::Checkbox("rotate", &tInfo.is_rotate_md);
-			if( tInfo.is_rotate_md ) {
-				md.orientation = glm::rotate(md.orientation, Q_PI*delta_time, {0,1,0});
-				md.updateModelMat();
-			}
-			
-			if( ImGui::Checkbox("floor", &tInfo.is_draw_floor) ) {
-				if(tInfo.is_draw_floor) {
-					scenes[i].models.push_back(tInfo.temp_floor_md);
-				}
-				else {
-					scenes[i].models.pop_back();
-				}
-			}
-
-			ImGui::Checkbox("draw envMap", &scenes[i].is_draw_env_map);
-
-			bool isInfoChanged = false;
-			static const char* litModStrs[]={"point", "IBL"};
-			if( ImGui::Combo("Light", &tInfo.idx_LitMod, litModStrs, IM_ARRAYSIZE(litModStrs)) ) {
-				isInfoChanged = true; 
-			}
-			static const char* modelStrs[]={"Phong", "BlinnPhong", "CookTorrance", "Oren-Nayar"};
-			if( ImGui::Combo("Model", &tInfo.idx_Brdf, modelStrs, IM_ARRAYSIZE(modelStrs)) ) {
-				isInfoChanged = true; 
-			}
-			if( tInfo.idx_Brdf==2 ) {
-				static const char* dStrs[]={"BlinnPhong", "GGX", "Beckmann"};
-				if( ImGui::Combo("D", &tInfo.idx_D, dStrs, IM_ARRAYSIZE(dStrs)) ) { isInfoChanged = true; }
-				static const char* gStrs[]={"CookTorrance", "Smith"};
-				if( ImGui::Combo("G", &tInfo.idx_G, gStrs, IM_ARRAYSIZE(gStrs)) ) { isInfoChanged = true; }
-				static const char* fStrs[]={"SchlickNDV", "SchlickNDH", "SchlickHDV"};
-				if( ImGui::Combo("F", &tInfo.idx_F, fStrs, IM_ARRAYSIZE(fStrs)) ) { isInfoChanged = true; }
-			}
-			if( isInfoChanged ) {
-				md.default_material->set_prog = makeSetProg(tInfo);
-			}
-			if( tInfo.idx_Brdf<2 ) { // phong, blinn phong
-				if( ImGui::SliderFloat("shininess", &tInfo.shininess, 0.5, 300) ) {
-					for(Material* mat : md.my_materials) {
-						mat->shininess = tInfo.shininess;
-					}
-				}
-			}
-			else { // cook-torrance
-				if( ImGui::SliderFloat("roughness", &tInfo.roughness, 0.01, 1) ) {
-					for(Material* mat : md.my_materials) {
-						mat->roughness = tInfo.roughness;
-					}
-				}
-				if( ImGui::SliderFloat("metalness", &tInfo.metalness, 0.000, 1) ) {
-					for(Material* mat : md.my_materials) {
-						mat->metalness = tInfo.metalness;
-					}
-				}
-			}
-			if( ImGui::SliderFloat("ambient light", &tInfo.ambientInt, 0.000, 0.05) ) {
-				for(Material* mat : md.my_materials) {
-					mat->ambientColor = glm::vec3(1)*tInfo.ambientInt;
-				}
-			}
-			ImGui::End();
-		}
-
 		// /draw model view
 		viewports[i].drawImGui();
+
+		// draw brdf ctrl
+		if(selected_vp_idx != i)
+			continue;
+		Model& md = *scenes[i].my_mds[0]; 
+		BrdfTestInfo& tInfo = brdf_test_infos[i];
+
+		ImGui::Begin(tInfo.ctrl_name.c_str());
+		ImGui::Checkbox("rotate", &tInfo.is_rotate_md);
+		if( tInfo.is_rotate_md ) {
+			md.orientation = glm::rotate(md.orientation, Q_PI*delta_time, {0,1,0});
+			md.updateModelMat();
+		}
+		
+		if( ImGui::Checkbox("floor", &tInfo.is_draw_floor) ) {
+			if(tInfo.is_draw_floor) {
+				scenes[i].models.push_back(tInfo.temp_floor_md);
+			}
+			else {
+				scenes[i].models.pop_back();
+			}
+		}
+
+		ImGui::Checkbox("draw envMap", &scenes[i].is_draw_env_map);
+
+		bool isInfoChanged = false;
+		static const char* litModStrs[]={"point", "IBL(sampling)","IBL(pre-filtering)"};
+		if( ImGui::Combo("Light", &tInfo.idx_LitMod, litModStrs, IM_ARRAYSIZE(litModStrs)) ) {
+			isInfoChanged = true; 
+		}
+		static const char* modelStrs[]={"Phong", "BlinnPhong", "CookTorrance", "Oren-Nayar"};
+		if( ImGui::Combo("Model", &tInfo.idx_Brdf, modelStrs, IM_ARRAYSIZE(modelStrs)) ) {
+			isInfoChanged = true; 
+		}
+		if( tInfo.idx_Brdf==2 ) {
+			static const char* dStrs[]={"BlinnPhong", "GGX", "Beckmann"};
+			if( ImGui::Combo("D", &tInfo.idx_D, dStrs, IM_ARRAYSIZE(dStrs)) ) { isInfoChanged = true; }
+			static const char* gStrs[]={"CookTorrance", "Smith"};
+			if( ImGui::Combo("G", &tInfo.idx_G, gStrs, IM_ARRAYSIZE(gStrs)) ) { isInfoChanged = true; }
+			static const char* fStrs[]={"SchlickNDV", "SchlickNDH", "SchlickHDV"};
+			if( ImGui::Combo("F", &tInfo.idx_F, fStrs, IM_ARRAYSIZE(fStrs)) ) { isInfoChanged = true; }
+		}
+		if( isInfoChanged ) {
+			md.default_material->set_prog = makeSetProg(tInfo);
+		}
+		if( tInfo.idx_Brdf<2 ) { // phong, blinn phong
+			if( ImGui::SliderFloat("shininess", &tInfo.shininess, 0.5, 300) ) {
+				for(Material* mat : md.my_materials) {
+					mat->shininess = tInfo.shininess;
+				}
+			}
+		}
+		else { // cook-torrance
+			if( ImGui::SliderFloat("roughness", &tInfo.roughness, 0.01, 1) ) {
+				for(Material* mat : md.my_materials) {
+					mat->roughness = tInfo.roughness;
+				}
+			}
+			if( ImGui::SliderFloat("metalness", &tInfo.metalness, 0.000, 1) ) {
+				for(Material* mat : md.my_materials) {
+					mat->metalness = tInfo.metalness;
+				}
+			}
+		}
+		if( ImGui::SliderFloat("ambient light", &tInfo.ambientInt, 0.000, 0.05) ) {
+			for(Material* mat : md.my_materials) {
+				mat->ambientColor = glm::vec3(1)*tInfo.ambientInt;
+			}
+		}
+		ImGui::End();
 	}
 }
 void lim::AppModelViewer::keyCallback(int key, int scancode, int action, int mods)
@@ -281,6 +289,9 @@ void lim::AppModelViewer::dndCallback(int count, const char **paths)
 {
 	for( int i=0; i<count; i++ ) {
 		const char* path = paths[i];
+		if(strIsSame(getExtension(path),"hdr")) {
+			light_map.initFromFile(path, false);
+		}
 		addModelViewer(path);
 	}
 }

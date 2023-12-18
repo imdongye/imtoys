@@ -54,6 +54,7 @@ namespace lim
 		bool is_focused = false;
 		bool is_dragged = false;
 		bool is_scrolled = false;
+		bool is_appearing = false;
 		glm::vec2 mouse_pos = {0,0};
 		glm::vec2 mouse_uv_pos = {0,0};
 		glm::vec2 mouse_off = {0,0};

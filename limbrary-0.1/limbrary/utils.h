@@ -54,7 +54,18 @@ namespace lim
 	inline bool strIsSame( std::string_view a, std::string_view b ) {
 		return strTolower(a)==strTolower(b);
 	}
-
+	inline std::string getExtension( const std::string& filename ) {
+		size_t dotPos = filename.find_last_of('.');
+		if( dotPos == std::string::npos || dotPos == filename.length()-1 )
+			return "";
+		return filename.substr(dotPos+1);
+	}
+	inline std::string getName( const std::string& filename ) {
+		size_t dotPos = filename.find_last_of('.');
+		if( dotPos == std::string::npos )
+			return filename;
+		return filename.substr(0,dotPos);
+	}
 
 
 	//template <class Ftype>

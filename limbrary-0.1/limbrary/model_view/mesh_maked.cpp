@@ -217,7 +217,7 @@ namespace lim
 			{
 				float theta = D_PI * slice / (float)nrSlices;
 				float x = rcos * cos(theta);
-				float z = -rcos * sin(theta);
+				float z = rcos * sin(theta);
 				vec3 pos = {x, y, z};
 				poss.push_back(pos);
 				nors.push_back(normalize(-pos));

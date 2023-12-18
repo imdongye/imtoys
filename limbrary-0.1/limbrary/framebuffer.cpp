@@ -68,7 +68,7 @@ void IFramebuffer::bind() const
 	myBind();
 	if(blendable) {
 		// http://www.andersriggelsen.dk/glblendfunc.php
-		// Todo: doesn't work
+		// Todo: 같은모델에서 IOT 안됨
 		glEnable(GL_BLEND);
 		// glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
