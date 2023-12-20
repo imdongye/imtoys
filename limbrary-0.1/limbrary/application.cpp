@@ -241,6 +241,8 @@ namespace lim
 			ImGui_ImplGlfw_InitForOpenGL(window, true);
 			ImGui_ImplOpenGL3_Init("#version 410");
 		}
+
+		glClampColor(GL_CLAMP_READ_COLOR, GL_FALSE);
 	}
 
 	AppBase::~AppBase()

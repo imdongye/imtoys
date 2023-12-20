@@ -7,9 +7,10 @@ const float PI = 3.1415926535;
 
 uniform sampler2D map_Light;
 
+
 vec3 dirFromUv(vec2 uv) {
-	float theta = 2*PI*uv.x;
-	float phi = PI*(uv.y-0.5);
+	float theta = 2*PI*(uv.x-0.5);
+	float phi = PI*(0.5-uv.y);
 	return vec3( cos(theta)*cos(phi), sin(phi), sin(theta)*cos(phi) );
 }
 

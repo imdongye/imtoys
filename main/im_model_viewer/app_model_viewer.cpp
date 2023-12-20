@@ -151,10 +151,10 @@ void lim::AppModelViewer::drawModelsToViewports()
 			
 		render(vp.getFb(), vp.camera, scenes[i]);
 
-		// vp.getFb().bind();
-		// drawTexToQuad(irradiance_fb.getRenderedTex(),1.f);
-		// drawTexToQuad(light_map.tex_id, 1.f);
-		// vp.getFb().unbind();
+		vp.getFb().bind();
+		drawTexToQuad(irradiance_fb.getRenderedTex(),1.f);
+		drawTexToQuad(light_map.tex_id, 1.f);
+		vp.getFb().unbind();
 
 		if( !vp.is_opened ) {
 			rmModelViewer(i);

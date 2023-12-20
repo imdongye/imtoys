@@ -34,9 +34,6 @@ void IFramebuffer::initGL()
 
 	myInitGL();
 
-	std::vector<GLenum> drawBuffers ={GL_COLOR_ATTACHMENT0};
-	glDrawBuffers(1, drawBuffers.data());
-
 	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 	if( status !=GL_FRAMEBUFFER_COMPLETE )
 		log::err("Framebuffer is not completed!! (%d)\n", status);
@@ -117,6 +114,9 @@ void FramebufferNoDepth::myInitGL()
 	color_tex.height = height;
 	color_tex.initGL();
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, color_tex.tex_id, 0);
+
+	std::vector<GLenum> drawBuffers ={GL_COLOR_ATTACHMENT0};
+	glDrawBuffers(1, drawBuffers.data());
 }
 void FramebufferNoDepth::myDeinitGL() 
 {
@@ -181,6 +181,9 @@ void FramebufferTexDepth::myInitGL()
 	depth_tex.height = height;
 	depth_tex.initGL();
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_tex.tex_id, 0);
+
+	std::vector<GLenum> drawBuffers ={GL_COLOR_ATTACHMENT0};
+	glDrawBuffers(1, drawBuffers.data());
 }
 void FramebufferTexDepth::myDeinitGL()
 {
@@ -242,6 +245,9 @@ void FramebufferRbDepth::myInitGL()
 	glBindRenderbuffer(GL_RENDERBUFFER, 0);
 	// GL_DEPTH_ATTACHMENT32F 나중에 문제될수있음. 테스트
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rbo_id);
+
+	std::vector<GLenum> drawBuffers ={GL_COLOR_ATTACHMENT0};
+	glDrawBuffers(1, drawBuffers.data());
 }
 void FramebufferRbDepth::myDeinitGL()
 {

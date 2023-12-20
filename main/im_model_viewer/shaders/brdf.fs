@@ -269,16 +269,15 @@ vec3 pointLighting() {
 /* spherical coordinate convertion */
 // theta of right vector is 0
 // phi of up vector is 0 
-const vec2 invAtan = vec2(0.1591, 0.3183);
 vec2 uvFromDir(vec3 v) {
-	float theta = atan(-v.z, v.x);
+	float theta = atan(v.z, v.x);
 	float phi = asin(v.y);
-    vec2 uv = vec2(theta/(2*PI), 0.5-phi/PI);
+    vec2 uv = vec2(theta/(2*PI), phi/PI-0.5);
     return uv;
 }
 vec3 dirFromUv(vec2 uv) {
-	float theta = 2*PI*uv.x;
-	float phi = PI*(uv.y-0.5);
+	float theta = 2*PI*(uv.x-0.5);
+	float phi = PI*(0.5-uv.y);
 	return vec3( cos(theta)*cos(phi), sin(phi), sin(theta)*cos(phi) );
 }
 vec3 ibSamplingLighting() {
@@ -377,11 +376,17 @@ vec3 ibImportanceSamplingLighting() {
 	vec3 integ = sum/(nr_ibl_w_samples*nr_ibl_w_samples * dist2);
 	return emission + integ + ambient;
 }
-
+vec2 vecToAngle(vec3 v) {
+	float theta = atan(v.z, v.x );
+	float phi = atan(v.y, length(v.xz));
+	return vec2(theta, phi);
+}
+vec2 angleToTexCoord(vec2 pt) {
+	return vec2(1-pt.x/(2*PI), 0.5-pt.y/PI);
+}
 vec3 ibPrefilteredLighting() {
-	vec2 uvIrr = uvFromDir(N);
-	return vec3(uvIrr.x,0, 0);
-	// return uvIrr.xyy;
+	// vec2 uvIrr = uvFromDir(N);
+	vec2 uvIrr = angleToTexCoord(vecToAngle(N));
 	return texture(map_Irradiance, uvIrr).rgb*light_Int;
 }
 
