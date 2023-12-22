@@ -48,7 +48,7 @@ namespace lim
 			bool createAndCompile();
 			void deinitGL();
 		};
-		bool reloadable = false;
+		bool reloadable = false; // reloadable안하면 link하고 쉐이더 삭제
 		std::vector<Shader> shaders;
 		GLuint pid = 0;
 		mutable std::unordered_map<std::string, GLint> uniform_location_cache;
@@ -65,7 +65,6 @@ namespace lim
 
 		// chaining //
 		Program& deinitGL();
-		Program& deinitGLAll();
 		Program& operator+=(const char *path);
 		Program& attatch(std::string path);
 		Program& link();

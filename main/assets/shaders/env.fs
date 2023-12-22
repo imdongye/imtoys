@@ -10,7 +10,7 @@ in vec3 wPos;
 in vec3 wNor;
 in vec2 mUv;
 
-uniform sampler2D map_BaseColor;
+uniform sampler2D map_Light;
 
 void convertLinearToSRGB( inout vec3 rgb ){
     rgb.r = rgb.r<0.0031308?(12.92*rgb.r):(1.055*pow(rgb.r,0.41667)-0.055);
@@ -19,7 +19,7 @@ void convertLinearToSRGB( inout vec3 rgb ){
 }
 
 void main() {
-	vec3 outColor = texture(map_BaseColor, mUv).rgb;
+	vec3 outColor = texture(map_Light, mUv).rgb;
 
 	convertLinearToSRGB(outColor);
 	FragColor = vec4(outColor, 1.0);

@@ -162,12 +162,12 @@ namespace lim
 		{
 			float phi = H_PI - F_PI * stack / (float)nrStacks;
 			float y = sin(phi);
-			float cosPhi = cos(phi);
+			float r_cosPhi = radius * cos(phi);
 			for (int slice = 0; slice <= nrSlices; slice++)
 			{
 				float theta = D_PI * slice / (float)nrSlices;
-				float x = cosPhi * cos(theta);
-				float z = -cosPhi * sin(theta);
+				float x = r_cosPhi * cos(theta);
+				float z = -r_cosPhi * sin(theta);
 				vec3 pos = {x, y, z};
 				poss.push_back(pos);
 				if( genNors ) {
@@ -212,12 +212,12 @@ namespace lim
 		{
 			float phi = H_PI - F_PI * stack / (float)nrStacks;
 			float y = sin(phi);
-			float cosPhi = cos(phi);
+			float r_cosPhi = radius * cos(phi);
 			for (int slice = 0; slice <= nrSlices; slice++)
 			{
 				float theta = D_PI * slice / (float)nrSlices;
-				float x = cosPhi * cos(theta);
-				float z = cosPhi * sin(theta);
+				float x = r_cosPhi * cos(theta);
+				float z = r_cosPhi * sin(theta);
 				vec3 pos = {x, y, z};
 				poss.push_back(pos);
 				nors.push_back(normalize(-pos));
@@ -539,12 +539,12 @@ namespace lim
 		{
 			float phi = H_PI - F_PI * stack/(float)(nrStacks-1);
 			float y = sin(phi);
-			float cosPhi = (phi);
+			float r_cosPhi = radius * cos(phi);
 			for( int slice=0; slice<=nrSlices; slice++ )
 			{
 				float theta = D_PI * slice / (float)nrSlices;
-				float x = cosPhi * cos(theta);
-				float z = -cosPhi * sin(theta);
+				float x = r_cosPhi * cos(theta);
+				float z = -r_cosPhi * sin(theta);
 				vec3 pos = {x, y, z};
 				vec3 nor = normalize(pos);
 				vec2 uv = { 1.f*slice/(float)nrSlices, (1.f-stack/(float)(nrStacks-1)) };

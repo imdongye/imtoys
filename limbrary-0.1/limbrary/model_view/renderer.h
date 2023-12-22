@@ -23,6 +23,25 @@ Todo:
 
 namespace lim
 {
+    // pre-filtered, split-sum
+    class IBLight
+    {
+    public:
+        Texture map_Light, map_Irradiance, map_PreFilteredEnv;
+    public:
+        bool setMap(const char* path);
+        GLuint getTexIdLight() const;
+        GLuint getTexIdIrradiance() const;
+        GLuint getTexIdPreFilteredEnv() const;
+        IBLight() = default;
+        ~IBLight() noexcept = default;
+        IBLight(IBLight&& src) noexcept;
+		IBLight& operator=(IBLight&& src) noexcept;
+    private:
+        IBLight(const IBLight&) = delete;
+		IBLight& operator=(const IBLight&) = delete;
+    };
+
 	class Scene
 	{
   	public:
@@ -30,9 +49,8 @@ namespace lim
         std::vector<Light*> my_lits;
 		std::vector<const Model*> models;
 		std::vector<const Light*> lights;
+        const IBLight* ib_light = nullptr;
         bool is_draw_env_map = false;
-        const Texture* map_Light = nullptr;
-        const Texture* map_Irradiance = nullptr;
     public:
         void addModel(Model* md);
         void addLight(Light* lit);

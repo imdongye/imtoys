@@ -265,7 +265,7 @@ void FramebufferRbDepth::myUnbind() const
 
 
 FramebufferMs::FramebufferMs(int _samples, int nrChannels, int bitPerChannel)
-	: IFramebuffer(), samples(_samples)
+	: IFramebuffer(), samples(glm::min(utils::getMsMaxSamples(),_samples))
 	, intermediate_fb(nrChannels, bitPerChannel)
 {
 }

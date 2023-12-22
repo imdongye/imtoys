@@ -53,6 +53,7 @@ uniform sampler2D map_Opacity;
 
 uniform sampler2D map_Light;
 uniform sampler2D map_Irradiance;
+uniform sampler2D map_PreFilteredEnv;
 
 
 
@@ -235,7 +236,7 @@ vec3 brdfCookTorrance() {
 	case 2: F = fresnelSchlick(VDH); break;
 	}
 	// return D*G*F / (4*max(NDL,0)*max(NDV,0)); // 내적 max하면 음수??
-	return D*G*F / (4*NDL*NDV);
+	return D*G*F / (4*NDL*NDV); // or 4PI
 }
 vec3 brdfPoint() {
 	vec3 diffuse = baseColor * mix(brdfLambertian(), vec3(0), metalness);
@@ -267,25 +268,39 @@ vec3 pointLighting() {
 }
 
 /* spherical coordinate convertion */
-// theta of right vector is 0
-// phi of up vector is 0 
+// theta of right vector is 0, use clock wise!
+// phi of up vector is 0, downvector is PI
+// 최적화 필요
 vec2 uvFromDir(vec3 v) {
-	float theta = atan(v.z, v.x);
-	float phi = asin(v.y);
-    vec2 uv = vec2(theta/(2*PI), phi/PI-0.5);
+	float theta = atan(v.z, v.x); // [0,2PI]->[0,1] z축이 반대방향이라 시계방향으로 뒤집힘
+	float phi = asin(v.y);  	  // [1,-1]->[PI/2,-PI/2]->[0,PI]->[1,0]
+    vec2 uv = vec2(theta/(2*PI), phi/PI+0.5);
     return uv;
 }
 vec3 dirFromUv(vec2 uv) {
-	float theta = 2*PI*(uv.x-0.5);
-	float phi = PI*(0.5-uv.y);
-	return vec3( cos(theta)*cos(phi), sin(phi), sin(theta)*cos(phi) );
+	float theta = 2*PI*(uv.x);// [0,1]->[0,2PI] 
+	float phi = PI*(1-uv.y);  // [0,1]->[PI,0]
+	return vec3( cos(theta)*sin(phi), cos(phi), sin(theta)*sin(phi) );
 }
+vec2 vecToAngle(vec3 v) {
+	float theta = atan(v.z, v.x );
+	float phi = atan(v.y, length(v.xz));
+	return vec2(theta, phi);
+}
+vec2 angleToTexCoord(vec2 pt) {
+	return vec2(1-pt.x/(2*PI), 0.5-pt.y/PI);
+}
+
+
+
+
 vec3 ibSamplingLighting() {
 	vec3 ambient = mat_AmbientColor*ambOcc*baseColor;
 	vec3 sum = vec3(0);
 
 	for(int i=0; i<nr_ibl_w_samples; i++) for(int j=0; j<nr_ibl_w_samples; j++) {
-		vec2 uv = vec2( i/float(nr_ibl_w_samples), j/float(nr_ibl_w_samples) ); // Todo 레귤러렌덤
+		vec2 uv = vec2( i/float(nr_ibl_w_samples), j/float(nr_ibl_w_samples) );
+		//uv = rand(uv, i); // 레귤러셈플링을 안해도 엘리어싱 안생기고 차이 없다.
 
 		L = dirFromUv(uv);
 		Rl = reflect(-L, N);//normalize(2*dot(N, L)*N-L);
@@ -347,7 +362,7 @@ vec3 ibImportanceSamplingLighting() {
 
 	for(int i=0; i<nr_ibl_w_samples; i++) for(int j=0; j<nr_ibl_w_samples; j++) {
 		vec2 uv = vec2( i/float(nr_ibl_w_samples), j/float(nr_ibl_w_samples) );
-		uv = rand(uv, i);
+		//uv = rand(uv, i); // 레귤러셈플링을 안해도 엘리어싱 안생기고 차이 없다.
 
 		H = importanceSampleGGX2(uv);
 		L = reflect(-V, H);
@@ -376,18 +391,15 @@ vec3 ibImportanceSamplingLighting() {
 	vec3 integ = sum/(nr_ibl_w_samples*nr_ibl_w_samples * dist2);
 	return emission + integ + ambient;
 }
-vec2 vecToAngle(vec3 v) {
-	float theta = atan(v.z, v.x );
-	float phi = atan(v.y, length(v.xz));
-	return vec2(theta, phi);
-}
-vec2 angleToTexCoord(vec2 pt) {
-	return vec2(1-pt.x/(2*PI), 0.5-pt.y/PI);
-}
+
 vec3 ibPrefilteredLighting() {
 	// vec2 uvIrr = uvFromDir(N);
-	vec2 uvIrr = angleToTexCoord(vecToAngle(N));
-	return texture(map_Irradiance, uvIrr).rgb*light_Int;
+	vec2 uvIrr = uvFromDir(N);
+	vec2 uvPfenv = uvFromDir(Rv);
+	// return  baseColor * texture(map_Irradiance, uvIrr).rgb;
+	// return texture(map_PreFilteredEnv, uvPfenv).rgb;
+	return baseColor * texture(map_Irradiance, uvIrr).rgb  * light_Int
+		+ texture(map_PreFilteredEnv, uvPfenv).rgb * light_Int;
 }
 
 void main() {

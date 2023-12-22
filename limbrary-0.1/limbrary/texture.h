@@ -35,7 +35,7 @@ namespace lim
 		GLenum src_chanel_type = GL_UNSIGNED_BYTE;
 
 		// modified by initGL
-		GLuint tex_id=0;
+		mutable GLuint tex_id=0;
 		float aspect_ratio=1.f;
 
 		// modified by initFromFile
@@ -45,10 +45,10 @@ namespace lim
 		int bit_per_channel = 8;
 
 	private:
-		Texture& operator=(const Texture&) = delete;
 	public:
 		Texture();
 		Texture(const Texture& src);
+		Texture& operator=(const Texture& src);
 		Texture(Texture&& src) noexcept;
 		Texture& operator=(Texture&& src) noexcept;
 		virtual ~Texture() noexcept;
@@ -59,9 +59,10 @@ namespace lim
 		void initGL(void* data = nullptr);
 		bool initFromFile(std::string_view path, bool convertLinear = false);
 		void deinitGL();
+		GLuint getTexId() const;
 	};
 
-	void drawTexToQuad(const GLuint texId, float gamma = 2.2f);
+	void drawTexToQuad(const GLuint texId, float gamma = 2.2f, float bias = 0.f, float gain = 1.f);
 	// for same size
 	void copyTexToTex(const GLuint srcTexId, Texture& dstTex);
 	// for diff size

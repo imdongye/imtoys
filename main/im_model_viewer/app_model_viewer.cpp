@@ -57,6 +57,9 @@ namespace
 
 
 lim::AppModelViewer::AppModelViewer() : AppBase(1373, 780, APP_NAME, false)
+	, vp_light_map("light map", new FramebufferNoDepth(3,32))
+	, vp_irr_map("irr map", new FramebufferNoDepth(3,32))
+	, vp_pfenv_map("pfenv map", new FramebufferNoDepth(3,32))
 {
 	viewports.reserve(5);
 	scenes.reserve(5);
@@ -74,9 +77,8 @@ lim::AppModelViewer::AppModelViewer() : AppBase(1373, 780, APP_NAME, false)
 	light_model.scale = glm::vec3(0.3f);
 	light_model.updateModelMat();
 
-	irr_prog.name = "irr baker";
-	irr_prog.attatch("canvas.vs").attatch("im_model_viewer/shaders/irr_map.fs").link();
-	setIBL("assets/ibls/artist_workshop_4k.hdr");
+
+	ib_light.setMap("assets/ibls/artist_workshop_4k.hdr");
 
 	
 	AssetLib::get().default_material.prog = &program;
@@ -123,12 +125,11 @@ void lim::AppModelViewer::addModelViewer(string path)
 	scn.addOwnModel(md);
 	scn.addOwnModel(floor);
 	scn.models.pop_back();
-	scn.map_Light = &light_map;
-	scn.map_Irradiance = &irradiance_fb.color_tex;
+	scn.ib_light = &ib_light;
 	scenes.emplace_back(std::move(scn)); // vector move template error
 
 	char* vpName = fmtStrToBuf("%s##model_view", md->name.c_str());
-	IFramebuffer* fb = new FramebufferMs(glm::max(utils::getMsMaxSamples(), 16), 4, 8);
+	IFramebuffer* fb = new FramebufferMs(8);
 	// IFramebuffer* fb = new FramebufferTexDepth(4, 8);
 	// fb->blendable = true;
 	viewports.emplace_back(vpName, fb);
@@ -151,10 +152,9 @@ void lim::AppModelViewer::drawModelsToViewports()
 			
 		render(vp.getFb(), vp.camera, scenes[i]);
 
-		vp.getFb().bind();
-		drawTexToQuad(irradiance_fb.getRenderedTex(),1.f);
-		drawTexToQuad(light_map.tex_id, 1.f);
-		vp.getFb().unbind();
+		// vp.getFb().bind();
+		// drawTexToQuad(ib_light.getTexIdPreFilteredEnv(),1.f, 0.f, light.intensity);
+		// vp.getFb().unbind();
 
 		if( !vp.is_opened ) {
 			rmModelViewer(i);
@@ -206,6 +206,25 @@ void lim::AppModelViewer::renderImGui()
 
 		if( ImGui::Button("relead shader") ) {
 			program.reload(GL_FRAGMENT_SHADER);
+		}
+		static bool is_draw_light_map_vp = false;
+		ImGui::Checkbox("show light map",&is_draw_light_map_vp);
+		if( is_draw_light_map_vp ) {
+			vp_light_map.getFb().bind();
+			drawTexToQuad(ib_light.getTexIdLight(), 2.2f, 0.f, 1.f);
+			vp_light_map.getFb().unbind();
+			vp_light_map.drawImGui();
+
+			vp_irr_map.getFb().bind();
+			drawTexToQuad(ib_light.getTexIdIrradiance(), 2.2f, 0.f, 1.f);
+
+			vp_irr_map.getFb().unbind();
+			vp_irr_map.drawImGui();
+
+			vp_pfenv_map.getFb().bind();
+			drawTexToQuad(ib_light.getTexIdPreFilteredEnv(), 2.2f, 0.f, 1.f);
+			vp_pfenv_map.getFb().unbind();
+			vp_pfenv_map.drawImGui();
 		}
 		ImGui::End();
 	}
@@ -305,26 +324,12 @@ void lim::AppModelViewer::keyCallback(int key, int scancode, int action, int mod
 void lim::AppModelViewer::cursorPosCallback(double xPos, double yPos)
 {
 }
-
-void lim::AppModelViewer::setIBL(const char* path) {
-	light_map.initFromFile(path, false);
-
-	irradiance_fb.color_tex.updateFormat(3,32,false, true);
-	irradiance_fb.resize(256, 128);
-	lim::log::pure(": map Irr format\n\n");
-
-	irradiance_fb.bind();
-	irr_prog.use();
-	irr_prog.setTexture("map_Light", light_map.tex_id, 0);
-	AssetLib::get().screen_quad.drawGL();
-	irradiance_fb.unbind();
-}
 void lim::AppModelViewer::dndCallback(int count, const char **paths)
 {
 	for( int i=0; i<count; i++ ) {
 		const char* path = paths[i];
 		if(strIsSame(getExtension(path),"hdr")) {
-			setIBL(path);
+			ib_light.setMap(path);
 		}
 		else {
 			addModelViewer(path);

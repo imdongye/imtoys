@@ -21,11 +21,9 @@ namespace lim
 		inline static constexpr CStr APP_DESCRIPTION = "model viewer for test materials";
 	private:
 		std::vector<ViewportWithCamera> viewports;
+		Viewport vp_light_map, vp_irr_map, vp_pfenv_map;
 		std::vector<Scene> scenes;
-
-		Texture light_map;
-		Program irr_prog;
-		FramebufferNoDepth irradiance_fb;
+		IBLight ib_light;
 
 		ProgramReloadable program;
 		Light light;
@@ -38,7 +36,6 @@ namespace lim
 		void addModelViewer(std::string path);
 		void rmModelViewer(int idx);
 		void drawModelsToViewports();
-		void setIBL(const char* path);
 
 		virtual void update() override;
 		virtual void renderImGui() override;

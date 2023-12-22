@@ -70,7 +70,7 @@ void lim::utils::drawEnvSphere(const Texture& map, const glm::mat4& viewMat, con
 	env_prog->setUniform("model_Mat", env_sphere->model_mat);
 	env_prog->setUniform("view_Mat", viewMat);
 	env_prog->setUniform("proj_Mat", projMat);
-	env_prog->setTexture("map_BaseColor", map.tex_id, 0);
+	env_prog->setTexture("map_Light", map.getTexId(), 0);
 	env_sphere->my_meshes.back()->drawGL();
 }
 
