@@ -82,9 +82,6 @@ void lim::Texture::deinitGL()
 		tex_id=0;
 	}
 }
-void setSrcAndInterFormat(int nrChannel, GLenum type) {
-
-}
 void lim::Texture::initGL(void* data)
 {
 	deinitGL();
@@ -229,6 +226,53 @@ GLuint lim::Texture::getTexId() const {
 	return tex_id;
 }
 
+lim::Texture3d::Texture3d(Texture3d&& src) noexcept
+	: Texture(std::move(src))
+{
+	depth = src.depth;
+}
+Texture3d& lim::Texture3d::operator=(Texture3d&& src) noexcept
+{
+	if(this != &src) {
+		Texture::operator=(std::move(src));
+		depth = src.depth;
+	}
+	return *this;
+}
+void lim::Texture3d::initGL(void* data) {
+	if(data!=nullptr) {
+		log::err("3dtex not surported load data");
+		return;
+	}
+	deinitGL();
+	aspect_ratio = width/(float)height;
+
+	glGenTextures(1, &tex_id);
+	glBindTexture(GL_TEXTURE_3D, tex_id);
+
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, mag_filter);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, min_filter);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, wrap_param);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, wrap_param);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, wrap_param );
+	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, mipmap_max_level);
+	// glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 8);
+
+	glTexImage3D(GL_TEXTURE_3D, 0, internal_format, width, height, depth, 0, src_format, src_chanel_type, nullptr);
+	glGenerateMipmap(GL_TEXTURE_3D);
+	glBindTexture(GL_TEXTURE_3D, 0);
+}
+void lim::Texture3d::setDataWithDepth(int depth, void* data) {
+	glBindTexture( GL_TEXTURE_3D, tex_id );
+	glTexSubImage3D( GL_TEXTURE_3D, 0, 0, 0, depth, width, height, 1, src_format, src_chanel_type, data);
+	
+	glGenerateMipmap( GL_TEXTURE_3D );
+}
+
+
+
+
+
 void lim::drawTexToQuad(const GLuint texId, float gamma, float bias, float gain) 
 {
 	const Program& prog = AssetLib::get().tex_to_quad_prog;
@@ -244,6 +288,23 @@ void lim::drawTexToQuad(const GLuint texId, float gamma, float bias, float gain)
 	AssetLib::get().screen_quad.drawGL();
 
 	glBindTexture(GL_TEXTURE_2D, 0);
+}
+void lim::drawTex3dToQuad(const GLuint texId, float depth, float gamma, float bias, float gain) 
+{
+	const Program& prog = AssetLib::get().tex_to_quad_prog;
+
+	prog.use();
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_3D, texId);
+	prog.setUniform("tex", 0);
+	prog.setUniform("gamma", gamma);
+	prog.setUniform("bias", bias);
+	prog.setUniform("gain", gain);
+	prog.setUniform("depth", depth);
+
+	AssetLib::get().screen_quad.drawGL();
+
+	glBindTexture(GL_TEXTURE_3D, 0);
 }
 
 void lim::copyTexToTex(const GLuint srcTexId, Texture& dstTex) 

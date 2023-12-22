@@ -41,186 +41,189 @@ IFramebuffer 상속깊이는 무조건 한번이여야하고
 
 namespace lim
 {
-	class IFramebuffer
-	{
-	public:
-		GLuint fbo = 0;
-		GLuint width = 0;
-		GLuint height = 0;
-		float aspect = 1.f;
-		glm::vec4 clear_color = {0.05f, 0.09f, 0.11f, 1.0f};
-		bool blendable = false;
-	public:
-		IFramebuffer() = default;
-		IFramebuffer(IFramebuffer&& src) noexcept;
-		IFramebuffer& operator=(IFramebuffer&& src) noexcept;
-		// 자식 소멸자에서 deinit호출해줘야함.
-		virtual ~IFramebuffer() noexcept = default; 
+class IFramebuffer
+{
+public:
+	GLuint fbo = 0;
+	GLuint width = 0;
+	GLuint height = 0;
+	float aspect = 1.f;
+	glm::vec4 clear_color = {0.05f, 0.09f, 0.11f, 1.0f};
+	bool blendable = false;
+public:
+	IFramebuffer() = default;
+	IFramebuffer(IFramebuffer&& src) noexcept;
+	IFramebuffer& operator=(IFramebuffer&& src) noexcept;
+	// 자식 소멸자에서 deinit호출해줘야함.
+	virtual ~IFramebuffer() noexcept = default; 
+	
+	// height -1 is square
+	bool resize(GLuint _width, GLuint _height=-1);
+
+	void initGL();
+	void deinitGL();
+	void bind() const;
+	void unbind() const;
+
+	// ms framebuffer return intermidiate
+	virtual GLuint getRenderedTex() const = 0;
+	
+protected:
+	virtual void myInitGL() = 0;
+	virtual void myDeinitGL() = 0;
+	virtual void myBind() const = 0;
+	virtual void myUnbind() const = 0;
+private:
+	IFramebuffer(const IFramebuffer&) = delete;
+	IFramebuffer& operator=(const IFramebuffer&) = delete;
+	private:
+	// Created by Hyun Joon Shin on 2021/10/29.
+	struct _PrevState {
+		GLint  fboId, drawFboId, readFboId;
+		GLint  viewport[4];
+		GLint  scissor[4];
+		bool  cullFace = GL_FALSE;
+		GLint  frontFace = GL_CCW;
+		GLint  cullMode = GL_BACK;
+		bool  depthTest = GL_FALSE;
+		bool  scissorTest = GL_FALSE;
+		bool blend = GL_FALSE;
+		GLint bsrcRGB, bdstRGB, bsrcAlpha, bdstAlpha; 
 		
-		// height -1 is square
-		bool resize(GLuint _width, GLuint _height=-1);
+		void capture() {
+			glGetIntegerv(GL_FRAMEBUFFER, &fboId);
+			glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFboId);
+			glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &readFboId);
+			glGetIntegerv(GL_VIEWPORT, viewport);
+			glGetIntegerv(GL_SCISSOR_BOX, scissor);
+			glGetIntegerv(GL_FRONT_FACE, &frontFace );
+			glGetIntegerv(GL_FRONT_FACE, &frontFace );
 
-		void initGL();
-		void deinitGL();
-		void bind() const;
-		void unbind() const;
+			cullFace = glIsEnabled(GL_CULL_FACE);
+			glGetIntegerv(GL_CULL_FACE_MODE, &cullMode );
+			depthTest = glIsEnabled(GL_DEPTH_TEST);
+			scissorTest = glIsEnabled(GL_SCISSOR_TEST);
+			blend = glIsEnabled(GL_BLEND);
+			glGetIntegerv(GL_BLEND_SRC_RGB, &bsrcRGB );
+			glGetIntegerv(GL_BLEND_DST_RGB, &bdstRGB );
+			glGetIntegerv(GL_BLEND_SRC_ALPHA, &bsrcAlpha );
+			glGetIntegerv(GL_BLEND_DST_ALPHA, &bdstAlpha );
+		}
+		void restore() {
+			glBindFramebuffer( GL_DRAW_FRAMEBUFFER, drawFboId );
+			glBindFramebuffer( GL_READ_FRAMEBUFFER, readFboId );
+			glViewport( viewport[0], viewport[1], viewport[2], viewport[3] );
+			glScissor( scissor[0], scissor[1], scissor[2], scissor[3] );
 
-		// ms framebuffer return intermidiate
-		virtual GLuint getRenderedTex() const = 0;
-		
-	protected:
-		virtual void myInitGL() = 0;
-		virtual void myDeinitGL() = 0;
-		virtual void myBind() const = 0;
-		virtual void myUnbind() const = 0;
-	private:
-		IFramebuffer(const IFramebuffer&) = delete;
-		IFramebuffer& operator=(const IFramebuffer&) = delete;
-		private:
-		// Created by Hyun Joon Shin on 2021/10/29.
-		struct _PrevState {
-			GLint  fboId, drawFboId, readFboId;
-			GLint  viewport[4];
-			GLint  scissor[4];
-			bool  cullFace = GL_FALSE;
-			GLint  frontFace = GL_CCW;
-			GLint  cullMode = GL_BACK;
-			bool  depthTest = GL_FALSE;
-			bool  scissorTest = GL_FALSE;
-			bool blend = GL_FALSE;
-			GLint bsrcRGB, bdstRGB, bsrcAlpha, bdstAlpha; 
-			
-			void capture() {
-				glGetIntegerv(GL_FRAMEBUFFER, &fboId);
-				glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFboId);
-				glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &readFboId);
-				glGetIntegerv(GL_VIEWPORT, viewport);
-				glGetIntegerv(GL_SCISSOR_BOX, scissor);
-				glGetIntegerv(GL_FRONT_FACE, &frontFace );
-				glGetIntegerv(GL_FRONT_FACE, &frontFace );
-
-				cullFace = glIsEnabled(GL_CULL_FACE);
-				glGetIntegerv(GL_CULL_FACE_MODE, &cullMode );
-				depthTest = glIsEnabled(GL_DEPTH_TEST);
-				scissorTest = glIsEnabled(GL_SCISSOR_TEST);
-				blend = glIsEnabled(GL_BLEND);
-				glGetIntegerv(GL_BLEND_SRC_RGB, &bsrcRGB );
-				glGetIntegerv(GL_BLEND_DST_RGB, &bdstRGB );
-				glGetIntegerv(GL_BLEND_SRC_ALPHA, &bsrcAlpha );
-				glGetIntegerv(GL_BLEND_DST_ALPHA, &bdstAlpha );
-			}
-			void restore() {
-				glBindFramebuffer( GL_DRAW_FRAMEBUFFER, drawFboId );
-				glBindFramebuffer( GL_READ_FRAMEBUFFER, readFboId );
-				glViewport( viewport[0], viewport[1], viewport[2], viewport[3] );
-				glScissor( scissor[0], scissor[1], scissor[2], scissor[3] );
-
-				if( cullFace ){ glEnable ( GL_CULL_FACE ); glCullFace( cullMode ); glFrontFace( frontFace ); }
-				else			glDisable( GL_CULL_FACE );
-				if( depthTest )	glEnable ( GL_DEPTH_TEST );
-				else			glDisable( GL_DEPTH_TEST );
-				if(scissorTest) glEnable ( GL_SCISSOR_TEST );
-				else			glDisable( GL_SCISSOR_TEST );
-				if( blend )   { glEnable ( GL_BLEND ); glBlendFuncSeparate(bsrcRGB, bdstRGB, bsrcAlpha, bdstAlpha);}
-				else			glDisable( GL_BLEND );
-			}
-		};
-		mutable _PrevState prevState;
+			if( cullFace ){ glEnable ( GL_CULL_FACE ); glCullFace( cullMode ); glFrontFace( frontFace ); }
+			else			glDisable( GL_CULL_FACE );
+			if( depthTest )	glEnable ( GL_DEPTH_TEST );
+			else			glDisable( GL_DEPTH_TEST );
+			if(scissorTest) glEnable ( GL_SCISSOR_TEST );
+			else			glDisable( GL_SCISSOR_TEST );
+			if( blend )   { glEnable ( GL_BLEND ); glBlendFuncSeparate(bsrcRGB, bdstRGB, bsrcAlpha, bdstAlpha);}
+			else			glDisable( GL_BLEND );
+		}
 	};
+	mutable _PrevState prevState;
+};
 
-	// depth attachment 없음
-	class FramebufferNoDepth : public IFramebuffer
-	{
-	public:
-		Texture color_tex;
-	public:
-		FramebufferNoDepth(int nrChannels = 3, int bitPerChannel = 8);
-		FramebufferNoDepth(FramebufferNoDepth&& src) noexcept;
-		FramebufferNoDepth& operator=(FramebufferNoDepth&& src) noexcept;
-		~FramebufferNoDepth() noexcept; 
+// depth attachment 없음
+class FramebufferNoDepth : public IFramebuffer
+{
+public:
+	Texture color_tex;
+public:
+	FramebufferNoDepth(int nrChannels = 3, int bitPerChannel = 8);
+	FramebufferNoDepth(FramebufferNoDepth&& src) noexcept;
+	FramebufferNoDepth& operator=(FramebufferNoDepth&& src) noexcept;
+	~FramebufferNoDepth() noexcept; 
 
-		virtual GLuint getRenderedTex() const final;
-	protected:
-		virtual void myInitGL() final;
-		virtual void myDeinitGL() final;
-		virtual void myBind() const final;
-		virtual void myUnbind() const final;
-	private:
-		FramebufferNoDepth(const FramebufferNoDepth&) = delete;
-		FramebufferNoDepth& operator=(const FramebufferNoDepth&) = delete;
-	};
+	virtual GLuint getRenderedTex() const final;
 
-	// depth_tex 샘플링 가능, 성능저하
-	class FramebufferTexDepth: public IFramebuffer
-	{
-	public:
-		Texture color_tex;
-		Texture depth_tex;
-	public:
-		FramebufferTexDepth(int nrChannels = 3, int bitPerChannel = 8);
-		FramebufferTexDepth(FramebufferTexDepth&& src) noexcept;
-		FramebufferTexDepth& operator=(FramebufferTexDepth&& src) noexcept;
-		~FramebufferTexDepth() noexcept;
+	float* makeFloatPixelsBuf() const;
 
-		virtual GLuint getRenderedTex() const final;
-	protected:
-		virtual void myInitGL() final;
-		virtual void myDeinitGL() final;
-		virtual void myBind() const final;
-		virtual void myUnbind() const final;
-	private:
-		FramebufferTexDepth(const FramebufferTexDepth&) = delete;
-		FramebufferTexDepth& operator=(const FramebufferTexDepth&) = delete;
-	};
+protected:
+	virtual void myInitGL() final;
+	virtual void myDeinitGL() final;
+	virtual void myBind() const final;
+	virtual void myUnbind() const final;
+private:
+	FramebufferNoDepth(const FramebufferNoDepth&) = delete;
+	FramebufferNoDepth& operator=(const FramebufferNoDepth&) = delete;
+};
 
-	// depth_rbo 샘플링 불가능, 성능향상
-	class FramebufferRbDepth: public IFramebuffer
-	{
-	public:
-		Texture color_tex;
-		GLuint depth_rbo_id = 0;
-	public:
-		FramebufferRbDepth(int nrChannels = 3, int bitPerChannel = 8);
-		FramebufferRbDepth(FramebufferRbDepth&& src) noexcept;
-		FramebufferRbDepth& operator=(FramebufferRbDepth&& src) noexcept;
-		~FramebufferRbDepth() noexcept;
+// depth_tex 샘플링 가능, 성능저하
+class FramebufferTexDepth: public IFramebuffer
+{
+public:
+	Texture color_tex;
+	Texture depth_tex;
+public:
+	FramebufferTexDepth(int nrChannels = 3, int bitPerChannel = 8);
+	FramebufferTexDepth(FramebufferTexDepth&& src) noexcept;
+	FramebufferTexDepth& operator=(FramebufferTexDepth&& src) noexcept;
+	~FramebufferTexDepth() noexcept;
 
-		virtual GLuint getRenderedTex() const final;
-	protected:
-		virtual void myInitGL() final;
-		virtual void myDeinitGL() final;
-		virtual void myBind() const final;
-		virtual void myUnbind() const final;
-	private:
-		FramebufferRbDepth(const FramebufferRbDepth&) = delete;
-		FramebufferRbDepth& operator=(const FramebufferRbDepth&) = delete;
-	};
+	virtual GLuint getRenderedTex() const final;
+protected:
+	virtual void myInitGL() final;
+	virtual void myDeinitGL() final;
+	virtual void myBind() const final;
+	virtual void myUnbind() const final;
+private:
+	FramebufferTexDepth(const FramebufferTexDepth&) = delete;
+	FramebufferTexDepth& operator=(const FramebufferTexDepth&) = delete;
+};
 
-	// 멀티셈플링으로 안티엘리어싱됨
-	class FramebufferMs: public IFramebuffer
-	{
-	private:
-		int samples = 8;
-		FramebufferNoDepth intermediate_fb;
-		glm::vec4 clear_color = {0.05f, 0.09f, 0.11f, 1.0f};
-		GLuint ms_color_tex_id = 0;
-		GLuint ms_depth_rbo_id = 0;
-	public:
-		FramebufferMs(int samples = 4, int nrChannels = 3, int bitPerChannel = 8);
-		FramebufferMs(FramebufferMs&& src) noexcept;
-		FramebufferMs& operator=(FramebufferMs&& src) noexcept;
-		~FramebufferMs() noexcept;
+// depth_rbo 샘플링 불가능, 성능향상
+class FramebufferRbDepth: public IFramebuffer
+{
+public:
+	Texture color_tex;
+	GLuint depth_rbo_id = 0;
+public:
+	FramebufferRbDepth(int nrChannels = 3, int bitPerChannel = 8);
+	FramebufferRbDepth(FramebufferRbDepth&& src) noexcept;
+	FramebufferRbDepth& operator=(FramebufferRbDepth&& src) noexcept;
+	~FramebufferRbDepth() noexcept;
 
-		virtual GLuint getRenderedTex() const final;
-	protected:
-		virtual void myInitGL() final;
-		virtual void myDeinitGL() final;
-		virtual void myBind() const final;
-		virtual void myUnbind() const final;
-	private:
-		FramebufferMs(const FramebufferMs&) = delete;
-		FramebufferMs& operator=(const FramebufferMs&) = delete;
-	};
+	virtual GLuint getRenderedTex() const final;
+protected:
+	virtual void myInitGL() final;
+	virtual void myDeinitGL() final;
+	virtual void myBind() const final;
+	virtual void myUnbind() const final;
+private:
+	FramebufferRbDepth(const FramebufferRbDepth&) = delete;
+	FramebufferRbDepth& operator=(const FramebufferRbDepth&) = delete;
+};
+
+// 멀티셈플링으로 안티엘리어싱됨
+class FramebufferMs: public IFramebuffer
+{
+private:
+	int samples = 8;
+	FramebufferNoDepth intermediate_fb;
+	glm::vec4 clear_color = {0.05f, 0.09f, 0.11f, 1.0f};
+	GLuint ms_color_tex_id = 0;
+	GLuint ms_depth_rbo_id = 0;
+public:
+	FramebufferMs(int samples = 4, int nrChannels = 3, int bitPerChannel = 8);
+	FramebufferMs(FramebufferMs&& src) noexcept;
+	FramebufferMs& operator=(FramebufferMs&& src) noexcept;
+	~FramebufferMs() noexcept;
+
+	virtual GLuint getRenderedTex() const final;
+protected:
+	virtual void myInitGL() final;
+	virtual void myDeinitGL() final;
+	virtual void myBind() const final;
+	virtual void myUnbind() const final;
+private:
+	FramebufferMs(const FramebufferMs&) = delete;
+	FramebufferMs& operator=(const FramebufferMs&) = delete;
+};
 }
 
 #endif

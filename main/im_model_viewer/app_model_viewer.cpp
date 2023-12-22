@@ -1,8 +1,8 @@
 /*
 Todo:
-1. Assimp 로딩속도 느림
+1. Assimp 로딩속도 느림 -> 릴리즈 빌드
 2. 투명도 GL_BLEND적용안됨
-
+3. prefilter 버튼 빼기
 
 */
 
@@ -130,8 +130,7 @@ void lim::AppModelViewer::addModelViewer(string path)
 
 	char* vpName = fmtStrToBuf("%s##model_view", md->name.c_str());
 	IFramebuffer* fb = new FramebufferMs(8);
-	// IFramebuffer* fb = new FramebufferTexDepth(4, 8);
-	// fb->blendable = true;
+	// fb->blendable = true; Todo: 질문
 	viewports.emplace_back(vpName, fb);
 	viewports.back().camera.setViewMode(CameraManVp::VM_PIVOT);
 }
@@ -151,10 +150,6 @@ void lim::AppModelViewer::drawModelsToViewports()
 			selected_vp_idx = i;
 			
 		render(vp.getFb(), vp.camera, scenes[i]);
-
-		// vp.getFb().bind();
-		// drawTexToQuad(ib_light.getTexIdPreFilteredEnv(),1.f, 0.f, light.intensity);
-		// vp.getFb().unbind();
 
 		if( !vp.is_opened ) {
 			rmModelViewer(i);
@@ -208,8 +203,11 @@ void lim::AppModelViewer::renderImGui()
 			program.reload(GL_FRAGMENT_SHADER);
 		}
 		static bool is_draw_light_map_vp = false;
+		static float pfenv_depth = 0.f;
 		ImGui::Checkbox("show light map",&is_draw_light_map_vp);
 		if( is_draw_light_map_vp ) {
+			ImGui::SliderFloat("pfenv depth", &pfenv_depth, 0.f, 1.f);
+
 			vp_light_map.getFb().bind();
 			drawTexToQuad(ib_light.getTexIdLight(), 2.2f, 0.f, 1.f);
 			vp_light_map.getFb().unbind();
@@ -222,7 +220,7 @@ void lim::AppModelViewer::renderImGui()
 			vp_irr_map.drawImGui();
 
 			vp_pfenv_map.getFb().bind();
-			drawTexToQuad(ib_light.getTexIdPreFilteredEnv(), 2.2f, 0.f, 1.f);
+			drawTex3dToQuad(ib_light.getTexIdPreFilteredEnv(), pfenv_depth, 2.2f, 0.f, 1.f);
 			vp_pfenv_map.getFb().unbind();
 			vp_pfenv_map.drawImGui();
 		}

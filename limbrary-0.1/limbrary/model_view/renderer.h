@@ -27,7 +27,9 @@ namespace lim
     class IBLight
     {
     public:
-        Texture map_Light, map_Irradiance, map_PreFilteredEnv;
+        const int roughness_depth = 10;
+        Texture map_Light, map_Irradiance;
+        Texture3d map_PreFilteredEnv;
     public:
         bool setMap(const char* path);
         GLuint getTexIdLight() const;

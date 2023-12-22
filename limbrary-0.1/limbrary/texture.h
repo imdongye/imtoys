@@ -56,13 +56,29 @@ namespace lim
 		void* getDataAndPropsFromFile(std::string_view path);
 	public:
 		bool updateFormat(int nrChannels = 3, int bitPerChannel = 8, bool convertLinear = false, bool verbose = false);
-		void initGL(void* data = nullptr);
+		virtual void initGL(void* data = nullptr);
 		bool initFromFile(std::string_view path, bool convertLinear = false);
 		void deinitGL();
 		GLuint getTexId() const;
 	};
 
+	class Texture3d: public Texture {
+	public:
+		int depth=0;
+		virtual void initGL(void* data = nullptr) override;
+		void setDataWithDepth(int depth, void* data);
+		Texture3d() = default;
+		virtual ~Texture3d() noexcept = default;
+		Texture3d(Texture3d&& src) noexcept;
+		Texture3d& operator=(Texture3d&& src) noexcept;
+	private:
+		Texture3d(const Texture3d& src) = delete;
+		Texture3d& operator=(const Texture3d& src) = delete;
+		bool initFromFile(std::string_view path, bool convertLinear = false) = delete;
+	};
+
 	void drawTexToQuad(const GLuint texId, float gamma = 2.2f, float bias = 0.f, float gain = 1.f);
+	void drawTex3dToQuad(const GLuint texId, float depth, float gamma = 2.2f, float bias = 0.f, float gain = 1.f);
 	// for same size
 	void copyTexToTex(const GLuint srcTexId, Texture& dstTex);
 	// for diff size

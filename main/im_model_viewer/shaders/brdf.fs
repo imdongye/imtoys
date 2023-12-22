@@ -53,7 +53,7 @@ uniform sampler2D map_Opacity;
 
 uniform sampler2D map_Light;
 uniform sampler2D map_Irradiance;
-uniform sampler2D map_PreFilteredEnv;
+uniform sampler3D map_PreFilteredEnv;
 
 
 
@@ -399,7 +399,7 @@ vec3 ibPrefilteredLighting() {
 	// return  baseColor * texture(map_Irradiance, uvIrr).rgb;
 	// return texture(map_PreFilteredEnv, uvPfenv).rgb;
 	return baseColor * texture(map_Irradiance, uvIrr).rgb  * light_Int
-		+ texture(map_PreFilteredEnv, uvPfenv).rgb * light_Int;
+		+ texture(map_PreFilteredEnv, vec3(uvPfenv,roughness)).rgb * light_Int;
 }
 
 void main() {

@@ -22,13 +22,17 @@ bool lim::IBLight::setMap(const char* path)
         return false;
     }
     log::pure("loading ibl .. ");
+    /* map_Light */
     if(!map_Light.initFromFile(path, false)) {
         return false;
     }
 
-    FramebufferNoDepth fb(3, 32);
-	fb.resize(256, 128);
+    FramebufferNoDepth fb(3, 32); // 3 channel, 32 bit
     Program iblProg("ibl baker");
+
+
+    /* map_Irradiance */
+	fb.resize(256, 128);
 	iblProg.attatch("canvas.vs").attatch("bake_irr.fs").link();
 
 	fb.bind();
@@ -40,18 +44,29 @@ bool lim::IBLight::setMap(const char* path)
     map_Irradiance = fb.color_tex; // !! 텍스쳐 복사되면서 mipmap도 생성됨.
 
 
+    /* map_PreFilteredEnv */
+    map_PreFilteredEnv.width = map_Light.width;
+    map_PreFilteredEnv.height = map_Light.height;
+    map_PreFilteredEnv.depth = roughness_depth;
+    map_PreFilteredEnv.updateFormat(3, 32);
+    map_PreFilteredEnv.initGL();
+
 	fb.resize(map_Light.width, map_Light.height);
     iblProg.deinitGL();
     iblProg.attatch("canvas.vs").attatch("bake_pfenv.fs").link();
 
-    fb.bind();
-	iblProg.use();
-	iblProg.setTexture("map_Light", map_Light.tex_id, 0);
-	iblProg.setUniform("roughness", 0.8f);
-	AssetLib::get().screen_quad.drawGL();
-	fb.unbind();
+    for(int i=0; i<roughness_depth; i++) {
+        float roughness = (i+0.5)/roughness_depth;// 0.05~0.95
+        fb.bind();
+        iblProg.use();
+        iblProg.setTexture("map_Light", map_Light.tex_id, 0);
+        iblProg.setUniform("roughness", roughness);
+        AssetLib::get().screen_quad.drawGL();
+        fb.unbind();
+        float* buf = fb.makeFloatPixelsBuf();
 
-    map_PreFilteredEnv = fb.color_tex; // !! 텍스쳐 복사되면서 mipmap도 생성됨.
+        map_PreFilteredEnv.setDataWithDepth(i, buf); // !! 텍스쳐 복사되면서 mipmap도 생성됨.
+    }
 
     return true;
 }
@@ -72,6 +87,7 @@ IBLight& lim::IBLight::operator=(IBLight&& src) noexcept {
     if(this!=&src) {
         map_Light = std::move(src.map_Light);
         map_Irradiance = std::move(src.map_Irradiance);
+        map_PreFilteredEnv = std::move(src.map_PreFilteredEnv);
     }
     return *this;
 }
@@ -347,7 +363,8 @@ void lim::render( const IFramebuffer& fb,
                 if( scn.ib_light ) {
                     prog.setTexture("map_Light", scn.ib_light->getTexIdLight(), activeSlot++);
                     prog.setTexture("map_Irradiance", scn.ib_light->getTexIdIrradiance(), activeSlot++);
-                    prog.setTexture("map_PreFilteredEnv", scn.ib_light->getTexIdPreFilteredEnv(), activeSlot++);
+                    // Todo: 3d를 2d로 업케스팅 강제로 막는 방법 없나
+                    prog.setTexture3d("map_PreFilteredEnv", scn.ib_light->getTexIdPreFilteredEnv(), activeSlot++);
                 }
             }
 

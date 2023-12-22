@@ -80,7 +80,6 @@ void IFramebuffer::unbind() const
 }
 
 
-
 FramebufferNoDepth::FramebufferNoDepth(int nrChannels, int bitPerChannel)
 {
 	color_tex.updateFormat(nrChannels, bitPerChannel);
@@ -356,4 +355,17 @@ void FramebufferMs::myUnbind() const
 						, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+}
+
+float* FramebufferNoDepth::makeFloatPixelsBuf() const {
+	float* buf = new float[ width * height * color_tex.nr_channels ];
+	GLuint format = color_tex.src_format;
+	GLint readFbo;// backup
+	glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &readFbo);
+
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
+	glReadPixels(0,0,width, height, format, GL_FLOAT, buf);
+
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, readFbo);
+	return buf;
 }

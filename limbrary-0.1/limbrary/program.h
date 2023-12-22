@@ -177,6 +177,11 @@ namespace lim
             glBindTexture(GL_TEXTURE_2D, texId);
 			return setUniform(vname, activeSlot);
 		}
+		inline const Program& setTexture3d(const std::string& vname, GLuint texId, int activeSlot) const {
+			glActiveTexture(GL_TEXTURE0 + activeSlot);
+            glBindTexture(GL_TEXTURE_3D, texId);
+			return setUniform(vname, activeSlot);
+		}
 	};
 
 	class ProgramReloadable: public Program
