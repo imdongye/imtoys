@@ -16,6 +16,9 @@ lim::AssetLib::AssetLib()
 
 	tex_to_quad_prog.name = "texToQuad";
 	tex_to_quad_prog.attatch("canvas.vs").attatch("canvas_color.fs").link();
+		
+	tex3d_to_quad_prog.name = "tex3dToQuad";
+	tex3d_to_quad_prog.attatch("canvas.vs").attatch("tex3d_to_2d.fs").link();
 
 	depth_prog.name = "depth";
 	depth_prog.attatch("mvp.vs").attatch("depth.fs").link();
@@ -33,7 +36,7 @@ lim::AssetLib::AssetLib()
 
 	env_sphere = new Model("env");
 	env_sphere->my_meshes.push_back(new MeshEnvSphere());
-	env_sphere->scale = glm::vec3(10.f);
+	env_sphere->scale = glm::vec3(20.f);
 	env_sphere->updateModelMat();
 
 

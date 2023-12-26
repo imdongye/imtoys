@@ -12,7 +12,7 @@ namespace lim
 		, viewport("viewport##shadertoy", new FramebufferNoDepth())
 		, program("im_shadertoy/shaders/hextile.glsl")
 	{
-		iChannel0.wrap_param = GL_REPEAT;
+		iChannel0.s_wrap_param = GL_REPEAT;
 		iChannel0.initFromFile("assets/images/uv_grid.jpg", true);
 	}
 	AppShaderToy::~AppShaderToy()

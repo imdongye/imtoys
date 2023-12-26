@@ -27,6 +27,7 @@ namespace lim
 		AppBase* app;
 
 		Program tex_to_quad_prog;
+		Program tex3d_to_quad_prog;
 		Program depth_prog;
 		
 		Material default_material;

@@ -29,7 +29,8 @@ namespace lim
 		GLint internal_format = GL_RGB8; // GL_R8, GL_SRGB8_ALPHA8(internal gamma collection)
 		GLint mag_filter = GL_LINEAR;
 		GLint min_filter = GL_LINEAR_MIPMAP_LINEAR; // GL_NEAREST, LINEAR, *_MIPMAP_*
-		GLint wrap_param = GL_REPEAT; // GL_CLAMP_TO_EDGE , GL_REPEAT , GL_MIRRORED_REPEAT
+		GLint s_wrap_param = GL_REPEAT; // GL_CLAMP_TO_EDGE, BORDER(이후 검은색), GL_REPEAT , GL_MIRRORED_REPEAT
+		GLint t_wrap_param = GL_REPEAT;
 		GLint mipmap_max_level = 1000;
 		GLenum src_format = GL_RGBA;
 		GLenum src_chanel_type = GL_UNSIGNED_BYTE;
@@ -64,7 +65,8 @@ namespace lim
 
 	class Texture3d: public Texture {
 	public:
-		int depth=0;
+		int nr_depth=0;
+		GLint r_wrap_param = GL_CLAMP_TO_EDGE;
 		virtual void initGL(void* data = nullptr) override;
 		void setDataWithDepth(int depth, void* data);
 		Texture3d() = default;

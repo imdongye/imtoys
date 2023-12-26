@@ -54,6 +54,7 @@ uniform sampler2D map_Opacity;
 uniform sampler2D map_Light;
 uniform sampler2D map_Irradiance;
 uniform sampler3D map_PreFilteredEnv;
+uniform sampler2D map_PreFilteredBRDF;
 
 
 
@@ -299,7 +300,7 @@ vec3 ibSamplingLighting() {
 	vec3 sum = vec3(0);
 
 	for(int i=0; i<nr_ibl_w_samples; i++) for(int j=0; j<nr_ibl_w_samples; j++) {
-		vec2 uv = vec2( i/float(nr_ibl_w_samples), j/float(nr_ibl_w_samples) );
+		vec2 uv = vec2( i/float(nr_ibl_w_samples-1), j/float(nr_ibl_w_samples-1) );
 		//uv = rand(uv, i); // 레귤러셈플링을 안해도 엘리어싱 안생기고 차이 없다.
 
 		L = dirFromUv(uv);
@@ -361,7 +362,7 @@ vec3 ibImportanceSamplingLighting() {
 	vec3 sum = vec3(0);
 
 	for(int i=0; i<nr_ibl_w_samples; i++) for(int j=0; j<nr_ibl_w_samples; j++) {
-		vec2 uv = vec2( i/float(nr_ibl_w_samples), j/float(nr_ibl_w_samples) );
+		vec2 uv = vec2( i/float(nr_ibl_w_samples-1), j/float(nr_ibl_w_samples-1) );
 		//uv = rand(uv, i); // 레귤러셈플링을 안해도 엘리어싱 안생기고 차이 없다.
 
 		H = importanceSampleGGX2(uv);
@@ -398,8 +399,12 @@ vec3 ibPrefilteredLighting() {
 	vec2 uvPfenv = uvFromDir(Rv);
 	// return  baseColor * texture(map_Irradiance, uvIrr).rgb;
 	// return texture(map_PreFilteredEnv, uvPfenv).rgb;
-	return baseColor * texture(map_Irradiance, uvIrr).rgb  * light_Int
-		+ texture(map_PreFilteredEnv, vec3(uvPfenv,roughness)).rgb * light_Int;
+	// return texture(map_PreFilteredEnv, vec3(uvPfenv,roughness)).rgb;
+	vec3 diff = mix(baseColor,vec3(0), metalness)  * texture(map_Irradiance, uvIrr).rgb  * light_Int;
+	vec3 spec = texture(map_PreFilteredEnv, vec3(uvPfenv,roughness)).rgb * light_Int;
+	vec2 brdf = texture(map_PreFilteredBRDF, vec2(NDV, roughness)).rg;
+	spec = spec*(F0*brdf.x + brdf.y);
+	return diff + spec;
 }
 
 void main() {

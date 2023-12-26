@@ -82,7 +82,7 @@ namespace lim
         Texture* map_Opacity = nullptr;       
 
         Program* prog = nullptr;
-		std::function<void(const Program&)> set_prog;
+		std::function<void(const Program&)> set_prog = nullptr;
     };
 }
 #endif

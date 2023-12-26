@@ -25,7 +25,7 @@ vec3 integrateIBL( vec3 N ) {
 	vec3 sum = vec3(0);
     float wsum = 0;
 	for(int i=0; i<nrSamples; i++) for(int j=0; j<nrSamples; j++) {
-		vec2 uv = vec2( i/float(nrSamples), j/float(nrSamples) );
+		vec2 uv = vec2( i/float(nrSamples-1), j/float(nrSamples-1) );
 		//uv = rand(uv, i); // 레귤러셈플링을 안해도 엘리어싱 안생기고 차이 없다.
         float phi = PI*(uv.y-0.5);
         vec3 L = dirFromUv(uv);

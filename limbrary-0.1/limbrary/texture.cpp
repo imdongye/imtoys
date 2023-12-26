@@ -25,7 +25,7 @@ namespace
 		dst.internal_format 	= src.internal_format;
 		dst.mag_filter 			= src.mag_filter;
 		dst.min_filter 			= src.min_filter;
-		dst.wrap_param 			= src.wrap_param;
+		dst.s_wrap_param 			= src.s_wrap_param;
 		dst.mipmap_max_level 	= src.mipmap_max_level;
 		dst.src_format 			= src.src_format;
 		dst.src_chanel_type 	= src.src_chanel_type;
@@ -92,8 +92,8 @@ void lim::Texture::initGL(void* data)
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_param);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_param);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, s_wrap_param);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, s_wrap_param);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, mipmap_max_level);
 	//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 8);
 
@@ -229,13 +229,13 @@ GLuint lim::Texture::getTexId() const {
 lim::Texture3d::Texture3d(Texture3d&& src) noexcept
 	: Texture(std::move(src))
 {
-	depth = src.depth;
+	nr_depth = src.nr_depth;
 }
 Texture3d& lim::Texture3d::operator=(Texture3d&& src) noexcept
 {
 	if(this != &src) {
 		Texture::operator=(std::move(src));
-		depth = src.depth;
+		nr_depth = src.nr_depth;
 	}
 	return *this;
 }
@@ -252,13 +252,13 @@ void lim::Texture3d::initGL(void* data) {
 
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, mag_filter);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, min_filter);
-	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, wrap_param);
-	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, wrap_param);
-	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, wrap_param );
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, s_wrap_param);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, s_wrap_param);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, r_wrap_param );
 	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, mipmap_max_level);
 	// glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 8);
 
-	glTexImage3D(GL_TEXTURE_3D, 0, internal_format, width, height, depth, 0, src_format, src_chanel_type, nullptr);
+	glTexImage3D(GL_TEXTURE_3D, 0, internal_format, width, height, nr_depth, 0, src_format, src_chanel_type, nullptr);
 	glGenerateMipmap(GL_TEXTURE_3D);
 	glBindTexture(GL_TEXTURE_3D, 0);
 }
@@ -267,6 +267,8 @@ void lim::Texture3d::setDataWithDepth(int depth, void* data) {
 	glTexSubImage3D( GL_TEXTURE_3D, 0, 0, 0, depth, width, height, 1, src_format, src_chanel_type, data);
 	
 	glGenerateMipmap( GL_TEXTURE_3D );
+	glBindTexture( GL_TEXTURE_3D, 0 );
+
 }
 
 
@@ -278,9 +280,7 @@ void lim::drawTexToQuad(const GLuint texId, float gamma, float bias, float gain)
 	const Program& prog = AssetLib::get().tex_to_quad_prog;
 
 	prog.use();
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, texId);
-	prog.setUniform("tex", 0);
+	prog.setTexture("tex", texId, 0);
 	prog.setUniform("gamma", gamma);
 	prog.setUniform("bias", bias);
 	prog.setUniform("gain", gain);
@@ -291,12 +291,10 @@ void lim::drawTexToQuad(const GLuint texId, float gamma, float bias, float gain)
 }
 void lim::drawTex3dToQuad(const GLuint texId, float depth, float gamma, float bias, float gain) 
 {
-	const Program& prog = AssetLib::get().tex_to_quad_prog;
+	const Program& prog = AssetLib::get().tex3d_to_quad_prog;
 
 	prog.use();
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_3D, texId);
-	prog.setUniform("tex", 0);
+	prog.setTexture3d("tex", texId, 0);
 	prog.setUniform("gamma", gamma);
 	prog.setUniform("bias", bias);
 	prog.setUniform("gain", gain);

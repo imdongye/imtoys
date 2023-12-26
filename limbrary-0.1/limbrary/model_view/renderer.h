@@ -27,8 +27,8 @@ namespace lim
     class IBLight
     {
     public:
-        const int roughness_depth = 10;
-        Texture map_Light, map_Irradiance;
+        const int nr_roughness_depth = 10;
+        Texture map_Light, map_Irradiance, map_PreFilteredBRDF;
         Texture3d map_PreFilteredEnv;
         bool is_map_baked = false;
     public:
@@ -37,6 +37,7 @@ namespace lim
         GLuint getTexIdLight() const;
         GLuint getTexIdIrradiance() const;
         GLuint getTexIdPreFilteredEnv() const;
+        GLuint getTexIdPreFilteredBRDF() const;
         IBLight() = default;
         ~IBLight() noexcept = default;
         IBLight(IBLight&& src) noexcept;

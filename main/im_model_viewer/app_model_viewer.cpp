@@ -24,7 +24,6 @@ namespace
 		std::string ctrl_name = "##modelview";
 		bool is_rotate_md = false;
 		bool is_draw_floor = false;
-		lim::Model* temp_floor_md = nullptr;
 		int idx_Brdf = 2;
 		int idx_D = 1;
 		int idx_G = 0;
@@ -35,7 +34,21 @@ namespace
         float refIdx    = 1.45f; // index of refraction
         float roughness = 0.3f;  // brdf param
 		float metalness = 0.f;
-		float ambientInt = 0.03f;
+		float ambientInt = 0.008f;
+		void setup(Model& md) {
+			for(Material* mat : md.my_materials) {
+				mat->shininess = shininess;
+			}
+			for(Material* mat : md.my_materials) {
+				mat->roughness = roughness;
+			}
+			for(Material* mat : md.my_materials) {
+				mat->metalness = metalness;
+			}
+			for(Material* mat : md.my_materials) {
+				mat->ambientColor = glm::vec3(1)*ambientInt;
+			}
+		}
 	};
 	std::vector<BrdfTestInfo> brdf_test_infos;
 
@@ -59,7 +72,8 @@ namespace
 lim::AppModelViewer::AppModelViewer() : AppBase(1373, 780, APP_NAME, false)
 	, vp_light_map("light map", new FramebufferNoDepth(3,32))
 	, vp_irr_map("irr map", new FramebufferNoDepth(3,32))
-	, vp_pfenv_map("pfenv map", new FramebufferNoDepth(3,32))
+	, vp_pfenv_map("pf env map", new FramebufferNoDepth(3,32))
+	, vp_pfbrdf_map("pf brdf map", new FramebufferNoDepth(3,32))
 {
 	viewports.reserve(5);
 	scenes.reserve(5);
@@ -76,6 +90,35 @@ lim::AppModelViewer::AppModelViewer() : AppBase(1373, 780, APP_NAME, false)
 	light_model.position = light.position;
 	light_model.scale = glm::vec3(0.3f);
 	light_model.updateModelMat();
+
+	floor_md.name = "floor";
+	floor_md.my_meshes.push_back(new MeshPlane(1));
+	floor_md.root.addMeshWithMat(floor_md.my_meshes.back());
+	floor_md.scale = glm::vec3(5.f);
+	floor_md.updateModelMat();
+	floor_md.my_materials.push_back(new Material());
+	floor_md.default_material = floor_md.my_materials.back();
+
+	floor_md.my_textures.push_back(new Texture());
+	floor_md.my_textures.back()->min_filter = GL_LINEAR_MIPMAP_LINEAR;
+	floor_md.my_textures.back()->initFromFile("assets/floor/wood_floor_worn_diff_4k.jpg", true);
+	floor_md.default_material->map_Flags |= Material::MF_BASE_COLOR;
+	floor_md.default_material->map_BaseColor = floor_md.my_textures.back();
+
+	floor_md.my_textures.push_back(new Texture());
+	floor_md.my_textures.back()->min_filter = GL_LINEAR_MIPMAP_LINEAR;
+	floor_md.my_textures.back()->initFromFile("assets/floor/wood_floor_worn_arm_4k.jpg");
+	floor_md.default_material->map_Flags |= Material::MF_ARM;
+	floor_md.default_material->map_Roughness = floor_md.my_textures.back();
+
+	floor_md.my_textures.push_back(new Texture());
+	floor_md.my_textures.back()->min_filter = GL_LINEAR_MIPMAP_LINEAR;
+	floor_md.my_textures.back()->initFromFile("assets/floor/wood_floor_worn_nor_gl_4k.jpg");
+	floor_md.default_material->map_Flags |= Material::MF_NOR;
+	floor_md.default_material->map_Bump = floor_md.my_textures.back();
+
+	floor_md.default_material->prog = nullptr;
+	
 
 
 	ib_light.setMap("assets/ibls/artist_workshop_4k.hdr");
@@ -101,30 +144,20 @@ void lim::AppModelViewer::addModelViewer(string path)
 
 	brdf_test_infos.push_back({});
 	brdf_test_infos.back().ctrl_name = md->name+" ctrl ##modelviewer";
+	brdf_test_infos.back().is_draw_floor = false;
+	brdf_test_infos.back().setup(*md);
 
 	md->my_materials.push_back(new Material());
 	md->default_material = md->my_materials.back();
 	md->default_material->prog = &program;
 	md->default_material->set_prog = makeSetProg(brdf_test_infos.back());
-
-	Model* floor = new Model("floor");
-	floor->my_meshes.push_back(new MeshPlane(1));
-	floor->root.addMeshWithMat(floor->my_meshes.back());
-	floor->scale = glm::vec3(5.f);
-	floor->position = {0,-md->pivoted_scaled_bottom_height,0};
-	floor->updateModelMat();
-	floor->my_materials.push_back(new Material());
-	floor->default_material = floor->my_materials.back();
-	floor->default_material->prog = &program;
-	floor->default_material->set_prog = makeSetProg(brdf_test_infos.back());
-	brdf_test_infos.back().temp_floor_md = floor;
+	md->position = {0,md->pivoted_scaled_bottom_height,0};
+	md->updateModelMat();
 
 	Scene scn;
 	scn.lights.push_back(&light);
 	scn.models.push_back(&light_model);
 	scn.addOwnModel(md);
-	scn.addOwnModel(floor);
-	scn.models.pop_back();
 	scn.ib_light = &ib_light;
 	scenes.push_back(std::move(scn)); // vector move template error
 
@@ -133,6 +166,8 @@ void lim::AppModelViewer::addModelViewer(string path)
 	// fb->blendable = true; Todo: 질문
 	viewports.emplace_back(vpName, fb);
 	viewports.back().camera.setViewMode(CameraManVp::VM_PIVOT);
+	viewports.back().camera.moveShift({0,md->pivoted_scaled_bottom_height,0});
+	viewports.back().camera.updateViewMat();
 }
 void lim::AppModelViewer::rmModelViewer(int idx)
 {
@@ -229,6 +264,11 @@ void lim::AppModelViewer::renderImGui()
 				drawTex3dToQuad(ib_light.getTexIdPreFilteredEnv(), pfenv_depth, 2.2f, 0.f, 1.f);
 				vp_pfenv_map.getFb().unbind();
 				vp_pfenv_map.drawImGui();
+
+				vp_pfbrdf_map.getFb().bind();
+				drawTexToQuad(ib_light.getTexIdPreFilteredBRDF(), 2.2f, 0.f, 1.f);
+				vp_pfbrdf_map.getFb().unbind();
+				vp_pfbrdf_map.drawImGui();
 			}
 		}
 		ImGui::End();
@@ -254,7 +294,7 @@ void lim::AppModelViewer::renderImGui()
 		
 		if( ImGui::Checkbox("floor", &tInfo.is_draw_floor) ) {
 			if(tInfo.is_draw_floor) {
-				scenes[i].models.push_back(tInfo.temp_floor_md);
+				scenes[i].models.push_back(&floor_md);
 			}
 			else {
 				scenes[i].models.pop_back();
@@ -335,6 +375,9 @@ void lim::AppModelViewer::dndCallback(int count, const char **paths)
 	for( int i=0; i<count; i++ ) {
 		const char* path = paths[i];
 		if(strIsSame(getExtension(path),"hdr")) {
+			for(BrdfTestInfo& tInfo: brdf_test_infos) {
+				tInfo.idx_LitMod = 0;
+			}
 			ib_light.setMap(path);
 		}
 		else {

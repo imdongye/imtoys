@@ -23,6 +23,8 @@ bool lim::IBLight::setMap(const char* path)
     }
     log::pure("loading ibl .. ");
     /* map_Light */
+    map_Light.s_wrap_param = GL_REPEAT;
+    map_Light.t_wrap_param = GL_MIRRORED_REPEAT;
     if(!map_Light.initFromFile(path, false)) {
         return false;
     }
@@ -36,6 +38,10 @@ void lim::IBLight::bakeMap() {
 
 
     /* map_Irradiance */
+    fb.color_tex.s_wrap_param = GL_REPEAT;
+    fb.color_tex.t_wrap_param = GL_MIRRORED_REPEAT;
+    fb.color_tex.mag_filter = GL_LINEAR;
+    fb.color_tex.min_filter = GL_LINEAR;// Todo: mipmap 쓰면 경계 검은색 나옴;;
 	fb.resize(256, 128);
 	iblProg.attatch("canvas.vs").attatch("bake_irr.fs").link();
 
@@ -49,28 +55,52 @@ void lim::IBLight::bakeMap() {
 
 
     /* map_PreFilteredEnv */
-    map_PreFilteredEnv.width = map_Light.width;
-    map_PreFilteredEnv.height = map_Light.height;
-    map_PreFilteredEnv.depth = roughness_depth;
+    const glm::vec2 pfenv_size = { map_Light.width*0.5f,  map_Light.height*0.5f };
+    map_PreFilteredEnv.width = pfenv_size.x;
+    map_PreFilteredEnv.height = pfenv_size.y;
+    map_PreFilteredEnv.nr_depth = nr_roughness_depth;
     map_PreFilteredEnv.updateFormat(3, 32);
+    map_PreFilteredEnv.s_wrap_param = GL_REPEAT;
+    map_PreFilteredEnv.t_wrap_param = GL_MIRRORED_REPEAT;
+    map_PreFilteredEnv.r_wrap_param = GL_CLAMP_TO_EDGE;
+    map_PreFilteredEnv.mag_filter = GL_LINEAR;
+    map_PreFilteredEnv.min_filter = GL_LINEAR;
     map_PreFilteredEnv.initGL();
 
-	fb.resize(map_Light.width, map_Light.height);
+	fb.resize(pfenv_size.x, pfenv_size.y);
     iblProg.deinitGL();
     iblProg.attatch("canvas.vs").attatch("bake_pfenv.fs").link();
 
-    for(int i=0; i<roughness_depth; i++) {
-        float roughness = (i+0.5)/roughness_depth;// 0.05~0.95
+    for(int i=0; i<nr_roughness_depth; i++) {
+        float roughness = (i+0.5)/nr_roughness_depth;// 0.05~0.95
         fb.bind();
         iblProg.use();
         iblProg.setTexture("map_Light", map_Light.tex_id, 0);
         iblProg.setUniform("roughness", roughness);
         AssetLib::get().screen_quad.drawGL();
         fb.unbind();
-        float* buf = fb.makeFloatPixelsBuf();
 
+        float* buf = fb.makeFloatPixelsBuf();
         map_PreFilteredEnv.setDataWithDepth(i, buf); // !! 텍스쳐 복사되면서 mipmap도 생성됨.
+        delete buf;
     }
+
+    /* map_PreFilteredBRDF */
+    fb.color_tex.s_wrap_param = GL_CLAMP_TO_EDGE;
+    fb.color_tex.t_wrap_param = GL_CLAMP_TO_EDGE;
+    fb.color_tex.mag_filter = GL_LINEAR;
+    fb.color_tex.min_filter = GL_LINEAR;
+	fb.resize(128, 128);
+    iblProg.deinitGL();
+	iblProg.attatch("canvas.vs").attatch("bake_brdf.fs").link();
+
+	fb.bind();
+	iblProg.use();
+	AssetLib::get().screen_quad.drawGL();
+	fb.unbind();
+
+    map_PreFilteredBRDF = fb.color_tex; // !! 텍스쳐 복사되면서 mipmap도 생성됨.
+    
     is_map_baked = true;
 }
 GLuint lim::IBLight::getTexIdLight() const {
@@ -81,6 +111,9 @@ GLuint lim::IBLight::getTexIdIrradiance() const {
 }
 GLuint lim::IBLight::getTexIdPreFilteredEnv() const {
     return map_PreFilteredEnv.tex_id;
+}
+GLuint lim::IBLight::getTexIdPreFilteredBRDF() const {
+    return map_PreFilteredBRDF.tex_id;
 }
 
 lim::IBLight::IBLight(IBLight&& src) noexcept {
@@ -217,7 +250,7 @@ namespace
 
     // 편하고 코드 보기 좋아졌다. 메쉬마다 함수포인터로 점프해서 성능이 많이 안좋아질줄알았는데 큰차이없다.
     inline void dfsNodeTree(const Model::Node* root, function<void(const Mesh*, const Material*, const glm::mat4& transform)> hook) {
-        stack<const Model::Node*> nodeStack;
+        stack<const Model::Node*> nodeStack; // queue?
         glm::mat4 transform = glm::mat4(1);
         nodeStack.push( root );
         while( nodeStack.size()>0 ) {
@@ -329,8 +362,8 @@ void lim::render( const IFramebuffer& fb,
     const Material* nextMat = nullptr;
     const Program* curProg = nullptr;
     const Program* nextProg = nullptr;
-    // 
-    std::function<void(const Program&)> curSetProg;
+    std::function<void(const Program&)> curSetProg = [](const Program&){};
+
     int activeSlot = 0;
 
     if(scn.is_draw_env_map) {
@@ -339,18 +372,20 @@ void lim::render( const IFramebuffer& fb,
 
     for( const Model* pMd : scn.models ) {
         const Model& md = *pMd;
-        nextMat = md.default_material;
-        nextProg = md.default_material->prog;
-        curSetProg = md.default_material->set_prog;
+        if( md.default_material->prog )
+            nextProg = md.default_material->prog;
+        if( md.default_material->set_prog )
+            curSetProg = md.default_material->set_prog;
 
         dfsNodeTree(&md.root, [&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
-            nextMat = (mat!=nullptr)?mat:md.default_material;
-            if( nextMat->prog != nullptr )
+            nextMat = (mat!=nullptr) ? mat : md.default_material;
+
+            if( nextMat->prog )
                 nextProg = nextMat->prog;
             if( nextMat->set_prog )
                 curSetProg = nextMat->set_prog;
 
-            if( curProg != nextProg ) {
+            if( nextProg && curProg != nextProg ) {
                 const Program& prog = *nextProg;
                 activeSlot = 0;
 
@@ -367,18 +402,18 @@ void lim::render( const IFramebuffer& fb,
                 if( scn.ib_light ) {
                     prog.setTexture("map_Light", scn.ib_light->getTexIdLight(), activeSlot++);
                     prog.setTexture("map_Irradiance", scn.ib_light->getTexIdIrradiance(), activeSlot++);
-                    // Todo: 3d를 2d로 업케스팅 강제로 막는 방법 없나
                     prog.setTexture3d("map_PreFilteredEnv", scn.ib_light->getTexIdPreFilteredEnv(), activeSlot++);
+                    prog.setTexture("map_PreFilteredBRDF", scn.ib_light->getTexIdPreFilteredBRDF(), activeSlot++);
                 }
             }
 
-            if( curProg != nextProg || curMat != nextMat ) {
-                curSetProg(*nextProg); // param active slot, return activeslot
+            if( (nextProg && curProg != nextProg) || curMat != nextMat ) {
                 bindMatToProg(*nextProg, *nextMat, activeSlot);
-                curMat = nextMat;
-            }
 
-            if( curProg != nextProg ) {
+               
+                curSetProg(*nextProg); // param active slot, return activeslot
+
+                curMat = nextMat;
                 curProg = nextProg;
             }
 

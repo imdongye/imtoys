@@ -47,6 +47,7 @@ set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
 add_subdirectory(vendor/glfw)
+set_target_properties(glfw PROPERTIES CONFIG Release)
 target_compile_definitions(glfw INTERFACE GLFW_INCLUDE_NONE) # Todo?: glad include 순서 무시하기위함
 
 ### assimp ###
@@ -63,6 +64,7 @@ option(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT OFF)
     set(ASSIMP_BUILD_FBX_EXPORTER ON CACHE BOOL "" FORCE)
     # set(ASSIMP_BUILD_GLTF_EXPORTER ON CACHE BOOL "" FORCE)
 add_subdirectory(vendor/assimp)
+set_target_properties(assimp PROPERTIES CONFIG Release)
 option(BUILD_SHARED_LIBS OFF)
 
 ### glad ### C

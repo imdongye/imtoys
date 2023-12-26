@@ -112,7 +112,7 @@ namespace lim
 		}
 
 		debugging_tex = new Texture();
-		debugging_tex->wrap_param = GL_REPEAT;
+		debugging_tex->s_wrap_param = GL_REPEAT;
 		debugging_tex->initFromFile("assets/images/uv_grid.jpg", true);
 
 		program = new Program();

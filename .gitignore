@@ -21,7 +21,7 @@ main/assets/fonts
 main/assets/images
 main/assets/ibls
 
-main/assets.*
+main/assets/*
 main/imhdr/images
 main/exports/*
 !main/exports/imgui.ini
