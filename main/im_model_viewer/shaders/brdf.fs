@@ -283,16 +283,6 @@ vec3 dirFromUv(vec2 uv) {
 	float phi = PI*(1-uv.y);  // [0,1]->[PI,0]
 	return vec3( cos(theta)*sin(phi), cos(phi), sin(theta)*sin(phi) );
 }
-vec2 vecToAngle(vec3 v) {
-	float theta = atan(v.z, v.x );
-	float phi = atan(v.y, length(v.xz));
-	return vec2(theta, phi);
-}
-vec2 angleToTexCoord(vec2 pt) {
-	return vec2(1-pt.x/(2*PI), 0.5-pt.y/PI);
-}
-
-
 
 
 vec3 ibSamplingLighting() {
@@ -302,23 +292,24 @@ vec3 ibSamplingLighting() {
 	for(int i=0; i<nr_ibl_w_samples; i++) for(int j=0; j<nr_ibl_w_samples; j++) {
 		vec2 uv = vec2( i/float(nr_ibl_w_samples-1), j/float(nr_ibl_w_samples-1) );
 		//uv = rand(uv, i); // 레귤러셈플링을 안해도 엘리어싱 안생기고 차이 없다.
-
 		L = dirFromUv(uv);
-		Rl = reflect(-L, N);//normalize(2*dot(N, L)*N-L);
-		H = normalize(L+V);
-
 		NDL = dot(N,L);
-		NDH = dot(N,H);
-		VDRl = dot(V,Rl);
-		VDH = dot(V,H);
 
 		if( NDL<0 ) // out of hemisphere
 			continue;
 
-		float phi = (uv.y-0.5)*PI; // Todo: rm dup
-		vec3 Li = light_Int * texture(map_Light, uv).rgb;
-		
-		sum += brdfPoint()*Li*NDL*cos(phi);
+		Rl = reflect(-L, N);//normalize(2*dot(N, L)*N-L);
+		H = normalize(L+V);
+		NDH = dot(N,H);
+		VDRl = dot(V,Rl);
+		VDH = dot(V,H);
+
+		float phi = PI*(1-uv.y);  // [0,1]->[PI,0]
+		float solidAngle = sin(phi);
+
+		vec3 colL = texture(map_Light, uvFromDir(L)).rgb;
+		vec3 Li = light_Int * colL;
+		sum += brdfPoint()*Li*NDL*solidAngle;
 	}
 	float dist2 = 10; // radiance
 	vec3 integ = sum/(nr_ibl_w_samples*nr_ibl_w_samples * dist2);
@@ -364,31 +355,35 @@ vec3 ibImportanceSamplingLighting() {
 	for(int i=0; i<nr_ibl_w_samples; i++) for(int j=0; j<nr_ibl_w_samples; j++) {
 		vec2 uv = vec2( i/float(nr_ibl_w_samples-1), j/float(nr_ibl_w_samples-1) );
 		//uv = rand(uv, i); // 레귤러셈플링을 안해도 엘리어싱 안생기고 차이 없다.
-
-		H = importanceSampleGGX2(uv);
+		H = importanceSampleGGX(uv);
 		L = reflect(-V, H);
-		Rl = reflect(-L, N);
-
 		NDL = dot(N,L);
+
+		if( NDL<=0 ) // out of hemisphere
+			continue;
+
+		Rl = reflect(-L, N);
 		NDH = dot(N,H);
 		VDRl = dot(V,Rl);
 		VDH = dot(V,H);
 
-		if( NDL<0 ) // out of hemisphere
-			continue;
+		float phi = PI*(1-uv.y);  // [0,1]->[PI,0]
+		float solidAngle = sin(phi);
 
-		float phi = (uv.y-0.5)*PI; // Todo: rm dup
-		vec3 Li = light_Int * texture(map_Light, uvFromDir(L)).rgb;
+		// 이상하게 face normal이 보인다.
+		// vec3 colL = texture(map_Light, uvFromDir(L), roughness*5).rgb; // 교수님 아티팩트 줄이기위한 mipmap어프로치
+		vec3 colL = texture(map_Light, uvFromDir(L)).rgb;
+		vec3 Li = light_Int * colL;
 
 		// brdfPoint에서 distributionGGX와 분모, cos(phi)와 brdf의 NDH 없애서 최적화 가능
 		// brdf 여러개 써보기 위해서 일단 ggx ndf로 나눈다. 
-		sum += brdfPoint()*Li*NDL*cos(phi) / distributionGGX(); // Todo: 분모 p가 제대로 적용 안돼서 아티펙트 보이는것 같음.
+		sum += brdfPoint()*Li*NDL*solidAngle / distributionGGX(); // Todo: 분모 p가 제대로 적용 안돼서 아티펙트 보이는것 같음.
 
 		// vec3 spec = Li/(4*NDV);
 		// sum += spec;
 		// sum += Li;
 	}
-	float dist2 = 10; // radiance
+	float dist2 = 30; // radiance
 	vec3 integ = sum/(nr_ibl_w_samples*nr_ibl_w_samples * dist2);
 	return emission + integ + ambient;
 }
@@ -400,8 +395,8 @@ vec3 ibPrefilteredLighting() {
 	// return  baseColor * texture(map_Irradiance, uvIrr).rgb;
 	// return texture(map_PreFilteredEnv, uvPfenv).rgb;
 	// return texture(map_PreFilteredEnv, vec3(uvPfenv,roughness)).rgb;
-	vec3 diff = mix(baseColor,vec3(0), metalness)  * texture(map_Irradiance, uvIrr).rgb  * light_Int;
-	vec3 spec = texture(map_PreFilteredEnv, vec3(uvPfenv,roughness)).rgb * light_Int;
+	vec3 diff = mix(baseColor,vec3(0), metalness)  * texture(map_Irradiance, uvIrr).rgb  * light_Int*0.01;
+	vec3 spec = texture(map_PreFilteredEnv, vec3(uvPfenv,roughness)).rgb * light_Int*0.01;
 	vec2 brdf = texture(map_PreFilteredBRDF, vec2(NDV, roughness)).rg;
 	spec = spec*(F0*brdf.x + brdf.y);
 	return diff + spec;

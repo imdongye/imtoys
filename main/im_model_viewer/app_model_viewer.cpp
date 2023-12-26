@@ -341,7 +341,7 @@ void lim::AppModelViewer::renderImGui()
 			}
 		}
 		else { // cook-torrance
-			if( ImGui::SliderFloat("roughness", &tInfo.roughness, 0.01, 1) ) {
+			if( ImGui::SliderFloat("roughness", &tInfo.roughness, 0.015, 1) ) {
 				for(Material* mat : md.my_materials) {
 					mat->roughness = tInfo.roughness;
 				}

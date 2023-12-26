@@ -27,14 +27,16 @@ vec3 integrateIBL( vec3 N ) {
 	for(int i=0; i<nrSamples; i++) for(int j=0; j<nrSamples; j++) {
 		vec2 uv = vec2( i/float(nrSamples-1), j/float(nrSamples-1) );
 		//uv = rand(uv, i); // 레귤러셈플링을 안해도 엘리어싱 안생기고 차이 없다.
-        float phi = PI*(uv.y-0.5);
+
         vec3 L = dirFromUv(uv);
-        vec3 colL = texture(map_Light, uv).rgb;
         float NDL = dot(N,L); // Todo: max0으로 가중치 0으로 처리하는게 >0분기보다 빠른지 테스트
-		if(NDL>0) { // hemisphere
-			sum += colL*NDL*cos(phi);
-			wsum += NDL;
-		}
+
+		if(NDL<=0) // hemisphere
+			continue;
+
+        vec3 colL = texture(map_Light, uv).rgb;
+		sum += colL*NDL;
+		wsum += NDL;
 	}
 	return sum/wsum;
 }

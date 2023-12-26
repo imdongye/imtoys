@@ -40,6 +40,44 @@ vec3 importanceSampleGGX(vec2 uv, vec3 N, float r) {
 	vec3 tanY = cross(N, tanX);
 	return tanX*tH.x + tanY*tH.y + N*tH.z;
 }
+vec3 importanceSampleGGX1(vec2 Xi, vec3 N, float r){
+    float a = r*r;
+	
+    float phi = 2.0 * PI * Xi.x;
+    float cosTheta = sqrt((1.0 - Xi.y) / (1.0 + (a*a - 1.0) * Xi.y));
+    float sinTheta = sqrt(1.0 - cosTheta*cosTheta);
+	
+    // from spherical coordinates to cartesian coordinates
+    vec3 H;
+    H.x = cos(phi) * sinTheta;
+    H.y = sin(phi) * sinTheta;
+    H.z = cosTheta;
+	
+    // from tangent-space vector to world-space sample vector
+    vec3 up        = abs(N.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+    vec3 tangent   = normalize(cross(up, N));
+    vec3 bitangent = cross(N, tangent);
+	
+    vec3 sampleVec = tangent * H.x + bitangent * H.y + N * H.z;
+    return normalize(sampleVec);
+}  
+// Rodrigues ver https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula
+vec3 importanceSampleGGX2(vec2 uv, vec3 N, float r) {
+	float a = r*r;
+	float theta = 2*PI*uv.x;
+	float phi = PI*(uv.y-0.5);
+	float cosPhi = sqrt( (1-uv.y)/(1+(a*a-1)*uv.y) );
+	float sinPhi = sqrt( 1-cosPhi*cosPhi );
+	// tangent space
+	vec3 tH = vec3(sinPhi*cos(theta), sinPhi*sin(theta), cosPhi);
+	// tangent space z axis to N with rotate kap
+	vec3 up = abs(N.z)<0.999? vec3(0,0,1) : vec3(1,0,0);
+	vec3 k = normalize(cross(up, N));
+	float cosKap = N.z; // dot(N, up)
+	float sinKap = length(N.xy);
+	return tH*cosKap + cross(k,tH)*sinKap + k*dot(k,tH)*(1-cosKap);
+}
+
 
 const int nrSamples = 50;
 vec3 integrateIBL( vec3 R ) {
@@ -50,21 +88,20 @@ vec3 integrateIBL( vec3 R ) {
     float wsum = 0;
 	for(int i=0; i<nrSamples; i++) for(int j=0; j<nrSamples; j++) {
 		vec2 uv = vec2( i/float(nrSamples-1), j/float(nrSamples-1) );
-		// uv = rand(uv, i); // 레귤러셈플링을 안해도 엘리어싱 안생기고 차이 없다.
-        vec3 H = importanceSampleGGX(uv, N, roughness);
+		uv = rand(uv, i); // 레귤러셈플링을 안해도 엘리어싱 안생기고 차이 없다.
+        vec3 H = importanceSampleGGX1(uv, N, roughness);
         vec3 L = reflect(-V, H); 
-        // vec3 colL = texture(map_Light, uvFromDir(L)).rgb;
-        vec3 colL = texture(map_Light, uvFromDir(L), sqrt(roughness)*7).rgb; // 교수님 아티팩트 줄이기위한 mipmap어프로치
-		// Todo: 중간 두점 아티팩트 왜그런지 모르겠음
-
-        float phi = PI*(uv.y-0.5);
-        float NDL = dot(N,L);
         // float NDL = dot(N,H); // * L대신 H??
-		if(NDL>0) { // hemisphere
-			float w = NDL*cos(phi); // 솔리드 엥글 고려안해도되나?
-			sum += colL*w; // ndf*Li의 썸이지만 임포턴스셈플링의 계수 ndf로켄슬아웃된것
-			wsum += w;
-		}
+        float NDL = dot(N,L);
+		if(NDL<=0) // hemisphere
+			continue;
+
+		float w = NDL; // 솔리드 엥글 고려안해도되나?
+		// vec3 colL = texture(map_Light, uvFromDir(L)).rgb;
+		vec3 colL = texture(map_Light, uvFromDir(L), sqrt(roughness)*7).rgb; // 교수님 아티팩트 줄이기위한 mipmap어프로치
+		// Todo: 중간 두점 아티팩트 왜그런지 모르겠음
+		sum += colL*w; // ndf*Li의 썸이지만 임포턴스셈플링의 계수 ndf로켄슬아웃된것
+		wsum += w;
 	}
 	return sum/wsum;
 }
