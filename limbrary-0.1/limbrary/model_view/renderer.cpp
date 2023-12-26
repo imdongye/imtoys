@@ -57,7 +57,7 @@ void lim::IBLight::bakeMap() {
 
 
     /* map_PreFilteredEnv */
-    const glm::vec2 pfenv_size = { map_Light.width*0.5f,  map_Light.height*0.5f };
+    const glm::vec2 pfenv_size = { map_Light.width*0.25f,  map_Light.height*0.25f };
     map_PreFilteredEnv.width = pfenv_size.x;
     map_PreFilteredEnv.height = pfenv_size.y;
     map_PreFilteredEnv.nr_depth = nr_roughness_depth;

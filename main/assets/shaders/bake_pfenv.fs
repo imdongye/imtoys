@@ -89,7 +89,7 @@ vec3 integrateIBL( vec3 R ) {
 	for(int i=0; i<nrSamples; i++) for(int j=0; j<nrSamples; j++) {
 		vec2 uv = vec2( i/float(nrSamples-1), j/float(nrSamples-1) );
 		uv = rand(uv, i); // 레귤러셈플링을 안해도 엘리어싱 안생기고 차이 없다.
-        vec3 H = importanceSampleGGX1(uv, N, roughness);
+        vec3 H = importanceSampleGGX(uv, N, roughness);
         vec3 L = reflect(-V, H); 
         // float NDL = dot(N,H); // * L대신 H??
         float NDL = dot(N,L);

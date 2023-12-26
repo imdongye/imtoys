@@ -44,6 +44,8 @@ If you want to use the pre-maked imgui window settings, Copy main/exports/imgui.
 cd main; ../build/Debug/executable/imtoys_exe; cd ..
 ```
 
+F1 key to open app selector
+
 ## Dependency
 
 c++17, glfw, glad, stb(image, write, truetype), assimp, imgui, nlohmann/json, fqms, nanovg, freetype
