@@ -63,12 +63,19 @@ uniform float roundnesses[MAX_OBJS];
 uniform float donuts[MAX_PRIMS];
 uniform float capsules[MAX_PRIMS];
 
-float distToObjs[MAX_OBJS];
+uniform bool use_IBL = false;
+uniform sampler2D map_Light;
+uniform sampler2D map_Irradiance;
+uniform sampler3D map_PreFilteredEnv;
+uniform sampler2D map_PreFilteredBRDF;
 
-vec3 N, L, V, R, H;
-float NDL, NDV, NDH, VDR, HDV;
+
+
+vec3 wPos, N, L, V, Rl, H, Rv;
+float NDL, NDV, NDH, VDRl, HDV;
 vec3 baseColor, F0;
 float roughness, metalness;
+
 
 /************** used marching cube too ***************/
 float sdSphere( vec3 p ) {
@@ -127,7 +134,7 @@ float getObjDist(int objIdx, vec3 wPos) {
     case PT_DONUT:
         return minScale * sdDonut(mPos, donuts[prim_idxs[objIdx]]);  
     }
-    return 0;
+    return 0.0;
 }
 float operateDist(int opType, float a, float b, float blendness) {
     switch(opType)
@@ -139,12 +146,12 @@ float operateDist(int opType, float a, float b, float blendness) {
     case OT_INT_ROUND:  return fOpIntersectionRound(a, b, blendness);
     case OT_INT_EDGE:   return fOpIntersectionChamfer(a, b, blendness);
     }
-    return 0;
+    return 0.0;
 }
 
 float sdWorld(vec3 wPos) {
     float dist = far_distance; 
-    dist = wPos.y; // plane
+    // dist = wPos.y; // plane
 
     for( int i=0; i<nr_objs; i++ ) 
     {
@@ -175,7 +182,7 @@ float rayMarch(vec3 origin, vec3 dir, float maxDist) {
 }
 float updateMaterial(vec3 wPos) {
     float dist = far_distance; 
-    dist = wPos.y; // plane
+    // dist = wPos.y; // plane
     
     baseColor = vec3(1);
     roughness = 0;
@@ -215,6 +222,26 @@ vec3 getNormal(vec3 p) {
     // return normalize(cross(dPdx, dPdy));
 }
 
+
+
+
+
+
+
+
+
+vec2 uvFromDir(vec3 v) {
+	float theta = atan(v.z, v.x); // [0,2PI]->[0,1] z축이 반대방향이라 시계방향으로 뒤집힘
+	float phi = asin(v.y);  	  // [1,-1]->[PI/2,-PI/2]->[0,PI]->[1,0]
+    vec2 uv = vec2(theta/(2*PI), phi/PI+0.5);
+    return uv;
+}
+vec3 dirFromUv(vec2 uv) {
+	float theta = 2*PI*(uv.x);// [0,1]->[0,2PI] 
+	float phi = PI*(1-uv.y);  // [0,1]->[PI,0]
+	return vec3( cos(theta)*sin(phi), cos(phi), sin(theta)*sin(phi) );
+}
+
 float distributionGGX() { // Todo: 하이라이트 중간 깨짐, 음수
 	float a = roughness*roughness;
 	float aa = a*a;
@@ -249,30 +276,57 @@ vec3 brdf() {
 }
 
 
-vec3 render(vec3 wPos, vec3 view) {
-	vec3 toLight = light_Pos-wPos;
-    N = getNormal(wPos);
-    V = view;
+vec3 pointLighting() {
+    vec3 toLight = light_Pos-wPos;
     L = normalize(toLight);
-    R = reflect(-L, N);
+    Rl = reflect(-L, N);
     H = normalize(L+V);
-
-    updateMaterial(wPos);
-    F0 = mix(vec3(0.24), baseColor, metalness);
 
     NDL = dot(N,L);
     NDV = dot(N,V);
     NDH = dot(N,H);
-    VDR = dot(V,R);
+    VDRl = dot(V,Rl);
 	HDV = dot(V,H);
 
     // return (NDL+pow(VDR, 1000))*mat_BaseColor;
-
 
 	vec3 Li = light_Int*vec3(1)/dot(toLight,toLight);
 	vec3 ambient = 0.01*1.0*baseColor; // 1.0 is ambOcc
 
     return brdf() * Li * max(0,NDL) + ambient;
+}
+
+vec3 ibPrefilteredLighting() {
+    Rv = reflect(-V, N);
+    vec2 uvIrr = uvFromDir(N);
+	vec2 uvPfenv = uvFromDir(Rv);
+    vec3 diff = mix(baseColor,vec3(0), metalness) * texture(map_Irradiance, uvIrr).rgb  * light_Int*0.01;
+	vec3 spec = texture(map_PreFilteredEnv, vec3(uvPfenv,roughness)).rgb * light_Int*0.01;
+	vec2 brdf = texture(map_PreFilteredBRDF, vec2(NDV, roughness)).rg;
+	spec = spec*(F0*brdf.x + brdf.y);
+	return diff + spec;
+}
+float ao() {
+    float dist = 0.07;
+    float occ = 1.0;
+    for (int i = 0; i < 8; ++i) {
+        occ = min(occ, sdWorld( wPos + dist * N) / dist);
+        dist *= 2.0;
+    }
+    occ = max(occ, 0.0);
+    return occ*0.7+0.3;
+}
+vec3 render() {
+    N = getNormal(wPos);
+    updateMaterial(wPos);
+    F0 = mix(vec3(0.24), baseColor, metalness);
+
+	if(use_IBL) {
+        return ibPrefilteredLighting()*ao();
+    }
+    else {
+        return pointLighting()*ao();
+    }
 }
 
 // gamma correction
@@ -293,13 +347,20 @@ void main()
     vec3 rd = normalize( camera_Aspect*uv.x*camRight + uv.y*camUp + eyeZ*camFront );
     float hitDist = rayMarch(ro, rd, far_distance);
     vec3 outColor;
+    V = -rd;
     
     if( hitDist > far_distance ) {
-        outColor = vec3(0,0.001,0.3);
+        if(use_IBL) {
+            vec2 uv = uvFromDir(-V);
+            outColor = texture(map_Light, uv).rgb;
+        }
+        else {
+            outColor = sky_color;
+        }
     }
     else {
-        vec3 wPos = ro + rd*hitDist;
-        outColor = render( wPos, -rd );
+        wPos = ro + rd*hitDist;
+        outColor = render();
 
         // debug
         // outColor = baseColor;

@@ -395,7 +395,7 @@ vec3 ibPrefilteredLighting() {
 	// return  baseColor * texture(map_Irradiance, uvIrr).rgb;
 	// return texture(map_PreFilteredEnv, uvPfenv).rgb;
 	// return texture(map_PreFilteredEnv, vec3(uvPfenv,roughness)).rgb;
-	vec3 diff = mix(baseColor,vec3(0), metalness)  * texture(map_Irradiance, uvIrr).rgb  * light_Int*0.01;
+	vec3 diff = mix(baseColor,vec3(0), metalness) * texture(map_Irradiance, uvIrr).rgb  * light_Int*0.01;
 	vec3 spec = texture(map_PreFilteredEnv, vec3(uvPfenv,roughness)).rgb * light_Int*0.01;
 	vec2 brdf = texture(map_PreFilteredBRDF, vec2(NDV, roughness)).rg;
 	spec = spec*(F0*brdf.x + brdf.y);

@@ -8,8 +8,8 @@
 
 namespace sdf
 {
-    void clear();
 	void init(lim::CameraController* cam, lim::Light* lit);
+    void deinit();
     void bindSdfData(const lim::Program& prog);
     void drawImGui();
 	void drawGuizmo(const lim::Viewport& vp);

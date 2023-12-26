@@ -8,6 +8,7 @@
     콘, ... 프리미티브 추가
     그림자, AO
     단축키
+    원점아니라 화면중간에 생성
 
 */
 #include "sdf_bridge.h"
@@ -59,6 +60,8 @@ float roundnesses[MAX_OBJS];
 float donuts[MAX_PRIMS];
 float capsules[MAX_PRIMS];
 
+IBLight ib_light;
+bool use_IBL = false;
 
 
 /***************** application data ****************/
@@ -310,7 +313,7 @@ sdf::Object::~Object() {
 
 /******************************** sdf_bridge.h **********************************/
 
-void sdf::clear() 
+void sdf::deinit() 
 {
     std::fill_n(nr_each_prim_types, nr_prim_types, 0);
     nr_groups = 0;
@@ -330,20 +333,40 @@ void sdf::clear()
 
     model_name = "Untitled";
 }
-void sdf::init(CameraController* cam, Light* lit) {
-    clear();
+static void resetData() {
+    sdf::deinit();
 
+    camera->pivot = glm::vec3(0,0,0);
+    camera->position = glm::vec3(0,1,5);
+    camera->updateViewMat();
+
+    
+    root = new sdf::Group("root", nullptr);
+
+    addMaterial();
+    selected_mat->name = "Material_floor";
+    selected_mat->roughness = 1.0;
+    selected_mat->metalness = 0.0;
+    selected_mat->base_color = glm::vec3(1);
+    selected_mat->updateShaderData();
+
+    root->addObjectToBack(PT_BOX);
+    root->children.back()->name = "Floor";
+    root->children.back()->position = {0,-1,0};
+    root->children.back()->scale = {20, 1, 20};
+    root->children.back()->composeTransform();
+
+    addMaterial();
+    root->addObjectToBack(PT_BOX);
+    sdf::serializeModel();
+}
+void sdf::init(CameraController* cam, Light* lit) {
     camera = cam;
     light = lit;
 
-    addMaterial();
-
-    root = new Group("root", nullptr);
-
-
-    root->addObjectToBack(PT_BOX);
-    serializeModel();
+    resetData();
 }
+
 void sdf::bindSdfData(const Program& prog) 
 {
     prog.setUniform("camera_Aspect", camera->aspect);
@@ -374,6 +397,15 @@ void sdf::bindSdfData(const Program& prog)
 
     prog.setUniform("donuts", MAX_PRIMS, donuts);
     prog.setUniform("capsules", MAX_PRIMS, capsules);
+
+    prog.setUniform("use_IBL", use_IBL);
+    if(use_IBL) {
+        int activeSlot = 0;
+        prog.setTexture("map_Light", ib_light.getTexIdLight(), activeSlot++);
+        prog.setTexture("map_Irradiance", ib_light.getTexIdIrradiance(), activeSlot++);
+        prog.setTexture3d("map_PreFilteredEnv", ib_light.getTexIdPreFilteredEnv(), activeSlot++);
+        prog.setTexture("map_PreFilteredBRDF", ib_light.getTexIdPreFilteredBRDF(), activeSlot++);
+    }
 }
 
 
@@ -544,7 +576,7 @@ void sdf::drawImGui()
         }
 
         if( ImGui::MenuItem("Clear") ) {
-            init(camera, light);
+            resetData();
             ImGui::EndMainMenuBar();
             return;
         }
@@ -669,6 +701,10 @@ void sdf::drawImGui()
     {
         ImGui::Begin("Settings##sdf");
         ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.5f);
+        if(ImGui::Checkbox("use IBL", &use_IBL)&& !ib_light.is_map_baked) {
+            ib_light.setMap("assets/ibls/Alexs_Apt_2k.hdr");
+            ib_light.bakeMap();
+        }
         ImGui::SliderInt("# March Steps", &nr_march_steps, 20, 300, "%d");
         ImGui::SliderFloat("Far Distance", &far_distance, 20, 300, "%.0f");
         ImGui::SliderFloat("Hit Threshold", &hit_threshold, 0.00001, 0.001, "%.5f");

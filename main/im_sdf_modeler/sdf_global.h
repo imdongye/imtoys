@@ -9,6 +9,7 @@
 #include <imgui.h>
 #include <imguizmo/ImGuizmo.h>
 #include <limbrary/model_view/light.h>
+#include <limbrary/model_view/renderer.h>
 #include <limbrary/model_view/camera_man.h>
 
 /************* glsl data **************/
@@ -43,6 +44,9 @@ extern float roundnesses[MAX_OBJS];
 extern float donuts[MAX_PRIMS];
 extern float capsules[MAX_PRIMS];
 
+extern lim::IBLight ib_light;
+extern bool use_IBL;
+
 
 /***************** application data ****************/
 extern int nr_each_prim_types[nr_prim_types];
@@ -66,6 +70,7 @@ extern ImGuizmo::MODE gzmo_space;
 extern std::string model_name;
 extern lim::CameraController* camera;
 extern lim::Light* light;
+
 
 namespace sdf {
     void serializeModel();

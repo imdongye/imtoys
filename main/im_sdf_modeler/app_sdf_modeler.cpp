@@ -35,11 +35,12 @@ lim::AppSdfModeler::AppSdfModeler(): AppBase(1373, 783, APP_NAME, false)
 	prog.name = "sdf and ray marching";
 	prog.attatch("canvas.vs").attatch("im_sdf_modeler/shaders/shader.fs").link();
 
+
 	sdf::init(&viewport.camera, &light);
 }
 lim::AppSdfModeler::~AppSdfModeler()
 {
-	sdf::clear();
+	sdf::deinit();
 }
 void lim::AppSdfModeler::update()
 {

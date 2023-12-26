@@ -167,7 +167,7 @@ void sdf::importJson(std::filesystem::path path) {
 
     lim::log::pure("sdff importer version %s\n", sdff_version);
 
-    sdf::clear();
+    sdf::deinit();
 
     try {
         ifile.open(path);
