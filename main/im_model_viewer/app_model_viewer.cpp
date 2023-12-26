@@ -126,7 +126,7 @@ void lim::AppModelViewer::addModelViewer(string path)
 	scn.addOwnModel(floor);
 	scn.models.pop_back();
 	scn.ib_light = &ib_light;
-	scenes.emplace_back(std::move(scn)); // vector move template error
+	scenes.push_back(std::move(scn)); // vector move template error
 
 	char* vpName = fmtStrToBuf("%s##model_view", md->name.c_str());
 	IFramebuffer* fb = new FramebufferMs(8);
@@ -202,27 +202,34 @@ void lim::AppModelViewer::renderImGui()
 		if( ImGui::Button("relead shader") ) {
 			program.reload(GL_FRAGMENT_SHADER);
 		}
+
+		if( !ib_light.is_map_baked && ImGui::Button("bake ibl") ) {
+			ib_light.bakeMap();
+		}
+
 		static bool is_draw_light_map_vp = false;
 		static float pfenv_depth = 0.f;
 		ImGui::Checkbox("show light map",&is_draw_light_map_vp);
 		if( is_draw_light_map_vp ) {
-			ImGui::SliderFloat("pfenv depth", &pfenv_depth, 0.f, 1.f);
 
 			vp_light_map.getFb().bind();
 			drawTexToQuad(ib_light.getTexIdLight(), 2.2f, 0.f, 1.f);
 			vp_light_map.getFb().unbind();
 			vp_light_map.drawImGui();
 
-			vp_irr_map.getFb().bind();
-			drawTexToQuad(ib_light.getTexIdIrradiance(), 2.2f, 0.f, 1.f);
+			if(ib_light.is_map_baked) {
+				ImGui::SliderFloat("pfenv depth", &pfenv_depth, 0.f, 1.f);
+				
+				vp_irr_map.getFb().bind();
+				drawTexToQuad(ib_light.getTexIdIrradiance(), 2.2f, 0.f, 1.f);
+				vp_irr_map.getFb().unbind();
+				vp_irr_map.drawImGui();
 
-			vp_irr_map.getFb().unbind();
-			vp_irr_map.drawImGui();
-
-			vp_pfenv_map.getFb().bind();
-			drawTex3dToQuad(ib_light.getTexIdPreFilteredEnv(), pfenv_depth, 2.2f, 0.f, 1.f);
-			vp_pfenv_map.getFb().unbind();
-			vp_pfenv_map.drawImGui();
+				vp_pfenv_map.getFb().bind();
+				drawTex3dToQuad(ib_light.getTexIdPreFilteredEnv(), pfenv_depth, 2.2f, 0.f, 1.f);
+				vp_pfenv_map.getFb().unbind();
+				vp_pfenv_map.drawImGui();
+			}
 		}
 		ImGui::End();
 	}
@@ -258,7 +265,8 @@ void lim::AppModelViewer::renderImGui()
 		ImGui::Separator();
 		bool isInfoChanged = false;
 		static const char* litModStrs[]={"point", "IBL(sampling)", "IBL(imp sampling)","IBL(pre-filtering)"};
-		if( ImGui::Combo("Light", &tInfo.idx_LitMod, litModStrs, IM_ARRAYSIZE(litModStrs)) ) {
+		int nrLitMods = IM_ARRAYSIZE(litModStrs);
+		if( ImGui::Combo("Light", &tInfo.idx_LitMod, litModStrs, (ib_light.is_map_baked)?nrLitMods:nrLitMods-1) ) {
 			isInfoChanged = true; 
 		}
 		if(tInfo.idx_LitMod==1||tInfo.idx_LitMod==2) {

@@ -30,8 +30,10 @@ namespace lim
         const int roughness_depth = 10;
         Texture map_Light, map_Irradiance;
         Texture3d map_PreFilteredEnv;
+        bool is_map_baked = false;
     public:
         bool setMap(const char* path);
+        void bakeMap();
         GLuint getTexIdLight() const;
         GLuint getTexIdIrradiance() const;
         GLuint getTexIdPreFilteredEnv() const;

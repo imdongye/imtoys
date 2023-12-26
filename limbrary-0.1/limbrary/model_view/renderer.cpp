@@ -26,6 +26,10 @@ bool lim::IBLight::setMap(const char* path)
     if(!map_Light.initFromFile(path, false)) {
         return false;
     }
+    is_map_baked = false;
+    return true;
+}
+void lim::IBLight::bakeMap() {
 
     FramebufferNoDepth fb(3, 32); // 3 channel, 32 bit
     Program iblProg("ibl baker");
@@ -67,8 +71,7 @@ bool lim::IBLight::setMap(const char* path)
 
         map_PreFilteredEnv.setDataWithDepth(i, buf); // !! 텍스쳐 복사되면서 mipmap도 생성됨.
     }
-
-    return true;
+    is_map_baked = true;
 }
 GLuint lim::IBLight::getTexIdLight() const {
     return map_Light.tex_id;
@@ -88,6 +91,7 @@ IBLight& lim::IBLight::operator=(IBLight&& src) noexcept {
         map_Light = std::move(src.map_Light);
         map_Irradiance = std::move(src.map_Irradiance);
         map_PreFilteredEnv = std::move(src.map_PreFilteredEnv);
+        is_map_baked = src.is_map_baked;
     }
     return *this;
 }
