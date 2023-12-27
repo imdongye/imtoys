@@ -286,11 +286,13 @@ vec3 dirFromUv(vec2 uv) {
 
 
 vec3 ibSamplingLighting() {
+	int nrIblHSamples = int(nr_ibl_w_samples/2);
+
 	vec3 ambient = mat_AmbientColor*ambOcc*baseColor;
 	vec3 sum = vec3(0);
 
-	for(int i=0; i<nr_ibl_w_samples; i++) for(int j=0; j<nr_ibl_w_samples; j++) {
-		vec2 uv = vec2( i/float(nr_ibl_w_samples-1), j/float(nr_ibl_w_samples-1) );
+	for(int i=0; i<nr_ibl_w_samples; i++) for(int j=0; j<nrIblHSamples; j++) {
+		vec2 uv = vec2( i/float(nr_ibl_w_samples-1), j/float(nrIblHSamples-1) );
 		//uv = rand(uv, i); // 레귤러셈플링을 안해도 엘리어싱 안생기고 차이 없다.
 		L = dirFromUv(uv);
 		NDL = dot(N,L);
@@ -351,9 +353,10 @@ vec3 importanceSampleGGX2(vec2 uv) {
 vec3 ibImportanceSamplingLighting() {
 	vec3 ambient = mat_AmbientColor*ambOcc*baseColor;
 	vec3 sum = vec3(0);
-
-	for(int i=0; i<nr_ibl_w_samples; i++) for(int j=0; j<nr_ibl_w_samples; j++) {
-		vec2 uv = vec2( i/float(nr_ibl_w_samples-1), j/float(nr_ibl_w_samples-1) );
+	float wsum = 0.0;
+	int nrIblHSamples = int(nr_ibl_w_samples/2);
+	for(int i=0; i<nr_ibl_w_samples; i++) for(int j=0; j<nrIblHSamples; j++) {
+		vec2 uv = vec2( i/float(nr_ibl_w_samples-1), j/float(nrIblHSamples-1) );
 		//uv = rand(uv, i); // 레귤러셈플링을 안해도 엘리어싱 안생기고 차이 없다.
 		H = importanceSampleGGX(uv);
 		L = reflect(-V, H);
@@ -371,20 +374,20 @@ vec3 ibImportanceSamplingLighting() {
 		float solidAngle = sin(phi);
 
 		// 이상하게 face normal이 보인다.
-		// vec3 colL = texture(map_Light, uvFromDir(L), roughness*5).rgb; // 교수님 아티팩트 줄이기위한 mipmap어프로치
-		vec3 colL = texture(map_Light, uvFromDir(L)).rgb;
+		vec3 colL = textureLod(map_Light, uvFromDir(L), sqrt(roughness)*6.8).rgb; // 교수님 아티팩트 줄이기위한 mipmap어프로치
+		// vec3 colL = texture(map_Light, uvFromDir(L)).rgb;
 		vec3 Li = light_Int * colL;
 
 		// brdfPoint에서 distributionGGX와 분모, cos(phi)와 brdf의 NDH 없애서 최적화 가능
 		// brdf 여러개 써보기 위해서 일단 ggx ndf로 나눈다. 
 		sum += brdfPoint()*Li*NDL*solidAngle / distributionGGX(); // Todo: 분모 p가 제대로 적용 안돼서 아티펙트 보이는것 같음.
-
+		wsum += 1.0;
 		// vec3 spec = Li/(4*NDV);
 		// sum += spec;
 		// sum += Li;
 	}
 	float dist2 = 30; // radiance
-	vec3 integ = sum/(nr_ibl_w_samples*nr_ibl_w_samples * dist2);
+	vec3 integ = sum/(wsum * dist2);
 	return emission + integ + ambient;
 }
 

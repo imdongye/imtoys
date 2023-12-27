@@ -26,7 +26,7 @@ bool lim::IBLight::setMap(const char* path)
     map_Light.s_wrap_param = GL_REPEAT;
     map_Light.t_wrap_param = GL_MIRRORED_REPEAT;
     map_Light.mag_filter = GL_LINEAR;
-    map_Light.min_filter = GL_LINEAR;// Todo: mipmap 쓰면 경계 검은색 나옴;;
+    map_Light.min_filter = GL_LINEAR_MIPMAP_NEAREST;// Todo: mipmap 쓰면 경계 검은색 나옴;;
     if(!map_Light.initFromFile(path, false)) {
         return false;
     }

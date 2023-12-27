@@ -20,12 +20,13 @@ vec3 dirFromUv(vec2 uv) {
 	return vec3( cos(theta)*sin(phi), cos(phi), sin(theta)*sin(phi) );
 }
 
-const int nrSamples = 100;
+const int nrSamplesW = 120;
+const int nrSamplesH = 60;
 vec3 integrateIBL( vec3 N ) {
 	vec3 sum = vec3(0);
     float wsum = 0;
-	for(int i=0; i<nrSamples; i++) for(int j=0; j<nrSamples; j++) {
-		vec2 uv = vec2( i/float(nrSamples-1), j/float(nrSamples-1) );
+	for(int i=0; i<nrSamplesW; i++) for(int j=0; j<nrSamplesH; j++) {
+		vec2 uv = vec2( i/float(nrSamplesW-1), j/float(nrSamplesH-1) );
 		//uv = rand(uv, i); // 레귤러셈플링을 안해도 엘리어싱 안생기고 차이 없다.
 
         vec3 L = dirFromUv(uv);
@@ -34,9 +35,11 @@ vec3 integrateIBL( vec3 N ) {
 		if(NDL<=0) // hemisphere
 			continue;
 
+		float phi = PI*(1-uv.y);
+		float solidAngle = sin(phi);
         vec3 colL = texture(map_Light, uv).rgb;
-		sum += colL*NDL;
-		wsum += NDL;
+		sum += colL*NDL*solidAngle;
+		wsum += 1.0;
 	}
 	return sum/wsum;
 }

@@ -79,29 +79,30 @@ vec3 importanceSampleGGX2(vec2 uv, vec3 N, float r) {
 }
 
 
-const int nrSamples = 50;
+const int nrSamplesW = 60;
+const int nrSamplesH = 30;
 vec3 integrateIBL( vec3 R ) {
 	vec3 N = R;
 	vec3 V = R; // *논문에서 V의 H에 대한 리플렉트로 L을구하는게 아니라 N으로 구한다
 
 	vec3 sum = vec3(0);
     float wsum = 0;
-	for(int i=0; i<nrSamples; i++) for(int j=0; j<nrSamples; j++) {
-		vec2 uv = vec2( i/float(nrSamples-1), j/float(nrSamples-1) );
+	for(int i=0; i<nrSamplesW; i++) for(int j=0; j<nrSamplesH; j++) {
+		vec2 uv = vec2( i/float(nrSamplesW-1), j/float(nrSamplesH-1) );
 		uv = rand(uv, i); // 레귤러셈플링을 안해도 엘리어싱 안생기고 차이 없다.
-        vec3 H = importanceSampleGGX(uv, N, roughness);
-        vec3 L = reflect(-V, H); 
+        vec3 H = normalize(importanceSampleGGX2(uv, N, roughness));
+        vec3 L = normalize(reflect(-V, H)); 
         // float NDL = dot(N,H); // * L대신 H??
         float NDL = dot(N,L);
+
 		if(NDL<=0) // hemisphere
 			continue;
 
-		float w = NDL; // 솔리드 엥글 고려안해도되나?
-		// vec3 colL = texture(map_Light, uvFromDir(L)).rgb;
-		vec3 colL = texture(map_Light, uvFromDir(L), sqrt(roughness)*7).rgb; // 교수님 아티팩트 줄이기위한 mipmap어프로치
 		// Todo: 중간 두점 아티팩트 왜그런지 모르겠음
-		sum += colL*w; // ndf*Li의 썸이지만 임포턴스셈플링의 계수 ndf로켄슬아웃된것
-		wsum += w;
+		// vec3 colL = texture(map_Light, uvFromDir(L)).rgb;
+		vec3 colL = textureLod(map_Light, uvFromDir(L), sqrt(roughness)*6.8).rgb; // 교수님 아티팩트 줄이기위한 mipmap어프로치
+		sum += colL*NDL; // ndf*Li의 썸이지만 임포턴스셈플링의 계수 ndf로켄슬아웃된것
+		wsum += 1.0;
 	}
 	return sum/wsum;
 }

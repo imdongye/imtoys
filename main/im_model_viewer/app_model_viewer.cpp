@@ -310,12 +310,12 @@ void lim::AppModelViewer::renderImGui()
 			isInfoChanged = true; 
 		}
 		if(tInfo.idx_LitMod==1||tInfo.idx_LitMod==2) {
-			int nrSamples = tInfo.nr_ibl_w_samples*tInfo.nr_ibl_w_samples;
+			int nrSamples = tInfo.nr_ibl_w_samples*tInfo.nr_ibl_w_samples/2;
 			if( ImGui::SliderInt("ibl samples", &nrSamples, 1, 2500, "%d") ) {
-				tInfo.nr_ibl_w_samples = glm::sqrt(nrSamples);
+				tInfo.nr_ibl_w_samples = glm::sqrt(2*nrSamples);
 				isInfoChanged = true; 
 			}
-			ImGui::Text("nr width samples %d", tInfo.nr_ibl_w_samples);
+			ImGui::Text("nr width samples (%dx%d)", tInfo.nr_ibl_w_samples, tInfo.nr_ibl_w_samples/2);
 		}
 		ImGui::Separator();
 		static const char* modelStrs[]={"Phong", "BlinnPhong", "CookTorrance", "Oren-Nayar"};
