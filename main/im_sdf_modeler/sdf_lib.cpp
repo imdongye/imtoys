@@ -330,6 +330,8 @@ void sdf::deinit()
 
     selected_edit_mode_idx = 1;
     gzmo_space = ImGuizmo::MODE::LOCAL;
+    
+    ib_light.deinitGL();
 
     model_name = "Untitled";
 }
@@ -399,7 +401,7 @@ void sdf::bindSdfData(const Program& prog)
     prog.setUniform("capsules", MAX_PRIMS, capsules);
 
     prog.setUniform("use_IBL", use_IBL);
-    if(use_IBL) {
+    if(use_IBL||true) {
         int activeSlot = 0;
         prog.setTexture("map_Light", ib_light.getTexIdLight(), activeSlot++);
         prog.setTexture("map_Irradiance", ib_light.getTexIdIrradiance(), activeSlot++);

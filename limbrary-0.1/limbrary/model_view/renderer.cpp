@@ -57,7 +57,8 @@ void lim::IBLight::bakeMap() {
 
 
     /* map_PreFilteredEnv */
-    const glm::vec2 pfenv_size = { map_Light.width*0.25f,  map_Light.height*0.25f };
+    // win에서 *0.25, mac에서 /10은 해야 동작함.
+    const glm::vec2 pfenv_size = { map_Light.width/10.f,  map_Light.height/10.f }; 
     map_PreFilteredEnv.width = pfenv_size.x;
     map_PreFilteredEnv.height = pfenv_size.y;
     map_PreFilteredEnv.nr_depth = nr_roughness_depth;
@@ -104,6 +105,12 @@ void lim::IBLight::bakeMap() {
     map_PreFilteredBRDF = fb.color_tex; // !! 텍스쳐 복사되면서 mipmap도 생성됨.
     
     is_map_baked = true;
+}
+void lim::IBLight::deinitGL() {
+    map_Light.deinitGL();
+    map_Irradiance.deinitGL();
+    map_PreFilteredEnv.deinitGL();
+    map_PreFilteredBRDF.deinitGL();
 }
 GLuint lim::IBLight::getTexIdLight() const {
     return map_Light.tex_id;
