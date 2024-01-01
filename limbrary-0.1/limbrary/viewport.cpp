@@ -88,7 +88,7 @@ namespace lim
 
 		ImGui::SetItemKeyOwner(ImGuiKey_MouseWheelY);
 		ImGui::SetItemKeyOwner(ImGuiKey_MouseWheelX);
-		GLuint texID = framebuffer->getRenderedTex();
+		GLuint texID = framebuffer->getRenderedTexId();
 		if( texID!=0 ) {
 			ImGui::Image((void*)(intptr_t)texID, ImVec2{(float)fb.width, (float)fb.height}, ImVec2{0, 1}, ImVec2{1, 0});
 		}

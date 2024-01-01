@@ -74,22 +74,17 @@ lim::AppModelViewer::AppModelViewer() : AppBase(1373, 780, APP_NAME, false)
 	, vp_irr_map("irr map", new FramebufferNoDepth(3,32))
 	, vp_pfenv_map("pf env map", new FramebufferNoDepth(3,32))
 	, vp_pfbrdf_map("pf brdf map", new FramebufferNoDepth(3,32))
+	, vp_shadow_map("shadow map", new FramebufferNoDepth(3,32))
 {
 	viewports.reserve(5);
 	scenes.reserve(5);
 	
 	program.name = "brdf_prog";
-	program.attatch("mvp.vs").attatch("im_model_viewer/shaders/brdf.fs").link();
+	program.home_dir = APP_DIR;
+	program.attatch("smvp.vs").attatch("brdf.fs").link();
 
 	light.setRotate(35.f, -35.f, 7.f);
 	light.intensity = 55.f;
-
-	light_model.name = "light";
-	light_model.my_meshes.push_back(new MeshSphere(8, 4));
-	light_model.root.addMeshWithMat(light_model.my_meshes.back()); // delete sphere when delete model!
-	light_model.position = light.position;
-	light_model.scale = glm::vec3(0.3f);
-	light_model.updateModelMat();
 
 	floor_md.name = "floor";
 	floor_md.my_meshes.push_back(new MeshPlane(1));
@@ -127,8 +122,8 @@ lim::AppModelViewer::AppModelViewer() : AppBase(1373, 780, APP_NAME, false)
 	AssetLib::get().default_material.prog = &program;
 
 	addModelViewer("assets/models/objs/bunny.obj");
-	addModelViewer("assets/models/objs/sphere20.obj");
-	addModelViewer("assets/models/helmet/FlightHelmet/FlightHelmet.gltf");
+	// addModelViewer("assets/models/objs/sphere20.obj");
+	// addModelViewer("assets/models/helmet/FlightHelmet/FlightHelmet.gltf");
 }
 
 lim::AppModelViewer::~AppModelViewer()
@@ -156,7 +151,6 @@ void lim::AppModelViewer::addModelViewer(string path)
 
 	Scene scn;
 	scn.lights.push_back(&light);
-	scn.models.push_back(&light_model);
 	scn.addOwnModel(md);
 	scn.ib_light = &ib_light;
 	scenes.push_back(std::move(scn)); // vector move template error
@@ -184,7 +178,7 @@ void lim::AppModelViewer::drawModelsToViewports()
 		if(selected_vp_idx!=i&&vp.is_focused)
 			selected_vp_idx = i;
 			
-		render(vp.getFb(), vp.camera, scenes[i]);
+		render(vp.getFb(), vp.camera, scenes[i], true);
 
 		if( !vp.is_opened ) {
 			rmModelViewer(i);
@@ -228,11 +222,10 @@ void lim::AppModelViewer::renderImGui()
 		isLightDraged |= ImGui::DragFloat("dist", &litDist, litDistSpd, 5.f, 50.f, "%.3f");
 		if( isLightDraged ) {
 			light.setRotate(litTheta, glm::fract(litPhi/360.f)*360.f, litDist);
-			light_model.position = light.position;
-			light_model.updateModelMat();
 		}
 		ImGui::Text("pos: %.1f %.1f %.1f", light.position.x, light.position.y, light.position.z);
 		ImGui::SliderFloat("intencity", &light.intensity, 0.5f, 200.f, "%.1f");
+		ImGui::Checkbox("shadow enabled", &light.shadow_enabled);
 
 		if( ImGui::Button("relead shader") ) {
 			program.reload(GL_FRAGMENT_SHADER);
@@ -270,7 +263,14 @@ void lim::AppModelViewer::renderImGui()
 				vp_pfbrdf_map.getFb().unbind();
 				vp_pfbrdf_map.drawImGui();
 			}
+			if(light.shadow_enabled) {
+				vp_shadow_map.getFb().bind();
+				drawTexToQuad(light.map_Shadow.getRenderedTexId(), 2.2f, 0.f, 1.f);
+				vp_shadow_map.getFb().unbind();
+				vp_shadow_map.drawImGui();
+			}
 		}
+		
 		ImGui::End();
 	}
 

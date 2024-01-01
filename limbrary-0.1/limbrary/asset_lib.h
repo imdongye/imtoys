@@ -28,12 +28,13 @@ namespace lim
 
 		Program tex_to_quad_prog;
 		Program tex3d_to_quad_prog;
-		Program depth_prog;
+		Program depth_prog, ndv_prog;
 		
 		Material default_material;
 		
 		MeshQuad screen_quad; // only poss
 		MeshSphere sphere;
+		MeshSphere small_sphere;
 		MeshCube cube;
 
 	private:

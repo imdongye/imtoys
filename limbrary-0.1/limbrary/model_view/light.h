@@ -25,8 +25,8 @@ namespace lim
 	public:
 		// you need to find magic numbers
 		int shadow_map_size = 1024;
-		float shadow_z_near = 1;
-		float shadow_z_far = 500;
+		float shadow_z_near = 0.0f;
+		float shadow_z_far = 30.f;
 		float ortho_width = 4;
 		float ortho_height = 8;
 
@@ -36,8 +36,9 @@ namespace lim
 		
 		glm::vec3 pivot = {0,0,0};
 		glm::vec3 position = {3.3f,5.7f,2.3f};
+		glm::mat4 model_mat;
 
-		FramebufferTexDepth map_Shadow;
+		FramebufferRbDepth map_Shadow;
 		glm::mat4 shadow_view_mat;
 		glm::mat4 shadow_proj_mat;
 		glm::mat4 shadow_vp_mat;

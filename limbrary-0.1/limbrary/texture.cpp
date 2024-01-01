@@ -13,6 +13,8 @@
 #include <limbrary/asset_lib.h>
 #include <limbrary/log.h>
 #include <stb_image.h>
+#include <glm/gtc/type_ptr.hpp>
+
 
 using namespace lim;
 
@@ -95,6 +97,7 @@ void lim::Texture::initGL(void* data)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, s_wrap_param);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, s_wrap_param);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, mipmap_max_level);
+	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(border_color)); 
 	//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 8);
 
 	glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, src_format, src_chanel_type, data);
@@ -253,6 +256,7 @@ void lim::Texture3d::initGL(void* data) {
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, mag_filter);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, min_filter);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, s_wrap_param);
+	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(border_color)); 
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, s_wrap_param);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, r_wrap_param );
 	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, mipmap_max_level);

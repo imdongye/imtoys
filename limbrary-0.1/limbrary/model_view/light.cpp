@@ -16,9 +16,12 @@ using namespace glm;
 
 namespace lim
 {
-	Light::Light()
+	Light::Light(): map_Shadow(3,32)
 	{
 		map_Shadow.clear_color = glm::vec4(1);
+		map_Shadow.color_tex.s_wrap_param = GL_CLAMP_TO_BORDER; 
+		map_Shadow.color_tex.t_wrap_param = GL_CLAMP_TO_BORDER; 
+		map_Shadow.color_tex.border_color = glm::vec4(1.f); 
 		map_Shadow.resize(shadow_map_size, shadow_map_size);
 
 		// fov 1.0은 60도 정도 2에서 1~-1사이의 중앙모델만 그린다고 가정하면 far을 엄청 멀리까지 안잡아도되고
@@ -67,6 +70,7 @@ namespace lim
 		toLit = rotate(radians(phiDeg), vec3{0,1,0}) * toLit;
 
 		position = pivot+distance*vec3(toLit);
+		model_mat = glm::translate(position);
 		updateShadowVP();
 	}
 	void Light::updateShadowVP()

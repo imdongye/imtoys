@@ -22,13 +22,13 @@ namespace lim
 	private:
 		std::vector<ViewportWithCamera> viewports;
 		Viewport vp_light_map, vp_irr_map, vp_pfenv_map, vp_pfbrdf_map;
+		Viewport vp_shadow_map;
 		std::vector<Scene> scenes;
 		IBLight ib_light;
 		Model floor_md;
 
 		ProgramReloadable program;
 		Light light;
-		Model light_model;
 
 	public:
 		AppModelViewer();

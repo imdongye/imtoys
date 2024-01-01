@@ -87,7 +87,8 @@ namespace lim
     // use prog in mat
     void render( const IFramebuffer& fb,
                  const Camera& cam,
-                 const Scene& scn );
+                 const Scene& scn,
+                 const bool isDrawLight = false );
 }
 
 

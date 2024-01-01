@@ -103,7 +103,7 @@ FramebufferNoDepth::~FramebufferNoDepth() noexcept
 	deinitGL();
 }
 /* override albe */
-GLuint FramebufferNoDepth::getRenderedTex() const
+GLuint FramebufferNoDepth::getRenderedTexId() const
 {
 	return color_tex.tex_id;
 }
@@ -165,7 +165,7 @@ FramebufferTexDepth::~FramebufferTexDepth() noexcept
 	deinitGL();
 }
 /* override albe */
-GLuint FramebufferTexDepth::getRenderedTex() const
+GLuint FramebufferTexDepth::getRenderedTexId() const
 {
 	return color_tex.tex_id;
 }
@@ -226,7 +226,7 @@ FramebufferRbDepth::~FramebufferRbDepth() noexcept
 	deinitGL();
 }
 /* override albe */
-GLuint FramebufferRbDepth::getRenderedTex() const
+GLuint FramebufferRbDepth::getRenderedTexId() const
 {
 	return color_tex.tex_id;
 }
@@ -297,7 +297,7 @@ FramebufferMs::~FramebufferMs() noexcept
 	deinitGL();
 }
 /* override able */
-GLuint FramebufferMs::getRenderedTex() const
+GLuint FramebufferMs::getRenderedTexId() const
 {
 	return intermediate_fb.color_tex.tex_id;
 }

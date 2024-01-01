@@ -16,6 +16,7 @@
 #include <glad/glad.h>
 #include <string>
 #include <memory>
+#include <glm/glm.hpp>
 
 namespace lim
 {
@@ -29,7 +30,8 @@ namespace lim
 		GLint internal_format = GL_RGB8; // GL_R8, GL_SRGB8_ALPHA8(internal gamma collection)
 		GLint mag_filter = GL_LINEAR;
 		GLint min_filter = GL_LINEAR_MIPMAP_LINEAR; // GL_NEAREST, LINEAR, *_MIPMAP_*
-		GLint s_wrap_param = GL_REPEAT; // GL_CLAMP_TO_EDGE, BORDER(이후 검은색), GL_REPEAT , GL_MIRRORED_REPEAT
+		glm::vec4 border_color = glm::vec4(0);
+		GLint s_wrap_param = GL_REPEAT; // GL_CLAMP_TO_EDGE, BORDER(이후 border_color), GL_REPEAT , GL_MIRRORED_REPEAT
 		GLint t_wrap_param = GL_REPEAT;
 		GLint mipmap_max_level = 1000;
 		GLenum src_format = GL_RGBA;

@@ -150,18 +150,16 @@ namespace lim
 
 	// From: http://www.songho.ca/opengl/gl_sphere.html
 	// texture coord가 다른 같은 위치의 vertex가 많음
-	MeshSphere::MeshSphere(int nrSlices, int nrStacks, bool genNors, bool genUvs)
+	MeshSphere::MeshSphere(int nrSlices, int nrStacks, bool genNors, bool genUvs, float radius)
 	{
 		name = fmtStrToBuf("sphere_sl%d_st%d", nrSlices, nrStacks);
-		
-		const float radius = 1.f;
 
 		// phi : angle form xy-plane [-pi/2, pi/2]
 		// theta : y-axis angle [0, 2pi]
 		for (int stack = 0; stack <= nrStacks; stack++)
 		{
 			float phi = H_PI - F_PI * stack / (float)nrStacks;
-			float y = sin(phi);
+			float y = radius* sin(phi);
 			float r_cosPhi = radius * cos(phi);
 			for (int slice = 0; slice <= nrSlices; slice++)
 			{

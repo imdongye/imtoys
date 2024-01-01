@@ -199,10 +199,10 @@ namespace
         prog.setUniform("light_Color", lit.color);
         prog.setUniform("light_Int", lit.intensity);
 
-        prog.setUniform("shadow_Enabled", (lit.shadow_enabled)?1:0);
+        prog.setUniform("shadow_Enabled", lit.shadow_enabled);
         if( lit.shadow_enabled ) {
             prog.setUniform("shadow_VP", lit.shadow_vp_mat);
-            prog.setTexture("map_Shadow", lit.map_Shadow.getRenderedTex(), activeSlot++);
+            prog.setTexture("map_Shadow", lit.map_Shadow.getRenderedTexId(), activeSlot++);
         }
         return activeSlot; // return next texture slot
     }
@@ -301,6 +301,10 @@ namespace
             }
 
             lit.map_Shadow.unbind();
+
+	        glBindTexture(GL_TEXTURE_2D, lit.map_Shadow.getRenderedTexId());
+            glGenerateMipmap(GL_TEXTURE_2D);
+	        glBindTexture(GL_TEXTURE_2D, 0);
         }
     }
 }
@@ -326,6 +330,7 @@ void lim::render( const IFramebuffer& fb,
 
     fb.unbind();
 }
+
 
 void lim::render( const IFramebuffer& fb, 
                 const Program& prog,
@@ -361,7 +366,8 @@ void lim::render( const IFramebuffer& fb,
 
 void lim::render( const IFramebuffer& fb,
                 const Camera& cam,
-                const Scene& scn )
+                const Scene& scn,
+                const bool isDrawLight )
 {
     bakeShadowMap(scn.lights, scn.models);
 
@@ -410,9 +416,11 @@ void lim::render( const IFramebuffer& fb,
 
                 if( scn.ib_light ) {
                     prog.setTexture("map_Light", scn.ib_light->getTexIdLight(), activeSlot++);
-                    prog.setTexture("map_Irradiance", scn.ib_light->getTexIdIrradiance(), activeSlot++);
-                    prog.setTexture3d("map_PreFilteredEnv", scn.ib_light->getTexIdPreFilteredEnv(), activeSlot++);
-                    prog.setTexture("map_PreFilteredBRDF", scn.ib_light->getTexIdPreFilteredBRDF(), activeSlot++);
+                    if(true||scn.ib_light->is_map_baked) {
+                        prog.setTexture("map_Irradiance", scn.ib_light->getTexIdIrradiance(), activeSlot++);
+                        prog.setTexture3d("map_PreFilteredEnv", scn.ib_light->getTexIdPreFilteredEnv(), activeSlot++);
+                        prog.setTexture("map_PreFilteredBRDF", scn.ib_light->getTexIdPreFilteredBRDF(), activeSlot++);
+                    }
                 }
             }
 
@@ -425,10 +433,19 @@ void lim::render( const IFramebuffer& fb,
                 curMat = nextMat;
                 curProg = nextProg;
             }
-
             curProg->setUniform("model_Mat", md.model_mat); // Todo: hirachi trnasformation
             ms->drawGL();
         });
+    }
+
+    if( isDrawLight ) {
+        const Program& prog = AssetLib::get().ndv_prog;
+        prog.use();
+        prog.setUniform("camera_Pos", cam.position);
+        prog.setUniform("view_Mat", cam.view_mat);
+        prog.setUniform("proj_Mat", cam.proj_mat);
+        prog.setUniform("model_Mat", scn.lights.back()->model_mat);
+        AssetLib::get().small_sphere.drawGL();
     }
 
     fb.unbind();

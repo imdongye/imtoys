@@ -66,7 +66,7 @@ public:
 	void unbind() const;
 
 	// ms framebuffer return intermidiate
-	virtual GLuint getRenderedTex() const = 0;
+	virtual GLuint getRenderedTexId() const = 0;
 	
 protected:
 	virtual void myInitGL() = 0;
@@ -139,7 +139,7 @@ public:
 	FramebufferNoDepth& operator=(FramebufferNoDepth&& src) noexcept;
 	~FramebufferNoDepth() noexcept; 
 
-	virtual GLuint getRenderedTex() const final;
+	virtual GLuint getRenderedTexId() const final;
 
 	float* makeFloatPixelsBuf() const;
 
@@ -165,7 +165,7 @@ public:
 	FramebufferTexDepth& operator=(FramebufferTexDepth&& src) noexcept;
 	~FramebufferTexDepth() noexcept;
 
-	virtual GLuint getRenderedTex() const final;
+	virtual GLuint getRenderedTexId() const final;
 protected:
 	virtual void myInitGL() final;
 	virtual void myDeinitGL() final;
@@ -188,7 +188,7 @@ public:
 	FramebufferRbDepth& operator=(FramebufferRbDepth&& src) noexcept;
 	~FramebufferRbDepth() noexcept;
 
-	virtual GLuint getRenderedTex() const final;
+	virtual GLuint getRenderedTexId() const final;
 protected:
 	virtual void myInitGL() final;
 	virtual void myDeinitGL() final;
@@ -214,7 +214,7 @@ public:
 	FramebufferMs& operator=(FramebufferMs&& src) noexcept;
 	~FramebufferMs() noexcept;
 
-	virtual GLuint getRenderedTex() const final;
+	virtual GLuint getRenderedTexId() const final;
 protected:
 	virtual void myInitGL() final;
 	virtual void myDeinitGL() final;

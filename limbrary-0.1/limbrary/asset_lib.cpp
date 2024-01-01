@@ -11,6 +11,7 @@ static int ms_max_samples = 2;
 
 lim::AssetLib::AssetLib()
 	: screen_quad(false, false)
+	, small_sphere(8,4,true, false, 0.2f)
 {
 	log::pure("init AssetLib\n");
 
@@ -23,6 +24,8 @@ lim::AssetLib::AssetLib()
 	depth_prog.name = "depth";
 	depth_prog.attatch("mvp.vs").attatch("depth.fs").link();
 
+	ndv_prog.name = "ndv";
+	ndv_prog.attatch("mvp.vs").attatch("ndv.fs").link();
 
 	default_prog.name = "defualt";
 	default_prog.attatch("mvp.vs").attatch("ndv.fs").link();

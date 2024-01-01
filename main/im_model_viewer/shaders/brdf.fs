@@ -9,6 +9,7 @@ out vec4 FragColor;
 in vec3 wPos;
 in vec3 wNor;
 in vec2 mUv;
+in vec4 lPos;
 
 const float PI = 3.1415926535;
 const int MF_NONE       = 0;
@@ -56,12 +57,13 @@ uniform sampler2D map_Irradiance;
 uniform sampler3D map_PreFilteredEnv;
 uniform sampler2D map_PreFilteredBRDF;
 
-
-
 uniform vec3 light_Pos;
 uniform vec3 light_Color;
 uniform float light_Int;
 uniform vec3 camera_Pos;
+
+uniform bool shadow_Enabled;
+uniform sampler2D map_Shadow;
 
 uniform int idx_Brdf = 0;
 uniform int idx_D = 0;
@@ -107,6 +109,26 @@ vec2 rand(vec2 st, int i) {
 		fract(sin(dot(st+i*4.1233, vec2(12.9898, 78.2336))) * 43758.5453),
     	fract(sin(dot(st+i*6.8233, vec2(39.8793, 83.2402))) * 22209.2896)
 	);
+}
+
+float shadowing()
+{
+	const float bias = 0.001;
+	if(!shadow_Enabled)
+		return 1.f;
+
+	float shadowFactor = 1.0;
+
+	vec3 shadowClipPos = lPos.xyz/lPos.w;
+	vec3 shadowTexPos = (shadowClipPos+1)*0.5;
+	float depth = shadowTexPos.z;
+	float lightDepth = texture(map_Shadow, shadowTexPos.xy).r;
+	// return lightDepth;
+	if( lightDepth+bias > depth ) {
+		return 1.0;
+	}
+	return 0.0;
+	return shadowFactor;	
 }
 
 //*****************************************
@@ -264,8 +286,8 @@ vec3 pointLighting() {
 
 	vec3 Li = light_Int*light_Color/dot(toLight,toLight); // radiance
 	vec3 ambient = mat_AmbientColor*ambOcc*baseColor;
-
-	return emission + brdfPoint() * Li * max(0,NDL) + ambient;
+	// return vec3(shadowing());
+	return emission + shadowing() * brdfPoint() * Li * max(0,NDL) + ambient;
 }
 
 /* spherical coordinate convertion */
@@ -404,6 +426,8 @@ vec3 ibPrefilteredLighting() {
 	spec = spec*(F0*brdf.x + brdf.y);
 	return diff + spec;
 }
+
+
 
 void main() {
 	vec3 faceN = normalize( cross( dFdx(wPos), dFdy(wPos) ) );
