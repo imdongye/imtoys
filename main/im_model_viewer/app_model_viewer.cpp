@@ -96,19 +96,19 @@ lim::AppModelViewer::AppModelViewer() : AppBase(1373, 780, APP_NAME, false)
 
 	floor_md.my_textures.push_back(new Texture());
 	floor_md.my_textures.back()->min_filter = GL_LINEAR_MIPMAP_LINEAR;
-	floor_md.my_textures.back()->initFromFile("assets/floor/wood_floor_deck_diff_4k.jpg", true);
+	floor_md.my_textures.back()->initFromFile("assets/images/floor/wood_floor_deck_diff_4k.jpg", true);
 	floor_md.default_material->map_Flags |= Material::MF_BASE_COLOR;
 	floor_md.default_material->map_BaseColor = floor_md.my_textures.back();
 
 	floor_md.my_textures.push_back(new Texture());
 	floor_md.my_textures.back()->min_filter = GL_LINEAR_MIPMAP_LINEAR;
-	floor_md.my_textures.back()->initFromFile("assets/floor/wood_floor_deck_arm_4k.jpg");
+	floor_md.my_textures.back()->initFromFile("assets/images/floor/wood_floor_deck_arm_4k.jpg");
 	floor_md.default_material->map_Flags |= Material::MF_ARM;
 	floor_md.default_material->map_Roughness = floor_md.my_textures.back();
 
 	floor_md.my_textures.push_back(new Texture());
 	floor_md.my_textures.back()->min_filter = GL_LINEAR_MIPMAP_LINEAR;
-	floor_md.my_textures.back()->initFromFile("assets/floor/wood_floor_deck_nor_gl_4k.jpg");
+	floor_md.my_textures.back()->initFromFile("assets/images/floor/wood_floor_deck_nor_gl_4k.jpg");
 	floor_md.default_material->map_Flags |= Material::MF_NOR;
 	floor_md.default_material->map_Bump = floor_md.my_textures.back();
 
@@ -116,7 +116,7 @@ lim::AppModelViewer::AppModelViewer() : AppBase(1373, 780, APP_NAME, false)
 	
 
 
-	ib_light.setMap("assets/ibls/artist_workshop_4k.hdr");
+	ib_light.setMap("assets/images/ibls/artist_workshop_4k.hdr");
 
 	
 	AssetLib::get().default_material.prog = &program;

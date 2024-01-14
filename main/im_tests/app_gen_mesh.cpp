@@ -118,7 +118,7 @@ namespace lim
 		program = new Program();
 		program->name = "debugging";
 		program->home_dir = APP_DIR;
-		program->attatch("assets/shaders/mvp.vs").attatch("debug.fs").link();
+		program->attatch("shaders/mvp.vs").attatch("debug.fs").link();
 		AssetLib::get().default_material.prog = program;
 		AssetLib::get().default_material.set_prog = [this](const Program& prog) {
 			prog.setUniform("time", vs_t);

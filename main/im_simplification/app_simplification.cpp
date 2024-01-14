@@ -27,11 +27,11 @@ namespace lim
 
 		programs.emplace_back("Auto Normal");
 		programs.back().home_dir = APP_DIR;
-		programs.back().attatch("assets/shaders/mvp.vs").attatch("bumped.fs").link();
+		programs.back().attatch("shaders/mvp.vs").attatch("bumped.fs").link();
 
 		programs.emplace_back("Bitoper");
 		programs.back().home_dir = APP_DIR;
-		programs.back().attatch("assets/shaders/mvp.vs").attatch("bitoper.fs").link();
+		programs.back().attatch("shaders/mvp.vs").attatch("bitoper.fs").link();
 
 		programs.emplace_back("Shadowed");
 		programs.back().home_dir = APP_DIR;
