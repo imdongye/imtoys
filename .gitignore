@@ -14,11 +14,13 @@
 *private/
 *todo/
 *result/
+
 main/imgui.ini
 main/app_pref.json
-main/assets/
 
-main/exports/*
+main/assets/
+main/exports/
+
 !main/exports/imgui.ini
-main/imgui.ini
+
 main/im_shadertoy/temp/temp.fs

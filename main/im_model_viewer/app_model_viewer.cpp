@@ -23,7 +23,7 @@ namespace
 	struct BrdfTestInfo {
 		std::string ctrl_name = "##modelview";
 		bool is_rotate_md = false;
-		bool is_draw_floor = false;
+		bool is_draw_floor = true;
 		int idx_Brdf = 2;
 		int idx_D = 1;
 		int idx_G = 0;
@@ -85,6 +85,7 @@ lim::AppModelViewer::AppModelViewer() : AppBase(1373, 780, APP_NAME, false)
 
 	light.setRotate(35.f, -35.f, 7.f);
 	light.intensity = 55.f;
+	light.shadow_enabled = true;
 
 	floor_md.name = "floor";
 	floor_md.my_meshes.push_back(new MeshPlane(1));
@@ -139,7 +140,8 @@ void lim::AppModelViewer::addModelViewer(string path)
 
 	brdf_test_infos.push_back({});
 	brdf_test_infos.back().ctrl_name = md->name+" ctrl ##modelviewer";
-	brdf_test_infos.back().is_draw_floor = false;
+	brdf_test_infos.back().is_draw_floor = true;
+
 	brdf_test_infos.back().setup(*md);
 
 	md->my_materials.push_back(new Material());
@@ -153,6 +155,7 @@ void lim::AppModelViewer::addModelViewer(string path)
 	scn.lights.push_back(&light);
 	scn.addOwnModel(md);
 	scn.ib_light = &ib_light;
+	scn.models.push_back(&floor_md);
 	scenes.push_back(std::move(scn)); // vector move template error
 
 	char* vpName = fmtStrToBuf("%s##model_view", md->name.c_str());
@@ -209,11 +212,11 @@ void lim::AppModelViewer::renderImGui()
 	{
 		ImGui::Begin("common ctrl##model_viewer");
 		static float litTheta = 90.f-glm::degrees(glm::acos(glm::dot(glm::normalize(light.position), glm::normalize(vec3(light.position.x, 0, light.position.z)))));
-		const static float litThetaSpd = 70 * 0.001;
+		const static float litThetaSpd = 70 * 0.001f;
 		static float litPhi = 90.f-glm::degrees(glm::atan(light.position.x,-light.position.z));
-		const static float litPhiSpd = 360 * 0.001;
+		const static float litPhiSpd = 360 * 0.001f;
 		static float litDist = glm::length(light.position);
-		const static float litDistSpd = 45.f * 0.001;
+		const static float litDistSpd = 45.f * 0.001f;
 		static bool isLightDraged = false;
 
 		ImGui::Text("<light>");
@@ -312,7 +315,7 @@ void lim::AppModelViewer::renderImGui()
 		if(tInfo.idx_LitMod==1||tInfo.idx_LitMod==2) {
 			int nrSamples = tInfo.nr_ibl_w_samples*tInfo.nr_ibl_w_samples/2;
 			if( ImGui::SliderInt("ibl samples", &nrSamples, 1, 2500, "%d") ) {
-				tInfo.nr_ibl_w_samples = glm::sqrt(2*nrSamples);
+				tInfo.nr_ibl_w_samples = (int)glm::sqrt(2*nrSamples);
 				isInfoChanged = true; 
 			}
 			ImGui::Text("nr width samples (%dx%d)", tInfo.nr_ibl_w_samples, tInfo.nr_ibl_w_samples/2);
@@ -334,25 +337,25 @@ void lim::AppModelViewer::renderImGui()
 			md.default_material->set_prog = makeSetProg(tInfo);
 		}
 		if( tInfo.idx_Brdf<2 ) { // phong, blinn phong
-			if( ImGui::SliderFloat("shininess", &tInfo.shininess, 0.5, 300) ) {
+			if( ImGui::SliderFloat("shininess", &tInfo.shininess, 0.5f, 300) ) {
 				for(Material* mat : md.my_materials) {
 					mat->shininess = tInfo.shininess;
 				}
 			}
 		}
 		else { // cook-torrance
-			if( ImGui::SliderFloat("roughness", &tInfo.roughness, 0.015, 1) ) {
+			if( ImGui::SliderFloat("roughness", &tInfo.roughness, 0.015f, 1) ) {
 				for(Material* mat : md.my_materials) {
 					mat->roughness = tInfo.roughness;
 				}
 			}
-			if( ImGui::SliderFloat("metalness", &tInfo.metalness, 0.000, 1) ) {
+			if( ImGui::SliderFloat("metalness", &tInfo.metalness, 0.000f, 1) ) {
 				for(Material* mat : md.my_materials) {
 					mat->metalness = tInfo.metalness;
 				}
 			}
 		}
-		if( ImGui::SliderFloat("ambient light", &tInfo.ambientInt, 0.000, 0.05) ) {
+		if( ImGui::SliderFloat("ambient light", &tInfo.ambientInt, 0.000, 0.05f) ) {
 			for(Material* mat : md.my_materials) {
 				mat->ambientColor = glm::vec3(1)*tInfo.ambientInt;
 			}

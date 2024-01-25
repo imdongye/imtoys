@@ -110,25 +110,60 @@ vec2 rand(vec2 st, int i) {
     	fract(sin(dot(st+i*6.8233, vec2(39.8793, 83.2402))) * 22209.2896)
 	);
 }
-
-float shadowing()
+const int nrDisk = 4;
+const vec2 poissonDisk[4] = vec2[](
+  vec2( -0.94201624, -0.39906216 ),
+  vec2( 0.94558609, -0.76890725 ),
+  vec2( -0.094184101, -0.92938870 ),
+  vec2( 0.34495938, 0.29387760 )
+);
+float rand(int i) {
+    vec4 seed4 = gl_FragCoord.xyzx;
+    float dot_product = dot(seed4, vec4(12.9898, 78.233, 45.164, 94.673));
+    return fract(sin(float(i+123)*dot_product) * 43758.5453);
+}
+float PCF()
 {
+    const float hardness = 500.0;
 	const float bias = 0.001;
-	if(!shadow_Enabled)
-		return 1.f;
 
-	float shadowFactor = 1.0;
+	vec3 shadowClipPos = lPos.xyz/lPos.w;
+	vec3 shadowTexPos = (shadowClipPos+1)*0.5;
+	float depth = shadowTexPos.z;
+
+	float shadowFactor = 0.0;
+	float divFactor = 1.0/float(nrDisk);
+	for( int i=0; i<nrDisk; i++ ) {
+		float theta = rand(0) * PI * 2;
+		mat2 rotMat = mat2(cos(theta), sin(theta), -sin(theta), cos(theta));
+		vec2 sampleUv = rotMat * (poissonDisk[i]/hardness) + shadowTexPos.xy;
+		// vec2 sampleUv = (poissonDisk[i]/hardness) + shadowTexPos.xy;
+		float lightDepth = texture(map_Shadow, sampleUv).r;
+		if( lightDepth+bias > depth ) {
+			shadowFactor += divFactor;
+		}
+	}
+	return shadowFactor;
+}
+float DefaultShadowMap() {
+	const float bias = 0.001;
 
 	vec3 shadowClipPos = lPos.xyz/lPos.w;
 	vec3 shadowTexPos = (shadowClipPos+1)*0.5;
 	float depth = shadowTexPos.z;
 	float lightDepth = texture(map_Shadow, shadowTexPos.xy).r;
-	// return lightDepth;
 	if( lightDepth+bias > depth ) {
 		return 1.0;
 	}
 	return 0.0;
-	return shadowFactor;	
+}
+float shadowing()
+{
+	if(!shadow_Enabled)
+		return 1.f;
+
+	return PCF();
+	return DefaultShadowMap();
 }
 
 //*****************************************
