@@ -104,12 +104,7 @@ mat3 getTBN(vec3 N) {
     float invmax = inversesqrt( max( dot(T,T), dot(B,B) ) );
     return mat3( T * invmax, B * invmax, N );
 }
-vec2 rand(vec2 st, int i) {
-    return vec2( 
-		fract(sin(dot(st+i*4.1233, vec2(12.9898, 78.2336))) * 43758.5453),
-    	fract(sin(dot(st+i*6.8233, vec2(39.8793, 83.2402))) * 22209.2896)
-	);
-}
+
 const int nrDisk = 4;
 const vec2 poissonDisk[4] = vec2[](
   vec2( -0.94201624, -0.39906216 ),
@@ -118,7 +113,7 @@ const vec2 poissonDisk[4] = vec2[](
   vec2( 0.34495938, 0.29387760 )
 );
 float rand(int i) {
-    vec4 seed4 = gl_FragCoord.xyzx;
+    vec4 seed4 = gl_FragCoord.zxyx;
     float dot_product = dot(seed4, vec4(12.9898, 78.233, 45.164, 94.673));
     return fract(sin(float(i+123)*dot_product) * 43758.5453);
 }

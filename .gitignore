@@ -9,18 +9,23 @@
 # Mac
 .DS_Store
 
+# assets
+!main/assets/
+main/assets/*
+!main/assets/shaders/
+!main/assets/imgui.ini
+
 # etc
 *ignored/
 *private/
 *todo/
 *result/
-
-main/imgui.ini
-main/app_pref.json
-
-main/assets/
 main/exports/
 
-!main/exports/imgui.ini
+
+main/imgui.ini
+
+main/app_pref.json
+
 
 main/im_shadertoy/temp/temp.fs

@@ -38,7 +38,7 @@ namespace lim
 	{
 	public:
 		std::string name = "nonamed";
-		std::string home_dir = ".";
+		std::string home_dir = "./assets";
 
 	protected:
 		struct Shader {
