@@ -8,8 +8,10 @@
 
 * CPack
 
-* pcss, oit, volume lighing, xDoG, SSAO, NURBS, cascaded PCF, deferrd shading, edge detect(geometry shader), bloom, dethering(shadow), sssss, screen space anti aliasing, dof, edge shader, motion blur
+* pcss, oit, volume lighing, xDoG, SSAO, NURBS, cascaded PCF, deferrd shading, edge detect(geometry shader), bloom, dethering(shadow), sssss, screen space anti aliasing, dof, edge shader, motion blur, 애니메이션, cube shadow
 
-* scene editor
+* scene(gltf) editor
 
 * sdf modeler: mirror
+
+* 베이어패턴

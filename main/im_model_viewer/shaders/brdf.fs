@@ -117,7 +117,7 @@ float rand(int i) {
     float dot_product = dot(seed4, vec4(12.9898, 78.233, 45.164, 94.673));
     return fract(sin(float(i+123)*dot_product) * 43758.5453);
 }
-float PCF()
+float PCF(float diskRadius) // 0.002
 {
     const float hardness = 500.0;
 	const float bias = 0.001;
@@ -127,17 +127,33 @@ float PCF()
 	float depth = shadowTexPos.z;
 
 	float shadowFactor = 0.0;
-	float divFactor = 1.0/float(nrDisk);
-	for( int i=0; i<nrDisk; i++ ) {
-		float theta = rand(0) * PI * 2;
-		mat2 rotMat = mat2(cos(theta), sin(theta), -sin(theta), cos(theta));
-		vec2 sampleUv = rotMat * (poissonDisk[i]/hardness) + shadowTexPos.xy;
-		// vec2 sampleUv = (poissonDisk[i]/hardness) + shadowTexPos.xy;
-		float lightDepth = texture(map_Shadow, sampleUv).r;
+
+	// float divFactor = 1.0/float(nrDisk);
+	// for( int i=0; i<nrDisk; i++ ) {
+	// 	float theta = rand(0) * PI * 2;
+	// 	mat2 rotMat = mat2(cos(theta), sin(theta), -sin(theta), cos(theta));
+	// 	vec2 sampleUv = rotMat * (poissonDisk[i]/hardness) + shadowTexPos.xy;
+	// 	// vec2 sampleUv = (poissonDisk[i]/hardness) + shadowTexPos.xy;
+	// 	float lightDepth = texture(map_Shadow, sampleUv).r;
+	// 	if( lightDepth+bias > depth ) {
+	// 		shadowFactor += divFactor;
+	// 	}
+	// }
+	int nrSample = 10;
+	// From: https://www.shadertoy.com/view/4l3yRM
+	// Todo for O(1): https://www.shadertoy.com/view/XtlXDM
+	for( int i = 0; i < nrSample; i++ ){
+        float theta = 2.4 * float(i);
+        float r = sqrt(float(i) + 0.5) / sqrt(float(nrSample));
+        vec2 u = r * vec2(cos(theta), sin(theta));
+        vec2 sampleUv = shadowTexPos.xy + u * diskRadius;
+        float lightDepth = texture(map_Shadow, sampleUv).r;
 		if( lightDepth+bias > depth ) {
-			shadowFactor += divFactor;
+			shadowFactor += 1.0;;
 		}
-	}
+    }
+	shadowFactor /= float(nrSample);
+
 	return shadowFactor;
 }
 float DefaultShadowMap() {
@@ -157,7 +173,7 @@ float shadowing()
 	if(!shadow_Enabled)
 		return 1.f;
 
-	return PCF();
+	return PCF(0.002);
 	return DefaultShadowMap();
 }
 
