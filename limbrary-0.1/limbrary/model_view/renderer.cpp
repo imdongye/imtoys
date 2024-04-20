@@ -201,7 +201,10 @@ namespace
 
         prog.setUniform("shadow_Enabled", lit.shadow_enabled);
         if( lit.shadow_enabled ) {
-            prog.setUniform("shadow_VP", lit.shadow_vp_mat);
+            prog.setUniform("light_vp_Mat", lit.light_vp_mat);
+            prog.setUniform("light_z_Near", lit.light_z_near);
+            prog.setUniform("light_z_Far", lit.light_z_far);
+            prog.setUniform("light_radius_Uv", lit.light_radius_uv);
             prog.setTexture("map_Shadow", lit.map_Shadow.getRenderedTexId(), activeSlot++);
         }
         return activeSlot; // return next texture slot
@@ -290,8 +293,8 @@ namespace
 
             lit.map_Shadow.bind();
 
-            depthProg.setUniform("view_Mat", lit.shadow_view_mat);
-            depthProg.setUniform("proj_Mat", lit.shadow_proj_mat);
+            depthProg.setUniform("view_Mat", lit.light_view_mat);
+            depthProg.setUniform("proj_Mat", lit.light_proj_mat);
             
             for( const Model* pMd : mds ) {
                 depthProg.setUniform("model_Mat", pMd->model_mat);

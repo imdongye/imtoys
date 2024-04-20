@@ -1,4 +1,4 @@
-// shadow map view projection
+// shadow map and model view projection
 
 #version 410
 
@@ -9,12 +9,12 @@ layout(location=2) in vec2 aUv;
 out vec3 wPos;
 out vec3 wNor;
 out vec2 mUv;
-out vec4 lPos; // light unit space position for shadow
+out vec4 lPos; // light clip space position for shadow
 
 uniform mat4 model_Mat;
 uniform mat4 view_Mat;
 uniform mat4 proj_Mat;
-uniform mat4 shadow_VP = mat4(1);
+uniform mat4 light_vp_Mat = mat4(1);
 
 
 void main()
@@ -25,7 +25,7 @@ void main()
 	wNor = normalize(wNor);
 	mUv = aUv;
 
-	lPos = shadow_VP * vec4(wPos, 1.0);
+	lPos = light_vp_Mat * vec4(wPos, 1.0);
 
 	gl_Position = proj_Mat*view_Mat*vec4(wPos,1.f);
 }

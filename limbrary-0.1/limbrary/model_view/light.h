@@ -25,8 +25,8 @@ namespace lim
 	public:
 		// you need to find magic numbers
 		int shadow_map_size = 1024;
-		float shadow_z_near = 0.0f;
-		float shadow_z_far = 30.f;
+		float light_z_near = 0.0f;
+		float light_z_far = 30.f;
 		float ortho_width = 4;
 		float ortho_height = 8;
 
@@ -36,18 +36,20 @@ namespace lim
 		
 		glm::vec3 pivot = {0,0,0};
 		glm::vec3 position = {3.3f,5.7f,2.3f};
-		glm::mat4 model_mat;
+		glm::mat4 model_mat; // for visualize light position
 
 		FramebufferRbDepth map_Shadow;
-		glm::mat4 shadow_view_mat;
-		glm::mat4 shadow_proj_mat;
-		glm::mat4 shadow_vp_mat;
+		glm::mat4 light_view_mat;
+		glm::mat4 light_proj_mat;
+		glm::mat4 light_vp_mat;
+		glm::vec2 light_radius_uv = glm::vec2(10); // for pcss
+
 	public:
 		// theta=[0,180] up is origin
 		// pi=[0,360] clockwise 3pm origin 
 		// if radius<0 : maintain radius
 		void setRotate(float thetaDeg=30.f, float phiDeg = 30.f, float radius = -1.f);
-		void updateShadowVP();
+		void updateShadowVPwithPivot();
 	public:
 		Light();
 		Light(Light&& src) noexcept;

@@ -229,6 +229,7 @@ void lim::AppModelViewer::renderImGui()
 		ImGui::Text("pos: %.1f %.1f %.1f", light.position.x, light.position.y, light.position.z);
 		ImGui::SliderFloat("intencity", &light.intensity, 0.5f, 200.f, "%.1f");
 		ImGui::Checkbox("shadow enabled", &light.shadow_enabled);
+		ImGui::SliderFloat2("light radius", &light.light_radius_uv.x, 0.f, 10.f, "%.2f");
 
 		if( ImGui::Button("relead shader") ) {
 			program.reload(GL_FRAGMENT_SHADER);
