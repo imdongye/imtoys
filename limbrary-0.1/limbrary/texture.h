@@ -27,7 +27,7 @@ namespace lim
 		// modified by user
 		std::string name = "nonamed texture";
 		int width=0, height=0; // initFromFile을 사용하면 수정됨.
-		GLint internal_format = GL_RGB8; // GL_R8, GL_SRGB8_ALPHA8(internal gamma collection)
+		GLint internal_format = GL_RGB8; // GL_R8, GL_SRGB8_ALPHA8(internal gamma collection), GL_DEPTH_COMPONENT32F
 		GLint mag_filter = GL_LINEAR;
 		GLint min_filter = GL_LINEAR_MIPMAP_LINEAR; // GL_NEAREST, LINEAR, *_MIPMAP_*
 		glm::vec4 border_color = glm::vec4(0);

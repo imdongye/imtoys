@@ -159,14 +159,38 @@ namespace lim
 		FramebufferMs(int samples = 4, int nrChannels = 3, int bitPerChannel = 8);
 		~FramebufferMs();
 
-		virtual GLuint getRenderedTexId() const final;
+	virtual GLuint getRenderedTexId() const final;
+protected:
+	virtual void myInitGL() final;
+	virtual void myDeinitGL() final;
+	virtual void myBind() const final;
+	virtual void myUnbind() const final;
+private:
+	FramebufferMs(const FramebufferMs&) = delete;
+	FramebufferMs& operator=(const FramebufferMs&) = delete;
+};
 
-	protected:
-		virtual void myInitGL() final;
-		virtual void myDeinitGL() final;
-		virtual void myBind() const final;
-		virtual void myUnbind() const final;
-	};
+class FramebufferOnlyDepth: public IFramebuffer
+{
+public:
+	Texture depth_tex;
+public:
+	FramebufferOnlyDepth();
+	FramebufferOnlyDepth(FramebufferOnlyDepth&& src) noexcept;
+	FramebufferOnlyDepth& operator=(FramebufferOnlyDepth&& src) noexcept;
+	~FramebufferOnlyDepth() noexcept;
+
+	virtual GLuint getRenderedTexId() const final;
+
+protected:
+	virtual void myInitGL() final;
+	virtual void myDeinitGL() final;
+	virtual void myBind() const final;
+	virtual void myUnbind() const final;
+private:
+	FramebufferOnlyDepth(const FramebufferOnlyDepth&) = delete;
+	FramebufferOnlyDepth& operator=(const FramebufferOnlyDepth&) = delete;
+};
 }
 
 #endif

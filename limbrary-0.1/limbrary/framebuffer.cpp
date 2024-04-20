@@ -283,3 +283,67 @@ void FramebufferMs::myUnbind() const
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 }
 
+float* FramebufferNoDepth::makeFloatPixelsBuf() const {
+	float* buf = new float[ width * height * color_tex.nr_channels ];
+	GLuint format = color_tex.src_format;
+	GLint readFbo;// backup
+	glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &readFbo);
+
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
+	glReadPixels(0,0,width, height, format, GL_FLOAT, buf);
+
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, readFbo);
+	return buf;
+}
+
+
+FramebufferOnlyDepth::FramebufferOnlyDepth() {
+	depth_tex.internal_format = GL_DEPTH_COMPONENT32F;
+	depth_tex.nr_channels = 1;
+	depth_tex.src_chanel_type = GL_FLOAT;
+	depth_tex.src_format = GL_DEPTH_COMPONENT;
+	depth_tex.bit_per_channel = 32;
+}
+FramebufferOnlyDepth::FramebufferOnlyDepth(FramebufferOnlyDepth&& src) noexcept
+	: IFramebuffer(std::move(src)) {
+	depth_tex = std::move(src.depth_tex);
+}
+FramebufferOnlyDepth& FramebufferOnlyDepth::operator=(FramebufferOnlyDepth&& src) noexcept
+{
+	if( this!=&src ) {
+		IFramebuffer::operator=(std::move(src));
+
+		depth_tex = std::move(src.depth_tex);
+	}
+	return *this;
+}
+FramebufferOnlyDepth::~FramebufferOnlyDepth() noexcept
+{
+	deinitGL();
+}
+/* override albe */
+GLuint FramebufferOnlyDepth::getRenderedTexId() const
+{
+	return depth_tex.tex_id;
+}
+void FramebufferOnlyDepth::myInitGL() 
+{
+	depth_tex.width = width;
+	depth_tex.height = height;
+	depth_tex.initGL();
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_tex.tex_id, 0);
+	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
+}
+void FramebufferOnlyDepth::myDeinitGL() 
+{
+	depth_tex.deinitGL();
+}
+void FramebufferOnlyDepth::myBind() const
+{
+	glEnable(GL_DEPTH_TEST);
+	glClear(GL_DEPTH_BUFFER_BIT);
+}
+void FramebufferOnlyDepth::myUnbind() const
+{
+}
