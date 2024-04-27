@@ -32,7 +32,9 @@ namespace lim
 		std::vector<std::string> recent_model_paths;
 	private:
 		AppPrefs(const AppPrefs&)=delete;
+		AppPrefs(AppPrefs&&)=delete;
 		AppPrefs& operator=(const AppPrefs&)=delete;
+		AppPrefs& operator=(AppPrefs&&)=delete;
 		AppPrefs();
 		~AppPrefs();
 		inline static AppPrefs* instance = nullptr;

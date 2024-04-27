@@ -88,9 +88,8 @@ namespace lim
 		bool prev_is_left = false;
 	public:
 		CameraController();
-		CameraController(CameraController&& src) noexcept;
-		CameraController& operator=(CameraController&& src) noexcept;
-		virtual ~CameraController() noexcept;
+		virtual ~CameraController();
+
 		void setViewMode(VIEWING_MODE vm);
 		VIEWING_MODE getViewMode();
 
@@ -101,6 +100,7 @@ namespace lim
 		void updateScrollMode();
 	};
 
+
 	class CameraManWin : public CameraController
 	{
 	private:
@@ -110,14 +110,13 @@ namespace lim
 		CameraManWin& operator=(const CameraManWin&) = delete;
 	public:
 		CameraManWin();
-		CameraManWin(CameraManWin&& src) noexcept;
-		CameraManWin& operator=(CameraManWin&& src) noexcept;
-		virtual ~CameraManWin() noexcept;
+		virtual ~CameraManWin();
 	private:
 		void initCallbacks();
 		void deinitCallbacks();
 	};
 	
+
 	class CameraManVp : public CameraController
 	{
 	private:
@@ -127,15 +126,12 @@ namespace lim
 		CameraManVp& operator=(const CameraManVp&) = delete;
 	public:
 		CameraManVp(Viewport* vp=nullptr);
-		CameraManVp(CameraManVp&& src) noexcept;
-		CameraManVp& operator=(CameraManVp&& src) noexcept;
-		virtual ~CameraManVp() noexcept;
+		virtual ~CameraManVp();
 	public:
 		void initCallbacks(Viewport* vp);
 		void deinitCallbacks();
 		void copySettingTo(CameraManVp& dst);
 	};
-
 
 
 	class ViewportWithCamera : public Viewport
@@ -147,9 +143,7 @@ namespace lim
 		ViewportWithCamera& operator=(const ViewportWithCamera&) = delete;
 	public:
 		ViewportWithCamera(std::string_view _name, IFramebuffer* createdFB);
-		ViewportWithCamera(ViewportWithCamera&& src) noexcept;
-		ViewportWithCamera& operator=(ViewportWithCamera&& src) noexcept;
-		virtual ~ViewportWithCamera() noexcept;
+		virtual ~ViewportWithCamera();
 	};
 }
 

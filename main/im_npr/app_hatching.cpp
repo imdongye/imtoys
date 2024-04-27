@@ -116,8 +116,7 @@ namespace lim
 	
 		models.push_back( {} );
 		models.back().name = "sphere";
-		models.back().root.addMeshWithMat(&AssetLib::get().sphere);
-		models.back().default_material = &h_mat;
+		models.back().root.meshs_mats.push_back({&AssetLib::get().sphere, &h_mat});
 		models.back().updateUnitScaleAndPivot();
 
 		models.push_back({});
@@ -141,7 +140,7 @@ namespace lim
 		light.setRotate(30.f, 30.f, 10.f);
 		light_model.name = "light";
 		light_model.my_meshes.push_back(new MeshSphere(8, 4));
-		light_model.root.addMeshWithMat(light_model.my_meshes.back()); // delete sphere when delete model!
+		light_model.root.meshs_mats.push_back({&AssetLib::get().sphere, nullptr}); // delete sphere when delete model!
 		light_model.position = light.position;
 		light_model.scale = glm::vec3(0.3f);
 		light_model.updateModelMat();
@@ -149,7 +148,7 @@ namespace lim
 		const std::string basename = "assets/images/TAM/default.bmp";
 		for( int tone=0; tone<nr_tones; tone++ ) {
 			std::string filename = basename;
-			filename.insert(filename.rfind('.'), 1, '0'+tone);
+			filename.insert(filename.rfind('.'), 1, '0'+(char)tone);
 			tam.push_back(new ArtMap(filename, 0));
 		}
 

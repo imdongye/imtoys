@@ -344,7 +344,7 @@ void exportMesh(std::string_view dir, std::string_view modelName,  int sampleRat
     lim::Model model;
     model.name = modelName;
     model.my_meshes.push_back(new lim::Mesh());
-    model.root.addMeshWithMat(model.my_meshes.back());
+    model.root.meshs_mats.push_back({model.my_meshes.back(), nullptr});
     lim::Mesh& mesh = *model.my_meshes.back();
 
     vec3 volumeMin = {-5, -5, -5};

@@ -32,6 +32,14 @@ namespace lim
         Texture3d map_PreFilteredEnv;
         bool is_map_baked = false;
     public:
+        IBLight(const IBLight&)	           = delete;
+		IBLight(IBLight&&)			       = delete;
+		IBLight& operator=(const IBLight&) = delete;
+		IBLight& operator=(IBLight&&)      = delete;
+
+        IBLight()          = default;
+        virtual ~IBLight() = default;
+
         bool setMap(const char* path);
         void bakeMap();
         void deinitGL();
@@ -39,13 +47,7 @@ namespace lim
         GLuint getTexIdIrradiance() const;
         GLuint getTexIdPreFilteredEnv() const;
         GLuint getTexIdPreFilteredBRDF() const;
-        IBLight() = default;
-        ~IBLight() noexcept = default;
-        IBLight(IBLight&& src) noexcept;
-		IBLight& operator=(IBLight&& src) noexcept;
-    private:
-        IBLight(const IBLight&) = delete;
-		IBLight& operator=(const IBLight&) = delete;
+
     };
 
 	class Scene
@@ -62,14 +64,15 @@ namespace lim
         void addLight(Light* lit);
         void addOwnModel(Model* md);
         void addOwnLight(Light* lit);
-  	private:
-		Scene(const Scene&) = delete;
-		Scene& operator=(const Scene&) = delete;
 	public:
-		Scene();
-		Scene(Scene&& src) noexcept;
-		Scene& operator=(Scene&& src) noexcept;
-        ~Scene() noexcept;
+		Scene(const Scene&)	           = delete;
+		Scene(Scene&&)			       = delete;
+		Scene& operator=(const Scene&) = delete;
+		Scene& operator=(Scene&&)      = delete;
+
+        Scene() = default;
+        virtual ~Scene();
+
         void releaseData();
 	};
 

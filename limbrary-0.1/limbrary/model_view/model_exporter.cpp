@@ -8,7 +8,9 @@ edit from : https://github.com/assimp/assimp/issues/203
 
 
 */
+#include <algorithm>
 #include <limbrary/model_view/model.h>
+#include <limbrary/asset_lib.h>
 #include <limbrary/log.h>
 #include <limbrary/utils.h>
 #include <assimp/cexport.h>
@@ -225,18 +227,17 @@ namespace
 		return aiMs;
 	}
 
-	std::vector<std::pair<const Mesh*, const Material*>> _index_cache; // Todo: 임시
+	std::vector<std::pair<const Mesh*, const Material*>> g_meshs_mats_cache; // Todo: 임시
 	aiNode* recursiveConvertTree(const Model::Node& src)
 	{
 		aiNode* node = new aiNode();
-		node->mTransformation = toAi(src.transform);
+		node->mTransformation = toAi(src.transform.mat);
 
-		const int nrMeshes = src.getNrMesh();
+		const int nrMeshes = src.meshs_mats.size();
 		node->mNumMeshes = nrMeshes;
 		node->mMeshes = new unsigned int[nrMeshes];
 		for( int i=0; i<nrMeshes; i++ ) {
-			auto [ms, mat] = src.getMeshWithMat(i);
-			node->mMeshes[i] = findIdx(_index_cache, std::make_pair(ms, mat));
+			node->mMeshes[i] = findIdx(g_meshs_mats_cache, src.meshs_mats[i]);
 		}
 
 		const size_t nrChilds = src.childs.size();
@@ -251,21 +252,11 @@ namespace
 	std::vector<const Material*> findMatsOfMesh(const Mesh* pMesh, const Model::Node& root) 
 	{
 		std::vector<const Material*> rst;
-		std::stack<const Model::Node*> nodeStack;
-        nodeStack.push( &root );
-		while(nodeStack.size()>0) {
-			const Model::Node& node = *nodeStack.top();
-			nodeStack.pop();
-			for(int i=0; i<node.getNrMesh(); i++) {
-				auto [ms, mat] = node.getMeshWithMat(i);
-				if(pMesh==ms) {
-					rst.push_back(mat);
-				}
+		root.treversal([&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
+			if(pMesh==ms) {
+				rst.push_back(mat);
 			}
-			for(const Model::Node& child: node.childs) {
-				nodeStack.push(&child);
-			}
-		}
+		});
 		return rst;
 	}
 
@@ -275,48 +266,44 @@ namespace
 
 		scene->mFlags = md.ai_backup_flags;
 
-		// assimp에서는 mesh안에 material index가 포함되어있어서
-		// 사용하는 material마다 같은 mesh를 생성해야한다.
-		// limbrary의 render tree에서 material의 null값을 허용하기때문에 null이 있을경우
-		// my_material마지막에 default_material을 넣어주고 indexing해서 assimp scene을 업데이트한다.
+		// assimp에서는 mesh안에 material index가 포함되어있다.
+		// 하지만 limbrary는 mesh와 material이 독립적이고 node에서 연결시켜주기때문에
+		// mesh는 같지만 material이 다른경우 assimp에서는 mesh를 각각 만들어줘야한다.
+		// 또한 연결된 material이 null인 경우 머테리얼을 사용하는것도 고려해야한다.
+		// my_material 마지막에 default_material을 넣어주고 indexing해서 assimp scene을 업데이트한다.
 		// export후 default material은 다시 빼주어야한다.
-		bool isUseDefaultMat = false;
 		GLuint nrAiMeshes = 0;
-		_index_cache.clear();
-		for( Mesh* ms: md.my_meshes ) {
-			std::vector<const Material*> mats = findMatsOfMesh(ms, md.root);
-			for( const Material* mat : mats ) {
-				if(mat==nullptr) {
-					isUseDefaultMat = true;
-				}
-				_index_cache.push_back(std::make_pair(ms, mat));
+		g_meshs_mats_cache.clear();
+		const Material* defaultMat = &AssetLib::get().default_material;
+		const Material* prevMat = defaultMat;
+		md.root.treversal([&](const Mesh* ms, const Material* mat, const glm::mat4& _) {
+			if( mat!=nullptr ) {
+				prevMat = mat;
+			}
+			auto pair = std::make_pair(ms, prevMat);
+			if( std::find(g_meshs_mats_cache.begin(), g_meshs_mats_cache.end(), pair) == g_meshs_mats_cache.end() ) {
+				g_meshs_mats_cache.push_back(pair);
 				nrAiMeshes++;
 			}
-		}
+		});
 		
-		const GLuint nrMats = md.my_materials.size();
-		if(isUseDefaultMat) {
-			scene->mNumMaterials = nrMats+1;
-			scene->mMaterials = new aiMaterial*[nrMats+1];
-			scene->mMaterials[nrMats] = convertMaterial(*md.default_material);
-		}
-		else {
-			scene->mNumMaterials = nrMats;
-			scene->mMaterials = new aiMaterial*[nrMats];
-		}
+		const GLuint nrMats = md.my_materials.size()+1;
+		scene->mNumMaterials = nrMats;
+		scene->mMaterials = new aiMaterial*[nrMats];
 		for( int i = 0; i<nrMats; i++ ) {
 			scene->mMaterials[i] = convertMaterial(*md.my_materials[i]);
 		}
+		scene->mMaterials[nrMats] = convertMaterial(*defaultMat);
 
 
 		scene->mNumMeshes = nrAiMeshes;
 		scene->mMeshes = new aiMesh*[nrAiMeshes];
 		for(int i=0; i<nrAiMeshes; i++) {
-			auto [ms, mat] = _index_cache[i];
+			auto [ms, mat] = g_meshs_mats_cache[i];
 			scene->mMeshes[i] = convertMesh(*ms, mat);
 		}
 		scene->mRootNode = recursiveConvertTree(md.root);
-		_index_cache.clear();
+		g_meshs_mats_cache.clear();
 		
 		
 		return scene;

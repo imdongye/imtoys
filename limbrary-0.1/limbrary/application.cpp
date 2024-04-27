@@ -308,8 +308,6 @@ namespace lim
 			glFinish();
 
 			glfwSwapBuffers(window);
-			for( auto& cb : loop_end_hooks ) 
-				cb(delta_time);
 		}
 	}
 }

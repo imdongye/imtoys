@@ -1,78 +1,109 @@
-//
-//  2022-09-05 / im dong ye
-// 
-//	position에서 vec3(0)(중앙바닥)을 바라보는 direction light
-// 
-//	point light를 만든다면
-//  draw 함수포인터에서 light의 위치를 받아서 모델자신을 바라보는 view_Mat을 계산해서 적용해줘야하나?
-//	그럼 이때 알맞은 fov는 뭐지?
-//
-//	only one light
-//
+/*
+	2024-04-24 / im dong ye
+
+
+*/
 #include <limbrary/model_view/light.h>
+#include <limbrary/asset_lib.h>
 #include <glm/gtx/transform.hpp>
 
 using namespace glm;
+using namespace lim;
 
-
-lim::Light::Light(): map_Shadow(3,32)
+ILight::ILight(enum LightType lt) : light_type((int)lt)
 {
-	map_Shadow.clear_color = glm::vec4(1);
-	map_Shadow.color_tex.s_wrap_param = GL_CLAMP_TO_BORDER; 
-	map_Shadow.color_tex.t_wrap_param = GL_CLAMP_TO_BORDER; 
-	map_Shadow.color_tex.border_color = glm::vec4(1.f); 
-	map_Shadow.resize(shadow_map_size, shadow_map_size);
+	tf.rot = {35.f, -35.f};
+	tf.distance = 7.f;
+	tf.updatePosDir();
+}
 
-	// fov 1.0은 60도 정도 2에서 1~-1사이의 중앙모델만 그린다고 가정하면 far을 엄청 멀리까지 안잡아도되고
-	// depth의 4바이트 깊이를 많이 사용할수있다.
-	// proj_mat = glm::perspective(1.f, 1.f, light_z_near, light_z_far);
+
+
+LightDirectional::Shadow::Shadow(const TransformPivoted* _tf, const glm::vec2* lightRadiusUv) 
+	: map(3, 32), tf(_tf), radius_wuv(lightRadiusUv)
+{
+	map.clear_color = glm::vec4(1);
+	map.color_tex.s_wrap_param = GL_CLAMP_TO_BORDER; 
+	map.color_tex.t_wrap_param = GL_CLAMP_TO_BORDER; 
+	map.color_tex.border_color = glm::vec4(1.f); 
+	map.resize(map_size, map_size);
 
 	const float halfW = ortho_width*0.5f;
 	const float halfH = ortho_height*0.5f;
-	light_proj_mat = glm::ortho(-halfW, halfW, -halfH, halfH, light_z_near, light_z_far);
-	updateShadowVPwithPivot();
+	proj_mat = glm::ortho(-halfW, halfW, -halfH, halfH, z_near, z_far);
+	updateVP();
+	updateRadiusTexSpaceUv();
 }
-lim::Light::Light(Light&& src) noexcept
-{
-	*this = std::move(src);
+void LightDirectional::Shadow::updateVP() {
+	view_mat = lookAt(vec3(tf->position), tf->pivot, {0,1,0});
+	vp_mat = proj_mat * view_mat;
 }
-lim::Light& lim::Light::operator=(lim::Light&& src) noexcept
+void LightDirectional::Shadow::updateRadiusTexSpaceUv() {
+	const float coef = 1.f/200.f;
+	radius_tuv = coef * (*radius_wuv) / glm::vec2(ortho_width, ortho_height);
+}
+
+
+
+
+LightDirectional::LightDirectional() : ILight(ILight::LT_DIRECTIONAL)
 {
-	if( this!=&src ) {
-		map_Shadow = std::move(src.map_Shadow);
-		shadow_map_size = src.shadow_map_size;
-		light_z_near = src.light_z_near;
-		light_z_far = src.light_z_far;
-		ortho_width = src.ortho_width;
-		ortho_height = src.ortho_height;
-		shadow_enabled = src.shadow_enabled;
-		color = src.color;
-		intensity = src.intensity;
-		pivot = src.pivot;
-		position = src.position;
-		light_view_mat = src.light_view_mat;
-		light_proj_mat = src.light_proj_mat;
+}
+LightDirectional::~LightDirectional()
+{
+	if(shadow) {
+		delete shadow;
+		shadow = nullptr;
 	}
-	return *this;
 }
-lim::Light::~Light() noexcept
+void LightDirectional::setShadowEnabled(bool enabled) {
+	if( shadow == nullptr ) {
+		shadow = new Shadow(&tf, &shadow_radius_uv);
+	}
+	shadow->enabled = enabled;
+}
+
+void LightDirectional::bakeShadowMap(const std::vector<const Model*>& mds) 
 {
+	if(!shadow || !shadow->enabled)
+		return;
+	const Program& depthProg = AssetLib::get().depth_prog;
+
+	shadow->map.bind();
+	depthProg.setUniform("view_Mat", shadow->view_mat);
+	depthProg.setUniform("proj_Mat", shadow->proj_mat);
+            
+	for( const Model* pMd : mds ) {
+		pMd->root.treversal([&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
+			depthProg.setUniform("model_Mat", transform);
+			ms->drawGL();
+		});
+	}
+
+	shadow->map.unbind();
+
+	glBindTexture(GL_TEXTURE_2D, shadow->map.getRenderedTexId());
+	glGenerateMipmap(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, 0);
 }
-void lim::Light::setRotate(float thetaDeg, float phiDeg, float radius)
+
+void LightDirectional::setUniformTo(const Program& prog) 
 {
-	vec3 diff = position-pivot;
-	float distance = (radius<0)?length(diff):radius;
+	prog.setUniform("light_Type", light_type);
+	prog.setUniform("light_Dir", tf.direction);
+	prog.setUniform("light_Color", color);
+	prog.setUniform("light_Int", intensity);
 
-	vec4 toLit = {0,1,0,0};
-	toLit = rotate(radians(thetaDeg), vec3{0,0,-1}) * toLit;
-	toLit = rotate(radians(phiDeg), vec3{0,1,0}) * toLit;
+	if( shadow == nullptr || !shadow->enabled ) {
+		prog.setUniform("shadow_Enabled", false);
+	}
+	else {
+		prog.setUniform("shadow_vp_Mat", shadow->vp_mat);
 
-	position = pivot+distance*vec3(toLit);
-	model_mat = glm::translate(position);
-	updateShadowVPwithPivot();
-}
-
-void lim::Light::updateShadowVPwithPivot() {
-	light_view_mat = lookAt(vec3(position), pivot, {0,1,0});
-	light_vp_mat = light_proj_mat * light_view_mat;
+		prog.setUniform("shadow_Enabled", true);
+		prog.setUniform("shadow_z_Near", shadow->z_near);
+		prog.setUniform("shadow_z_Far", shadow->z_far);
+		prog.setUniform("shadow_radius_Uv", shadow->radius_tuv );
+		prog.setTexture("map_Shadow", shadow->map.getRenderedTexId());
+	}
 }

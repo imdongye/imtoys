@@ -130,6 +130,7 @@
         "xutility": "cpp",
         "memory_resource": "cpp",
         "xstddef": "cpp",
-        "__verbose_abort": "cpp"
+        "__verbose_abort": "cpp",
+        "codecvt": "cpp"
     },
 }

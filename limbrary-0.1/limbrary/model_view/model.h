@@ -4,9 +4,11 @@
 edit learnopengl code
 
 Note:
-default_mat을 수정한다면 program 과 set_prog는 반드시 지정해줘야함.
+Model은 실제 Mesh데이터, Material(Texture) 데이터와 root node를 소유하는 객체이다.
+Node는 Model의 데이터(또는 공용 asset)를 참조하는 객체이고 트리구조를 만들고 mesh가 사용하는 material을 명시한다.
+Material은 Model의 texture데이터를 참조한다.
+Model을 normalize하면 root 노드의 Transform에 크기와 위치를 노멀라이즈하는 변환행렬이 들어가고 메쉬와 변환은 그 다음 노드부터 시작된다.
 
-Transform 하이라키 구조는 굳이 필요하지 않고 Model 의 RenderTree 를 사용해도된다.
 
 TODO list:
 1. Transfrom.h
@@ -35,50 +37,37 @@ TODO list:
 namespace lim
 {
 	// clone able
-	class Model : public Transform
+	class Model
 	{
 	public:
 		struct Node
 		{
-		private:
-			int nr_meshes=0;
-			std::vector<const Mesh*> meshes;
-			std::vector<const Material*> mats;
 		public:
+			Transform transform;
 			// if mat is null then mesh rendered with past material
-			void addMeshWithMat(const Mesh* ms, const Material* mat = nullptr) {
-				meshes.push_back(ms);
-				mats.push_back(mat);
-				nr_meshes++;
-			}
-			std::pair<const Mesh*, const Material*> getMeshWithMat(int idx) const {
-				return std::make_pair(meshes[idx], mats[idx]);
-			}
-			int getNrMesh() const {
-				return nr_meshes;
-			}
-			void treversal(std::function<void(const Mesh* ms, const Material* mat)> callback) const {
-				for( int i=0; i<nr_meshes; i++ ) {
-					callback(meshes[i], mats[i]);
+			std::vector<std::pair<const Mesh*, const Material*>> meshs_mats;
+			std::vector<Node> childs;
+
+			void treversal(std::function<void(const Mesh* ms, const Material* mat, const glm::mat4& transform)> callback
+				, const glm::mat4& topTransform = glm::mat4(1) ) const 
+			{
+				glm::mat4 curTransform = transform.mat * topTransform;
+				for( const auto& meshmat : meshs_mats ) {
+					callback(meshmat.first, meshmat.second, curTransform);
 				}
 				for( const Model::Node& child : childs ) {
-					child.treversal(callback);
+					child.treversal(callback, curTransform);
 				}
 			}
-			std::vector<Node> childs;
-			glm::mat4 transform = glm::mat4(1);
 		};
+
 	public:
 		std::string name = "nonamed model";
 		std::string path = "nodir";
 
-		/* transformation */
-		Transform normalize_term;
-		glm::mat4 model_mat;
-
-		/* render data */
 		Node root;
-		Material* default_material;
+		Transform* tf_normalize = nullptr;
+		Transform* tf = nullptr;
 		
 		/* delete when model deleted */
 		std::vector<Material*> my_materials;
@@ -93,24 +82,24 @@ namespace lim
 		glm::vec3 boundary_max = glm::vec3(std::numeric_limits<float>::min());
 		float pivoted_scaled_bottom_height = 0;
 		GLuint ai_backup_flags = 0;
+
 	public:
-		void updateModelMat();
-		void updateUnitScaleAndPivot();
+		Model(Model&&)			       = delete;
+		Model& operator=(const Model&) = delete;
+		Model& operator=(Model&&)      = delete;
+
+		Model(std::string_view name="nonamed");
+		Model(const Model& src, bool makeRef=false);
+		virtual ~Model();
+
 		void updateNrAndBoundary();
+		void updateUnitScaleAndPivot();
 
 		bool importFromFile(std::string_view modelPath, bool unitScaleAndPivot = false, bool withMaterial = true);
 		// render tree에서 사용하는 mesh와 material은 모두 my_에 포함되어있어야 export가능.
 		bool exportToFile(size_t pIndex, std::string_view exportDir); // dir without last slash
 
 		void releaseResource();
-	public:
-		Model(std::string_view name="nonamed");
-		Model(const Model& src, bool makeRef=false);
-		Model(Model&& src) noexcept;
-		Model& operator=(Model&& src) noexcept;
-		~Model() noexcept;
-	private:
-		Model& operator=(const Model&) = delete;
 	};
 }
 #endif

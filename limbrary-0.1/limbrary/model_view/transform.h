@@ -16,25 +16,23 @@ parent는 계층관계나 pivot으로 쓴다.
 
 namespace lim 
 {
-    class Transform
+    struct Transform
     {
-    public:
         glm::vec3 position = glm::vec3(0);
 		glm::quat orientation = glm::quat(1,0,0,0);
 		glm::vec3 scale = glm::vec3(1);
-        // translateMat * rotateMat * scaleMat
-        glm::mat4 transform = glm::mat4(1);
-    public:
-        void updateTransform() {
-            transform = glm::translate(position) 
-                        * glm::toMat4(orientation) 
-                        * glm::scale(scale);
-        }
-        Transform() = default;
-        Transform(const Transform& copy) = default;
-        Transform(Transform&& move) = default;
-        Transform& operator=(const Transform& copy) = default;
-        Transform& operator=(Transform&& move) = default;
+        glm::mat4 mat = glm::mat4(1);
+        
+        void update();
+    };
+    struct TransformPivoted : public Transform
+    {
+        glm::vec3 pivot = glm::vec3(0);
+        glm::vec2 rot = glm::vec2(0); // degree
+        float distance = 0;
+        glm::vec3 direction;
+        void updatePosDir();
+        void updateOrientation();
     };
 }
 

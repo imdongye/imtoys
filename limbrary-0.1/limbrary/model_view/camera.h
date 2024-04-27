@@ -41,11 +41,14 @@ namespace lim
 		glm::mat4 view_mat;
 		glm::mat4 proj_mat;
 	public:
+		Camera(const Camera&)	         = delete;
+		Camera(Camera&&)			     = delete;
+		Camera& operator=(const Camera&) = delete;
+		Camera& operator=(Camera&&)      = delete;
+
 		Camera();
-		Camera(Camera&& src) noexcept;
-		Camera& operator=(Camera&& src) noexcept;
-		virtual ~Camera() noexcept;
-	public:
+		virtual ~Camera();
+		
 		void moveShift(const glm::vec3& off);
 		// with pos and pivot
 		void updateViewMat();

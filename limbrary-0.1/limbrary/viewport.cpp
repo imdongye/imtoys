@@ -15,35 +15,7 @@ namespace lim
 		framebuffer = createdFB;
 		framebuffer->resize(256, 256); // default size
 	}
-	Viewport::Viewport(Viewport&& src) noexcept
-	{
-		*this = std::move(src);
-	}
-	Viewport& Viewport::operator=(Viewport&& src) noexcept
-	{
-		if(this != &src) {
-			name 			 = std::move(src.name);
-			window_mode 	 = src.window_mode;
-			is_opened	 = src.is_opened;
-			is_hovered 		 = src.is_hovered;
-			is_focused 		 = src.is_focused;
-			is_dragged 		 = src.is_dragged;
-			mouse_pos 		 = src.mouse_pos;
-			mouse_uv_pos     = src.mouse_uv_pos;
-			is_scrolled = src.is_scrolled;
-			scroll_off  = src.scroll_off;
-
-			resize_callbacks = std::move(src.resize_callbacks);
-			update_callbacks = std::move(src.update_callbacks);
-
-			if( framebuffer )
-				delete framebuffer;
-			framebuffer = src.framebuffer;
-			src.framebuffer = nullptr;
-		}
-		return *this; 
-	}
-	Viewport::~Viewport() noexcept
+	Viewport::~Viewport()
 	{
 		if( framebuffer )
 			delete framebuffer;

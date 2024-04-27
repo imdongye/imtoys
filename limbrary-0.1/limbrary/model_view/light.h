@@ -16,48 +16,94 @@ shadow사용할때 flustum크기 시야와 오브젝트 고려해서 잘 조절�
 
 #include "../framebuffer.h"
 #include <glm/glm.hpp>
+#include "../program.h"
+#include "model.h"
 
 
 namespace lim
 {
-	class Light
+	class ILight
 	{
 	public:
-		// you need to find magic numbers
-		int shadow_map_size = 1024;
-		float light_z_near = 0.0f;
-		float light_z_far = 30.f;
-		float ortho_width = 4;
-		float ortho_height = 8;
+		enum LightType {
+			LT_DIRECTIONAL,
+			LT_POINT,
+			LT_SPOT,
+		};
+		int light_type;
 
-		bool shadow_enabled = false;
+		TransformPivoted tf;
 		glm::vec3 color = {1,1,1};
 		float intensity = 120.f;
-		
-		glm::vec3 pivot = {0,0,0};
-		glm::vec3 position = {3.3f,5.7f,2.3f};
-		glm::mat4 model_mat; // for visualize light position
 
-		FramebufferRbDepth map_Shadow;
-		glm::mat4 light_view_mat;
-		glm::mat4 light_proj_mat;
-		glm::mat4 light_vp_mat;
-		glm::vec2 light_radius_uv = glm::vec2(10); // for pcss
+	protected:
+		ILight(const ILight&)	         = delete;
+		ILight(ILight&&)			     = delete;
+		ILight& operator=(const ILight&) = delete;
+		ILight& operator=(ILight&&)      = delete;
+
+		ILight(enum LightType lt);
+		virtual ~ILight() = default;
 
 	public:
-		// theta=[0,180] up is origin
-		// pi=[0,360] clockwise 3pm origin 
-		// if radius<0 : maintain radius
-		void setRotate(float thetaDeg=30.f, float phiDeg = 30.f, float radius = -1.f);
-		void updateShadowVPwithPivot();
-	public:
-		Light();
-		Light(Light&& src) noexcept;
-		Light& operator=(Light&& src) noexcept;
-		~Light() noexcept;
-	private:
-		Light(const Light&) = delete;
-		Light& operator=(const Light&) = delete;
+		virtual void setShadowEnabled(bool enabled) = 0;
+		virtual void bakeShadowMap(const std::vector<const Model*>& mds) = 0;
+		virtual void setUniformTo(const Program& prog) = 0;
 	};
+
+
+
+
+	class LightDirectional : public ILight
+	{
+	public:
+		struct Shadow {
+			bool enabled = true;
+			int map_size = 1024;
+			float z_near = 0.0f;
+			float z_far = 30.f;
+			float ortho_width = 4;
+			float ortho_height = 8;
+			FramebufferRbDepth map;
+
+			const glm::vec2* radius_wuv; // world space
+			glm::vec2 radius_tuv; // texture space
+
+			const TransformPivoted* tf;
+			glm::mat4 view_mat;
+			glm::mat4 proj_mat;
+			glm::mat4 vp_mat;
+
+			Shadow(const TransformPivoted* _tf, const glm::vec2* lightRadiusUv);
+			void updateVP();
+			void updateRadiusTexSpaceUv();
+		};
+
+		Shadow* shadow = nullptr;
+		glm::vec2 shadow_radius_uv = {1,1};
+		glm::vec3 direction;
+
+	public:
+		LightDirectional();
+		~LightDirectional();
+		virtual void setShadowEnabled(bool enabled) override;
+		virtual void bakeShadowMap(const std::vector<const Model*>& mds) override;
+		virtual void setUniformTo(const Program& prog) override;
+	};
+
+
+
+
+	
+	// class LightPoint : public ILight
+	// {
+	// };
+
+
+
+
+	// class LightSpot : public ILight
+	// {
+	// };
 }
 #endif

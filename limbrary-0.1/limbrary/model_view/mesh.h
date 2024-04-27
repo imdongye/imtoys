@@ -48,14 +48,14 @@ namespace lim
 		GLuint element_buf = 0;
 		GLuint vert_array = 0;
 
-	private:
-		Mesh& operator=(const Mesh&) = delete;
 	public:
+		Mesh(Mesh&& src)			 = delete;
+		Mesh& operator=(const Mesh&) = delete;
+		Mesh& operator=(Mesh&& src)  = delete;
+		
 		Mesh();
 		Mesh(const Mesh& src); // clone
-		Mesh(Mesh&& src) noexcept;
-		Mesh& operator=(Mesh&& src) noexcept;
-		virtual ~Mesh() noexcept;
+		virtual ~Mesh();
 		
 		void drawGL() const;
 		void initGL();

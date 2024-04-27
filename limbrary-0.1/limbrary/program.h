@@ -14,6 +14,7 @@ Usage:
 
 Note:
 glDeleteShader은 모든 Progrma에 detach 되어야만 동작함.
+texture slot은 use할때 0부터 시작해서 setTexture할때마다 올라간다.
 
 Todo:
 1. include 기능 pre processor
@@ -51,17 +52,17 @@ namespace lim
 		bool reloadable = false; // reloadable안하면 link하고 쉐이더 삭제
 		std::vector<Shader> shaders;
 		GLuint pid = 0;
+		mutable int cur_available_slot = 0;
 		mutable std::unordered_map<std::string, GLint> uniform_location_cache;
 
-	protected:
-		// Disable Copying and Assignment
-		Program(const Program&) = delete;
-		Program& operator=(const Program&) = delete;
 	public:
+		Program(const Program&) = delete;
+		Program(Program&&) = delete;
+		Program& operator=(const Program&) = delete;
+		Program& operator=(Program&&) = delete;
+
 		Program(std::string_view name="nonamed");
-		Program(Program&& src) noexcept;
-		Program& operator=(Program&& src) noexcept;
-		virtual ~Program() noexcept;
+		virtual ~Program();
 
 		// chaining //
 		Program& deinitGL();
@@ -70,9 +71,17 @@ namespace lim
 		Program& link();
 		const Program& use() const;
 
-	private:
-		GLint getUniformLocation(const std::string& vname) const;
-	public:
+		
+		inline const Program& setTexture(const std::string& vname, GLuint texId) const {
+			glActiveTexture(GL_TEXTURE0 + cur_available_slot);
+            glBindTexture(GL_TEXTURE_2D, texId);
+			return setUniform(vname, cur_available_slot++);
+		}
+		inline const Program& setTexture3d(const std::string& vname, GLuint texId) const {
+			glActiveTexture(GL_TEXTURE0 + cur_available_slot);
+            glBindTexture(GL_TEXTURE_3D, texId);
+			return setUniform(vname, cur_available_slot++);
+		}
 		/* & bool */
 		inline const Program& setUniform(const std::string& vname, const bool v) const {
 			glUniform1i(getUniformLocation(vname), v);
@@ -170,26 +179,14 @@ namespace lim
 			glUniformMatrix4fv(getUniformLocation(vname), n, GL_FALSE, (GLfloat*)v);
 			return *this;
 		}
-
-
-		inline const Program& setTexture(const std::string& vname, GLuint texId, int activeSlot) const {
-			glActiveTexture(GL_TEXTURE0 + activeSlot);
-            glBindTexture(GL_TEXTURE_2D, texId);
-			return setUniform(vname, activeSlot);
-		}
-		inline const Program& setTexture3d(const std::string& vname, GLuint texId, int activeSlot) const {
-			glActiveTexture(GL_TEXTURE0 + activeSlot);
-            glBindTexture(GL_TEXTURE_3D, texId);
-			return setUniform(vname, activeSlot);
-		}
+	private:
+		GLint getUniformLocation(const std::string& vname) const;
 	};
 
 	class ProgramReloadable: public Program
 	{
 	public:
 		ProgramReloadable(std::string_view name="nonamed");
-		ProgramReloadable(ProgramReloadable&& src);
-		ProgramReloadable& operator=(ProgramReloadable&& src) noexcept;
 		// type : GL_VERTEX_SHADER, GL_FRAGMENT_SHADER ...
 		void reload(GLenum type);
 	};

@@ -47,38 +47,38 @@ namespace lim
 		int nr_channels = 3;
 		int bit_per_channel = 8;
 
-	private:
 	public:
+		Texture(Texture&&)			       = delete;
+		Texture& operator=(Texture&&)      = delete;
+
 		Texture();
 		Texture(const Texture& src);
 		Texture& operator=(const Texture& src);
-		Texture(Texture&& src) noexcept;
-		Texture& operator=(Texture&& src) noexcept;
-		virtual ~Texture() noexcept;
-	private:
-		void* getDataAndPropsFromFile(std::string_view path);
-	public:
+		virtual ~Texture();
+
 		bool updateFormat(int nrChannels = 3, int bitPerChannel = 8, bool convertLinear = false, bool verbose = false);
 		virtual void initGL(void* data = nullptr);
 		bool initFromFile(std::string_view path, bool convertLinear = false);
 		void deinitGL();
 		GLuint getTexId() const;
+
+	private:
+		void* getDataAndPropsFromFile(std::string_view path);
 	};
 
 	class Texture3d: public Texture {
 	public:
 		int nr_depth=0;
 		GLint r_wrap_param = GL_CLAMP_TO_EDGE;
+
+	public:
+		bool initFromFile(std::string_view path, bool convertLinear = false) = delete;
+
+		Texture3d() = default;
+		virtual ~Texture3d() = default;
+
 		virtual void initGL(void* data = nullptr) override;
 		void setDataWithDepth(int depth, void* data);
-		Texture3d() = default;
-		virtual ~Texture3d() noexcept = default;
-		Texture3d(Texture3d&& src) noexcept;
-		Texture3d& operator=(Texture3d&& src) noexcept;
-	private:
-		Texture3d(const Texture3d& src) = delete;
-		Texture3d& operator=(const Texture3d& src) = delete;
-		bool initFromFile(std::string_view path, bool convertLinear = false) = delete;
 	};
 
 	void drawTexToQuad(const GLuint texId, float gamma = 2.2f, float bias = 0.f, float gain = 1.f);

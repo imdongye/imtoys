@@ -89,11 +89,10 @@ lim::AppModelViewer::AppModelViewer() : AppBase(1373, 780, APP_NAME, false)
 
 	floor_md.name = "floor";
 	floor_md.my_meshes.push_back(new MeshPlane(1));
-	floor_md.root.addMeshWithMat(floor_md.my_meshes.back());
+	floor_md.my_materials.push_back(new Material());
+	floor_md.root.meshs_mats.push_back({floor_md.my_meshes.back(), floor_md.my_materials.back()});
 	floor_md.scale = glm::vec3(5.f);
 	floor_md.updateModelMat();
-	floor_md.my_materials.push_back(new Material());
-	floor_md.default_material = floor_md.my_materials.back();
 
 	floor_md.my_textures.push_back(new Texture());
 	floor_md.my_textures.back()->min_filter = GL_LINEAR_MIPMAP_LINEAR;
@@ -229,7 +228,9 @@ void lim::AppModelViewer::renderImGui()
 		ImGui::Text("pos: %.1f %.1f %.1f", light.position.x, light.position.y, light.position.z);
 		ImGui::SliderFloat("intencity", &light.intensity, 0.5f, 200.f, "%.1f");
 		ImGui::Checkbox("shadow enabled", &light.shadow_enabled);
-		ImGui::SliderFloat2("light radius", &light.light_radius_uv.x, 0.f, 10.f, "%.2f");
+		if(ImGui::SliderFloat2("light radius", &light.i_light_radius_world_space_uv.x, 0.f, 1.f, "%.2f")) {
+			light.updateLightRadius();
+		}
 
 		if( ImGui::Button("relead shader") ) {
 			program.reload(GL_FRAGMENT_SHADER);

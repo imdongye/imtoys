@@ -12,6 +12,7 @@ in vec2 mUv;
 in vec4 lPos;
 
 const float PI = 3.1415926535;
+
 const int MF_NONE       = 0;
 const int MF_BASE_COLOR = 1<<0;
 const int MF_SPECULAR   = 1<<1;
@@ -57,16 +58,18 @@ uniform sampler2D map_Irradiance;
 uniform sampler3D map_PreFilteredEnv;
 uniform sampler2D map_PreFilteredBRDF;
 
+uniform vec3 camera_Pos;
+uniform int light_Type;
 uniform vec3 light_Pos;
 uniform vec3 light_Color;
 uniform float light_Int;
-uniform vec3 camera_Pos;
+
 
 uniform bool shadow_Enabled;
+uniform float shadow_z_Near;
+uniform float shadow_z_Far;
+uniform vec2 shadow_radius_Uv;
 uniform sampler2D map_Shadow;
-uniform float light_z_Near;
-uniform float light_z_Far;
-uniform vec2 light_radius_Uv;
 
 uniform int idx_Brdf = 0;
 uniform int idx_D = 0;
@@ -173,11 +176,11 @@ float zTexToZView(float zTex) { // [0,1] -> [near, far]
 	// [-1,1](non linear) -> [near, far](linear)
 	//return -2.0*light_z_Far*light_z_Near / ( zNdc*(light_z_Far-light_z_Near) + light_z_Far+light_z_Near );
 	// [0,1] -> [near, far]
-	return light_z_Far*light_z_Near / ( (light_z_Near-light_z_Far)*zTex-light_z_Near );
+	return shadow_z_Far*shadow_z_Near / ( (shadow_z_Near-shadow_z_Far)*zTex-shadow_z_Near ); // 왜 안되지
 }
-float zClipToZView(float zClip) { // [-near, far] -> [near, far]
-	return ((light_z_Far-light_z_Near)*zClip + 2.0*light_z_Near*light_z_Far) / (light_z_Far+light_z_Near);
-}
+// float zClipToZView(float zClip) { // [-near, far] -> [near, far]
+// 	return ((light_z_Far-light_z_Near)*zClip + 2.0*light_z_Near*light_z_Far) / (light_z_Far+light_z_Near);
+// }
 
 float PCF(vec2 shadowTexPos, float curDepth, vec2 sampleRadiusUv) // 0.002
 {
@@ -208,16 +211,18 @@ float shadowing()
 	const float bias = 0.001;
 	vec3 shadowNDC_pos = lPos.xyz/lPos.w;
 	vec3 shadowTexCoord = (shadowNDC_pos+1)*0.5;
-	float depthFromLight = lPos.z; // [-n, f] -> [0, 1] -> [n, f]
-	float nonLinearDepthFromLight = shadowTexCoord.z;
-	float nonLinearMinDepthFromLight = texture(map_Shadow, shadowTexCoord.xy).r;
+	float lDepth = zTexToZView(shadowTexCoord.z); // [0, 1] -> [n, f]
+
+
+	// return PCF(shadowTexCoord.xy, shadowTexCoord.z, light_radius_Uv);
+	// return shadowTexCoord.z;
+	return (lDepth-shadow_z_Near)/(shadow_z_Far-shadow_z_Near);
 
 	// STEP 1: blocker search
 	float avgBlockerDepth, nrBlockers;
-	float lDepth = zClipToZView(lPos.z);
 	// Using similar triangles from the surface point to the area light
 	// (샘플링 콘의 비율을 일정하게 하기위함.)
-	vec2 searchRegionRadiusUV = light_radius_Uv * (lDepth - light_z_Near) / lDepth;
+	vec2 searchRegionRadiusUV = shadow_radius_Uv * (lDepth - shadow_z_Near) / lDepth;
 	findBlocker( avgBlockerDepth, nrBlockers, shadowTexCoord, searchRegionRadiusUV);
 	// return nrBlockers/float(NR_FIND_BLOCKER_SAMPLE);
 	if( nrBlockers == 0 ) return 1.0;
@@ -227,9 +232,9 @@ float shadowing()
 	// STEP 2: penumbra size
 	float avgBlockerDepthWorld = zTexToZView(avgBlockerDepth); // linearize
 	// Using similar triangles between the area light, the blocking plane and the surface point
-	vec2 wPenumbraUv = (lDepth - avgBlockerDepthWorld)*light_radius_Uv / avgBlockerDepthWorld;
+	vec2 wPenumbraUv = (lDepth - avgBlockerDepthWorld)*shadow_radius_Uv / avgBlockerDepthWorld;
 	// Project UV size to the near plane of the light
-	vec2 filterRadiusUv = wPenumbraUv*light_z_Near/lDepth;
+	vec2 filterRadiusUv = wPenumbraUv*shadow_z_Near/lDepth;
 
 
 	// STEP 3: filtering
@@ -391,7 +396,7 @@ vec3 pointLighting() {
 
 	vec3 Li = light_Int*light_Color/dot(toLight,toLight); // radiance
 	vec3 ambient = mat_AmbientColor*ambOcc*baseColor;
-	// return vec3(shadowing());
+	return vec3(shadowing());
 	return emission + shadowing() * brdfPoint() * Li * max(0,NDL) + ambient;
 }
 

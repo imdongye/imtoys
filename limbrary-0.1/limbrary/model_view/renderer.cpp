@@ -15,10 +15,10 @@ using namespace std;
 using namespace lim;
 
 
-bool lim::IBLight::setMap(const char* path) 
+bool IBLight::setMap(const char* path) 
 {
     if(!strIsSame(getExtension(path),"hdr")) {
-        lim::log::err("need hdr ext to load ibl\n");
+        log::err("need hdr ext to load ibl\n");
         return false;
     }
     log::pure("loading ibl .. ");
@@ -33,7 +33,7 @@ bool lim::IBLight::setMap(const char* path)
     is_map_baked = false;
     return true;
 }
-void lim::IBLight::bakeMap() {
+void IBLight::bakeMap() {
 
     FramebufferNoDepth fb(3, 32); // 3 channel, 32 bit
     Program iblProg("ibl baker");
@@ -106,78 +106,50 @@ void lim::IBLight::bakeMap() {
     
     is_map_baked = true;
 }
-void lim::IBLight::deinitGL() {
+void IBLight::deinitGL() {
     map_Light.deinitGL();
     map_Irradiance.deinitGL();
     map_PreFilteredEnv.deinitGL();
     map_PreFilteredBRDF.deinitGL();
 }
-GLuint lim::IBLight::getTexIdLight() const {
+GLuint IBLight::getTexIdLight() const {
     return map_Light.tex_id;
 }
-GLuint lim::IBLight::getTexIdIrradiance() const {
+GLuint IBLight::getTexIdIrradiance() const {
     return map_Irradiance.tex_id;
 }
-GLuint lim::IBLight::getTexIdPreFilteredEnv() const {
+GLuint IBLight::getTexIdPreFilteredEnv() const {
     return map_PreFilteredEnv.tex_id;
 }
-GLuint lim::IBLight::getTexIdPreFilteredBRDF() const {
+GLuint IBLight::getTexIdPreFilteredBRDF() const {
     return map_PreFilteredBRDF.tex_id;
 }
 
-lim::IBLight::IBLight(IBLight&& src) noexcept {
-    *this = std::move(src);
-}
-IBLight& lim::IBLight::operator=(IBLight&& src) noexcept {
-    if(this!=&src) {
-        map_Light = std::move(src.map_Light);
-        map_Irradiance = std::move(src.map_Irradiance);
-        map_PreFilteredEnv = std::move(src.map_PreFilteredEnv);
-        is_map_baked = src.is_map_baked;
-    }
-    return *this;
-}
 
 
 
 
-void lim::Scene::addModel(Model* md)  {
+
+
+void Scene::addModel(Model* md)  {
     models.push_back(md);
 }
-void lim::Scene::addLight(Light* lit) {
+void Scene::addLight(Light* lit) {
     lights.push_back(lit);
 }
-void lim::Scene::addOwnModel(Model* md)  {
+void Scene::addOwnModel(Model* md)  {
     models.push_back(md);
     my_mds.push_back(md);
 }
-void lim::Scene::addOwnLight(Light* lit) {
+void Scene::addOwnLight(Light* lit) {
     lights.push_back(lit);
     my_lits.push_back(lit);
 }
-lim::Scene::Scene()
-{    
-}
-lim::Scene::Scene(Scene&& src) noexcept
-{
-    *this = std::move(src);
-}
-Scene& lim::Scene::operator=(Scene&& src) noexcept {
-    if(this!=&src) {
-        releaseData();
-        my_mds = std::move(src.my_mds);
-        models = std::move(src.models);
-        my_lits= std::move(src.my_lits);
-        lights = std::move(src.lights);
-        ib_light = std::move(src.ib_light);
-        is_draw_env_map = src.is_draw_env_map;
-    }
-    return *this;
-}
-lim::Scene::~Scene() noexcept {
+
+Scene::~Scene() {
     releaseData();
 }
-void lim::Scene::releaseData() {
+void Scene::releaseData() {
     for( const Model* md: my_mds ){
         delete md;
     }
@@ -193,22 +165,6 @@ void lim::Scene::releaseData() {
 
 namespace
 {
-    inline int bindLightToProg(const Program& prog, const Light& lit, int activeSlot)
-    {
-        prog.setUniform("light_Pos", lit.position);
-        prog.setUniform("light_Color", lit.color);
-        prog.setUniform("light_Int", lit.intensity);
-
-        prog.setUniform("shadow_Enabled", lit.shadow_enabled);
-        if( lit.shadow_enabled ) {
-            prog.setUniform("light_vp_Mat", lit.light_vp_mat);
-            prog.setUniform("light_z_Near", lit.light_z_near);
-            prog.setUniform("light_z_Far", lit.light_z_far);
-            prog.setUniform("light_radius_Uv", lit.light_radius_uv);
-            prog.setTexture("map_Shadow", lit.map_Shadow.getRenderedTexId(), activeSlot++);
-        }
-        return activeSlot; // return next texture slot
-    }
     inline int bindMatToProg(const Program& prog, const Material& mat, int activeSlot)
     {
         prog.setUniform("mat_BaseColor", mat.baseColor);
@@ -230,85 +186,34 @@ namespace
         prog.setUniform("map_Flags", mat.map_Flags);
         
         if( mat.map_BaseColor ) {
-            prog.setTexture("map_BaseColor", mat.map_BaseColor->tex_id, activeSlot++);
+            prog.setTexture("map_BaseColor", mat.map_BaseColor->tex_id);
         }
         if( mat.map_Specular ) {
-            prog.setTexture("map_Specular", mat.map_Specular->tex_id, activeSlot++);
+            prog.setTexture("map_Specular", mat.map_Specular->tex_id);
         }
         if( mat.map_Bump ) {
-            prog.setTexture("map_Bump", mat.map_Bump->tex_id, activeSlot++);
+            prog.setTexture("map_Bump", mat.map_Bump->tex_id);
             if( mat.map_Flags & Material::MF_HEIGHT ) {
                 prog.setUniform("texDelta", mat.texDelta);
                 prog.setUniform("bumpHeight", mat.bumpHeight);
             }
         }
         if( mat.map_AmbOcc ) {
-            prog.setTexture("map_AmbOcc", mat.map_AmbOcc->tex_id, activeSlot++);
+            prog.setTexture("map_AmbOcc", mat.map_AmbOcc->tex_id);
         }
         if( mat.map_Roughness ) {
-            prog.setTexture("map_Roughness", mat.map_Roughness->tex_id, activeSlot++);
+            prog.setTexture("map_Roughness", mat.map_Roughness->tex_id);
         }
         if( mat.map_Metalness ) {
-            prog.setTexture("map_Metalness", mat.map_Metalness->tex_id, activeSlot++);
+            prog.setTexture("map_Metalness", mat.map_Metalness->tex_id);
         }
         if( mat.map_Emission ) {
-            prog.setTexture("map_Emission", mat.map_Emission->tex_id, activeSlot++);
+            prog.setTexture("map_Emission", mat.map_Emission->tex_id);
         }
         if( mat.map_Opacity ) {
-            prog.setTexture("map_Opacity", mat.map_Opacity->tex_id, activeSlot++);
+            prog.setTexture("map_Opacity", mat.map_Opacity->tex_id);
         }
         return activeSlot;
-    }
-
-    // 편하고 코드 보기 좋아졌다. 메쉬마다 함수포인터로 점프해서 성능이 많이 안좋아질줄알았는데 큰차이없다.
-    inline void dfsNodeTree(const Model::Node* root, function<void(const Mesh*, const Material*, const glm::mat4& transform)> hook) {
-        stack<const Model::Node*> nodeStack; // queue?
-        glm::mat4 transform = glm::mat4(1);
-        nodeStack.push( root );
-        while( nodeStack.size()>0 ) {
-            const Model::Node& node = *nodeStack.top();
-            nodeStack.pop();
-            transform = node.transform*transform;
-            for( const Model::Node& child : node.childs ) {
-                nodeStack.push(&child);
-            }
-            for( int i=0; i<node.getNrMesh(); i++ ) {
-                auto [ms, mat] = node.getMeshWithMat(i);
-                hook(ms, mat, transform);
-            }
-        }
-    }
-
-    inline void bakeShadowMap(const std::vector<const Light*>& lits, const std::vector<const Model*>& mds)
-    {
-        const Program& depthProg = AssetLib::get().depth_prog;
-
-        depthProg.use();
-        for( const Light* pLit : lits ) {
-            const Light& lit = *pLit;
-
-            if( lit.shadow_enabled == false ) {
-                continue;
-            }
-
-            lit.map_Shadow.bind();
-
-            depthProg.setUniform("view_Mat", lit.light_view_mat);
-            depthProg.setUniform("proj_Mat", lit.light_proj_mat);
-            
-            for( const Model* pMd : mds ) {
-                depthProg.setUniform("model_Mat", pMd->model_mat);
-                dfsNodeTree(&pMd->root, [](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
-                    ms->drawGL();
-                });
-            }
-
-            lit.map_Shadow.unbind();
-
-	        glBindTexture(GL_TEXTURE_2D, lit.map_Shadow.getRenderedTexId());
-            glGenerateMipmap(GL_TEXTURE_2D);
-	        glBindTexture(GL_TEXTURE_2D, 0);
-        }
     }
 }
 
@@ -418,11 +323,11 @@ void lim::render( const IFramebuffer& fb,
                 }
 
                 if( scn.ib_light ) {
-                    prog.setTexture("map_Light", scn.ib_light->getTexIdLight(), activeSlot++);
+                    prog.setTexture("map_Light", scn.ib_light->getTexIdLight());
                     if(true||scn.ib_light->is_map_baked) {
-                        prog.setTexture("map_Irradiance", scn.ib_light->getTexIdIrradiance(), activeSlot++);
-                        prog.setTexture3d("map_PreFilteredEnv", scn.ib_light->getTexIdPreFilteredEnv(), activeSlot++);
-                        prog.setTexture("map_PreFilteredBRDF", scn.ib_light->getTexIdPreFilteredBRDF(), activeSlot++);
+                        prog.setTexture("map_Irradiance", scn.ib_light->getTexIdIrradiance());
+                        prog.setTexture3d("map_PreFilteredEnv", scn.ib_light->getTexIdPreFilteredEnv());
+                        prog.setTexture("map_PreFilteredBRDF", scn.ib_light->getTexIdPreFilteredBRDF());
                     }
                 }
             }

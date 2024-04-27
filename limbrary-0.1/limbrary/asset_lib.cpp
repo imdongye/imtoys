@@ -39,8 +39,8 @@ lim::AssetLib::AssetLib()
 
 	env_sphere = new Model("env");
 	env_sphere->my_meshes.push_back(new MeshEnvSphere());
-	env_sphere->scale = glm::vec3(20.f);
-	env_sphere->updateModelMat();
+	env_sphere->tf->scale = glm::vec3(20.f);
+	env_sphere->tf->update();
 
 
 	glGetIntegerv(GL_MAX_SAMPLES, &ms_max_samples);
@@ -73,7 +73,7 @@ void lim::AssetLib::destroy()
 
 void lim::utils::drawEnvSphere(const Texture& map, const glm::mat4& viewMat, const glm::mat4& projMat) {
 	env_prog->use();
-	env_prog->setUniform("model_Mat", env_sphere->model_mat);
+	env_prog->setUniform("model_Mat", env_sphere->tf->mat);
 	env_prog->setUniform("view_Mat", viewMat);
 	env_prog->setUniform("proj_Mat", projMat);
 	env_prog->setTexture("map_Light", map.getTexId(), 0);

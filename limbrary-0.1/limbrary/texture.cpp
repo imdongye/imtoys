@@ -42,10 +42,10 @@ namespace
 }
 
 
-lim::Texture::Texture()
+Texture::Texture()
 {
 }
-lim::Texture::Texture(const Texture& src)
+Texture::Texture(const Texture& src)
 {
 	*this = src;
 }
@@ -59,32 +59,18 @@ Texture& lim::Texture::operator=(const Texture& src)
 	}
 	return *this;
 }
-lim::Texture::Texture(Texture&& src) noexcept
-{
-	*this = std::move(src);
-}
-Texture& lim::Texture::operator=(Texture&& src) noexcept
-{
-	if(this != &src) {
-		deinitGL();
-		copyTexBaseProps(src, *this);
-		tex_id = src.tex_id;
-		src.tex_id = 0;
-	}
-	return *this;
-}
-lim::Texture::~Texture() noexcept
+Texture::~Texture()
 {
 	deinitGL();
 }
-void lim::Texture::deinitGL()
+void Texture::deinitGL()
 {
 	if( tex_id>0 ) {
 		glDeleteTextures(1, &tex_id);
 		tex_id=0;
 	}
 }
-void lim::Texture::initGL(void* data)
+void Texture::initGL(void* data)
 {
 	deinitGL();
 	aspect_ratio = width/(float)height;
@@ -106,7 +92,7 @@ void lim::Texture::initGL(void* data)
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void* lim::Texture::getDataAndPropsFromFile(std::string_view filePath)
+void* Texture::getDataAndPropsFromFile(std::string_view filePath)
 {
 	void* data;
 
@@ -137,7 +123,7 @@ void* lim::Texture::getDataAndPropsFromFile(std::string_view filePath)
 	}
 	return data;
 }
-bool lim::Texture::updateFormat(int nrChannels, int bitPerChannel, bool convertLinear, bool verbose) {
+bool Texture::updateFormat(int nrChannels, int bitPerChannel, bool convertLinear, bool verbose) {
 	const char* fmStr = nullptr;
 
 	nr_channels = nrChannels;
@@ -207,7 +193,7 @@ bool lim::Texture::updateFormat(int nrChannels, int bitPerChannel, bool convertL
 	return true;
 }
 
-bool lim::Texture::initFromFile(std::string_view filePath, bool convertLinear)
+bool Texture::initFromFile(std::string_view filePath, bool convertLinear)
 {
 	void* data = getDataAndPropsFromFile(filePath);
 	if(!data)
@@ -225,24 +211,12 @@ bool lim::Texture::initFromFile(std::string_view filePath, bool convertLinear)
 	log::pure("%s(%dx%dx%dx%dbits)\n", name.c_str(), width, height, nr_channels, bit_per_channel);
 	return true;
 }
-GLuint lim::Texture::getTexId() const {
+GLuint Texture::getTexId() const {
 	return tex_id;
 }
 
-lim::Texture3d::Texture3d(Texture3d&& src) noexcept
-	: Texture(std::move(src))
-{
-	nr_depth = src.nr_depth;
-}
-Texture3d& lim::Texture3d::operator=(Texture3d&& src) noexcept
-{
-	if(this != &src) {
-		Texture::operator=(std::move(src));
-		nr_depth = src.nr_depth;
-	}
-	return *this;
-}
-void lim::Texture3d::initGL(void* data) {
+
+void Texture3d::initGL(void* data) {
 	if(data!=nullptr) {
 		log::err("3dtex not surported load data");
 		return;
@@ -266,7 +240,7 @@ void lim::Texture3d::initGL(void* data) {
 	glGenerateMipmap(GL_TEXTURE_3D);
 	glBindTexture(GL_TEXTURE_3D, 0);
 }
-void lim::Texture3d::setDataWithDepth(int depth, void* data) {
+void Texture3d::setDataWithDepth(int depth, void* data) {
 	glBindTexture( GL_TEXTURE_3D, tex_id );
 	glTexSubImage3D( GL_TEXTURE_3D, 0, 0, 0, depth, width, height, 1, src_format, src_chanel_type, data);
 	

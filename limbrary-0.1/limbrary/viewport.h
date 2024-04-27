@@ -64,14 +64,14 @@ namespace lim
 	protected:
 		glm::vec2 prev_mouse_pos = {0,0};
 		IFramebuffer* framebuffer = nullptr;
-	private:
-		Viewport(const Viewport&) = delete;
-		Viewport& operator=(const Viewport&) = delete;
 	public:
+		Viewport(const Viewport&) = delete;
+		Viewport(Viewport&&) = delete;
+		Viewport& operator=(const Viewport&) = delete;
+		Viewport& operator=(Viewport&&) = delete;
+		
 		Viewport(std::string_view _name, IFramebuffer* createdFB);
-		Viewport(Viewport&& src) noexcept;
-		Viewport& operator=(Viewport&& src) noexcept;
-		virtual ~Viewport() noexcept;
+		virtual ~Viewport();
 
 		bool drawImGui(std::function<void(const Viewport&)> guizmoFunc = nullptr);
 		void resize(GLuint _width, GLuint _height);

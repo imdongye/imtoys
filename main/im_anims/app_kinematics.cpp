@@ -49,7 +49,7 @@ namespace lim
 		ImGui::Text("model");
 		ImGui::Text("%f %f %f", md->position.x, md->position.y, md->position.z);
 		for(int i=0;i<4;i++) for(int j=0;j<4;j++) {
-			ImGui::Text("%.1f", md->transform[j][i]);
+			ImGui::Text("%.1f", md->mat[j][i]);
 			if(j<3) ImGui::SameLine();
 		}
 		ImGui::End();

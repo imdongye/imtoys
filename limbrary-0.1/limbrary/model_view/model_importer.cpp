@@ -316,14 +316,15 @@ namespace
 
 	void recursiveConvertTree(const aiNode* src, Model::Node& dst) 
 	{
-		dst.transform = toGLM(src->mTransformation);
+		// todo 역변환
+		dst.transform.mat = toGLM(src->mTransformation);
 		for( size_t i=0; i<src->mNumMeshes; i++ ) {
 			Material* mat = nullptr;
 			if( _rst_md->my_materials.size()>0 ) {
 				const aiMesh* aiMs = _scene->mMeshes[src->mMeshes[i]];
 				mat = _rst_md->my_materials[aiMs->mMaterialIndex];
 			}
-			dst.addMeshWithMat(_rst_md->my_meshes[src->mMeshes[i]], mat);
+			dst.meshs_mats.push_back({_rst_md->my_meshes[src->mMeshes[i]], mat});
 		}
 
 		for( size_t i=0; i< src->mNumChildren; i++ ) {

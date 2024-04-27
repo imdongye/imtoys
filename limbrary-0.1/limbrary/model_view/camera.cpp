@@ -20,54 +20,26 @@
 #include <limbrary/log.h>
 
 using namespace glm;
+using namespace lim;
 
-namespace lim
+
+Camera::Camera()
 {
-	Camera::Camera()
-	{
-		updateViewMat();
-		updateProjMat();
-	}
-	Camera::Camera(Camera&& src) noexcept
-	{
-		aspect = src.aspect;
-		fovy = src.fovy;
-		z_near = src.z_near;
-		z_far = src.z_far;
-		position = src.position;
-		pivot = src.pivot;
-		global_up = src.global_up;
-		view_mat = src.view_mat;
-		proj_mat = src.proj_mat;
-	}
-	Camera& Camera::operator=(Camera&& src) noexcept
-	{
-		if( this!=&src ) {
-			aspect = src.aspect;
-			fovy = src.fovy;
-			z_near = src.z_near;
-			z_far = src.z_far;
-			position = src.position;
-			pivot = src.pivot;
-			global_up = src.global_up;
-			view_mat = src.view_mat;
-			proj_mat = src.proj_mat;
-		}
-		return *this;
-	}
-	Camera::~Camera() noexcept
-	{
-	}
-	void Camera::moveShift(const glm::vec3& off) {
-		position += off;
-		pivot += off;
-	}
-	void Camera::updateViewMat()
-	{
-		view_mat = lookAt(position, pivot, global_up);
-	}
-	void Camera::updateProjMat()
-	{
-		proj_mat = perspective(radians(fovy), aspect, z_near, z_far);
-	}
+	updateViewMat();
+	updateProjMat();
+}
+Camera::~Camera()
+{
+}
+void Camera::moveShift(const glm::vec3& off) {
+	position += off;
+	pivot += off;
+}
+void Camera::updateViewMat()
+{
+	view_mat = lookAt(position, pivot, global_up);
+}
+void Camera::updateProjMat()
+{
+	proj_mat = perspective(radians(fovy), aspect, z_near, z_far);
 }

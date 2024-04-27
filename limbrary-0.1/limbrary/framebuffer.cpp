@@ -7,22 +7,18 @@
 using namespace lim;
 
 
-IFramebuffer::IFramebuffer(IFramebuffer&& src) noexcept {
-	*this = std::move(src);
-}
-IFramebuffer& IFramebuffer::operator=(IFramebuffer&& src) noexcept {
-	if( this!=&src ) {
-		deinitGL();
 
-		fbo = src.fbo;
-		src.fbo = 0;
-
-		width = src.width;
-		height = src.height;
-		aspect = src.aspect;
-		clear_color = src.clear_color;
-	}
-	return *this;
+bool IFramebuffer::resize(GLuint _width, GLuint _height)
+{
+	_height = (_height<0)?_width:_height;
+	if( width==_width && height==_height )
+		return false;
+	width = _width; height = _height;
+	aspect = width/(float)height;
+	initGL();
+	glFlush();
+	glFinish();
+	return true;
 }
 void IFramebuffer::initGL()
 {
@@ -43,18 +39,6 @@ void IFramebuffer::deinitGL()
 {
 	if( fbo>0 ) { glDeleteFramebuffers(1, &fbo); fbo=0; }
 	myDeinitGL();
-}
-bool IFramebuffer::resize(GLuint _width, GLuint _height)
-{
-	_height = (_height<0)?_width:_height;
-	if( width==_width && height==_height )
-		return false;
-	width = _width; height = _height;
-	aspect = width/(float)height;
-	initGL();
-	glFlush();
-	glFinish();
-	return true;
 }
 void IFramebuffer::bind() const
 {
@@ -80,30 +64,30 @@ void IFramebuffer::unbind() const
 }
 
 
+
+
 FramebufferNoDepth::FramebufferNoDepth(int nrChannels, int bitPerChannel)
 {
 	color_tex.updateFormat(nrChannels, bitPerChannel);
 }
-FramebufferNoDepth::FramebufferNoDepth(FramebufferNoDepth&& src) noexcept
-	: IFramebuffer(std::move(src))
-{
-	color_tex = std::move(src.color_tex);
-}
-FramebufferNoDepth& FramebufferNoDepth::operator=(FramebufferNoDepth&& src) noexcept
-{
-	if( this!=&src ) {
-		IFramebuffer::operator=(std::move(src));
-
-		color_tex = std::move(src.color_tex);
-	}
-	return *this;
-}
-FramebufferNoDepth::~FramebufferNoDepth() noexcept
+FramebufferNoDepth::~FramebufferNoDepth()
 {
 	deinitGL();
 }
-/* override albe */
-GLuint FramebufferNoDepth::getRenderedTexId() const
+float* FramebufferNoDepth::makeFloatPixelsBuf() const {
+	float* buf = new float[ width * height * color_tex.nr_channels ];
+	GLuint format = color_tex.src_format;
+	GLint readFbo;// backup
+	glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &readFbo);
+
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
+	glReadPixels(0,0,width, height, format, GL_FLOAT, buf);
+
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, readFbo);
+	return buf;
+}
+
+GLuint FramebufferNoDepth::getRenderedTexId() const 
 {
 	return color_tex.tex_id;
 }
@@ -114,7 +98,7 @@ void FramebufferNoDepth::myInitGL()
 	color_tex.initGL();
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, color_tex.tex_id, 0);
 
-	std::vector<GLenum> drawBuffers ={GL_COLOR_ATTACHMENT0};
+	std::vector<GLenum> drawBuffers = {GL_COLOR_ATTACHMENT0};
 	glDrawBuffers(1, drawBuffers.data());
 }
 void FramebufferNoDepth::myDeinitGL() 
@@ -132,6 +116,7 @@ void FramebufferNoDepth::myUnbind() const
 
 
 
+
 FramebufferTexDepth::FramebufferTexDepth(int nrChannels, int bitPerChannel)
 {
 	color_tex.updateFormat(nrChannels, bitPerChannel);
@@ -144,27 +129,10 @@ FramebufferTexDepth::FramebufferTexDepth(int nrChannels, int bitPerChannel)
 	depth_tex.src_format = GL_DEPTH_COMPONENT;
 	depth_tex.bit_per_channel = 32;
 }
-FramebufferTexDepth::FramebufferTexDepth(FramebufferTexDepth&& src) noexcept
-	: IFramebuffer(std::move(src))
-{
-	color_tex = std::move(src.color_tex);
-	depth_tex = std::move(src.depth_tex);
-}
-FramebufferTexDepth& FramebufferTexDepth::operator=(FramebufferTexDepth&& src) noexcept
-{
-	if( this!=&src ) {
-		IFramebuffer::operator=(std::move(src));
-
-		color_tex = std::move(src.color_tex);
-		depth_tex = std::move(src.depth_tex);
-	}
-	return *this;
-}
-FramebufferTexDepth::~FramebufferTexDepth() noexcept
+FramebufferTexDepth::~FramebufferTexDepth()
 {
 	deinitGL();
 }
-/* override albe */
 GLuint FramebufferTexDepth::getRenderedTexId() const
 {
 	return color_tex.tex_id;
@@ -203,29 +171,10 @@ FramebufferRbDepth::FramebufferRbDepth(int nrChannels, int bitPerChannel)
 {
 	color_tex.updateFormat(nrChannels, bitPerChannel);
 }
-FramebufferRbDepth::FramebufferRbDepth(FramebufferRbDepth&& src) noexcept
-	: IFramebuffer(std::move(src))
-{
-	color_tex = std::move(src.color_tex);
-	depth_rbo_id = src.depth_rbo_id;
-	src.depth_rbo_id = 0;
-}
-FramebufferRbDepth& FramebufferRbDepth::operator=(FramebufferRbDepth&& src) noexcept
-{
-	if( this!=&src ) {
-		IFramebuffer::operator=(std::move(src));
-
-		color_tex = std::move(src.color_tex);
-		depth_rbo_id = src.depth_rbo_id;
-		src.depth_rbo_id = 0;
-	}
-	return *this;
-}
-FramebufferRbDepth::~FramebufferRbDepth() noexcept
+FramebufferRbDepth::~FramebufferRbDepth()
 {
 	deinitGL();
 }
-/* override albe */
 GLuint FramebufferRbDepth::getRenderedTexId() const
 {
 	return color_tex.tex_id;
@@ -263,40 +212,17 @@ void FramebufferRbDepth::myUnbind() const
 }
 
 
+
+
 FramebufferMs::FramebufferMs(int _samples, int nrChannels, int bitPerChannel)
 	: IFramebuffer(), samples(glm::min(utils::getMsMaxSamples(),_samples))
 	, intermediate_fb(nrChannels, bitPerChannel)
 {
 }
-FramebufferMs::FramebufferMs(FramebufferMs&& src) noexcept
-	: IFramebuffer(std::move(src))
-{
-	samples = src.samples;
-	intermediate_fb = std::move(src.intermediate_fb);
-	ms_color_tex_id = src.ms_color_tex_id;
-	ms_depth_rbo_id = src.ms_depth_rbo_id;
-	src.ms_color_tex_id = 0;
-	src.ms_depth_rbo_id = 0;
-}
-FramebufferMs& FramebufferMs::operator=(FramebufferMs&& src) noexcept
-{
-	if( this!=&src ) {
-		IFramebuffer::operator=(std::move(src));
-
-		samples = src.samples;
-		intermediate_fb = std::move(src.intermediate_fb);
-		ms_color_tex_id = src.ms_color_tex_id;
-		ms_depth_rbo_id = src.ms_depth_rbo_id;
-		src.ms_color_tex_id = 0;
-		src.ms_depth_rbo_id = 0;
-	}
-	return *this;
-}
-FramebufferMs::~FramebufferMs() noexcept
+FramebufferMs::~FramebufferMs()
 {
 	deinitGL();
 }
-/* override able */
 GLuint FramebufferMs::getRenderedTexId() const
 {
 	return intermediate_fb.color_tex.tex_id;
@@ -357,15 +283,3 @@ void FramebufferMs::myUnbind() const
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 }
 
-float* FramebufferNoDepth::makeFloatPixelsBuf() const {
-	float* buf = new float[ width * height * color_tex.nr_channels ];
-	GLuint format = color_tex.src_format;
-	GLint readFbo;// backup
-	glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &readFbo);
-
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
-	glReadPixels(0,0,width, height, format, GL_FLOAT, buf);
-
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, readFbo);
-	return buf;
-}

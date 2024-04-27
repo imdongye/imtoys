@@ -21,7 +21,9 @@ namespace lim
 	class AssetLib
 	{
 	private:
+		inline static AssetLib* instance = nullptr;
 		Program default_prog;
+
 	public:
 		//****** property ******//
 		AppBase* app;
@@ -38,11 +40,11 @@ namespace lim
 		MeshCube cube;
 
 	private:
-		inline static AssetLib* instance = nullptr;
 		AssetLib(const AssetLib&)=delete;
 		AssetLib& operator=(const AssetLib&)=delete;
 		AssetLib();
 		~AssetLib();
+		
 	public:
 		static void create(AppBase* app);
 		static void destroy();
