@@ -13,16 +13,19 @@ uniform sampler2D uvgridTex;
 uniform int fixedArtMapIdx = -1;
 uniform bool is6way = true;
 
-uniform vec3 light_Pos;
-uniform vec3 light_Color;
-uniform float light_Int;
-
-uniform vec3 camera_Pos;
+uniform vec3 cam_Pos;
+struct LightDirectional {
+	vec3 Pos;
+	vec3 Dir;
+	vec3 Color;
+	float Intensity;
+};
+uniform LightDirectional lit;
 
 void main() {
 	vec3 FaceN = normalize(cross(dFdx(wPos), dFdy(wPos)));
 	vec3 N = normalize(wNor);
-	vec3 L = normalize(light_Pos-wPos);
+	vec3 L = normalize(lit.Pos-wPos);
 	float lambertian = max(0,dot(N,L));
 	vec2 scaledUv = uvScale * (mUv-vec2(.5f)) + vec2(.5f);
 	vec3 outColor = vec3(0);

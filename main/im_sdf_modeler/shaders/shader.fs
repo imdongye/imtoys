@@ -17,7 +17,7 @@ const float PI = 3.1415926535;
 const vec3 UP = vec3(0,1,0);
 
 uniform float camera_Aspect;
-uniform vec3 camera_Pos;
+uniform vec3 cam_Pos;
 uniform float camera_Fovy;
 uniform vec3 camera_Pivot;
 uniform vec3 light_Pos;
@@ -288,7 +288,7 @@ vec3 pointLighting() {
     VDRl = dot(V,Rl);
 	HDV = dot(V,H);
 
-    // return (NDL+pow(VDR, 1000))*mat_BaseColor;
+    // return (NDL+pow(VDR, 1000))*mat.BaseColor;
 
 	vec3 Li = light_Int*vec3(1)/dot(toLight,toLight);
 	vec3 ambient = 0.01*1.0*baseColor; // 1.0 is ambOcc
@@ -339,8 +339,8 @@ void convertLinearToSRGB( inout vec3 rgb ){
 void main()
 {
     vec2 uv = texCoord*2-vec2(1);
-    vec3 ro = camera_Pos;
-    vec3 camFront = normalize( camera_Pivot-camera_Pos );
+    vec3 ro = cam_Pos;
+    vec3 camFront = normalize( camera_Pivot-cam_Pos );
     vec3 camRight = normalize( cross(camFront, UP) );
     vec3 camUp = normalize( cross(camRight, camFront) );
     float eyeZ = 1/tan((PI/360)*camera_Fovy);

@@ -9,18 +9,27 @@ namespace lim
 	AppKinematics::AppKinematics(): AppBase(1200, 780, APP_NAME)
 		, viewport("AnimTester", new FramebufferMs(8))
 	{
-		scene.addOwnLight(new Light());
-		
-		scene.addOwnModel(new Model());
-		scene.my_mds.back()->my_meshes.push_back(new MeshCapsule());
-		scene.my_mds.back()->root.addMeshWithMat(
-			scene.my_mds.back()->my_meshes.back()
-		);
-		scene.addOwnModel(new Model());
-		scene.my_mds.back()->my_meshes.push_back(new MeshPlane());
-		scene.my_mds.back()->root.addMeshWithMat(
-			scene.my_mds.back()->my_meshes.back()
-		);
+		LightDirectional* lit = new LightDirectional();
+		Model* md = new Model();
+		scene.addOwn(md);
+		scene.addOwn(lit);
+
+		Material* mat = new Material;
+		md->addOwn(mat);
+
+		Mesh* capsule = new MeshCapsule();
+		md->addOwn(capsule);
+		RdNode* capsuleNode = md->root.makeChild();
+		capsuleNode->addMsMat(capsule, mat);
+		capsuleNode->transform.pos = {0,1,0};
+		capsuleNode->transform.update();
+
+		Mesh* plane = new MeshPlane();
+		md->addOwn(plane);
+		RdNode* planeNode = md->root.makeChild();
+		planeNode->addMsMat(plane, mat);
+		planeNode->transform.pos = {0,-1,0};
+		planeNode->transform.update();
 	}
 	AppKinematics::~AppKinematics()
 	{
@@ -36,7 +45,7 @@ namespace lim
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		render(viewport.getFb(), viewport.camera, scene);
 	}
-	void AppKinematics::renderImGui()
+	void AppKinematics::updateImGui()
 	{
 		ImGui::DockSpaceOverViewport();
 
@@ -45,11 +54,11 @@ namespace lim
 		ImGui::Begin("camera");
 		ImGui::Text("%f %f %f", viewport.camera.position.x, viewport.camera.position.y,viewport.camera.position.z);
 		ImGui::Text("%f %f %f", viewport.camera.pivot.x, viewport.camera.pivot.y,viewport.camera.pivot.z);
-		const Model* md = scene.models[0];
+		const Transform& capsuleTf = *scene.own_mds[0]->tf;
 		ImGui::Text("model");
-		ImGui::Text("%f %f %f", md->position.x, md->position.y, md->position.z);
+		ImGui::Text("%f %f %f", capsuleTf.pos.x, capsuleTf.pos.y, capsuleTf.pos.z);
 		for(int i=0;i<4;i++) for(int j=0;j<4;j++) {
-			ImGui::Text("%.1f", md->mat[j][i]);
+			ImGui::Text("%.1f", capsuleTf.mtx[j][i]);
 			if(j<3) ImGui::SameLine();
 		}
 		ImGui::End();

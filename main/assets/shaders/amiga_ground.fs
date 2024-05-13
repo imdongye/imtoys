@@ -3,7 +3,7 @@ layout(location=0) out vec4 FragColor;
 
 in vec3 wPos;
 
-uniform vec3 camera_Pos;
+uniform vec3 cam_Pos;
 uniform float gamma = 2.2;
 
 void main()

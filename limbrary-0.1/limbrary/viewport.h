@@ -63,7 +63,7 @@ namespace lim
 		Callbacks<void(float dt)> update_callbacks;
 	protected:
 		glm::vec2 prev_mouse_pos = {0,0};
-		IFramebuffer* framebuffer = nullptr;
+		IFramebuffer* own_framebuffer = nullptr;
 	public:
 		Viewport(const Viewport&) = delete;
 		Viewport(Viewport&&) = delete;

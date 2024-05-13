@@ -131,6 +131,7 @@
         "memory_resource": "cpp",
         "xstddef": "cpp",
         "__verbose_abort": "cpp",
-        "codecvt": "cpp"
+        "codecvt": "cpp",
+        "orderingmethods": "cpp"
     },
 }

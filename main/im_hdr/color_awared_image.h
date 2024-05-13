@@ -648,10 +648,7 @@ RAW bit :)");
 
 			const Program& prog = colorAwareDisplayProg->use();
 
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, tex_id);
-
-			prog.setUniform("tex", 0);
+			prog.setTexture("tex", tex_id);
 			prog.setUniform("nrChannels", nr_channels);
 			
 			prog.setUniform("inputGamma", profile.gamma);

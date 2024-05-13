@@ -58,12 +58,12 @@ namespace lim
 		IFramebuffer& operator=(IFramebuffer&&) 	 = delete;
 
 		IFramebuffer() = default;
+	public:		
 		// 자식 소멸자에서 deinit호출해줘야함.
 		virtual ~IFramebuffer() = default;
 
-	public:		
 		// height -1 is square
-		bool resize(GLuint _width, GLuint _height=-1);
+		bool resize(int _width, int _height=-1);
 
 		void initGL();
 		void deinitGL();
@@ -92,6 +92,26 @@ namespace lim
 		~FramebufferNoDepth(); 
 
 		float* makeFloatPixelsBuf() const;
+		virtual GLuint getRenderedTexId() const final;
+
+	protected:
+		virtual void myInitGL() final;
+		virtual void myDeinitGL() final;
+		virtual void myBind() const final;
+		virtual void myUnbind() const final;
+	};
+
+
+
+	class FramebufferOnlyDepth: public IFramebuffer
+	{
+	public:
+		Texture depth_tex;
+
+	public:
+		FramebufferOnlyDepth();
+		~FramebufferOnlyDepth();
+
 		virtual GLuint getRenderedTexId() const final;
 
 	protected:
@@ -159,38 +179,15 @@ namespace lim
 		FramebufferMs(int samples = 4, int nrChannels = 3, int bitPerChannel = 8);
 		~FramebufferMs();
 
-	virtual GLuint getRenderedTexId() const final;
-protected:
-	virtual void myInitGL() final;
-	virtual void myDeinitGL() final;
-	virtual void myBind() const final;
-	virtual void myUnbind() const final;
-private:
-	FramebufferMs(const FramebufferMs&) = delete;
-	FramebufferMs& operator=(const FramebufferMs&) = delete;
-};
+		virtual GLuint getRenderedTexId() const final;
 
-class FramebufferOnlyDepth: public IFramebuffer
-{
-public:
-	Texture depth_tex;
-public:
-	FramebufferOnlyDepth();
-	FramebufferOnlyDepth(FramebufferOnlyDepth&& src) noexcept;
-	FramebufferOnlyDepth& operator=(FramebufferOnlyDepth&& src) noexcept;
-	~FramebufferOnlyDepth() noexcept;
+	protected:
+		virtual void myInitGL() final;
+		virtual void myDeinitGL() final;
+		virtual void myBind() const final;
+		virtual void myUnbind() const final;
+	};
 
-	virtual GLuint getRenderedTexId() const final;
-
-protected:
-	virtual void myInitGL() final;
-	virtual void myDeinitGL() final;
-	virtual void myBind() const final;
-	virtual void myUnbind() const final;
-private:
-	FramebufferOnlyDepth(const FramebufferOnlyDepth&) = delete;
-	FramebufferOnlyDepth& operator=(const FramebufferOnlyDepth&) = delete;
-};
 }
 
 #endif

@@ -30,9 +30,8 @@ namespace lim
 
 		Program tex_to_quad_prog;
 		Program tex3d_to_quad_prog;
-		Program depth_prog, ndv_prog;
-		
-		Material default_material;
+		Program depth_prog;
+		Program ndv_prog;
 		
 		MeshQuad screen_quad; // only poss
 		MeshSphere sphere;
@@ -42,6 +41,9 @@ namespace lim
 	private:
 		AssetLib(const AssetLib&)=delete;
 		AssetLib& operator=(const AssetLib&)=delete;
+		AssetLib(AssetLib&&)=delete;
+		AssetLib& operator=(AssetLib&&)=delete;
+		
 		AssetLib();
 		~AssetLib();
 		
@@ -51,12 +53,12 @@ namespace lim
 		static AssetLib& get();
 	};
 
-	
+	// Todo 
 	namespace utils
 	{
 		void glErr( std::string_view msg );
 		int getMsMaxSamples();
-		void drawEnvSphere(const Texture& map, const glm::mat4& viewMat, const glm::mat4& projMat);
+		void drawEnvSphere(const Texture& map, const glm::mat4& mtx_View, const glm::mat4& mtx_Proj);
 	}
 }
 

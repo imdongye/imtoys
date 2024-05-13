@@ -128,7 +128,7 @@ namespace lim
 
 		nvgEndFrame(vg);
 	}
-	void AppNano::renderImGui()
+	void AppNano::updateImGui()
 	{
 	}
 	void AppNano::mouseBtnCallback(int btn, int action, int mod)

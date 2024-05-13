@@ -29,7 +29,7 @@ namespace lim
 
 		processInput();
 	}
-	void AppMovingWindow::renderImGui()
+	void AppMovingWindow::updateImGui()
 	{
 		ImGui::Begin("test window");
 		ImGui::Text("wasd to move window");

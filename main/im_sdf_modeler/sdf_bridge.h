@@ -8,7 +8,7 @@
 
 namespace sdf
 {
-	void init(lim::CameraController* cam, lim::Light* lit);
+	void init(lim::CameraController* cam);
     void deinit();
     void bindSdfData(const lim::Program& prog);
     void drawImGui();

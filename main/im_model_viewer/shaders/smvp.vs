@@ -11,21 +11,21 @@ out vec3 wNor;
 out vec2 mUv;
 out vec4 lPos; // light clip space position for shadow
 
-uniform mat4 model_Mat;
-uniform mat4 view_Mat;
-uniform mat4 proj_Mat;
-uniform mat4 shadow_vp_Mat = mat4(1);
+uniform mat4 mtx_Model;
+uniform mat4 mtx_View;
+uniform mat4 mtx_Proj;
+uniform mat4 mtx_ShadowVp = mat4(1);
 
 
 void main()
 {
-	wPos = vec3(model_Mat*vec4(aPos, 1.f));
-	//wNor = mat3(model_Mat)*aNor;
-	wNor = vec3(model_Mat*vec4(aNor, 0.f));
+	wPos = vec3(mtx_Model*vec4(aPos, 1.f));
+	//wNor = mat3(mtx_Model)*aNor;
+	wNor = vec3(mtx_Model*vec4(aNor, 0.f));
 	wNor = normalize(wNor);
 	mUv = aUv;
 
-	lPos = shadow_vp_Mat * vec4(wPos, 1.0);
+	lPos = mtx_ShadowVp * vec4(wPos, 1.0);
 
-	gl_Position = proj_Mat*view_Mat*vec4(wPos,1.f);
+	gl_Position = mtx_Proj*mtx_View*vec4(wPos,1.f);
 }

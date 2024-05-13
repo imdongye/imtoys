@@ -70,8 +70,8 @@ namespace lim
 			VM_PIVOT,
 			VM_SCROLL
 		};
-	protected:
 		int viewing_mode = VM_FREE;
+	protected:
 
 		enum INPUT_STATUS {
 			IST_NONE     = 1<<0,
@@ -130,7 +130,6 @@ namespace lim
 	public:
 		void initCallbacks(Viewport* vp);
 		void deinitCallbacks();
-		void copySettingTo(CameraManVp& dst);
 	};
 
 

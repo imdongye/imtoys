@@ -1,10 +1,3 @@
-/*
-
-Todo:
-지금 render node의 메쉬에 해당하는 material이 null일때 default를 사용함.
-
-*/
-
 #include <limbrary/model_view/renderer.h>
 #include <limbrary/asset_lib.h>
 #include <limbrary/log.h>
@@ -15,9 +8,15 @@ using namespace std;
 using namespace lim;
 
 
-bool IBLight::setMap(const char* path) 
+IBLight::IBLight(const char* path) {
+    if( path ) {
+        setMapAndBake(path);
+    }
+}
+
+bool IBLight::setMapAndBake(std::string_view path) 
 {
-    if(!strIsSame(getExtension(path),"hdr")) {
+    if(!strIsSame(getExtension(path.data()),"hdr")) {
         log::err("need hdr ext to load ibl\n");
         return false;
     }
@@ -30,11 +29,12 @@ bool IBLight::setMap(const char* path)
     if(!map_Light.initFromFile(path, false)) {
         return false;
     }
-    is_map_baked = false;
-    return true;
-}
-void IBLight::bakeMap() {
 
+
+
+    //
+    //  Bake Prefiltered Light Maps
+    //
     FramebufferNoDepth fb(3, 32); // 3 channel, 32 bit
     Program iblProg("ibl baker");
 
@@ -49,8 +49,8 @@ void IBLight::bakeMap() {
 
 	fb.bind();
 	iblProg.use();
-	iblProg.setTexture("map_Light", map_Light.tex_id, 0);
-	AssetLib::get().screen_quad.drawGL();
+	iblProg.setTexture("map_Light", map_Light.tex_id);
+	AssetLib::get().screen_quad.bindAndDrawGL();
 	fb.unbind();
 
     map_Irradiance = fb.color_tex; // !! 텍스쳐 복사되면서 mipmap도 생성됨.
@@ -78,9 +78,9 @@ void IBLight::bakeMap() {
         float roughness = (i+0.5)/nr_roughness_depth;// 0.05~0.95
         fb.bind();
         iblProg.use();
-        iblProg.setTexture("map_Light", map_Light.tex_id, 0);
+        iblProg.setTexture("map_Light", map_Light.tex_id);
         iblProg.setUniform("roughness", roughness);
-        AssetLib::get().screen_quad.drawGL();
+        AssetLib::get().screen_quad.bindAndDrawGL();
         fb.unbind();
 
         float* buf = fb.makeFloatPixelsBuf();
@@ -99,13 +99,14 @@ void IBLight::bakeMap() {
 
 	fb.bind();
 	iblProg.use();
-	AssetLib::get().screen_quad.drawGL();
+	AssetLib::get().screen_quad.bindAndDrawGL();
 	fb.unbind();
 
     map_PreFilteredBRDF = fb.color_tex; // !! 텍스쳐 복사되면서 mipmap도 생성됨.
-    
-    is_map_baked = true;
+    is_baked = true;
+    return true;
 }
+
 void IBLight::deinitGL() {
     map_Light.deinitGL();
     map_Irradiance.deinitGL();
@@ -124,152 +125,111 @@ GLuint IBLight::getTexIdPreFilteredEnv() const {
 GLuint IBLight::getTexIdPreFilteredBRDF() const {
     return map_PreFilteredBRDF.tex_id;
 }
-
-
-
-
-
-
-
-void Scene::addModel(Model* md)  {
-    models.push_back(md);
+void IBLight::setUniformTo(const Program& prg) const {
+    prg.setTexture("map_Light", getTexIdLight());
+    prg.setTexture("map_Irradiance", getTexIdIrradiance());
+    prg.setTexture("map_PreFilteredBRDF", getTexIdPreFilteredBRDF());
+    prg.setTexture3d("map_PreFilteredEnv", getTexIdPreFilteredEnv());
 }
-void Scene::addLight(Light* lit) {
-    lights.push_back(lit);
-}
-void Scene::addOwnModel(Model* md)  {
-    models.push_back(md);
-    my_mds.push_back(md);
-}
-void Scene::addOwnLight(Light* lit) {
-    lights.push_back(lit);
-    my_lits.push_back(lit);
-}
+
+
+
+
+
+
 
 Scene::~Scene() {
     releaseData();
 }
 void Scene::releaseData() {
-    for( const Model* md: my_mds ){
+    for( Model* md: own_mds ){
         delete md;
     }
-    for( const Light* lit: my_lits ){
+    for( ILight* lit: own_lits ){
         delete lit;
     }
-    my_mds.clear();
-    my_lits.clear();
-    models.clear();
+    own_mds.clear();
+    own_lits.clear();
+    nodes.clear();
     lights.clear();
 }
 
-
-namespace
-{
-    inline int bindMatToProg(const Program& prog, const Material& mat, int activeSlot)
-    {
-        prog.setUniform("mat_BaseColor", mat.baseColor);
-        prog.setUniform("mat_SpecColor", mat.specColor);
-        prog.setUniform("mat_AmbientColor", mat.ambientColor);
-        prog.setUniform("mat_EmissionColor", mat.emissionColor);
-        prog.setUniform("mat_F0", mat.F0);
-
-        prog.setUniform("mat_Transmission", mat.transmission);
-        prog.setUniform("mat_Refraciti", mat.refraciti);
-        prog.setUniform("mat_Opacity", mat.opacity);
-        prog.setUniform("mat_Shininess", mat.shininess);
-        prog.setUniform("mat_Roughness", mat.roughness);
-        prog.setUniform("mat_Metalness", mat.metalness);
-        prog.setUniform("mat_TexDelta", mat.bumpHeight);
-        prog.setUniform("mat_BumpHeight", mat.texDelta);
-
-
-        prog.setUniform("map_Flags", mat.map_Flags);
-        
-        if( mat.map_BaseColor ) {
-            prog.setTexture("map_BaseColor", mat.map_BaseColor->tex_id);
-        }
-        if( mat.map_Specular ) {
-            prog.setTexture("map_Specular", mat.map_Specular->tex_id);
-        }
-        if( mat.map_Bump ) {
-            prog.setTexture("map_Bump", mat.map_Bump->tex_id);
-            if( mat.map_Flags & Material::MF_HEIGHT ) {
-                prog.setUniform("texDelta", mat.texDelta);
-                prog.setUniform("bumpHeight", mat.bumpHeight);
-            }
-        }
-        if( mat.map_AmbOcc ) {
-            prog.setTexture("map_AmbOcc", mat.map_AmbOcc->tex_id);
-        }
-        if( mat.map_Roughness ) {
-            prog.setTexture("map_Roughness", mat.map_Roughness->tex_id);
-        }
-        if( mat.map_Metalness ) {
-            prog.setTexture("map_Metalness", mat.map_Metalness->tex_id);
-        }
-        if( mat.map_Emission ) {
-            prog.setTexture("map_Emission", mat.map_Emission->tex_id);
-        }
-        if( mat.map_Opacity ) {
-            prog.setTexture("map_Opacity", mat.map_Opacity->tex_id);
-        }
-        return activeSlot;
-    }
+Model* Scene::addOwn(Model* md)  {
+    nodes.push_back(&md->root);
+    own_mds.push_back(md);
+    return md;
+}
+ILight* Scene::addOwn(ILight* lit) {
+    lights.push_back(lit);
+    own_lits.push_back(lit);
+    return lit;
+}
+const Model* Scene::addRef(const Model* md)  {
+    nodes.push_back(&md->root);
+    return md;
+}
+const RdNode* Scene::addRef(const RdNode* nd)  {
+    nodes.push_back(nd);
+    return nd;
+}
+const ILight* Scene::addRef(const ILight* lit) {
+    lights.push_back(lit);
+    return lit;
 }
 
 
+
+/*
+
+Note:
+같은 Mesh를 여러번 draw할때 중복 bind를 줄이기위해 curMesh로 확인하고있다.
+하지만 일반적인 모델의 경우 Mesh는 모두 다르기 때문에 성능을 위해서는
+중복 Mesh를 위한 render함수를 따로 분리하는게 좋다.
+
+    요구사항
+material이 바뀌면 1.mat바인딩
+program이 바뀌면 1.use 2.mat바인딩(setProg)
+mesh바뀌면 1.ms바인딩
+마지막 drawcall
+
+*/
 void lim::render( const IFramebuffer& fb,
-                const Program& prog,
-                const Model& md )
+                  const Camera& cam,
+                  const Model& md,
+                  const ILight& lit )
 {
+    lit.bakeShadowMap({&md.root});
+
     fb.bind();
-    prog.use();
-    prog.setUniform("model_Mat", md.model_mat);
 
-    const Material* curMat = md.default_material;
+    const Material* curMat = nullptr;
+    const Program* curProg = nullptr;
+    const Mesh* curMesh = nullptr;
 
-    dfsNodeTree(&md.root, [&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
-        if( mat!=nullptr ) {
+    md.root.treversal([&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
+        if( curMat != mat ) {
+            if( curProg != mat->prog ) {
+                curProg = mat->prog;
+                curProg->use();
+                cam.setUniformTo(*curProg);
+                lit.setUniformTo(*curProg);
+            }
             curMat = mat;
+            curMat->setUniformTo(*curProg);
         }
-        bindMatToProg(prog, *curMat, 0);
-        ms->drawGL();
+        curProg->setUniform("mtx_Model", transform);
+        if( curMesh != ms ) {
+            curMesh = ms;
+            curMesh->bindGL();
+        }
+        curMesh->drawGL();
     });
 
     fb.unbind();
 }
 
 
-void lim::render( const IFramebuffer& fb, 
-                const Program& prog,
-                const Camera& cam,
-                const Model& md, 
-                const Light& lit )
-{
-    bakeShadowMap( {&lit}, {&md} );
 
-    fb.bind();
-    
-    prog.use();
-    prog.setUniform("camera_Pos", cam.position);
-    prog.setUniform("proj_Mat", cam.proj_mat);
-    prog.setUniform("view_Mat", cam.view_mat);
-    prog.setUniform("model_Mat", md.model_mat);
-
-    int activeSlot = bindLightToProg(prog, lit, 0);
-
-    const Material* curMat = md.default_material;
-
-    dfsNodeTree(&md.root, [&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
-        if( mat!=nullptr ) {
-            curMat = mat;
-        }
-        bindMatToProg(prog, *curMat, activeSlot);
-        ms->drawGL();
-    });
-
-    fb.unbind();
-}
 
 
 void lim::render( const IFramebuffer& fb,
@@ -277,83 +237,57 @@ void lim::render( const IFramebuffer& fb,
                 const Scene& scn,
                 const bool isDrawLight )
 {
-    bakeShadowMap(scn.lights, scn.models);
-
-    /* draw models */
-    fb.bind();
-    const Material* curMat = nullptr;
-    const Material* nextMat = nullptr;
-    const Program* curProg = nullptr;
-    const Program* nextProg = nullptr;
-    std::function<void(const Program&)> curSetProg = [](const Program&){};
-
-    int activeSlot = 0;
-
-    if(scn.is_draw_env_map) {
-        utils::drawEnvSphere(scn.ib_light->map_Light, cam.view_mat, cam.proj_mat);
+    for( const ILight* lit : scn.lights ) {
+        lit->bakeShadowMap(scn.nodes);
     }
 
-    for( const Model* pMd : scn.models ) {
-        const Model& md = *pMd;
-        if( md.default_material->prog )
-            nextProg = md.default_material->prog;
-        if( md.default_material->set_prog )
-            curSetProg = md.default_material->set_prog;
+    fb.bind();
 
-        dfsNodeTree(&md.root, [&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
-            nextMat = (mat!=nullptr) ? mat : md.default_material;
+    if( scn.is_draw_env_map ) {
+        utils::drawEnvSphere(scn.ib_light->map_Light, cam.mtx_View, cam.mtx_Proj);
+    }
+    
+    const Program* curProg = nullptr;
+    const Material* curMat = nullptr;
+    const Mesh* curMesh = nullptr;
 
-            if( nextMat->prog )
-                nextProg = nextMat->prog;
-            if( nextMat->set_prog )
-                curSetProg = nextMat->set_prog;
-
-            if( nextProg && curProg != nextProg ) {
-                const Program& prog = *nextProg;
-                activeSlot = 0;
-
-                prog.use();
-                prog.setUniform("camera_Pos", cam.position);
-                prog.setUniform("view_Mat", cam.view_mat);
-                prog.setUniform("proj_Mat", cam.proj_mat);
-
-                for( const Light* pLit : scn.lights ) {
-                    activeSlot = bindLightToProg(prog, *pLit, activeSlot);
-                    break; //  Todo: 지금은 라이트 하나만
-                }
-
-                if( scn.ib_light ) {
-                    prog.setTexture("map_Light", scn.ib_light->getTexIdLight());
-                    if(true||scn.ib_light->is_map_baked) {
-                        prog.setTexture("map_Irradiance", scn.ib_light->getTexIdIrradiance());
-                        prog.setTexture3d("map_PreFilteredEnv", scn.ib_light->getTexIdPreFilteredEnv());
-                        prog.setTexture("map_PreFilteredBRDF", scn.ib_light->getTexIdPreFilteredBRDF());
+    for( const RdNode* nd : scn.nodes ) {
+        nd->treversal([&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
+            if( curMat != mat ) {
+                if( curProg != mat->prog ) {
+                    curProg = mat->prog;
+                    curProg->use();
+                    cam.setUniformTo(*curProg);
+                    for( const ILight* lit : scn.lights ) {
+                        lit->setUniformTo(*curProg);
+                    }
+                    if( scn.ib_light ) {
+                        scn.ib_light->setUniformTo(*curProg);
                     }
                 }
+                curMat = mat;
+                curMat->setUniformTo(*curProg);
             }
-
-            if( (nextProg && curProg != nextProg) || curMat != nextMat ) {
-                bindMatToProg(*nextProg, *nextMat, activeSlot);
-
-               
-                curSetProg(*nextProg); // param active slot, return activeslot
-
-                curMat = nextMat;
-                curProg = nextProg;
+            curProg->setUniform("mtx_Model", transform);
+            if( curMesh != ms ) {
+                curMesh = ms;
+                curMesh->bindGL();
             }
-            curProg->setUniform("model_Mat", md.model_mat); // Todo: hirachi trnasformation
-            ms->drawGL();
+            curMesh->drawGL();
         });
     }
 
     if( isDrawLight ) {
         const Program& prog = AssetLib::get().ndv_prog;
         prog.use();
-        prog.setUniform("camera_Pos", cam.position);
-        prog.setUniform("view_Mat", cam.view_mat);
-        prog.setUniform("proj_Mat", cam.proj_mat);
-        prog.setUniform("model_Mat", scn.lights.back()->model_mat);
-        AssetLib::get().small_sphere.drawGL();
+        cam.setUniformTo(prog);
+
+        // todo: diff color
+        for( auto lit : scn.lights ) {
+            prog.setUniform("mtx_Model", lit->tf.mtx);
+            // todo: draw dir with line
+            AssetLib::get().small_sphere.bindAndDrawGL();
+        }
     }
 
     fb.unbind();

@@ -2,15 +2,30 @@
 2022-09-05 / im dong ye
 # Rule And Note
 
+## [ 줄임말 ]
+
+* md : model
+* prog : program
+* scn : scene
+* mat : material
+* tf : transform
+* ms : mesh
+* lit : light
+* nd : Node
+* src : source
+* dst : destination
+* mtx : matrix
+
 ## [ 이름 규칙 ]
 
 * namespace : snake_case
 * class/struct 이름 : PascalCase
 * 함수/멤버 함수 : camelCase
 * 멤버 상수 : UPPER_SNAKE_CASE
-* 멤버 static변수, 전역변수 : _snake_case
+* 멤버 static변수, 전역변수 : s_snake_case, g_snake_case
 * 멤버 변수 : snake_case
-* 지역 변수, 파라미터 : camelCase ( _ward )
+* Uniform변수에도 사용되는 멤버변수는 glsl 규칙과 동일하게
+* 지역 변수, 파라미터 : camelCase or _single
 * 함수의 선언부 매개변수에서 Class이름등으로 어떤객체인지 확실할때는 약어로 쓴다 ex) void init(Player p, int _age)
 * 경로 뒤에 /를 붙이지 않는다.
 * 포인터변수 선언에서 \*는 자료형 옆에 붙이고 한줄에서 여러 포인터 변수를 선언할때만 변수 앞에 붙인다. ex) int\* a; int  \*a1 \*a2;
@@ -31,8 +46,11 @@ getter / setter 은 간단한 프로젝트에서 예방의 효과보다 생산�
 glEnable/Disable은 사용후 초기값으로 복구 시켜두기
 
 attribute 변수 : aPos, aNor, ...
-varying 변수 : mPos(model space), cPos(camera space), wPos(world space)
-uniform 변수 : map_Bump, camera_Pos ( snake + camel_Case )
+varying 변수 : mPos(model space), cPos(camera space), wPos(world space), lPos(light)
+uniform 변수 : map_Bump, mtx_ShadowVp ( single_PascalCase )
+uniform struct : mat.Shininess ( single.PascalCase )
+전역 변수 : snake_case
+전역 상수 : SNAKE_CASE
 
 
 ## [ 패키지 ]
@@ -67,6 +85,8 @@ OpenGL ID 가 들어가거나 삭제해야할 객체포인터를 맴버로 가�
 또한 dinamic array 에 객체들을 생성하면 각 객체의 주소가 바뀔수있기때문에 조심해야한다.
 
 헤더에서 멤버변수 초기화화하면 가독성은 좋지만 멤버값 바꿀때마다, 포함하는 모든소스 다시 컴파일해서 안좋긴한데 그렇다고 멤버이니셜라이져나 생성자에서 초기화하기엔 멤버수정될때마다 생성자 관리해줘야하고 읽을때 파일 두번 열어야하고 중복코드가 많이생김.
+
+own_ prefix가 있는 포인터는 소유권있어서 소멸자에서 삭제 필요. 없으면 소유권없음
 
 
 

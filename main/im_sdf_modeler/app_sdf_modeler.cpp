@@ -36,7 +36,7 @@ lim::AppSdfModeler::AppSdfModeler(): AppBase(1373, 783, APP_NAME, false)
 	prog.attatch("canvas.vs").attatch("im_sdf_modeler/shaders/shader.fs").link();
 
 
-	sdf::init(&viewport.camera, &light);
+	sdf::init(&viewport.camera);
 }
 lim::AppSdfModeler::~AppSdfModeler()
 {
@@ -57,10 +57,10 @@ void lim::AppSdfModeler::update()
 	sdf::bindSdfData(prog);
 
 
-	AssetLib::get().screen_quad.drawGL();
+	AssetLib::get().screen_quad.bindAndDrawGL();
 	viewport.getFb().unbind();
 }
-void lim::AppSdfModeler::renderImGui()
+void lim::AppSdfModeler::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
 

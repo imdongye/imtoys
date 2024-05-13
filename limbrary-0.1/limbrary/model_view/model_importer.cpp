@@ -28,12 +28,13 @@ using namespace glm;
 
 namespace
 {
-	Model* _rst_md = nullptr; // temp model
-	const aiScene* _scene;
-	std::string _model_dir;
+	Model* g_rst_md = nullptr; // temp model
+	const Material* g_same_mat = nullptr;
+	const aiScene* g_scn;
+	std::string g_model_dir;
 
-	const int _nr_formats = (int)aiGetImportFormatCount();
-	const char* _formats[32] = { nullptr, };
+	const int g_nr_formats = (int)aiGetImportFormatCount();
+	const char* g_formats[32] = { nullptr, };
 
 
 	inline vec3 toGLM( const aiVector3D& v ) {
@@ -51,31 +52,28 @@ namespace
 					m.a3, m.b3, m.c3, m.d3,
 					m.a4, m.b4, m.c4, m.d4);
 	}
-
 	class LimImportLogStream : public Assimp::LogStream
 	{
 	public:
-			LimImportLogStream()
-			{
-			}
-			~LimImportLogStream()
-			{
-			}
+			LimImportLogStream(){}
+			~LimImportLogStream(){}
 			virtual void write(const char* message) override
 			{
 				//log::pure("%s", message);
 			}
 	};
 
+
+
 	// 중복 load 막기
 	Texture* loadTexture(string texPath, bool convertLinear, const char* msg)
 	{
 		Texture* rst = nullptr;
-		std::vector<Texture*>& loadedTexs = _rst_md->my_textures; 
+		std::vector<Texture*>& loadedTexs = g_rst_md->own_textures; 
 
 		// assimp가 mtl의 뒤에오는 옵션을 읽지 않음 (ex: eye.png -bm 0.4) 그래서 아래와 같이 필터링한다.
 		texPath = texPath.substr(0, texPath.find_first_of(' '));
-		texPath = _model_dir + "/" + texPath;
+		texPath = g_model_dir + "/" + texPath;
 
 		for( size_t i = 0; i < loadedTexs.size(); i++ ) {
 			if( texPath.compare(loadedTexs[i]->file_path)==0 ) {
@@ -91,6 +89,8 @@ namespace
 		return rst;
 	}
 
+
+
 	Material* convertMaterial(aiMaterial* aiMat, bool verbose = false)
 	{
 		Material* rst = new Material();
@@ -100,18 +100,17 @@ namespace
 		aiString tempStr;
 		float tempFloat;
 
-		mat.prog = nullptr;
 		if(verbose) log::pure("<load factors>\n");
-		mat.factor_Flags = Material::FF_NONE;
+		mat.factor_flags = Material::FF_NONE;
 		if( aiMat->Get(AI_MATKEY_COLOR_DIFFUSE, temp3d) == AI_SUCCESS ) {
 			if(verbose) log::pure("base color: %.1f %.1f %.1f\n", temp3d.r, temp3d.g, temp3d.b);
-			mat.factor_Flags |= Material::FF_BASE_COLOR;
-			mat.baseColor = toGLM(temp3d); 
+			mat.factor_flags |= Material::FF_COLOR_BASE;
+			mat.BaseColor = toGLM(temp3d); 
 		}
 		if( aiMat->Get(AI_MATKEY_COLOR_SPECULAR, temp3d) == AI_SUCCESS ) {
 			if(verbose) log::pure("specular color: %.1f %.1f %.1f\n", temp3d.r, temp3d.g, temp3d.b);
-			mat.factor_Flags |= Material::FF_SPECULAR;
-			mat.specColor = toGLM(temp3d); 
+			mat.factor_flags |= Material::FF_SPECULAR;
+			mat.SpecColor = toGLM(temp3d); 
 		}
 		if( aiMat->Get(AI_MATKEY_SHININESS_STRENGTH, tempFloat ) != AI_SUCCESS ) {
 			if(verbose) log::pure("*pass wrong shininess strength: %.1f\n", tempFloat);
@@ -124,23 +123,23 @@ namespace
 		}
 		if( aiMat->Get(AI_MATKEY_COLOR_EMISSIVE, temp3d) == AI_SUCCESS ) {
 			if(verbose) log::pure("emissive color: %.1f %.1f %.1f\n", temp3d.r, temp3d.g, temp3d.b);
-			mat.factor_Flags |= Material::FF_EMISSION;
-			mat.emissionColor = toGLM(temp3d); 
+			mat.factor_flags |= Material::FF_EMISSION;
+			mat.EmissionColor = toGLM(temp3d); 
 		}
 		if( aiMat->Get(AI_MATKEY_TRANSMISSION_FACTOR, tempFloat) == AI_SUCCESS ) {
 			if(verbose) log::pure("transmission: %.1f\n", tempFloat);
-			mat.factor_Flags |= Material::FF_TRANSMISSION;
-			mat.transmission = tempFloat; 
+			mat.factor_flags |= Material::FF_TRANSMISSION;
+			mat.Transmission = tempFloat; 
 		}
 		if( aiMat->Get(AI_MATKEY_REFRACTI, tempFloat) == AI_SUCCESS ) {
 			if(verbose) log::pure("refraciti: %.1f\n", tempFloat);
-			mat.factor_Flags |= Material::FF_REFRACITI;
-			mat.refraciti = tempFloat; 
+			mat.factor_flags |= Material::FF_REFRACITI;
+			mat.Refraciti = tempFloat; 
 		}
 		if( aiMat->Get(AI_MATKEY_OPACITY, tempFloat) == AI_SUCCESS ) {
 			if(verbose) log::pure("opacity: %.1f\n", tempFloat);
-			mat.factor_Flags |= Material::FF_OPACITY;
-			mat.opacity = tempFloat; 
+			mat.factor_flags |= Material::FF_OPACITY;
+			mat.Opacity = tempFloat; 
 		}
 		if( aiMat->Get(AI_MATKEY_SHININESS, tempFloat) == AI_SUCCESS ) {
 			if(verbose) log::pure("*pass wrong shininess: %.1f\n", tempFloat);
@@ -148,13 +147,13 @@ namespace
 		}
 		if( aiMat->Get(AI_MATKEY_ROUGHNESS_FACTOR, tempFloat) == AI_SUCCESS ) {
 			if(verbose) log::pure("roughness: %.1f\n", tempFloat);
-			mat.factor_Flags |= Material::FF_ROUGHNESS;
-			mat.roughness = tempFloat;
+			mat.factor_flags |= Material::FF_ROUGHNESS;
+			mat.Roughness = tempFloat;
 		}
 		if( aiMat->Get(AI_MATKEY_METALLIC_FACTOR, tempFloat) == AI_SUCCESS ) {
 			if(verbose) log::pure("metalness: %.1f\n", tempFloat);
-			mat.factor_Flags |= Material::FF_METALNESS;
-			mat.metalness = tempFloat; 
+			mat.factor_flags |= Material::FF_METALNESS;
+			mat.Metalness = tempFloat; 
 		}
 
 		// normal, metalness, roughness, occlusion 은 linear space다.
@@ -162,12 +161,12 @@ namespace
 		// verbose = true;
 		mat.map_Flags = Material::MF_NONE;
 		if( aiMat->GetTexture(aiTextureType_DIFFUSE, 0, &tempStr) == AI_SUCCESS ) {
-			mat.map_Flags |= Material::MF_BASE_COLOR;
-			mat.map_BaseColor = loadTexture(tempStr.C_Str(), true, "map_BaseColor"); // kd일때만 linear space변환
+			mat.map_Flags |= Material::MF_COLOR_BASE;
+			mat.map_ColorBase = loadTexture(tempStr.C_Str(), true, "map_BaseColor"); // kd일때만 linear space변환
 		}
 		if( aiMat->GetTexture(aiTextureType_BASE_COLOR, 0, &tempStr) == AI_SUCCESS ) {
-			mat.map_Flags |= Material::MF_BASE_COLOR;
-			mat.map_BaseColor = loadTexture(tempStr.C_Str(), true, "map_BaseColor"); // kd일때만 linear space변환
+			mat.map_Flags |= Material::MF_COLOR_BASE;
+			mat.map_ColorBase = loadTexture(tempStr.C_Str(), true, "map_BaseColor"); // kd일때만 linear space변환
 		}
 		if( aiMat->GetTexture(aiTextureType_SPECULAR, 0, &tempStr) == AI_SUCCESS ) {
 			mat.map_Flags |= Material::MF_SPECULAR;
@@ -231,24 +230,24 @@ namespace
 		return rst;
 	}
 
+
+
+
+
+
 	Mesh* convertMesh(const aiMesh* aiMs)
 	{
 		Mesh* rst = new Mesh();
 		Mesh& ms = *rst;
-		vec3& boundaryMax = _rst_md->boundary_max;
-		vec3& boundaryMin = _rst_md->boundary_min;
 		
 		ms.name = aiMs->mName.C_Str();
 
-		ms.poss.resize( aiMs->mNumVertices );
-		for( GLuint i=0; i<aiMs->mNumVertices; i++ ) {
-			ms.poss[i] = toGLM( aiMs->mVertices[i] );
-			vec3& p = ms.poss[i];
-			// 요소들끼리의 min max
-			boundaryMax = glm::max(boundaryMax, p);
-			boundaryMin = glm::min(boundaryMin, p);
+		{
+			ms.poss.resize( aiMs->mNumVertices );
+			for( GLuint i=0; i<aiMs->mNumVertices; i++ ) {
+				ms.poss[i] = toGLM( aiMs->mVertices[i] );
+			}
 		}
-		_rst_md->nr_vertices += ms.poss.size();
 
 		if( aiMs->HasNormals() ) {
 			ms.nors.resize( aiMs->mNumVertices );
@@ -281,6 +280,7 @@ namespace
 			}
 		}
 
+		// Todo
 		if( aiMs->HasBones() ) {
 			//ms.bone_ids.resize( aiMs->mNumVertices );
 			//ms.bending_factors.resize( aiMs->mNumVertices );
@@ -303,7 +303,7 @@ namespace
 				}
 				ms.tris.push_back( uvec3(face.mIndices[0], face.mIndices[1], face.mIndices[2]));
 			}
-			_rst_md->nr_triangles += ms.tris.size();
+			g_rst_md->nr_triangles += ms.tris.size();
 		}
 		if( nrNotTriFace>0 ) {
 			log::err("find not tri face : nr %d\n", nrNotTriFace);
@@ -314,17 +314,16 @@ namespace
 		return rst;
 	}
 
-	void recursiveConvertTree(const aiNode* src, Model::Node& dst) 
+	void recursiveConvertTree(const aiNode* src, RdNode& dst) 
 	{
-		// todo 역변환
-		dst.transform.mat = toGLM(src->mTransformation);
+		dst.name = src->mName.C_Str();
+		dst.transform.mtx = toGLM(src->mTransformation);
+		// Todo : reverse matrix
+
 		for( size_t i=0; i<src->mNumMeshes; i++ ) {
-			Material* mat = nullptr;
-			if( _rst_md->my_materials.size()>0 ) {
-				const aiMesh* aiMs = _scene->mMeshes[src->mMeshes[i]];
-				mat = _rst_md->my_materials[aiMs->mMaterialIndex];
-			}
-			dst.meshs_mats.push_back({_rst_md->my_meshes[src->mMeshes[i]], mat});
+			const aiMesh* aiMs = g_scn->mMeshes[src->mMeshes[i]];
+			const Material* mat = (g_same_mat) ? g_same_mat : g_rst_md->own_materials[aiMs->mMaterialIndex];
+			dst.meshs_mats.push_back({g_rst_md->own_meshes[src->mMeshes[i]], mat});
 		}
 
 		for( size_t i=0; i< src->mNumChildren; i++ ) {
@@ -334,9 +333,14 @@ namespace
 	}
 }
 
+
+
+
+
+
 namespace lim
 {
-	bool Model::importFromFile(string_view modelPath, bool unitScaleAndPivot, bool withMaterial)
+	bool Model::importFromFile(string_view modelPath, bool unitScaleAndPivot, const Material* withSameMat)
 	{
 		const char* extension = strrchr(modelPath.data(), '.');
 		if( !extension ) {
@@ -348,12 +352,15 @@ namespace lim
 			return false;
 		}
 
-		_rst_md = this;
+		clear();
+		g_same_mat = withSameMat;
+		g_rst_md = this;
 		path = modelPath;
 		const size_t lastSlashPos = path.find_last_of("/\\");
 		const size_t dotPos = path.find_last_of('.');
 		name = path.substr(lastSlashPos + 1, dotPos - lastSlashPos - 1);
-		_model_dir = (lastSlashPos == 0) ? "" : path.substr(0, lastSlashPos);
+		g_model_dir = (lastSlashPos == 0) ? "" : path.substr(0, lastSlashPos);
+
 
 		/* Assimp 설정 */
 		GLuint pFrags = 0;
@@ -367,64 +374,72 @@ namespace lim
 		// pFrags |= aiProcess_OptimizeMeshes : mesh를 합쳐서 draw call을 줄인다. batching?
 		pFrags |= aiProcessPreset_TargetRealtime_MaxQuality;
 
+
 		double elapsedTime = glfwGetTime();
 		log::pure("%s model loading..\n", name.c_str());
 		const GLuint severity = Assimp::Logger::Debugging|Assimp::Logger::Info|Assimp::Logger::Err|Assimp::Logger::Warn;
 		Assimp::DefaultLogger::create("", Assimp::Logger::VERBOSE);
 		Assimp::DefaultLogger::get()->attachStream(new LimImportLogStream(), severity);
-		_scene = aiImportFile(modelPath.data(), pFrags);
-		if( !_scene || _scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !_scene->mRootNode ) {
+		g_scn = aiImportFile(modelPath.data(), pFrags);
+		if( !g_scn || g_scn->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !g_scn->mRootNode ) {
 			log::err("assimp_importer: %s\n\n", aiGetErrorString());
 			Assimp::DefaultLogger::kill();
 			return false;
 		}
 		Assimp::DefaultLogger::kill();
-		ai_backup_flags = _scene->mFlags;
+		ai_backup_flags = g_scn->mFlags;
 		log::pure("done! read file with assimp in %.2fsec\n", glfwGetTime()-elapsedTime);
 
 		/* import mats */
 		elapsedTime = glfwGetTime();
-		if( withMaterial ) {
-			my_materials.reserve(_scene->mNumMaterials);
-			for( GLuint i=0; i<_scene->mNumMaterials; i++ ) {
-				my_materials.push_back(convertMaterial(_scene->mMaterials[i]));
+		if( !g_same_mat ) {
+			own_materials.reserve(g_scn->mNumMaterials);
+			for( GLuint i=0; i<g_scn->mNumMaterials; i++ ) {
+				own_materials.push_back(convertMaterial(g_scn->mMaterials[i]));
 			}
 		}
 
 		/* import my_meshes */
-		my_meshes.reserve(_scene->mNumMeshes);
-		for( GLuint i=0; i<_scene->mNumMeshes; i++ ) {
-			my_meshes.push_back(convertMesh(_scene->mMeshes[i]));
+		own_meshes.reserve(g_scn->mNumMeshes);
+		for( GLuint i=0; i<g_scn->mNumMeshes; i++ ) {
+			own_meshes.push_back(convertMesh(g_scn->mMeshes[i]));
 		}
 		boundary_size = boundary_max - boundary_min;
 
 		/* set node tree structure */
-		recursiveConvertTree(_scene->mRootNode, root);
-		log::pure("#meshs %d, #mats %d, #verts %d, #tris %d\n", my_meshes.size(), my_materials.size(), nr_vertices, nr_triangles);
-		log::pure("boundary size : %f, %f, %f\n", name.c_str(), boundary_size.x, boundary_size.y, boundary_size.z);
-		log::pure("done! convert aiScene in %.2fsec\n\n", glfwGetTime()-elapsedTime);
+		recursiveConvertTree(g_scn->mRootNode, root);
 
-		aiReleaseImport(_scene);
-
+		updateNrAndBoundary();
 		if( unitScaleAndPivot ) {
 			updateUnitScaleAndPivot();
 		}
+		log::pure("#meshs %d, #mats %d, #verts %d, #tris %d\n", own_meshes.size(), own_materials.size(), nr_vertices, nr_triangles);
+		log::pure("boundary size : %f, %f, %f\n", boundary_size.x, boundary_size.y, boundary_size.z);
+		log::pure("done! convert aiScene in %.2fsec\n\n", glfwGetTime()-elapsedTime);
+
+		aiReleaseImport(g_scn);
+
+		
 		return true;
 	}
 
+
+
+
+
 	int getNrImportFormats()
 	{
-		return _nr_formats;
+		return g_nr_formats;
 	}
 	const char* getImportFormat(int idx)
 	{
-		if (_formats[0] == nullptr) {
-			for (int i = 0; i < _nr_formats; i++)
-				_formats[i] = aiGetImportFormatDescription(i)->mFileExtensions;
+		if (g_formats[0] == nullptr) {
+			for (int i = 0; i < g_nr_formats; i++)
+				g_formats[i] = aiGetImportFormatDescription(i)->mFileExtensions;
 		}
-		if (idx < 0 || idx >= _nr_formats)
+		if (idx < 0 || idx >= g_nr_formats)
 			return nullptr;
-		return _formats[idx];
+		return g_formats[idx];
 	}
 	std::string findModelInDirectory(std::string_view _path)
 	{

@@ -51,7 +51,7 @@ namespace lim
 		~AppPbr();
 	private:
 		virtual void update() override;
-		virtual void renderImGui() override;
+		virtual void updateImGui() override;
 	};
 }
 

@@ -31,7 +31,7 @@ namespace lim
 		virtual void update() final;
 		void drawMap();
 		void drawController();
-		virtual void renderImGui() final;
+		virtual void updateImGui() final;
 	private:
 		virtual void keyCallback(int key, int scancode, int action, int mods) final;
 		virtual void cursorPosCallback(double xPos, double yPos) final;

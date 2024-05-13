@@ -37,9 +37,23 @@ void Camera::moveShift(const glm::vec3& off) {
 }
 void Camera::updateViewMat()
 {
-	view_mat = lookAt(position, pivot, global_up);
+	mtx_View = lookAt(position, pivot, global_up);
 }
 void Camera::updateProjMat()
 {
-	proj_mat = perspective(radians(fovy), aspect, z_near, z_far);
+	mtx_Proj = perspective(radians(fovy), aspect, z_near, z_far);
+}
+void Camera::setUniformTo(const Program& prg) const {
+	prg.setUniform("cam_Pos", position);
+    prg.setUniform("mtx_Proj", mtx_Proj);
+    prg.setUniform("mtx_View", mtx_View);
+}
+void Camera::copyFrom(const Camera& src) {
+	fovy = src.fovy;
+	z_near = src.z_near;
+	position = src.position;
+	pivot = src.pivot;
+	global_up = src.global_up;
+	mtx_View = src.mtx_View;
+	mtx_Proj = src.mtx_Proj;
 }

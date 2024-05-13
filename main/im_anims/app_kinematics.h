@@ -27,7 +27,7 @@ namespace lim
 		~AppKinematics();
 	private:
 		virtual void update() final;
-		virtual void renderImGui() final;
+		virtual void updateImGui() final;
 	};
 }
 

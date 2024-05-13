@@ -30,7 +30,7 @@ namespace lim
 
 	private:
 		virtual void update() override;
-		virtual void renderImGui() override;
+		virtual void updateImGui() override;
 		virtual void framebufferSizeCallback(int w, int h) override;
 		virtual void mouseBtnCallback(int button, int action, int mods) override;
 		virtual void cursorPosCallback(double xPos, double yPos) override;

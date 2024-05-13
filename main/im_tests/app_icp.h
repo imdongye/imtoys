@@ -22,14 +22,14 @@ namespace lim
 	private:
 		CameraManWin camera;
 		Program prog;
-		Mesh src, dst;
+		Mesh src_ms, dst_ms;
 		glm::mat4 icp_mat = glm::mat4(1);
 	public:
 		AppICP();
 		~AppICP();
 	private:
 		virtual void update() override;
-		virtual void renderImGui() override;
+		virtual void updateImGui() override;
 	};
 }
 

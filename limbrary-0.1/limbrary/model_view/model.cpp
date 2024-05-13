@@ -28,11 +28,72 @@
 using namespace lim;
 
 
+
+void RdNode::addMsMat(const Mesh* ms, const Material* mat) {
+	meshs_mats.push_back({ms, mat});
+}
+RdNode* RdNode::makeChild(std::string_view _name) {
+	childs.push_back(RdNode());
+	childs.back().name = _name;
+	return &childs.back();
+}
+void RdNode::treversal(std::function<void(const Mesh* ms, const Material* mat, const glm::mat4& transform)> callback
+				, const glm::mat4& prevTransform ) const
+{
+	const glm::mat4 curTf = transform.mtx * prevTransform;
+
+	for( auto [ms, mat] : meshs_mats ) {
+		callback(ms, mat, curTf);
+	}
+	for( const RdNode& child : childs ) {
+		child.treversal(callback, curTf);
+	}
+}
+void RdNode::clear() {
+	meshs_mats.clear();
+	childs.clear();
+}
+
+
+
+
+
+Model::Model(std::string_view _name)
+	: name(_name)
+{
+	tf = &root.transform;
+}
+Model::~Model()
+{
+	clear();
+}
+void Model::clear()
+{
+	for( Material* mat : own_materials )
+		delete mat;
+	for( Texture* tex : own_textures )
+		delete tex;
+	for( Mesh* ms : own_meshes )
+		delete ms;
+
+	own_materials.clear();
+	own_textures.clear();
+	own_meshes.clear();
+	root.clear();
+
+	tf = &root.transform;
+	tf_normalized = nullptr;
+}
+
+
+
+
+
 static void correctMatTexLink( const Material& src,  Material& dst
 	, const std::vector<Texture*>& srcTexs, std::vector<Texture*>& dstTexs )
 {
-	if( dst.map_BaseColor ) {
-		dst.map_BaseColor = dstTexs[findIdx(srcTexs, src.map_BaseColor)];
+	if( dst.map_ColorBase ) {
+		dst.map_ColorBase = dstTexs[findIdx(srcTexs, src.map_ColorBase)];
 	}
 	if( dst.map_Specular ) {
 		dst.map_Specular = dstTexs[findIdx(srcTexs, src.map_Specular)];
@@ -56,15 +117,36 @@ static void correctMatTexLink( const Material& src,  Material& dst
 		dst.map_Opacity = dstTexs[findIdx(srcTexs, src.map_Opacity)];
 	}
 }
-
-
-Model::Model(std::string_view _name)
-	: name(_name)
-{
-	tf = &root.transform;
+static void recursiveCopyTree(const RdNode& src, RdNode& dst) {
+	dst.name = src.name;
+	dst.transform = src.transform;
+	dst.meshs_mats = src.meshs_mats;
+	
+	dst.childs.reserve(src.childs.size());
+	for( const RdNode& child : src.childs ) {
+		dst.childs.push_back({});
+		recursiveCopyTree(child, dst.childs.back());
+	}
 }
-Model::Model(const Model& src, bool makeRef)
+static void recursiveCopyAndMatchTree(const RdNode& src, RdNode& dst, const Model& srcMd, const Model& dstMd) {
+	dst.name = src.name;
+	dst.transform = src.transform;
+	dst.meshs_mats.reserve(src.meshs_mats.size());
+	for( auto& [srcMs, srcMat] : dst.meshs_mats ) {
+		int msIdx = findIdx(srcMd.own_meshes, (Mesh*)srcMs);
+		int matIdx = findIdx(srcMd.own_materials, (Material*)srcMat);
+		dst.meshs_mats.push_back({dstMd.own_meshes[msIdx], dstMd.own_materials[matIdx]});
+	}
+	
+	dst.childs.reserve(src.childs.size());
+	for( const RdNode& child : src.childs ) {
+		dst.childs.push_back({});
+		recursiveCopyAndMatchTree(child, dst.childs.back(), srcMd, dstMd);
+	}
+}
+void Model::copyFrom(const Model& src, bool makeRef)
 {
+	clear();
 	name = src.name;
 	path = src.path;
 
@@ -76,84 +158,69 @@ Model::Model(const Model& src, bool makeRef)
 	pivoted_scaled_bottom_height = src.pivoted_scaled_bottom_height;
 	ai_backup_flags = src.ai_backup_flags;
 
-	std::stack<const Node*> srcNs;
-	std::stack<Node*> dstNs;
-	srcNs.push(&src.root);
-	dstNs.push(&root);
-
 	if( makeRef ) 
 	{
-		while( srcNs.size()>0 ) {
-			const Node* srcN = srcNs.top(); srcNs.pop();
-			Node* dstN = dstNs.top(); dstNs.pop();
-			
-			dstN->transform = srcN->transform;
-			dstN->meshs_mats = srcN->meshs_mats;
-
-			dstN->childs.reserve(srcN->childs.size());
-			for(const Node& oriChild : srcN->childs) {
-				srcNs.push(&oriChild);
-				dstN->childs.push_back({});
-				dstNs.push(&dstN->childs.back());
-			}
-		}
+		recursiveCopyTree(src.root, root);
 	}
 	else // clone
 	{
 		log::warn("Model is copied\n\n");
-		my_textures.reserve(src.my_textures.size());
-		for( Texture* srcTex : src.my_textures ) {
-			my_textures.push_back( new Texture(*srcTex) ); // lvalue clone with copy consturctor
+		own_textures.reserve(src.own_textures.size());
+		for( Texture* srcTex : src.own_textures ) {
+			own_textures.push_back( new Texture(*srcTex) );
 		}
 
-		my_materials.reserve(src.my_materials.size());
-		for( int i=0; i<src.my_materials.size(); i++ ) {
-			my_materials.push_back( new Material(*src.my_materials[i]) ); // lvalue clone with copy consturctor
-			correctMatTexLink( *src.my_materials[i], *my_materials[i], src.my_textures, my_textures);
+		own_materials.reserve(src.own_materials.size());
+		for( int i=0; i<src.own_materials.size(); i++ ) {
+			own_materials.push_back( new Material(*src.own_materials[i]) );
+			correctMatTexLink( *src.own_materials[i], *own_materials[i], src.own_textures, own_textures);
 		}
 
-		my_meshes.reserve(src.my_meshes.size());
-		for( Mesh* srcMs : src.my_meshes ) {
-			my_meshes.push_back( new Mesh(*srcMs) ); // lvalue clone with copy consturctor
+		own_meshes.reserve(src.own_meshes.size());
+		for( Mesh* srcMs : src.own_meshes ) {
+			own_meshes.push_back( new Mesh(*srcMs) );
 		}
 
-		while( srcNs.size()>0 ) {
-			const Node* srcN = srcNs.top(); srcNs.pop();
-			Node* dstN = dstNs.top(); dstNs.pop();
-			
-			for( const auto& meshmat :  srcN->meshs_mats ) {
-				int ms_idx = findIdx(src.my_meshes, (Mesh*)meshmat.first);
-				int mat_idx = findIdx(src.my_materials, (Material*)meshmat.second);
-				dstN->meshs_mats.push_back({my_meshes[ms_idx], my_materials[mat_idx]});
-			}
-			dstN->childs.reserve(srcN->childs.size());
-			for(const Node& oriChild : srcN->childs) {
-				srcNs.push(&oriChild);
-				dstN->childs.push_back({});
-				dstNs.push(&dstN->childs.back());
-			}
-		}
+		recursiveCopyAndMatchTree(src.root, root, src, *this);
 	}
 	if( src.tf == &src.root.transform ) {
 		tf = &root.transform;
-		tf_normalize = nullptr;
+		tf_normalized = nullptr;
 	} else {
 		tf = &root.childs[0].transform;
-		tf_normalize = &root.transform;
+		tf_normalized = &root.transform;
 	}
 }
-Model::~Model()
-{
-	releaseResource();
+
+
+
+
+
+Material* Model::addOwn(Material* md) {
+	own_materials.push_back(md);
+	return md;
 }
-void Model::releaseResource()
+Texture* Model::addOwn(Texture* tex) {
+	own_textures.push_back(tex);
+	return tex;
+}
+Mesh* Model::addOwn(Mesh* ms) {
+	own_meshes.push_back(ms);
+	return ms;
+}
+
+
+void Model::setProgToAllMat(const Program* prog)
 {
-	for( Material* mat : my_materials )
-		delete mat;
-	for( Texture* tex : my_textures )
-		delete tex;
-	for( Mesh* ms : my_meshes )
-		delete ms;
+	for( Material* mat : own_materials ) {
+		mat->prog = prog;
+	}
+}
+void Model::setSetProgToAllMat(std::function<void(const Program&)> setProg)
+{
+	for( Material* mat : own_materials ) {
+		mat->set_prog = setProg;
+	}
 }
 
 
@@ -165,50 +232,37 @@ void Model::updateNrAndBoundary()
 	boundary_min = glm::vec3(std::numeric_limits<float>::max());
 	boundary_size = glm::vec3(0);
 
-	std::stack<const Node*> nodeStack;
-	nodeStack.push(&root);
-	while(nodeStack.size()>0)
-	{
-		const Node& cur = *nodeStack.top(); nodeStack.pop();
-		for( const auto& meshmat : cur.meshs_mats ) {
-			auto ms = meshmat.first;
-			for(const glm::vec3& p : ms->poss) {
-				// Todo : transform
-				boundary_max = glm::max(boundary_max, p);
-				boundary_min = glm::min(boundary_min, p);
-			}
-			nr_vertices += ms->poss.size();
-			nr_triangles += ms->tris.size();
+	root.treversal([&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
+		nr_vertices += ms->poss.size();
+		nr_triangles += ms->tris.size();
+		for(glm::vec3 p : ms->poss) {
+			p = transform * glm::vec4(p, 1);
+			boundary_max = glm::max(boundary_max, p);
+			boundary_min = glm::min(boundary_min, p);
 		}
-		for(const Node& nd : cur.childs) {
-			nodeStack.push(&nd);
-		}
-	}
+	});
 	boundary_size = boundary_max-boundary_min;
 }
 void Model::updateUnitScaleAndPivot()
 {
-	if( nr_vertices==0 ) {
-		updateNrAndBoundary();
-	}
 	constexpr float unit_length = 2.f;
 	//float max_axis_length = glm::max(glm::max(boundary_size.x, boundary_size.y), boundary_size.z);
 	float min_axis_length = glm::min(glm::min(boundary_size.x, boundary_size.y), boundary_size.z);
 	float normScale = unit_length/min_axis_length;
 
-	if( !tf_normalize ) {
-		Node real = root;
+	if( !tf_normalized ) {
+		RdNode real = root;
 		root.transform = Transform();
 		root.meshs_mats.clear();
 		root.childs.clear();
 		root.childs.push_back(real);
-		tf_normalize = &root.transform;
+		tf_normalized = &root.transform;
 		tf = &root.childs[0].transform;
 	}
 
-	tf_normalize->scale = glm::vec3(normScale);
-	tf_normalize->position = -(boundary_min + boundary_size*0.5f)*normScale;
-	tf_normalize->update();
+	tf_normalized->scale = glm::vec3(normScale);
+	tf_normalized->pos = -(boundary_min + boundary_size*0.5f)*normScale;
+	tf_normalized->update();
 
 	pivoted_scaled_bottom_height = boundary_size.y*0.5f*normScale;
 }

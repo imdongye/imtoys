@@ -7,18 +7,50 @@ in vec2 mUv;
 in vec4 shadowFragPos;
 
 /* light */
-uniform int shadow_Enabled = -1;
-uniform vec3 light_Pos = vec3(1,0,0);
-uniform vec3 light_Color = vec3(1);
-uniform float light_Int = 0.8;
+uniform sampler2D map_Light;
+uniform sampler2D map_Irradiance;
+uniform sampler3D map_PreFilteredEnv;
+uniform sampler2D map_PreFilteredBRDF;
+struct LightDirectional {
+	vec3 Pos;
+	vec3 Dir;
+	vec3 Color;
+	float Intensity;
+};
+uniform LightDirectional lit;
+
+struct ShadowDirectional {
+	bool Enabled;
+	float ZNear;
+	float ZFar;
+	vec2 TexelSize;
+	vec2 OrthoSize;
+	vec2 RadiusUv;
+};
+uniform ShadowDirectional shadow;
 uniform sampler2D map_Shadow;
+
 /* matarial */
-uniform int shininess = 20;
-uniform vec3 mat_BaseColor = vec3(1,1,0);
+struct Material {
+	vec3 BaseColor;
+	vec3 SpecColor;
+	vec3 AmbientColor;
+	vec3 EmissionColor;
+	vec3 F0;
+	float Transmission;
+	float Refraciti;
+	float Opacity;
+	float Shininess;
+	float Roughness;
+	float Metalness;
+	float BumpHeight;
+	float TexDelta;
+};
+uniform Material mat;
 /* texture */
 
 /* etc */
-uniform vec3 camera_Pos;
+uniform vec3 cam_Pos;
 uniform float gamma = 2.2;
 
 // 포아송 분포
@@ -37,7 +69,7 @@ float random(int i)
 }
 float shadowing()
 {
-	if( shadow_Enabled < 0 ) return 1.f;
+	if( !shadow.Enabled ) return 1.f;
 
 	float shadowFactor = 1.0;
 	vec3 shadowClipPos = shadowFragPos.xyz/shadowFragPos.w;
@@ -75,18 +107,18 @@ float shadowing()
 void main(void)
 {
 	vec3 N = normalize(wNor);
-	vec3 L = normalize(light_Pos-wPos);
-	vec3 V = normalize(camera_Pos - wPos);
+	vec3 L = normalize(lit.Pos-wPos);
+	vec3 V = normalize(cam_Pos - wPos);
 	vec3 R = 2*dot(N,L)*N-L;
 
 	float visibility = shadowing();
 
-	vec4 albelo = vec4(mat_BaseColor,1);
+	vec4 albelo = vec4(mat.BaseColor,1);
 
 	float lambertian = max(0, dot(N, L));
-	vec3 diffuse = light_Int*lambertian*albelo.rgb;
+	vec3 diffuse = lit.Intensity*lambertian*albelo.rgb;
 	vec3 ambient = 0.1f*albelo.rgb;
-	vec3 specular = pow(max(0,dot(R,V)), shininess) * lambertian * vec3(1);
+	vec3 specular = pow(max(0,dot(R,V)), mat.Shininess) * lambertian * vec3(1);
 	vec3 outColor = diffuse+ambient+specular;
 	outColor *= visibility;
 

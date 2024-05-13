@@ -22,6 +22,8 @@ main/assets/*
 *result/
 main/exports/
 
+.$diagram.drawio.bkp
+
 
 main/imgui.ini
 

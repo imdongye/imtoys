@@ -44,7 +44,7 @@ extern float roundnesses[MAX_OBJS];
 extern float donuts[MAX_PRIMS];
 extern float capsules[MAX_PRIMS];
 
-extern lim::IBLight ib_light;
+extern lim::IBLight* ib_light;
 extern bool use_IBL;
 
 
@@ -69,7 +69,7 @@ extern ImGuizmo::MODE gzmo_space;
 
 extern std::string model_name;
 extern lim::CameraController* camera;
-extern lim::Light* light;
+extern lim::LightDirectional* light;
 
 
 namespace sdf {

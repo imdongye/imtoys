@@ -75,7 +75,7 @@ namespace lim
 		glClear(GL_COLOR_BUFFER_BIT);
 
 	}
-	void AppFluid::renderImGui()
+	void AppFluid::updateImGui()
 	{
 		//ImGui::DockSpaceOverViewport();
 
@@ -102,9 +102,9 @@ namespace lim
 				| ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDocking;
 
 			const float PAD = 10.0f;
-			const ImGuiViewport* viewport = ImGui::GetMainViewport();
-			ImVec2 work_pos = viewport->WorkPos; // Use work area to avoid menu-bar/task-bar, if any!
-			ImVec2 work_size = viewport->WorkSize;
+			const ImGuiViewport* igvp = ImGui::GetMainViewport();
+			ImVec2 work_pos = igvp->WorkPos; // Use work area to avoid menu-bar/task-bar, if any!
+			ImVec2 work_size = igvp->WorkSize;
 			ImVec2 window_pos, window_pos_pivot;
 			window_pos.x = work_pos.x + PAD;
 			window_pos.y = work_pos.y + PAD;

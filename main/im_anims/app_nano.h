@@ -57,7 +57,7 @@ namespace lim
 	private:
 		void drawEyes(NVGcontext *vg, float x, float y, float w, float h, float mx, float my, float t);
 		virtual void update() override;
-		virtual void renderImGui() override;
+		virtual void updateImGui() override;
 		virtual void mouseBtnCallback(int btn, int action, int mod) override;
 		virtual void keyCallback(int key, int scancode, int action, int mods) override;
 		virtual void cursorPosCallback(double xPos, double yPos) override;

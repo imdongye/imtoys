@@ -60,8 +60,7 @@ float roundnesses[MAX_OBJS];
 float donuts[MAX_PRIMS];
 float capsules[MAX_PRIMS];
 
-IBLight ib_light;
-bool use_IBL = false;
+
 
 
 /***************** application data ****************/
@@ -81,7 +80,10 @@ ImGuizmo::MODE gzmo_space = ImGuizmo::MODE::LOCAL;
 
 std::string model_name = "Untitled";
 CameraController* camera = nullptr;
-Light* light = nullptr;
+
+LightDirectional* light = nullptr;
+IBLight* ib_light = nullptr;
+bool use_IBL = false;
 
 
 /********************** global func **********************/
@@ -312,7 +314,11 @@ sdf::Object::~Object() {
 
 
 /******************************** sdf_bridge.h **********************************/
-
+static void resetData();
+void sdf::init(CameraController* cam) {
+    camera = cam;
+    resetData();
+}
 void sdf::deinit() 
 {
     std::fill_n(nr_each_prim_types, nr_prim_types, 0);
@@ -330,13 +336,19 @@ void sdf::deinit()
 
     selected_edit_mode_idx = 1;
     gzmo_space = ImGuizmo::MODE::LOCAL;
-    
-    ib_light.deinitGL();
 
     model_name = "Untitled";
+
+    if(light) delete light;
+    if(ib_light) delete ib_light;
+    light = nullptr;
+    ib_light = nullptr;
 }
 static void resetData() {
     sdf::deinit();
+
+    light = new LightDirectional();
+    ib_light = new IBLight();
 
     camera->pivot = glm::vec3(0,0,0);
     camera->position = glm::vec3(0,1,5);
@@ -362,21 +374,15 @@ static void resetData() {
     root->addObjectToBack(PT_BOX);
     sdf::serializeModel();
 }
-void sdf::init(CameraController* cam, Light* lit) {
-    camera = cam;
-    light = lit;
-
-    resetData();
-}
 
 void sdf::bindSdfData(const Program& prog) 
 {
     prog.setUniform("camera_Aspect", camera->aspect);
 	prog.setUniform("camera_Fovy", camera->fovy);
-	prog.setUniform("camera_Pos", camera->position);
+	prog.setUniform("cam_Pos", camera->position);
 	prog.setUniform("camera_Pivot", camera->pivot);
-    prog.setUniform("light_Pos", light->position);
-    prog.setUniform("light_Int", light->intensity);
+    prog.setUniform("light_Pos", light->tf.pos);
+    prog.setUniform("light_Int", light->Intensity);
 
     prog.setUniform("nr_march_steps", nr_march_steps);
     prog.setUniform("far_distance", far_distance);
@@ -401,12 +407,12 @@ void sdf::bindSdfData(const Program& prog)
     prog.setUniform("capsules", MAX_PRIMS, capsules);
 
     prog.setUniform("use_IBL", use_IBL);
-    if(use_IBL||true) {
+    if( use_IBL ) {
         int activeSlot = 0;
-        prog.setTexture("map_Light", ib_light.getTexIdLight(), activeSlot++);
-        prog.setTexture("map_Irradiance", ib_light.getTexIdIrradiance(), activeSlot++);
-        prog.setTexture3d("map_PreFilteredEnv", ib_light.getTexIdPreFilteredEnv(), activeSlot++);
-        prog.setTexture("map_PreFilteredBRDF", ib_light.getTexIdPreFilteredBRDF(), activeSlot++);
+        prog.setTexture("map_Light", ib_light->getTexIdLight());
+        prog.setTexture("map_Irradiance", ib_light->getTexIdIrradiance());
+        prog.setTexture3d("map_PreFilteredEnv", ib_light->getTexIdPreFilteredEnv());
+        prog.setTexture("map_PreFilteredBRDF", ib_light->getTexIdPreFilteredBRDF());
     }
 }
 
@@ -703,9 +709,8 @@ void sdf::drawImGui()
     {
         ImGui::Begin("Settings##sdf");
         ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.5f);
-        if(ImGui::Checkbox("use IBL", &use_IBL)&& !ib_light.is_map_baked) {
-            ib_light.setMap("assets/ibls/Alexs_Apt_2k.hdr");
-            ib_light.bakeMap();
+        if( ImGui::Checkbox("use IBL", &use_IBL) && !ib_light->is_baked ) {
+            ib_light->setMapAndBake("assets/images/ibls/Alexs_Apt_2k.hdr");
         }
         ImGui::SliderInt("# March Steps", &nr_march_steps, 20, 300, "%d");
         ImGui::SliderFloat("Far Distance", &far_distance, 20, 300, "%.0f");
@@ -714,21 +719,18 @@ void sdf::drawImGui()
         ImGui::Separator();
 
         ImGui::Text("<Light>");
-        static float litTheta = 90.f-glm::degrees(glm::acos(glm::dot(glm::normalize(light->position), glm::normalize(glm::vec3(light->position.x, 0, light->position.z)))));
         const static float litThetaSpd = 70 * 0.001;
-        static float litPhi = 90.f-glm::degrees(glm::atan(light->position.x,-light->position.z));
         const static float litPhiSpd = 360 * 0.001;
-        static float litDist = glm::length(light->position);
         const static float litDistSpd = 45.f * 0.001;
         bool isLightDraged = false;
-        isLightDraged |= ImGui::DragFloat("Yaw", &litPhi, litPhiSpd, -FLT_MAX, +FLT_MAX, "%.3f");
-        isLightDraged |= ImGui::DragFloat("Pitch", &litTheta, litThetaSpd, 0, 80, "%.3f");
-        isLightDraged |= ImGui::DragFloat("Distance", &litDist, litDistSpd, 5.f, 20.f, "%.3f");
+        isLightDraged |= ImGui::DragFloat("phi", &light->tf.phi, litPhiSpd, -FLT_MAX, +FLT_MAX, "%.3f");
+        isLightDraged |= ImGui::DragFloat("theta", &light->tf.theta, litThetaSpd, 0, 80, "%.3f");
+        isLightDraged |= ImGui::DragFloat("Distance", &light->tf.dist, litDistSpd, 5.f, 20.f, "%.3f");
         if( isLightDraged ) {
-            light->setRotate(litTheta, glm::fract(litPhi/360.f)*360.f, litDist);
+            light->tf.updateWithRotAndDist();
         }
-        ImGui::Text("Pos: %.1f %.1f %.1f", light->position.x, light->position.y, light->position.z);
-        ImGui::SliderFloat("Intencity", &light->intensity, 0.0f, 200.f, "%.1f");
+        ImGui::Text("Pos: %.1f %.1f %.1f", light->tf.pos.x, light->tf.pos.y, light->tf.pos.z);
+        ImGui::SliderFloat("Intencity", &light->Intensity, 0.0f, 200.f, "%.1f");
         ImGui::Separator();
         ImGui::Text("<Camera>");
         static int viewingMode = 0;
@@ -797,7 +799,7 @@ void sdf::drawGuizmo(const Viewport& vp) {
 
     ImGuizmo::SetOrthographic(false);
     if(selected_edit_mode_idx>0) {
-        ImGuizmo::Manipulate( glm::value_ptr(cam.view_mat), glm::value_ptr(cam.proj_mat)
+        ImGuizmo::Manipulate( glm::value_ptr(cam.mtx_View), glm::value_ptr(cam.mtx_Proj)
                             , gzmo_edit_modes[selected_edit_mode_idx], gzmo_space, glm::value_ptr(selected_obj->transform)
                             , nullptr, nullptr, nullptr);
     }

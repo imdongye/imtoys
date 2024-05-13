@@ -21,12 +21,11 @@ namespace lim
 		glm::vec2 uv_scale = {1.f, 1.f};
 		float vs_t = 0.f;
 
-		Program* program;
-		ViewportWithCamera* viewport;
-		std::vector<Model*> models;
-		Light* light;
-		Model* light_model;
-		Texture* debugging_tex;
+		Program program;
+		Material default_mat;
+		ViewportWithCamera viewport;
+		Texture debugging_tex;
+		LightDirectional light;
 		Scene scene;
 
 	public:
@@ -34,9 +33,9 @@ namespace lim
 		~AppGenMesh();
 	private:
 		virtual void update() override;
-		virtual void renderImGui() override;
+		virtual void updateImGui() override;
 	private:
-		void processInput(GLFWwindow* window);
+		void addMeshToScene(Mesh* ms);
 	};
 }
 

@@ -8,15 +8,15 @@ out vec3 wPos;
 out vec3 wNor;
 out vec2 mUv;
 
-uniform mat4 model_Mat;
-uniform mat4 view_Mat;
-uniform mat4 proj_Mat;
+uniform mat4 mtx_Model;
+uniform mat4 mtx_View;
+uniform mat4 mtx_Proj;
 
 void main()
 {
-	wPos = vec3(model_Mat*vec4(aPos, 1.f));
-	wNor = mat3(model_Mat)*aNor;
+	wPos = vec3(mtx_Model*vec4(aPos, 1.f));
+	wNor = mat3(mtx_Model)*aNor;
 	mUv = aUv;
 
-	gl_Position = proj_Mat*view_Mat*vec4(wPos,1.f);
+	gl_Position = mtx_Proj*mtx_View*vec4(wPos,1.f);
 }

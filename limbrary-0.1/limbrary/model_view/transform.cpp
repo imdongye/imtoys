@@ -12,19 +12,20 @@ parent는 계층관계나 pivot으로 쓴다.
 using namespace lim;
 
 void Transform::update() {
-    mat = glm::translate(position) 
+    mtx = glm::translate(pos) 
         * glm::toMat4(orientation) 
         * glm::scale(scale);
+    
+    if( update_callback )
+        update_callback(this);
 }
 
-void TransformPivoted::updatePosDir() {
+void TransformPivoted::updateWithRotAndDist() {
     // Todo: make mat
 	glm::vec4 toPos = {0,1,0,0};
-	toPos = glm::rotate(glm::radians(rot.y), glm::vec3{0,0,-1}) * toPos;
-	toPos = glm::rotate(glm::radians(rot.x), glm::vec3{0,1, 0}) * toPos;
-    direction = toPos;
-	position = pivot+distance*direction;
+	toPos = glm::rotate(glm::radians(theta), glm::vec3{0,0,-1}) * toPos;
+	toPos = glm::rotate(glm::radians(phi),   glm::vec3{0,1, 0}) * toPos;
+    dir = toPos;
+	pos = pivot+dist*dir;
+    update();
 }
-void TransformPivoted::updateOrientation() {
-
-}   

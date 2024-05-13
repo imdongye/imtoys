@@ -32,11 +32,15 @@ using namespace glm;
 
 namespace
 {
-	const int _nr_formats = (int)aiGetExportFormatCount();
+	const int g_nr_formats = (int)aiGetExportFormatCount();
 
-	const aiExportFormatDesc* _formats[32] = { nullptr, };
+	const aiExportFormatDesc* g_formats[32] = { nullptr, };
 
-	const Model* _src_md = nullptr;
+	const Model* g_src_md = nullptr;
+
+	std::vector<std::pair<const Mesh*, const Material*>> g_materialed_meshes;
+
+
 
 	inline aiVector3D toAiV( const vec3& v ) {
 		return { v.x, v.y, v.z };
@@ -53,21 +57,19 @@ namespace
 							m[2][0], m[2][1], m[2][2], m[2][3], 
 							m[3][0], m[3][1], m[3][2], m[3][3] );
 	}
-
 	class LimExportLogStream : public Assimp::LogStream
 	{
 	public:
-			LimExportLogStream()
-			{
-			}
-			~LimExportLogStream()
-			{
-			}
+			LimExportLogStream(){}
+			~LimExportLogStream(){}
 			virtual void write(const char* message) override
 			{
 				//log::pure("%s", message);
 			}
 	};
+
+
+
 
 	aiMaterial* convertMaterial(const Material& src)
 	{
@@ -77,47 +79,47 @@ namespace
 		aiString tempStr;
 		float tempFloat;
 
-		if(src.factor_Flags & Material::FF_BASE_COLOR) {
-			temp3d = toAiC(src.baseColor);
+		if(src.factor_flags & Material::FF_COLOR_BASE) {
+			temp3d = toAiC(src.BaseColor);
 			aiMat->AddProperty(&temp3d, 1, AI_MATKEY_COLOR_DIFFUSE);
 		}
-		if(src.factor_Flags & Material::FF_SPECULAR) {
-			temp3d = toAiC(src.specColor);
+		if(src.factor_flags & Material::FF_SPECULAR) {
+			temp3d = toAiC(src.SpecColor);
 			aiMat->AddProperty(&temp3d, 1, AI_MATKEY_COLOR_SPECULAR);
 		}
 		// pass AI_MATKEY_SHININESS_STRENGTH
-		if(src.factor_Flags & Material::FF_AMBIENT) {
+		if(src.factor_flags & Material::FF_AMBIENT) {
 			// temp3d = toAiC(src.ambientColor);
 			// aiMat->AddProperty(&temp3d, 1, AI_MATKEY_COLOR_AMBIENT);
 		}
-		if(src.factor_Flags & Material::FF_EMISSION) {
-			temp3d = toAiC(src.emissionColor);
+		if(src.factor_flags & Material::FF_EMISSION) {
+			temp3d = toAiC(src.EmissionColor);
 			aiMat->AddProperty(&temp3d, 1, AI_MATKEY_COLOR_EMISSIVE);
 		}
-		if(src.factor_Flags & Material::FF_TRANSMISSION) {
-			tempFloat = src.transmission;
+		if(src.factor_flags & Material::FF_TRANSMISSION) {
+			tempFloat = src.Transmission;
 			aiMat->AddProperty(&tempFloat, 1, AI_MATKEY_TRANSMISSION_FACTOR);
 		}
-		if(src.factor_Flags & Material::FF_REFRACITI) {
-			tempFloat = src.refraciti;
+		if(src.factor_flags & Material::FF_REFRACITI) {
+			tempFloat = src.Refraciti;
 			aiMat->AddProperty(&tempFloat, 1, AI_MATKEY_REFRACTI);
 		}
-		if(src.factor_Flags & Material::FF_OPACITY) {
-			tempFloat = src.opacity;
+		if(src.factor_flags & Material::FF_OPACITY) {
+			tempFloat = src.Opacity;
 			aiMat->AddProperty(&tempFloat, 1, AI_MATKEY_OPACITY);
 		}
 		// pass AI_MATKEY_SHININESS
-		if(src.factor_Flags & Material::FF_ROUGHNESS) {
-			tempFloat = src.opacity;
+		if(src.factor_flags & Material::FF_ROUGHNESS) {
+			tempFloat = src.Opacity;
 			aiMat->AddProperty(&tempFloat, 1, AI_MATKEY_ROUGHNESS_FACTOR);
 		}
-		if(src.factor_Flags & Material::FF_METALNESS) {
-			tempFloat = src.metalness;
+		if(src.factor_flags & Material::FF_METALNESS) {
+			tempFloat = src.Metalness;
 			aiMat->AddProperty(&tempFloat, 1, AI_MATKEY_METALLIC_FACTOR);
 		}
 
-		if( src.map_BaseColor ) {
-			tempStr = aiString(src.map_BaseColor->file_path.data());
+		if( src.map_ColorBase ) {
+			tempStr = aiString(src.map_ColorBase->file_path.data());
 			aiMat->AddProperty( &tempStr, AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE, 0) );
 		}
 		if( src.map_Specular ) {
@@ -168,53 +170,46 @@ namespace
 		return aiMat;
 	}
 
-	aiMesh* convertMesh(const Mesh& src, const Material* srcMat) 
+
+
+
+	aiMesh* convertMesh(const Mesh& src, const Material* mat) 
 	{
 		aiMesh* aiMs = new aiMesh();
 		// From: https://github.com/assimp/assimp/issues/203
 		aiMs->mPrimitiveTypes = aiPrimitiveType_TRIANGLE;
-		if(srcMat) {
-			GLuint idxOfMat = findIdx(_src_md->my_materials, (Material*)srcMat);
-			if(idxOfMat<0) {
-				// 머테리얼이 my_materials에 없거나 null값인경우 makeScene에서 만들어주는 
-				// 마지막위치의 defaultMaterial을 사용하기 위함.
-				idxOfMat = _src_md->my_materials.size();
-			}
-			aiMs->mMaterialIndex = idxOfMat;
-		} else {
-			aiMs->mMaterialIndex = 0;
-		}
+		aiMs->mMaterialIndex = findIdx(g_src_md->own_materials, (Material*)mat);
 
-		GLuint nrTemp = src.poss.size();
-		aiMs->mNumVertices = nrTemp;
-		if( nrTemp>0 ) {
-			aiMs->mVertices = new aiVector3D[nrTemp];
-			for( int i=0; i<nrTemp; i++ ) {
+		GLuint size = src.poss.size();
+		aiMs->mNumVertices = size;
+		if( size>0 ) {
+			aiMs->mVertices = new aiVector3D[size];
+			for( int i=0; i<size; i++ ) {
 				aiMs->mVertices[i] = toAiV(src.poss[i]);
 			}
 		}
 
-		nrTemp = src.nors.size();
-		if( nrTemp>0 ) {
-			aiMs->mNormals = new aiVector3D[nrTemp];
-			for( int i=0; i<nrTemp; i++ ) {
+		size = src.nors.size();
+		if( size>0 ) {
+			aiMs->mNormals = new aiVector3D[size];
+			for( int i=0; i<size; i++ ) {
 				aiMs->mNormals[i] = toAiV(src.nors[i]);
 			}
 		}
 
-		nrTemp = src.uvs.size();
-		if( nrTemp>0 ) {
-			aiMs->mTextureCoords[0] = new aiVector3D[nrTemp];
-			for( int i=0; i<nrTemp; i++ ) {
+		size = src.uvs.size();
+		if( size>0 ) {
+			aiMs->mTextureCoords[0] = new aiVector3D[size];
+			for( int i=0; i<size; i++ ) {
 				aiMs->mTextureCoords[0][i] = {src.uvs[i].x, src.uvs[i].y, 0.f};
 			}
 		}
 		
-		nrTemp = src.tris.size();
-		if( nrTemp>0 ) {
-			aiMs->mNumFaces = nrTemp;
-			aiMs->mFaces = new aiFace[nrTemp];
-			for( int i=0; i<nrTemp; i++ ) {
+		size = src.tris.size();
+		if( size>0 ) {
+			aiMs->mNumFaces = size;
+			aiMs->mFaces = new aiFace[size];
+			for( int i=0; i<size; i++ ) {
 				aiFace& face = aiMs->mFaces[i];
 				face.mNumIndices = 3;
 				face.mIndices = new unsigned int[3];
@@ -223,115 +218,91 @@ namespace
 				}
 			}
 		}
+
+		// Todo: rigging blend factors
 		
 		return aiMs;
 	}
 
-	std::vector<std::pair<const Mesh*, const Material*>> g_meshs_mats_cache; // Todo: 임시
-	aiNode* recursiveConvertTree(const Model::Node& src)
+
+
+
+
+	void recursiveConvertTree(const RdNode& src, aiNode* dst)
 	{
-		aiNode* node = new aiNode();
-		node->mTransformation = toAi(src.transform.mat);
+		dst->mName = aiString(src.name.data());
+		dst->mTransformation = toAi(src.transform.mtx);
 
 		const int nrMeshes = src.meshs_mats.size();
-		node->mNumMeshes = nrMeshes;
-		node->mMeshes = new unsigned int[nrMeshes];
+		dst->mNumMeshes = nrMeshes;
+		dst->mMeshes = new unsigned int[nrMeshes];
 		for( int i=0; i<nrMeshes; i++ ) {
-			node->mMeshes[i] = findIdx(g_meshs_mats_cache, src.meshs_mats[i]);
+			dst->mMeshes[i] = findIdx(g_materialed_meshes, src.meshs_mats[i]);
 		}
 
 		const size_t nrChilds = src.childs.size();
-		node->mNumChildren = nrChilds;
-		node->mChildren = new aiNode*[nrChilds];
+		dst->mNumChildren = nrChilds;
+		dst->mChildren = new aiNode*[nrChilds];
 		for( size_t i=0; i< src.childs.size(); i++ ) {
-			node->mChildren[i] = recursiveConvertTree(src.childs[i]);
+			dst->mChildren[i] = new aiNode();
+			recursiveConvertTree(src.childs[i], dst->mChildren[i]);
 		}
-		return node;
 	}
-
-	std::vector<const Material*> findMatsOfMesh(const Mesh* pMesh, const Model::Node& root) 
-	{
-		std::vector<const Material*> rst;
-		root.treversal([&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
-			if(pMesh==ms) {
-				rst.push_back(mat);
-			}
-		});
-		return rst;
-	}
+	
 
 	aiScene* makeScene(const Model& md)
 	{
-		aiScene* scene = new aiScene();
+		aiScene* scn = new aiScene();
 
-		scene->mFlags = md.ai_backup_flags;
+		scn->mFlags = md.ai_backup_flags;
+		scn->mNumLights = 0;
 
-		// assimp에서는 mesh안에 material index가 포함되어있다.
-		// 하지만 limbrary는 mesh와 material이 독립적이고 node에서 연결시켜주기때문에
-		// mesh는 같지만 material이 다른경우 assimp에서는 mesh를 각각 만들어줘야한다.
-		// 또한 연결된 material이 null인 경우 머테리얼을 사용하는것도 고려해야한다.
-		// my_material 마지막에 default_material을 넣어주고 indexing해서 assimp scene을 업데이트한다.
-		// export후 default material은 다시 빼주어야한다.
-		GLuint nrAiMeshes = 0;
-		g_meshs_mats_cache.clear();
-		const Material* defaultMat = &AssetLib::get().default_material;
-		const Material* prevMat = defaultMat;
-		md.root.treversal([&](const Mesh* ms, const Material* mat, const glm::mat4& _) {
-			if( mat!=nullptr ) {
-				prevMat = mat;
-			}
-			auto pair = std::make_pair(ms, prevMat);
-			if( std::find(g_meshs_mats_cache.begin(), g_meshs_mats_cache.end(), pair) == g_meshs_mats_cache.end() ) {
-				g_meshs_mats_cache.push_back(pair);
-				nrAiMeshes++;
+		/*
+		assimp에서는 mesh안에 material index가 포함되어있다.
+		하지만 limbrary는 mesh와 material이 독립적이고 node에서 연결시켜주기때문에
+		mesh는 같지만 material이 다른경우 assimp에서는 mesh를 각각 만들어줘야한다.
+		*/
+		g_materialed_meshes.clear();
+		md.root.treversal([&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
+			auto pair = std::make_pair(ms, mat);
+			if( findIdx(g_materialed_meshes, pair)<0 ) {
+				g_materialed_meshes.push_back(pair);
 			}
 		});
 		
-		const GLuint nrMats = md.my_materials.size()+1;
-		scene->mNumMaterials = nrMats;
-		scene->mMaterials = new aiMaterial*[nrMats];
+
+		const GLuint nrMats = md.own_materials.size();
+		scn->mNumMaterials = nrMats;
+		scn->mMaterials = new aiMaterial*[nrMats];
 		for( int i = 0; i<nrMats; i++ ) {
-			scene->mMaterials[i] = convertMaterial(*md.my_materials[i]);
+			scn->mMaterials[i] = convertMaterial(*md.own_materials[i]);
 		}
-		scene->mMaterials[nrMats] = convertMaterial(*defaultMat);
 
 
-		scene->mNumMeshes = nrAiMeshes;
-		scene->mMeshes = new aiMesh*[nrAiMeshes];
-		for(int i=0; i<nrAiMeshes; i++) {
-			auto [ms, mat] = g_meshs_mats_cache[i];
-			scene->mMeshes[i] = convertMesh(*ms, mat);
+		scn->mNumMeshes = g_materialed_meshes.size();
+		scn->mMeshes = new aiMesh*[scn->mNumMeshes];
+		for(int i=0; i<scn->mNumMeshes; i++) {
+			auto [ms, mat] = g_materialed_meshes[i];
+			scn->mMeshes[i] = convertMesh(*ms, mat);
 		}
-		scene->mRootNode = recursiveConvertTree(md.root);
-		g_meshs_mats_cache.clear();
-		
-		
-		return scene;
+
+
+		scn->mRootNode = new aiNode();
+		recursiveConvertTree(md.root, scn->mRootNode);
+		g_materialed_meshes.clear();
+		return scn;
 	}
 };
 
+
+
 namespace lim
 {
-	int getNrExportFormats()
-	{
-		return _nr_formats;
-	}
-	const aiExportFormatDesc* getExportFormatInfo(int idx)
-	{
-		if (_formats[0] == nullptr) {
-			for (int i = 0; i < _nr_formats; i++)
-				_formats[i] = aiGetExportFormatDescription(i);
-		}
-		if (idx < 0 || idx >= _nr_formats)
-			return nullptr;
-		return _formats[idx];
-	}
-
 	bool Model::exportToFile(size_t pIndex, std::string_view exportDir)
 	{
 		namespace fs = std::filesystem;
-		const aiExportFormatDesc *format = _formats[pIndex];
-		_src_md = this;
+		const aiExportFormatDesc *format = g_formats[pIndex];
+		g_src_md = this;
 		std::string md_dir(exportDir);
 		md_dir += "/"+name+"_"+format->fileExtension;
 
@@ -343,7 +314,7 @@ namespace lim
 		std::string mdPath = md_dir + "/" + name +'.'+format->fileExtension;
 		path = mdPath;
 		// export할때 모델의 상대 경로로 임시 변경
-		for( Texture* tex : my_textures ) {
+		for( Texture* tex : own_textures ) {
 			tex->file_path = tex->file_path.c_str() + lastSlashPosInOriMdPath+1;
 		}
 
@@ -373,7 +344,7 @@ namespace lim
 
 		/* export texture */
 		elapsedTime = glfwGetTime();
-		for( Texture* tex : my_textures )
+		for( Texture* tex : own_textures )
 		{
 			std::string newTexPath = md_dir + "/" + tex->file_path.c_str();
 			tex->file_path = newTexPath;
@@ -408,5 +379,25 @@ namespace lim
 
 		log::pure("done! export texture in %.2fsec\n\n", glfwGetTime()-elapsedTime);
 		return true;
+	}
+
+
+
+
+
+
+	int getNrExportFormats()
+	{
+		return g_nr_formats;
+	}
+	const aiExportFormatDesc* getExportFormatInfo(int idx)
+	{
+		if (g_formats[0] == nullptr) {
+			for (int i = 0; i < g_nr_formats; i++)
+				g_formats[i] = aiGetExportFormatDescription(i);
+		}
+		if (idx < 0 || idx >= g_nr_formats)
+			return nullptr;
+		return g_formats[idx];
 	}
 }

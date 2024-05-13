@@ -23,7 +23,7 @@ namespace lim
 		~AppMovingWindow();
 	private:
 		virtual void update() override;
-		virtual void renderImGui() override;
+		virtual void updateImGui() override;
 		void processInput();
 	};
 }

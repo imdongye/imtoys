@@ -13,15 +13,15 @@ namespace lim
 			#version 410 core
 			layout (location = 0) in vec3 aPos;
 
-			uniform mat4 model_Mat = mat4(1);
-			uniform mat4 view_Mat = mat4(1);
-			uniform mat4 proj_Mat= mat4(1);
+			uniform mat4 mtx_Model = mat4(1);
+			uniform mat4 mtx_View = mat4(1);
+			uniform mat4 mtx_Proj= mat4(1);
 
 			out vec3 wPos;
 
 			void main(void) {
-				wPos = (model_Mat * vec4(aPos, 1.0)).xyz;
-				gl_Position= proj_Mat*view_Mat*vec4(wPos,1.0);
+				wPos = (mtx_Model * vec4(aPos, 1.0)).xyz;
+				gl_Position= mtx_Proj*mtx_View*vec4(wPos,1.0);
 			}
 			)shader";
 		vg = nvgCreateGL3(NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG);
@@ -67,7 +67,7 @@ namespace lim
 		nvgRestore(vg);
 		nvgEndFrame(vg);
 	}
-	void AppFont::renderImGui()
+	void AppFont::updateImGui()
 	{
 		ImGui::Begin("asdf");
 		ImGui::PushFont(font1);

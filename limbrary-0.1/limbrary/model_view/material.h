@@ -28,7 +28,7 @@ namespace lim
     {
         enum FactorFlag {
             FF_NONE         = 0,
-            FF_BASE_COLOR   = 1<<0,
+            FF_COLOR_BASE   = 1<<0,
             FF_SPECULAR     = 1<<1,
             FF_AMBIENT      = 1<<2,
             FF_EMISSION     = 1<<3,
@@ -41,7 +41,7 @@ namespace lim
         };
         enum MapFlag{
             MF_NONE       = 0,
-            MF_BASE_COLOR = 1<<0, // 1
+            MF_COLOR_BASE = 1<<0, // 1
             MF_SPECULAR   = 1<<1, // 2
             MF_HEIGHT     = 1<<2, // 4
             MF_NOR        = 1<<3, // 8
@@ -55,24 +55,26 @@ namespace lim
             MF_SHININESS  = 1<<11,// 2052
         };
 
-        int factor_Flags = 0; // just for export
-        glm::vec3 baseColor = {0.27f, 0.79f, 0.69f}; // 지구의 모든 물체는 반사율 0이 될수없음.
-        glm::vec3 specColor = glm::vec3(1.f);
-        glm::vec3 ambientColor = glm::vec3(0.003f);
-        glm::vec3 emissionColor = glm::vec3(0.f);
-        float transmission = 0.f;
-        float refraciti = 0.f;           // ior
-        float opacity = 1.f;
-        float shininess = 100.f;         // assimp로드 기본값 낮아서 로드하지 않음.
-        float roughness = 0.3f;
-        float metalness = 0.0f;
+        int factor_flags = 0; // just for export
+        //
+        // mat.BaseColor
+        //
+        glm::vec3 BaseColor = {0.27f, 0.79f, 0.69f}; // 지구의 모든 물체는 반사율 0이 될수없음.
+        glm::vec3 SpecColor = glm::vec3(1.f);
+        glm::vec3 AmbientColor = glm::vec3(0.003f);
+        glm::vec3 EmissionColor = glm::vec3(0.f);
         glm::vec3 F0 = glm::vec3(0.21f); // plastic high assimp로드되지 않음. 
-
-        float bumpHeight = 100;
-        float texDelta = 0.00001f;
+        float Transmission = 0.f;
+        float Refraciti = 0.f;           // ior
+        float Opacity = 1.f;
+        float Shininess = 100.f;         // assimp로드 기본값 낮아서 로드하지 않음.
+        float Roughness = 0.3f;
+        float Metalness = 0.0f;
+        float BumpHeight = 100;
+        float TexDelta = 0.00001f;
 
         int map_Flags = 0;
-        Texture* map_BaseColor = nullptr;     // Diffuse Color
+        Texture* map_ColorBase = nullptr;     // Diffuse Color
         Texture* map_Specular = nullptr;
         Texture* map_Bump = nullptr;          // MF_Height, MF_Nor 로 노멀맵인지 height맵인지 구분
         Texture* map_AmbOcc = nullptr;
@@ -81,8 +83,13 @@ namespace lim
         Texture* map_Emission = nullptr;
         Texture* map_Opacity = nullptr;       
 
-        Program* prog = nullptr;
+
+        const Program* prog; // AssetLib::get().ndv_prog
 		std::function<void(const Program&)> set_prog = nullptr;
+
+
+        Material();
+        void setUniformTo(const Program& prg) const;
     };
 }
 #endif

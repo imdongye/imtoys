@@ -31,7 +31,7 @@ namespace lim
 		glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	}
-	void AppImGuiTest::renderImGui()
+	void AppImGuiTest::updateImGui()
 	{
 		ImGuiIO& io = ImGui::GetIO(); (void)io;
 		// 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).

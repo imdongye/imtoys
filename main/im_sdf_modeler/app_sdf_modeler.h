@@ -18,17 +18,17 @@ namespace lim
 		inline static constexpr CStr APP_NAME = "sdf_modeler";
 		inline static constexpr CStr APP_DIR  = "im_sdf_modeler";
 		inline static constexpr CStr APP_DESCRIPTION = "hello, world";
+
 	private:
-		Light light;
 		ProgramReloadable prog;
 		ViewportWithCamera viewport;
 
 	public:
 		AppSdfModeler();
 		~AppSdfModeler();
-	private:
+		
 		virtual void update() final;
-		virtual void renderImGui() final;
+		virtual void updateImGui() final;
 		virtual void keyCallback(int key, int scancode, int action, int mods) override;
 		virtual void dndCallback(int count, const char **paths) override;
 		virtual void mouseBtnCallback(int button, int action, int mods) override;

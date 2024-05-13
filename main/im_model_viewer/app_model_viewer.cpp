@@ -29,24 +29,24 @@ namespace
 		int idx_G = 0;
 		int idx_F = 0;
 		int idx_LitMod = 0;
-		int nr_ibl_w_samples = 30;
+		int nr_IblWSamples = 30;
         float shininess = 100.f; // shininess
-        float refIdx    = 1.45f; // index of refraction
+        // float refIdx    = 1.45f; // index of refraction
         float roughness = 0.3f;  // brdf param
 		float metalness = 0.f;
-		float ambientInt = 0.008f;
+		float ambient_int = 0.008f;
 		void setup(Model& md) {
-			for(Material* mat : md.my_materials) {
-				mat->shininess = shininess;
+			for(Material* mat : md.own_materials) {
+				mat->Shininess = shininess;
 			}
-			for(Material* mat : md.my_materials) {
-				mat->roughness = roughness;
+			for(Material* mat : md.own_materials) {
+				mat->Roughness = roughness;
 			}
-			for(Material* mat : md.my_materials) {
-				mat->metalness = metalness;
+			for(Material* mat : md.own_materials) {
+				mat->Metalness = metalness;
 			}
-			for(Material* mat : md.my_materials) {
-				mat->ambientColor = glm::vec3(1)*ambientInt;
+			for(Material* mat : md.own_materials) {
+				mat->AmbientColor = glm::vec3(1)*ambient_int;
 			}
 		}
 	};
@@ -59,7 +59,7 @@ namespace
 			prog.setUniform("idx_G", tInfo.idx_G);
 			prog.setUniform("idx_F", tInfo.idx_F);
 			prog.setUniform("idx_LitMod", tInfo.idx_LitMod);
-			prog.setUniform("nr_ibl_w_samples", tInfo.nr_ibl_w_samples);
+			prog.setUniform("nr_IblWSamples", tInfo.nr_IblWSamples);
 		};
 	}
 
@@ -75,6 +75,7 @@ lim::AppModelViewer::AppModelViewer() : AppBase(1373, 780, APP_NAME, false)
 	, vp_pfenv_map("pf env map", new FramebufferNoDepth(3,32))
 	, vp_pfbrdf_map("pf brdf map", new FramebufferNoDepth(3,32))
 	, vp_shadow_map("shadow map", new FramebufferNoDepth(3,32))
+	, ib_light("assets/images/ibls/artist_workshop_4k.hdr")
 {
 	viewports.reserve(5);
 	scenes.reserve(5);
@@ -83,43 +84,39 @@ lim::AppModelViewer::AppModelViewer() : AppBase(1373, 780, APP_NAME, false)
 	program.home_dir = APP_DIR;
 	program.attatch("smvp.vs").attatch("brdf.fs").link();
 
-	light.setRotate(35.f, -35.f, 7.f);
-	light.intensity = 55.f;
-	light.shadow_enabled = true;
+	d_light.tf.theta = 35.f;
+	d_light.tf.phi =  -35.f;
+	d_light.tf.dist = 7.f;
+	d_light.tf.updateWithRotAndDist();
+	d_light.Intensity = 55.f;
+	d_light.setShadowEnabled(true);
 
 	floor_md.name = "floor";
-	floor_md.my_meshes.push_back(new MeshPlane(1));
-	floor_md.my_materials.push_back(new Material());
-	floor_md.root.meshs_mats.push_back({floor_md.my_meshes.back(), floor_md.my_materials.back()});
-	floor_md.scale = glm::vec3(5.f);
-	floor_md.updateModelMat();
+	floor_md.addOwn(new MeshPlane(1));
+	Material* flMat = floor_md.addOwn(new Material());
+	flMat->prog = &program;
+	floor_md.root.addMsMat(floor_md.own_meshes.back(), flMat);
+	floor_md.tf->scale = glm::vec3(5.f);
+	floor_md.tf->update();
 
-	floor_md.my_textures.push_back(new Texture());
-	floor_md.my_textures.back()->min_filter = GL_LINEAR_MIPMAP_LINEAR;
-	floor_md.my_textures.back()->initFromFile("assets/images/floor/wood_floor_deck_diff_4k.jpg", true);
-	floor_md.default_material->map_Flags |= Material::MF_BASE_COLOR;
-	floor_md.default_material->map_BaseColor = floor_md.my_textures.back();
+	Texture* flTex;
+	flTex = floor_md.addOwn(new Texture());
+	flTex->min_filter = GL_LINEAR_MIPMAP_LINEAR;
+	flTex->initFromFile("assets/images/floor/wood_floor_deck_diff_4k.jpg", true);
+	flMat->map_Flags |= Material::MF_COLOR_BASE;
+	flMat->map_ColorBase = flTex;
 
-	floor_md.my_textures.push_back(new Texture());
-	floor_md.my_textures.back()->min_filter = GL_LINEAR_MIPMAP_LINEAR;
-	floor_md.my_textures.back()->initFromFile("assets/images/floor/wood_floor_deck_arm_4k.jpg");
-	floor_md.default_material->map_Flags |= Material::MF_ARM;
-	floor_md.default_material->map_Roughness = floor_md.my_textures.back();
+	flTex = floor_md.addOwn(new Texture());
+	flTex->min_filter = GL_LINEAR_MIPMAP_LINEAR;
+	flTex->initFromFile("assets/images/floor/wood_floor_deck_arm_4k.jpg");
+	flMat->map_Flags |= Material::MF_ARM;
+	flMat->map_Roughness = flTex;
 
-	floor_md.my_textures.push_back(new Texture());
-	floor_md.my_textures.back()->min_filter = GL_LINEAR_MIPMAP_LINEAR;
-	floor_md.my_textures.back()->initFromFile("assets/images/floor/wood_floor_deck_nor_gl_4k.jpg");
-	floor_md.default_material->map_Flags |= Material::MF_NOR;
-	floor_md.default_material->map_Bump = floor_md.my_textures.back();
-
-	floor_md.default_material->prog = nullptr;
-	
-
-
-	ib_light.setMap("assets/images/ibls/artist_workshop_4k.hdr");
-
-	
-	AssetLib::get().default_material.prog = &program;
+	flTex = floor_md.addOwn(new Texture());
+	flTex->min_filter = GL_LINEAR_MIPMAP_LINEAR;
+	flTex->initFromFile("assets/images/floor/wood_floor_deck_nor_gl_4k.jpg");
+	flMat->map_Flags |= Material::MF_NOR;
+	flMat->map_Bump = flTex;
 
 	addModelViewer("assets/models/objs/bunny.obj");
 	// addModelViewer("assets/models/objs/sphere20.obj");
@@ -134,8 +131,10 @@ lim::AppModelViewer::~AppModelViewer()
 void lim::AppModelViewer::addModelViewer(string path) 
 {
 	Model* md = new Model();
-	if( md->importFromFile(findModelInDirectory(path), true)==false )
+	if( md->importFromFile(findModelInDirectory(path), true)==false ) {
+		delete md;
 		return;
+	}
 
 	brdf_test_infos.push_back({});
 	brdf_test_infos.back().ctrl_name = md->name+" ctrl ##modelviewer";
@@ -143,30 +142,29 @@ void lim::AppModelViewer::addModelViewer(string path)
 
 	brdf_test_infos.back().setup(*md);
 
-	md->my_materials.push_back(new Material());
-	md->default_material = md->my_materials.back();
-	md->default_material->prog = &program;
-	md->default_material->set_prog = makeSetProg(brdf_test_infos.back());
-	md->position = {0,md->pivoted_scaled_bottom_height,0};
-	md->updateModelMat();
+	md->setProgToAllMat(&program);
+	md->setSetProgToAllMat(makeSetProg(brdf_test_infos.back()));
+	md->tf->pos = {0,md->pivoted_scaled_bottom_height,0};
+	md->tf->update();
 
-	Scene scn;
-	scn.lights.push_back(&light);
-	scn.addOwnModel(md);
-	scn.ib_light = &ib_light;
-	scn.models.push_back(&floor_md);
-	scenes.push_back(std::move(scn)); // vector move template error
+	Scene* scn = new Scene();
+	scn->addRef(&d_light);
+	scn->addRef(&floor_md);
+	scn->addOwn(md);
+	scn->ib_light = &ib_light;
+	scenes.push_back(scn);
 
 	char* vpName = fmtStrToBuf("%s##model_view", md->name.c_str());
-	IFramebuffer* fb = new FramebufferMs(8);
-	// fb->blendable = true; Todo: 질문
-	viewports.emplace_back(vpName, fb);
-	viewports.back().camera.setViewMode(CameraManVp::VM_PIVOT);
-	viewports.back().camera.moveShift({0,md->pivoted_scaled_bottom_height,0});
-	viewports.back().camera.updateViewMat();
+	auto vp = new ViewportWithCamera(vpName, new FramebufferMs(8));
+	vp->camera.setViewMode(CameraManVp::VM_PIVOT);
+	vp->camera.moveShift({0,md->pivoted_scaled_bottom_height,0});
+	vp->camera.updateViewMat();
+	viewports.push_back(vp);
 }
 void lim::AppModelViewer::rmModelViewer(int idx)
 {
+	delete scenes[idx];
+	delete viewports[idx];
 	scenes.erase(scenes.begin()+idx);
 	viewports.erase(viewports.begin()+idx);
 	brdf_test_infos.erase(brdf_test_infos.begin()+idx);
@@ -176,11 +174,11 @@ void lim::AppModelViewer::drawModelsToViewports()
 {
 	for(int i=0; i<viewports.size(); i++ )
 	{
-		ViewportWithCamera& vp = viewports[i];
-		if(selected_vp_idx!=i&&vp.is_focused)
+		ViewportWithCamera& vp = *viewports[i];
+		if( selected_vp_idx!=i && vp.is_focused )
 			selected_vp_idx = i;
 			
-		render(vp.getFb(), vp.camera, scenes[i], true);
+		render(vp.getFb(), vp.camera, *scenes[i], true);
 
 		if( !vp.is_opened ) {
 			rmModelViewer(i);
@@ -201,7 +199,7 @@ void lim::AppModelViewer::update()
 
 	drawModelsToViewports();
 }
-void lim::AppModelViewer::renderImGui()
+void lim::AppModelViewer::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
 
@@ -210,39 +208,30 @@ void lim::AppModelViewer::renderImGui()
 	// draw common ctrl
 	{
 		ImGui::Begin("common ctrl##model_viewer");
-		static float litTheta = 90.f-glm::degrees(glm::acos(glm::dot(glm::normalize(light.position), glm::normalize(vec3(light.position.x, 0, light.position.z)))));
 		const static float litThetaSpd = 70 * 0.001f;
-		static float litPhi = 90.f-glm::degrees(glm::atan(light.position.x,-light.position.z));
 		const static float litPhiSpd = 360 * 0.001f;
-		static float litDist = glm::length(light.position);
 		const static float litDistSpd = 45.f * 0.001f;
 		static bool isLightDraged = false;
 
 		ImGui::Text("<light>");
-		isLightDraged |= ImGui::DragFloat("yaw", &litPhi, litPhiSpd, -FLT_MAX, +FLT_MAX, "%.3f");
-		isLightDraged |= ImGui::DragFloat("pitch", &litTheta, litThetaSpd, 0, 80, "%.3f");
-		isLightDraged |= ImGui::DragFloat("dist", &litDist, litDistSpd, 5.f, 50.f, "%.3f");
+		isLightDraged |= ImGui::DragFloat("phi", &d_light.tf.phi, litPhiSpd, -FLT_MAX, +FLT_MAX, "%.3f");
+		isLightDraged |= ImGui::DragFloat("theta", &d_light.tf.theta, litThetaSpd, 0, 80, "%.3f");
+		isLightDraged |= ImGui::DragFloat("dist", &d_light.tf.dist, litDistSpd, 5.f, 50.f, "%.3f");
 		if( isLightDraged ) {
-			light.setRotate(litTheta, glm::fract(litPhi/360.f)*360.f, litDist);
+			d_light.tf.updateWithRotAndDist();
 		}
-		ImGui::Text("pos: %.1f %.1f %.1f", light.position.x, light.position.y, light.position.z);
-		ImGui::SliderFloat("intencity", &light.intensity, 0.5f, 200.f, "%.1f");
-		ImGui::Checkbox("shadow enabled", &light.shadow_enabled);
-		if(ImGui::SliderFloat2("light radius", &light.i_light_radius_world_space_uv.x, 0.f, 1.f, "%.2f")) {
-			light.updateLightRadius();
-		}
+		ImGui::Text("pos: %.1f %.1f %.1f", d_light.tf.pos.x, d_light.tf.pos.y, d_light.tf.pos.z);
+		ImGui::SliderFloat("intencity", &d_light.Intensity, 0.5f, 200.f, "%.1f");
+		ImGui::Checkbox("shadow enabled", &d_light.shadow->Enabled);
+		ImGui::SliderFloat2("light radius", &d_light.shadow->RadiusUv.x, 0.f, 0.1f, "%.3f");
 
-		if( ImGui::Button("relead shader") ) {
+		if( ImGui::Button("relead shader(ctrl+R)") ) {
 			program.reload(GL_FRAGMENT_SHADER);
-		}
-
-		if( !ib_light.is_map_baked && ImGui::Button("bake ibl") ) {
-			ib_light.bakeMap();
 		}
 
 		static bool is_draw_light_map_vp = false;
 		static float pfenv_depth = 0.f;
-		ImGui::Checkbox("show light map",&is_draw_light_map_vp);
+		ImGui::Checkbox("show light map", &is_draw_light_map_vp);
 		if( is_draw_light_map_vp ) {
 
 			vp_light_map.getFb().bind();
@@ -250,27 +239,26 @@ void lim::AppModelViewer::renderImGui()
 			vp_light_map.getFb().unbind();
 			vp_light_map.drawImGui();
 
-			if(ib_light.is_map_baked) {
-				ImGui::SliderFloat("pfenv depth", &pfenv_depth, 0.f, 1.f);
+			ImGui::SliderFloat("pfenv depth", &pfenv_depth, 0.f, 1.f);
 				
-				vp_irr_map.getFb().bind();
-				drawTexToQuad(ib_light.getTexIdIrradiance(), 2.2f, 0.f, 1.f);
-				vp_irr_map.getFb().unbind();
-				vp_irr_map.drawImGui();
+			vp_irr_map.getFb().bind();
+			drawTexToQuad(ib_light.getTexIdIrradiance(), 2.2f, 0.f, 1.f);
+			vp_irr_map.getFb().unbind();
+			vp_irr_map.drawImGui();
 
-				vp_pfenv_map.getFb().bind();
-				drawTex3dToQuad(ib_light.getTexIdPreFilteredEnv(), pfenv_depth, 2.2f, 0.f, 1.f);
-				vp_pfenv_map.getFb().unbind();
-				vp_pfenv_map.drawImGui();
+			vp_pfenv_map.getFb().bind();
+			drawTex3dToQuad(ib_light.getTexIdPreFilteredEnv(), pfenv_depth, 2.2f, 0.f, 1.f);
+			vp_pfenv_map.getFb().unbind();
+			vp_pfenv_map.drawImGui();
 
-				vp_pfbrdf_map.getFb().bind();
-				drawTexToQuad(ib_light.getTexIdPreFilteredBRDF(), 2.2f, 0.f, 1.f);
-				vp_pfbrdf_map.getFb().unbind();
-				vp_pfbrdf_map.drawImGui();
-			}
-			if(light.shadow_enabled) {
+			vp_pfbrdf_map.getFb().bind();
+			drawTexToQuad(ib_light.getTexIdPreFilteredBRDF(), 2.2f, 0.f, 1.f);
+			vp_pfbrdf_map.getFb().unbind();
+			vp_pfbrdf_map.drawImGui();
+
+			if(d_light.shadow->Enabled) {
 				vp_shadow_map.getFb().bind();
-				drawTexToQuad(light.map_Shadow.getRenderedTexId(), 2.2f, 0.f, 1.f);
+				drawTexToQuad(d_light.shadow->map.getRenderedTexId(), 2.2f, 0.f, 1.f);
 				vp_shadow_map.getFb().unbind();
 				vp_shadow_map.drawImGui();
 			}
@@ -282,45 +270,45 @@ void lim::AppModelViewer::renderImGui()
 	for(int i=0; i<scenes.size(); i++) 
 	{
 		// /draw model view
-		viewports[i].drawImGui();
+		viewports[i]->drawImGui();
 
 		// draw brdf ctrl
 		if(selected_vp_idx != i)
 			continue;
-		Model& md = *scenes[i].my_mds[0]; 
+		Model& md = *scenes[i]->own_mds[0]; 
 		BrdfTestInfo& tInfo = brdf_test_infos[i];
 
 		ImGui::Begin(tInfo.ctrl_name.c_str());
 		ImGui::Checkbox("rotate", &tInfo.is_rotate_md);
 		if( tInfo.is_rotate_md ) {
-			md.orientation = glm::rotate(md.orientation, Q_PI*delta_time, {0,1,0});
-			md.updateModelMat();
+			md.tf->orientation = glm::rotate(md.tf->orientation, Q_PI*delta_time, {0,1,0});
+			md.tf->update();
 		}
 		
 		if( ImGui::Checkbox("floor", &tInfo.is_draw_floor) ) {
 			if(tInfo.is_draw_floor) {
-				scenes[i].models.push_back(&floor_md);
+				scenes[i]->addRef(&floor_md);
 			}
 			else {
-				scenes[i].models.pop_back();
+				scenes[i]->nodes.pop_back();
 			}
 		}
 
-		ImGui::Checkbox("draw envMap", &scenes[i].is_draw_env_map);
+		ImGui::Checkbox("draw envMap", &scenes[i]->is_draw_env_map);
 		ImGui::Separator();
 		bool isInfoChanged = false;
 		static const char* litModStrs[]={"point", "IBL(sampling)", "IBL(imp sampling)","IBL(pre-filtering)"};
 		int nrLitMods = IM_ARRAYSIZE(litModStrs);
-		if( ImGui::Combo("Light", &tInfo.idx_LitMod, litModStrs, (ib_light.is_map_baked)?nrLitMods:nrLitMods-1) ) {
+		if( ImGui::Combo("Light", &tInfo.idx_LitMod, litModStrs, nrLitMods) ) {
 			isInfoChanged = true; 
 		}
 		if(tInfo.idx_LitMod==1||tInfo.idx_LitMod==2) {
-			int nrSamples = tInfo.nr_ibl_w_samples*tInfo.nr_ibl_w_samples/2;
+			int nrSamples = tInfo.nr_IblWSamples*tInfo.nr_IblWSamples/2;
 			if( ImGui::SliderInt("ibl samples", &nrSamples, 1, 2500, "%d") ) {
-				tInfo.nr_ibl_w_samples = (int)glm::sqrt(2*nrSamples);
+				tInfo.nr_IblWSamples = (int)glm::sqrt(2*nrSamples);
 				isInfoChanged = true; 
 			}
-			ImGui::Text("nr width samples (%dx%d)", tInfo.nr_ibl_w_samples, tInfo.nr_ibl_w_samples/2);
+			ImGui::Text("nr width samples (%dx%d)", tInfo.nr_IblWSamples, tInfo.nr_IblWSamples/2);
 		}
 		ImGui::Separator();
 		static const char* modelStrs[]={"Phong", "BlinnPhong", "CookTorrance", "Oren-Nayar"};
@@ -336,30 +324,30 @@ void lim::AppModelViewer::renderImGui()
 			if( ImGui::Combo("F", &tInfo.idx_F, fStrs, IM_ARRAYSIZE(fStrs)) ) { isInfoChanged = true; }
 		}
 		if( isInfoChanged ) {
-			md.default_material->set_prog = makeSetProg(tInfo);
+			md.setSetProgToAllMat(makeSetProg(tInfo));
 		}
 		if( tInfo.idx_Brdf<2 ) { // phong, blinn phong
 			if( ImGui::SliderFloat("shininess", &tInfo.shininess, 0.5f, 300) ) {
-				for(Material* mat : md.my_materials) {
-					mat->shininess = tInfo.shininess;
+				for(Material* mat : md.own_materials) {
+					mat->Shininess = tInfo.shininess;
 				}
 			}
 		}
 		else { // cook-torrance
 			if( ImGui::SliderFloat("roughness", &tInfo.roughness, 0.015f, 1) ) {
-				for(Material* mat : md.my_materials) {
-					mat->roughness = tInfo.roughness;
+				for(Material* mat : md.own_materials) {
+					mat->Roughness = tInfo.roughness;
 				}
 			}
 			if( ImGui::SliderFloat("metalness", &tInfo.metalness, 0.000f, 1) ) {
-				for(Material* mat : md.my_materials) {
-					mat->metalness = tInfo.metalness;
+				for(Material* mat : md.own_materials) {
+					mat->Metalness = tInfo.metalness;
 				}
 			}
 		}
-		if( ImGui::SliderFloat("ambient light", &tInfo.ambientInt, 0.000, 0.05f) ) {
-			for(Material* mat : md.my_materials) {
-				mat->ambientColor = glm::vec3(1)*tInfo.ambientInt;
+		if( ImGui::SliderFloat("ambient light", &tInfo.ambient_int, 0.000, 0.05f) ) {
+			for(Material* mat : md.own_materials) {
+				mat->AmbientColor = glm::vec3(1)*tInfo.ambient_int;
 			}
 		}
 		ImGui::End();
@@ -383,7 +371,7 @@ void lim::AppModelViewer::dndCallback(int count, const char **paths)
 			for(BrdfTestInfo& tInfo: brdf_test_infos) {
 				tInfo.idx_LitMod = 0;
 			}
-			ib_light.setMap(path);
+			ib_light.setMapAndBake(path);
 		}
 		else {
 			addModelViewer(path);

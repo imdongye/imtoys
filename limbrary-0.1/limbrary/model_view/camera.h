@@ -19,6 +19,7 @@
 #define __camera_h_
 
 #include <glm/glm.hpp>
+#include <limbrary/program.h>
 
 namespace lim
 {
@@ -33,13 +34,14 @@ namespace lim
 		float z_near=0.1f;
 		float z_far=100;
 		
+		// todo: TransformPivoted
 		// if you edit then must call updateViewMat();
 		glm::vec3 position = {0,0,5};
 		glm::vec3 pivot = {0,0,0};
 		glm::vec3 global_up = {0,1,0};
 
-		glm::mat4 view_mat;
-		glm::mat4 proj_mat;
+		glm::mat4 mtx_View;
+		glm::mat4 mtx_Proj;
 	public:
 		Camera(const Camera&)	         = delete;
 		Camera(Camera&&)			     = delete;
@@ -53,6 +55,8 @@ namespace lim
 		// with pos and pivot
 		void updateViewMat();
 		void updateProjMat();
+		void setUniformTo(const Program& prg) const;
+		void copyFrom(const Camera& src);
 	};
 }
 #endif

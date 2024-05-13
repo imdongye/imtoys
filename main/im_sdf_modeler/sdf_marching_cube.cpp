@@ -343,9 +343,10 @@ static int getCubeInfoIdx(vec3 wPos, vec3 radius) {
 void exportMesh(std::string_view dir, std::string_view modelName,  int sampleRate) {
     lim::Model model;
     model.name = modelName;
-    model.my_meshes.push_back(new lim::Mesh());
-    model.root.meshs_mats.push_back({model.my_meshes.back(), nullptr});
-    lim::Mesh& mesh = *model.my_meshes.back();
+    model.addOwn(new lim::Mesh());
+    model.addOwn(new lim::Material());
+    model.root.addMsMat(model.own_meshes.back(), model.own_materials.back());
+    lim::Mesh& mesh = *model.own_meshes.back();
 
     vec3 volumeMin = {-5, -5, -5};
     vec3 volumeMax = { 5,  5,  5};

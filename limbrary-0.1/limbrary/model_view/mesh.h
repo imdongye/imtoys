@@ -57,10 +57,12 @@ namespace lim
 		Mesh(const Mesh& src); // clone
 		virtual ~Mesh();
 		
-		void drawGL() const;
 		void initGL();
 		void deinitGL();
 		void print() const;
+		void bindGL() const;
+		void drawGL() const;
+		void bindAndDrawGL() const;
 	};
 }
 

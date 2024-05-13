@@ -28,7 +28,7 @@ namespace lim
 		~AppFont();
 	private:
 		virtual void update() override;
-		virtual void renderImGui() override;
+		virtual void updateImGui() override;
 	private:
 		virtual void keyCallback(int key, int scancode, int action, int mods) override;
 		virtual void cursorPosCallback(double xPos, double yPos) override;

@@ -54,7 +54,7 @@ namespace lim
 		vec4 iMouse = {viewport.mouse_pos.x, viewport.mouse_pos.y, 0,0};
 		program.setUniform("iMouse", iMouse);
 
-		program.setTexture("iChannel0", iChannel0.tex_id, 0);
+		program.setTexture("iChannel0", iChannel0.tex_id);
 		// program.setUniform("iChannel1", iChannel1, 0);
 		// program.setUniform("iChannel2", iChannel2, 0);
 		// program.setUniform("iChannel3", iChannel3, 0);
@@ -66,11 +66,11 @@ namespace lim
 		// program.setUniform("iSampleRate", iSampleRate);
 
 		 
-		AssetLib::get().screen_quad.drawGL();
+		AssetLib::get().screen_quad.bindAndDrawGL();
 		viewport.getFb().unbind();
 	}
 
-	void AppShaderToy::renderImGui()
+	void AppShaderToy::updateImGui()
 	{
 		ImGui::DockSpaceOverViewport();
 		ImGui::Begin("controller##shadertoy");

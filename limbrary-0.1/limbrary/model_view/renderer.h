@@ -2,13 +2,22 @@
 
 2023-09-10 / imdongye
 
-Scene
-renderer에서 사용하기위한 단순 컨테이너
-my_mds에 넣어두면 해당씬에 생명주기가 종속되어 같이삭제됨.
+< Scene : 렌더링단위 및 모델과 라이트 저장공간 >
 
-Todo: 
-1. 멀티라이트
-2. 노드(메쉬들) 별 하이라키 transform
+Note:
+여러개의 scene을 동시에 보는것 고려됨.
+scene마다 light와 model들을 소유권이 있는것과 렌더링되는것을 나눈다.
+(model도 비슷하게 mesh, material, texture의 소유권과 렌더링을 나눠서 관리됨)
+즉 scene을 캐슁하기 위한 저장공간으로 쓸수도있음
+(예외로 model안의 material에 program은 소유권이 어플리케이션에 있음.)
+
+
+Application 소유권 : Program, IBLight, Scene
+Scene의 소유권 : Model, Light
+Model의 소유권 : Texture, Material, Mesh
+
+Todo:
+
 
 */
 
@@ -30,41 +39,40 @@ namespace lim
         static constexpr int nr_roughness_depth = 10;
         Texture map_Light, map_Irradiance, map_PreFilteredBRDF;
         Texture3d map_PreFilteredEnv;
-        bool is_map_baked = false;
+        bool is_baked = false;
+
     public:
         IBLight(const IBLight&)	           = delete;
 		IBLight(IBLight&&)			       = delete;
 		IBLight& operator=(const IBLight&) = delete;
 		IBLight& operator=(IBLight&&)      = delete;
 
-        IBLight()          = default;
+        IBLight(const char* path = nullptr);
         virtual ~IBLight() = default;
 
-        bool setMap(const char* path);
-        void bakeMap();
+        bool setMapAndBake(std::string_view path);
         void deinitGL();
         GLuint getTexIdLight() const;
         GLuint getTexIdIrradiance() const;
         GLuint getTexIdPreFilteredEnv() const;
         GLuint getTexIdPreFilteredBRDF() const;
 
+        void setUniformTo(const Program& prg) const;
+
     };
+
 
 	class Scene
 	{
   	public:
-		std::vector<Model*> my_mds;
-        std::vector<Light*> my_lits;
-		std::vector<const Model*> models;
-		std::vector<const Light*> lights;
+		std::vector<Model*> own_mds;
+        std::vector<ILight*> own_lits;
+		std::vector<const RdNode*> nodes;
+		std::vector<const ILight*> lights;
         const IBLight* ib_light = nullptr;
         bool is_draw_env_map = false;
+
     public:
-        void addModel(Model* md);
-        void addLight(Light* lit);
-        void addOwnModel(Model* md);
-        void addOwnLight(Light* lit);
-	public:
 		Scene(const Scene&)	           = delete;
 		Scene(Scene&&)			       = delete;
 		Scene& operator=(const Scene&) = delete;
@@ -74,18 +82,20 @@ namespace lim
         virtual ~Scene();
 
         void releaseData();
+
+        Model* addOwn(Model* md);
+        ILight* addOwn(ILight* lit);
+        const Model* addRef(const Model* md);
+        const RdNode* addRef(const RdNode* md);
+        const ILight* addRef(const ILight* lit);
+
 	};
 
+                
     void render( const IFramebuffer& fb,
-                 const Program& prog,
-                 const Model& md );
-
-    // use prog in param
-    void render( const IFramebuffer& fb, 
-                 const Program& prog,
                  const Camera& cam,
-                 const Model& md, 
-                 const Light& lit );
+                 const Model& md,
+                 const ILight& lit );
 
     // use prog in mat
     void render( const IFramebuffer& fb,

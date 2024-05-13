@@ -17,7 +17,6 @@ namespace lim
 		glFrontFace(GL_CCW);
 		//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-		model.importFromFile("assets/models/objs/bunny.obj", true);
 
 		metal_colors.push_back( {1.000, 0.782, 0.344} ); // Gold
 		metal_colors.push_back( {0.664, 0.824, 0.850} ); // Zinc
@@ -33,9 +32,10 @@ namespace lim
 		viewport.camera.moveShift({0,0,10});
 		viewport.camera.updateViewMat();
 
-		model.scale = model.scale*3.f;
-		model.position = glm::vec3(15, 0, 0);
-		model.updateModelMat();
+		model.importFromFile("assets/models/objs/bunny.obj", true);
+		model.tf->scale = glm::vec3(3.f);
+		model.tf->pos = glm::vec3(15, 0, 0);
+		model.tf->update();
 
 		/* initialize static shader uniforms before rendering */
 		prog.use().setUniform("ao", 1.0f);
@@ -62,9 +62,9 @@ namespace lim
 
 		prog.setUniform("beckmannGamma", beckmannGamma);
 		const Camera& cam = viewport.camera;
-		prog.setUniform("view", cam.view_mat);
+		prog.setUniform("view", cam.mtx_View);
 		prog.setUniform("camPos", cam.position);
-		prog.setUniform("projection", cam.proj_mat);
+		prog.setUniform("projection", cam.mtx_Proj);
 
 		glm::vec3 light_Pos = light_position + glm::vec3(sin(glfwGetTime() * 2.0) * 5.0, 0.0, 0.0);
 		if(!movedLight) light_Pos = light_position;
@@ -78,7 +78,7 @@ namespace lim
 		modelMat = glm::scale(modelMat, glm::vec3(0.5f));
 		prog.setUniform("model", modelMat);
 		prog.setUniform("Kd", glm::vec3(1,1,1));
-		sphere.drawGL();
+		sphere.bindAndDrawGL();
 
 
 		///* draw spheres */
@@ -104,7 +104,7 @@ namespace lim
 				modelMat = glm::translate(glm::mat4(1.0f), glm::vec3( col*spacing-pivot.x, pivot.y-row*spacing, 0.0f ));
 				prog.setUniform("model", modelMat);
 
-				sphere.drawGL();
+				sphere.bindAndDrawGL();
 			}
 		}
 
@@ -117,26 +117,26 @@ namespace lim
 		modelMat = glm::translate(glm::mat4(1), glm::vec3(spacing*3, spacing, 0));
 		modelMat *= glm::scale(glm::vec3(2.f));
 		prog.setUniform("model", modelMat);
-		sphere.drawGL();
+		sphere.bindAndDrawGL();
 
 
 		prog.setUniform("isGGX", false);
 		modelMat = glm::translate(glm::mat4(1), glm::vec3(spacing*3, -spacing, 0));
 		modelMat *= glm::scale(glm::vec3(2.f));
 		prog.setUniform("model", modelMat);
-		sphere.drawGL();
+		sphere.bindAndDrawGL();
 
 
 		/* draw models */
 		prog.setUniform("isGGX", true);
-		prog.setUniform("model", model.model_mat);
-		for( const Mesh* mesh: model.my_meshes ) {
-			mesh->drawGL();
+		prog.setUniform("model", model.tf->mtx);
+		for( const Mesh* mesh: model.own_meshes ) {
+			mesh->bindAndDrawGL();
 		}
 		
 		viewport.getFb().unbind();
 	}
-	void AppPbr::renderImGui()
+	void AppPbr::updateImGui()
 	{
 		ImGui::DockSpaceOverViewport();
 		

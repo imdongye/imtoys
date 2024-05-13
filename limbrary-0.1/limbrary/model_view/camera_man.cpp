@@ -272,17 +272,6 @@ void CameraManVp::initCallbacks(Viewport* _vp)
 		updateFromInput();
 	};
 }
-void CameraManVp::copySettingTo(CameraManVp& dst)
-{
-	dst.fovy = fovy;
-	dst.z_near = z_near;
-	dst.position = position;
-	dst.pivot = pivot;
-	dst.global_up = global_up;
-	dst.view_mat = view_mat;
-	dst.proj_mat = proj_mat;
-	dst.viewing_mode = viewing_mode;
-}
 
 
 

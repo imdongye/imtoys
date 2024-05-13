@@ -20,15 +20,15 @@ namespace lim
 		inline static constexpr CStr APP_DIR  = "im_model_viewer";
 		inline static constexpr CStr APP_DESCRIPTION = "model viewer for test materials";
 	private:
-		std::vector<ViewportWithCamera> viewports;
+		std::vector<ViewportWithCamera*> viewports;
 		Viewport vp_light_map, vp_irr_map, vp_pfenv_map, vp_pfbrdf_map;
 		Viewport vp_shadow_map;
-		std::vector<Scene> scenes;
+		std::vector<Scene*> scenes;
 		IBLight ib_light;
 		Model floor_md;
 
 		ProgramReloadable program;
-		Light light;
+		LightDirectional d_light;
 
 	public:
 		AppModelViewer();
@@ -39,7 +39,7 @@ namespace lim
 		void drawModelsToViewports();
 
 		virtual void update() override;
-		virtual void renderImGui() override;
+		virtual void updateImGui() override;
 		virtual void keyCallback(int key, int scancode, int action, int mods) override;
 		virtual void cursorPosCallback(double xPos, double yPos) override;
 		virtual void dndCallback(int count, const char **paths) override;

@@ -130,8 +130,14 @@ void Mesh::deinitGL()
 		vert_array = 0;
 	}
 }
-void Mesh::drawGL() const
-{
+void Mesh::bindGL() const {
+	glBindVertexArray(vert_array);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, element_buf);
+}
+void Mesh::drawGL() const {
+	glDrawElements(GL_TRIANGLES, tris.size()*3, GL_UNSIGNED_INT, 0);
+}
+void Mesh::bindAndDrawGL() const {
 	glBindVertexArray(vert_array);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, element_buf);
 	glDrawElements(GL_TRIANGLES, tris.size()*3, GL_UNSIGNED_INT, 0);

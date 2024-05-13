@@ -84,7 +84,7 @@ void Texture::initGL(void* data)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, s_wrap_param);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, mipmap_max_level);
 	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(border_color)); 
-	//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 8);
+	//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 8); // todo
 
 	glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, src_format, src_chanel_type, data);
 	
@@ -258,12 +258,12 @@ void lim::drawTexToQuad(const GLuint texId, float gamma, float bias, float gain)
 	const Program& prog = AssetLib::get().tex_to_quad_prog;
 
 	prog.use();
-	prog.setTexture("tex", texId, 0);
+	prog.setTexture("tex", texId);
 	prog.setUniform("gamma", gamma);
 	prog.setUniform("bias", bias);
 	prog.setUniform("gain", gain);
 
-	AssetLib::get().screen_quad.drawGL();
+	AssetLib::get().screen_quad.bindAndDrawGL();
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
@@ -272,13 +272,13 @@ void lim::drawTex3dToQuad(const GLuint texId, float depth, float gamma, float bi
 	const Program& prog = AssetLib::get().tex3d_to_quad_prog;
 
 	prog.use();
-	prog.setTexture3d("tex", texId, 0);
+	prog.setTexture3d("tex", texId);
 	prog.setUniform("gamma", gamma);
 	prog.setUniform("bias", bias);
 	prog.setUniform("gain", gain);
 	prog.setUniform("depth", depth);
 
-	AssetLib::get().screen_quad.drawGL();
+	AssetLib::get().screen_quad.bindAndDrawGL();
 
 	glBindTexture(GL_TEXTURE_3D, 0);
 }

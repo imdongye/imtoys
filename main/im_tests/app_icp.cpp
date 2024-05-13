@@ -177,16 +177,19 @@ namespace lim
         camera.pivot = {0,0,0};
         camera.updateViewMat();
 
-        Model model;
-        model.importFromFile("assets/models/objs/woody.obj", true, false);
-        log::pure(glm::to_string(model.position).c_str());
+        Material* mat = new Material();
+        Model md;
+        md.importFromFile("assets/models/objs/woody.obj", true, mat);
+        md.addOwn(mat);
+        const Transform& nomalized_term = *md.tf_normalized;
+        log::pure(glm::to_string(nomalized_term.pos).c_str());
         log::pure("\n");
-        log::pure(glm::to_string(model.scale).c_str());
+        log::pure(glm::to_string(nomalized_term.scale).c_str());
 
-        makeTransformedMesh(*model.my_meshes[0], dst, model.model_mat);
+        makeTransformedMesh(*md.own_meshes[0], dst_ms, nomalized_term.mtx);
 
         glm::mat4 rigidMat = glm::translate(glm::vec3 {3,1, 0}) * glm::rotate(0.2f, glm::vec3 {0,0,1});
-        makeTransformedMesh(dst, src, rigidMat);
+        makeTransformedMesh(dst_ms, src_ms, rigidMat);
     }
     AppICP::~AppICP()
     {
@@ -202,38 +205,38 @@ namespace lim
 
         prog.use();
 
-        prog.setUniform("view_Mat", camera.view_mat);
-        prog.setUniform("proj_Mat", camera.proj_mat);
-        prog.setUniform("camera_Pos", camera.position);
+        prog.setUniform("mtx_View", camera.mtx_View);
+        prog.setUniform("mtx_Proj", camera.mtx_Proj);
+        prog.setUniform("cam_Pos", camera.position);
 
         prog.setUniform("modelMat", glm::mat4(1));
-        glBindVertexArray(dst.vert_array);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, dst.element_buf);
-		glDrawElements(GL_POINTS, dst.tris.size()*3, GL_UNSIGNED_INT, 0);
+        glBindVertexArray(dst_ms.vert_array);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, dst_ms.element_buf);
+		glDrawElements(GL_POINTS, dst_ms.tris.size()*3, GL_UNSIGNED_INT, 0);
 		
         prog.setUniform("modelMat", icp_mat);
-        glBindVertexArray(src.vert_array);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, src.element_buf);
-		glDrawElements(GL_POINTS, src.tris.size()*3, GL_UNSIGNED_INT, 0);
+        glBindVertexArray(src_ms.vert_array);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, src_ms.element_buf);
+		glDrawElements(GL_POINTS, src_ms.tris.size()*3, GL_UNSIGNED_INT, 0);
     }
-    void AppICP::renderImGui()
+    void AppICP::updateImGui()
     {
         static bool isoverlay = true;
         log::drawViewer("logviewr##icp");
         //ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
         ImGui::Begin("icp tester##icp", &isoverlay);
         if( ImGui::Button("iterate") ) {
-            const int nrPoss = src.poss.size();
+            const int nrPoss = src_ms.poss.size();
             // 열벡터로 나열
             Eigen::MatrixXd srcdata = Eigen::MatrixXd::Ones(3, nrPoss);
             Eigen::MatrixXd dstdata = Eigen::MatrixXd::Ones(3, nrPoss);
 
             for( int i=0; i<nrPoss; i++ ) {
                 glm::vec3 p;
-                p = src.poss[i];
+                p = src_ms.poss[i];
                 srcdata.block<3,1>(0, i) << p.x, p.y, p.z;
 
-                p = dst.poss[i];
+                p = dst_ms.poss[i];
                 dstdata.block<3,1>(0, i) << p.x, p.y, p.z;
             }
 

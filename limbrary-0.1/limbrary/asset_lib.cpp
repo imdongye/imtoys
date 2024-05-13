@@ -22,29 +22,22 @@ lim::AssetLib::AssetLib()
 	tex3d_to_quad_prog.attatch("canvas.vs").attatch("tex3d_to_2d.fs").link();
 
 	depth_prog.name = "depth";
-	depth_prog.attatch("mvp.vs").attatch("depth.fs").link();
+	depth_prog.attatch("mvp_no_out.vs").attatch("depth.fs").link();
 
 	ndv_prog.name = "ndv";
 	ndv_prog.attatch("mvp.vs").attatch("ndv.fs").link();
-
-	default_prog.name = "defualt";
-	default_prog.attatch("mvp.vs").attatch("ndv.fs").link();
-	default_material.prog = &default_prog;
-	default_material.set_prog = [](const Program&){};
-
-
 
 	env_prog = new Program("env");
 	env_prog->attatch("mvp.vs").attatch("env.fs").link();
 
 	env_sphere = new Model("env");
-	env_sphere->my_meshes.push_back(new MeshEnvSphere());
+	env_sphere->own_meshes.push_back(new MeshEnvSphere());
 	env_sphere->tf->scale = glm::vec3(20.f);
 	env_sphere->tf->update();
 
 
 	glGetIntegerv(GL_MAX_SAMPLES, &ms_max_samples);
-	log::pure("GL_MAX_SAMPLES : %d\n", ms_max_samples);
+	log::pure("GL_MAX_SAMPLES : %d\n\n", ms_max_samples);
 }
 lim::AssetLib::~AssetLib()
 {
@@ -71,13 +64,13 @@ void lim::AssetLib::destroy()
 }
 
 
-void lim::utils::drawEnvSphere(const Texture& map, const glm::mat4& viewMat, const glm::mat4& projMat) {
+void lim::utils::drawEnvSphere(const Texture& map, const glm::mat4& mtx_View, const glm::mat4& mtx_Proj) {
 	env_prog->use();
-	env_prog->setUniform("model_Mat", env_sphere->tf->mat);
-	env_prog->setUniform("view_Mat", viewMat);
-	env_prog->setUniform("proj_Mat", projMat);
-	env_prog->setTexture("map_Light", map.getTexId(), 0);
-	env_sphere->my_meshes.back()->drawGL();
+	env_prog->setUniform("mtx_Model", env_sphere->tf->mtx);
+	env_prog->setUniform("mtx_View", mtx_View);
+	env_prog->setUniform("mtx_Proj", mtx_Proj);
+	env_prog->setTexture("map_Light", map.getTexId());
+	env_sphere->own_meshes.back()->bindAndDrawGL();
 }
 
 int lim::utils::getMsMaxSamples() {

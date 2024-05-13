@@ -2,7 +2,7 @@
 
 2023-11-02 / im dong ye
 
-parent는 계층관계나 pivot으로 쓴다.
+Todo: mat to pos ori scale
 
 */
 
@@ -13,26 +13,32 @@ parent는 계층관계나 pivot으로 쓴다.
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <functional>
 
 namespace lim 
 {
     struct Transform
     {
-        glm::vec3 position = glm::vec3(0);
+        glm::vec3 pos = glm::vec3(0);
 		glm::quat orientation = glm::quat(1,0,0,0);
 		glm::vec3 scale = glm::vec3(1);
-        glm::mat4 mat = glm::mat4(1);
+
+        glm::mat4 mtx = glm::mat4(1);
+
+        std::function<void(const Transform* tf)> update_callback = nullptr;
         
         void update();
     };
     struct TransformPivoted : public Transform
     {
         glm::vec3 pivot = glm::vec3(0);
-        glm::vec2 rot = glm::vec2(0); // degree
-        float distance = 0;
-        glm::vec3 direction;
-        void updatePosDir();
-        void updateOrientation();
+        float theta, phi; // degree
+        float dist = 0;
+
+        glm::vec3 dir; // out rst
+        
+        void updateWithRotAndDist();
+        // void updateOrientation(); // todo
     };
 }
 

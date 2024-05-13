@@ -285,7 +285,7 @@ namespace lim
 			
 			ImGuizmo::BeginFrame();
 
-			renderImGui();
+			updateImGui();
 			draw_appselector();
 			_drawProfilerFps();
 			

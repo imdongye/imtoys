@@ -5,7 +5,7 @@
 Callbacks는 포인터를 키로 한 헤쉬테이블 맵이다. glfw콜백이 불렸을때 등록된 함수들을 실행해준다.
 헤쉬테이블은 메모리 사용량이 많지만 프레임마다 전체탐색되기때문에 logN인 map(트리)대신 unordered_map을 사용했다.
 
-실행순서: 생성자 -> {renderImGui, update} -> 소멸자
+실행순서: 생성자 -> {updateImGui, update} -> 소멸자
 
 Todo:
 1. crtp로 참조 줄이기, 
@@ -68,7 +68,7 @@ namespace lim
 
 	protected:
 		virtual void update()=0;
-		virtual void renderImGui()=0;
+		virtual void updateImGui()=0;
 		virtual void framebufferSizeCallback(int w, int h) {};
 		virtual void keyCallback(int key, int scancode, int action, int mods) {};
 		virtual void cursorPosCallback(double xPos, double yPos) {};

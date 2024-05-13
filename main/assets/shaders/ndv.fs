@@ -5,12 +5,12 @@ in vec3 wPos;
 in vec3 wNor;
 in vec2 mUv;
 
-uniform vec3 camera_Pos;
+uniform vec3 cam_Pos;
 uniform float gamma = 2.2;
 
 void main()
 {    
-    vec3 V = camera_Pos - wPos; 
+    vec3 V = cam_Pos - wPos; 
     V = normalize(V);
     vec3 N = normalize (cross (dFdx(wPos.xyz), dFdy(wPos.xyz)));
 	//vec3 N = wNor;

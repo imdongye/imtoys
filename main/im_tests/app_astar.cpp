@@ -120,7 +120,7 @@ namespace lim
 		}
 		ImGui::End();
 	}
-	void AppAstar::renderImGui()
+	void AppAstar::updateImGui()
 	{
 		ImGui::DockSpaceOverViewport();
 		

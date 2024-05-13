@@ -125,17 +125,17 @@ static void fromJson(lim::CameraController& cam, const Json& json) {
     cam.updateViewMat();
     cam.updateProjMat();
 }
-static void toJson(const lim::Light& lit, Json& json) {
-    toJson(lit.position,  json["position"]);
-    toJson(lit.pivot,     json["pivot"]);
-    toJson(lit.color,     json["color"]);
-    json["intensity"]= lit.intensity;
+static void toJson(const lim::LightDirectional& lit, Json& json) {
+    toJson(lit.tf.pos,   json["position"]);
+    toJson(lit.tf.pivot, json["pivot"]);
+    toJson(lit.Color,    json["color"]);
+    json["intensity"]= lit.Intensity;
 }
-static void fromJson(lim::Light& lit, const Json& json) {
-    fromJson(lit.position,  json["position"]);
-    fromJson(lit.pivot,     json["pivot"]);
-    fromJson(lit.color,     json["color"]);
-    lit.intensity =         json["intensity"];
+static void fromJson(lim::LightDirectional& lit, const Json& json) {
+    fromJson(lit.tf.pos,    json["position"]);
+    fromJson(lit.tf.pivot,  json["pivot"]);
+    fromJson(lit.Color,     json["color"]);
+    lit.Intensity =         json["intensity"];
 }
 
 void sdf::exportJson(std::filesystem::path path) {

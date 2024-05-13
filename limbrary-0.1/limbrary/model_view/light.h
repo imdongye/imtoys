@@ -33,8 +33,8 @@ namespace lim
 		int light_type;
 
 		TransformPivoted tf;
-		glm::vec3 color = {1,1,1};
-		float intensity = 120.f;
+		glm::vec3 Color = {1,1,1};
+		float Intensity = 120.f;
 
 	protected:
 		ILight(const ILight&)	         = delete;
@@ -43,12 +43,14 @@ namespace lim
 		ILight& operator=(ILight&&)      = delete;
 
 		ILight(enum LightType lt);
-		virtual ~ILight() = default;
 
 	public:
+		virtual ~ILight() = default;
+
 		virtual void setShadowEnabled(bool enabled) = 0;
-		virtual void bakeShadowMap(const std::vector<const Model*>& mds) = 0;
-		virtual void setUniformTo(const Program& prog) = 0;
+		virtual void bakeShadowMap(const std::vector<const RdNode*>& nds) const = 0;
+		virtual void setUniformTo(const Program& prog) const = 0;
+
 	};
 
 
@@ -57,53 +59,83 @@ namespace lim
 	class LightDirectional : public ILight
 	{
 	public:
-		struct Shadow {
-			bool enabled = true;
-			int map_size = 1024;
-			float z_near = 0.0f;
-			float z_far = 30.f;
-			float ortho_width = 4;
-			float ortho_height = 8;
-			FramebufferRbDepth map;
+		// Todo: dinamic OrthoSize
+		struct Shadow
+		{
+			glm::mat4 mtx_View;
+			glm::mat4 mtx_Proj;
+			glm::mat4 mtx_ShadowVp;
 
-			const glm::vec2* radius_wuv; // world space
-			glm::vec2 radius_tuv; // texture space
+			bool Enabled = true;
+			float ZNear = 0.0f;
+			float ZFar = 30.f;
+			glm::vec2 TexelSize = glm::vec2(1.f/1024.f); // ortho_width/height 고려해야하나
+			glm::vec2 OrthoSize = glm::vec2(4, 8);
+			glm::vec2 RadiusUv = glm::vec2(0.001f); // world space
+			FramebufferRbDepth map; // map_Shadow 
+			
+			const int map_size = 1024;
 
-			const TransformPivoted* tf;
-			glm::mat4 view_mat;
-			glm::mat4 proj_mat;
-			glm::mat4 vp_mat;
-
-			Shadow(const TransformPivoted* _tf, const glm::vec2* lightRadiusUv);
-			void updateVP();
-			void updateRadiusTexSpaceUv();
+			Shadow(TransformPivoted& tf);
 		};
 
 		Shadow* shadow = nullptr;
-		glm::vec2 shadow_radius_uv = {1,1};
-		glm::vec3 direction;
 
 	public:
 		LightDirectional();
 		~LightDirectional();
 		virtual void setShadowEnabled(bool enabled) override;
-		virtual void bakeShadowMap(const std::vector<const Model*>& mds) override;
-		virtual void setUniformTo(const Program& prog) override;
+		virtual void bakeShadowMap(const std::vector<const RdNode*>& nds) const override;
+		virtual void setUniformTo(const Program& prog) const override;
 	};
-
-
-
-
 	
+	
+	
+
+	// class LightSpot : public ILight
+	// {
+	// public:
+	// 	struct Shadow {
+	// 		bool enabled = true;
+	// 		int map_size = 1024;
+	// 		float z_near = 0.0f;
+	// 		float z_far = 30.f;
+	// 		float fovy = 4;
+	// 		float aspect = 8;
+	// 		FramebufferRbDepth map;
+
+	// 		const glm::vec2* radius_wuv; // world space
+	// 		glm::vec2 radius_tuv; // texture space
+
+	// 		const TransformPivoted* tf; // view_mat
+	// 		glm::mat4 proj_mat;
+	// 		glm::mat4 vp_mat;
+
+	// 		Shadow(const TransformPivoted* _tf, const glm::vec2* lightRadiusUv);
+	// 		void updateVP();
+	// 		void updateRadiusTexSpaceUv();
+	// 	};
+
+	// 	Shadow* shadow = nullptr;
+	// 	glm::vec2 shadow_radius_uv = {1,1};
+
+	// 	float inner_cone;
+	// 	float outer_edge;
+
+	// public:
+	// 	LightSpot();
+	// 	~LightSpot();
+	// 	virtual void setShadowEnabled(bool enabled) override;
+	// 	virtual void bakeShadowMap(const std::vector<const Model*>& mds) override;
+	// 	virtual void setUniformTo(const Program& prog) override;
+
+	// };
+
+	// Todo: cubemap
 	// class LightPoint : public ILight
 	// {
 	// };
 
-
-
-
-	// class LightSpot : public ILight
-	// {
-	// };
+	
 }
 #endif

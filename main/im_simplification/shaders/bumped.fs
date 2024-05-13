@@ -17,26 +17,27 @@ const int MF_AMB_OCC    = 1<<4;
 const int MF_ROUGHNESS  = 1<<5;
 const int MF_METALNESS  = 1<<6;
 const int MF_EMISSION   = 1<<7;
-const int MF_Opacity    = 1<<8;
+const int MF_OPACITY    = 1<<8;
 const int MF_MR         = 1<<9;
-const int MF_ARM        = 1<<1;
-const int MF_SHININESS  = 1<<1;
-
-uniform vec3 mat_BaseColor;
-uniform vec3 specColor;
-uniform vec3 ambientColor;
-uniform vec3 emissionColor;
-
-uniform float transmission;
-uniform float refraciti;
-uniform float opacity;
-uniform float shininess;
-uniform float roughness;
-uniform float metalness;
-uniform vec3 f0 = vec3(1);
-
+const int MF_ARM        = 1<<10;
+const int MF_SHININESS  = 1<<11;
+struct Material {
+	vec3 BaseColor;
+	vec3 SpecColor;
+	vec3 AmbientColor;
+	vec3 EmissionColor;
+	vec3 F0;
+	float Transmission;
+	float Refraciti;
+	float Opacity;
+	float Shininess;
+	float Roughness;
+	float Metalness;
+	float BumpHeight;
+	float TexDelta;
+};
+uniform Material mat;
 uniform int map_Flags;
-
 uniform sampler2D map_BaseColor;
 uniform sampler2D map_Specular;
 uniform sampler2D map_Bump;
@@ -46,16 +47,24 @@ uniform sampler2D map_Metalness;
 uniform sampler2D map_Emission;
 uniform sampler2D map_Opacity;
 
-uniform float texDelta;
-uniform float bumpHeight;
-
-
-uniform vec3 light_Pos;
-uniform vec3 light_Color;
-uniform float light_Int;
-uniform int shadow_Enabled;
-uniform vec3 camera_Pos;
-
+uniform vec3 cam_Pos;
+struct LightDirectional {
+	vec3 Pos;
+	vec3 Dir;
+	vec3 Color;
+	float Intensity;
+};
+struct ShadowDirectional {
+	bool Enabled;
+	float ZNear;
+	float ZFar;
+	vec2 TexelSize;
+	vec2 OrthoSize;
+	vec2 RadiusUv;
+};
+uniform LightDirectional lit;
+uniform ShadowDirectional shadow;
+uniform sampler2D map_Shadow;
 
 
 mat3 getTBN( vec3 N ) {
@@ -74,19 +83,19 @@ mat3 getTBN( vec3 N ) {
 void main(void)
 {
 	vec3 N = normalize(wNor);
-	vec3 L = normalize(light_Pos - wPos);
-	vec3 V = normalize(camera_Pos - wPos);
+	vec3 L = normalize(lit.Pos - wPos);
+	vec3 V = normalize(cam_Pos - wPos);
 
 	if( (map_Flags&(MF_NOR|MF_HEIGHT)) > 0 ) // has bump
 	{
 		mat3 TBN = getTBN( N );
 		vec3 tsNor; // tangent normal
 		if( (map_Flags&MF_HEIGHT) > 0 ) { // bump map
-			float Bu = texture(map_Bump, mUv+vec2(texDelta,0)).r
-						- texture(map_Bump, mUv+vec2(-texDelta,0)).r;
-			float Bv = texture(map_Bump, mUv+vec2(0,texDelta)).r
-						- texture(map_Bump, mUv+vec2(0,-texDelta)).r;
-			tsNor = vec3(-Bu*bumpHeight, -Bv*bumpHeight, 1);
+			float Bu = texture(map_Bump, mUv+vec2(mat.TexDelta,0)).r
+						- texture(map_Bump, mUv+vec2(-mat.TexDelta,0)).r;
+			float Bv = texture(map_Bump, mUv+vec2(0,mat.TexDelta)).r
+						- texture(map_Bump, mUv+vec2(0,-mat.TexDelta)).r;
+			tsNor = vec3(-Bu*mat.BumpHeight, -Bv*mat.BumpHeight, 1);
 		}
 		else { // nor map
 			tsNor = texture(map_Bump, mUv).xyz*2.0-vec3(1);
@@ -96,16 +105,16 @@ void main(void)
 	vec3 R = 2*dot(N,L)*N-L;
 	
 
-	if( shadow_Enabled > 0 )
+	if( shadow.Enabled )
 	{
 		// ...
 	}
 
-	vec3 albelo = ( (map_Flags&MF_BASE_COLOR) > 0 ) ? texture(map_BaseColor, mUv).rgb : mat_BaseColor;
+	vec3 albelo = ( (map_Flags&MF_BASE_COLOR) > 0 ) ? texture(map_BaseColor, mUv).rgb : mat.BaseColor;
 	float lambertian = max(0, dot(N, L));
-	vec3 diffuse = light_Color*lambertian*albelo;
+	vec3 diffuse = lit.Color*lambertian*albelo;
 	vec3 ambient = albelo*0.2;//Ka;
-	vec3 specular = pow(max(0,dot(R,V)), shininess) * lambertian * vec3(1);
+	vec3 specular = pow(max(0,dot(R,V)), mat.Shininess) * lambertian * vec3(1);
 	vec3 outColor = diffuse+ambient+specular;
 
     outColor = pow(outColor, vec3(1/2.2));

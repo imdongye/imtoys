@@ -35,7 +35,7 @@ namespace lim
 		bool is_same_camera = true;
 
 		int selected_prog_idx = 0;
-		std::vector<Program> programs;
+		std::vector<Program*> programs;
 		std::vector<const char*> shader_names;
 
 		bool simplify_trigger = false;
@@ -44,14 +44,13 @@ namespace lim
 		int dst_vp_idx = 1;
 		int last_focused_vp_idx = 0;
 		
-		Light light;
+		LightDirectional light;
 		Model ground;
 
 		int nr_viewports = 0;
-		std::vector<ViewportWithCamera> viewports;
-		// scene에서 주소값을 사용하기때문에 
+		std::vector<ViewportWithCamera*> viewports;
+		std::vector<Scene*> scenes;
 		std::vector<Model*> models;
-		std::vector<Scene> scenes;
 
 		const char* export_path = "exports/simp_rst";
 
@@ -65,10 +64,10 @@ namespace lim
 		void doExportModel(size_t pIndex, int vpIdx);
 		void doSimplifyModel(float lived_pct = 0.8f, int version = 0, int agressiveness = 7, bool verbose = true);
 		void doBakeNormalMap(int texSize);
-
+		void setProg(int idx);
 	private:
 		virtual void update() override;
-		virtual void renderImGui() override;
+		virtual void updateImGui() override;
 		virtual void keyCallback(int key, int scancode, int action, int mods) override;
 		virtual void mouseBtnCallback(int button, int action, int mods) override;
 		virtual void dndCallback(int count, const char **paths) override;

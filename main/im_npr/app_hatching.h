@@ -41,11 +41,10 @@ namespace lim
 		Program h_prog;
 
 		ViewportWithCamera viewport;
-		std::vector<Model> models;
-		Light light;
-		Model light_model;
+		LightDirectional light;
 		Scene scene;
-	private:
+
+		
 		static constexpr GLint nr_tones = 6;
 		glm::vec2 uv_scale = {3.5f, 3.5f};
 		int fixed_art_map_idx=-1;
@@ -57,7 +56,7 @@ namespace lim
 		~AppHatching();
 	private:
 		virtual void update() override;
-		virtual void renderImGui() override;
+		virtual void updateImGui() override;
 	};
 }
 

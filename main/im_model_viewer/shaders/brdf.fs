@@ -13,6 +13,9 @@ in vec4 lPos;
 
 const float PI = 3.1415926535;
 
+
+
+// material
 const int MF_NONE       = 0;
 const int MF_BASE_COLOR = 1<<0;
 const int MF_SPECULAR   = 1<<1;
@@ -26,24 +29,23 @@ const int MF_OPACITY    = 1<<8;
 const int MF_MR         = 1<<9;
 const int MF_ARM        = 1<<10;
 const int MF_SHININESS  = 1<<11;
-
-uniform vec3 mat_BaseColor;
-uniform vec3 mat_SpecColor;
-uniform vec3 mat_AmbientColor;
-uniform vec3 mat_EmissionColor;
-uniform vec3 mat_F0;
-
-uniform float mat_Transmission;
-uniform float mat_Refraciti;
-uniform float mat_Opacity;
-uniform float mat_Shininess;
-uniform float mat_Roughness;
-uniform float mat_Metalness;
-uniform float mat_TexDelta;
-uniform float mat_BumpHeight;
-
+struct Material {
+	vec3 BaseColor;
+	vec3 SpecColor;
+	vec3 AmbientColor;
+	vec3 EmissionColor;
+	vec3 F0;
+	float Transmission;
+	float Refraciti;
+	float Opacity;
+	float Shininess;
+	float Roughness;
+	float Metalness;
+	float BumpHeight;
+	float TexDelta;
+};
+uniform Material mat;
 uniform int map_Flags;
-
 uniform sampler2D map_BaseColor;
 uniform sampler2D map_Specular;
 uniform sampler2D map_Bump;
@@ -53,30 +55,50 @@ uniform sampler2D map_Metalness;
 uniform sampler2D map_Emission;
 uniform sampler2D map_Opacity;
 
+
+// camera
+uniform vec3 cam_Pos;
+
+//light
 uniform sampler2D map_Light;
 uniform sampler2D map_Irradiance;
 uniform sampler3D map_PreFilteredEnv;
 uniform sampler2D map_PreFilteredBRDF;
+struct LightDirectional {
+	vec3 Pos;
+	vec3 Dir;
+	vec3 Color;
+	float Intensity;
+};
+uniform LightDirectional lit;
 
-uniform vec3 camera_Pos;
-uniform int light_Type;
-uniform vec3 light_Pos;
-uniform vec3 light_Color;
-uniform float light_Int;
-
-
-uniform bool shadow_Enabled;
-uniform float shadow_z_Near;
-uniform float shadow_z_Far;
-uniform vec2 shadow_radius_Uv;
+struct ShadowDirectional {
+	bool Enabled;
+	float ZNear;
+	float ZFar;
+	vec2 TexelSize;
+	vec2 OrthoSize;
+	vec2 RadiusUv;
+};
+uniform ShadowDirectional shadow;
 uniform sampler2D map_Shadow;
 
+
+
+// for testing
 uniform int idx_Brdf = 0;
 uniform int idx_D = 0;
 uniform int idx_G = 0;
 uniform int idx_F = 0;
 uniform int idx_LitMod = 0;
-uniform int nr_ibl_w_samples = 50;
+uniform int nr_IblWSamples = 50;
+
+
+
+
+
+
+
 
 
 // gamma correction
@@ -130,17 +152,21 @@ float iqint3( uvec2 x ) {
     uint  n = 1103515245U * ( (q.x  ) ^ (q.y>>3U) );
     return float(n) * (1.0/float(0xffffffffU));
 }
-
-
 float randWith2(vec2 co){
 	return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
 }
+
+
+
+
+
+
+
 
 // shadowing magic number
 const int NR_FIND_BLOCKER_SAMPLE = 32;
 const int NR_PCF_SAMPLE = 32;
 const float SHADOW_BIAS = 0.001; // Todo: non linear한 depth값에 적용하는거라 정필요할듯
-
 
 vec2 vogelSample( int i, int nrSample, float startTheta ) {
 	const float GoldenAngle = 2.4;
@@ -176,7 +202,7 @@ float zTexToZView(float zTex) { // [0,1] -> [near, far]
 	// [-1,1](non linear) -> [near, far](linear)
 	//return -2.0*light_z_Far*light_z_Near / ( zNdc*(light_z_Far-light_z_Near) + light_z_Far+light_z_Near );
 	// [0,1] -> [near, far]
-	return shadow_z_Far*shadow_z_Near / ( (shadow_z_Near-shadow_z_Far)*zTex-shadow_z_Near ); // 왜 안되지
+	return shadow.ZFar*shadow.ZNear / ( (shadow.ZNear-shadow.ZFar)*zTex-shadow.ZNear ); // 왜 안되지
 }
 // float zClipToZView(float zClip) { // [-near, far] -> [near, far]
 // 	return ((light_z_Far-light_z_Near)*zClip + 2.0*light_z_Near*light_z_Far) / (light_z_Far+light_z_Near);
@@ -205,7 +231,7 @@ float PCF(vec2 shadowTexPos, float curDepth, vec2 sampleRadiusUv) // 0.002
 
 float shadowing()
 {
-	if(!shadow_Enabled)
+	if(!shadow.Enabled)
 		return 1.f;
 
 	const float bias = 0.001;
@@ -213,16 +239,18 @@ float shadowing()
 	vec3 shadowTexCoord = (shadowNDC_pos+1)*0.5;
 	float lDepth = zTexToZView(shadowTexCoord.z); // [0, 1] -> [n, f]
 
-
-	// return PCF(shadowTexCoord.xy, shadowTexCoord.z, light_radius_Uv);
 	// return shadowTexCoord.z;
-	return (lDepth-shadow_z_Near)/(shadow_z_Far-shadow_z_Near);
+	// return texture(map_Shadow, shadowTexCoord.xy).r;
+	return PCF(shadowTexCoord.xy, shadowTexCoord.z, shadow.RadiusUv);
+	// return shadowTexCoord.z;
+	// return (lDepth-shadow_z_Near)/(shadow_z_Far-shadow_z_Near);
 
 	// STEP 1: blocker search
 	float avgBlockerDepth, nrBlockers;
 	// Using similar triangles from the surface point to the area light
 	// (샘플링 콘의 비율을 일정하게 하기위함.)
-	vec2 searchRegionRadiusUV = shadow_radius_Uv * (lDepth - shadow_z_Near) / lDepth;
+	vec2 sRadiusTUv = shadow.RadiusUv*shadow.TexelSize;
+	vec2 searchRegionRadiusUV = sRadiusTUv * (lDepth - shadow.ZNear) / lDepth;
 	findBlocker( avgBlockerDepth, nrBlockers, shadowTexCoord, searchRegionRadiusUV);
 	// return nrBlockers/float(NR_FIND_BLOCKER_SAMPLE);
 	if( nrBlockers == 0 ) return 1.0;
@@ -232,22 +260,28 @@ float shadowing()
 	// STEP 2: penumbra size
 	float avgBlockerDepthWorld = zTexToZView(avgBlockerDepth); // linearize
 	// Using similar triangles between the area light, the blocking plane and the surface point
-	vec2 wPenumbraUv = (lDepth - avgBlockerDepthWorld)*shadow_radius_Uv / avgBlockerDepthWorld;
+	vec2 wPenumbraUv = (lDepth - avgBlockerDepthWorld)*sRadiusTUv / avgBlockerDepthWorld;
 	// Project UV size to the near plane of the light
-	vec2 filterRadiusUv = wPenumbraUv*shadow_z_Near/lDepth;
+	vec2 filterRadiusUv = wPenumbraUv*shadow.ZNear/lDepth;
 
 
 	// STEP 3: filtering
 	return PCF(shadowTexCoord.xy, shadowTexCoord.z, filterRadiusUv);
 }
 
+
+
+
+
+
+
 //*****************************************
 //            Rendering Equation
 //*****************************************
 vec3 N, L, V, H, Rl, Rv;
 float NDL, NDV, NDH, VDRl, VDH;
-vec3 baseColor, F0, emission;
-float roughness, metalness, ambOcc;
+vec3 base_color, F0, emission;
+float roughness, metalness, amb_occ;
 
 
 vec3 OrenNayar() {
@@ -265,7 +299,7 @@ vec3 OrenNayar() {
 	float c2 = 0.25*sigmaa*(cosPhi>=0?sin(alpha):(sin(alpha)-pow(2*beta/PI,3)));
 	float c3 = 0.125*sigmaa*pow(4*alpha*beta/(PI*PI),2);
 	float l1 = cosTi*(c1+c2*cosPhi*tan(beta)+c3*(1-abs(cosPhi))*tan((alpha+beta)/2));
-	vec3 l2 = 0.17*baseColor*cosTi*(aa/(aa+0.13))*(1-cosPhi*pow(2*beta/PI,2));
+	vec3 l2 = 0.17*base_color*cosTi*(aa/(aa+0.13))*(1-cosPhi*pow(2*beta/PI,2));
 	return vec3(l1)+l2;
 }
 
@@ -273,14 +307,14 @@ vec3 brdfLambertian() { // Diffuse
 	return vec3(1/PI);
 }
 vec3 brdfPhong() { // Specular
-	float normalizeFactor = (mat_Shininess+1)/(2*PI);
-	return mat_AmbientColor + vec3(1) * normalizeFactor * pow( max(0,VDRl), mat_Shininess );
+	float normalizeFactor = (mat.Shininess+1)/(2*PI);
+	return mat.AmbientColor + vec3(1) * normalizeFactor * pow( max(0,VDRl), mat.Shininess );
 }
 vec3 brdfBlinnPhong() { // Specular
 	// vec3 H = (V+L)/2; // 성능을위해 노멀라이즈 하지 않음.
 	// float NDH = max(0,dot(N, H));
-	float normalizeFactor = (mat_Shininess+1)/(2*PI);
-	return mat_AmbientColor + vec3(1) * normalizeFactor * pow( max(0,NDH), mat_Shininess );
+	float normalizeFactor = (mat.Shininess+1)/(2*PI);
+	return mat.AmbientColor + vec3(1) * normalizeFactor * pow( max(0,NDH), mat.Shininess );
 }
 
 
@@ -372,7 +406,7 @@ vec3 brdfCookTorrance() {
 	return D*G*F / (4*NDL*NDV); // or 4PI
 }
 vec3 brdfPoint() {
-	vec3 diffuse = baseColor * mix(brdfLambertian(), vec3(0), metalness);
+	vec3 diffuse = base_color * mix(brdfLambertian(), vec3(0), metalness);
 
 	vec3 specular = vec3(0);
 	switch(idx_Brdf) {
@@ -384,7 +418,7 @@ vec3 brdfPoint() {
 	return diffuse+specular;
 }
 vec3 pointLighting() {
-	vec3 toLight = light_Pos-wPos;
+	vec3 toLight = lit.Pos-wPos;
 	L = normalize( toLight );
 	Rl = reflect(-L, N);//normalize(2*dot(N, L)*N-L);
 	H = normalize(L+V);
@@ -394,9 +428,9 @@ vec3 pointLighting() {
     VDRl = dot(V,Rl);
 	VDH = dot(V,H);
 
-	vec3 Li = light_Int*light_Color/dot(toLight,toLight); // radiance
-	vec3 ambient = mat_AmbientColor*ambOcc*baseColor;
-	return vec3(shadowing());
+	vec3 Li = lit.Intensity*lit.Color/dot(toLight,toLight); // radiance
+	vec3 ambient = mat.AmbientColor*amb_occ*base_color;
+	// return vec3(shadowing());
 	return emission + shadowing() * brdfPoint() * Li * max(0,NDL) + ambient;
 }
 
@@ -418,13 +452,13 @@ vec3 dirFromUv(vec2 uv) {
 
 
 vec3 ibSamplingLighting() {
-	int nrIblHSamples = int(nr_ibl_w_samples/2);
+	int nrIblHSamples = int(nr_IblWSamples/2);
 
-	vec3 ambient = mat_AmbientColor*ambOcc*baseColor;
+	vec3 ambient = mat.AmbientColor*amb_occ*base_color;
 	vec3 sum = vec3(0);
 
-	for(int i=0; i<nr_ibl_w_samples; i++) for(int j=0; j<nrIblHSamples; j++) {
-		vec2 uv = vec2( i/float(nr_ibl_w_samples-1), j/float(nrIblHSamples-1) );
+	for(int i=0; i<nr_IblWSamples; i++) for(int j=0; j<nrIblHSamples; j++) {
+		vec2 uv = vec2( i/float(nr_IblWSamples-1), j/float(nrIblHSamples-1) );
 		//uv = rand(uv, i); // 레귤러셈플링을 안해도 엘리어싱 안생기고 차이 없다.
 		L = dirFromUv(uv);
 		NDL = dot(N,L);
@@ -442,11 +476,11 @@ vec3 ibSamplingLighting() {
 		float solidAngle = sin(phi);
 
 		vec3 colL = texture(map_Light, uvFromDir(L)).rgb;
-		vec3 Li = light_Int * colL;
+		vec3 Li = lit.Intensity * colL;
 		sum += brdfPoint()*Li*NDL*solidAngle;
 	}
 	float dist2 = 10; // radiance
-	vec3 integ = sum/(nr_ibl_w_samples*nr_ibl_w_samples * dist2);
+	vec3 integ = sum/(nr_IblWSamples*nr_IblWSamples * dist2);
 	return emission + integ + ambient;
 }
 
@@ -483,12 +517,12 @@ vec3 importanceSampleGGX2(vec2 uv) {
 }
 
 vec3 ibImportanceSamplingLighting() {
-	vec3 ambient = mat_AmbientColor*ambOcc*baseColor;
+	vec3 ambient = mat.AmbientColor*amb_occ*base_color;
 	vec3 sum = vec3(0);
 	float wsum = 0.0;
-	int nrIblHSamples = int(nr_ibl_w_samples/2);
-	for(int i=0; i<nr_ibl_w_samples; i++) for(int j=0; j<nrIblHSamples; j++) {
-		vec2 uv = vec2( i/float(nr_ibl_w_samples-1), j/float(nrIblHSamples-1) );
+	int nrIblHSamples = int(nr_IblWSamples/2);
+	for(int i=0; i<nr_IblWSamples; i++) for(int j=0; j<nrIblHSamples; j++) {
+		vec2 uv = vec2( i/float(nr_IblWSamples-1), j/float(nrIblHSamples-1) );
 		//uv = rand(uv, i); // 레귤러셈플링을 안해도 엘리어싱 안생기고 차이 없다.
 		H = importanceSampleGGX(uv);
 		L = reflect(-V, H);
@@ -508,7 +542,7 @@ vec3 ibImportanceSamplingLighting() {
 		// 이상하게 face normal이 보인다.
 		vec3 colL = textureLod(map_Light, uvFromDir(L), sqrt(roughness)*6.8).rgb; // 교수님 아티팩트 줄이기위한 mipmap어프로치
 		// vec3 colL = texture(map_Light, uvFromDir(L)).rgb;
-		vec3 Li = light_Int * colL;
+		vec3 Li = lit.Intensity * colL;
 
 		// brdfPoint에서 distributionGGX와 분모, cos(phi)와 brdf의 NDH 없애서 최적화 가능
 		// brdf 여러개 써보기 위해서 일단 ggx ndf로 나눈다. 
@@ -530,12 +564,17 @@ vec3 ibPrefilteredLighting() {
 	// return  baseColor * texture(map_Irradiance, uvIrr).rgb;
 	// return texture(map_PreFilteredEnv, uvPfenv).rgb;
 	// return texture(map_PreFilteredEnv, vec3(uvPfenv,roughness)).rgb;
-	vec3 diff = mix(baseColor,vec3(0), metalness) * texture(map_Irradiance, uvIrr).rgb  * light_Int*0.01;
-	vec3 spec = texture(map_PreFilteredEnv, vec3(uvPfenv,roughness)).rgb * light_Int*0.01;
+	vec3 diff = mix(base_color,vec3(0), metalness) * texture(map_Irradiance, uvIrr).rgb  * lit.Intensity*0.01;
+	vec3 spec = texture(map_PreFilteredEnv, vec3(uvPfenv,roughness)).rgb * lit.Intensity*0.01;
 	vec2 brdf = texture(map_PreFilteredBRDF, vec2(NDV, roughness)).rg;
 	spec = spec*(F0*brdf.x + brdf.y);
 	return diff + spec;
 }
+
+
+
+
+
 
 
 
@@ -545,21 +584,21 @@ void main() {
 	float alpha = 1.0;
 	N = (gl_FrontFacing)?normalize(wNor):normalize(-wNor);
 
-	baseColor = mat_BaseColor;
+	base_color = mat.BaseColor;
 	if( (map_Flags & MF_BASE_COLOR)>0 ) {
 		vec4 rgba = texture( map_BaseColor, mUv );
-		baseColor = rgba.rgb;
+		base_color = rgba.rgb;
 		alpha = rgba.a;
 	}
-	ambOcc = 1.f;
+	amb_occ = 1.f;
 	if( (map_Flags & MF_AMB_OCC)>0 ) {
-		ambOcc = texture( map_AmbOcc, mUv ).r;
+		amb_occ = texture( map_AmbOcc, mUv ).r;
 	}
-	roughness = mat_Roughness;
+	roughness = mat.Roughness;
 	if( (map_Flags & MF_ROUGHNESS)>0 ) {
 		roughness = texture( map_Roughness, mUv ).r;
 	}
-	metalness = mat_Metalness;
+	metalness = mat.Metalness;
 	if( (map_Flags & MF_METALNESS)>0 ) {
 		metalness = texture( map_Metalness, mUv ).r;
 	}
@@ -570,7 +609,7 @@ void main() {
 	}
 	if( (map_Flags & MF_ARM)>0 ) {
 		vec3 texCol = texture( map_Roughness, mUv ).rgb;
-		ambOcc 	  = texCol.r;
+		amb_occ 	  = texCol.r;
 		roughness = texCol.g;
 		metalness = texCol.b;
 	}
@@ -578,8 +617,8 @@ void main() {
 		mat3 tbn = getTBN(N);
 		N = tbn* (texture( map_Bump, mUv ).rgb*2 - vec3(1));
 	}
-    F0 = mix(mat_F0, baseColor, metalness);
-	V = normalize( camera_Pos - wPos );
+    F0 = mix(mat.F0, base_color, metalness);
+	V = normalize( cam_Pos - wPos );
     NDV = dot(N,V);
 	Rv = reflect(-V, N);
 

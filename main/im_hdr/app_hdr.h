@@ -36,7 +36,7 @@ namespace lim
 		void addImage(std::string_view path);
 	private:
 		virtual void update() override;
-		virtual void renderImGui() override;
+		virtual void updateImGui() override;
 		virtual void dndCallback(int count, const char **paths) override;
 	};
 }

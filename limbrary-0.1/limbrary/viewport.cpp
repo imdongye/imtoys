@@ -12,17 +12,17 @@ namespace lim
 	{
 		if( createdFB==nullptr )
 			return;
-		framebuffer = createdFB;
-		framebuffer->resize(256, 256); // default size
+		own_framebuffer = createdFB;
+		own_framebuffer->resize(256, 256); // default size
 	}
 	Viewport::~Viewport()
 	{
-		if( framebuffer )
-			delete framebuffer;
+		if( own_framebuffer )
+			delete own_framebuffer;
 	}
 	bool Viewport::drawImGui(std::function<void(const Viewport&)> guizmoFunc) // and resize framebuffer
 	{
-		IFramebuffer& fb = *framebuffer;
+		IFramebuffer& fb = *own_framebuffer;
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
 		ImGui::SetNextWindowSize({(float)fb.width, (float)fb.height+ImGui::GetFrameHeight()}, (window_mode==WM_FIXED_SIZE)?ImGuiCond_Always:ImGuiCond_Once);
 
@@ -60,7 +60,7 @@ namespace lim
 
 		ImGui::SetItemKeyOwner(ImGuiKey_MouseWheelY);
 		ImGui::SetItemKeyOwner(ImGuiKey_MouseWheelX);
-		GLuint texID = framebuffer->getRenderedTexId();
+		GLuint texID = own_framebuffer->getRenderedTexId();
 		if( texID!=0 ) {
 			ImGui::Image((void*)(intptr_t)texID, ImVec2{(float)fb.width, (float)fb.height}, ImVec2{0, 1}, ImVec2{1, 0});
 		}
@@ -98,29 +98,29 @@ namespace lim
 	}
 	void Viewport::resize(GLuint _width, GLuint _height)
 	{
-		framebuffer->resize(_width, _height);
+		own_framebuffer->resize(_width, _height);
 		for( auto& cb : resize_callbacks ) {
 			cb(_width, _height);
 		}
 	}
 	const IFramebuffer& Viewport::getFb()
 	{
-		return *framebuffer;
+		return *own_framebuffer;
 	}
 	void Viewport::setClearColor(glm::vec4 color)
 	{
-		framebuffer->clear_color = color;
+		own_framebuffer->clear_color = color;
 	}
 	const GLuint& Viewport::getWidth() const
 	{
-		return framebuffer->width;
+		return own_framebuffer->width;
 	}
 	const GLuint& Viewport::getHeight() const
 	{
-		return framebuffer->height;
+		return own_framebuffer->height;
 	}
 	const float& Viewport::getAspect() const
 	{
-		return framebuffer->aspect;
+		return own_framebuffer->aspect;
 	}
 }
