@@ -222,7 +222,7 @@ set(dep_libs ${dep_libs} ${lib_name})
 ### limbrary ###
 # 배포할땐 cpp를 삭제하고 배포하기로 하자.
 set(lib_name "limbrary")
-set(lib_dir "${CMAKE_SOURCE_DIR}/limbrary-0.1")
+set(lib_dir "${CMAKE_SOURCE_DIR}/limbrary")
 file(GLOB_RECURSE lib_files CONFIGURE_DEPENDS "${lib_dir}/*.*")
 add_library(${lib_name} STATIC ${lib_files})
 source_group(TREE "${lib_dir}" FILES ${lib_files})

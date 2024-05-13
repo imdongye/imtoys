@@ -1,10 +1,8 @@
 # Todo Lists
 
-* model loading speed
+* blend
 
 * 노멀맵에서 범프맵을 만들때 적분을 못해서 미분값을 가지고 포아송 방정식(자코비, 가우스세이델)을 풀면된다.
-
-* 우측값참조로 받는 이동생성자를 만들어서 값복사는 안되게 하고 vector에 추가, 딥카피에도 안전하게 만들기
 
 * CPack
 
@@ -22,14 +20,10 @@
 
 * 베이어패턴, Chromaticity map to length one
 
-* vp_fixed_ratio 버그
-
 * viewport with camera move 부분 viewport에서 꼭 콜백이 필요할까
 
 * vp 탭에서 가려졌을때 렌더링안하게
 
 * 거리에 ^2비례하는 프로젝션
-
-* 라이센스추가
 
 * 허프만 코드, 허프 코드
