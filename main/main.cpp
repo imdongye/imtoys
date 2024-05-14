@@ -28,6 +28,7 @@
 #include "im_model_viewer/app_model_viewer.h"
 #include "im_shadertoy/app_shadertoy.h"
 #include "im_sdf_modeler/app_sdf_modeler.h"
+#include "im_mine_sweeper/app_mine_sweeper.h"
 
 static int _selected_app_idx;
 
@@ -77,6 +78,7 @@ static void pushAppData()
 
 int main()
 {
+	pushAppData<lim::AppMineSweeper>();
 	pushAppData<lim::AppModelViewer>();
 	pushAppData<lim::AppSdfModeler>();
 	pushAppData<lim::AppTemplate>();
