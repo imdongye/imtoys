@@ -1,7 +1,7 @@
-//
-//  framework template
-//	2022-11-14 / im dong ye
-//
+/*
+	framework template
+	2022-11-14 / im dong ye
+*/
 
 #ifndef __app_template_h_
 #define __app_template_h_

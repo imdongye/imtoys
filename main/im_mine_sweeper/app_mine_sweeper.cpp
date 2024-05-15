@@ -1,36 +1,85 @@
+/*
+	Todo:
+	1. 맵정보 내보내기 불러오기
+	2. 나무위키 규칙보고 compute업그레이드
+
+
+*/
 #include "app_mine_sweeper.h"
 #include <glad/glad.h>
 #include <limbrary/log.h>
 #include <imgui.h>
 #include <glm/gtc/random.hpp>
-#include <vector>
+#include <functional>
 
 
 using namespace glm;
 using namespace lim;
 
 namespace {
+	constexpr int MAX_BOARD_SIZE = 40;
+	constexpr int TOP_WINDOW_HEIGHT = 100;
+	constexpr int NINE_BOARD_WINDOW_SIZE = 380;
+	constexpr float UI_FONT_SIZE = 20.f;
+	constexpr float CELL_FONT_SIZE = 30.f;
+		
+	enum class GameState{
+		NEW,
+		PLAYING,
+		OVER,
+	};
+	struct Adjustable { // for ui
+		int width = 9;
+		int height = 9;
+		int nr_mine = 10;
+	};
+	struct Cell {
+		int x, y;
+		bool is_open, is_mine, is_flaged;
+		int nr_nbrs;
+		float prob; // probability of mine
+	};
+	struct Board {
+		Cell cells[MAX_BOARD_SIZE][MAX_BOARD_SIZE];
+		int width, height;
+		int nr_closed, nr_flagged, nr_mine;
+
+		bool isOutside(int x, int y);
+		void clear();
+		void plantMines(int avoidX, int avoidY);
+		bool dig(int x, int y); // return true if OVER(is mine or all clear)
+		void switchFlag(int x, int y);
+
+		bool compute1();
+		bool compute2();
+		void invokeNbrs(int x, int y, std::function<void(Cell&)> invoke);
+		void invokeAll(std::function<void(Cell&)> invoke);
+	};
+		
+
 	vec2 toGlm(const ImVec2& v) {
 		return {v.x, v.y};
 	}
 	ImVec2 toIG(const vec2& v) {
 		return {v.x, v.y};
 	}
-	constexpr int TOP_WINDOW_HEIGHT = 100;
-	constexpr int NINE_BOARD_WINDOW_SIZE = 380;
-	constexpr float UI_FONT_SIZE = 20.f;
-	constexpr float CELL_FONT_SIZE = 30.f;
-	ImFont* g_ui_font;
-	ImFont* g_cell_font;
+	
+	ImFont* ui_font;
+	ImFont* cell_font;
+	Adjustable adj;
+	double start_time;
+	double elapsed_time;
+	GameState game_state;
+	Board board;
 }
 
 
 
 
-bool AppMineSweeper::Board::isOutside(int x, int y) {
+bool Board::isOutside(int x, int y) {
 	return ( x<0 || x>=width || y<0 || y>=height );
 }
-void AppMineSweeper::Board::clear() {
+void Board::clear() {
 	for( int y=0; y<MAX_BOARD_SIZE; y++ ) for( int x=0; x<MAX_BOARD_SIZE; x++ ) {
 		Cell& c = cells[y][x];
 		c.x = x; c.y = y;
@@ -40,7 +89,7 @@ void AppMineSweeper::Board::clear() {
 		c.nr_nbrs = 0;
 	}
 }
-void AppMineSweeper::Board::invokeNbrs(int x, int y, std::function<void(Cell&)> invoke) {
+void Board::invokeNbrs(int x, int y, std::function<void(Cell&)> invoke) {
 	for( int dy=-1; dy<=1; dy++ ) for( int dx=-1; dx<=1; dx++ ) {
 		if( dy==0 && dx==0 )
 			continue;
@@ -51,12 +100,12 @@ void AppMineSweeper::Board::invokeNbrs(int x, int y, std::function<void(Cell&)> 
 		invoke(cells[ny][nx]);
 	}
 }
-void AppMineSweeper::Board::invokeAll(std::function<void(Cell&)> invoke) {
+void Board::invokeAll(std::function<void(Cell&)> invoke) {
 	for( int y=0; y<height; y++ ) for( int x=0; x<width; x++ ) {
 		invoke(cells[y][x]);
 	}
 }
-void AppMineSweeper::Board::plantMines(int avoidX, int avoidY) {
+void Board::plantMines(int avoidX, int avoidY) {
 	nr_closed = width*height;
 	nr_flagged = 0;
 
@@ -77,14 +126,14 @@ void AppMineSweeper::Board::plantMines(int avoidX, int avoidY) {
 		});
 	}
 }
-void AppMineSweeper::Board::switchFlag(int x, int y) {
+void Board::switchFlag(int x, int y) {
 	if( isOutside(x, y) )
 		return;
 	Cell& cell = cells[y][x];
 	cell.is_flaged = !cell.is_flaged;
 	nr_flagged += cell.is_flaged ? 1 : -1;
 }
-bool AppMineSweeper::Board::dig(int x, int y) {
+bool Board::dig(int x, int y) {
 	Cell& cell = cells[y][x];
 	if( isOutside(x, y) || cell.is_open )
 		return false;
@@ -108,37 +157,85 @@ bool AppMineSweeper::Board::dig(int x, int y) {
 //
 /*
 	열린칸의 지뢰개수를 보고 지뢰 찾기
-	vs 닫힌칸의 주변 칸 지뢰개수표시 보고 지뢰인지 확인
+	vs 모르는칸의 주변칸 지뢰개수표시 보고 지뢰인지 확인
 
-	is_mine접근금지
+	열린칸은 flag일 수 없다고 가정
+
+	compute1: 열린칸 지뢰개수 보고 나머지 전부 지뢰 또는 빈칸
+	compute2: 열린칸에서 주변 모르는칸에 확률(남은지뢰개수/모르는칸개수)을 더해서 높은것 지뢰로 선택
+	compute3: Todo: 확률로 칸열기
 */
-bool AppMineSweeper::Board::compute() {
-	Cell* closedNbrs[8];
+bool Board::compute1() {
 	bool isOver = false;
-
-	invokeAll([&](Cell& c){
-		if( !c.is_open || c.is_flaged ) {
+	invokeAll([&](Cell& c) {
+		if( !c.is_open ) {
 			return;
 		}
+		Cell* unknownNbrs[8];
 		int nrFlags = 0;
-		int nrUnknowns = 0; // veil unknown hide closed
+		int nrUnknowns = 0;
 		invokeNbrs(c.x, c.y, [&](Cell& nbr){
 			if( nbr.is_flaged )
 				nrFlags++;
 			else if( !nbr.is_open ) 
-				closedNbrs[nrUnknowns++] = &nbr;
+				unknownNbrs[nrUnknowns++] = &nbr;
 		});
 		if( c.nr_nbrs == nrFlags ) {
 			for( int i=0; i<nrUnknowns; i++ ) {
-				isOver |= dig(closedNbrs[i]->x, closedNbrs[i]->y);
+				isOver |= dig(unknownNbrs[i]->x, unknownNbrs[i]->y);
 			}
 		}
 		if( c.nr_nbrs == nrFlags + nrUnknowns ) {
 			for( int i=0; i<nrUnknowns; i++ ) {
-				switchFlag(closedNbrs[i]->x, closedNbrs[i]->y);
+				switchFlag(unknownNbrs[i]->x, unknownNbrs[i]->y);
 			}
 		}
 	});
+	return isOver;
+}
+bool Board::compute2() {
+	bool isOver = false;
+	int nrUnknowns = 0;
+	Cell* unknowns[MAX_BOARD_SIZE*MAX_BOARD_SIZE];
+	Cell *maxCell, *minCell;
+
+	invokeAll([&](Cell& c) {
+		if( !c.is_open && !c.is_flaged) {
+			c.prob = 0.f;
+			unknowns[nrUnknowns++] = &c;
+		}
+	});
+
+	invokeAll([&](Cell& c) {
+		if( !c.is_open ) {
+			return;
+		}
+		Cell* unknownNbrs[8];
+		int nrFlags = 0;
+		int nrUnknownNbrs = 0;
+		invokeNbrs(c.x, c.y, [&](Cell& nbr){
+			if( nbr.is_flaged )
+				nrFlags++;
+			else if( !nbr.is_open ) 
+				unknownNbrs[nrUnknownNbrs++] = &nbr;
+		});
+		for( int i=0; i<nrUnknownNbrs; i++ ) {
+			unknownNbrs[i]->prob += (c.nr_nbrs-nrFlags) / float(nrUnknownNbrs);
+		}
+	});
+	
+	maxCell = minCell = unknowns[0];
+
+	for( int i=1; i<nrUnknowns; i++ ) {
+		Cell* curCell = unknowns[i];
+		if( maxCell->prob < curCell->prob ) {
+			maxCell = curCell;
+		} else if( minCell->prob > curCell->prob ) {
+			minCell = curCell;
+		}
+	}
+	switchFlag(maxCell->x, maxCell->y);
+	// isOver = dig(minCell->x, minCell->y);
 	return isOver;
 }
 
@@ -148,7 +245,7 @@ bool AppMineSweeper::Board::compute() {
 
 
 
-void AppMineSweeper::setNewGame() {
+static void setNewGame() {
 	game_state = GameState::NEW;
 	elapsed_time = 0.0;
 	board.clear();
@@ -163,24 +260,20 @@ AppMineSweeper::AppMineSweeper()
 	setNewGame();
 
 	ImGuiIO& io = ImGui::GetIO();
-	io.Fonts->AddFontFromFileTTF("assets/fonts/SpoqaHanSansNeo-Medium.ttf", 16.f
-								, nullptr, io.Fonts->GetGlyphRangesKorean());
+	const char* fontPath = "assets/fonts/SpoqaHanSansNeo-Medium.ttf";
+	const char* iconPath = "im_mine_sweeper/fontello/font/fontello.ttf";
+	io.Fonts->AddFontFromFileTTF(fontPath, 16.f, nullptr, io.Fonts->GetGlyphRangesKorean());
 	
 	ImFontConfig config;
     // config.GlyphMinAdvanceX = 13.0f;
 	config.MergeMode = true;
     static ImWchar lIconRanges[] = { 0xE800, 0xE810, 0 };
 
+	io.Fonts->AddFontFromFileTTF(fontPath, UI_FONT_SIZE, nullptr, io.Fonts->GetGlyphRangesKorean());
+	ui_font = io.Fonts->AddFontFromFileTTF(iconPath, UI_FONT_SIZE, &config, lIconRanges);
 
-	io.Fonts->AddFontFromFileTTF("assets/fonts/SpoqaHanSansNeo-Medium.ttf", UI_FONT_SIZE
-								, nullptr, io.Fonts->GetGlyphRangesKorean());
-	g_ui_font = io.Fonts->AddFontFromFileTTF("im_mine_sweeper/fontello/font/fontello.ttf"
-											, UI_FONT_SIZE, &config, lIconRanges);
-
-
-	io.Fonts->AddFontFromFileTTF("assets/fonts/SpoqaHanSansNeo-Medium.ttf", CELL_FONT_SIZE);
-    g_cell_font = io.Fonts->AddFontFromFileTTF("im_mine_sweeper/fontello/font/fontello.ttf"
-											  , CELL_FONT_SIZE, &config, lIconRanges);
+	io.Fonts->AddFontFromFileTTF(fontPath, CELL_FONT_SIZE);
+    cell_font = io.Fonts->AddFontFromFileTTF(iconPath, CELL_FONT_SIZE, &config, lIconRanges);
 
 }
 AppMineSweeper::~AppMineSweeper()
@@ -238,8 +331,8 @@ void AppMineSweeper::updateImGui()
 
 	const vec2 screenPos = toGlm(ImGui::GetCursorScreenPos());
 	vec2 mousePos = toGlm(ImGui::GetMousePos()) - screenPos;
-	int hoveredX = (mousePos.x>0)? mousePos.x/cellRegion.x : -1;
-	int hoveredY = (mousePos.y>0)? mousePos.y/cellRegion.y : -1;
+	int hoveredX = (mousePos.x>0)? int(mousePos.x/cellRegion.x) : -1;
+	int hoveredY = (mousePos.y>0)? int(mousePos.y/cellRegion.y) : -1;
 	
 	ImDrawList* drawList = ImGui::GetWindowDrawList();
 	board.invokeAll([&](Cell& cell) {
@@ -297,7 +390,7 @@ void AppMineSweeper::updateImGui()
 		}
 		txPos.x -= fontSize*0.23f;
 		txPos.y -= fontSize*0.45f;
-		drawList->AddText(g_cell_font, fontSize, txPos, col, txPtr);
+		drawList->AddText(cell_font, fontSize, txPos, col, txPtr);
 	});
 	ImGui::End();
 	ImGui::PopStyleVar();
@@ -308,8 +401,8 @@ void AppMineSweeper::updateImGui()
 	//	State
 	//
 	if( game_state != GameState::NEW ) {
-		ImGui::Begin("state");
-		ImGui::PushFont(g_ui_font);
+		ImGui::Begin("state", nullptr, ImGuiWindowFlags_HorizontalScrollbar);
+		ImGui::PushFont(ui_font);
 
 		if( game_state == GameState::PLAYING ) {
 			elapsed_time = ImGui::GetTime() - start_time;
@@ -322,17 +415,23 @@ void AppMineSweeper::updateImGui()
 		ImGui::Text(u8"\uE803 %d:%02d", eSec/60, eSec%60);
 		ImGui::SetItemTooltip("%.3f sec", elapsed_time);
 
-		ImGui::SameLine(0.f,15.f);
+		ImGui::SameLine();
 		int remainMines = glm::min(board.nr_closed, board.nr_mine-board.nr_flagged);
-		ImGui::Text(u8"\uE802 %d/%d", remainMines, board.nr_mine);
+		ImGui::Text(u8"\uE802 %2d/%d", remainMines, board.nr_mine);
 		if( game_state != GameState::NEW ) {
-			ImGui::SameLine(0.f, 20.f);
+			ImGui::SameLine();
 			if( ImGui::Button(u8"\uE810 다시시작") ) {
 				setNewGame();
 			}
-			ImGui::SameLine(0.f, 20.f);
-			if( ImGui::Button("자동오픈1회") ) {
-				if( board.compute() ) {
+			ImGui::SameLine();
+			if( ImGui::Button("자동1") ) {
+				if( board.compute1() ) {
+					game_state = GameState::OVER;
+				}
+			}
+			ImGui::SameLine();
+			if( ImGui::Button("자동2") ) {
+				if( board.compute2() ) {
 					game_state = GameState::OVER;
 				}
 			}
@@ -350,8 +449,8 @@ void AppMineSweeper::updateImGui()
 	static int level = 0;
 	static bool isAdjChanged = false;
 	if( game_state == GameState::NEW ) {
-		ImGui::Begin("settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-		ImGui::PushFont(g_ui_font);
+		ImGui::Begin("settings", nullptr, ImGuiWindowFlags_HorizontalScrollbar);
+		ImGui::PushFont(ui_font);
 		ImGui::SetNextItemWidth(100.f);
 		if( ImGui::Combo("level", &level, levelStrs, 4) ) {
 			isAdjChanged = true;
