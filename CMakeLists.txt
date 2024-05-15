@@ -24,7 +24,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 99)
 
 set(CMAKE_VERBOSE_MAKEFILE true)
-set(CMAKE_GENERATOR_PLATFORM x64)
+if(WIN32)
+    set(CMAKE_GENERATOR_PLATFORM x64)
+endif(WIN32)
 
 project(
     imtoys
@@ -332,3 +334,12 @@ if(CMAKE_GENERATOR MATCHES "Xcode")
                     XCODE_SCHEME_WORKING_DIRECTORY ${working_dir})
     # 시작 schema 설정 못찾음
 endif()
+
+
+
+### CPack ###
+# include(InstallRequiredSystemLibraries)
+# set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/License.txt")
+# set(CPACK_PACKAGE_VERSION_MAJOR 0)
+# set(CPACK_PACKAGE_VERSION_MAJOR 2)
+# include(CPack)
