@@ -7,6 +7,7 @@
 #define __app_mines_weeper_h_
 
 #include <limbrary/application.h>
+#include <functional>
 
 namespace lim
 {
@@ -38,8 +39,10 @@ namespace lim
 			int nr_mine = 10;
 		};
 		struct Cell {
+			int x, y;
 			bool is_open, is_mine, is_flaged;
 			int nr_nbrs;
+			float prob; // probability of not mine
 		};
 		struct Board {
 			Cell cells[MAX_BOARD_SIZE][MAX_BOARD_SIZE];
@@ -49,10 +52,13 @@ namespace lim
 			bool isOutside(int x, int y);
 			void clear();
 			void plantMines(int avoidX, int avoidY);
-			bool reveal(int x, int y);
+			bool dig(int x, int y); // return true if OVER(is mine or all clear)
 			void switchFlag(int x, int y);
-		};
 
+			bool compute();
+			void invokeNbrs(int x, int y, std::function<void(Cell&)> invoke);
+			void invokeAll(std::function<void(Cell&)> invoke);
+		};
 		Adjustable adj;
 		double start_time;
 		double elapsed_time;

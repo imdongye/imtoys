@@ -3,8 +3,9 @@
 #include <limbrary/log.h>
 #include <imgui.h>
 #include <glm/gtc/random.hpp>
+#include <vector>
 
-using namespace std;
+
 using namespace glm;
 using namespace lim;
 
@@ -32,10 +33,27 @@ bool AppMineSweeper::Board::isOutside(int x, int y) {
 void AppMineSweeper::Board::clear() {
 	for( int y=0; y<MAX_BOARD_SIZE; y++ ) for( int x=0; x<MAX_BOARD_SIZE; x++ ) {
 		Cell& c = cells[y][x];
+		c.x = x; c.y = y;
 		c.is_open = false;
 		c.is_mine = false;
 		c.is_flaged = false;
 		c.nr_nbrs = 0;
+	}
+}
+void AppMineSweeper::Board::invokeNbrs(int x, int y, std::function<void(Cell&)> invoke) {
+	for( int dy=-1; dy<=1; dy++ ) for( int dx=-1; dx<=1; dx++ ) {
+		if( dy==0 && dx==0 )
+			continue;
+		int nx = x+dx;
+		int ny = y+dy;
+		if( isOutside(nx, ny) )
+			continue;
+		invoke(cells[ny][nx]);
+	}
+}
+void AppMineSweeper::Board::invokeAll(std::function<void(Cell&)> invoke) {
+	for( int y=0; y<height; y++ ) for( int x=0; x<width; x++ ) {
+		invoke(cells[y][x]);
 	}
 }
 void AppMineSweeper::Board::plantMines(int avoidX, int avoidY) {
@@ -52,26 +70,21 @@ void AppMineSweeper::Board::plantMines(int avoidX, int avoidY) {
 			continue;
 		}
 		cells[y][x].is_mine = true;
-	}
-
-	for( int y=0; y<height; y++ ) for( int x=0; x<width; x++ ) {
 		cells[y][x].nr_nbrs = 0;
-		if( cells[y][x].is_mine ) 
-			continue;
-		for( int dy=-1; dy<=1; dy++ ) for( int dx=-1; dx<=1; dx++ ) {
-			if( dy==0 && dx==0 )
-				continue;
-			int nx = x+dx;
-			int ny = y+dy;
-			if( isOutside(nx, ny) )
-				continue;
-			if( cells[ny][nx].is_mine ) 
-				cells[y][x].nr_nbrs++;
-		}
+		invokeNbrs(x,y,[](Cell& c){
+			if(!c.is_mine)
+				c.nr_nbrs++;
+		});
 	}
 }
-// if mine return true
-bool AppMineSweeper::Board::reveal(int x, int y) {
+void AppMineSweeper::Board::switchFlag(int x, int y) {
+	if( isOutside(x, y) )
+		return;
+	Cell& cell = cells[y][x];
+	cell.is_flaged = !cell.is_flaged;
+	nr_flagged += cell.is_flaged ? 1 : -1;
+}
+bool AppMineSweeper::Board::dig(int x, int y) {
 	Cell& cell = cells[y][x];
 	if( isOutside(x, y) || cell.is_open )
 		return false;
@@ -81,21 +94,53 @@ bool AppMineSweeper::Board::reveal(int x, int y) {
 		switchFlag(x,y);
 
 	if( cell.nr_nbrs==0 && !cell.is_mine ) {
-		reveal(x-1, y);
-		reveal(x+1, y);
-		reveal(x, y-1);
-		reveal(x, y+1);
+		invokeNbrs(x,y,[&](Cell& c){
+			dig(c.x, c.y);
+		});
 	}
-	return cell.is_mine;
-}
-void AppMineSweeper::Board::switchFlag(int x, int y) {
-	if( isOutside(x, y) )
-		return;
-	Cell& cell = cells[y][x];
-	cell.is_flaged = !cell.is_flaged;
-	nr_flagged += cell.is_flaged ? 1 : -1;
+	return cell.is_mine||nr_closed==nr_mine;
 }
 
+
+
+//
+//	검증
+//
+/*
+	열린칸의 지뢰개수를 보고 지뢰 찾기
+	vs 닫힌칸의 주변 칸 지뢰개수표시 보고 지뢰인지 확인
+
+	is_mine접근금지
+*/
+bool AppMineSweeper::Board::compute() {
+	Cell* closedNbrs[8];
+	bool isOver = false;
+
+	invokeAll([&](Cell& c){
+		if( !c.is_open || c.is_flaged ) {
+			return;
+		}
+		int nrFlags = 0;
+		int nrUnknowns = 0; // veil unknown hide closed
+		invokeNbrs(c.x, c.y, [&](Cell& nbr){
+			if( nbr.is_flaged )
+				nrFlags++;
+			else if( !nbr.is_open ) 
+				closedNbrs[nrUnknowns++] = &nbr;
+		});
+		if( c.nr_nbrs == nrFlags ) {
+			for( int i=0; i<nrUnknowns; i++ ) {
+				isOver |= dig(closedNbrs[i]->x, closedNbrs[i]->y);
+			}
+		}
+		if( c.nr_nbrs == nrFlags + nrUnknowns ) {
+			for( int i=0; i<nrUnknowns; i++ ) {
+				switchFlag(closedNbrs[i]->x, closedNbrs[i]->y);
+			}
+		}
+	});
+	return isOver;
+}
 
 
 
@@ -186,9 +231,9 @@ void AppMineSweeper::updateImGui()
 
 	const vec2 cellRegion = contentSize/vec2(board.width, board.height);
 	const vec2 cellSize = cellRegion*vec2(1.f-paddingRadio);
-	const float fontSize = glm::min(glm::min(cellSize.x*0.9f, cellSize.y)*0.8f, CELL_FONT_SIZE);
 	const vec2 cellPadding = cellRegion*vec2(paddingRadio/2.f);
 	const float rounding = cellSize.x * 0.1f;
+	const float baseFontSize = glm::min(glm::min(cellSize.x*0.9f, cellSize.y)*0.8f, CELL_FONT_SIZE);
 
 
 	const vec2 screenPos = toGlm(ImGui::GetCursorScreenPos());
@@ -197,17 +242,16 @@ void AppMineSweeper::updateImGui()
 	int hoveredY = (mousePos.y>0)? mousePos.y/cellRegion.y : -1;
 	
 	ImDrawList* drawList = ImGui::GetWindowDrawList();
-	for( int y=0; y<board.height; y++ ) for( int x=0; x<board.width; x++ ) {
-		const Cell& cell = board.cells[y][x];
-		bool isHovered = hoveredX==x && hoveredY==y;
-		ImVec2 tlPos = toIG(screenPos + cellPadding + vec2(x, y)*cellRegion);
+	board.invokeAll([&](Cell& cell) {
+		bool isHovered = hoveredX==cell.x && hoveredY==cell.y;
+		ImVec2 tlPos = toIG(screenPos + cellPadding + vec2(cell.x, cell.y)*cellRegion);
 		ImVec2 brPos = {tlPos.x+cellSize.x, tlPos.y+cellSize.y};
 		ImColor col = boardColors[COL_CELL_IDX];
 
 		if( cell.is_open ) {
 			drawList->AddRect(tlPos, brPos, col, rounding);
 			if( !cell.is_mine && cell.nr_nbrs==0 ) {
-				continue;
+				return;
 			}
 		}
 		else { // closed
@@ -217,27 +261,30 @@ void AppMineSweeper::updateImGui()
 			drawList->AddRectFilled(tlPos, brPos, col, rounding);
 			if( game_state == GameState::OVER ) {
 				if( !cell.is_flaged && !cell.is_mine)
-					continue;
+					return;
 			}
 			else {
 				if( !cell.is_flaged )
-					continue;
+					return;
 			}
 		}
 
 		const char* txPtr;
 		ImVec2 txPos;
-		txPos.x = tlPos.x+cellSize.x*0.5f - fontSize*0.23f;
-		txPos.y = tlPos.y+cellSize.y*0.5f - fontSize*0.45f;
+		float fontSize = baseFontSize;
+		txPos.x = tlPos.x+cellSize.x*0.5f;
+		txPos.y = tlPos.y+cellSize.y*0.5f;
 
 		if( cell.is_flaged ) {
-			txPos.x -= fontSize*0.16f;
+			fontSize *= 0.8f;
+			txPos.x -= fontSize*0.21f;
 			col = boardColors[(game_state==GameState::OVER&&cell.is_mine)?COL_FLAG_RIGHT_IDX:COL_FLAG_WRONG_IDX];
 			txPtr = u8"\uE800";
 		} 
 		else if( cell.is_mine ) {
 			if( game_state == GameState::PLAYING && !cell.is_open )
-				continue;
+				return;
+			fontSize *= 0.8f;
 			txPos.x -= fontSize*0.16f;
 			col = boardColors[COL_MINE_IDX];
 			txPtr = u8"\uE802";
@@ -248,8 +295,10 @@ void AppMineSweeper::updateImGui()
 			col = boardColors[cell.nr_nbrs];
 			txPtr = numStr;
 		}
+		txPos.x -= fontSize*0.23f;
+		txPos.y -= fontSize*0.45f;
 		drawList->AddText(g_cell_font, fontSize, txPos, col, txPtr);
-	}
+	});
 	ImGui::End();
 	ImGui::PopStyleVar();
 
@@ -280,6 +329,12 @@ void AppMineSweeper::updateImGui()
 			ImGui::SameLine(0.f, 20.f);
 			if( ImGui::Button(u8"\uE810 다시시작") ) {
 				setNewGame();
+			}
+			ImGui::SameLine(0.f, 20.f);
+			if( ImGui::Button("자동오픈1회") ) {
+				if( board.compute() ) {
+					game_state = GameState::OVER;
+				}
 			}
 		}
 		ImGui::PopFont();
@@ -365,10 +420,9 @@ void AppMineSweeper::updateImGui()
 			start_time = ImGui::GetTime();
 			board.plantMines(hoveredX, hoveredY);
 		}
-		if( board.reveal(hoveredX, hoveredY) ) {
+		if( board.dig(hoveredX, hoveredY) ) {
 			game_state = GameState::OVER;
 		}
-		log::pure("isOver: %d %d\n", hoveredX, hoveredY);
 	} else if( ImGui::IsMouseReleased(1) ) {
 		board.switchFlag(hoveredX, hoveredY);
 	}
