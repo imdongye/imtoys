@@ -22,11 +22,9 @@ cmake_minimum_required(VERSION 3.24...3.27 FATAL_ERROR)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 99)
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DLIM_DEBUG")
 
 set(CMAKE_VERBOSE_MAKEFILE true)
-if(WIN32)
-    set(CMAKE_GENERATOR_PLATFORM x64)
-endif(WIN32)
 
 project(
     imtoys
@@ -36,13 +34,18 @@ project(
 )
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+    set(CMAKE_GENERATOR_PLATFORM x64)
+
     #add_compile_options(/wd4819) # 코드페이지 949 경고
     add_compile_options(/utf-8)
 endif()
 
+
+
+
+
+
 set(dep_libs)
-
-
 ### glfw ###
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
@@ -75,7 +78,7 @@ add_subdirectory(vendor/assimp)
 set_target_properties(assimp PROPERTIES CONFIG Release) # release 빌드
 option(BUILD_SHARED_LIBS OFF)
 set_target_properties(assimp PROPERTIES FOLDER "vendor")
-set(dep_libs ${dep_libs} assimp)
+list(APPEND dep_libs assimp)
 
 
 
@@ -94,7 +97,7 @@ add_library(${lib_name} STATIC ${lib_files})
 source_group(TREE ${lib_dir} FILES ${lib_files})
 target_include_directories(${lib_name} PUBLIC "${lib_dir}/include")
 set_target_properties(${lib_name} PROPERTIES FOLDER "vendor")
-set(dep_libs ${dep_libs} ${lib_name})
+list(APPEND dep_libs ${lib_name})
 
 
 
@@ -107,8 +110,7 @@ add_library(${lib_name} STATIC ${lib_files})
 source_group(TREE ${lib_dir} FILES ${lib_files})
 target_include_directories(${lib_name} PUBLIC ${lib_dir})
 set_target_properties(${lib_name} PROPERTIES FOLDER "vendor")
-set(dep_libs ${dep_libs} ${lib_name})
-
+list(APPEND dep_libs ${lib_name})
 
 
 
@@ -121,7 +123,7 @@ add_library(${lib_name} STATIC ${lib_files})
 source_group(TREE ${lib_dir} FILES ${lib_files})
 target_include_directories(${lib_name} PUBLIC ${lib_dir})
 set_target_properties(${lib_name} PROPERTIES FOLDER "vendor")
-set(dep_libs ${dep_libs} ${lib_name})
+list(APPEND dep_libs ${lib_name})
 
 
 
@@ -146,7 +148,7 @@ target_compile_definitions(${lib_name}
         IMGUI_STB_RECT_PACK_FILENAME="../stb/stb_rect_pack.h"
 )
 set_target_properties(${lib_name} PROPERTIES FOLDER "vendor")
-set(dep_libs ${dep_libs} ${lib_name})
+list(APPEND dep_libs ${lib_name})
 
 
 
@@ -162,7 +164,7 @@ target_link_libraries(${lib_name} PUBLIC imgui)
 add_dependencies(${lib_name} imgui)
 target_compile_definitions(${lib_name} PRIVATE USE_IMGUI_API)
 set_target_properties(${lib_name} PROPERTIES FOLDER "vendor")
-set(dep_libs ${dep_libs} ${lib_name})
+list(APPEND dep_libs ${lib_name})
 
 
 
@@ -176,7 +178,7 @@ target_include_directories(${lib_name} PUBLIC ${lib_dir})
 target_link_libraries(${lib_name} PUBLIC imgui)
 add_dependencies(${lib_name} imgui)
 set_target_properties(${lib_name} PROPERTIES FOLDER "vendor")
-set(dep_libs ${dep_libs} ${lib_name})
+list(APPEND dep_libs ${lib_name})
 
 
 
@@ -190,7 +192,7 @@ source_group(TREE "${lib_dir}/glm" FILES ${lib_files})
 target_include_directories(${lib_name} INTERFACE ${lib_dir})
 target_compile_definitions(${lib_name} INTERFACE GLM_FORCE_SILENT_WARNINGS)
 set_target_properties(${lib_name} PROPERTIES FOLDER "vendor")
-set(dep_libs ${dep_libs} ${lib_name})
+list(APPEND dep_libs ${lib_name})
 
 
 
@@ -203,7 +205,7 @@ add_library(${lib_name} INTERFACE ${lib_files})
 source_group(TREE "${lib_dir}/Eigen" FILES ${lib_files})
 target_include_directories(${lib_name} INTERFACE ${lib_dir})
 set_target_properties(${lib_name} PROPERTIES FOLDER "vendor")
-set(dep_libs ${dep_libs} ${lib_name})
+list(APPEND dep_libs ${lib_name})
 
 
 
@@ -216,13 +218,12 @@ add_library(${lib_name} INTERFACE ${lib_files})
 source_group(TREE ${lib_dir} FILES ${lib_files})
 target_include_directories(${lib_name} INTERFACE ${lib_dir})
 set_target_properties(${lib_name} PROPERTIES FOLDER "vendor")
-set(dep_libs ${dep_libs} ${lib_name})
+list(APPEND dep_libs ${lib_name})
 
 
 
 
 ### limbrary ###
-# 배포할땐 cpp를 삭제하고 배포하기로 하자.
 set(lib_name "limbrary")
 set(lib_dir "${CMAKE_SOURCE_DIR}/limbrary")
 file(GLOB_RECURSE lib_files CONFIGURE_DEPENDS "${lib_dir}/*.*")
@@ -264,50 +265,51 @@ endif()
 
 
 
-### main proj ###
 set(exe_name "imtoys_exe")
 set(main_dir "${CMAKE_SOURCE_DIR}/main")
-file(GLOB_RECURSE main_files CONFIGURE_DEPENDS "${main_dir}/*.*")
-list(FILTER main_files EXCLUDE REGEX "${main_dir}/assets/fonts/*")
-list(FILTER main_files EXCLUDE REGEX "${main_dir}/assets/models/*")
-list(FILTER main_files EXCLUDE REGEX "${main_dir}/assets/images/*")
-list(FILTER main_files EXCLUDE REGEX "${main_dir}/ignored/*")
-list(FILTER main_files EXCLUDE REGEX "${main_dir}/exports/*")
-add_executable(${exe_name} ${main_files})
-source_group(TREE ${main_dir} FILES ${main_files})
+file(GLOB_RECURSE main_files CONFIGURE_DEPENDS 
+    ${main_dir}/*.c ${main_dir}/*.cpp ${main_dir}/*.h ${main_dir}/*.hpp ${main_dir}/*.ipp
+)
+list(FILTER main_files   EXCLUDE REGEX "${main_dir}/assets/*")
+file(GLOB_RECURSE shader_files #CONFIGURE_DEPENDS 
+    ${main_dir}/*.glsl ${main_dir}/*.vs ${main_dir}/*.vert ${main_dir}/*.fs ${main_dir}/*.frag
+)
+list(FILTER main_files   EXCLUDE REGEX "${main_dir}/ignored/*")
+list(FILTER shader_files EXCLUDE REGEX "${main_dir}/ignored/*")
+list(FILTER main_files   EXCLUDE REGEX "${main_dir}/exports/*")
+list(FILTER shader_files EXCLUDE REGEX "${main_dir}/exports/*")
+### main proj ###
+add_executable(${exe_name} ${main_files} ${shader_files})
+source_group(TREE ${main_dir} FILES ${main_files} ${shader_files})
 target_include_directories(${exe_name} PRIVATE ${main_dir})
 target_link_libraries(${exe_name} PRIVATE limbrary)
 add_dependencies(${exe_name} limbrary)
 if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-    target_compile_options(
-        ${exe_name} 
-        PRIVATE
-            /W4
-            #/WX
+    target_compile_options(${exe_name} PRIVATE
+        /W4
+        #/WX
     )
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    target_compile_options(
-        ${exe_name} 
-        PRIVATE
-            -Wall
-            #-Werror
+    target_compile_options(${exe_name} PRIVATE
+        -Wall
+        #-Werror
     )
 endif()
-target_compile_definitions(
-    ${exe_name} 
-    PRIVATE
-        WINDOW_NAME="imtoys template"
-        WINDOW_WIDTH=600
-        WINDOW_HEIGHT=400
+target_compile_definitions(${exe_name} PRIVATE
+    WINDOW_NAME="imtoys template"
+    WINDOW_WIDTH=600
+    WINDOW_HEIGHT=400
 )
 
 
 
 
 ### 결과 파일 생성 위치 지정 ###
-set_target_properties(limbrary ${dep_libs} ${exe_name} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/$<CONFIG>/library) # static, dll load lib
-set_target_properties(limbrary ${dep_libs} ${exe_name} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/$<CONFIG>/module) # dll of module 
-set_target_properties(limbrary ${dep_libs} ${exe_name} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/$<CONFIG>/executable) # exe
+set_target_properties(limbrary ${dep_libs} ${exe_name} PROPERTIES 
+    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/$<CONFIG>/library      # static, dll load lib
+    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/$<CONFIG>/module       # dll of module 
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/$<CONFIG>/executable   # exe
+) 
 
 
 
@@ -329,10 +331,11 @@ if(CMAKE_GENERATOR MATCHES "Visual Studio*")
     set_target_properties(${exe_name} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY ${working_dir})
 endif()
 if(CMAKE_GENERATOR MATCHES "Xcode")
-    set_target_properties(${exe_name} PROPERTIES 
-                    XCODE_GENERATE_SCHEME TRUE
-                    XCODE_SCHEME_WORKING_DIRECTORY ${working_dir})
     # 시작 schema 설정 못찾음
+    set_target_properties(${exe_name} PROPERTIES 
+        XCODE_GENERATE_SCHEME TRUE
+        XCODE_SCHEME_WORKING_DIRECTORY ${working_dir}
+    )
 endif()
 
 

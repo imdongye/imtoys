@@ -163,7 +163,11 @@ AppBase::AppBase(int winWidth, int winHeight, const char* title, bool vsync)
 
 	
 
-
+	// init singleton
+	glClampColor(GL_CLAMP_READ_COLOR, GL_FALSE);
+	srand(time(0));
+	AppPrefs::create();
+	AssetLib::create(this);
 
 
 	//
@@ -262,16 +266,6 @@ AppBase::AppBase(int winWidth, int winHeight, const char* title, bool vsync)
 		ImGui_ImplGlfw_InitForOpenGL(window, true);
 		ImGui_ImplOpenGL3_Init("#version 410");
 	}
-
-
-
-
-	// init singleton
-	AppPrefs::create();
-	AssetLib::create(this);
-
-	glClampColor(GL_CLAMP_READ_COLOR, GL_FALSE);
-	srand(time(0));
 }
 
 

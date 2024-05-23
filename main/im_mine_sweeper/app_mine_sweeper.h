@@ -3,8 +3,8 @@
 	2024-05-14 / imdongye
 */
 
-#ifndef __app_mines_weeper_h_
-#define __app_mines_weeper_h_
+#ifndef __app_mine_sweeper_h_
+#define __app_mine_sweeper_h_
 
 #include <limbrary/application.h>
 
