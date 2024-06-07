@@ -24,8 +24,12 @@ namespace lim
 	class Mesh
 	{
 	public:
-		static constexpr int MAX_BONE_INFLUENCE = 4;
-
+		static constexpr int MAX_BONE_PER_VERT = 4;
+		struct VertBoneInfo {
+			int ids[MAX_BONE_PER_VERT] = { -1, };
+			float weights[MAX_BONE_PER_VERT] = { 0.f,};
+		};
+	public:
 		std::string name = "unnamed mesh";
 
 		std::vector<glm::vec3> poss;
@@ -34,17 +38,15 @@ namespace lim
 		std::vector<glm::vec3> cols;
 		std::vector<glm::vec3> tangents;
 		std::vector<glm::vec3> bitangents;
-		std::vector<std::array<int, MAX_BONE_INFLUENCE>> bone_ids;
-		std::vector<std::array<float, MAX_BONE_INFLUENCE>> bending_factors;
+		std::vector<VertBoneInfo> bone_infos;
 		std::vector<glm::uvec3> tris;
-		GLuint pos_buf = 0;
-		GLuint nor_buf = 0;
-		GLuint uv_buf  = 0;
-		GLuint color_buf = 0;
-		GLuint tangent_buf = 0;
-		GLuint bitangent_buf = 0;
-		GLuint bone_id_buf = 0;
-		GLuint bending_factor_buf = 0;
+		GLuint pos_buf = 0; 			// 0
+		GLuint nor_buf = 0; 			// 1
+		GLuint uv_buf  = 0;				// 2
+		GLuint color_buf = 0;			// 3
+		GLuint tangent_buf = 0; 		// 4
+		GLuint bitangent_buf = 0;		// 5
+		GLuint bone_infos_buf = 0;		// 6, 7
 		GLuint element_buf = 0;
 		GLuint vert_array = 0;
 

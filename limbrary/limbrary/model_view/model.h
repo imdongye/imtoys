@@ -30,6 +30,7 @@ Model에 의존하지 않고 RdNode에 의존하는 Scene
 #include <limits>
 #include <glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <map>
 #include "../texture.h"
 #include "mesh.h"
 #include "camera.h"
@@ -50,6 +51,14 @@ namespace lim
 			, const glm::mat4& prevTransform = glm::mat4(1) ) const;
 		void clear();
 	};
+
+	struct BoneInfo
+	{
+		int id;
+		glm::mat4 offset;
+	};
+
+	
 
 	// clone able
 	class Model
@@ -76,6 +85,9 @@ namespace lim
 		float pivoted_scaled_bottom_height = 0;
 		GLuint ai_backup_flags = 0;
 
+		int nr_bones = 0;
+		std::map<std::string, BoneInfo> bone_map;
+
 	public:
 		Model(const Model& src)		   = delete;
 		Model& operator=(const Model&) = delete;
@@ -84,6 +96,7 @@ namespace lim
 
 		Model(std::string_view name="nonamed");
 		virtual ~Model();
+		void clear();
 
 		void copyFrom(const Model& src, bool makeRef = false);
 
@@ -100,8 +113,6 @@ namespace lim
 		bool importFromFile(std::string_view modelPath, bool unitScaleAndPivot = false, const Material* withSameMat = nullptr);
 		// render tree에서 사용하는 mesh와 material은 모두 own_에 포함되어있어야 export가능.
 		bool exportToFile(size_t pIndex, std::string_view exportDir); // dir without last slash
-
-		void clear();
 	};
 }
 #endif

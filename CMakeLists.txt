@@ -265,6 +265,9 @@ endif()
 
 
 
+
+
+### main proj ###
 set(exe_name "imtoys_exe")
 set(main_dir "${CMAKE_SOURCE_DIR}/main")
 file(GLOB_RECURSE main_files CONFIGURE_DEPENDS 
@@ -278,7 +281,7 @@ list(FILTER main_files   EXCLUDE REGEX "${main_dir}/ignored/*")
 list(FILTER shader_files EXCLUDE REGEX "${main_dir}/ignored/*")
 list(FILTER main_files   EXCLUDE REGEX "${main_dir}/exports/*")
 list(FILTER shader_files EXCLUDE REGEX "${main_dir}/exports/*")
-### main proj ###
+
 add_executable(${exe_name} ${main_files} ${shader_files})
 source_group(TREE ${main_dir} FILES ${main_files} ${shader_files})
 target_include_directories(${exe_name} PRIVATE ${main_dir})
@@ -304,6 +307,8 @@ target_compile_definitions(${exe_name} PRIVATE
 
 
 
+
+
 ### 결과 파일 생성 위치 지정 ###
 set_target_properties(limbrary ${dep_libs} ${exe_name} PROPERTIES 
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/$<CONFIG>/library      # static, dll load lib
@@ -312,8 +317,7 @@ set_target_properties(limbrary ${dep_libs} ${exe_name} PROPERTIES
 ) 
 
 
-
-
+### 솔루션탐색기에서 나머지 그룹 묶기 ###
 set_target_properties(update_mappings PROPERTIES FOLDER "vendor")
 if(WIN32)
     set_target_properties(UpdateAssimpLibsDebugSymbolsAndDLLs PROPERTIES FOLDER "vendor")
@@ -341,8 +345,8 @@ endif()
 
 
 ### CPack ###
-# include(InstallRequiredSystemLibraries)
-# set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/License.txt")
-# set(CPACK_PACKAGE_VERSION_MAJOR 0)
-# set(CPACK_PACKAGE_VERSION_MAJOR 2)
-# include(CPack)
+# From: https://github.com/imdongye/immines/blob/main/CMakeLists.txt
+# if(WIN32)
+#     set_target_properties(${exe_name} PROPERTIES 
+#         LINK_FLAGS "/ENTRY:mainCRTStartup /SUBSYSTEM:WINDOWS")
+# endif(WIN32)

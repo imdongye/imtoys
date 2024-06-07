@@ -8,16 +8,30 @@ parent는 계층관계나 pivot으로 쓴다.
 
 
 #include "transform.h"
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/matrix_decompose.hpp>
+#include <glm/gtx/orthonormalize.hpp>
 
 using namespace lim;
 
 void Transform::update() {
     mtx = glm::translate(pos) 
-        * glm::toMat4(orientation) 
+        * glm::mat4_cast(ori) 
         * glm::scale(scale);
     
     if( update_callback )
         update_callback(this);
+}
+void Transform::decomposeMtx() {
+    scale = {glm::length(glm::vec3(mtx[0])), glm::length(glm::vec3(mtx[1])), glm::length(glm::vec3(mtx[2]))};
+    pos = glm::vec3(mtx[3]);
+    glm::mat3 ortho = glm::orthonormalize(glm::mat3(mtx));
+    // ori = glm::normalize(glm::quat_cast(glm::mat3(mtx)));
+    ori = glm::quat_cast(ortho);
+    // glm::vec3 skew;
+    // glm::vec4 perspective;
+    // glm::decompose(mtx, scale, ori, pos, skew, perspective);
+    // ori = glm::conjugate(ori);
 }
 
 void TransformPivoted::updateWithRotAndDist() {

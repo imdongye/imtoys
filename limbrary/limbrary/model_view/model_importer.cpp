@@ -280,16 +280,44 @@ namespace
 			}
 		}
 
-		// Todo
 		if( aiMs->HasBones() ) {
-			//ms.bone_ids.resize( aiMs->mNumVertices );
-			//ms.bending_factors.resize( aiMs->mNumVertices );
-			// for( GLuint i=0; i<aiMs->mNumVertices; i++ ) {
-			// 	for( GLuint j=0; j<Mesh::MAX_BONE_INFLUENCE; j++ ) {
-			// 		ms.bone_ids[i] =
-			// 		ms.bending_factors[i] =
-			// 	}
-			// }
+			ms.bone_infos.resize( aiMs->mNumVertices );
+			for( GLuint i=0; i<aiMs->mNumVertices; i++ ) {
+				for( GLuint j=0; j<Mesh::MAX_BONE_PER_VERT; j++ ) {
+					ms.bone_infos[i].ids[j] = -1;
+					ms.bone_infos[i].weights[j] = 0.f;
+				}
+			}
+			for( int boneIdx=0; boneIdx<aiMs->mNumBones; boneIdx++ ) {
+				int boneId = -1;
+				std::string boneName = aiMs->mBones[boneIdx]->mName.C_Str();
+				if( g_rst_md->bone_map.find(boneName) == g_rst_md->bone_map.end() ) {
+					BoneInfo newBoneInfo;
+					newBoneInfo.id = g_rst_md->nr_bones;
+					newBoneInfo.offset = toGLM(aiMs->mBones[boneIdx]->mOffsetMatrix);
+					g_rst_md->bone_map[boneName] = newBoneInfo;
+					boneId = g_rst_md->nr_bones;
+					g_rst_md->nr_bones++;
+				} else {
+					boneId = g_rst_md->bone_map[boneName].id;
+				}
+				assert(boneId != -1);
+				auto weights = aiMs->mBones[boneIdx]->mWeights;
+				auto nrWeights = aiMs->mBones[boneIdx]->mNumWeights;
+				
+				for( int weightIdx=0; weightIdx<nrWeights; weightIdx++ ) {
+					int vertId = weights[weightIdx].mVertexId;
+					float weight = weights[weightIdx].mWeight;
+					assert(vertId <= ms.bone_infos.size());
+					for( int j=0; j<Mesh::MAX_BONE_PER_VERT; j++ ) {
+						if( ms.bone_infos[vertId].ids[j] == -1 ) {
+							ms.bone_infos[vertId].ids[j] = boneId;
+							ms.bone_infos[vertId].weights[j] = weight;
+							break;
+						}
+					} // set bone data
+				}		
+			}
 		}
 
 		int nrNotTriFace = 0;
@@ -318,7 +346,7 @@ namespace
 	{
 		dst.name = src->mName.C_Str();
 		dst.transform.mtx = toGLM(src->mTransformation);
-		// Todo : reverse matrix
+		dst.transform.decomposeMtx();
 
 		for( size_t i=0; i<src->mNumMeshes; i++ ) {
 			const aiMesh* aiMs = g_scn->mMeshes[src->mMeshes[i]];

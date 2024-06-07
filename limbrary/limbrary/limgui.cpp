@@ -38,3 +38,20 @@ bool LimGui::CheckBox3(const char* label, bool v[3])
     EndGroup();
     return value_changed;
 }
+
+void LimGui::Mat4(glm::mat4& m) {
+    static ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoHostExtendX;
+    if( ImGui::BeginTable("matrix", 4, flags) ) {
+        for( int i = 0; i < 4; i++ ) {
+            ImGui::TableNextRow();
+            for( int j = 0; j < 4; j++ ) {
+                ImGui::TableNextColumn();
+                ImGui::Text("%.2f", m[j][i]);
+            }
+        }
+        ImGui::EndTable();
+    }
+}
+void LimGui::Vec3(glm::vec3& v) {
+    ImGui::Text("%.2f %.2f %.2f", v.x, v.y, v.z);
+}

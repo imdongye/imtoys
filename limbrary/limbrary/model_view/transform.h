@@ -20,7 +20,7 @@ namespace lim
     struct Transform
     {
         glm::vec3 pos = glm::vec3(0);
-		glm::quat orientation = glm::quat(1,0,0,0);
+		glm::quat ori = glm::quat(1,0,0,0);
 		glm::vec3 scale = glm::vec3(1);
 
         glm::mat4 mtx = glm::mat4(1);
@@ -28,6 +28,7 @@ namespace lim
         std::function<void(const Transform* tf)> update_callback = nullptr;
         
         void update();
+        void decomposeMtx();
     };
     struct TransformPivoted : public Transform
     {

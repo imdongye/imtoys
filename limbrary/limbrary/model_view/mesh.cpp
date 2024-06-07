@@ -32,8 +32,7 @@ Mesh::Mesh(const Mesh& src)
 	, cols(src.cols)
 	, tangents(src.tangents)
 	, bitangents(src.bitangents)
-	, bone_ids(src.bone_ids)
-	, bending_factors(src.bending_factors)
+	, bone_infos(src.bone_infos)
 	, tris(src.tris)
 {
 	initGL();
@@ -94,19 +93,16 @@ void Mesh::initGL()
 		glEnableVertexAttribArray(5);
 		glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	}
-	if( bone_ids.size()>0 ){
-		glGenBuffers(1, &bone_id_buf);
-		glBindBuffer(GL_ARRAY_BUFFER, bone_id_buf);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(bone_ids[0])*bone_ids.size(), bone_ids.data(), GL_STATIC_DRAW);
+	if( bone_infos.size()>0 ){
+		glGenBuffers(1, &bone_infos_buf);
+		glBindBuffer(GL_ARRAY_BUFFER, bone_infos_buf);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(bone_infos[0])*bone_infos.size(), bone_infos.data(), GL_STATIC_DRAW);
+		GLsizei stride = sizeof(VertBoneInfo);
+		const void* weightOffset = (void *)(MAX_BONE_PER_VERT*sizeof(int));
 		glEnableVertexAttribArray(6);
-		glVertexAttribPointer(6, MAX_BONE_INFLUENCE, GL_INT, GL_FALSE, 0, 0);
-	}
-	if( bending_factors.size()>0 ){
-		glGenBuffers(1, &bending_factor_buf);
-		glBindBuffer(GL_ARRAY_BUFFER, bending_factor_buf);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(bending_factors[0])*bending_factors.size(), bending_factors.data(), GL_STATIC_DRAW);
+		glVertexAttribIPointer(6, MAX_BONE_PER_VERT, GL_INT, stride, 0);
 		glEnableVertexAttribArray(7);
-		glVertexAttribPointer(7, MAX_BONE_INFLUENCE, GL_FLOAT, GL_FALSE, 0, 0);
+		glVertexAttribPointer(7, MAX_BONE_PER_VERT, GL_FLOAT, GL_FALSE, stride, weightOffset);
 	}
 	if( tris.size()>0 ){
 		glGenBuffers(1, &element_buf);
@@ -122,8 +118,7 @@ void Mesh::deinitGL()
 	deleteGLBuf(tangent_buf);
 	deleteGLBuf(bitangent_buf);
 	deleteGLBuf(color_buf);
-	deleteGLBuf(bone_id_buf);
-	deleteGLBuf(bending_factor_buf);
+	deleteGLBuf(bone_infos_buf);
 	deleteGLBuf(element_buf);
 	if( vert_array>0 ){
 		glDeleteVertexArrays(1, &vert_array);

@@ -281,7 +281,7 @@ void lim::AppModelViewer::updateImGui()
 		ImGui::Begin(tInfo.ctrl_name.c_str());
 		ImGui::Checkbox("rotate", &tInfo.is_rotate_md);
 		if( tInfo.is_rotate_md ) {
-			md.tf->orientation = glm::rotate(md.tf->orientation, Q_PI*delta_time, {0,1,0});
+			md.tf->ori = glm::rotate(md.tf->ori, Q_PI*delta_time, {0,1,0});
 			md.tf->update();
 		}
 		

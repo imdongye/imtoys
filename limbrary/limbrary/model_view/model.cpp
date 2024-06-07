@@ -40,7 +40,7 @@ RdNode* RdNode::makeChild(std::string_view _name) {
 void RdNode::treversal(std::function<void(const Mesh* ms, const Material* mat, const glm::mat4& transform)> callback
 				, const glm::mat4& prevTransform ) const
 {
-	const glm::mat4 curTf = transform.mtx * prevTransform;
+	const glm::mat4 curTf = prevTransform*transform.mtx;
 
 	for( auto [ms, mat] : meshs_mats ) {
 		callback(ms, mat, curTf);
@@ -246,18 +246,18 @@ void Model::updateNrAndBoundary()
 void Model::updateUnitScaleAndPivot()
 {
 	constexpr float unit_length = 2.f;
-	//float max_axis_length = glm::max(glm::max(boundary_size.x, boundary_size.y), boundary_size.z);
+	float max_axis_length = glm::max(glm::max(boundary_size.x, boundary_size.y), boundary_size.z);
 	float min_axis_length = glm::min(glm::min(boundary_size.x, boundary_size.y), boundary_size.z);
-	float normScale = unit_length/min_axis_length;
+	float normScale = unit_length/max_axis_length;
 
 	if( !tf_normalized ) {
 		RdNode real = root;
-		root.transform = Transform();
 		root.meshs_mats.clear();
 		root.childs.clear();
 		root.childs.push_back(real);
-		tf_normalized = &root.transform;
-		tf = &root.childs[0].transform;
+		root.childs.back().name = "pivot";
+		tf_normalized = &(root.childs.back().transform);
+		*tf_normalized = Transform();
 	}
 
 	tf_normalized->scale = glm::vec3(normScale);
@@ -265,4 +265,5 @@ void Model::updateUnitScaleAndPivot()
 	tf_normalized->update();
 
 	pivoted_scaled_bottom_height = boundary_size.y*0.5f*normScale;
+	// pivoted_scaled_bottom_height = 0;
 }

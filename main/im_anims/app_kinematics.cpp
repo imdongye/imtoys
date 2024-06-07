@@ -10,9 +10,10 @@ namespace lim
 		, viewport("AnimTester", new FramebufferMs(8))
 	{
 		LightDirectional* lit = new LightDirectional();
+		scene.addOwn(lit);
+		
 		Model* md = new Model();
 		scene.addOwn(md);
-		scene.addOwn(lit);
 
 		Material* mat = new Material;
 		md->addOwn(mat);
