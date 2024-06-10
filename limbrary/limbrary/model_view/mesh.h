@@ -26,7 +26,7 @@ namespace lim
 	public:
 		static constexpr int MAX_BONE_PER_VERT = 4;
 		struct VertBoneInfo {
-			int ids[MAX_BONE_PER_VERT] = { -1, };
+			int idxs[MAX_BONE_PER_VERT] = { -1, };
 			float weights[MAX_BONE_PER_VERT] = { 0.f,};
 		};
 	public:

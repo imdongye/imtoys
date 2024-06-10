@@ -37,8 +37,7 @@ RdNode* RdNode::makeChild(std::string_view _name) {
 	childs.back().name = _name;
 	return &childs.back();
 }
-void RdNode::treversal(std::function<void(const Mesh* ms, const Material* mat, const glm::mat4& transform)> callback
-				, const glm::mat4& prevTransform ) const
+void RdNode::treversal(std::function<void(const Mesh* ms, const Material* mat, const glm::mat4& transform)> callback, const glm::mat4& prevTransform ) const
 {
 	const glm::mat4 curTf = prevTransform*transform.mtx;
 
@@ -47,6 +46,17 @@ void RdNode::treversal(std::function<void(const Mesh* ms, const Material* mat, c
 	}
 	for( const RdNode& child : childs ) {
 		child.treversal(callback, curTf);
+	}
+}
+void RdNode::treversalNode(std::function<bool(RdNode& node, const glm::mat4& transform)> callback, const glm::mat4& prevTransform )
+{
+	const glm::mat4 curTf = prevTransform*transform.mtx;
+
+	if( !callback(*this, curTf) )
+		return;
+
+	for( RdNode& child : childs ) {
+		child.treversalNode(callback, curTf);
 	}
 }
 void RdNode::clear() {
@@ -59,7 +69,7 @@ void RdNode::clear() {
 
 
 Model::Model(std::string_view _name)
-	: name(_name)
+	: name(_name), animator(this)
 {
 	tf = &root.transform;
 }
@@ -83,6 +93,10 @@ void Model::clear()
 
 	tf = &root.transform;
 	tf_normalized = nullptr;
+
+	bone_name_to_idx.clear();
+	bone_offsets.clear();
+	bone_offsets.reserve(100);
 }
 
 
@@ -223,6 +237,18 @@ void Model::setSetProgToAllMat(std::function<void(const Program&)> setProg)
 	}
 }
 
+static void setMatInTree(RdNode& root, const Material* mat) {
+	for( auto& [_, dst] : root.meshs_mats ) {
+		dst = mat; 
+	}
+	for( RdNode& child : root.childs ) {
+		setMatInTree(child, mat);
+	}
+}
+void Model::setSameMat(const Material* mat) {
+	setMatInTree(root, mat);
+}
+
 
 void Model::updateNrAndBoundary()
 {
@@ -243,7 +269,7 @@ void Model::updateNrAndBoundary()
 	});
 	boundary_size = boundary_max-boundary_min;
 }
-void Model::updateUnitScaleAndPivot()
+void Model::setUnitScaleAndPivot()
 {
 	constexpr float unit_length = 2.f;
 	float max_axis_length = glm::max(glm::max(boundary_size.x, boundary_size.y), boundary_size.z);
@@ -263,6 +289,7 @@ void Model::updateUnitScaleAndPivot()
 	tf_normalized->scale = glm::vec3(normScale);
 	tf_normalized->pos = -(boundary_min + boundary_size*0.5f)*normScale;
 	tf_normalized->update();
+
 
 	pivoted_scaled_bottom_height = boundary_size.y*0.5f*normScale;
 	// pivoted_scaled_bottom_height = 0;

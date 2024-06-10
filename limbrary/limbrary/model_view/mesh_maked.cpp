@@ -197,11 +197,9 @@ MeshSphere::MeshSphere(int nrSlices, int nrStacks, bool genNors, bool genUvs, fl
 
 	initGL();
 }
-MeshEnvSphere::MeshEnvSphere(int nrSlices, int nrStacks)
+MeshEnvSphere::MeshEnvSphere(float radius, int nrSlices, int nrStacks)
 {
 	name = fmtStrToBuf("env_sphere_sl%d_st%d", nrSlices, nrStacks);
-	
-	const float radius = 1.f;
 
 	// phi : angle form xy-plane [-pi/2, pi/2]
 	// theta : y-axis angle [0, 2pi]
@@ -216,7 +214,7 @@ MeshEnvSphere::MeshEnvSphere(int nrSlices, int nrStacks)
 			float x = r_cosPhi * cos(theta);
 			float z = r_cosPhi * sin(theta);
 			vec3 pos = {x, y, z};
-			poss.push_back(pos);
+			poss.push_back(pos*radius);
 			nors.push_back(normalize(-pos));
 			uvs.push_back({ slice/(float)nrSlices, 1.f - stack/(float)nrStacks });
 		}

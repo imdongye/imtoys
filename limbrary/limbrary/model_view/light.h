@@ -48,7 +48,7 @@ namespace lim
 		virtual ~ILight() = default;
 
 		virtual void setShadowEnabled(bool enabled) = 0;
-		virtual void bakeShadowMap(const std::vector<const RdNode*>& nds) const = 0;
+		virtual void bakeShadowMap(const std::vector<const Model*>& mds) const = 0;
 		virtual void setUniformTo(const Program& prog) const = 0;
 
 	};
@@ -85,7 +85,7 @@ namespace lim
 		LightDirectional();
 		~LightDirectional();
 		virtual void setShadowEnabled(bool enabled) override;
-		virtual void bakeShadowMap(const std::vector<const RdNode*>& nds) const override;
+		virtual void bakeShadowMap(const std::vector<const Model*>& mds) const override;
 		virtual void setUniformTo(const Program& prog) const override;
 	};
 	

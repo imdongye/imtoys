@@ -2,70 +2,77 @@
 #define __animator_h_
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <limbrary/program.h>
 #include <vector>
 #include <string>
-#include <map>
 
-// namespace lim
-// {
-//     struct KeyPos {
-//         float time_stamp;
-//         glm::vec3 pos;
-//     };
-//     struct KeyScale {
-//         float time_stamp;
-//         glm::vec3 scale;
-//     };
-//     struct KeyOri {
-//         float time_stamp;
-//         glm::quat pos;
-//     };
+namespace lim
+{
+    struct RdNode;
+    class Model;
 
-//     class Bone
-//     {
-//     private:
-//         std::vector<KeyPos> poss;
-//         std::vector<KeyPos> scales;
-//         std::vector<KeyPos> oris;
-//         glm::mat4 local_mtx;
-//         std::string name;
-//         int id;
-//     public:
-//         Bone(const std::string_view name, int ID, const )
-//     };
+    struct Animation 
+    {
+    public:
+        struct KeyVec3 {
+            float tick;
+            glm::vec3 value;
+        };
+        struct KeyQuat {
+            float tick;
+            glm::quat value;
+        };
+        struct BoneTrack
+        {
+            int nr_poss, nr_scales, nr_oris;
+            std::vector<KeyVec3> poss;
+            std::vector<KeyVec3> scales;
+            std::vector<KeyQuat> oris;
+            RdNode* target;
+            int bone_idx;
+        };
+        std::string name;
+        std::vector<BoneTrack> bone_tracks;
+        double nr_ticks;
+        int ticks_per_sec;
+    };
 
-//     struct BoneInfo
-// 	{
-// 		int id;
-// 		glm::mat4 offset;
-// 	};
+    class Animator
+    {
+    public:
+        enum class State {
+            PLAY,
+            PAUSE,
+            STOP,
+        };
+        State state = State::STOP;
+        Model* model;
+        int anim_idx = -1;
+        double start_sec, elapsed_sec, duration_sec;
+        bool is_loop = false;
+        std::vector<glm::mat4> mtx_Bones;
+        std::vector<Animation> animations;
+        
+    public:
+        Animator(const Model& src)		  = delete;
+		Animator& operator=(const Model&) = delete;
+		Animator(Model&&)			      = delete;
+		Animator& operator=(Model&&)      = delete;
 
-//     class Animation 
-//     {
-//     private:
-//         std::vector<Bone> bones;
-//         int nr_bones = 0;
-// 		std::map<std::string, BoneInfo> bone_map;
+        Animator(Model* md);
+        ~Animator();
+        void play(int animIdx = -1);
+        void pause();
+        void stop();
+        void setUniformTo(const Program& prog) const;
+        void updateDefaultMtxBones();
 
-//         int tics_per_sec;
+    private:
+        friend class Model;
+        void updateMtxBonesSize();
+        void update(float dt);
+    };
 
-//         std::string name;
-//         int id;
-//     public:
-//         Animation(const std::string_view name, int ID)
-//     };
-
-//     class Animator
-//     {
-//     private:
-//         std::vector<glm::mat4> mtx_Bones;
-//         Animation* current_animation = nullptr;
-//         float cur_time;
-//         float delta_time;
-//     public:
-//         Animator(const std::string_view name, int ID)
-//     }
-
-// }
+}
 
 #endif

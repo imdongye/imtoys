@@ -6,7 +6,7 @@
 #include <limbrary/model_view/model.h>
 
 static lim::Program* env_prog;
-static lim::Model* env_sphere;
+static lim::MeshEnvSphere* env_sphere;
 static int ms_max_samples = 2;
 
 lim::AssetLib::AssetLib()
@@ -30,10 +30,7 @@ lim::AssetLib::AssetLib()
 	env_prog = new Program("env");
 	env_prog->attatch("mvp.vs").attatch("env.fs").link();
 
-	env_sphere = new Model("env");
-	env_sphere->own_meshes.push_back(new MeshEnvSphere());
-	env_sphere->tf->scale = glm::vec3(20.f);
-	env_sphere->tf->update();
+	env_sphere = new MeshEnvSphere(20.f);
 
 
 	glGetIntegerv(GL_MAX_SAMPLES, &ms_max_samples);
@@ -66,11 +63,11 @@ void lim::AssetLib::destroy()
 
 void lim::utils::drawEnvSphere(const Texture& map, const glm::mat4& mtx_View, const glm::mat4& mtx_Proj) {
 	env_prog->use();
-	env_prog->setUniform("mtx_Model", env_sphere->tf->mtx);
+	env_prog->setUniform("mtx_Model", glm::mat4(1));
 	env_prog->setUniform("mtx_View", mtx_View);
 	env_prog->setUniform("mtx_Proj", mtx_Proj);
 	env_prog->setTexture("map_Light", map.getTexId());
-	env_sphere->own_meshes.back()->bindAndDrawGL();
+	env_sphere->bindAndDrawGL();
 }
 
 int lim::utils::getMsMaxSamples() {

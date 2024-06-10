@@ -54,11 +54,11 @@ namespace lim
             MF_ARM        = 1<<10,// 1026
             MF_SHININESS  = 1<<11,// 2052
         };
+    
+        std::string name = "nonamed mat";
 
         int factor_flags = 0; // just for export
-        //
-        // mat.BaseColor
-        //
+
         glm::vec3 BaseColor = {0.27f, 0.79f, 0.69f}; // 지구의 모든 물체는 반사율 0이 될수없음.
         glm::vec3 SpecColor = glm::vec3(1.f);
         glm::vec3 AmbientColor = glm::vec3(0.003f);

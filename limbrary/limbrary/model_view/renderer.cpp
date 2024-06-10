@@ -150,12 +150,12 @@ void Scene::releaseData() {
     }
     own_mds.clear();
     own_lits.clear();
-    nodes.clear();
+    models.clear();
     lights.clear();
 }
 
 Model* Scene::addOwn(Model* md)  {
-    nodes.push_back(&md->root);
+    models.push_back(md);
     own_mds.push_back(md);
     return md;
 }
@@ -165,12 +165,8 @@ ILight* Scene::addOwn(ILight* lit) {
     return lit;
 }
 const Model* Scene::addRef(const Model* md)  {
-    nodes.push_back(&md->root);
+    models.push_back(md);
     return md;
-}
-const RdNode* Scene::addRef(const RdNode* nd)  {
-    nodes.push_back(nd);
-    return nd;
 }
 const ILight* Scene::addRef(const ILight* lit) {
     lights.push_back(lit);
@@ -193,44 +189,73 @@ mesh바뀌면 1.ms바인딩
 마지막 drawcall
 
 */
-void lim::render( const IFramebuffer& fb,
-                  const Camera& cam,
-                  const Model& md,
-                  const ILight& lit )
-{
-    lit.bakeShadowMap({&md.root});
+// void lim::render( const IFramebuffer& fb,
+//                 const Camera& cam,
+//                 const Scene& scn,
+//                 const bool isDrawLight )
+// {
+//     for( const ILight* lit : scn.lights ) {
+//         lit->bakeShadowMap(scn.models);
+//     }
 
-    fb.bind();
+//     fb.bind();
 
-    const Material* curMat = nullptr;
-    const Program* curProg = nullptr;
-    const Mesh* curMesh = nullptr;
+//     if( scn.is_draw_env_map ) {
+//         utils::drawEnvSphere(scn.ib_light->map_Light, cam.mtx_View, cam.mtx_Proj);
+//     }
+    
+//     const Program* curProg = nullptr;
+//     const Material* curMat = nullptr;
+//     const Mesh* curMesh = nullptr;
+//     bool isProgChanged = true;
+//     bool isMatChanged = true;
+//     bool isMeshChanged = true;
+//     bool isModelChanged = true;
 
-    md.root.treversal([&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
-        if( curMat != mat ) {
-            if( curProg != mat->prog ) {
-                curProg = mat->prog;
-                curProg->use();
-                cam.setUniformTo(*curProg);
-                lit.setUniformTo(*curProg);
-            }
-            curMat = mat;
-            curMat->setUniformTo(*curProg);
-        }
-        curProg->setUniform("mtx_Model", transform);
-        if( curMesh != ms ) {
-            curMesh = ms;
-            curMesh->bindGL();
-        }
-        curMesh->drawGL();
-    });
+//     for( const Model* md : scn.models ) {
+//         md->root.treversal([&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
+//             if( curMat != mat ) {
+//                 if( curProg != mat->prog ) {
+//                     curProg = mat->prog;
+//                     curProg->use();
+//                     cam.setUniformTo(*curProg);
+//                     for( const ILight* lit : scn.lights ) {
+//                         lit->setUniformTo(*curProg);
+//                     }
+//                     if( scn.ib_light ) {
+//                         scn.ib_light->setUniformTo(*curProg);
+//                     }
+//                     md->animator.setUniformTo(*curProg);
+//                 }
+//                 curMat = mat;
+//                 curMat->setUniformTo(*curProg);
+//             } else if( isModelChanged ) {
 
-    fb.unbind();
-}
+//             }
+//             curProg->setUniform("mtx_Model", transform);
+//             if( curMesh != ms ) {
+//                 curMesh = ms;
+//                 curMesh->bindGL();
+//             }
+//             curMesh->drawGL();
+//         });
+//     }
 
+//     if( isDrawLight ) {
+//         const Program& prog = AssetLib::get().ndv_prog;
+//         prog.use();
+//         cam.setUniformTo(prog);
 
+//         // todo: diff color
+//         for( auto lit : scn.lights ) {
+//             prog.setUniform("mtx_Model", lit->tf.mtx);
+//             // todo: draw dir with line
+//             AssetLib::get().small_sphere.bindAndDrawGL();
+//         }
+//     }
 
-
+//     fb.unbind();
+// }
 
 void lim::render( const IFramebuffer& fb,
                 const Camera& cam,
@@ -238,7 +263,7 @@ void lim::render( const IFramebuffer& fb,
                 const bool isDrawLight )
 {
     for( const ILight* lit : scn.lights ) {
-        lit->bakeShadowMap(scn.nodes);
+        lit->bakeShadowMap(scn.models);
     }
 
     fb.bind();
@@ -250,29 +275,49 @@ void lim::render( const IFramebuffer& fb,
     const Program* curProg = nullptr;
     const Material* curMat = nullptr;
     const Mesh* curMesh = nullptr;
+    bool isProgChanged = true;
+    bool isMatChanged = true;
+    bool isMeshChanged = true;
+    bool isModelChanged = true;
 
-    for( const RdNode* nd : scn.nodes ) {
-        nd->treversal([&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
+    for( const Model* md : scn.models ) {
+        isModelChanged = true;
+        md->root.treversal([&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
             if( curMat != mat ) {
+                curMat = mat;
+                isMatChanged = true;
                 if( curProg != mat->prog ) {
                     curProg = mat->prog;
-                    curProg->use();
-                    cam.setUniformTo(*curProg);
-                    for( const ILight* lit : scn.lights ) {
-                        lit->setUniformTo(*curProg);
-                    }
-                    if( scn.ib_light ) {
-                        scn.ib_light->setUniformTo(*curProg);
-                    }
+                    isProgChanged = true;
                 }
-                curMat = mat;
-                curMat->setUniformTo(*curProg);
             }
-            curProg->setUniform("mtx_Model", transform);
+
             if( curMesh != ms ) {
                 curMesh = ms;
+                isMeshChanged = true;
+            }
+            if( isProgChanged ) {
+                curProg->use();
+                cam.setUniformTo(*curProg);
+                for( const ILight* lit : scn.lights ) {
+                    lit->setUniformTo(*curProg);
+                }
+                if( scn.ib_light ) {
+                    scn.ib_light->setUniformTo(*curProg);
+                }
+                md->animator.setUniformTo(*curProg);
+                curMat->setUniformTo(*curProg);
+            }
+            if( !isProgChanged && isMatChanged ) {
+                curMat->setUniformTo(*curProg);
+            }
+            if( !isProgChanged && isModelChanged ) {
+                md->animator.setUniformTo(*curProg);
+            }
+            if( isMeshChanged ) {
                 curMesh->bindGL();
             }
+            curProg->setUniform("mtx_Model", transform);
             curMesh->drawGL();
         });
     }

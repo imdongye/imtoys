@@ -9,6 +9,7 @@
 #include <limbrary/application.h>
 #include <limbrary/model_view/camera_man.h>
 #include <limbrary/model_view/renderer.h>
+#include <limbrary/model_view/animator.h>
 
 namespace lim
 {
@@ -23,7 +24,7 @@ namespace lim
 		ViewportWithCamera viewport;
 		Scene scene;
 		Model model;
-		RdNode* cur_nod = nullptr;
+		RdNode* cur_nd = nullptr;
 		
 		void drawHierarchy(RdNode& nd);
 		void drawInspector(RdNode& nd);

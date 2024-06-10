@@ -21,7 +21,7 @@ namespace lim
 	struct MeshPlane : public Mesh { MeshPlane(int nrSlices = 5, bool genNors = true, bool genUvs = true); };
 	struct MeshCube : public Mesh { MeshCube(bool genNors = true, bool genUvs = true); };
 	struct MeshSphere : public Mesh { MeshSphere(int nrSlices = 50, int nrStacks = 25, bool genNors = true, bool genUvs = true, float radius = 1.f); };
-	struct MeshEnvSphere : public Mesh { MeshEnvSphere(int nrSlices = 50, int nrStacks = 25); };
+	struct MeshEnvSphere : public Mesh { MeshEnvSphere(float radius=20.f, int nrSlices = 50, int nrStacks = 25); };
 	struct MeshIcoSphere : public Mesh { MeshIcoSphere(int subdivision = 0, bool genNors = true, bool genUvs = true); };
 	struct MeshCubeSphere : public Mesh { MeshCubeSphere(int nrSlices = 1, bool genNors = true, bool genUvs = true); };
 	struct MeshCubeSphere2 : public Mesh { MeshCubeSphere2(int nrSlices = 1, bool genNors = true, bool genUvs = true); };

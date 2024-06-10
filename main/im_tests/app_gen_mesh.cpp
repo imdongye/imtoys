@@ -52,19 +52,23 @@ namespace lim
 		addMeshToScene(new MeshCylinder(20));
 
 		Model* md = new Model();
-		md->importFromFile("assets/models/objs/spot.obj", true, &default_mat);
+		md->importFromFile("assets/models/objs/spot.obj");
+		md->setUnitScaleAndPivot();
+		md->setSameMat(&default_mat);
 
 		scene.addOwn(md);
 
 		md = new Model();
-		md->importFromFile("assets/models/objs/Wooden Crate.obj", true, &default_mat);
+		md->importFromFile("assets/models/objs/Wooden Crate.obj");
+		md->setUnitScaleAndPivot();
+		md->setSameMat(&default_mat);
 		scene.addOwn(md);
 
 
 		const float interModels = 3.5f;
-		const float biasModels = -interModels * scene.nodes.size() / 2.f;
+		const float biasModels = -interModels * scene.models.size() / 2.f;
 
-		for( int i = 0; i < scene.nodes.size(); i++ )
+		for( int i = 0; i < scene.models.size(); i++ )
 		{
 			scene.own_mds[i]->tf->pos = {biasModels + interModels * i, 0, 0};
 			scene.own_mds[i]->tf->update();

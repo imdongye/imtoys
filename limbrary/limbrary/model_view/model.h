@@ -35,11 +35,11 @@ Model에 의존하지 않고 RdNode에 의존하는 Scene
 #include "mesh.h"
 #include "camera.h"
 #include "transform.h"
+#include "animator.h"
 
 namespace lim
 {
-	struct RdNode
-	{
+	struct RdNode {
 		std::string name = "nonamed node";
 		Transform transform;
 		std::vector<std::pair<const Mesh*, const Material*>> meshs_mats;
@@ -49,16 +49,10 @@ namespace lim
 		RdNode* makeChild(std::string_view name = "nonamed node");
 		void treversal(std::function<void(const Mesh* ms, const Material* mat, const glm::mat4& transform)> callback
 			, const glm::mat4& prevTransform = glm::mat4(1) ) const;
+		void treversalNode(std::function<bool(RdNode& node, const glm::mat4& transform)> callback
+			, const glm::mat4& prevTransform = glm::mat4(1));
 		void clear();
 	};
-
-	struct BoneInfo
-	{
-		int id;
-		glm::mat4 offset;
-	};
-
-	
 
 	// clone able
 	class Model
@@ -85,8 +79,14 @@ namespace lim
 		float pivoted_scaled_bottom_height = 0;
 		GLuint ai_backup_flags = 0;
 
+
+		/* bone */
+		RdNode bone_root;
 		int nr_bones = 0;
-		std::map<std::string, BoneInfo> bone_map;
+		std::map<std::string, int> bone_name_to_idx;
+		std::vector<glm::mat4> bone_offsets;
+
+		Animator animator;
 
 	public:
 		Model(const Model& src)		   = delete;
@@ -106,11 +106,12 @@ namespace lim
 
 		void setProgToAllMat(const Program* prog);
 		void setSetProgToAllMat(std::function<void(const Program&)> setProg);
+		void setSameMat(const Material* mat);
 
 		void updateNrAndBoundary();
-		void updateUnitScaleAndPivot();
+		void setUnitScaleAndPivot();
 
-		bool importFromFile(std::string_view modelPath, bool unitScaleAndPivot = false, const Material* withSameMat = nullptr);
+		bool importFromFile(std::string_view modelPath, bool withAnim = false);
 		// render tree에서 사용하는 mesh와 material은 모두 own_에 포함되어있어야 export가능.
 		bool exportToFile(size_t pIndex, std::string_view exportDir); // dir without last slash
 	};

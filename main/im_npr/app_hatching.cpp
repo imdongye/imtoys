@@ -110,7 +110,9 @@ lim::AppHatching::AppHatching(): AppBase(1200, 780, APP_NAME)
 	viewport.setClearColor({0.1f, 0.1f, 0.1f, 1.0f});
 
 	Model* md = new Model();
-	md->importFromFile("assets/models/dwarf/Dwarf_2_Low.obj", true, &h_mat);
+	md->importFromFile("assets/models/dwarf/Dwarf_2_Low.obj");
+	md->setUnitScaleAndPivot();
+	md->setSameMat(&h_mat);
 	scene.addOwn(md);
 	
 	md = new Model("sphere");
@@ -118,13 +120,15 @@ lim::AppHatching::AppHatching(): AppBase(1200, 780, APP_NAME)
 	scene.addOwn(md);
 
 	md = new Model();
-	md->importFromFile("assets/models/dwarf/Dwarf_2_Low.obj", true, &h_mat);
+	md->importFromFile("assets/models/dwarf/Dwarf_2_Low.obj");
+	md->setUnitScaleAndPivot();
+	md->setSameMat(&h_mat);
 	scene.addOwn(md);
 
 	const float interModels = 2.f;
-	const float biasModels = -interModels*(scene.nodes.size()-1)*0.5f;
+	const float biasModels = -interModels*(scene.models.size()-1)*0.5f;
 
-	for( int i = 0; i<scene.nodes.size(); i++ ) {
+	for( int i = 0; i<scene.models.size(); i++ ) {
 		scene.own_mds[i]->tf->pos ={biasModels + interModels*i, 0, 0};
 		scene.own_mds[i]->tf->update();
 	}

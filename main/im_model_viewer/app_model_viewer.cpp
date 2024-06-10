@@ -131,10 +131,11 @@ lim::AppModelViewer::~AppModelViewer()
 void lim::AppModelViewer::addModelViewer(string path) 
 {
 	Model* md = new Model();
-	if( md->importFromFile(findModelInDirectory(path), true)==false ) {
+	if( md->importFromFile(findModelInDirectory(path))==false ) {
 		delete md;
 		return;
 	}
+	md->setUnitScaleAndPivot();
 
 	brdf_test_infos.push_back({});
 	brdf_test_infos.back().ctrl_name = md->name+" ctrl ##modelviewer";
@@ -290,7 +291,7 @@ void lim::AppModelViewer::updateImGui()
 				scenes[i]->addRef(&floor_md);
 			}
 			else {
-				scenes[i]->nodes.pop_back();
+				scenes[i]->models.pop_back();
 			}
 		}
 

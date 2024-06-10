@@ -129,10 +129,11 @@ void lim::AppSimplification::doImportModel(std::string_view path, int vpIdx)
 
 	Model& md = *models[vpIdx];
 
-	if( !md.importFromFile(path.data(), true) ) {
+	if( !md.importFromFile(path.data()) ) {
 		return;
 	}
 
+	md.setUnitScaleAndPivot();
 	md.tf->pos = {0,md.pivoted_scaled_bottom_height, 0};
 	md.tf->update();
 

@@ -32,7 +32,8 @@ namespace lim
 		viewport.camera.moveShift({0,0,10});
 		viewport.camera.updateViewMat();
 
-		model.importFromFile("assets/models/objs/bunny.obj", true);
+		model.importFromFile("assets/models/objs/bunny.obj");
+		model.setUnitScaleAndPivot();
 		model.tf->scale = glm::vec3(3.f);
 		model.tf->pos = glm::vec3(15, 0, 0);
 		model.tf->update();

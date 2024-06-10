@@ -26,7 +26,6 @@ namespace lim
         glm::mat4 mtx = glm::mat4(1);
 
         std::function<void(const Transform* tf)> update_callback = nullptr;
-        
         void update();
         void decomposeMtx();
     };

@@ -179,7 +179,9 @@ namespace lim
 
         Material* mat = new Material();
         Model md;
-        md.importFromFile("assets/models/objs/woody.obj", true, mat);
+        md.importFromFile("assets/models/objs/woody.obj");
+        md.setUnitScaleAndPivot();
+        md.setSameMat(mat);
         md.addOwn(mat);
         const Transform& nomalized_term = *md.tf_normalized;
         log::pure(glm::to_string(nomalized_term.pos).c_str());
