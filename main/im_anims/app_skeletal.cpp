@@ -17,7 +17,15 @@ static std::function<void(const lim::Program&)> makeSetProg() {
 }
 
 
-
+void AppSkeletal::importModel(const char* path) {
+	model.importFromFile(path, true);
+	model.setUnitScaleAndPivot();
+	model.tf->pos.y += model.pivoted_scaled_bottom_height;
+	model.tf->update();
+	model.setProgToAllMat(&program);
+	model.setSetProgToAllMat(makeSetProg());
+	cur_nd = &model.root;
+}
 lim::AppSkeletal::AppSkeletal() : AppBase(1200, 780, APP_NAME)
 	, viewport("viewport##skeletal", new FramebufferMs())
 {
@@ -28,14 +36,9 @@ lim::AppSkeletal::AppSkeletal() : AppBase(1200, 780, APP_NAME)
 	program.home_dir = APP_DIR;
 	program.attatch("skel.vs").attatch("skel.fs").link();
 
-	model.importFromFile("assets/models/jump.fbx", true);
-	model.setUnitScaleAndPivot();
-	model.tf->pos.y += model.pivoted_scaled_bottom_height;
-	model.tf->update();
-	model.setProgToAllMat(&program);
-	model.setSetProgToAllMat(makeSetProg());
+	
+	importModel("assets/models/jump.fbx");
 	scene.addRef(&model);
-	cur_nd = &model.root;
 
 	// model.animator.play(0);
 
@@ -69,8 +72,8 @@ void lim::AppSkeletal::drawHierarchy(lim::RdNode& nd ) {
 	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_None;
 	if( &nd == cur_nd ) {
 		flags |= ImGuiTreeNodeFlags_Selected;
-		if( model.bone_name_to_idx.find(nd.name) != model.bone_name_to_idx.end() ) {
-			display_BoneIdx = model.bone_name_to_idx[nd.name];
+		if( model.animator.name_to_idx.find(nd.name) != model.animator.name_to_idx.end() ) {
+			display_BoneIdx = model.animator.name_to_idx[nd.name];
 		}
 	}
 	if( nd.childs.size() == 0 ) {
@@ -106,7 +109,6 @@ void lim::AppSkeletal::drawInspector(RdNode& nd) {
 	}
 	if( edited ) {
 		nd.transform.update();
-		model.animator.updateDefaultMtxBones();
 	}
 	LimGui::Mat4(nd.transform.mtx);
 }
@@ -120,7 +122,7 @@ void lim::AppSkeletal::updateImGui()
 	viewport.drawImGui();
 
 	ImGui::Begin("bone info");
-	ImGui::Text("nr_bones : %d", model.nr_bones);
+	ImGui::Text("nr_bones : %d", model.animator.nr_bones);
 	ImGui::Text("nr_animations : %d", model.animator.animations.size());
 	switch(model.animator.state) {
 	case Animator::State::PLAY: ImGui::Text("state : PLAY"); break;
@@ -149,8 +151,16 @@ void lim::AppSkeletal::updateImGui()
 		model.setSetProgToAllMat(makeSetProg());
 	}
 
-	if(ImGui::Button("default")) {
-		model.animator.updateDefaultMtxBones();
+	// if(ImGui::Button("default")) {
+	// 	model.animator.updateDefaultMtxBones();
+	// }
+	std::string anim_list;
+	for(auto& anim : model.animator.animations) {
+		anim_list += anim.name + "\0";
+	}
+	static int selected_anim = 0;
+	if(ImGui::Combo("animation", &selected_anim, anim_list.c_str())) {
+		model.animator.play(selected_anim);
 	}
 	ImGui::End();
 
@@ -158,9 +168,9 @@ void lim::AppSkeletal::updateImGui()
 	drawHierarchy(model.root);
 	ImGui::End();
 
-	ImGui::Begin("hierarchy-bone");
-	drawHierarchy(model.bone_root);
-	ImGui::End();
+	// ImGui::Begin("hierarchy-bone");
+	// drawHierarchy(model.bone_root);
+	// ImGui::End();
 
 	ImGui::Begin("inspector");
 	drawInspector(*cur_nd);
@@ -171,6 +181,5 @@ void lim::AppSkeletal::updateImGui()
 	ImGui::End();
 }
 void lim::AppSkeletal::dndCallback(int cnt, const char **paths) {
-	model.importFromFile(paths[0], true);
-	cur_nd = &model.root;
+	importModel(paths[0]);
 }

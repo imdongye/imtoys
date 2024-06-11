@@ -28,6 +28,7 @@ namespace lim
 		
 		void drawHierarchy(RdNode& nd);
 		void drawInspector(RdNode& nd);
+		void importModel(const char* path);
 
 	public:
 		AppSkeletal();

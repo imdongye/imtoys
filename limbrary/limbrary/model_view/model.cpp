@@ -48,17 +48,6 @@ void RdNode::treversal(std::function<void(const Mesh* ms, const Material* mat, c
 		child.treversal(callback, curTf);
 	}
 }
-void RdNode::treversalNode(std::function<bool(RdNode& node, const glm::mat4& transform)> callback, const glm::mat4& prevTransform )
-{
-	const glm::mat4 curTf = prevTransform*transform.mtx;
-
-	if( !callback(*this, curTf) )
-		return;
-
-	for( RdNode& child : childs ) {
-		child.treversalNode(callback, curTf);
-	}
-}
 void RdNode::clear() {
 	meshs_mats.clear();
 	childs.clear();
@@ -69,7 +58,7 @@ void RdNode::clear() {
 
 
 Model::Model(std::string_view _name)
-	: name(_name), animator(this)
+	: name(_name), animator()
 {
 	tf = &root.transform;
 }
@@ -90,13 +79,10 @@ void Model::clear()
 	own_textures.clear();
 	own_meshes.clear();
 	root.clear();
+	animator.clear();
 
 	tf = &root.transform;
 	tf_normalized = nullptr;
-
-	bone_name_to_idx.clear();
-	bone_offsets.clear();
-	bone_offsets.reserve(100);
 }
 
 

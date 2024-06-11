@@ -47,10 +47,7 @@ namespace lim
 		
 		void addMsMat(const Mesh* ms, const Material* mat);
 		RdNode* makeChild(std::string_view name = "nonamed node");
-		void treversal(std::function<void(const Mesh* ms, const Material* mat, const glm::mat4& transform)> callback
-			, const glm::mat4& prevTransform = glm::mat4(1) ) const;
-		void treversalNode(std::function<bool(RdNode& node, const glm::mat4& transform)> callback
-			, const glm::mat4& prevTransform = glm::mat4(1));
+		void treversal(std::function<void(const Mesh* ms, const Material* mat, const glm::mat4& transform)> callback, const glm::mat4& prevTransform = glm::mat4(1) ) const;
 		void clear();
 	};
 
@@ -81,11 +78,6 @@ namespace lim
 
 
 		/* bone */
-		RdNode bone_root;
-		int nr_bones = 0;
-		std::map<std::string, int> bone_name_to_idx;
-		std::vector<glm::mat4> bone_offsets;
-
 		Animator animator;
 
 	public:

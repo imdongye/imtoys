@@ -6,31 +6,38 @@
 using namespace lim;
 using namespace glm;
 
-void Animator::updateDefaultMtxBones() {
-    state = State::PAUSE;
-    model->bone_root.treversalNode([&](const RdNode& node, const glm::mat4& transform) {
-        if( model->bone_name_to_idx.find(node.name) == model->bone_name_to_idx.end() )
-            return true;
-        int boneIdx = model->bone_name_to_idx[node.name];
-        mat4 offset = model->bone_offsets[boneIdx];
-        mtx_Bones[boneIdx] = transform*offset;
-        return true;
-    });
+void BoneNode::treversal(std::function<bool(BoneNode& node, const glm::mat4& transform)> callback, const glm::mat4& prevTransform )
+{
+	const glm::mat4 curTf = prevTransform*transform.mtx;
+
+	if( !callback(*this, curTf) )
+		return;
+
+	for( BoneNode& child : childs ) {
+		child.treversal(callback, curTf);
+	}
+}
+void BoneNode::clear() {
+	childs.clear();
 }
 
-Animator::Animator(Model* md) {
-    model = md;
+
+Animator::Animator() {
     AssetLib::get().app->update_hooks[this] = [this](float dt) {
         update(dt);
     };
 }
 Animator::~Animator() {
     AssetLib::get().app->update_hooks.erase(this);
+    clear();
 }
-void Animator::updateMtxBonesSize() {
+void Animator::clear() {
+    nr_bones = 0;
+    bone_root.clear();
+    name_to_idx.clear();
+	offsets.clear();
     mtx_Bones.clear();
-    mtx_Bones.resize(model->nr_bones, mat4(1.0f));
-    return;
+    animations.clear();
 }
 
 void Animator::play(int animIdx) {
@@ -146,11 +153,11 @@ void Animator::update(float dt) {
         nodeTf.update();
     }
 
-    model->bone_root.treversalNode([&](const RdNode& node, const glm::mat4& transform) {
-        if( model->bone_name_to_idx.find(node.name) == model->bone_name_to_idx.end() )
+    bone_root.treversal([&](const BoneNode& node, const glm::mat4& transform) {
+        int boneIdx = node.bone_idx;
+        if( boneIdx<0 )
             return true;
-        int boneIdx = model->bone_name_to_idx[node.name];
-        mat4 offset = model->bone_offsets[boneIdx];
+        mat4 offset = offsets[boneIdx];
         mtx_Bones[boneIdx] = transform*offset;
         return true;
     });
