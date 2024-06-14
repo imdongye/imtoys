@@ -28,6 +28,8 @@ namespace lim
 		
 		void drawHierarchy(RdNode& nd);
 		void drawInspector(RdNode& nd);
+		void drawHeierarchy(BoneNode& nd);
+		void drawInspector(BoneNode& nd);
 		void importModel(const char* path);
 
 	public:

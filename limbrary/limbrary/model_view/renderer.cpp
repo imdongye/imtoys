@@ -213,7 +213,7 @@ mesh바뀌면 1.ms바인딩
 //     bool isModelChanged = true;
 
 //     for( const Model* md : scn.models ) {
-//         md->root.treversal([&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
+//         md->root.treversalMsMat([&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
 //             if( curMat != mat ) {
 //                 if( curProg != mat->prog ) {
 //                     curProg = mat->prog;
@@ -319,7 +319,7 @@ void lim::render( const IFramebuffer& fb,
             }
             curProg->setUniform("mtx_Model", transform);
             curMesh->drawGL();
-        });
+        }, (md->prev_tf) ? md->prev_tf->mtx : glm::mat4(1.0f) );
     }
 
     if( isDrawLight ) {

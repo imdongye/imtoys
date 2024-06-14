@@ -6,11 +6,10 @@
 using namespace lim;
 using namespace glm;
 
-void BoneNode::treversal(std::function<bool(BoneNode& node, const glm::mat4& transform)> callback, const glm::mat4& prevTransform )
-{
-	const glm::mat4 curTf = prevTransform*transform.mtx;
+void BoneNode::treversal(std::function<bool(BoneNode& node, const glm::mat4& transform)> callback, const glm::mat4& prevTransform ) {
+	const glm::mat4 curTf = prevTransform * tf.mtx;
 
-	if( !callback(*this, curTf) )
+	if( callback(*this, curTf) )
 		return;
 
 	for( BoneNode& child : childs ) {
@@ -18,36 +17,50 @@ void BoneNode::treversal(std::function<bool(BoneNode& node, const glm::mat4& tra
 	}
 }
 void BoneNode::clear() {
+    bone_idx = -1;
 	childs.clear();
 }
 
-
 Animator::Animator() {
-    AssetLib::get().app->update_hooks[this] = [this](float dt) {
-        update(dt);
-    };
+}
+void Animator::init(const Model* md) {
+    model = md;
+    mtx_Bones.resize(model->nr_bones);
+    if( !AssetLib::get().app->update_hooks.isIn(this) ) {
+        AssetLib::get().app->update_hooks[this] = [this](float dt) {update(dt);};
+    }
 }
 Animator::~Animator() {
-    AssetLib::get().app->update_hooks.erase(this);
     clear();
+    if( model ) {
+        AssetLib::get().app->update_hooks.erase(this);
+    } 
 }
 void Animator::clear() {
-    nr_bones = 0;
     bone_root.clear();
-    name_to_idx.clear();
-	offsets.clear();
+    bone_tfs.clear();
     mtx_Bones.clear();
-    animations.clear();
+}
+Animator& Animator::operator=(const Animator& src) {
+    bone_root = src.bone_root;
+    cur_anim = src.cur_anim;
+    init(src.model);
+    start_sec = src.start_sec;
+    elapsed_sec = src.elapsed_sec;
+    duration_sec = src.duration_sec;
+    is_loop = src.is_loop;
+    mtx_Bones = src.mtx_Bones;
+    return *this;
 }
 
-void Animator::play(int animIdx) {
-    if(animIdx<0 && anim_idx<0) {
+void Animator::play(const Animation* anim) {
+    if( !cur_anim && !anim ) {
         log::err("no selected animation\n");
         assert(false);
     }
-    if( animIdx!=anim_idx ) {
-        anim_idx = animIdx;
-        duration_sec = animations[anim_idx].nr_ticks/animations[anim_idx].ticks_per_sec;
+    if( cur_anim!=anim ) {
+        cur_anim = anim;
+        duration_sec = cur_anim->nr_ticks/cur_anim->ticks_per_sec;
         state = State::STOP;
     }
 
@@ -102,7 +115,7 @@ static void getKeyIdx(const std::vector<Animation::KeyQuat>& keys, double cur_ti
     }
 }
 void Animator::update(float dt) {
-    if(state!=State::PLAY || anim_idx<0 )
+    if( state!=State::PLAY || !cur_anim )
         return;
     elapsed_sec = glfwGetTime() - start_sec;
     if( elapsed_sec > duration_sec ) {
@@ -114,15 +127,14 @@ void Animator::update(float dt) {
             return;
         }
     }
-    Animation& curAnim = animations[anim_idx];
-    double cur_tick = elapsed_sec * curAnim.ticks_per_sec;
-    cur_tick = fmod(cur_tick, curAnim.nr_ticks);
+    double cur_tick = elapsed_sec * cur_anim->ticks_per_sec;
+    cur_tick = fmod(cur_tick, cur_anim->nr_ticks);
 
-    for( const Animation::BoneTrack& track : curAnim.bone_tracks ) {
+    for( const Animation::Track& track : cur_anim->tracks ) {
         int idx;
         float factor;
         vec3 v1, v2, vDt;
-        Transform& nodeTf = track.target->transform;
+        Transform& nodeTf = *bone_tfs[track.bone_tf_idx];
         if( track.nr_poss>1 ) {
             getKeyIdx(track.poss, cur_tick, idx, factor);
             v1 = track.poss[idx-1].value;
@@ -156,9 +168,8 @@ void Animator::update(float dt) {
     bone_root.treversal([&](const BoneNode& node, const glm::mat4& transform) {
         int boneIdx = node.bone_idx;
         if( boneIdx<0 )
-            return true;
-        mat4 offset = offsets[boneIdx];
-        mtx_Bones[boneIdx] = transform*offset;
-        return true;
+            return false;
+        mtx_Bones[boneIdx] = transform * model->bone_offsets[boneIdx];
+        return false;
     });
 }

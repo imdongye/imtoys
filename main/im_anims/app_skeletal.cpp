@@ -72,8 +72,8 @@ void lim::AppSkeletal::drawHierarchy(lim::RdNode& nd ) {
 	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_None;
 	if( &nd == cur_nd ) {
 		flags |= ImGuiTreeNodeFlags_Selected;
-		if( model.animator.name_to_idx.find(nd.name) != model.animator.name_to_idx.end() ) {
-			display_BoneIdx = model.animator.name_to_idx[nd.name];
+		if( model.animator.bone_name_to_idx.find(nd.name) != model.animator.bone_name_to_idx.end() ) {
+			display_BoneIdx = model.animator.bone_name_to_idx[nd.name];
 		}
 	}
 	if( nd.childs.size() == 0 ) {
@@ -100,17 +100,17 @@ void lim::AppSkeletal::drawInspector(RdNode& nd) {
 	ImGui::Text("name : %s", nd.name.c_str());
 	ImGui::Text("childs : %d", nd.childs.size());
 	bool edited = false;
-	edited |= ImGui::DragFloat3("pos", glm::value_ptr(nd.transform.pos), 0.01f);
-	edited |= ImGui::DragFloat3("scale", glm::value_ptr(nd.transform.scale), 0.01f);
-	glm::vec3 rot = glm::degrees(glm::eulerAngles(nd.transform.ori));
+	edited |= ImGui::DragFloat3("pos", glm::value_ptr(nd.tf.pos), 0.01f);
+	edited |= ImGui::DragFloat3("scale", glm::value_ptr(nd.tf.scale), 0.01f);
+	glm::vec3 rot = glm::degrees(glm::eulerAngles(nd.tf.ori));
 	if(ImGui::DragFloat3("ori", glm::value_ptr(rot), 0.1f)) {
 		edited = true;
-		nd.transform.ori = glm::quat(glm::radians(rot));
+		nd.tf.ori = glm::quat(glm::radians(rot));
 	}
 	if( edited ) {
-		nd.transform.update();
+		nd.tf.update();
 	}
-	LimGui::Mat4(nd.transform.mtx);
+	LimGui::Mat4(nd.tf.mtx);
 }
 
 void lim::AppSkeletal::updateImGui()
@@ -154,12 +154,12 @@ void lim::AppSkeletal::updateImGui()
 	// if(ImGui::Button("default")) {
 	// 	model.animator.updateDefaultMtxBones();
 	// }
-	std::string anim_list;
+	std::vector<const char*> anim_list;
 	for(auto& anim : model.animator.animations) {
-		anim_list += anim.name + "\0";
+		anim_list.push_back(anim.name.c_str());
 	}
 	static int selected_anim = 0;
-	if(ImGui::Combo("animation", &selected_anim, anim_list.c_str())) {
+	if(ImGui::Combo("animation", &selected_anim, anim_list.data(), anim_list.size())) {
 		model.animator.play(selected_anim);
 	}
 	ImGui::End();

@@ -1,3 +1,15 @@
+/*
+
+2024-06-14 / im dong ye
+edit learnopengl code
+
+Note:
+nr_bones(mesh) != nr_tracks != nr_bone_nodes
+animations를 model(data)에서 공유하면 Track에 BoneNode를 
+
+
+*/
+
 #ifndef __animator_h_
 #define __animator_h_
 #include <glm/glm.hpp>
@@ -10,18 +22,6 @@
 
 namespace lim
 {
-    class Model;
-
-    struct BoneNode {
-        std::string name = "nonamed node";
-        int bone_idx = -1;
-        Transform transform;
-        std::vector<BoneNode> childs;
-        
-        void treversal(std::function<bool(BoneNode& node, const glm::mat4& transform)> callback, const glm::mat4& prevTransform = glm::mat4(1));
-        void clear();
-    };
-
     struct Animation 
     {
     public:
@@ -33,26 +33,39 @@ namespace lim
             float tick;
             glm::quat value;
         };
-        struct BoneTrack
+        struct Track
         {
             std::string name;
-            BoneNode* target;
+            int bone_tf_idx = -1;
             int nr_poss, nr_scales, nr_oris;
             std::vector<KeyVec3> poss;
             std::vector<KeyVec3> scales;
             std::vector<KeyQuat> oris;
         };
         std::string name;
-        std::vector<BoneTrack> bone_tracks;
+        std::vector<Track> tracks;
         double nr_ticks;
         int ticks_per_sec;
     };
 
+
+
+    struct BoneNode {
+        std::string name = "nonamed node";
+        Transform tf;
+        int bone_idx = -1;
+        std::vector<BoneNode> childs;
+
+        // callback이 true일때까지 dfs.
+        void treversal(std::function<bool(BoneNode& node, const glm::mat4& transform)> callback, const glm::mat4& mtxPrevTf = glm::mat4(1));
+        void clear();
+    };
+
+    struct Model;
+
     class Animator
     {
     public:
-        BoneNode bone_root;
-
         enum class State {
             PLAY,
             PAUSE,
@@ -60,34 +73,33 @@ namespace lim
         };
         State state = State::STOP;
 
-        int anim_idx = -1;
+        BoneNode bone_root;
+        std::vector<Transform*> bone_tfs;
+
+        const Animation* cur_anim = nullptr;
+        const Model* model = nullptr;
         double start_sec, elapsed_sec, duration_sec;
         bool is_loop = false;
 
-		int nr_bones = 0;
-		std::map<std::string, int> name_to_idx;
-		std::vector<glm::mat4> offsets;
         std::vector<glm::mat4> mtx_Bones;
-        std::vector<Animation> animations;
         
     public:
-        Animator(const Model& src)		  = delete;
-		Animator& operator=(const Model&) = delete;
-		Animator(Model&&)			      = delete;
-		Animator& operator=(Model&&)      = delete;
+        Animator(const Animator& src)		 = delete;
+		Animator(Animator&&)			     = delete;
+		Animator& operator=(Animator&&)      = delete;
 
         Animator();
+        void init(const Model* md);
         ~Animator();
         void clear();
-
-        void play(int animIdx = -1);
+		Animator& operator=(const Animator& src); // todo default
+        
+        void play(const Animation* anim = nullptr );
         void pause();
         void stop();
         void setUniformTo(const Program& prog) const;
 
     private:
-        friend class Model;
-        void updateMtxBonesSize();
         void update(float dt);
     };
 

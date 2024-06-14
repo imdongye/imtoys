@@ -299,13 +299,13 @@ static Mesh* convertMesh(const aiMesh* aiMs)
 		for( int i=0; i<aiMs->mNumBones; i++ ) {
 			std::string boneName = aiMs->mBones[i]->mName.C_Str();
 			int boneIdx;
-			if( g_animator->name_to_idx.find(boneName) == g_animator->name_to_idx.end() ) {
-				boneIdx = g_animator->nr_bones;
-				g_animator->nr_bones++;
-				g_animator->name_to_idx[boneName] = boneIdx;
-				g_animator->offsets.push_back(toGLM(aiMs->mBones[i]->mOffsetMatrix));
+			if( g_model->bone_name_to_idx.find(boneName) == g_model->bone_name_to_idx.end() ) {
+				boneIdx = g_model->nr_bones;
+				g_model->nr_bones++;
+				g_model->bone_name_to_idx[boneName] = boneIdx;
+				g_model->bone_offsets.push_back(toGLM(aiMs->mBones[i]->mOffsetMatrix));
 			} else {
-				boneIdx = g_animator->name_to_idx[boneName];
+				boneIdx = g_model->bone_name_to_idx[boneName];
 			}
 			auto aiWeights = aiMs->mBones[i]->mWeights;
 			auto nrWeights = aiMs->mBones[i]->mNumWeights;
@@ -354,12 +354,12 @@ static void convertAnim(Animation& dst, const aiAnimation& src) {
 	dst.ticks_per_sec = (src.mTicksPerSecond==0.f) ? 25.f : src.mTicksPerSecond;
 	dst.nr_ticks = src.mDuration;
 
-	dst.bone_tracks.resize(src.mNumChannels);
+	dst.tracks.resize(src.mNumChannels);
 	for( uint i=0; i<src.mNumChannels; i++ ) {
 		const aiNodeAnim& aiTrack = *(src.mChannels[i]);
-		Animation::BoneTrack& track = dst.bone_tracks[i];
+		Animation::Track& track = dst.tracks[i];
 		track.name = aiTrack.mNodeName.C_Str();
-		track.target = nullptr; // after convertTree
+		track.bone_tf_idx = -1; // after convertTree
 
 		track.nr_poss = aiTrack.mNumPositionKeys;
 		track.poss.resize(track.nr_poss);
@@ -385,22 +385,25 @@ static void convertAnim(Animation& dst, const aiAnimation& src) {
 static void convertBoneTree(BoneNode& dst, const aiNode* src) {
 	dst.name = src->mName.C_Str();
 
-	if( g_animator->name_to_idx.find(dst.name) != g_animator->name_to_idx.end() ) {
-		dst.bone_idx = g_animator->name_to_idx[dst.name];
+	if( isIn(g_model->bone_name_to_idx, dst.name) ) {
+		dst.bone_idx = g_model->bone_name_to_idx[dst.name];
 	} else {
 		dst.bone_idx = -1;
 	}
-	for( Animation& anim : g_animator->animations ) {
-		for( Animation::BoneTrack& track : anim.bone_tracks ) {
+	g_animator->bone_tfs.push_back(&dst.tf);
+	int tfIdx = g_animator->bone_tfs.size()-1;
+
+	for( Animation& anim : g_model->animations ) {
+		for( Animation::Track& track : anim.tracks ) {
 			if( track.name == dst.name ) {
-				track.target = &dst;
+				track.bone_tf_idx = tfIdx;
 				break;
 			}
 		}
 	}
 
-	dst.transform.mtx = toGLM(src->mTransformation);
-	dst.transform.decomposeMtx();
+	dst.tf.mtx = toGLM(src->mTransformation);
+	dst.tf.decomposeMtx();
 
 	dst.childs.reserve(src->mNumChildren);
 	for( size_t i=0; i< src->mNumChildren; i++ ) {
@@ -409,11 +412,11 @@ static void convertBoneTree(BoneNode& dst, const aiNode* src) {
 	}
 }
 static bool isBoneNode(const char* name) {
-	if( g_animator->name_to_idx.find(name) != g_animator->name_to_idx.end() ) {
+	if( g_model->bone_name_to_idx.find(name) != g_model->bone_name_to_idx.end() ) {
 		return true;
 	}
-	for( const auto& anim : g_animator->animations ) {
-		for( const auto& track : anim.bone_tracks ) {
+	for( const auto& anim : g_model->animations ) {
+		for( const auto& track : anim.tracks ) {
 			if( track.name == name ) {
 				return true;
 			}
@@ -423,16 +426,9 @@ static bool isBoneNode(const char* name) {
 }
 static void convertRdTree(RdNode& dst, const aiNode* src) 
 {
-	const char* name = src->mName.C_Str();
-	if( isBoneNode(name) ) {
-		assert( g_animator->bone_root.name=="empty" );
-		convertBoneTree(g_animator->bone_root, src);
-		return;
-	}
-
-	dst.name = name;
-	dst.transform.mtx = toGLM(src->mTransformation);
-	dst.transform.decomposeMtx();
+	dst.name = src->mName.C_Str();
+	dst.tf.mtx = toGLM(src->mTransformation);
+	dst.tf.decomposeMtx();
 
 	for( size_t i=0; i<src->mNumMeshes; i++ ) {
 		const int msIdx = src->mMeshes[i];
@@ -441,9 +437,16 @@ static void convertRdTree(RdNode& dst, const aiNode* src)
 		dst.meshs_mats.push_back({g_model->own_meshes[msIdx], mat});
 	}
 
+	dst.childs.reserve(src->mNumChildren);
 	for( size_t i=0; i< src->mNumChildren; i++ ) {
+		aiNode* aiChild = src->mChildren[i];
+		if( isBoneNode(aiChild->mName.C_Str()) ) {
+			assert( g_animator->bone_root.name=="empty" ); // bone root가 두개일 때
+			convertBoneTree(g_animator->bone_root, src);
+			continue;
+		}
 		dst.childs.push_back({});
-		convertRdTree( dst.childs.back(), src->mChildren[i]);
+		convertRdTree( dst.childs.back(), aiChild );
 	}
 }
 
@@ -524,14 +527,14 @@ bool lim::Model::importFromFile(string_view modelPath, bool withAnims)
 	for( GLuint i=0; i<g_scn->mNumMeshes; i++ ) {
 		own_meshes.push_back(convertMesh(g_scn->mMeshes[i]));
 	}
-	g_animator->mtx_Bones.resize(g_animator->nr_bones);
+	g_animator->init(this);
 	withAnims = (g_animator!=nullptr);
 
 	/* import anims( bone-2 ) */
 	if( withAnims ) {
-		animator.animations.resize(g_scn->mNumAnimations);
+		animations.resize(g_scn->mNumAnimations);
 		for( uint i=0; i<g_scn->mNumAnimations; i++ ) {
-			convertAnim(animator.animations[i], *(g_scn->mAnimations[i]));
+			convertAnim(animations[i], *(g_scn->mAnimations[i]));
 		}
 	}
 

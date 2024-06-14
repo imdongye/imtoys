@@ -231,7 +231,7 @@ namespace
 	void recursiveConvertTree(const RdNode& src, aiNode* dst)
 	{
 		dst->mName = aiString(src.name.data());
-		dst->mTransformation = toAi(src.transform.mtx);
+		dst->mTransformation = toAi(src.tf.mtx);
 
 		const int nrMeshes = src.meshs_mats.size();
 		dst->mNumMeshes = nrMeshes;

@@ -22,24 +22,16 @@
 #include <assimp/material.h>
 #include <limbrary/asset_lib.h>
 #include <limbrary/utils.h>
-#include <stack>
-
 
 using namespace lim;
-
 
 
 void RdNode::addMsMat(const Mesh* ms, const Material* mat) {
 	meshs_mats.push_back({ms, mat});
 }
-RdNode* RdNode::makeChild(std::string_view _name) {
-	childs.push_back(RdNode());
-	childs.back().name = _name;
-	return &childs.back();
-}
-void RdNode::treversal(std::function<void(const Mesh* ms, const Material* mat, const glm::mat4& transform)> callback, const glm::mat4& prevTransform ) const
+void RdNode::treversal(std::function<void(const Mesh* ms, const Material* mat, const glm::mat4& transform)> callback, const glm::mat4& mtxPrevTf ) const
 {
-	const glm::mat4 curTf = prevTransform*transform.mtx;
+	const glm::mat4 curTf = mtxPrevTf * tf.mtx;
 
 	for( auto [ms, mat] : meshs_mats ) {
 		callback(ms, mat, curTf);
@@ -56,143 +48,61 @@ void RdNode::clear() {
 
 
 
-
-Model::Model(std::string_view _name)
-	: name(_name), animator()
-{
-	tf = &root.transform;
+ModelView::ModelView() {
+	tf = &root.tf;
 }
-Model::~Model()
-{
+ModelView::~ModelView() {
+}
+ModelView::ModelView(const ModelView& src) {
+	operator=(src);
+}
+static Transform* findTf(RdNode& dst, const RdNode& src, const Transform* srcTf) {
+	if(srcTf == &src.tf) {
+		return &dst.tf;
+	}
+	int nrChilds = src.childs.size();
+	for( int i=0; i<nrChilds; i++ ) {
+		Transform* rst = findTf(dst.childs[i], src.childs[i], srcTf);
+		if( rst )
+			return rst;
+	}
+	return nullptr;
+}
+ModelView& ModelView::operator=(const ModelView& src) {
+	root = src.root;
+	prev_tf = src.prev_tf;
+	tf = findTf(root, src.root, src.tf);
+	tf_normalized = findTf(root, src.root, src.tf_normalized);
+	animator = src.animator;
+	return *this;
+}
+
+
+
+
+Model::Model(std::string_view _name): name(_name) {
+}
+Model::~Model() {
 	clear();
 }
-void Model::clear()
-{
-	for( Material* mat : own_materials )
-		delete mat;
-	for( Texture* tex : own_textures )
-		delete tex;
-	for( Mesh* ms : own_meshes )
-		delete ms;
-
-	own_materials.clear();
-	own_textures.clear();
-	own_meshes.clear();
+void Model::clear() {
 	root.clear();
+	tf = &root.tf;
+	tf_normalized = nullptr;
+
 	animator.clear();
 
-	tf = &root.transform;
-	tf_normalized = nullptr;
+
+	for( Material* mat : own_materials )
+		delete mat;
+	own_materials.clear();
+	for( Texture* tex : own_textures )
+		delete tex;
+	own_textures.clear();
+	for( Mesh* ms : own_meshes )
+		delete ms;
+	own_meshes.clear();
 }
-
-
-
-
-
-static void correctMatTexLink( const Material& src,  Material& dst
-	, const std::vector<Texture*>& srcTexs, std::vector<Texture*>& dstTexs )
-{
-	if( dst.map_ColorBase ) {
-		dst.map_ColorBase = dstTexs[findIdx(srcTexs, src.map_ColorBase)];
-	}
-	if( dst.map_Specular ) {
-		dst.map_Specular = dstTexs[findIdx(srcTexs, src.map_Specular)];
-	}
-	if( dst.map_Bump ) {
-		dst.map_Bump = dstTexs[findIdx(srcTexs, src.map_Bump)];
-	}
-	if( dst.map_AmbOcc ) {
-		dst.map_AmbOcc = dstTexs[findIdx(srcTexs, src.map_AmbOcc)];
-	}
-	if( dst.map_Roughness ) {
-		dst.map_Roughness = dstTexs[findIdx(srcTexs, src.map_Roughness)];
-	}
-	if( dst.map_Metalness ) {
-		dst.map_Metalness = dstTexs[findIdx(srcTexs, src.map_Metalness)];
-	}
-	if( dst.map_Emission ) {
-		dst.map_Emission = dstTexs[findIdx(srcTexs, src.map_Emission)];
-	}
-	if( dst.map_Opacity ) {
-		dst.map_Opacity = dstTexs[findIdx(srcTexs, src.map_Opacity)];
-	}
-}
-static void recursiveCopyTree(const RdNode& src, RdNode& dst) {
-	dst.name = src.name;
-	dst.transform = src.transform;
-	dst.meshs_mats = src.meshs_mats;
-	
-	dst.childs.reserve(src.childs.size());
-	for( const RdNode& child : src.childs ) {
-		dst.childs.push_back({});
-		recursiveCopyTree(child, dst.childs.back());
-	}
-}
-static void recursiveCopyAndMatchTree(const RdNode& src, RdNode& dst, const Model& srcMd, const Model& dstMd) {
-	dst.name = src.name;
-	dst.transform = src.transform;
-	dst.meshs_mats.reserve(src.meshs_mats.size());
-	for( auto& [srcMs, srcMat] : dst.meshs_mats ) {
-		int msIdx = findIdx(srcMd.own_meshes, (Mesh*)srcMs);
-		int matIdx = findIdx(srcMd.own_materials, (Material*)srcMat);
-		dst.meshs_mats.push_back({dstMd.own_meshes[msIdx], dstMd.own_materials[matIdx]});
-	}
-	
-	dst.childs.reserve(src.childs.size());
-	for( const RdNode& child : src.childs ) {
-		dst.childs.push_back({});
-		recursiveCopyAndMatchTree(child, dst.childs.back(), srcMd, dstMd);
-	}
-}
-void Model::copyFrom(const Model& src, bool makeRef)
-{
-	clear();
-	name = src.name;
-	path = src.path;
-
-	nr_vertices = src.nr_vertices;
-	nr_triangles = src.nr_triangles;
-	boundary_max = src.boundary_max;
-	boundary_min = src.boundary_min;
-	boundary_size = src.boundary_size;
-	pivoted_scaled_bottom_height = src.pivoted_scaled_bottom_height;
-	ai_backup_flags = src.ai_backup_flags;
-
-	if( makeRef ) 
-	{
-		recursiveCopyTree(src.root, root);
-	}
-	else // clone
-	{
-		log::warn("Model is copied\n\n");
-		own_textures.reserve(src.own_textures.size());
-		for( Texture* srcTex : src.own_textures ) {
-			own_textures.push_back( new Texture(*srcTex) );
-		}
-
-		own_materials.reserve(src.own_materials.size());
-		for( int i=0; i<src.own_materials.size(); i++ ) {
-			own_materials.push_back( new Material(*src.own_materials[i]) );
-			correctMatTexLink( *src.own_materials[i], *own_materials[i], src.own_textures, own_textures);
-		}
-
-		own_meshes.reserve(src.own_meshes.size());
-		for( Mesh* srcMs : src.own_meshes ) {
-			own_meshes.push_back( new Mesh(*srcMs) );
-		}
-
-		recursiveCopyAndMatchTree(src.root, root, src, *this);
-	}
-	if( src.tf == &src.root.transform ) {
-		tf = &root.transform;
-		tf_normalized = nullptr;
-	} else {
-		tf = &root.childs[0].transform;
-		tf_normalized = &root.transform;
-	}
-}
-
-
 
 
 
@@ -208,6 +118,7 @@ Mesh* Model::addOwn(Mesh* ms) {
 	own_meshes.push_back(ms);
 	return ms;
 }
+
 
 
 void Model::setProgToAllMat(const Program* prog)
@@ -234,6 +145,7 @@ static void setMatInTree(RdNode& root, const Material* mat) {
 void Model::setSameMat(const Material* mat) {
 	setMatInTree(root, mat);
 }
+
 
 
 void Model::updateNrAndBoundary()
@@ -268,7 +180,7 @@ void Model::setUnitScaleAndPivot()
 		root.childs.clear();
 		root.childs.push_back(real);
 		root.childs.back().name = "pivot";
-		tf_normalized = &(root.childs.back().transform);
+		tf_normalized = &(root.childs.back().tf);
 		*tf_normalized = Transform();
 	}
 
@@ -279,4 +191,88 @@ void Model::setUnitScaleAndPivot()
 
 	pivoted_scaled_bottom_height = boundary_size.y*0.5f*normScale;
 	// pivoted_scaled_bottom_height = 0;
+}
+
+
+
+static void correctMatTexLink( Material& dst, const Material& src
+	, std::vector<Texture*>& dstTexs, const std::vector<Texture*>& srcTexs )
+{
+	if( dst.map_ColorBase ) {
+		dst.map_ColorBase = dstTexs[findIdx(srcTexs, src.map_ColorBase)];
+	}
+	if( dst.map_Specular ) {
+		dst.map_Specular = dstTexs[findIdx(srcTexs, src.map_Specular)];
+	}
+	if( dst.map_Bump ) {
+		dst.map_Bump = dstTexs[findIdx(srcTexs, src.map_Bump)];
+	}
+	if( dst.map_AmbOcc ) {
+		dst.map_AmbOcc = dstTexs[findIdx(srcTexs, src.map_AmbOcc)];
+	}
+	if( dst.map_Roughness ) {
+		dst.map_Roughness = dstTexs[findIdx(srcTexs, src.map_Roughness)];
+	}
+	if( dst.map_Metalness ) {
+		dst.map_Metalness = dstTexs[findIdx(srcTexs, src.map_Metalness)];
+	}
+	if( dst.map_Emission ) {
+		dst.map_Emission = dstTexs[findIdx(srcTexs, src.map_Emission)];
+	}
+	if( dst.map_Opacity ) {
+		dst.map_Opacity = dstTexs[findIdx(srcTexs, src.map_Opacity)];
+	}
+}
+static void matchRdTree(RdNode& dst, const RdNode& src, const Model& dstMd, const Model& srcMd) {
+	dst.meshs_mats.reserve(src.meshs_mats.size());
+	for( auto& [srcMs, srcMat] : dst.meshs_mats ) {
+		int msIdx = findIdx(srcMd.own_meshes, (Mesh*)srcMs);
+		int matIdx = findIdx(srcMd.own_materials, (Material*)srcMat);
+		dst.meshs_mats.push_back({dstMd.own_meshes[msIdx], dstMd.own_materials[matIdx]});
+	}
+	
+	int nrChilds = src.childs.size();
+	for( int i=0 ; i<nrChilds; i++ ) {
+		matchRdTree(dst.childs[i], src.childs[i], dstMd, srcMd);
+	}
+}
+void Model::copyFrom(const Model& src) {
+	clear();
+	ModelView::operator=(src);
+
+	name = src.name;
+	path = src.path;
+
+	own_textures.reserve(src.own_textures.size());
+	for( Texture* srcTex : src.own_textures ) {
+		own_textures.push_back( new Texture(*srcTex) );
+	}
+
+	own_materials.reserve(src.own_materials.size());
+	for( int i=0; i<src.own_materials.size(); i++ ) {
+		own_materials.push_back( new Material(*src.own_materials[i]) );
+		correctMatTexLink( *own_materials[i], *src.own_materials[i], own_textures, src.own_textures);
+	}
+
+	own_meshes.reserve(src.own_meshes.size());
+	for( Mesh* srcMs : src.own_meshes ) {
+		own_meshes.push_back( new Mesh(*srcMs) );
+	}
+
+	matchRdTree(root, src.root, *this, src);
+
+
+	nr_vertices = src.nr_vertices;
+	nr_triangles = src.nr_triangles;
+	boundary_max = src.boundary_max;
+	boundary_min = src.boundary_min;
+	boundary_size = src.boundary_size;
+	pivoted_scaled_bottom_height = src.pivoted_scaled_bottom_height;
+	ai_backup_flags = src.ai_backup_flags;
+
+	
+	nr_bones = src.nr_bones;
+	bone_name_to_idx = src.bone_name_to_idx;
+	bone_offsets = src.bone_offsets;
+	animations = src.animations;
 }

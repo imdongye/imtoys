@@ -22,15 +22,15 @@ namespace lim
 		md->addOwn(capsule);
 		RdNode* capsuleNode = md->root.makeChild();
 		capsuleNode->addMsMat(capsule, mat);
-		capsuleNode->transform.pos = {0,1,0};
-		capsuleNode->transform.update();
+		capsuleNode->tf.pos = {0,1,0};
+		capsuleNode->tf.update();
 
 		Mesh* plane = new MeshPlane();
 		md->addOwn(plane);
 		RdNode* planeNode = md->root.makeChild();
 		planeNode->addMsMat(plane, mat);
-		planeNode->transform.pos = {0,-1,0};
-		planeNode->transform.update();
+		planeNode->tf.pos = {0,-1,0};
+		planeNode->tf.update();
 	}
 	AppKinematics::~AppKinematics()
 	{

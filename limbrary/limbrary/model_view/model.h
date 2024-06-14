@@ -41,26 +41,35 @@ namespace lim
 {
 	struct RdNode {
 		std::string name = "nonamed node";
-		Transform transform;
+        Transform tf;
 		std::vector<std::pair<const Mesh*, const Material*>> meshs_mats;
-		std::vector<RdNode> childs;
-		
+        std::vector<RdNode> childs;
+
 		void addMsMat(const Mesh* ms, const Material* mat);
-		RdNode* makeChild(std::string_view name = "nonamed node");
-		void treversal(std::function<void(const Mesh* ms, const Material* mat, const glm::mat4& transform)> callback, const glm::mat4& prevTransform = glm::mat4(1) ) const;
+		void treversal(std::function<void(const Mesh* ms, const Material* mat, const glm::mat4& transform)> callback, const glm::mat4& mtxPrevTf = glm::mat4(1) ) const;
 		void clear();
 	};
 
-	// clone able
-	class Model
+	class ModelView 
+	{
+	public:
+		RdNode root;
+		const Transform* prev_tf = nullptr;
+		Transform* tf = nullptr;
+		Transform* tf_normalized = nullptr;
+		Animator animator;
+	public:
+		ModelView();
+		virtual ~ModelView();
+		ModelView(const ModelView& src);
+		ModelView& operator=(const ModelView& src);
+	};
+
+	class Model: public ModelView
 	{
 	public:
 		std::string name = "nonamed model";
 		std::string path = "nodir";
-
-		RdNode root;
-		Transform* tf_normalized = nullptr;
-		Transform* tf = nullptr;
 
 		/* delete when model deleted */
 		std::vector<Material*> own_materials;
@@ -78,34 +87,38 @@ namespace lim
 
 
 		/* bone */
-		Animator animator;
+		int nr_bones = 0;
+		std::map<std::string, int> bone_name_to_idx;
+		std::vector<glm::mat4> bone_offsets;
+        std::vector<Animation> animations;
 
 	public:
 		Model(const Model& src)		   = delete;
 		Model& operator=(const Model&) = delete;
-		Model(Model&&)			       = delete;
-		Model& operator=(Model&&)      = delete;
 
 		Model(std::string_view name="nonamed");
-		virtual ~Model();
+		~Model();
 		void clear();
-
-		void copyFrom(const Model& src, bool makeRef = false);
 
 		Material* addOwn(Material* md);
 		Texture* addOwn(Texture* tex);
 		Mesh* addOwn(Mesh* ms);
 
+		void setSameMat(const Material* mat);
 		void setProgToAllMat(const Program* prog);
 		void setSetProgToAllMat(std::function<void(const Program&)> setProg);
-		void setSameMat(const Material* mat);
 
 		void updateNrAndBoundary();
 		void setUnitScaleAndPivot();
 
+		void copyFrom(const Model& src); // now for model simplification
 		bool importFromFile(std::string_view modelPath, bool withAnim = false);
 		// render tree에서 사용하는 mesh와 material은 모두 own_에 포함되어있어야 export가능.
 		bool exportToFile(size_t pIndex, std::string_view exportDir); // dir without last slash
 	};
+}
+
+namespace LimGui {
+	void ModelEditor(lim::ModelView* model);
 }
 #endif

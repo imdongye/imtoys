@@ -66,6 +66,14 @@ namespace lim
 			return filename;
 		return filename.substr(0,dotPos);
 	}
+	template <typename T>
+	inline bool isIn( const std::vector<T>& arr, const T& value ) {
+		return ( std::find( arr.begin(), arr.end(), value ) != arr.end() );
+	}
+	template <typename TK, typename TV>
+	inline bool isIn( const std::map<TK, TV>& arr, const TK& key ) {
+		return ( std::find( arr.begin(), arr.end(), value ) != arr.end() );
+	}
 
 
 	//template <class Ftype>
@@ -108,6 +116,13 @@ namespace lim
 			keys.push_back(key);
 			cbs.push_back(std::function<Ftype>());
 			return cbs.back();
+		}
+		bool isIn(void* key) {
+			for( const void* k : keys ) {
+				if( k == key )
+					return true;
+			}
+			return false;
 		}
 		void erase(void* key) 
 		{
