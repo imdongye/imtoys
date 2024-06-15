@@ -22,10 +22,15 @@
 #include <assimp/material.h>
 #include <limbrary/asset_lib.h>
 #include <limbrary/utils.h>
+#include <imgui.h>
 
 using namespace lim;
 
-
+RdNode* RdNode::makeChild(std::string_view _name) {
+	childs.push_back(RdNode());
+	childs.back().name = _name;
+	return &childs.back();
+}
 void RdNode::addMsMat(const Mesh* ms, const Material* mat) {
 	meshs_mats.push_back({ms, mat});
 }

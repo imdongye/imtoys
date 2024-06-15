@@ -15,6 +15,7 @@ unordered_map은 헤쉬테이블로 메모리를 많이 차지 하지만 순회�
 #include <glad/glad.h>
 #include <limbrary/log.h>
 #include <algorithm>
+#include <map>
 
 #define COMP_IMVEC2(X, Y) ((X).x==(Y).x)&&((X).y==(Y).y)
 #define INT2VOIDP(i) (void*)(uintptr_t)(i)
@@ -68,11 +69,11 @@ namespace lim
 	}
 	template <typename T>
 	inline bool isIn( const std::vector<T>& arr, const T& value ) {
-		return ( std::find( arr.begin(), arr.end(), value ) != arr.end() );
+		return arr.find(value) != arr.end();
 	}
 	template <typename TK, typename TV>
-	inline bool isIn( const std::map<TK, TV>& arr, const TK& key ) {
-		return ( std::find( arr.begin(), arr.end(), value ) != arr.end() );
+	inline bool isIn( const std::map<TK, TV>& map, const TK& key ) {
+		return map.find(key) != map.end();
 	}
 
 

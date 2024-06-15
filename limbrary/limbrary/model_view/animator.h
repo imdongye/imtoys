@@ -61,7 +61,7 @@ namespace lim
         void clear();
     };
 
-    struct Model;
+    class Model;
 
     class Animator
     {

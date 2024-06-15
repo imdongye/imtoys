@@ -142,7 +142,7 @@ Scene::~Scene() {
     releaseData();
 }
 void Scene::releaseData() {
-    for( Model* md: own_mds ){
+    for( ModelView* md: own_mds ){
         delete md;
     }
     for( ILight* lit: own_lits ){
@@ -154,7 +154,7 @@ void Scene::releaseData() {
     lights.clear();
 }
 
-Model* Scene::addOwn(Model* md)  {
+ModelView* Scene::addOwn(ModelView* md)  {
     models.push_back(md);
     own_mds.push_back(md);
     return md;
@@ -164,7 +164,7 @@ ILight* Scene::addOwn(ILight* lit) {
     own_lits.push_back(lit);
     return lit;
 }
-const Model* Scene::addRef(const Model* md)  {
+const ModelView* Scene::addRef(const ModelView* md)  {
     models.push_back(md);
     return md;
 }
@@ -280,7 +280,7 @@ void lim::render( const IFramebuffer& fb,
     bool isMeshChanged = true;
     bool isModelChanged = true;
 
-    for( const Model* md : scn.models ) {
+    for( const ModelView* md : scn.models ) {
         isModelChanged = true;
         md->root.treversal([&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
             if( curMat != mat ) {
@@ -319,7 +319,7 @@ void lim::render( const IFramebuffer& fb,
             }
             curProg->setUniform("mtx_Model", transform);
             curMesh->drawGL();
-        }, (md->prev_tf) ? md->prev_tf->mtx : glm::mat4(1.0f) );
+        }, getMtxTf(md->prev_tf));
     }
 
     if( isDrawLight ) {

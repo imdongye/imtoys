@@ -299,7 +299,7 @@ static Mesh* convertMesh(const aiMesh* aiMs)
 		for( int i=0; i<aiMs->mNumBones; i++ ) {
 			std::string boneName = aiMs->mBones[i]->mName.C_Str();
 			int boneIdx;
-			if( g_model->bone_name_to_idx.find(boneName) == g_model->bone_name_to_idx.end() ) {
+			if( !isIn(g_model->bone_name_to_idx, boneName) ) {
 				boneIdx = g_model->nr_bones;
 				g_model->nr_bones++;
 				g_model->bone_name_to_idx[boneName] = boneIdx;
@@ -411,8 +411,8 @@ static void convertBoneTree(BoneNode& dst, const aiNode* src) {
 		convertBoneTree( dst.childs.back(), src->mChildren[i]);
 	}
 }
-static bool isBoneNode(const char* name) {
-	if( g_model->bone_name_to_idx.find(name) != g_model->bone_name_to_idx.end() ) {
+static bool isBoneNode(std::string name) {
+	if( isIn(g_model->bone_name_to_idx, name ) ) {
 		return true;
 	}
 	for( const auto& anim : g_model->animations ) {

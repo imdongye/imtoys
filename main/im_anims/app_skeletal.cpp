@@ -68,34 +68,6 @@ void lim::AppSkeletal::update()
 
 	render(viewport.getFb(), viewport.camera, scene);
 }
-void lim::AppSkeletal::drawHierarchy(lim::RdNode& nd ) {
-	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_None;
-	if( &nd == cur_nd ) {
-		flags |= ImGuiTreeNodeFlags_Selected;
-		if( model.animator.bone_name_to_idx.find(nd.name) != model.animator.bone_name_to_idx.end() ) {
-			display_BoneIdx = model.animator.bone_name_to_idx[nd.name];
-		}
-	}
-	if( nd.childs.size() == 0 ) {
-		flags |= ImGuiTreeNodeFlags_Leaf;
-	}
-	else {
-		flags |= ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_DefaultOpen;
-	}
-	
-	if(ImGui::TreeNodeEx(&nd, flags, "%s", nd.name.c_str())) {
-		if( cur_nd!=&nd &&ImGui::IsItemClicked(0)) {
-			cur_nd = &nd;
-		}
-		for(auto& [ms, mat]: nd.meshs_mats) {
-			ImGui::BulletText("%s\n%s", ms->name.c_str(), mat->name.c_str());
-		}
-		for(auto& c : nd.childs) {
-			drawHierarchy(c);
-		}
-		ImGui::TreePop();
-	}	
-}
 void lim::AppSkeletal::drawInspector(RdNode& nd) {
 	ImGui::Text("name : %s", nd.name.c_str());
 	ImGui::Text("childs : %d", nd.childs.size());
@@ -162,18 +134,6 @@ void lim::AppSkeletal::updateImGui()
 	if(ImGui::Combo("animation", &selected_anim, anim_list.data(), anim_list.size())) {
 		model.animator.play(selected_anim);
 	}
-	ImGui::End();
-
-	ImGui::Begin("hierarchy");
-	drawHierarchy(model.root);
-	ImGui::End();
-
-	// ImGui::Begin("hierarchy-bone");
-	// drawHierarchy(model.bone_root);
-	// ImGui::End();
-
-	ImGui::Begin("inspector");
-	drawInspector(*cur_nd);
 	ImGui::End();
 
 	ImGui::Begin("camera");

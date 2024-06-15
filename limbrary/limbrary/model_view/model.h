@@ -45,6 +45,7 @@ namespace lim
 		std::vector<std::pair<const Mesh*, const Material*>> meshs_mats;
         std::vector<RdNode> childs;
 
+		RdNode* makeChild(std::string_view name="nonamed node");
 		void addMsMat(const Mesh* ms, const Material* mat);
 		void treversal(std::function<void(const Mesh* ms, const Material* mat, const glm::mat4& transform)> callback, const glm::mat4& mtxPrevTf = glm::mat4(1) ) const;
 		void clear();
@@ -61,6 +62,7 @@ namespace lim
 	public:
 		ModelView();
 		virtual ~ModelView();
+		// make ref with model
 		ModelView(const ModelView& src);
 		ModelView& operator=(const ModelView& src);
 	};
@@ -116,9 +118,5 @@ namespace lim
 		// render tree에서 사용하는 mesh와 material은 모두 own_에 포함되어있어야 export가능.
 		bool exportToFile(size_t pIndex, std::string_view exportDir); // dir without last slash
 	};
-}
-
-namespace LimGui {
-	void ModelEditor(lim::ModelView* model);
 }
 #endif

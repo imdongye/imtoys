@@ -40,6 +40,10 @@ namespace lim
         void updateWithRotAndDist();
         // void updateOrientation(); // todo
     };
+
+    inline glm::mat4 getMtxTf(const Transform* tf) {
+		return (tf) ? tf->mtx : glm::mat4(1.f);
+	}
 }
 
 #endif

@@ -65,9 +65,9 @@ namespace lim
 	class Scene
 	{
   	public:
-		std::vector<Model*> own_mds;
+		std::vector<ModelView*> own_mds;
         std::vector<ILight*> own_lits;
-		std::vector<const Model*> models;
+		std::vector<const ModelView*> models;
 		std::vector<const ILight*> lights;
         const IBLight* ib_light = nullptr;
         bool is_draw_env_map = false;
@@ -83,9 +83,9 @@ namespace lim
 
         void releaseData();
 
-        Model* addOwn(Model* md);
+        ModelView* addOwn(ModelView* md);
         ILight* addOwn(ILight* lit);
-        const Model* addRef(const Model* md);
+        const ModelView* addRef(const ModelView* md);
         const ILight* addRef(const ILight* lit);
 
 	};
