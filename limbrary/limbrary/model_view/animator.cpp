@@ -58,7 +58,7 @@ void Animator::play(const Animation* anim) {
         log::err("no selected animation\n");
         assert(false);
     }
-    if( cur_anim!=anim ) {
+    if( anim && cur_anim!=anim ) {
         cur_anim = anim;
         duration_sec = cur_anim->nr_ticks/cur_anim->ticks_per_sec;
         state = State::STOP;

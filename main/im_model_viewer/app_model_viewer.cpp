@@ -276,7 +276,7 @@ void lim::AppModelViewer::updateImGui()
 		// draw brdf ctrl
 		if(selected_vp_idx != i)
 			continue;
-		Model& md = *scenes[i]->own_mds[0]; 
+		ModelView& md = *scenes[i]->own_mds[0]; 
 		BrdfTestInfo& tInfo = brdf_test_infos[i];
 
 		ImGui::Begin(tInfo.ctrl_name.c_str());
@@ -325,29 +325,52 @@ void lim::AppModelViewer::updateImGui()
 			if( ImGui::Combo("F", &tInfo.idx_F, fStrs, IM_ARRAYSIZE(fStrs)) ) { isInfoChanged = true; }
 		}
 		if( isInfoChanged ) {
-			md.setSetProgToAllMat(makeSetProg(tInfo));
+			md.md_data->setSetProgToAllMat(makeSetProg(tInfo));
 		}
 		if( tInfo.idx_Brdf<2 ) { // phong, blinn phong
 			if( ImGui::SliderFloat("shininess", &tInfo.shininess, 0.5f, 300) ) {
-				for(Material* mat : md.own_materials) {
+				for(Material* mat : md.md_data->own_materials) {
 					mat->Shininess = tInfo.shininess;
 				}
 			}
 		}
 		else { // cook-torrance
 			if( ImGui::SliderFloat("roughness", &tInfo.roughness, 0.015f, 1) ) {
-				for(Material* mat : md.own_materials) {
+				for(Material* mat : md.md_data->own_materials) {
 					mat->Roughness = tInfo.roughness;
 				}
 			}
 			if( ImGui::SliderFloat("metalness", &tInfo.metalness, 0.000f, 1) ) {
-				for(Material* mat : md.own_materials) {
+				for(Material* mat : md.md_data->own_materials) {
 					mat->Metalness = tInfo.metalness;
 				}
 			}
 		}
 		if( ImGui::SliderFloat("ambient light", &tInfo.ambient_int, 0.000, 0.05f) ) {
-			for(Material* mat : md.own_materials) {
+			for(Material* mat : md.md_data->own_materials) {
+				mat->AmbientColor = glm::vec3(1)*tInfo.ambient_int;
+			}
+		}
+
+
+		for(Material* mat : md.md_data->own_materials) {
+			// phong, blinn phong
+			if( tInfo.idx_Brdf<2 ) { 
+				if( ImGui::SliderFloat("shininess", &tInfo.shininess, 0.5f, 300) ) {
+					mat->Shininess = tInfo.shininess;
+				}
+			}
+			// cook-torrance
+			else { 
+				if( ImGui::SliderFloat("roughness", &tInfo.roughness, 0.015f, 1) ) {
+					mat->Roughness = tInfo.roughness;
+				}
+				if( ImGui::SliderFloat("metalness", &tInfo.metalness, 0.000f, 1) ) {
+					mat->Metalness = tInfo.metalness;
+				}
+			}
+
+			if( ImGui::SliderFloat("ambient light", &tInfo.ambient_int, 0.000, 0.05f) ) {
 				mat->AmbientColor = glm::vec3(1)*tInfo.ambient_int;
 			}
 		}

@@ -319,7 +319,7 @@ void lim::render( const IFramebuffer& fb,
             }
             curProg->setUniform("mtx_Model", transform);
             curMesh->drawGL();
-        }, getMtxTf(md->prev_tf));
+        }, getMtxTf(md->tf_prev));
     }
 
     if( isDrawLight ) {

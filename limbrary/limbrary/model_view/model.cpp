@@ -75,10 +75,11 @@ static Transform* findTf(RdNode& dst, const RdNode& src, const Transform* srcTf)
 }
 ModelView& ModelView::operator=(const ModelView& src) {
 	root = src.root;
-	prev_tf = src.prev_tf;
+	tf_prev = src.tf_prev;
 	tf = findTf(root, src.root, src.tf);
 	tf_normalized = findTf(root, src.root, src.tf_normalized);
 	animator = src.animator;
+	md_data = src.md_data;
 	return *this;
 }
 
@@ -86,6 +87,7 @@ ModelView& ModelView::operator=(const ModelView& src) {
 
 
 Model::Model(std::string_view _name): name(_name) {
+	md_data = this;
 }
 Model::~Model() {
 	clear();

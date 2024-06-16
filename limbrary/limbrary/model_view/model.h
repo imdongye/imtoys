@@ -50,15 +50,16 @@ namespace lim
 		void treversal(std::function<void(const Mesh* ms, const Material* mat, const glm::mat4& transform)> callback, const glm::mat4& mtxPrevTf = glm::mat4(1) ) const;
 		void clear();
 	};
-
+	class Model;
 	class ModelView 
 	{
 	public:
 		RdNode root;
-		const Transform* prev_tf = nullptr;
+		const Transform* tf_prev = nullptr;
 		Transform* tf = nullptr;
 		Transform* tf_normalized = nullptr;
 		Animator animator;
+		Model* md_data = nullptr;
 	public:
 		ModelView();
 		virtual ~ModelView();

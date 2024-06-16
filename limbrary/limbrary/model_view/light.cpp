@@ -78,7 +78,7 @@ void LightDirectional::bakeShadowMap(const std::vector<const ModelView*>& mds) c
 		md->root.treversal([&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
 			depthProg.setUniform("mtx_Model", transform);
 			ms->bindAndDrawGL();
-		}, getMtxTf(md->prev_tf) );
+		}, getMtxTf(md->tf_prev) );
 	}
 
 	shadow->map.unbind();

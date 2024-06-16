@@ -68,23 +68,6 @@ void lim::AppSkeletal::update()
 
 	render(viewport.getFb(), viewport.camera, scene);
 }
-void lim::AppSkeletal::drawInspector(RdNode& nd) {
-	ImGui::Text("name : %s", nd.name.c_str());
-	ImGui::Text("childs : %d", nd.childs.size());
-	bool edited = false;
-	edited |= ImGui::DragFloat3("pos", glm::value_ptr(nd.tf.pos), 0.01f);
-	edited |= ImGui::DragFloat3("scale", glm::value_ptr(nd.tf.scale), 0.01f);
-	glm::vec3 rot = glm::degrees(glm::eulerAngles(nd.tf.ori));
-	if(ImGui::DragFloat3("ori", glm::value_ptr(rot), 0.1f)) {
-		edited = true;
-		nd.tf.ori = glm::quat(glm::radians(rot));
-	}
-	if( edited ) {
-		nd.tf.update();
-	}
-	LimGui::Mat4(nd.tf.mtx);
-}
-
 void lim::AppSkeletal::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
@@ -93,48 +76,7 @@ void lim::AppSkeletal::updateImGui()
 
 	viewport.drawImGui();
 
-	ImGui::Begin("bone info");
-	ImGui::Text("nr_bones : %d", model.animator.nr_bones);
-	ImGui::Text("nr_animations : %d", model.animator.animations.size());
-	switch(model.animator.state) {
-	case Animator::State::PLAY: ImGui::Text("state : PLAY"); break;
-	case Animator::State::PAUSE: ImGui::Text("state : PAUSE"); break;
-	case Animator::State::STOP: ImGui::Text("state : STOP"); break;
-	}
-	float progress = model.animator.elapsed_sec / model.animator.duration_sec; 
-	ImGui::ProgressBar(progress);
-
-
-	if(ImGui::Button("Play")) {
-		model.animator.play(0);
-	}
-	ImGui::SameLine();
-	if(ImGui::Button("Pause")) {
-		model.animator.pause();
-	}
-	ImGui::SameLine();
-	if(ImGui::Button("Stop")) {
-		model.animator.stop();
-	}
-	ImGui::SameLine();
-	ImGui::Checkbox("isLoop", &model.animator.is_loop);
-
-	if( ImGui::InputInt("display bone Idx", &display_BoneIdx) ) {
-		model.setSetProgToAllMat(makeSetProg());
-	}
-
-	// if(ImGui::Button("default")) {
-	// 	model.animator.updateDefaultMtxBones();
-	// }
-	std::vector<const char*> anim_list;
-	for(auto& anim : model.animator.animations) {
-		anim_list.push_back(anim.name.c_str());
-	}
-	static int selected_anim = 0;
-	if(ImGui::Combo("animation", &selected_anim, anim_list.data(), anim_list.size())) {
-		model.animator.play(selected_anim);
-	}
-	ImGui::End();
+	LimGui::ModelEditor(model);
 
 	ImGui::Begin("camera");
 	LimGui::Vec3(viewport.camera.position);

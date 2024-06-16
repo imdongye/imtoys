@@ -536,6 +536,7 @@ bool lim::Model::importFromFile(string_view modelPath, bool withAnims)
 		for( uint i=0; i<g_scn->mNumAnimations; i++ ) {
 			convertAnim(animations[i], *(g_scn->mAnimations[i]));
 		}
+		animator.cur_anim = &animations[0];
 	}
 
 	/* set node tree structure */

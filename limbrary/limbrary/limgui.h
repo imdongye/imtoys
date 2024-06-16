@@ -21,7 +21,7 @@ namespace LimGui
     IMGUI_API void Vec3(glm::vec3& v);
     
 	// only one in updateImGui
-    void ModelEditor(ModelView& md);
+    void ModelEditor(lim::ModelView& md);
 }
 
 
