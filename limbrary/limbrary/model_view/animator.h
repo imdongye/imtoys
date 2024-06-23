@@ -55,9 +55,8 @@ namespace lim
         Transform tf;
         int bone_idx = -1;
         std::vector<BoneNode> childs;
-
-        // callback이 true일때까지 dfs.
-        void treversal(std::function<bool(BoneNode& node, const glm::mat4& transform)> callback, const glm::mat4& mtxPrevTf = glm::mat4(1));
+        
+        void treversal(std::function<void(BoneNode& node, const glm::mat4& transform)> callback, const glm::mat4& mtxPrevTf = glm::mat4(1));
         void clear();
     };
 
@@ -77,8 +76,9 @@ namespace lim
         std::vector<Transform*> bone_tfs;
 
         const Animation* cur_anim = nullptr;
-        const Model* model = nullptr;
+        const Model* md_data = nullptr;
         double start_sec, elapsed_sec, duration_sec;
+        double cur_tick = 0.0;
         bool is_loop = false;
 
         std::vector<glm::mat4> mtx_Bones;
@@ -94,10 +94,12 @@ namespace lim
         void clear();
 		Animator& operator=(const Animator& src); // todo default
         
-        void play(const Animation* anim = nullptr );
+        void setAnim(const Animation* anim);
+        void play();
         void pause();
         void stop();
         void setUniformTo(const Program& prog) const;
+        void updateMtxBones();
 
     private:
         void update(float dt);

@@ -12,6 +12,7 @@ static int ms_max_samples = 2;
 lim::AssetLib::AssetLib()
 	: screen_quad(false, false)
 	, small_sphere(8,4,true, false, 0.2f)
+	, thin_cylinder(0.1f)
 {
 	log::pure("init AssetLib\n");
 
@@ -26,6 +27,9 @@ lim::AssetLib::AssetLib()
 
 	ndv_prog.name = "ndv";
 	ndv_prog.attatch("mvp.vs").attatch("ndv.fs").link();
+
+	color_prog.name = "red";
+	color_prog.attatch("mvp.vs").attatch("color.fs").link();
 
 	env_prog = new Program("env");
 	env_prog->attatch("mvp.vs").attatch("env.fs").link();

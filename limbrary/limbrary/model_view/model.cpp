@@ -34,15 +34,28 @@ RdNode* RdNode::makeChild(std::string_view _name) {
 void RdNode::addMsMat(const Mesh* ms, const Material* mat) {
 	meshs_mats.push_back({ms, mat});
 }
-void RdNode::treversal(std::function<void(const Mesh* ms, const Material* mat, const glm::mat4& transform)> callback, const glm::mat4& mtxPrevTf ) const
-{
+void RdNode::treversal(std::function<void(const Mesh* ms, const Material* mat, const glm::mat4& transform)> callback, const glm::mat4& mtxPrevTf ) const {
 	const glm::mat4 curTf = mtxPrevTf * tf.mtx;
 
-	for( auto [ms, mat] : meshs_mats ) {
-		callback(ms, mat, curTf);
+	for( const auto& msset : meshs_mats ) {
+		callback(msset.ms, msset.mat, curTf);
 	}
 	for( const RdNode& child : childs ) {
 		child.treversal(callback, curTf);
+	}
+}
+void RdNode::treversalEnabled(std::function<void(const Mesh* ms, const Material* mat, const glm::mat4& transform)> callback, const glm::mat4& mtxPrevTf ) const {
+	if( !enabled )
+		return;
+	const glm::mat4 curTf = mtxPrevTf * tf.mtx;
+
+	for( const auto& msset : meshs_mats ) {
+		if( msset.enabled ) {
+			callback(msset.ms, msset.mat, curTf);
+		}
+	}
+	for( const RdNode& child : childs ) {
+		child.treversalEnabled(callback, curTf);
 	}
 }
 void RdNode::clear() {
@@ -83,6 +96,18 @@ ModelView& ModelView::operator=(const ModelView& src) {
 	return *this;
 }
 
+const glm::mat4& ModelView::getGlobalTfMtx() const {
+	glm::mat4 mtx = glm::mat4(1);
+	if( tf_prev ) {
+		mtx = tf_prev->mtx;
+	}
+	mtx = mtx * tf->mtx;
+	if( tf_normalized ) {
+		mtx = mtx * tf_normalized->mtx;
+	}
+	return mtx;
+}
+
 
 
 
@@ -98,6 +123,7 @@ void Model::clear() {
 	tf_normalized = nullptr;
 
 	animator.clear();
+	animations.clear();
 
 
 	for( Material* mat : own_materials )
@@ -142,8 +168,8 @@ void Model::setSetProgToAllMat(std::function<void(const Program&)> setProg)
 }
 
 static void setMatInTree(RdNode& root, const Material* mat) {
-	for( auto& [_, dst] : root.meshs_mats ) {
-		dst = mat; 
+	for( auto& msset : root.meshs_mats ) {
+		msset.mat = mat;
 	}
 	for( RdNode& child : root.childs ) {
 		setMatInTree(child, mat);
@@ -232,10 +258,10 @@ static void correctMatTexLink( Material& dst, const Material& src
 }
 static void matchRdTree(RdNode& dst, const RdNode& src, const Model& dstMd, const Model& srcMd) {
 	dst.meshs_mats.reserve(src.meshs_mats.size());
-	for( auto& [srcMs, srcMat] : dst.meshs_mats ) {
-		int msIdx = findIdx(srcMd.own_meshes, (Mesh*)srcMs);
-		int matIdx = findIdx(srcMd.own_materials, (Material*)srcMat);
-		dst.meshs_mats.push_back({dstMd.own_meshes[msIdx], dstMd.own_materials[matIdx]});
+	for( const auto& srcMsset : dst.meshs_mats ) {
+		int msIdx = findIdx(srcMd.own_meshes, (Mesh*)srcMsset.ms);
+		int matIdx = findIdx(srcMd.own_materials, (Material*)srcMsset.mat);
+		dst.meshs_mats.push_back({dstMd.own_meshes[msIdx], dstMd.own_materials[matIdx], srcMsset.enabled});
 	}
 	
 	int nrChilds = src.childs.size();

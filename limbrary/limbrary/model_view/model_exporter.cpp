@@ -237,7 +237,8 @@ namespace
 		dst->mNumMeshes = nrMeshes;
 		dst->mMeshes = new unsigned int[nrMeshes];
 		for( int i=0; i<nrMeshes; i++ ) {
-			dst->mMeshes[i] = findIdx(g_materialed_meshes, src.meshs_mats[i]);
+			auto pair = std::make_pair(src.meshs_mats[i].ms, src.meshs_mats[i].mat);
+			dst->mMeshes[i] = findIdx(g_materialed_meshes, pair);
 		}
 
 		const size_t nrChilds = src.childs.size();
@@ -258,7 +259,7 @@ namespace
 		scn->mNumLights = 0;
 
 		/*
-		assimp에서는 mesh안에 material index가 포함되어있다.
+		assimp에서는 aiNode의 mesh안에 material index가 포함되어있다.
 		하지만 limbrary는 mesh와 material이 독립적이고 node에서 연결시켜주기때문에
 		mesh는 같지만 material이 다른경우 assimp에서는 mesh를 각각 만들어줘야한다.
 		*/

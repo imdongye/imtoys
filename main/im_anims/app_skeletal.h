@@ -24,12 +24,6 @@ namespace lim
 		ViewportWithCamera viewport;
 		Scene scene;
 		Model model;
-		RdNode* cur_nd = nullptr;
-		
-		void drawHierarchy(RdNode& nd);
-		void drawInspector(RdNode& nd);
-		void drawHeierarchy(BoneNode& nd);
-		void drawInspector(BoneNode& nd);
 		void importModel(const char* path);
 
 	public:

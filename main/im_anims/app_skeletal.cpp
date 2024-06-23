@@ -6,15 +6,9 @@
 #include <limbrary/model_view/mesh_maked.h>
 #include <limbrary/limgui.h>
 #include <functional>
+#include <limbrary/asset_lib.h>
 
 using namespace lim;
-
-static int display_BoneIdx = 0;
-static std::function<void(const lim::Program&)> makeSetProg() {
-	return [&](const Program& prog) {
-		prog.setUniform("display_BoneIdx", display_BoneIdx);
-	};
-}
 
 
 void AppSkeletal::importModel(const char* path) {
@@ -23,11 +17,10 @@ void AppSkeletal::importModel(const char* path) {
 	model.tf->pos.y += model.pivoted_scaled_bottom_height;
 	model.tf->update();
 	model.setProgToAllMat(&program);
-	model.setSetProgToAllMat(makeSetProg());
-	cur_nd = &model.root;
+	LimGui::ModelEditorReset();
 }
 lim::AppSkeletal::AppSkeletal() : AppBase(1200, 780, APP_NAME)
-	, viewport("viewport##skeletal", new FramebufferMs())
+	, viewport("viewport##skeletal", new FramebufferTexDepth())
 {
 	LightDirectional* lit = new LightDirectional();
 	scene.addOwn(lit);
@@ -39,8 +32,6 @@ lim::AppSkeletal::AppSkeletal() : AppBase(1200, 780, APP_NAME)
 	
 	importModel("assets/models/jump.fbx");
 	scene.addRef(&model);
-
-	// model.animator.play(0);
 
 	Model* floor = new Model();
 	Mesh* ms = floor->addOwn(new MeshPlane(1));
@@ -58,6 +49,8 @@ lim::AppSkeletal::AppSkeletal() : AppBase(1200, 780, APP_NAME)
 lim::AppSkeletal::~AppSkeletal()
 {
 }
+static bool drawOffset = true;
+extern BoneNode* cur_bone;
 void lim::AppSkeletal::update() 
 {
 	glEnable(GL_DEPTH_TEST);
@@ -67,6 +60,35 @@ void lim::AppSkeletal::update()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	render(viewport.getFb(), viewport.camera, scene);
+
+
+	const IFramebuffer& fb = viewport.getFb();
+	glBindFramebuffer(GL_FRAMEBUFFER, fb.fbo);
+	glViewport(0, 0, fb.width, fb.height);
+	glDisable(GL_DEPTH_TEST);
+	Program& prog = AssetLib::get().color_prog;
+	prog.use();
+	viewport.camera.setUniformTo(prog);
+	glm::mat4 globalMtx = model.getGlobalTfMtx();
+	model.animator.bone_root.treversal([&](const BoneNode& node, const glm::mat4& transform) {
+		int boneIdx = node.bone_idx;
+        if( boneIdx<0 )
+            return;
+		/* bone tf */
+		if( !drawOffset) {
+			prog.setUniform("mtx_Model", globalMtx * transform);
+		}
+		/* offset */
+		else {
+			glm::mat4 local = glm::inverse(model.bone_offsets[boneIdx]);
+			prog.setUniform("mtx_Model", globalMtx * local);
+		}
+
+		prog.setUniform("color", (cur_bone == &node) ? glm::vec3(1, 0, 0) : glm::vec3(0, 0, 1));
+		AssetLib::get().sphere.bindAndDrawGL();
+	});
+	glEnable(GL_DEPTH_TEST);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 void lim::AppSkeletal::updateImGui()
 {
@@ -78,8 +100,8 @@ void lim::AppSkeletal::updateImGui()
 
 	LimGui::ModelEditor(model);
 
-	ImGui::Begin("camera");
-	LimGui::Vec3(viewport.camera.position);
+	ImGui::Begin("skeletal ctrl");
+	ImGui::Checkbox("draw offset", &drawOffset);
 	ImGui::End();
 }
 void lim::AppSkeletal::dndCallback(int cnt, const char **paths) {

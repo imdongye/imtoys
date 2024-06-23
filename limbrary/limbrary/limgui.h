@@ -13,6 +13,8 @@
 #include <imgui.h>
 #include <glm/glm.hpp>
 #include <limbrary/model_view/model.h>
+#include <limbrary/framebuffer.h>
+#include <limbrary/model_view/camera.h>
 
 namespace LimGui
 {
@@ -22,6 +24,7 @@ namespace LimGui
     
 	// only one in updateImGui
     void ModelEditor(lim::ModelView& md);
+    void ModelEditorReset();
 }
 
 

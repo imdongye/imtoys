@@ -1,6 +1,7 @@
 #include <limbrary/limgui.h>
 #include <imgui.h>
 #include <imgui_internal.h>
+#include <limbrary/asset_lib.h>
 
 using namespace ImGui;
 using namespace lim;
@@ -57,9 +58,11 @@ void LimGui::Vec3(glm::vec3& v) {
 }
 
 
+
 static ModelView* cur_md = nullptr;
 static RdNode* cur_nd = nullptr;
-static BoneNode* cur_bone = nullptr;
+BoneNode* cur_bone = nullptr;
+static RdNode::MsSet* cur_msset = nullptr;
 
 static void drawHierarchy(RdNode& nd) {
 	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_None;
@@ -75,17 +78,34 @@ static void drawHierarchy(RdNode& nd) {
 	
 	if(ImGui::TreeNodeEx(&nd, flags, nd.name.c_str())) {
 		if( cur_nd!=&nd && ImGui::IsItemClicked(0) ) {
-			cur_bone = nullptr;
 			cur_nd = &nd;
+			cur_bone = nullptr;
+			cur_msset = nullptr;
 		}
-		for(auto& [ms, mat]: nd.meshs_mats) {
-			ImGui::BulletText("%s\n%s", ms->name.c_str(), mat->name.c_str());
+		for(auto& msset: nd.meshs_mats) {
+			ImGuiTreeNodeFlags msflags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_Bullet;
+			if( cur_msset == &msset ) {
+				msflags |= ImGuiTreeNodeFlags_Selected;
+			}
+			ImGui::TreeNodeEx(&msset, msflags, "%s", msset.ms->name.c_str());
+			if( cur_msset!=&msset && ImGui::IsItemClicked(0) ) {
+				cur_nd = nullptr;
+				cur_bone = nullptr;
+				cur_msset = &msset;
+			}
+			ImGui::TreePop();
 		}
 		for(auto& c : nd.childs) {
 			drawHierarchy(c);
 		}
 		ImGui::TreePop();
 	}
+}
+static int display_BoneIdx = 0;
+static std::function<void(const lim::Program&)> makeSetProg() {
+	return [&](const Program& prog) {
+		prog.setUniform("display_BoneIdx", display_BoneIdx);
+	};
 }
 static void drawHierarchy(BoneNode& nd) {
 	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_None;
@@ -101,8 +121,15 @@ static void drawHierarchy(BoneNode& nd) {
 	
 	if(ImGui::TreeNodeEx(&nd, flags, nd.name.c_str())) {
 		if( cur_bone!=&nd && ImGui::IsItemClicked(0) ) {
+			if( nd.bone_idx>=0 ) {
+				display_BoneIdx = nd.bone_idx;
+			} else {
+				display_BoneIdx = -2;
+			}
+			cur_md->md_data->setSetProgToAllMat(makeSetProg());
 			cur_nd = nullptr;
 			cur_bone = &nd;
+			cur_msset = nullptr;
 		}
 		for(auto& c : nd.childs) {
 			drawHierarchy(c);
@@ -111,10 +138,12 @@ static void drawHierarchy(BoneNode& nd) {
 	}
 }
 static void drawInspector() {
+	ImGui::Begin("inspector");
 	if( cur_nd ) {
 		RdNode& nd = *cur_nd;
 		ImGui::Text("name : %s", nd.name.c_str());
 		ImGui::Text("childs : %d", nd.childs.size());
+		ImGui::Checkbox("enabled", &nd.enabled);
 		bool edited = false;
 		edited |= ImGui::DragFloat3("pos", glm::value_ptr(nd.tf.pos), 0.01f);
 		edited |= ImGui::DragFloat3("scale", glm::value_ptr(nd.tf.scale), 0.01f);
@@ -142,47 +171,61 @@ static void drawInspector() {
 		}
 		if( edited ) {
 			nd.tf.update();
+			cur_md->animator.updateMtxBones();
 		}
 		LimGui::Mat4(nd.tf.mtx);
 	}
+	else if( cur_msset ) {
+		const Mesh* ms = cur_msset->ms;
+		const Material* mat = cur_msset->mat;
+		ImGui::Text("name : %s", ms->name.c_str());
+		ImGui::Text("material : %s", mat->name.c_str());
+		ImGui::Checkbox("enabled", &cur_msset->enabled);
+	}
+	ImGui::End();
 }
-static void drawAnimator(ModelView& md) {
-	ImGui::Text("#bones in mesh : %d", md.animator.mtx_Bones.size());
-	ImGui::Text("#bones in anim : %d", md.animator.cur_anim->tracks.size());
-	switch(md.animator.state) {
+static void drawAnimator(Animator& animator) {
+	if( animator.cur_anim == nullptr )
+		return;
+	
+	ImGui::Begin("animator");
+	ImGui::Text("#bones in mesh : %d", animator.mtx_Bones.size());
+	switch(animator.state) {
 	case Animator::State::PLAY: ImGui::Text("state : PLAY"); break;
 	case Animator::State::PAUSE: ImGui::Text("state : PAUSE"); break;
 	case Animator::State::STOP: ImGui::Text("state : STOP"); break;
 	}
-	float progress = md.animator.elapsed_sec / md.animator.duration_sec; 
+	float progress = animator.elapsed_sec / animator.duration_sec; 
 	ImGui::ProgressBar(progress);
-
+	ImGui::Text("%d/%d", (int)animator.cur_tick, (int)animator.cur_anim->nr_ticks);
 
 	if(ImGui::Button("Play")) {
-		md.animator.play(0);
+		animator.play();
 	}
 	ImGui::SameLine();
 	if(ImGui::Button("Pause")) {
-		md.animator.pause();
+		animator.pause();
 	}
 	ImGui::SameLine();
 	if(ImGui::Button("Stop")) {
-		md.animator.stop();
+		animator.stop();
 	}
 	ImGui::SameLine();
-	ImGui::Checkbox("isLoop", &md.animator.is_loop);
+	ImGui::Checkbox("isLoop", &animator.is_loop);
 
 	// if(ImGui::Button("default")) {
-	// 	md.animator.updateDefaultMtxBones();
+	// 	animator.updateDefaultMtxBones();
 	// }
 	std::vector<const char*> anim_list;
-	for(auto& anim : md.md_data->animations) {
+	for(auto& anim : animator.md_data->animations) {
 		anim_list.push_back(anim.name.c_str());
 	}
 	static int anim_idx = 0;
 	if(ImGui::Combo("animation", &anim_idx, anim_list.data(), anim_list.size())) {
-		md.animator.play(&md.md_data->animations[anim_idx]);
+		animator.setAnim(&animator.md_data->animations[anim_idx]);
 	}
+	ImGui::Text("#tracks in anim : %d", animator.cur_anim->tracks.size());
+	ImGui::End();
 }
 
 void LimGui::ModelEditor(ModelView& md) {
@@ -190,18 +233,19 @@ void LimGui::ModelEditor(ModelView& md) {
 		cur_md = &md;
 		cur_nd = nullptr;
 		cur_bone = nullptr;
+		cur_msset = nullptr;
 	}
 
 	ImGui::Begin("hierarchy");
 	drawHierarchy(md.root);
+	ImGui::Separator();
 	drawHierarchy(md.animator.bone_root);
 	ImGui::End();
 
-	ImGui::Begin("inspector");
 	drawInspector();
-	ImGui::End();
 
-	ImGui::Begin("animator");
-	drawAnimator(md);
-	ImGui::End();
+	drawAnimator(md.animator);
+}
+void LimGui::ModelEditorReset() {
+	cur_md = nullptr;
 }

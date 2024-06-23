@@ -32,11 +32,13 @@ namespace lim
 		Program tex3d_to_quad_prog;
 		Program depth_prog;
 		Program ndv_prog;
+		Program color_prog;
 		
 		MeshQuad screen_quad; // only poss
 		MeshSphere sphere;
 		MeshSphere small_sphere;
 		MeshCube cube;
+		MeshCylinder thin_cylinder;
 
 	private:
 		AssetLib(const AssetLib&)=delete;

@@ -40,14 +40,21 @@ Model에 의존하지 않고 RdNode에 의존하는 Scene
 namespace lim
 {
 	struct RdNode {
+		struct MsSet {
+			const Mesh* ms = nullptr;
+			const Material* mat = nullptr;
+			bool enabled = true;
+		};
 		std::string name = "nonamed node";
         Transform tf;
-		std::vector<std::pair<const Mesh*, const Material*>> meshs_mats;
         std::vector<RdNode> childs;
+		bool enabled = true;
+		std::vector<MsSet> meshs_mats;
 
 		RdNode* makeChild(std::string_view name="nonamed node");
 		void addMsMat(const Mesh* ms, const Material* mat);
 		void treversal(std::function<void(const Mesh* ms, const Material* mat, const glm::mat4& transform)> callback, const glm::mat4& mtxPrevTf = glm::mat4(1) ) const;
+		void treversalEnabled(std::function<void(const Mesh* ms, const Material* mat, const glm::mat4& transform)> callback, const glm::mat4& mtxPrevTf = glm::mat4(1) ) const;
 		void clear();
 	};
 	class Model;
@@ -66,6 +73,8 @@ namespace lim
 		// make ref with model
 		ModelView(const ModelView& src);
 		ModelView& operator=(const ModelView& src);
+		
+		const glm::mat4& getGlobalTfMtx() const;
 	};
 
 	class Model: public ModelView

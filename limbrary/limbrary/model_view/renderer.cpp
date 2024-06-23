@@ -282,7 +282,7 @@ void lim::render( const IFramebuffer& fb,
 
     for( const ModelView* md : scn.models ) {
         isModelChanged = true;
-        md->root.treversal([&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
+        md->root.treversalEnabled([&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
             if( curMat != mat ) {
                 curMat = mat;
                 isMatChanged = true;

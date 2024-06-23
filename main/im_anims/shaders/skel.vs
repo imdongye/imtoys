@@ -1,5 +1,5 @@
 #version 410
-const int MAX_BONES = 100;
+const int MAX_BONES = 200;
 const int MAX_BONE_PER_VERT = 4;
 
 layout(location=0) in vec3 aPos;

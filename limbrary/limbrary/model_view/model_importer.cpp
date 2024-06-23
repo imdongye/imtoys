@@ -297,18 +297,19 @@ static Mesh* convertMesh(const aiMesh* aiMs)
 			}
 		}
 		for( int i=0; i<aiMs->mNumBones; i++ ) {
-			std::string boneName = aiMs->mBones[i]->mName.C_Str();
+			const aiBone* aiBone = aiMs->mBones[i];
+			std::string boneName = aiBone->mName.C_Str();
 			int boneIdx;
 			if( !isIn(g_model->bone_name_to_idx, boneName) ) {
 				boneIdx = g_model->nr_bones;
 				g_model->nr_bones++;
 				g_model->bone_name_to_idx[boneName] = boneIdx;
-				g_model->bone_offsets.push_back(toGLM(aiMs->mBones[i]->mOffsetMatrix));
+				g_model->bone_offsets.push_back(toGLM(aiBone->mOffsetMatrix));
 			} else {
 				boneIdx = g_model->bone_name_to_idx[boneName];
 			}
-			auto aiWeights = aiMs->mBones[i]->mWeights;
-			auto nrWeights = aiMs->mBones[i]->mNumWeights;
+			auto aiWeights = aiBone->mWeights;
+			auto nrWeights = aiBone->mNumWeights;
 			
 			for( int weightIdx=0; weightIdx<nrWeights; weightIdx++ ) {
 				int vertIdx = aiWeights[weightIdx].mVertexId;
@@ -332,11 +333,14 @@ static Mesh* convertMesh(const aiMesh* aiMs)
 		ms.tris.reserve( aiMs->mNumFaces );
 		for( GLuint i=0; i<aiMs->mNumFaces; i++ ) {
 			const aiFace& face = aiMs->mFaces[i];
-			if( face.mNumIndices !=3 ) {
+			if( face.mNumIndices == 3 ) {
+				ms.tris.push_back( uvec3(face.mIndices[0], face.mIndices[1], face.mIndices[2]));
+			} else if( face.mNumIndices == 4 ) {
+				ms.tris.push_back( uvec3(face.mIndices[0], face.mIndices[1], face.mIndices[3]));
+				ms.tris.push_back( uvec3(face.mIndices[3], face.mIndices[2], face.mIndices[1]));
+			} else {
 				nrNotTriFace++;
-				continue;
 			}
-			ms.tris.push_back( uvec3(face.mIndices[0], face.mIndices[1], face.mIndices[2]));
 		}
 		g_model->nr_triangles += ms.tris.size();
 	}
@@ -356,32 +360,37 @@ static void convertAnim(Animation& dst, const aiAnimation& src) {
 
 	dst.tracks.resize(src.mNumChannels);
 	for( uint i=0; i<src.mNumChannels; i++ ) {
-		const aiNodeAnim& aiTrack = *(src.mChannels[i]);
+		const aiNodeAnim& srcTrack = *(src.mChannels[i]);
 		Animation::Track& track = dst.tracks[i];
-		track.name = aiTrack.mNodeName.C_Str();
+		track.name = srcTrack.mNodeName.C_Str();
 		track.bone_tf_idx = -1; // after convertTree
 
-		track.nr_poss = aiTrack.mNumPositionKeys;
+		track.nr_poss = srcTrack.mNumPositionKeys;
 		track.poss.resize(track.nr_poss);
 		for( uint j=0; j<track.nr_poss; j++ ) {
-			const aiVectorKey& k = aiTrack.mPositionKeys[j];
+			const aiVectorKey& k = srcTrack.mPositionKeys[j];
 			track.poss[j] = {float(k.mTime), toGLM(k.mValue)};
 		}
-		track.nr_scales = aiTrack.mNumScalingKeys;
+		track.nr_scales = srcTrack.mNumScalingKeys;
 		track.scales.resize(track.nr_scales);
 		for( uint j=0; j<track.nr_scales; j++ ) {
-			const aiVectorKey& k = aiTrack.mScalingKeys[j];
+			const aiVectorKey& k = srcTrack.mScalingKeys[j];
 			track.scales[j] = {float(k.mTime), toGLM(k.mValue)};
 		}
-		track.nr_oris = aiTrack.mNumRotationKeys;
+		track.nr_oris = srcTrack.mNumRotationKeys;
 		track.oris.resize(track.nr_oris);
 		for( uint j=0; j<track.nr_oris; j++ ) {
-			const aiQuatKey& k = aiTrack.mRotationKeys[j];
+			const aiQuatKey& k = srcTrack.mRotationKeys[j];
 			track.oris[j] = {float(k.mTime), toGLM(k.mValue)};
 		}
 	}
 }
-
+static bool isEndPostfix(std::string name) {
+	if( name.length() < 4 )
+		return false;
+	name = name.substr(name.size()-4, 4);
+	return name=="_end";
+}
 static void convertBoneTree(BoneNode& dst, const aiNode* src) {
 	dst.name = src->mName.C_Str();
 
@@ -407,8 +416,12 @@ static void convertBoneTree(BoneNode& dst, const aiNode* src) {
 
 	dst.childs.reserve(src->mNumChildren);
 	for( size_t i=0; i< src->mNumChildren; i++ ) {
+		aiNode* aiChild = src->mChildren[i];
+		// if(isEndPostfix(aiChild->mName.C_Str())) {
+		// 	continue;
+		// }
 		dst.childs.push_back({});
-		convertBoneTree( dst.childs.back(), src->mChildren[i]);
+		convertBoneTree( dst.childs.back(), aiChild );
 	}
 }
 static bool isBoneNode(std::string name) {
@@ -424,25 +437,30 @@ static bool isBoneNode(std::string name) {
 	}
 	return false;
 }
+static bool is_find_bone_node = false;
+static mat4 global_transform = mat4(1);
 static void convertRdTree(RdNode& dst, const aiNode* src) 
 {
 	dst.name = src->mName.C_Str();
 	dst.tf.mtx = toGLM(src->mTransformation);
 	dst.tf.decomposeMtx();
+	if( !is_find_bone_node ) {
+		global_transform = global_transform * dst.tf.mtx;
+	}
 
 	for( size_t i=0; i<src->mNumMeshes; i++ ) {
 		const int msIdx = src->mMeshes[i];
 		const aiMesh* aiMs = g_scn->mMeshes[msIdx];
 		const Material* mat = g_model->own_materials[aiMs->mMaterialIndex];
-		dst.meshs_mats.push_back({g_model->own_meshes[msIdx], mat});
+		dst.meshs_mats.push_back({g_model->own_meshes[msIdx], mat, true});
 	}
 
 	dst.childs.reserve(src->mNumChildren);
 	for( size_t i=0; i< src->mNumChildren; i++ ) {
 		aiNode* aiChild = src->mChildren[i];
-		if( isBoneNode(aiChild->mName.C_Str()) ) {
-			assert( g_animator->bone_root.name=="empty" ); // bone root가 두개일 때
-			convertBoneTree(g_animator->bone_root, src);
+		if( !is_find_bone_node && isBoneNode(aiChild->mName.C_Str()) ) {
+			is_find_bone_node = true;
+			convertBoneTree(g_animator->bone_root, aiChild);
 			continue;
 		}
 		dst.childs.push_back({});
@@ -513,7 +531,7 @@ bool lim::Model::importFromFile(string_view modelPath, bool withAnims)
 	aiReleasePropertyStore(props);
 	Assimp::DefaultLogger::kill();
 	ai_backup_flags = g_scn->mFlags;
-	log::pure("done! read file with assimp in %.2fsec\n", glfwGetTime()-elapsedTime);
+	log::pure("read file with assimp in %.2fsec\n", glfwGetTime()-elapsedTime);
 
 	/* import mats */
 	elapsedTime = glfwGetTime();
@@ -527,23 +545,41 @@ bool lim::Model::importFromFile(string_view modelPath, bool withAnims)
 	for( GLuint i=0; i<g_scn->mNumMeshes; i++ ) {
 		own_meshes.push_back(convertMesh(g_scn->mMeshes[i]));
 	}
-	g_animator->init(this);
 	withAnims = (g_animator!=nullptr);
 
 	/* import anims( bone-2 ) */
 	if( withAnims ) {
+		g_animator->init(this);
 		animations.resize(g_scn->mNumAnimations);
 		for( uint i=0; i<g_scn->mNumAnimations; i++ ) {
 			convertAnim(animations[i], *(g_scn->mAnimations[i]));
 		}
-		animator.cur_anim = &animations[0];
+		animator.setAnim(&animations[0]);
 	}
 
-	/* set node tree structure */
+	/* set node tree structure (bone-3,4) */
 	animator.bone_root.name = "empty";
+	is_find_bone_node = false;
+	global_transform = mat4(1);
 	convertRdTree(root, g_scn->mRootNode);
+	if( withAnims ) {
 
-	/* bone-3,4 */
+		// mat4 invGlobalTf = inverse(global_transform);
+		// for( mat4& offset : bone_offsets ) {
+		// 	offset = global_transform * offset;
+		// }
+
+
+		// animator.bone_root.treversal([&](const BoneNode& node, const glm::mat4& transform) {
+		// 	int boneIdx = node.bone_idx;
+		// 	if( boneIdx<0 )
+		// 		return;
+		// 	bone_offsets[boneIdx] = inverse(transform);
+		// });
+
+		// g_animator->updateMtxBones();
+	}
+
 	updateNrAndBoundary();
 
 
