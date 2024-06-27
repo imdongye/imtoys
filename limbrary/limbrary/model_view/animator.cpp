@@ -148,7 +148,7 @@ void Animator::update(float dt) {
             v1 = track.poss[idx-1].value;
             v2 = track.poss[idx].value;
             vDt = v2 - v1;
-            nodeTf.pos = v1 + dt * factor;
+            nodeTf.pos = v1 + vDt * factor;
         } else {
             nodeTf.pos = track.poss[0].value;
         }

@@ -174,6 +174,10 @@ static void drawInspector() {
 			cur_md->animator.updateMtxBones();
 		}
 		LimGui::Mat4(nd.tf.mtx);
+		ImGui:Text("bone_idx : %d", nd.bone_idx);
+		if( nd.bone_idx>=0 ) {
+			LimGui::Mat4(cur_md->md_data->bone_offsets[nd.bone_idx]);
+		}
 	}
 	else if( cur_msset ) {
 		const Mesh* ms = cur_msset->ms;
