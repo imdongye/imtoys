@@ -564,19 +564,19 @@ bool lim::Model::importFromFile(string_view modelPath, bool withAnims)
 	convertRdTree(root, g_scn->mRootNode);
 	if( withAnims ) {
 
-		mat4 invGlobalTf = inverse(global_transform);
-		for( mat4& offset : bone_offsets ) {
-			// offset = offset*global_transform;
-			offset = offset*scale(vec3(1.f,1.04f,1.f));
-		}
+		/* sometimes defualt offset mtx is wrong */
+		// mat4 invGlobalTf = inverse(global_transform);
+		// for( mat4& offset : bone_offsets ) {
+		// 	offset = offset*global_transform;
+		// }
 
 
-		// animator.bone_root.treversal([&](const BoneNode& node, const glm::mat4& transform) {
-		// 	int boneIdx = node.bone_idx;
-		// 	if( boneIdx<0 )
-		// 		return;
-		// 	bone_offsets[boneIdx] = inverse(transform);
-		// });
+		animator.bone_root.treversal([&](const BoneNode& node, const glm::mat4& transform) {
+			int boneIdx = node.bone_idx;
+			if( boneIdx<0 )
+				return;
+			bone_offsets[boneIdx] = inverse(transform);
+		});
 
 		g_animator->updateMtxBones();
 	}

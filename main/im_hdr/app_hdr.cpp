@@ -58,6 +58,15 @@ namespace lim
 	}
 	void AppHdr::update()
 	{
+		// clear backbuffer
+		glEnable(GL_DEPTH_TEST);
+		glDisable(GL_MULTISAMPLE);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glViewport(0, 0, fb_width, fb_height);
+		glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		
 		for( int i=0; i<imgs.size(); i++ ) {
 			if( viewports[i]->is_opened == false ) {
 				delete imgs[i]; delete viewports[i];
@@ -69,14 +78,7 @@ namespace lim
 			//texIDToFramebuffer(imgs[i]->tex_id, *viewports[i]->getFb(), 1.f);
 		}
 
-		// clear backbuffer
-		glEnable(GL_DEPTH_TEST);
-		glDisable(GL_MULTISAMPLE);
-
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glViewport(0, 0, fb_width, fb_height);
-		glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		
 		
 	}
 	void AppHdr::updateImGui()

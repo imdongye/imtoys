@@ -91,8 +91,8 @@ ModelView& ModelView::operator=(const ModelView& src) {
 	tf_prev = src.tf_prev;
 	tf = findTf(root, src.root, src.tf);
 	tf_normalized = findTf(root, src.root, src.tf_normalized);
-	animator = src.animator;
 	md_data = src.md_data;
+	animator = src.animator;
 	return *this;
 }
 
@@ -257,11 +257,12 @@ static void correctMatTexLink( Material& dst, const Material& src
 	}
 }
 static void matchRdTree(RdNode& dst, const RdNode& src, const Model& dstMd, const Model& srcMd) {
-	dst.meshs_mats.reserve(src.meshs_mats.size());
-	for( const auto& srcMsset : dst.meshs_mats ) {
+	int nr_msmats = src.meshs_mats.size();
+	for( int i=0 ; i<nr_msmats; i++ ) {
+		const RdNode::MsSet& srcMsset = src.meshs_mats[i];
 		int msIdx = findIdx(srcMd.own_meshes, (Mesh*)srcMsset.ms);
 		int matIdx = findIdx(srcMd.own_materials, (Material*)srcMsset.mat);
-		dst.meshs_mats.push_back({dstMd.own_meshes[msIdx], dstMd.own_materials[matIdx], srcMsset.enabled});
+		dst.meshs_mats[i] = {dstMd.own_meshes[msIdx], dstMd.own_materials[matIdx], srcMsset.enabled};
 	}
 	
 	int nrChilds = src.childs.size();
@@ -273,6 +274,7 @@ void Model::copyFrom(const Model& src) {
 	clear();
 	ModelView::operator=(src);
 
+	md_data = this;
 	name = src.name;
 	path = src.path;
 

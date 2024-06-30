@@ -46,9 +46,6 @@ namespace
 	}
 	void loadFromGlobal(lim::Mesh& mesh)
 	{
-		mesh.poss.clear();
-		mesh.nors.clear();
-		mesh.uvs.clear();
 		mesh.poss.resize(Simplify::vertices.size());
 		if( hasNormal )
 			mesh.nors.resize(Simplify::vertices.size());
@@ -61,7 +58,6 @@ namespace
 		}
 
 		// make triangles & edge
-		mesh.tris.clear();
 		mesh.tris.resize( Simplify::triangles.size() );
 
 		for( int i=0; i<Simplify::triangles.size(); i++ ) {

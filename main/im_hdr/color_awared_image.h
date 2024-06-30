@@ -658,7 +658,7 @@ RAW bit :)");
 			prog.setUniform("chromaticAdaptation", chromatic_adaptation);
 			prog.setUniform("PCS2RGB", PCS2RGB);
 
-			AssetLib::get().screen_quad.drawGL();
+			AssetLib::get().screen_quad.bindAndDrawGL();
 
 			fb.unbind();
 		}

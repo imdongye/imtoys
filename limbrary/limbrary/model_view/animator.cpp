@@ -22,6 +22,8 @@ void BoneNode::clear() {
 Animator::Animator() {
 }
 void Animator::init(const Model* md) {
+    if( !md )
+        return;
     md_data = md;
     mtx_Bones.resize(md_data->nr_bones);
     if( !AssetLib::get().app->update_hooks.isIn(this) ) {

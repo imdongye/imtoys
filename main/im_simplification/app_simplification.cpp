@@ -157,8 +157,6 @@ void lim::AppSimplification::doSimplifyModel(float lived_pct, int version, int a
 	Model* srcMd = models[src_vp_idx];
 	Model* dstMd = models[dst_vp_idx];
 
-	if( dstMd != nullptr )
-		delete dstMd;
 	dstMd->copyFrom(*srcMd);
 
 	simplifyModel(*dstMd, lived_pct, version, agressiveness, verbose);
