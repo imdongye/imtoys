@@ -11,7 +11,7 @@ static int ms_max_samples = 2;
 
 lim::AssetLib::AssetLib()
 	: screen_quad(false, false)
-	, small_sphere(8,4,true, false, 0.2f)
+	, small_sphere( 0.2f, 8,4,true, false)
 	, thin_cylinder(0.1f)
 {
 	log::pure("init AssetLib\n");

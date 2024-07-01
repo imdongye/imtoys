@@ -57,11 +57,11 @@ MeshQuad::MeshQuad(bool genNors, bool genUvs)
 	initGL();
 }
 
-MeshPlane::MeshPlane(int nrSlices, bool genNors, bool genUvs)
+MeshPlane::MeshPlane(float radius, int nrSlices, bool genNors, bool genUvs)
 {
 	name = fmtStrToBuf("plane_s%d", nrSlices);
 	
-	const float length = 2.0f;
+	const float length = radius*2;
 	const float start = -length / 2.f;
 	const float step = length / nrSlices;
 	const vec3 up = {0, 1, 0};
@@ -149,7 +149,7 @@ MeshCube::MeshCube(bool genNors, bool genUvs)
 
 // From: http://www.songho.ca/opengl/gl_sphere.html
 // texture coord가 다른 같은 위치의 vertex가 많음
-MeshSphere::MeshSphere(int nrSlices, int nrStacks, bool genNors, bool genUvs, float radius)
+MeshSphere::MeshSphere(float radius, int nrSlices, int nrStacks, bool genNors, bool genUvs)
 {
 	name = fmtStrToBuf("sphere_sl%d_st%d", nrSlices, nrStacks);
 

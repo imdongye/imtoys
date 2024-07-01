@@ -37,7 +37,7 @@ namespace lim
 
 
 		/* gen models */
-		addMeshToScene(new MeshSphere(10, 25));
+		addMeshToScene(new MeshSphere(1.f, 10, 25));
 		addMeshToScene(new MeshEnvSphere(10));
 		addMeshToScene(new MeshDonut(50, 25));
 		addMeshToScene(new MeshCapsule(50, 25));

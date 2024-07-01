@@ -4,6 +4,8 @@
 
 using namespace lim;
 
+const lim::Program* lim::g_cur_prog = nullptr;
+
 static bool checkCompileErrors(GLuint shader, std::string_view path)
 {
 	GLint success;
@@ -158,6 +160,7 @@ const Program& Program::use() const
 	}
 	glUseProgram(pid);
 	cur_available_slot = 0;
+	g_cur_prog = this;
 	return *this;
 }
 // From: https://www.youtube.com/watch?v=nBB0LGSIm5Q

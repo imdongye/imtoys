@@ -35,6 +35,9 @@ Todo:
 
 namespace lim
 {
+	class Program;
+	extern const Program* g_cur_prog;
+
 	class Program
 	{
 	public:

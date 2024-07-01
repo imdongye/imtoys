@@ -4,15 +4,16 @@
 #include <limbrary/log.h>
 #include <imgui.h>
 
+using namespace lim;
 
-lim::AppTemplate::AppTemplate() : AppBase(1200, 780, APP_NAME)
+AppTemplate::AppTemplate() : AppBase(1200, 780, APP_NAME)
 {
 	
 }
-lim::AppTemplate::~AppTemplate()
+AppTemplate::~AppTemplate()
 {
 }
-void lim::AppTemplate::update() 
+void AppTemplate::update() 
 {
 	glEnable(GL_DEPTH_TEST);
 
@@ -21,7 +22,7 @@ void lim::AppTemplate::update()
 	glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
-void lim::AppTemplate::updateImGui()
+void AppTemplate::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
 
@@ -33,14 +34,14 @@ void lim::AppTemplate::updateImGui()
 	ImGui::Text("fb size  : %d %d", fb_width, fb_height);
 	ImGui::End();
 }
-void lim::AppTemplate::keyCallback(int key, int scancode, int action, int mods)
+void AppTemplate::keyCallback(int key, int scancode, int action, int mods)
 {
 	log::pure("%d\n", key);
 	log::pure("%d\n", key);
 	log::warn("%d\n", key);
 	log::err("%d\n", key);
 }
-void lim::AppTemplate::cursorPosCallback(double xPos, double yPos)
+void AppTemplate::cursorPosCallback(double xPos, double yPos)
 {
 	static double xOld, yOld, xOff, yOff = 0;
 	xOff = xPos - xOld;

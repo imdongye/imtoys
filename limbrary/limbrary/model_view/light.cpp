@@ -63,7 +63,7 @@ void LightDirectional::setShadowEnabled(bool enabled) {
 	shadow->Enabled = enabled;
 }
 
-void LightDirectional::bakeShadowMap(const std::vector<const ModelView*>& mds) const
+void LightDirectional::bakeShadowMap(std::function<void(const Program& sProg)> draw) const
 {
 	if(!shadow || !shadow->Enabled)
 		return;
@@ -73,14 +73,9 @@ void LightDirectional::bakeShadowMap(const std::vector<const ModelView*>& mds) c
 	depthProg.use();
 	depthProg.setUniform("mtx_View", shadow->mtx_View);
 	depthProg.setUniform("mtx_Proj", shadow->mtx_Proj);
-            
-	for( const ModelView* md : mds ) {
-		md->root.treversal([&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
-			depthProg.setUniform("mtx_Model", transform);
-			ms->bindAndDrawGL();
-		}, getMtxTf(md->tf_prev) );
-	}
 
+	draw(depthProg);
+	
 	shadow->map.unbind();
 
 	glBindTexture(GL_TEXTURE_2D, shadow->map.getRenderedTexId());

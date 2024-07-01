@@ -263,7 +263,14 @@ void lim::render( const IFramebuffer& fb,
                 const bool isDrawLight )
 {
     for( const ILight* lit : scn.lights ) {
-        lit->bakeShadowMap(scn.models);
+        lit->bakeShadowMap([&scn](const Program& sProg) {
+            for( const ModelView* md : scn.models ) {
+                md->root.treversal([&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
+                    sProg.setUniform("mtx_Model", transform);
+                    ms->bindAndDrawGL();
+                }, getMtxTf(md->tf_prev) );
+            }
+        });
     }
 
     fb.bind();

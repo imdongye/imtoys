@@ -16,6 +16,7 @@ shadow사용할때 flustum크기 시야와 오브젝트 고려해서 잘 조절�
 
 #include "../framebuffer.h"
 #include <glm/glm.hpp>
+#include <functional>
 #include "../program.h"
 #include "model.h"
 
@@ -48,7 +49,7 @@ namespace lim
 		virtual ~ILight() = default;
 
 		virtual void setShadowEnabled(bool enabled) = 0;
-		virtual void bakeShadowMap(const std::vector<const ModelView*>& mds) const = 0;
+		virtual void bakeShadowMap(std::function<void(const Program& sProg)> draw) const = 0;
 		virtual void setUniformTo(const Program& prog) const = 0;
 
 	};
@@ -85,7 +86,7 @@ namespace lim
 		LightDirectional();
 		~LightDirectional();
 		virtual void setShadowEnabled(bool enabled) override;
-		virtual void bakeShadowMap(const std::vector<const ModelView*>& mds) const override;
+		virtual void bakeShadowMap(std::function<void(const Program& sProg)> draw) const override;
 		virtual void setUniformTo(const Program& prog) const override;
 	};
 	

@@ -30,6 +30,8 @@
 #include "im_mine_sweeper/app_mine_sweeper.h"
 #include "im_model_viewer/app_model_viewer.h"
 #include "im_anims/app_skeletal.h"
+#include "im_anims/app_particle.h"
+
 
 static int _selected_app_idx;
 
@@ -79,6 +81,7 @@ static void pushAppData()
 
 int main()
 {
+	pushAppData<lim::AppParticle>();
 	pushAppData<lim::AppSkeletal>();
 	pushAppData<lim::AppMineSweeper>();
 	pushAppData<lim::AppModelViewer>();

@@ -89,6 +89,7 @@ namespace lim
 
 
         Material();
+        Material(const Material& mat) = default;
         void setUniformTo(const Program& prg) const;
     };
 }
