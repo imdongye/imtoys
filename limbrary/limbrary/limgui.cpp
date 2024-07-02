@@ -2,6 +2,7 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <limbrary/asset_lib.h>
+#include <map>
 
 using namespace lim;
 
@@ -293,4 +294,30 @@ void LimGui::LightDirectionalEditorReset(const char* name, const char* smName) {
 	dl_name = name;
 	dl_shadow_map_name = smName; // not used
 	AssetLib::get().texture_viewer.name = smName;
+}
+
+
+struct PlotVarData {
+	int insert_idx = -1;
+	std::vector<float> data;
+};
+static std::map<ImGuiID, PlotVarData> g_plot_var_map;
+
+void LimGui::PlotVal(const char* name, const char* postFix, float value, int bufSize) {
+	ImGui::PushID(name);
+	ImGuiID id = ImGui::GetID("");
+	
+	PlotVarData& pvd = g_plot_var_map[id];
+	if( pvd.insert_idx<0 ) {
+		pvd.insert_idx = 0;
+		pvd.data.resize(bufSize, 0);
+	}
+	assert(pvd.data.size() == bufSize);
+	if( pvd.insert_idx == bufSize ) {
+		pvd.insert_idx = 0;
+	}
+	pvd.data[pvd.insert_idx++] = value;
+	ImGui::Text("%s\t%-3.4f %s", name, value, postFix);
+	ImGui::PlotLines("##plotvar", pvd.data.data(), bufSize, pvd.insert_idx, nullptr, FLT_MAX, FLT_MAX, {0, 50});
+	ImGui::PopID();
 }

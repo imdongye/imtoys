@@ -4,6 +4,7 @@
 #include <limbrary/log.h>
 #include <imgui.h>
 #include <limbrary/asset_lib.h>
+#include <limbrary/limgui.h>
 
 using namespace glm;
 using namespace std;
@@ -12,7 +13,7 @@ using namespace lim;
 static AppParticle* g_app = nullptr;
 
 /*
-	1unit : m, kg
+	1unit : m, kg, sec
 */
 
 struct Particle {
@@ -95,6 +96,6 @@ void lim::AppParticle::renderImGui()
 	log::drawViewer("logger##template");
 
 	ImGui::Begin("test window##template");
-	ImGui::Text("delta time : %f", delta_time);
+	LimGui::PlotVal("delta time", "(ms)", delta_time*1000.f);
 	ImGui::End();
 }
