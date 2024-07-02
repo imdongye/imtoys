@@ -10,11 +10,11 @@
 #include <limbrary/model_view/mesh_maked.h>
 #include <limbrary/model_view/renderer.h>
 #include <limbrary/model_view/camera_man.h>
-#include "canvas3d_app.h"
+#include "appbase_canvas3d.h"
 
 namespace lim
 {
-	class AppParticle : public Canvas3dApp
+	class AppParticle : public AppBaseCanvas3d
 	{
 	public:
 		inline static constexpr CStr APP_NAME = "particle";

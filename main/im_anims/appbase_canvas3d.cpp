@@ -1,5 +1,5 @@
 
-#include "canvas3d_app.h"
+#include "appbase_canvas3d.h"
 #include <limbrary/limgui.h>
 #include <imgui.h>
 
@@ -7,7 +7,7 @@ using namespace lim;
 using namespace glm;
 using namespace std;
 
-Canvas3dApp::Canvas3dApp(int winWidth, int winHeight, const char* title, bool vsync) 
+AppBaseCanvas3d::AppBaseCanvas3d(int winWidth, int winHeight, const char* title, bool vsync) 
     : AppBase(winWidth, winHeight, title, vsync)
     , prog("lit_color")
     , vp("canvas3d", new FramebufferMs())
@@ -22,12 +22,12 @@ Canvas3dApp::Canvas3dApp(int winWidth, int winHeight, const char* title, bool vs
     light.setShadowEnabled(true);
     LimGui::LightDirectionalEditorReset("d_light editor##canvas3d", "d_light shadow map##canvas3d");
 }
-Canvas3dApp::~Canvas3dApp() {
+AppBaseCanvas3d::~AppBaseCanvas3d() {
 
 }
 
 
-void Canvas3dApp::update() {
+void AppBaseCanvas3d::update() {
     glEnable(GL_DEPTH_TEST);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(0, 0, fb_width, fb_height);
@@ -56,7 +56,7 @@ void Canvas3dApp::update() {
 
 	vp.getFb().unbind();
 }
-void Canvas3dApp::updateImGui() {
+void AppBaseCanvas3d::updateImGui() {
     ImGui::DockSpaceOverViewport();
     vp.drawImGui();
     LimGui::LightDirectionalEditor(light);
@@ -65,9 +65,9 @@ void Canvas3dApp::updateImGui() {
 
 
 
-void Canvas3dApp::drawQuad( const vec3& p, const vec3& n, const vec2& sz, const vec3& color ) {
+void AppBaseCanvas3d::drawQuad( const vec3& p, const vec3& n, const vec2& sz, const vec3& color ) const {
     vec3 s = {sz.x, sz.y, 1.f};
-    vec3 axis = cross(n, vec3{0,0,1});
+    vec3 axis = cross(vec3{0,0,1}, n);
     float l = length(axis);
     float angle = atan2f(l, n.z);
     mat4 mtx_Model;
@@ -80,14 +80,14 @@ void Canvas3dApp::drawQuad( const vec3& p, const vec3& n, const vec2& sz, const 
     quad.bindAndDrawGL();
 }
 
-void Canvas3dApp::drawSphere( const vec3& p, const float r, const vec3& color ) {
+void AppBaseCanvas3d::drawSphere( const vec3& p, const float r, const vec3& color ) const {
     mat4 mtx_Model = translate(p) * scale(vec3(r));
     g_cur_prog->setUniform("mtx_Model", mtx_Model);
     g_cur_prog->setUniform("color", color);
     sphere.bindAndDrawGL();
 }
 
-void Canvas3dApp::drawCylinder( const vec3& p1, const vec3& p2, float r, const vec3& color ) {
+void AppBaseCanvas3d::drawCylinder( const vec3& p1, const vec3& p2, float r, const vec3& color ) const {
     vec3 diff = p1 - p2;
     vec3 mid = (p1 + p2) * 0.5f;
     vec3 s = {r, length(diff), r};

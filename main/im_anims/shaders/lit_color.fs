@@ -153,8 +153,8 @@ void main()
 	vec3 faceN = normalize( cross( dFdx(wPos), dFdy(wPos) ) );
     vec3 L = normalize(lit.Pos - wPos);
 	vec3 N = normalize(wNor);
-	if( dot(N,faceN)<0 )
-		N = -N;
+	// if( dot(N,faceN)<0 )
+	// 	N = -N;
 	float NDL = max(dot(N, L),0);
     vec3 outColor;
 	outColor = shadowing() * NDL * vec3(color);
