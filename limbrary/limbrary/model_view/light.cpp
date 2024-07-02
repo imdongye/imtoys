@@ -19,9 +19,15 @@ ILight::ILight(enum LightType lt) : light_type((int)lt)
 }
 
 
-
+const int LightDirectional::Shadow::map_size = 1024;
 LightDirectional::Shadow::Shadow(TransformPivoted& tf) 
 	: map(3, 32)
+	, Enabled(true)
+	, ZNear(0.f)
+	, ZFar(30.f)
+	, TexelSize(vec2(1/map_size))
+	, OrthoSize(vec2(6,12))
+	, RadiusUv(vec2(0.001f))
 {
 	TexelSize = glm::vec2(1.f/map_size);
 
@@ -63,7 +69,7 @@ void LightDirectional::setShadowEnabled(bool enabled) {
 	shadow->Enabled = enabled;
 }
 
-void LightDirectional::bakeShadowMap(std::function<void(const Program& sProg)> draw) const
+void LightDirectional::bakeShadowMap(std::function<void()> draw) const
 {
 	if(!shadow || !shadow->Enabled)
 		return;
@@ -74,7 +80,7 @@ void LightDirectional::bakeShadowMap(std::function<void(const Program& sProg)> d
 	depthProg.setUniform("mtx_View", shadow->mtx_View);
 	depthProg.setUniform("mtx_Proj", shadow->mtx_Proj);
 
-	draw(depthProg);
+	draw();
 	
 	shadow->map.unbind();
 

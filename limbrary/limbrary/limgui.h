@@ -15,6 +15,7 @@
 #include <limbrary/model_view/model.h>
 #include <limbrary/framebuffer.h>
 #include <limbrary/model_view/camera.h>
+#include <limbrary/model_view/light.h>
 
 namespace LimGui
 {
@@ -24,7 +25,10 @@ namespace LimGui
     
 	// only one in updateImGui
     void ModelEditor(lim::ModelView& md);
-    void ModelEditorReset();
+    void ModelEditorReset(const char* hname="hierarchy", const char* iname = "inspector", const char* aname = "animator");
+
+    void LightDirectionalEditor(lim::LightDirectional& lit);
+    void LightDirectionalEditorReset(const char* name="d_light editor", const char* smName="d_light shadow map");
 }
 
 

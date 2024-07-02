@@ -49,7 +49,7 @@ namespace lim
 		virtual ~ILight() = default;
 
 		virtual void setShadowEnabled(bool enabled) = 0;
-		virtual void bakeShadowMap(std::function<void(const Program& sProg)> draw) const = 0;
+		virtual void bakeShadowMap(std::function<void()> draw) const = 0;
 		virtual void setUniformTo(const Program& prog) const = 0;
 
 	};
@@ -67,15 +67,15 @@ namespace lim
 			glm::mat4 mtx_Proj;
 			glm::mat4 mtx_ShadowVp;
 
-			bool Enabled = true;
-			float ZNear = 0.0f;
-			float ZFar = 30.f;
-			glm::vec2 TexelSize = glm::vec2(1.f/1024.f); // ortho_width/height 고려해야하나
-			glm::vec2 OrthoSize = glm::vec2(4, 8);
-			glm::vec2 RadiusUv = glm::vec2(0.001f); // world space
+			static const int map_size;
 			FramebufferRbDepth map; // map_Shadow 
+			bool Enabled ;
+			float ZNear;
+			float ZFar;
+			glm::vec2 TexelSize; // ortho_width/height 고려해야하나
+			glm::vec2 OrthoSize;
+			glm::vec2 RadiusUv; // world space
 			
-			const int map_size = 1024;
 
 			Shadow(TransformPivoted& tf);
 		};
@@ -86,7 +86,7 @@ namespace lim
 		LightDirectional();
 		~LightDirectional();
 		virtual void setShadowEnabled(bool enabled) override;
-		virtual void bakeShadowMap(std::function<void(const Program& sProg)> draw) const override;
+		virtual void bakeShadowMap(std::function<void()> draw) const override;
 		virtual void setUniformTo(const Program& prog) const override;
 	};
 	

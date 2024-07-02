@@ -11,26 +11,39 @@ using namespace lim;
 
 static AppParticle* g_app = nullptr;
 
+/*
+	1unit : m, kg
+*/
+
 struct Particle {
-	vec3 p, v, a;
-	float m = 0.001f;
-	vec4 color = vec4(1.f);
+	vec3 p = vec3{0};
+	vec3 v = vec3{0};
+	vec3 f = vec3{0};
+	float m = 0.1f;
+	vec4 color = vec4{1.f,1,0,0};
 	bool fixed = false;
 
-	void clearAcc() {
-		a = vec3(0);
+	void clearForce() {
+		f = vec3(0);
 	}
 	void addForce(const vec3& force) {
-		a += force/m;
+		f += force;
 	}
 	void integrate(float dt) {
 		if( fixed ) return;
 		p += v*dt;
-		v += a*dt;
+		v += f/m*dt;
+		if(p.y<0)
+			v = -v;
 	}
 	void draw() {
 		g_app->drawSphere(p, 0.05f, color);
 	}
+};
+
+struct Spring {
+	Particle *p1, *p2;
+
 };
 
 struct ICollider {
@@ -41,8 +54,9 @@ struct ICollider {
 };
 
 struct ColPlane : ICollider {
-	vec3 p, n;
-	vec4 color = vec4(1.f);
+	vec3 p = vec3{0};
+	vec3 n = {0,1,0};
+	vec4 color = vec4{1.f,0,0,1};
 	float k_mu, k_r;
 
 	virtual void draw() override {
@@ -68,7 +82,11 @@ lim::AppParticle::~AppParticle()
 void lim::AppParticle::render() 
 {
 	col_plane.draw();
+	// drawSphere(vec3{0}, 1, vec4(1,0,0,0));
 	for(auto& p : particles) {
+		p.clearForce();
+		p.addForce(vec3{0,-1,0}*0.98f);
+		p.integrate(delta_time);
 		p.draw();
 	}
 }

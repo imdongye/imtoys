@@ -12,6 +12,7 @@ Todo:
 #include <limbrary/model_view/model_io_helper.h>
 #include <limbrary/model_view/renderer.h>
 #include <limbrary/asset_lib.h>
+#include <limbrary/limgui.h>
 #include <glad/glad.h>
 
 using namespace lim;
@@ -74,15 +75,13 @@ lim::AppModelViewer::AppModelViewer() : AppBase(1373, 780, APP_NAME, false)
 	, vp_irr_map("irr map", new FramebufferNoDepth(3,32))
 	, vp_pfenv_map("pf env map", new FramebufferNoDepth(3,32))
 	, vp_pfbrdf_map("pf brdf map", new FramebufferNoDepth(3,32))
-	, vp_shadow_map("shadow map", new FramebufferNoDepth(3,32))
 	, ib_light("assets/images/ibls/artist_workshop_4k.hdr")
 {
 	viewports.reserve(5);
 	scenes.reserve(5);
 	
 	program.name = "brdf_prog";
-	program.home_dir = APP_DIR;
-	program.attatch("smvp.vs").attatch("brdf.fs").link();
+	program.attatch("smvp.vs").attatch("im_model_viewer/shaders/brdf.fs").link();
 
 	d_light.tf.theta = 35.f;
 	d_light.tf.phi =  -35.f;
@@ -206,25 +205,11 @@ void lim::AppModelViewer::updateImGui()
 
 	// log::drawViewer("logger##model_viewer");
 
+	LimGui::LightDirectionalEditor(d_light);
+
 	// draw common ctrl
 	{
 		ImGui::Begin("common ctrl##model_viewer");
-		const static float litThetaSpd = 70 * 0.001f;
-		const static float litPhiSpd = 360 * 0.001f;
-		const static float litDistSpd = 45.f * 0.001f;
-		static bool isLightDraged = false;
-
-		ImGui::Text("<light>");
-		isLightDraged |= ImGui::DragFloat("phi", &d_light.tf.phi, litPhiSpd, -FLT_MAX, +FLT_MAX, "%.3f");
-		isLightDraged |= ImGui::DragFloat("theta", &d_light.tf.theta, litThetaSpd, 0, 80, "%.3f");
-		isLightDraged |= ImGui::DragFloat("dist", &d_light.tf.dist, litDistSpd, 5.f, 50.f, "%.3f");
-		if( isLightDraged ) {
-			d_light.tf.updateWithRotAndDist();
-		}
-		ImGui::Text("pos: %.1f %.1f %.1f", d_light.tf.pos.x, d_light.tf.pos.y, d_light.tf.pos.z);
-		ImGui::SliderFloat("intencity", &d_light.Intensity, 0.5f, 200.f, "%.1f");
-		ImGui::Checkbox("shadow enabled", &d_light.shadow->Enabled);
-		ImGui::SliderFloat2("light radius", &d_light.shadow->RadiusUv.x, 0.f, 0.1f, "%.3f");
 
 		if( ImGui::Button("relead shader(ctrl+R)") ) {
 			program.reload(GL_FRAGMENT_SHADER);
@@ -256,13 +241,6 @@ void lim::AppModelViewer::updateImGui()
 			drawTexToQuad(ib_light.getTexIdPreFilteredBRDF(), 2.2f, 0.f, 1.f);
 			vp_pfbrdf_map.getFb().unbind();
 			vp_pfbrdf_map.drawImGui();
-
-			if(d_light.shadow->Enabled) {
-				vp_shadow_map.getFb().bind();
-				drawTexToQuad(d_light.shadow->map.getRenderedTexId(), 2.2f, 0.f, 1.f);
-				vp_shadow_map.getFb().unbind();
-				vp_shadow_map.drawImGui();
-			}
 		}
 		
 		ImGui::End();

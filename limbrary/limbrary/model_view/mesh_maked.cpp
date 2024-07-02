@@ -457,11 +457,11 @@ MeshCubeSphere2::MeshCubeSphere2(int nrSlices, bool genNors, bool genUvs)
 	initGL();
 }
 
-MeshCylinder::MeshCylinder(float radius, int nrSlices, bool genNors, bool genUvs)
+MeshCylinder::MeshCylinder(float radius, float height, int nrSlices, bool genNors, bool genUvs)
 {
 	name = fmtStrToBuf("sylinder_s%d", nrSlices);
 	
-	const float half = 1.f; // height
+	const float half = height*0.5f;
 
 	poss.push_back({ 0, half,0 });
 	poss.push_back({ 0,-half,0 });

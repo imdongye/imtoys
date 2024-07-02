@@ -13,6 +13,7 @@ utils : AssetLib의 라이프사이클을 빌린 툴
 #include "program.h"
 #include "model_view/material.h"
 #include "model_view/mesh_maked.h"
+#include "viewport.h"
 
 namespace lim
 {
@@ -39,6 +40,8 @@ namespace lim
 		MeshSphere small_sphere;
 		MeshCube cube;
 		MeshCylinder thin_cylinder;
+
+		Viewport texture_viewer;
 
 	private:
 		AssetLib(const AssetLib&)=delete;

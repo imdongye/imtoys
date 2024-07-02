@@ -3,40 +3,39 @@
 #include <imgui_internal.h>
 #include <limbrary/asset_lib.h>
 
-using namespace ImGui;
 using namespace lim;
 
 bool LimGui::CheckBox3(const char* label, bool v[3])
 {
     static const char* check_box_labels[3] = {"X", "Y", "Z"};
-    ImGuiWindow* window = GetCurrentWindow();
+    ImGuiWindow* window = ImGui::GetCurrentWindow();
     if (window->SkipItems)
         return false;
 
     ImGuiContext& g = *GImGui;
     bool value_changed = false;
-    BeginGroup();
-    PushID(label);
-    PushMultiItemsWidths(3, CalcItemWidth());
+    ImGui::BeginGroup();
+    ImGui::PushID(label);
+    ImGui::PushMultiItemsWidths(3, ImGui::CalcItemWidth());
     for (int i = 0; i < 3; i++)
     {
-        PushID(i);
-        value_changed |= Checkbox(check_box_labels[i], &v[i]);
-        float itemWidth = GetItemRectSize().x;
-        float sectionWidth = CalcItemWidth() + g.Style.ItemInnerSpacing.x;
-        SameLine(0, sectionWidth+ - itemWidth);
-        PopID();
-        PopItemWidth();
+        ImGui::PushID(i);
+        value_changed |= ImGui::Checkbox(check_box_labels[i], &v[i]);
+        float itemWidth = ImGui::GetItemRectSize().x;
+        float sectionWidth = ImGui::CalcItemWidth() + g.Style.ItemInnerSpacing.x;
+        ImGui::SameLine(0, sectionWidth+ - itemWidth);
+        ImGui::PopID();
+        ImGui::PopItemWidth();
     }
-    PopID();
+    ImGui::PopID();
 
-    const char* label_end = FindRenderedTextEnd(label);
+    const char* label_end = ImGui::FindRenderedTextEnd(label);
     if (label != label_end)
     {
-        TextEx(label, label_end);
+        ImGui::TextEx(label, label_end);
     }
 
-    EndGroup();
+    ImGui::EndGroup();
     return value_changed;
 }
 
@@ -61,8 +60,13 @@ void LimGui::Vec3(glm::vec3& v) {
 
 static ModelView* cur_md = nullptr;
 static RdNode* cur_nd = nullptr;
-BoneNode* cur_bone = nullptr;
+BoneNode* cur_bone = nullptr; // temp used in app_skeletal.cpp
 static RdNode::MsSet* cur_msset = nullptr;
+static const char* me_inspector_name = "inspector";
+static const char* me_hierarchy_name = "hierarchy";
+static const char* me_animator_name  = "animator";
+static const char* dl_name			 = "d_light editor";
+static const char* dl_shadow_map_name= "d_light shadow map";
 
 static void drawHierarchy(RdNode& nd) {
 	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_None;
@@ -138,7 +142,7 @@ static void drawHierarchy(BoneNode& nd) {
 	}
 }
 static void drawInspector() {
-	ImGui::Begin("inspector");
+	ImGui::Begin(me_inspector_name);
 	if( cur_nd ) {
 		RdNode& nd = *cur_nd;
 		ImGui::Text("name : %s", nd.name.c_str());
@@ -174,7 +178,7 @@ static void drawInspector() {
 			cur_md->animator.updateMtxBones();
 		}
 		LimGui::Mat4(nd.tf.mtx);
-		ImGui:Text("bone_idx : %d", nd.bone_idx);
+		ImGui::Text("bone_idx : %d", nd.bone_idx);
 		if( nd.bone_idx>=0 ) {
 			LimGui::Mat4(cur_md->md_data->bone_offsets[nd.bone_idx]);
 		}
@@ -192,7 +196,7 @@ static void drawAnimator(Animator& animator) {
 	if( animator.cur_anim == nullptr )
 		return;
 	
-	ImGui::Begin("animator");
+	ImGui::Begin(me_animator_name);
 	ImGui::Text("#bones in mesh : %d", animator.mtx_Bones.size());
 	switch(animator.state) {
 	case Animator::State::PLAY: ImGui::Text("state : PLAY"); break;
@@ -240,7 +244,7 @@ void LimGui::ModelEditor(ModelView& md) {
 		cur_msset = nullptr;
 	}
 
-	ImGui::Begin("hierarchy");
+	ImGui::Begin(me_hierarchy_name);
 	drawHierarchy(md.root);
 	ImGui::Separator();
 	drawHierarchy(md.animator.bone_root);
@@ -250,6 +254,43 @@ void LimGui::ModelEditor(ModelView& md) {
 
 	drawAnimator(md.animator);
 }
-void LimGui::ModelEditorReset() {
+void LimGui::ModelEditorReset(const char* hname, const char* iname, const char* aname) {
 	cur_md = nullptr;
+	me_hierarchy_name = hname;
+	me_inspector_name = iname;
+	me_animator_name = aname;
+}
+
+
+void LimGui::LightDirectionalEditor(lim::LightDirectional& lit) {
+	const static float lit_theta_spd = 70 * 0.001f;
+	const static float lit_phi_spd = 360 * 0.001f;
+	const static float lit_dist_spd = 45.f * 0.001f;
+	static bool is_light_draged = false;
+	static bool is_draw_shadow_map_view = false;
+	ImGui::Begin(dl_name);
+	is_light_draged |= ImGui::DragFloat("phi", &lit.tf.phi, lit_phi_spd, -FLT_MAX, +FLT_MAX, "%.3f");
+	is_light_draged |= ImGui::DragFloat("theta", &lit.tf.theta, lit_theta_spd, 0, 80, "%.3f");
+	is_light_draged |= ImGui::DragFloat("dist", &lit.tf.dist, lit_dist_spd, 5.f, 50.f, "%.3f");
+	if( is_light_draged ) {
+		lit.tf.updateWithRotAndDist();
+	}
+	ImGui::Text("pos: %.1f %.1f %.1f", lit.tf.pos.x, lit.tf.pos.y, lit.tf.pos.z);
+	ImGui::SliderFloat("intencity", &lit.Intensity, 0.5f, 200.f, "%.1f");
+	ImGui::SliderFloat2("light radius", &lit.shadow->RadiusUv.x, 0.f, 0.1f, "%.3f");
+	ImGui::Checkbox("shadow enabled", &lit.shadow->Enabled);
+	ImGui::Checkbox("show shadow map", &is_draw_shadow_map_view);
+	if(is_draw_shadow_map_view && lit.shadow->Enabled) {
+		Viewport& vp = AssetLib::get().texture_viewer; // todo 
+		vp.getFb().bind();
+		drawTexToQuad(lit.shadow->map.getRenderedTexId(), 2.2, 0.f, 1.f);
+		vp.getFb().unbind();
+		vp.drawImGui();
+	}
+	ImGui::End();
+}
+void LimGui::LightDirectionalEditorReset(const char* name, const char* smName) {
+	dl_name = name;
+	dl_shadow_map_name = smName; // not used
+	AssetLib::get().texture_viewer.name = smName;
 }

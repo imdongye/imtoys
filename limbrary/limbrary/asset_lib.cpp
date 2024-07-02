@@ -13,6 +13,7 @@ lim::AssetLib::AssetLib()
 	: screen_quad(false, false)
 	, small_sphere( 0.2f, 8,4,true, false)
 	, thin_cylinder(0.1f)
+	, texture_viewer("replace before drawImGui", new FramebufferNoDepth(3,32))
 {
 	log::pure("init AssetLib\n");
 

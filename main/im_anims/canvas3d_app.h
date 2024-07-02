@@ -34,9 +34,9 @@ namespace lim
         virtual void render()=0;
         virtual void renderImGui()=0;
 
-        void drawQuad( const glm::vec3& p, const glm::vec3& n, const glm::vec2& sz, const glm::vec4& color );
-        void drawSphere( const glm::vec3& p, const float r, const glm::vec4& color );
-        void drawCylinder( const glm::vec3& p1, const glm::vec3& p2, float r, const glm::vec4& color );
+        void drawQuad( const glm::vec3& p, const glm::vec3& n, const glm::vec2& sz, const glm::vec3& color );
+        void drawSphere( const glm::vec3& p, const float r, const glm::vec3& color );
+        void drawCylinder( const glm::vec3& p1, const glm::vec3& p2, float r, const glm::vec3& color );
     };
 };
 

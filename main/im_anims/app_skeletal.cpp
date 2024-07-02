@@ -40,8 +40,7 @@ lim::AppSkeletal::AppSkeletal() : AppBase(1200, 780, APP_NAME)
 	floor->setProgToAllMat(&program);
 	scene.addOwn(floor);
 
-	viewport.camera.position.y = model.tf->pos.y;
-	viewport.camera.pivot.y = model.tf->pos.y;
+	viewport.camera.moveShift(glm::vec3(0,model.tf->pos.y,0));
 	viewport.camera.updateViewMat();
 
 	
