@@ -1,5 +1,5 @@
 #include <limbrary/log.h>
-
+#include <glad/glad.h>
 #include <vector>
 #include <string>
 #include <stdarg.h>
@@ -20,7 +20,7 @@ namespace
     vector<int> line_offsets = {0};
     ImGuiTextFilter filter;
 
-    bool is_auto_scroll_on = false;
+    bool is_auto_scroll_on = true;
     bool is_time_stamp_on = false;
 }
 
@@ -92,6 +92,30 @@ void lim::log::err(const char* fmt, ...)
     appendfv(fmt, args);
     va_end(args);
     addFindedOffsets(start, buf.size());
+}
+
+void lim::log::glError(int line) {
+    GLenum err = glGetError();
+    
+    const char* msg = nullptr;
+    switch( err ) {
+        case GL_INVALID_ENUM:                   msg = "GL_INVALID_ENUM"; break;
+        case GL_INVALID_VALUE:                  msg = "GL_INVALID_VALUE"; break;
+        case GL_INVALID_OPERATION:              msg = "GL_INVALID_OPERATION"; break;
+        case GL_STACK_OVERFLOW:                 msg = "GL_STACK_OVERFLOW"; break;
+        case GL_STACK_UNDERFLOW:                msg = "GL_STACK_UNDERFLOW"; break;
+        case GL_INVALID_FRAMEBUFFER_OPERATION:  msg = "INVALID_FRAMEBUFFER_OPERATION"; break;
+        default:                                msg = "UNKNOWN"; break;
+    }
+    if( err == GL_NO_ERROR )
+        log::pure("no gl error");
+    else
+        log::err("gl error %s(%d)", msg, err);
+
+    if( line >= 0 )
+        log::pure(" in line %d\n", line);
+    else
+        log::pure("\n");
 }
 
 

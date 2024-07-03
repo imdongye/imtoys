@@ -69,31 +69,31 @@ struct Particle {
 };
 
 struct Spring {
-	Particle* p1;
-	Particle* p2;
+	Particle& p1;
+	Particle& p2;
 	float ks_pct;
 	float r;
 	vec3 color = {1.f,1.f,0.f};
 
 
-	Spring(Particle* p1=nullptr, Particle* p2=nullptr, float ksPct=1.f) 
+	Spring(Particle& p1, Particle& p2, float ksPct=1.f) 
 		: p1(p1), p2(p2)
 		, ks_pct(ksPct)
-		, r(length(p1->p - p2->p)) {
+		, r(length(p1.p - p2.p)) {
 	}
 	void applyForce() {
-		vec3 diffP = p1->p - p2->p;
+		vec3 diffP = p1.p - p2.p;
 		float curR = length(diffP);
 		float diffR = curR - r;
 		vec3 dir = normalize(diffP);
-		vec3 diffV = p1->v - p2->v;
+		vec3 diffV = p1.v - p2.v;
 		float force = ks_pct * Ks * diffR;
 		force -= Kd * dot(diffV, dir);
-		p1->addForce(-force * dir);
-		p2->addForce( force * dir);
+		p1.addForce(-force * dir);
+		p2.addForce( force * dir);
 	}
 	void draw() {
-		g_app->drawCylinder(p1->p, p2->p, def_spring_radius, color);
+		g_app->drawCylinder(p1.p, p2.p, def_spring_radius, color);
 	}
 };
 
@@ -161,7 +161,6 @@ struct Cloth {
 	vector<Particle> particles;
 	vector<Spring> springs;
 	
-	Cloth(): particles(400), springs(2400) {}
 	void clear() {
 		particles.clear();
 		springs.clear();
@@ -236,7 +235,7 @@ void AppParticle::render()
 		for(auto& p : particles) p.draw();
 		col_plane.draw();
 	}
-	cloth.update(dt, {&col_plane});
+	// cloth.update(dt, {&col_plane});
 	drawSphere({0,0,0}, 0.1f, {0,0,1});
 }
 void AppParticle::renderImGui()

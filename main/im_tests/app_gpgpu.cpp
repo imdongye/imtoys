@@ -9,7 +9,6 @@ using namespace lim;
 using namespace glm;
 
 namespace {
-	uint xfb;
 	uint pos_vbo, pos_vao;
 	vec3 pos_data[10] = {
 		{0, 1, 0},
@@ -17,17 +16,21 @@ namespace {
 		{1, 1, 0},
 		{1, 1, 1},
 		{0, 0, 1},
+
 		{1, 1, 0},
 		{1, 1, 0},
 		{0, 1, 2},
 		{0, 1, 0},
 		{0, 1, 3},
 	};
-	uint out_buf_id;
+
+	Program xfb_prog;
+	uint xfb;
+	uint xfb_out_buf;
+
 	vec3 out_norm[10];
 	float out_length[10];
 
-	Program xfb_prog;
 }
 
 AppGpgpu::AppGpgpu() : AppBase(1200, 780, APP_NAME)
@@ -41,37 +44,54 @@ AppGpgpu::AppGpgpu() : AppBase(1200, 780, APP_NAME)
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
+	glGenBuffers(1, &xfb_out_buf);
+	glBindBuffer(GL_ARRAY_BUFFER, xfb_out_buf);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(out_norm)+sizeof(out_length), nullptr, GL_DYNAMIC_COPY);
 
-	xfb_prog.attatch("im_tests/shaders/xfb.vs").link();
+
+	const char* vars[] = {"out_norm", "out_length"};
+	xfb_prog.attatch("im_tests/shaders/xfb.vs").link(2, vars, GL_SEPARATE_ATTRIBS);
 
 	glCreateTransformFeedbacks(1, &xfb);
-	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, xfb);
-
-
-	glGenBuffers(1, &out_buf_id);
-	glBindBuffer(GL_ARRAY_BUFFER, out_buf_id);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(out_norm)+sizeof(out_length), nullptr, GL_DYNAMIC_COPY);
-	glTransformFeedbackBufferRange(xfb, 0, out_buf_id, 0, sizeof(out_norm));
-	glTransformFeedbackBufferRange(xfb, 1, out_buf_id, sizeof(out_norm), sizeof(out_length));
-	
-	const char* vars[] = {"out_norm", "out_length"};
-	uint pid = xfb_prog.getPid();
-	glTransformFeedbackVaryings(pid, 2, vars, GL_SEPARATE_ATTRIBS);
-	glLinkProgram(pid);
+	glTransformFeedbackBufferRange(xfb, 0, xfb_out_buf, 0, sizeof(out_norm));
+	glTransformFeedbackBufferRange(xfb, 1, xfb_out_buf, sizeof(out_norm), sizeof(out_length));
 
 
 
-	glUseProgram(pid);
+
+	xfb_prog.use();
+	log::glError(67);
 	glEnable(GL_RASTERIZER_DISCARD);
-	glBindVertexArray(pos_vao);
-	glBeginTransformFeedback(GL_POINTS);
-	glEndTransformFeedback();
+	{
+	log::glError(69);
+		glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, xfb);
+		{
+			glBeginTransformFeedback(GL_POINTS);
+			{
+	log::glError(74);
+				glBindVertexArray(pos_vao);
+	log::glError(74);
+				glDrawArrays(GL_POINTS, 0, 10);
+	log::glError(74);
+			}
+			glEndTransformFeedback();
+		}
+		glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
+	}
 	glDisable(GL_RASTERIZER_DISCARD);
+	log::glError(74);
 
-	glBindBuffer(GL_ARRAY_BUFFER, out_buf_id);
-	glGetBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(out_norm), &out_norm);
-	glDrawArrays(GL_POINT, 0, 10);
+
+
+	// glBindBuffer(GL_ARRAY_BUFFER, xfb_out_buf);
+	// const float* buf_ptr = (const float*)glMapBuffer(GL_ARRAY_BUFFER, GL_READ_ONLY);
+	// memcpy(out_norm, buf_ptr, sizeof(out_norm));
+
+	glBindBuffer(GL_ARRAY_BUFFER, xfb_out_buf);
 	glGetBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(out_length), &out_length);
+	glGetBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(out_norm), &out_norm);
+
+	log::glError(93);
 
 	for(int i=0; i<sizeof(out_norm)/sizeof(out_norm[0]); i++)
 		log::pure("%f %f %f\n", out_norm[i]);
@@ -96,7 +116,7 @@ AppGpgpu::~AppGpgpu()
 {
 	glDeleteBuffers(1, &pos_vbo);
 	glDeleteTransformFeedbacks(1, &xfb);
-	glDeleteBuffers(1, &out_buf_id);
+	glDeleteBuffers(1, &xfb_out_buf);
 }
 void AppGpgpu::update() 
 {

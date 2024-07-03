@@ -57,6 +57,7 @@ static GLenum getType(std::string_view path)
 Program::Program(std::string_view _name)
 	: name(_name)
 {
+	shaders.reserve(3);
 }
 Program::~Program()
 {
@@ -129,26 +130,31 @@ Program& Program::attatch(std::string path)
 
 	return *this;
 }
-Program& Program::link()
+Program& Program::link(GLsizei count, const char** varyings, GLenum bufferMode)
 {
-	if( pid ) { glDeleteProgram(pid); pid = 0; }
+	if( pid ) { 
+		glDeleteProgram(pid); pid = 0; 
+	}
 	pid = glCreateProgram();
+
+	if( count>0 ) {
+		glTransformFeedbackVaryings(pid, count, varyings, bufferMode);
+	}
 
 	for(auto& shader : shaders) {
 		glAttachShader(pid, shader.sid);
 	}
 	glLinkProgram(pid);
-	if( !reloadable ) {
+	if( !checkLinkingErrors(pid) ) {
+		if( pid ) { glDeleteProgram(pid); pid = 0; }
+		return *this;
+	}
+	if( reloadable==false ) {
 		for(auto& shader : shaders) {
 			glDetachShader(pid, shader.sid);
 			shader.deinitGL();
 		}
 		shaders.clear();
-		shaders.shrink_to_fit();
-	}
-	if( !checkLinkingErrors(pid) ) {
-		if( pid ) { glDeleteProgram(pid); pid = 0; }
-		return *this;
 	}
 	log::pure("%s : linked\n\n", name.c_str());
 	return *this;

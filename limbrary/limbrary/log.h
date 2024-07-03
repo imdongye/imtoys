@@ -28,6 +28,8 @@ namespace lim
         void warn(const char* format, ...);
         void err(const char* format, ...);
 
+        void glError(int line = -1);
+
         void clear();
         void exportToFile(const char* filename = "log.txt");
         void drawViewer(const char* title, bool* pOpen = nullptr);
