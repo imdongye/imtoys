@@ -31,6 +31,7 @@
 #include "im_model_viewer/app_model_viewer.h"
 #include "im_anims/app_skeletal.h"
 #include "im_anims/app_particle.h"
+#include "im_tests/app_gpgpu.h"
 
 
 static int _selected_app_idx;
@@ -81,6 +82,7 @@ static void pushAppData()
 
 int main()
 {
+	pushAppData<lim::AppGpgpu>();
 	pushAppData<lim::AppParticle>();
 	pushAppData<lim::AppSkeletal>();
 	pushAppData<lim::AppMineSweeper>();

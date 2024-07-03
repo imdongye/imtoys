@@ -67,6 +67,10 @@ namespace lim
 		Program(std::string_view name="nonamed");
 		virtual ~Program();
 
+		inline GLuint getPid() const {
+			return pid;
+		}
+
 		// chaining //
 		Program& deinitGL();
 		Program& operator+=(const char *path);

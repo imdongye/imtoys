@@ -62,8 +62,6 @@ struct Particle {
 		if( fixed ) return;
 		p += v*dt;
 		v += f/m*dt;
-		if(p.y<0)
-			v = -v;
 	}
 	void draw() {
 		g_app->drawSphere(p, def_particle_radius, color);
@@ -136,8 +134,8 @@ struct ColSphere : ICollider {
 	vec3 p = vec3{0};
 	float r = 1.f;
 	vec4 color = vec4{1.f,0,0,1};
-	float k_mu = def_Kmu;
 	float k_r = def_Kr;
+	float k_mu = def_Kmu;
 
 	virtual void applyCollision(vector<Particle>& particles) override {	
 		for( Particle& ptcl : particles ) {
@@ -182,37 +180,84 @@ struct Cloth {
 	}
 };
 
+static bool g_is_pause = false;
 static ColPlane col_plane;
 static vector<Particle> particles;
+static Cloth cloth;
 
-lim::AppParticle::AppParticle() : AppBaseCanvas3d(1200, 780, APP_NAME, false)
+static void resetScene() {
+	particles[0].p = vec3(1, 2, 0);
+}
+static void resetParams() {
+	particles[0].m = 1.f;
+	col_plane.k_r = 0.7f;
+	col_plane.k_mu = 0.7f;
+}
+
+static void makeCloth(Cloth& dst, mat4 tf, vec2 size, ivec2 nrSize) {
+	vec2 sPos = size/2.f;
+	vec2 stepSize = size/vec2(nrSize);
+
+	dst.particles.resize(nrSize.x*nrSize.y);
+	for(int x=0; x<nrSize.x; x++) for(int y=0; y<nrSize.y; y++) {
+		vec4 pPos = {sPos.x+stepSize.x*x, 0,sPos.y+stepSize.y*y, 1};
+		pPos = tf*pPos;
+		Particle& p = dst.particles[x + nrSize.x*y];
+		p.p = vec3(pPos);
+	}
+
+}
+
+AppParticle::AppParticle() : AppBaseCanvas3d(1200, 780, APP_NAME, false)
 {
 	g_app = this;
-
+	particles.clear();
 	particles.reserve(1000);
-	Particle p;
-	p.p = vec3(0, 3, 0);
-	particles.push_back(p);
-}
-lim::AppParticle::~AppParticle()
-{
-}
-void lim::AppParticle::render() 
-{
-	col_plane.draw();
-	// drawSphere(vec3{0}, 1, vec4(1,0,0,0));
-	for(auto& p : particles) {
-		p.clearForce();
-		p.addForce(vec3{0,-1,0}*0.98f);
-		p.integrate(delta_time);
-		p.draw();
-	}
-}
-void lim::AppParticle::renderImGui()
-{
-	log::drawViewer("logger##template");
+	particles.push_back(Particle());
 
-	ImGui::Begin("test window##template");
+	
+
+	resetScene();
+	resetParams();
+	makeCloth(cloth, translate(vec3{0,3,0}), {3.f, 3.f}, {15, 15});
+}
+AppParticle::~AppParticle()
+{
+}
+void AppParticle::render() 
+{
+	float dt = (g_is_pause)? 0:delta_time;
+	// drawSphere(vec3{0}, 1, vec4(1,0,0,0));
+	{
+		for(auto& p : particles) p.clearForce();
+		for(auto& p : particles) p.addForce(G);
+		col_plane.applyCollision(particles);
+		for(auto& p : particles) p.integrate(dt);
+		for(auto& p : particles) p.draw();
+		col_plane.draw();
+	}
+	cloth.update(dt, {&col_plane});
+	drawSphere({0,0,0}, 0.1f, {0,0,1});
+}
+void AppParticle::renderImGui()
+{
+	log::drawViewer("logger##particle");
+
+	ImGui::Begin("test window##particle");
 	LimGui::PlotVal("delta time", "(ms)", delta_time*1000.f);
+	if(ImGui::Button("restart")) {
+		resetScene();
+	}
+	if(ImGui::Button("reset params")) {
+		resetParams();
+	}
+	ImGui::Checkbox("pause", &g_is_pause);
+
+	Particle& p = particles[0];
+	ImGui::SliderFloat("p mass", &p.m, 0.01f, 10.f);
+	ImGui::SliderFloat("c Kr", &col_plane.k_r, 0.01f, 1.f);
+	ImGui::SliderFloat("c Kmu", &col_plane.k_mu, 0.01f, 1.f);
+
 	ImGui::End();
+
 }
