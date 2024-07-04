@@ -35,10 +35,7 @@ void CameraController::updateFreeMode()
 		updateProjMat();
 	}
 	if( input_status&IST_FOCUSED ) {
-		const vec3 diff = pivot - position;
-		const vec3 front = normalize(diff);
-		const vec3 right = normalize(cross(front, global_up));
-		const vec3 up    = normalize(cross(right, front));
+		const vec3 diff = pivot - pos;
 
 		// move
 		const vec3 forwardDir = (1)?front:normalize(vec3{front.x, 0.f, front.z});
@@ -74,7 +71,7 @@ void CameraController::updateFreeMode()
 		if( input_status&IST_DRAGGED && ImGui::IsMouseDown(0) ) {
 			vec2 step = spd_free_rot * mouse_off;
 			vec3 rotated = rotate(-step.x, up)*rotate(-step.y, right)*vec4(diff, 0);
-			pivot = rotated + position;
+			pivot = rotated + pos;
 		}
 		updateViewMat();
 	}
@@ -84,18 +81,15 @@ void CameraController::updatePivotMode()
 	// zoom
 	if( input_status&IST_SCROLLED ) {
 		const vec2 step = spd_zoom_dist * scroll_off;
-		const vec3 diff = position - pivot;
-		float distance = length(diff);
+		const vec3 diff = pos - pivot;
+		float distance = glm::length(diff);
 		float newDist = distance * pow(1.01f, step.y);
 		newDist = clamp(newDist, MIN_DIST, MAX_DIST);
-		position = newDist/distance * diff + pivot;
+		pos = newDist/distance * diff + pivot;
 	}
 
 	if( input_status&IST_DRAGGED ) {
-		const vec3 diff = pivot - position;
-		const vec3 front = normalize(diff);
-		const vec3 right = normalize(cross(front, global_up));
-		const vec3 up    = normalize(cross(right, front));
+		const vec3 diff = pivot - pos;
 		const vec2 off = mouse_off;
 
 		// move tangent plane
@@ -108,8 +102,8 @@ void CameraController::updatePivotMode()
 		else if( ImGui::IsMouseDown(0) ) {
 			const vec2 step = off * spd_pivot_rot;
 			const vec3 rotated = rotate(-step.x, global_up)*rotate(step.y, -right)*vec4(-diff,0);
-			if( abs(rotated.y) < length(rotated)*0.99f )
-				position = pivot + rotated;
+			if( abs(rotated.y) < glm::length(rotated)*0.99f )
+				pos = pivot + rotated;
 		}
 	}
 
@@ -120,19 +114,16 @@ void CameraController::updatePivotMode()
 void CameraController::updateScrollMode()
 {
 	if( input_status&IST_SCROLLED ) {
-		const vec3 diff = pivot - position;
-		const vec3 front = normalize(diff);
-		const vec3 right = normalize(cross(front, global_up));
-		const vec3 up    = normalize(cross(right, front));
+		const vec3 diff = pivot - pos;
 		const vec2 off = scroll_off;
 
 		// zoom
 		if( ImGui::IsKeyDown(ImGuiKey_LeftAlt) ) {
 			const vec2 step = spd_zoom_dist * off;
-			float distance = length(diff);
+			float distance = glm::length(diff);
 			float newDist = distance * pow(1.01f, step.y);
 			newDist = clamp(newDist, MIN_DIST, MAX_DIST);
-			position = -newDist/distance * diff + pivot;
+			pos = -newDist/distance * diff + pivot;
 		}
 		// move tangent plane
 		else if( ImGui::IsKeyDown(ImGuiKey_LeftShift) ) {
@@ -143,8 +134,8 @@ void CameraController::updateScrollMode()
 		else {
 			const vec2 step = off * spd_scroll_rot;
 			const vec3 rotated = rotate(-step.x, global_up)*rotate(step.y, -right)*vec4(-diff,0);
-			if( abs(rotated.y) < length(rotated)*0.9f )
-				position = pivot + rotated;
+			if( abs(rotated.y) < glm::length(rotated)*0.9f )
+				pos = pivot + rotated;
 		}
 	}
 

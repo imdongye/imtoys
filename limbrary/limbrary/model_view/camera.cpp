@@ -32,29 +32,57 @@ Camera::~Camera()
 {
 }
 vec3 Camera::screenPosToDir(const vec2& uv) const {
-	
+	// vec4 ndcP = vec4(2.f*uv.x-1, 2.f*uv.y-1, -1, 0);
+	// // vec4 ndcP = vec4(0.f, 0.f, -1, 0);
+	// vec3 wPos = inverse(mtx_Proj*mtx_View) * ndcP;
+
+	vec2 ndc = 2.f*uv - vec2(1);
+    float eyeZ = 1.f/tan(radians(fovy));
+    vec3 rd = normalize( aspect*ndc.x*right + ndc.y*up + eyeZ*front );
+	return rd;
 }
 void Camera::moveShift(const glm::vec3& off) {
-	position += off;
+	pos += off;
 	pivot += off;
 }
 void Camera::updateViewMat()
 {
-	mtx_View = lookAt(position, pivot, global_up);
+	const vec3 diff = pivot - pos;
+	length = glm::length(diff);
+	front = normalize(diff);
+	right = normalize(cross(front, global_up));
+	up = cross(right, front);
+
+	mtx_View[0][0] = right.x;
+	mtx_View[1][0] = right.y;
+	mtx_View[2][0] = right.z;
+	mtx_View[3][0] =-dot(right, pos);
+	mtx_View[0][1] = up.x;
+	mtx_View[1][1] = up.y;
+	mtx_View[2][1] = up.z;
+	mtx_View[3][1] =-dot(up, pos);
+	mtx_View[0][2] =-front.x;
+	mtx_View[1][2] =-front.y;
+	mtx_View[2][2] =-front.z;
+	mtx_View[3][2] = dot(front, pos);
+	mtx_View[0][3] = 0.f;
+	mtx_View[1][3] = 0.f; 
+	mtx_View[2][3] = 0.f; 
+	mtx_View[3][3] = 1.f;
 }
 void Camera::updateProjMat()
 {
 	mtx_Proj = perspective(radians(fovy), aspect, z_near, z_far);
 }
 void Camera::setUniformTo(const Program& prg) const {
-	prg.setUniform("cam_Pos", position);
+	prg.setUniform("cam_Pos", pos);
     prg.setUniform("mtx_Proj", mtx_Proj);
     prg.setUniform("mtx_View", mtx_View);
 }
 void Camera::copyFrom(const Camera& src) {
 	fovy = src.fovy;
 	z_near = src.z_near;
-	position = src.position;
+	pos = src.pos;
 	pivot = src.pivot;
 	global_up = src.global_up;
 	mtx_View = src.mtx_View;

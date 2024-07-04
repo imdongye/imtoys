@@ -49,8 +49,8 @@ namespace lim
 		const float MAX_DIST = 17.f;
 		const float MIN_DIST = 0.1f;
 
-		float spd_free_move = 2.5f/1.f;    // m/sec
-		float spd_free_rot = D_PI/1900.f;  // r/px
+		float spd_free_move = 2.f/1.f;    // m/sec
+		float spd_free_rot = D_PI/2100.f;  // r/px
 
 		float spd_pivot_move = 1.f/120.f;  // m/px
 		float spd_pivot_rot = D_PI/1000.f; // r/px

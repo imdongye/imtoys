@@ -114,12 +114,12 @@ void fromJson(sdf::Material& mat, const Json& json) {
     mat.updateShaderData();
 }
 static void toJson(const lim::CameraController& cam, Json& json) {
-    toJson(cam.position,  json["position"]);
+    toJson(cam.pos,  json["position"]);
     toJson(cam.pivot,     json["pivot"]);
     json["fovy"] = cam.fovy;
 }
 static void fromJson(lim::CameraController& cam, const Json& json) {
-    fromJson(cam.position,  json["position"]);
+    fromJson(cam.pos,  json["position"]);
     fromJson(cam.pivot,     json["pivot"]);
     cam.fovy =              json["fovy"];
     cam.updateViewMat();

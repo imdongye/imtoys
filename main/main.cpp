@@ -11,26 +11,26 @@
 #include <limbrary/log.h>
 #include <limbrary/viewport.h>
 
-// #include "im_tests/app_template.h"
-// #include "im_tests/app_imgui_test.h"
-// #include "im_tests/app_icp.h"
-// #include "im_tests/app_gen_mesh.h"
-// #include "im_tests/app_font.h"
-// #include "im_tests/app_astar.h"
-// #include "im_tests/app_moving_window.h"
-// #include "im_simplification/app_simplification.h"
-// #include "im_pbr/app_pbr.h"
-// #include "im_npr/app_hatching.h"
-// #include "im_hdr/app_hdr.h"
-// #include "im_anims/app_nano.h"
-// #include "im_anims/app_kinematics.h"
-// #include "im_anims/app_fluid.h"
-// #include "im_shadertoy/app_shadertoy.h"
-// #include "im_sdf_modeler/app_sdf_modeler.h"
-// #include "im_mine_sweeper/app_mine_sweeper.h"
-// #include "im_model_viewer/app_model_viewer.h"
-// #include "im_anims/app_skeletal.h"
-// #include "im_tests/app_gpgpu.h"
+#include "im_tests/app_template.h"
+#include "im_tests/app_imgui_test.h"
+#include "im_tests/app_icp.h"
+#include "im_tests/app_gen_mesh.h"
+#include "im_tests/app_font.h"
+#include "im_tests/app_astar.h"
+#include "im_tests/app_moving_window.h"
+#include "im_simplification/app_simplification.h"
+#include "im_pbr/app_pbr.h"
+#include "im_npr/app_hatching.h"
+#include "im_hdr/app_hdr.h"
+#include "im_anims/app_nano.h"
+#include "im_anims/app_kinematics.h"
+#include "im_anims/app_fluid.h"
+#include "im_shadertoy/app_shadertoy.h"
+#include "im_sdf_modeler/app_sdf_modeler.h"
+#include "im_mine_sweeper/app_mine_sweeper.h"
+#include "im_model_viewer/app_model_viewer.h"
+#include "im_anims/app_skeletal.h"
+#include "im_tests/app_gpgpu.h"
 #include "im_anims/app_particle.h"
 
 
@@ -83,26 +83,26 @@ static void pushAppData()
 int main()
 {
 	pushAppData<lim::AppParticle>();
-	// pushAppData<lim::AppGpgpu>();
-	// pushAppData<lim::AppSkeletal>();
-	// pushAppData<lim::AppMineSweeper>();
-	// pushAppData<lim::AppModelViewer>();
-	// pushAppData<lim::AppSdfModeler>();
-	// pushAppData<lim::AppTemplate>();
-	// pushAppData<lim::AppImGuiTest>();
-	// pushAppData<lim::AppICP>();
-	// pushAppData<lim::AppGenMesh>();
-	// pushAppData<lim::AppFont>();
-	// pushAppData<lim::AppAstar>();
-	// pushAppData<lim::AppMovingWindow>();
-	// pushAppData<lim::AppSimplification>();
-	// pushAppData<lim::AppPbr>();
-	// pushAppData<lim::AppKinematics>();
-	// pushAppData<lim::AppHatching>();
-	// pushAppData<lim::AppHdr>();
-	// pushAppData<lim::AppNano>();
-	// pushAppData<lim::AppFluid>();
-	// pushAppData<lim::AppShaderToy>();
+	pushAppData<lim::AppGpgpu>();
+	pushAppData<lim::AppSkeletal>();
+	pushAppData<lim::AppMineSweeper>();
+	pushAppData<lim::AppModelViewer>();
+	pushAppData<lim::AppSdfModeler>();
+	pushAppData<lim::AppTemplate>();
+	pushAppData<lim::AppImGuiTest>();
+	pushAppData<lim::AppICP>();
+	pushAppData<lim::AppGenMesh>();
+	pushAppData<lim::AppFont>();
+	pushAppData<lim::AppAstar>();
+	pushAppData<lim::AppMovingWindow>();
+	pushAppData<lim::AppSimplification>();
+	pushAppData<lim::AppPbr>();
+	pushAppData<lim::AppKinematics>();
+	pushAppData<lim::AppHatching>();
+	pushAppData<lim::AppHdr>();
+	pushAppData<lim::AppNano>();
+	pushAppData<lim::AppFluid>();
+	pushAppData<lim::AppShaderToy>();
 
 	_selected_app_idx = 0;
 

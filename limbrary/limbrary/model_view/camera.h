@@ -36,10 +36,13 @@ namespace lim
 		
 		// todo: TransformPivoted
 		// if you edit then must call updateViewMat();
-		glm::vec3 position = {0,0,5};
+		glm::vec3 pos = {0,0,5};
 		glm::vec3 pivot = {0,0,0};
 		glm::vec3 global_up = {0,1,0};
 
+		// result
+		float length;
+		glm::vec3 front, up, right;
 		glm::mat4 mtx_View;
 		glm::mat4 mtx_Proj;
 	public:

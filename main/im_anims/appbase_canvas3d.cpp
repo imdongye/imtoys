@@ -13,11 +13,12 @@ AppBaseCanvas3d::AppBaseCanvas3d(int winWidth, int winHeight, const char* title,
     , vp("canvas3d", new FramebufferMs())
     , light()
     , quad(true, false)
-    , sphere(1.f, 50, 25, true, false)
-    , cylinder(1.f, 1.f, 50, true, false)
+    , sphere(1.f, 10, 5, true, false)
+    , cylinder(1.f, 1.f, 10, true, false)
 {
     prog.attatch("smvp.vs").attatch("im_anims/shaders/lit_color.fs").link();
-    vp.camera.moveShift({0, 3, 3});
+    vp.camera.pivot = vec3(0, 1.0, 0);
+    vp.camera.pos = vec3(0, 1.5, 3.4);
 	vp.camera.updateViewMat();
     light.setShadowEnabled(true);
     LimGui::LightDirectionalEditorReset("d_light editor##canvas3d", "d_light shadow map##canvas3d");
@@ -46,10 +47,10 @@ void AppBaseCanvas3d::update() {
 	light.setUniformTo(prog);
 	
     {
-		drawSphere(light.tf.pos, 0.2, vec3{1});
+		drawSphere(light.tf.pos, vec3(1));
         vec3 p1 = light.tf.pos;
         vec3 p2 = p1+light.tf.dir*-0.6f;
-        drawCylinder(p1, p2, 0.1, vec3{1});
+        drawCylinder(p1, p2, vec3(1));
 	}
 
     render();
@@ -65,7 +66,7 @@ void AppBaseCanvas3d::updateImGui() {
 
 
 
-void AppBaseCanvas3d::drawQuad( const vec3& p, const vec3& n, const vec2& sz, const vec3& color ) const {
+void AppBaseCanvas3d::drawQuad( const vec3& p, const vec3& n, const vec3& color, const vec2& sz ) const {
     vec3 s = {sz.x, sz.y, 1.f};
     vec3 axis = cross(vec3{0,0,1}, n);
     float l = length(axis);
@@ -80,14 +81,14 @@ void AppBaseCanvas3d::drawQuad( const vec3& p, const vec3& n, const vec2& sz, co
     quad.bindAndDrawGL();
 }
 
-void AppBaseCanvas3d::drawSphere( const vec3& p, const float r, const vec3& color ) const {
+void AppBaseCanvas3d::drawSphere( const vec3& p, const vec3& color, const float r ) const {
     mat4 mtx_Model = translate(p) * scale(vec3(r));
     g_cur_prog->setUniform("mtx_Model", mtx_Model);
     g_cur_prog->setUniform("color", color);
     sphere.bindAndDrawGL();
 }
 
-void AppBaseCanvas3d::drawCylinder( const vec3& p1, const vec3& p2, float r, const vec3& color ) const {
+void AppBaseCanvas3d::drawCylinder( const vec3& p1, const vec3& p2, const vec3& color, const float r ) const {
     vec3 diff = p1 - p2;
     vec3 mid = (p1 + p2) * 0.5f;
     vec3 s = {r, length(diff), r};

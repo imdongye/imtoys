@@ -351,7 +351,7 @@ static void resetData() {
     ib_light = new IBLight();
 
     camera->pivot = glm::vec3(0,0,0);
-    camera->position = glm::vec3(0,1,5);
+    camera->pos = glm::vec3(0,1,5);
     camera->updateViewMat();
 
     
@@ -379,7 +379,7 @@ void sdf::bindSdfData(const Program& prog)
 {
     prog.setUniform("camera_Aspect", camera->aspect);
 	prog.setUniform("camera_Fovy", camera->fovy);
-	prog.setUniform("cam_Pos", camera->position);
+	prog.setUniform("cam_Pos", camera->pos);
 	prog.setUniform("camera_Pivot", camera->pivot);
     prog.setUniform("light_Pos", light->tf.pos);
     prog.setUniform("light_Int", light->Intensity);
@@ -866,7 +866,7 @@ void sdf::clickCallback(int btn, glm::vec2 uv) {
 
     float eyeZ = 1.f/tan(glm::radians(camera->fovy)/2.f);
     glm::vec3 pickDir, front, right, up;
-    front = glm::normalize(camera->pivot - camera->position);
+    front = glm::normalize(camera->pivot - camera->pos);
     right = glm::normalize( glm::cross(front, {0,1,0}) );
     up = glm::normalize( glm::cross(right, front) );
     uv = uv*2.f-glm::vec2(1);
@@ -876,7 +876,7 @@ void sdf::clickCallback(int btn, glm::vec2 uv) {
 
     float minDist = 999999.f;
     for(Object* obj: serialized_objs) {
-        glm::vec3 toObj = glm::vec3(obj->transform[3])-camera->position;
+        glm::vec3 toObj = glm::vec3(obj->transform[3])-camera->pos;
         float rr = obj->getScaleFactor(); rr *= rr;
         float distFromLine2 = glm::length2( glm::cross(pickDir, toObj) );
         float distProjLine = glm::dot(pickDir, toObj);

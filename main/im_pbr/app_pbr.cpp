@@ -64,7 +64,7 @@ namespace lim
 		prog.setUniform("beckmannGamma", beckmannGamma);
 		const Camera& cam = viewport.camera;
 		prog.setUniform("view", cam.mtx_View);
-		prog.setUniform("camPos", cam.position);
+		prog.setUniform("camPos", cam.pos);
 		prog.setUniform("projection", cam.mtx_Proj);
 
 		glm::vec3 light_Pos = light_position + glm::vec3(sin(glfwGetTime() * 2.0) * 5.0, 0.0, 0.0);

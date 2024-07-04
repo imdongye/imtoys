@@ -53,7 +53,7 @@ namespace lim
 		viewport.drawImGui();
 
 		ImGui::Begin("camera");
-		ImGui::Text("%f %f %f", viewport.camera.position.x, viewport.camera.position.y,viewport.camera.position.z);
+		ImGui::Text("%f %f %f", viewport.camera.pos.x, viewport.camera.pos.y,viewport.camera.pos.z);
 		ImGui::Text("%f %f %f", viewport.camera.pivot.x, viewport.camera.pivot.y,viewport.camera.pivot.z);
 		const Transform& capsuleTf = *scene.own_mds[0]->tf;
 		ImGui::Text("model");

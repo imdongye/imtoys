@@ -19,6 +19,8 @@ Todo:
 #ifndef __log_h_
 #define __log_h_
 
+
+
 namespace lim
 {
     namespace log

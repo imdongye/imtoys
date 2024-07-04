@@ -173,7 +173,7 @@ namespace lim
         prog.home_dir = APP_DIR;
         prog.attatch("mvp_points.vs").attatch("blue.fs").link();
 
-        camera.position = {0,0,5};
+        camera.pos = {0,0,5};
         camera.pivot = {0,0,0};
         camera.updateViewMat();
 
@@ -209,7 +209,7 @@ namespace lim
 
         prog.setUniform("mtx_View", camera.mtx_View);
         prog.setUniform("mtx_Proj", camera.mtx_Proj);
-        prog.setUniform("cam_Pos", camera.position);
+        prog.setUniform("cam_Pos", camera.pos);
 
         prog.setUniform("modelMat", glm::mat4(1));
         glBindVertexArray(dst_ms.vert_array);
