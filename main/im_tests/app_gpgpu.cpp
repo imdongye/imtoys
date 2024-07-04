@@ -49,8 +49,7 @@ AppGpgpu::AppGpgpu() : AppBase(1200, 780, APP_NAME)
 	glBufferData(GL_ARRAY_BUFFER, sizeof(out_norm)+sizeof(out_length), nullptr, GL_DYNAMIC_COPY);
 
 
-	const char* vars[] = {"out_norm", "out_length"};
-	xfb_prog.attatch("im_tests/shaders/xfb.vs").link(2, vars, GL_SEPARATE_ATTRIBS);
+	xfb_prog.attatch("im_tests/shaders/xfb.vs").link();
 
 	glCreateTransformFeedbacks(1, &xfb);
 	glTransformFeedbackBufferRange(xfb, 0, xfb_out_buf, 0, sizeof(out_norm));

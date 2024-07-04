@@ -130,16 +130,12 @@ Program& Program::attatch(std::string path)
 
 	return *this;
 }
-Program& Program::link(GLsizei count, const char** varyings, GLenum bufferMode)
+Program& Program::link()
 {
 	if( pid ) { 
 		glDeleteProgram(pid); pid = 0; 
 	}
 	pid = glCreateProgram();
-
-	if( count>0 ) {
-		glTransformFeedbackVaryings(pid, count, varyings, bufferMode);
-	}
 
 	for(auto& shader : shaders) {
 		glAttachShader(pid, shader.sid);

@@ -75,7 +75,7 @@ namespace lim
 		Program& deinitGL();
 		Program& operator+=(const char *path);
 		Program& attatch(std::string path);
-		Program& link(GLsizei count = -1, const char** varyings=nullptr, GLenum bufferMode=GL_SEPARATE_ATTRIBS);
+		Program& link();
 		const Program& use() const;
 
 		
