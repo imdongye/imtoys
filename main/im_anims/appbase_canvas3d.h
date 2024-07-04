@@ -19,12 +19,12 @@ namespace lim
     {
     private:
         Program prog;
-        ViewportWithCamera vp;
         LightDirectional light;
         MeshQuad quad;
 		MeshSphere sphere;
         MeshCylinder cylinder;
-
+    protected:
+        ViewportWithCamera vp;
     public:
         AppBaseCanvas3d(int winWidth=1280, int winHeight=720, const char* title="nonamed", bool vsync=true);
         virtual ~AppBaseCanvas3d();

@@ -26,7 +26,7 @@ LightDirectional::Shadow::Shadow(TransformPivoted& tf)
 	, ZNear(0.f)
 	, ZFar(30.f)
 	, TexelSize(vec2(1/map_size))
-	, OrthoSize(vec2(6,12))
+	, OrthoSize(vec2(12,30))
 	, RadiusUv(vec2(0.001f))
 {
 	TexelSize = glm::vec2(1.f/map_size);

@@ -31,6 +31,9 @@ Camera::Camera()
 Camera::~Camera()
 {
 }
+vec3 Camera::screenPosToDir(const vec2& uv) const {
+	
+}
 void Camera::moveShift(const glm::vec3& off) {
 	position += off;
 	pivot += off;

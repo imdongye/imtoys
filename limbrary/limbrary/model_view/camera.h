@@ -50,7 +50,7 @@ namespace lim
 
 		Camera();
 		virtual ~Camera();
-		
+		glm::vec3 screenPosToDir(const glm::vec2& uv) const;
 		void moveShift(const glm::vec3& off);
 		// with pos and pivot
 		void updateViewMat();

@@ -26,7 +26,8 @@ namespace lim
 		~AppParticle();
 		virtual void render() override;
 		virtual void renderImGui() override;
-		
+		virtual void mouseBtnCallback(int button, int action, int mods) final;
+		virtual void cursorPosCallback(double xPos, double yPos) final;
 	};
 }
 

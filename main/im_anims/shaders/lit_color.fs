@@ -87,15 +87,17 @@ float PCF(vec2 shadowTexPos, float realDepth, vec2 sampleRadiusUv) // 0.002
 {
 	float visibility = 0.0;
 	float startTheta = iqint3(uvec2(gl_FragCoord.xy)+uvec2(84,137))*PI;
+	realDepth = min(realDepth, 1.0); // for shadowmap border color 1
+
 
 	// From: https://www.shadertoy.com/view/4l3yRM
 	// Todo for O(1): https://www.shadertoy.com/view/XtlXDM
 	for( int i = 0; i < NR_PCF_SAMPLE; i++ ){
         vec2 samplePos = shadowTexPos
 			+ vogelSample(i, NR_PCF_SAMPLE, startTheta) * sampleRadiusUv;
-        float minDepth = texture(map_Shadow, samplePos).r;
+        float lightDepth = texture(map_Shadow, samplePos).r;
 
-		if( minDepth+SHADOW_BIAS > realDepth ) {
+		if( lightDepth+SHADOW_BIAS > realDepth ) {
 			visibility += 1.0;
 		}
     }
