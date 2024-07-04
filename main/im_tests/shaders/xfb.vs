@@ -2,8 +2,8 @@
 
 layout(location=0) in vec3 pos;
 
-layout(xfb_buffer=0, xfb_offset=0) out vec3 out_norm;
-layout(xfb_buffer=1, xfb_offset=0) out float out_length;
+layout(xfb_buffer=0, xfb_offset=0) out float out_length;
+layout(xfb_buffer=1, xfb_offset=0) out vec3 out_norm;
 
 // bool intersect(vec3 p1, vec3 p2, vec3 t1, vec3 t2, vec3 t3, out vec3 point) {
 //     vec3 diff, u, v, n, w0, 2;
@@ -43,8 +43,6 @@ layout(xfb_buffer=1, xfb_offset=0) out float out_length;
 // }
 
 void main() {
-    // out_norm = normalize(pos);
-    // out_length = length(pos);
-    out_norm = vec3(1,2,3);
-    out_length = 10.0;
+    out_norm = normalize(pos);
+    out_length = length(pos);
 }

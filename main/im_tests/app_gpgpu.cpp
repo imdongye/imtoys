@@ -28,8 +28,8 @@ namespace {
 	uint xfb;
 	uint xfb_out_buf;
 
-	vec3 out_norm[10];
 	float out_length[10];
+	vec3 out_norm[10];
 
 }
 
@@ -46,70 +46,43 @@ AppGpgpu::AppGpgpu() : AppBase(1200, 780, APP_NAME)
 
 	glGenBuffers(1, &xfb_out_buf);
 	glBindBuffer(GL_ARRAY_BUFFER, xfb_out_buf);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(out_norm)+sizeof(out_length), nullptr, GL_DYNAMIC_COPY);
-
+	glBufferData(GL_ARRAY_BUFFER, sizeof(out_length)+sizeof(out_norm), nullptr, GL_DYNAMIC_COPY);
 
 	xfb_prog.attatch("im_tests/shaders/xfb.vs").link();
 
-	glCreateTransformFeedbacks(1, &xfb);
-	glTransformFeedbackBufferRange(xfb, 0, xfb_out_buf, 0, sizeof(out_norm));
-	glTransformFeedbackBufferRange(xfb, 1, xfb_out_buf, sizeof(out_norm), sizeof(out_length));
-
-
+	glGenTransformFeedbacks(1, &xfb);
+	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, xfb);
+	glBindBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, xfb_out_buf, 0, sizeof(out_length));
+	glBindBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 1, xfb_out_buf, sizeof(out_length), sizeof(out_norm));
 
 
 	xfb_prog.use();
-	log::glError(67);
 	glEnable(GL_RASTERIZER_DISCARD);
 	{
-	log::glError(69);
 		glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, xfb);
 		{
 			glBeginTransformFeedback(GL_POINTS);
 			{
-	log::glError(74);
 				glBindVertexArray(pos_vao);
-	log::glError(74);
 				glDrawArrays(GL_POINTS, 0, 10);
-	log::glError(74);
 			}
 			glEndTransformFeedback();
 		}
 		glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
 	}
 	glDisable(GL_RASTERIZER_DISCARD);
-	log::glError(74);
+	glFlush();
 
-
-
-	// glBindBuffer(GL_ARRAY_BUFFER, xfb_out_buf);
-	// const float* buf_ptr = (const float*)glMapBuffer(GL_ARRAY_BUFFER, GL_READ_ONLY);
-	// memcpy(out_norm, buf_ptr, sizeof(out_norm));
 
 	glBindBuffer(GL_ARRAY_BUFFER, xfb_out_buf);
 	glGetBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(out_length), &out_length);
-	glGetBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(out_norm), &out_norm);
-
-	log::glError(93);
+	glBindBuffer(GL_ARRAY_BUFFER, xfb_out_buf);
+	glGetBufferSubData(GL_ARRAY_BUFFER, sizeof(out_length), sizeof(out_norm), &out_norm);
 
 	for(int i=0; i<sizeof(out_norm)/sizeof(out_norm[0]); i++)
-		log::pure("%f %f %f\n", out_norm[i]);
+		log::pure("%f %f %f\n", out_norm[i].x, out_norm[i].y, out_norm[i].z);
 	for(int i=0; i<sizeof(out_length)/sizeof(out_length[0]); i++)
 		log::pure("%f\n", out_length[i]);
-
-	/*glCreateBuffers(1, &x_buffer);
-	glNamedBufferStorage(x_buffer, buf_size, nullptr, 0);*/
-	//glBindBuffer(GL_TRANSFORM_FEEDBACK, x_buffer);
-	//glBufferData(x_buffer, 1024*1024, nullptr, GL_STATIC_DRAW)
-	/*glTransformFeedbackBufferRange(xfb, 0, x_buffer, 0, buf_size/2);
-	glTransformFeedbackBufferRange(xfb, 1, x_buffer, buf_size / 2, buf_size / 2);*/
-	/*glCreateTransformFeedbacks(n, ids);
-	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, id);
-	glIsTransformFeedback(id);
-	glDeleteTransformFeedbacks(n, ids);
-	glTransformFeedbackBufferBase(xfb, index, buffer);*/
-
-
 }
 AppGpgpu::~AppGpgpu()
 {
