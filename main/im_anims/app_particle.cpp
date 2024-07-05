@@ -17,6 +17,7 @@ struct ICollider;
 struct Particle;
 struct Spring;
 struct Cloth;
+struct ColAnimator;
 
 namespace {
 	AppParticle* g_app = nullptr;
@@ -24,8 +25,8 @@ namespace {
 	constexpr float def_Ka = 0.026f;	// vicous drag 공기저항
 	constexpr float def_Ks = 30.f;		// 스프링 계수
 	constexpr float def_Kd = 0.4f;		// 스프링 저항
-	constexpr float def_Kmu = 0.3f; 	// 마찰 계수
-	constexpr float def_Kr = 0.3f;		// 반발 저항
+	constexpr float def_Kmu = 0.1f; 	// 마찰 계수
+	constexpr float def_Kr = 0.8f;		// 반발 계수
 	constexpr float def_collision_eps = 0.001f; // (particle ratius)
 	constexpr float def_stretch_pct = 1.f;
 	constexpr float def_shear_pct = 0.9f;
@@ -51,6 +52,7 @@ namespace {
 	vector<Particle> particles;
 	vector<Spring> springs;
 	vector<Cloth> cloths;
+	vector<ColAnimator> animators;
 
 	Particle* picked_ptcl = nullptr;
 }
@@ -185,6 +187,8 @@ struct Cloth {
 
 
 struct ICollider {
+	vec3 p = vec3{0};
+	vec3 old_p = vec3{0};
 	float k_r = def_Kr;
 	float k_mu = def_Kmu;
 	vec3 color = vec3(1.f);
@@ -193,7 +197,6 @@ struct ICollider {
 };
 
 struct ColPlane : ICollider {
-	vec3 p = vec3{0};
 	vec3 n = {0,1,0};
 
 	ColPlane() {
@@ -219,11 +222,11 @@ struct ColPlane : ICollider {
 };
 
 struct ColSphere : ICollider {
-	vec3 p = vec3{0};
-	float r = 1.f;
+	float r = 0.4f;
 	vec4 color = vec4{1.f,0,0,1};
 
-	virtual void applyCollision(vector<Particle>& ptcls) const final {	
+
+	virtual void applyCollision(vector<Particle>& ptcls) const final {
 		for( Particle& ptcl : ptcls ) {
 			vec3 diffP = ptcl.p - p;
 			float curR = length(diffP);
@@ -232,10 +235,10 @@ struct ColSphere : ICollider {
 			if( dot(ptcl.v, n) > 0.f ) continue;
 
 			vec3 pv = ptcl.v;
-			vec3 pvn = -dot(ptcl.v, n) * n;
+			vec3 pvn = -dot(pv, n) * n;
 			vec3 pvt = pv + pvn;
 			ptcl.v = pvt + k_r*pvn;
-			ptcl.addForce(k_mu*pvt);
+			ptcl.addForce(-k_mu*pvt);
 		}
 	}
 	virtual void draw() override {
@@ -245,11 +248,49 @@ struct ColSphere : ICollider {
 
 
 
+struct ColAnimator {
+	struct KeyPos {
+		float t;
+		vec3 pos;
+	};
+	vector<KeyPos> keys;
+	ICollider* col;
+	float time = 0;
+	float time_length;
+	ColAnimator() = delete;
+	ColAnimator(ICollider* c, vector<KeyPos>&& ks)
+		:col(c), keys(move(ks)) {
+		time_length = keys.back().t;
+	}
+	void animate(const float dt) {
+		const int nrKeys = keys.size();
+		vec3 newPos{0,0,0};
+		for(int i=0; i<nrKeys; i++) {
+			if( time < keys[i].t ) {
+				KeyPos& k2 = keys[i];
+				KeyPos& k1 = keys[i-1];
+				float dt = k2.t - k1.t;
+				float diff = time-k1.t;
+				float factor = diff/dt;
+				newPos = factor*(k2.pos-k1.pos) + k1.pos;
+				break;
+			}
+		}
+		col->p = newPos;
+
+		time += dt;
+		if(time>time_length) {
+			time -= time_length;
+		}
+	}
+};
+
 
 static void initScene() {
 	colliders.reserve(5);
-	particles.reserve(25*25+1);
+	particles.reserve(100+25*25);
 	springs.reserve(25*25*6);
+	animators.reserve(5);
 	
 	// p0
 	particles.emplace_back();
@@ -258,6 +299,28 @@ static void initScene() {
 
 	ColPlane* plane = new ColPlane();
 	colliders.push_back(plane);
+
+	ColSphere* sphere = new ColSphere();
+	sphere->p = {-0.2, 0, 0.3};
+	colliders.push_back(sphere);
+
+	vector<ColAnimator::KeyPos> keys =  {
+		{0.f, vec3(0,0,0)},
+		{1.f, vec3(2,0,0)},
+		{2.f, vec3(1,0,0)},
+		{3.f, vec3(2,0,0)},
+		{4.f, vec3(0,0,0)},
+	};
+	animators.emplace_back(sphere, move(keys));
+}
+static void deinitScene() {
+	for( auto* p : colliders ) {
+		delete p;
+	}
+	colliders.clear();
+	particles.clear();
+	springs.clear();
+	animators.clear();
 }
 static void resetScene() {
 	Particle& ptcl = particles[0];
@@ -295,6 +358,7 @@ AppParticle::AppParticle() : AppBaseCanvas3d(1200, 780, APP_NAME, false)
 }
 AppParticle::~AppParticle()
 {
+	deinitScene();
 }
 void AppParticle::render() 
 {
@@ -302,6 +366,7 @@ void AppParticle::render()
 	dt = glm::min(dt, 1.f/165.f);
 	for(int i=0; i<step_size; i++)
 	{
+		for(auto& a : animators) a.animate(dt);
 		for(auto& p : particles) p.clearForce();
 		for(auto& p : particles) p.addForce(-Ka*p.v); // 공기저항
 		for(auto& p : particles) p.addForce(G*p.m); // 자유낙하법칙
@@ -355,8 +420,14 @@ void AppParticle::renderImGui()
 }
 
 void AppParticle::mouseBtnCallback(int btn, int action, int mods) {
-	if(btn!=GLFW_MOUSE_BUTTON_2)
+	if(btn==GLFW_MOUSE_BUTTON_1)
 		return;
+	if(btn==GLFW_MOUSE_BUTTON_3 && action==GLFW_PRESS) {
+		particles.emplace_back();
+		Particle& p = particles.back();
+		p.p = vp.camera.pos;
+		p.v = vp.getMousePosRayDir()*20.f;
+	}
 	if(action==GLFW_RELEASE) {
 		picked_ptcl = nullptr;
 		return;
