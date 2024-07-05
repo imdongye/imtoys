@@ -246,8 +246,6 @@ struct ColSphere : ICollider {
 
 
 
-
-
 static void initScene() {
 	colliders.reserve(5);
 	particles.reserve(25*25+1);
@@ -357,27 +355,44 @@ void AppParticle::renderImGui()
 }
 
 void AppParticle::mouseBtnCallback(int btn, int action, int mods) {
-	if(btn!=GLFW_MOUSE_BUTTON_2 || action!=GLFW_PRESS)
+	if(btn!=GLFW_MOUSE_BUTTON_2)
 		return;
-	log::pure("click");
-	particles[1].fixed = false;
+	if(action==GLFW_RELEASE) {
+		picked_ptcl = nullptr;
+		return;
+	}
+	const vec3 mouseRay = vp.getMousePosRayDir();
 
-	const vec2 uv = {mouse_pos.x/fb_width, 1.f-mouse_pos.y/fb_height};
-	const vec3 pickDir = vp.camera.screenPosToDir(uv);
-	for(Particle& p : particles) {
+	float minDepth = FLT_MAX;
+	int minDepthPtclIdx = -1;
+	for(int i=0; i<particles.size(); i++) {
+		Particle& p = particles[i];
 		vec3 toObj = p.p - vp.camera.pos;
-		float distFromLine = glm::length( glm::cross(pickDir, toObj) );
-        float distProjLine = glm::dot(pickDir, toObj);
+		float distFromLine = glm::length( glm::cross(mouseRay, toObj) );
+        float distProjLine = glm::dot(mouseRay, toObj);
 
         if( distFromLine < 0.02f ) {
-            if( distProjLine>0 ) {
-                picked_ptcl = &p;
-				p.fixed = !p.fixed;
+            if( distProjLine>0 && minDepth>distProjLine ) {
+				minDepth = distProjLine;
+				minDepthPtclIdx = i;
             }
-        }
+		}
+	}
+	if( minDepthPtclIdx!=-1 ) {
+		particles[minDepthPtclIdx].fixed = !particles[minDepthPtclIdx].fixed;
+		if(particles[minDepthPtclIdx].fixed) {
+			picked_ptcl = &particles[minDepthPtclIdx];
+		}
 	}
 }
 
 void AppParticle::cursorPosCallback(double xPos, double yPos) {
-
+	if(!picked_ptcl)
+		return;
+	vec3& dstP = picked_ptcl->p;
+	const vec3 toObj = dstP-vp.camera.pos;
+	const vec3 mouseRay = vp.getMousePosRayDir();
+	const float depth = dot(vp.camera.front, toObj)/dot(vp.camera.front, mouseRay);
+	picked_ptcl->p = depth*mouseRay+vp.camera.pos;
+	picked_ptcl->v = vec3(0);
 }

@@ -35,10 +35,10 @@ vec3 Camera::screenPosToDir(const vec2& uv) const {
 	// vec4 ndcP = vec4(2.f*uv.x-1, 2.f*uv.y-1, -1, 0);
 	// // vec4 ndcP = vec4(0.f, 0.f, -1, 0);
 	// vec3 wPos = inverse(mtx_Proj*mtx_View) * ndcP;
-
-	vec2 ndc = 2.f*uv - vec2(1);
-    float eyeZ = 1.f/tan(radians(fovy));
-    vec3 rd = normalize( aspect*ndc.x*right + ndc.y*up + eyeZ*front );
+	vec2 ndc = 2.f*vec2(uv.x, 1.f-uv.y) - vec2(1);
+	ndc.x *= aspect;
+    float eyeZ = 1.f/tan(radians(fovy/2.f));
+    vec3 rd = normalize( ndc.x*right + ndc.y*up + eyeZ*front );
 	return rd;
 }
 void Camera::moveShift(const glm::vec3& off) {

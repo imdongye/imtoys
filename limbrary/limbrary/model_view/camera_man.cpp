@@ -275,3 +275,6 @@ ViewportWithCamera::ViewportWithCamera(std::string_view _name, IFramebuffer* cre
 ViewportWithCamera::~ViewportWithCamera() noexcept
 {
 }
+vec3 ViewportWithCamera::getMousePosRayDir() const {
+	return camera.screenPosToDir(mouse_uv_pos);
+}
