@@ -5,6 +5,7 @@
 #include <imgui.h>
 #include <limbrary/program.h>
 #include <limbrary/asset_lib.h>
+#include <limbrary/limgui.h>
 
 using namespace lim;
 using namespace glm;
@@ -121,22 +122,52 @@ namespace {
 	constexpr float def_M = 0.01f; // 10g 질량
 
 	float time_speed = 1.f;
-	int step_size = 3;
+	int step_size = 50;
 	float Ka = def_Ka; 	
 	float Kr = def_Kr;
 	float Kmu = def_Kmu;
 	float Ks = def_Ks; 		
 	float Kd = def_Kd;
 	
-	bool is_pause = false;
+	bool is_pause = true;
 	float cloth_p_m = def_M;
 	float stretch_pct = def_stretch_pct;
 	float shear_pct = def_shear_pct;
 	float bending_pct = def_bending_pct;
 
 	const vec3 G = {0, -9.8, 0};
+	std::vector<vec4> cloth_p_data;
 }
 
+static void resetScene() {
+	for(int i=0; i<2 ; i++) {
+		glBindVertexArray(vao_update_ids[i]);
+
+		glBindBuffer(GL_ARRAY_BUFFER, vbo_pos_ids[i]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vec4)*nr_ptcls, cloth_p_data.data(), GL_DYNAMIC_COPY);
+
+		glBindBuffer(GL_ARRAY_BUFFER, vbo_prev_pos_ids[i]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vec4)*nr_ptcls, cloth_p_data.data(), GL_DYNAMIC_COPY);
+		glBindVertexArray(0);
+	}
+}
+
+static void resetParams() {
+	time_speed = 1.f;
+	step_size = 3;
+	cloth_p_m = def_M;
+
+	Kr = def_Kr;
+	Kmu = def_Kmu;
+
+	stretch_pct = def_stretch_pct;
+	shear_pct = def_shear_pct;
+	bending_pct = def_bending_pct;
+
+	Ka = def_Ka;
+	Kd = def_Kd;
+	Ks = def_Ks;
+}
 
 AppGpgpu::AppGpgpu()
 	: AppBase(1280, 720, "gpgpu")
@@ -155,7 +186,7 @@ AppGpgpu::AppGpgpu()
 	ctf.update();
 	MeshPlane plane(1, p_size_x-1, p_size_y-1);
 	nr_ptcls = plane.poss.size();
-	std::vector<vec4> cloth_p_data(nr_ptcls);
+	cloth_p_data.resize(nr_ptcls);
 	for(int i=0; i<nr_ptcls; i++) {
 		vec3 newPos = vec3(ctf.mtx*vec4(plane.poss[i],1));
 		cloth_p_data[i] = vec4(newPos, cloth_p_m);
@@ -175,12 +206,12 @@ AppGpgpu::AppGpgpu()
 		glBindVertexArray(vao_update_ids[i]);
 
 		glBindBuffer(GL_ARRAY_BUFFER, vbo_pos_ids[i]);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(vec4)*nr_ptcls, cloth_p_data.data(), GL_DYNAMIC_COPY);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vec4)*nr_ptcls, nullptr, GL_DYNAMIC_COPY);
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0);
 
 		glBindBuffer(GL_ARRAY_BUFFER, vbo_prev_pos_ids[i]);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(vec4)*nr_ptcls, cloth_p_data.data(), GL_DYNAMIC_COPY);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vec4)*nr_ptcls, nullptr, GL_DYNAMIC_COPY);
 		glEnableVertexAttribArray(1);
 		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, 0);
 		glBindVertexArray(0);
@@ -214,6 +245,8 @@ AppGpgpu::AppGpgpu()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 	glGenTransformFeedbacks(1, &xfb_id);
+
+	resetScene();
 }
 AppGpgpu::~AppGpgpu()
 {
@@ -230,52 +263,55 @@ void AppGpgpu::update()
 	static int srcIdx=0;
 	static int dstIdx=1;
 
-	prog_xfb.use();
-	vec2 interSize = vec2(2.f*0.7f*0.5f)/vec2(p_size_x-1, p_size_y-1);
-	prog_xfb.setUniform("inter_size", interSize);
-	prog_xfb.setUniform("p_size_x", p_size_x);
-	prog_xfb.setUniform("p_size_y", p_size_y);
-	prog_xfb.setUniform("dt", delta_time/step_size);
-	prog_xfb.setUniform("ka", Ka);
-	prog_xfb.setUniform("kr", Kr);
-	prog_xfb.setUniform("stretchKs", 	stretch_pct*Ks);
-	prog_xfb.setUniform("shearKs", 		shear_pct*Ks);
-	prog_xfb.setUniform("bendingKs", 	bending_pct*Ks);
-	prog_xfb.setUniform("stretchKd", 	Kd);
-	prog_xfb.setUniform("shearKd", 		Kd);
-	prog_xfb.setUniform("bendingKd", 	Kd);
-	prog_xfb.setUniform("gravity", G);
-
-	glEnable(GL_RASTERIZER_DISCARD);
+	if(!is_pause)
 	{
-		glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, xfb_id);
+		prog_xfb.use();
+		vec2 interSize = vec2(2.f*0.7f*0.5f)/vec2(p_size_x-1, p_size_y-1);
+		float dt = (delta_time*time_speed)/float(step_size);
+		prog_xfb.setUniform("inter_size", interSize);
+		prog_xfb.setUniform("p_size_x", p_size_x);
+		prog_xfb.setUniform("p_size_y", p_size_y);
+		prog_xfb.setUniform("dt", dt);
+		prog_xfb.setUniform("ka", Ka);
+		prog_xfb.setUniform("kr", Kr);
+		prog_xfb.setUniform("stretchKs", 	stretch_pct*Ks);
+		prog_xfb.setUniform("shearKs", 		shear_pct*Ks);
+		prog_xfb.setUniform("bendingKs", 	bending_pct*Ks);
+		prog_xfb.setUniform("stretchKd", 	Kd);
+		prog_xfb.setUniform("shearKd", 		Kd);
+		prog_xfb.setUniform("bendingKd", 	Kd);
+		prog_xfb.setUniform("gravity", G);
+
+		glEnable(GL_RASTERIZER_DISCARD);
 		{
-			for(int i=0; i<step_size; i++)
+			glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, xfb_id);
 			{
-				glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, vbo_pos_ids[dstIdx]);
-				glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 1, vbo_prev_pos_ids[dstIdx]);
-
-				glActiveTexture(GL_TEXTURE0);
-				glBindTexture(GL_TEXTURE_BUFFER, tbo_pos_ids[srcIdx]);
-				prog.setUniform("tex_posm", 0);
-				glActiveTexture(GL_TEXTURE1);
-				glBindTexture(GL_TEXTURE_BUFFER, tbo_pos_ids[srcIdx]);
-				prog.setUniform("tex_prev_posm", 0);
-
-				glBeginTransformFeedback(GL_POINTS);
+				for(int i=0; i<step_size; i++)
 				{
-					glBindVertexArray(vao_update_ids[srcIdx]);
-					glDrawArrays(GL_POINTS, 0, nr_ptcls);
-				}
-				glEndTransformFeedback();
-				std::swap(srcIdx, dstIdx);
-			}
-		}
-		glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
-	}
-	glDisable(GL_RASTERIZER_DISCARD);
-	glFlush();
+					glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, vbo_pos_ids[dstIdx]);
+					glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 1, vbo_prev_pos_ids[dstIdx]);
 
+					glActiveTexture(GL_TEXTURE0);
+					glBindTexture(GL_TEXTURE_BUFFER, tbo_pos_ids[srcIdx]);
+					prog.setUniform("tex_posm", 0);
+					glActiveTexture(GL_TEXTURE1);
+					glBindTexture(GL_TEXTURE_BUFFER, tbo_pos_ids[srcIdx]);
+					prog.setUniform("tex_prev_posm", 1);
+
+					glBeginTransformFeedback(GL_POINTS);
+					{
+						glBindVertexArray(vao_update_ids[srcIdx]);
+						glDrawArrays(GL_POINTS, 0, nr_ptcls);
+					}
+					glEndTransformFeedback();
+					std::swap(srcIdx, dstIdx);
+				}
+			}
+			glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
+		}
+		glDisable(GL_RASTERIZER_DISCARD);
+		glFlush();
+	}
 
 
 	viewport.getFb().bind();
@@ -296,6 +332,7 @@ void AppGpgpu::update()
 	viewport.getFb().unbind();
 	std::swap(srcIdx, dstIdx);
 }
+
 void AppGpgpu::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
@@ -305,7 +342,32 @@ void AppGpgpu::updateImGui()
 	viewport.drawImGui();
 
 	ImGui::Begin("test window##template");
-	ImGui::Text("win size : %d %d", win_width, win_height);
-	ImGui::Text("fb size  : %d %d", fb_width, fb_height);
+	LimGui::PlotVal("fps", "", ImGui::GetIO().Framerate);
+	if(ImGui::Button("restart")) {
+		resetScene();
+	}
+	if(ImGui::Button("reset params")) {
+		resetParams();
+	}
+	ImGui::Checkbox("pause", &is_pause);
+
+
+	ImGui::SliderFloat("time speed", &time_speed, 0.1f, 2.f);
+	ImGui::SliderInt("step size", &step_size, 1, 60);
+	ImGui::SliderFloat("p0 mass", &cloth_p_m, 0.01f, 3.f);
+
+	ImGui::SliderFloat("plane bounce damping", &Kr, 0.01f, 1.f);
+	ImGui::SliderFloat("plane friction", &Kmu, 0.01f, 1.f);
+
+	ImGui::SliderFloat("air damping", &Ka, 0.0001f, 0.09f, "%.5f");
+
+	ImGui::SliderFloat("spring mass", &cloth_p_m, 0.001f, 0.1f);
+	ImGui::SliderFloat("spring coef", &Ks, 10.f, 50.f);
+	ImGui::SliderFloat("spring damping coef", &Kd, 0.00f, 1.f);
+
+	ImGui::SliderFloat("stretch", &stretch_pct, 0.1f, 1.f);
+	ImGui::SliderFloat("shear", &shear_pct, 0.1f, 1.f);
+	ImGui::SliderFloat("bending", &bending_pct, 0.1f, 1.f);
+
 	ImGui::End();
 }

@@ -65,6 +65,8 @@ vec3 getSpringForce(ivec2 dxy, float ks, float kd) {
 
 void main()
 {
+    if(dt == 0)
+        return;
     const int index = gl_VertexID;
     cur_ixy = ivec2( index % p_size_x, index / p_size_x );
     cur_pos = aPosm.xyz;
@@ -77,15 +79,15 @@ void main()
     F += gravity*cur_m;
     F -= ka*cur_vel;
 
-    // for( int i=0; i<4; i++ ) {
-    //     F += getSpringForce(stretchDxy[i], stretchKs, stretchKd);
-    // }
-    // for( int i=0; i<4; i++ ) {
-    //     F += getSpringForce(shearDxy[i], shearKs, shearKd);
-    // }
-    // for( int i=0; i<4; i++ ) {
-    //     F += getSpringForce(bendingDxy[i], bendingKs, bendingKd);
-    // }
+    for( int i=0; i<4; i++ ) {
+        F += getSpringForce(stretchDxy[i], stretchKs, stretchKd);
+    }
+    for( int i=0; i<4; i++ ) {
+        F += getSpringForce(shearDxy[i], shearKs, shearKd);
+    }
+    for( int i=0; i<4; i++ ) {
+        F += getSpringForce(bendingDxy[i], bendingKs, bendingKd);
+    }
     vec3 acc = vec3(0);
     if(cur_m!=0)
         acc = F/cur_m;
