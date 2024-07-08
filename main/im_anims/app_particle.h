@@ -7,9 +7,6 @@
 #define __app_particle_h_
 
 #include <limbrary/application.h>
-#include <limbrary/model_view/mesh_maked.h>
-#include <limbrary/model_view/renderer.h>
-#include <limbrary/model_view/camera_man.h>
 #include "appbase_canvas3d.h"
 
 namespace lim

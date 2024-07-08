@@ -23,10 +23,10 @@ namespace {
 	AppParticle* g_app = nullptr;
 
 	constexpr float def_Ka = 0.026f;	// vicous drag 공기저항
-	constexpr float def_Ks = 30.f;		// 스프링 계수
-	constexpr float def_Kd = 0.4f;		// 스프링 저항
 	constexpr float def_Kmu = 0.1f; 	// 마찰 계수
 	constexpr float def_Kr = 0.8f;		// 반발 계수
+	constexpr float def_Ks = 30.f;		// 스프링 계수
+	constexpr float def_Kd = 0.4f;		// 스프링 저항
 	constexpr float def_collision_eps = 0.001f; // (particle ratius)
 	constexpr float def_stretch_pct = 1.f;
 	constexpr float def_shear_pct = 0.9f;
@@ -39,7 +39,7 @@ namespace {
 	float Ks = def_Ks; 		
 	float Kd = def_Kd;
 	
-	bool is_pause = false;
+	bool is_pause = true;
 	float cloth_p_m = def_M;
 	float stretch_pct = def_stretch_pct;
 	float shear_pct = def_shear_pct;
@@ -101,12 +101,15 @@ struct Spring {
 	}
 	void applyForce() {
 		vec3 diffP = p2.p - p1.p;
+		vec3 diffV = p2.v - p1.v;
+
 		float curR = glm::length(diffP);
+		vec3 dir = diffP/curR;
+		
 		// force : p1이 당겨지는 힘
 		float force = ks_pct*Ks*(curR-length);
-		vec3 dir = diffP/curR;
-		vec3 diffV = p2.v - p1.v;
 		force += Kd * dot(diffV, dir);
+
 		p1.addForce( force * dir);
 		p2.addForce(-force * dir);
 	}
@@ -167,11 +170,12 @@ struct Cloth {
 		}
 	}
 	void setPose(const mat4& tf) {
-		vec2 startUv = {-0.5f, 0.5f};
-		vec2 stepUv = {1.f/nr_width, 1.f/nr_height};
+		vec2 startUv = {-1.f, -1.f};
+		// 2m 2m
+		vec2 stepUv = {2.f/(nr_width-1), 2.f/(nr_height-1)};
 		for(int x=0; x<nr_width; x++) for(int y=0; y<nr_height; y++) {
 			vec2 uv = startUv + stepUv*vec2(x,y);
-			vec3 wPos = vec3(tf * vec4(uv.x, uv.y, 0, 1));
+			vec3 wPos = vec3(tf * vec4(uv.x, 0, uv.y, 1));
 			Particle& p = *p_ptcls[idxP(x,y)];
 			p.p = wPos;
 			p.v = vec3(0.f);
@@ -327,9 +331,14 @@ static void resetScene() {
 	ptcl.p = vec3(1, 2, 0);
 	ptcl.v = {1.1f,0,0};
 
-	mat4 ctf = translate(vec3{0,1.f,0}) * rotate(-F_PI*0.3f,vec3{1,0,0}) * scale(vec3(0.7f));
+	//70cm
+	Transform ctf;
+	ctf.pos = {0,1,0};
+	ctf.ori = quat(rotate(H_PI*0.8f, vec3{1,0,0}));
+	ctf.scale = vec3(0.7f*0.5f);
+	ctf.update();
 	Cloth& cloth = cloths.back();
-	cloth.setPose(ctf);
+	cloth.setPose(ctf.mtx);
 	cloth.p_ptcls[0]->fixed = true;
 }
 static void resetParams() {

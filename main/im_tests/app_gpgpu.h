@@ -7,6 +7,9 @@
 #define __app_gpgpu_h_
 
 #include <limbrary/application.h>
+#include <limbrary/model_view/mesh_maked.h>
+#include <limbrary/model_view/camera_man.h>
+#include <limbrary/model_view/transform.h>
 
 namespace lim
 {
@@ -17,6 +20,11 @@ namespace lim
 		inline static constexpr CStr APP_DIR  = "im_tests";
 		inline static constexpr CStr APP_DESCRIPTION = "limbrary template application";
 
+
+		Program prog;
+		Program prog_xfb;
+		MeshPlane ground;
+		ViewportWithCamera viewport;
 
 	public:
 		AppGpgpu();

@@ -57,44 +57,44 @@ MeshQuad::MeshQuad(bool genNors, bool genUvs)
 	initGL();
 }
 
-MeshPlane::MeshPlane(float radius, int nrSlices, bool genNors, bool genUvs)
+MeshPlane::MeshPlane(float radius, int nrCols, int nrRows, bool genNors, bool genUvs)
 {
-	name = fmtStrToBuf("plane_s%d", nrSlices);
-	
-	const float length = radius*2;
-	const float start = -length / 2.f;
-	const float step = length / nrSlices;
+	name = fmtStrToBuf("plane_%d_%d", nrCols, nrRows);
+	const float width = 2.f*radius;
+	const float fNrCols = nrCols;
+	const float fNrRows = nrRows;
+	const float start = -width / 2.f;
+	const float stepX = width / fNrCols;
+	const float stepY = width / fNrRows;
 	const vec3 up = {0, 1, 0};
-	const float div = nrSlices;
 
 
-	for(int i = 0; i <= nrSlices; i++) for(int j = 0; j <= nrSlices; j++)
+	for(int i = 0; i <= nrRows; i++) for(int j = 0; j <= nrCols; j++)
 	{
-		poss.push_back({start + step * j, 0, start + step * i});
+		poss.push_back({start + stepX * j, 0, start + stepY * i});
 		if( genNors ) {
 			nors.push_back( up );
 		}
 		if( genUvs ) {
-			uvs.push_back({ j/div, (div-i)/div });
+			uvs.push_back({ j/fNrCols, (fNrRows-i)/fNrRows });
 		}
 	}
 
-
-	const int nrCols = nrSlices + 1;
-	for (int i = 0; i < nrSlices; i++) for (int j = 0; j < nrSlices; j++)
+	const int nrColVerts = nrCols+1;
+	for (int i = 0; i < nrRows; i++) for (int j = 0; j < nrCols; j++)
 	{
 		// 0-1
 		// |\|
 		// 2-3
-		const int ori = i * nrCols + j;
+		const int ori = i * nrColVerts + j;
 
 		// lower
 		tris.push_back({ori + 0,
-						ori + 0 + nrCols,
-						ori + 1 + nrCols});
+						ori + 0 + nrColVerts,
+						ori + 1 + nrColVerts});
 		// upper
 		tris.push_back({ori + 0,
-						ori + 1 + nrCols,
+						ori + 1 + nrColVerts,
 						ori + 1});
 	}
 	

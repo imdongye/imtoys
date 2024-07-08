@@ -99,6 +99,10 @@ namespace lim
 			glUniform1i(getUniformLocation(vname), v);
 			return *this;
 		}
+		inline const Program& setUniform(const std::string& vname, const glm::uint v) const {
+			glUniform1ui(getUniformLocation(vname), v);
+			return *this;
+		}
 		inline const Program& setUniform(const std::string& vname, const glm::ivec2& v) const {
 			glUniform2iv(getUniformLocation(vname), 1, glm::value_ptr(v));
 			return *this;
