@@ -6,6 +6,7 @@
 #include <limbrary/program.h>
 #include <limbrary/asset_lib.h>
 #include <limbrary/limgui.h>
+#include <limbrary/gl_tools.h>
 
 using namespace lim;
 using namespace glm;
@@ -105,6 +106,16 @@ namespace {
 	GLuint tbo_prev_pos_ids[2];
 	int nr_ptcls, nr_tris;
 }
+static void clearGLBuffers() {
+	gl::safeDelXfbs(1, &xfb_id);
+	gl::safeDelVertArrs(2, vao_update_ids);
+	gl::safeDelVertArrs(2, vao_render_ids);
+	gl::safeDelBufs(2, vbo_pos_ids);
+	gl::safeDelBufs(2, vbo_prev_pos_ids);
+	gl::safeDelBufs(1, &vbo_indices);
+	gl::safeDelTexs(2, tbo_pos_ids);
+	gl::safeDelTexs(2, tbo_prev_pos_ids);
+}
 
 namespace {
 	constexpr float def_time_speed = 1.f;
@@ -112,7 +123,7 @@ namespace {
 	constexpr float def_Ka = 0.026f;	// vicous drag 공기저항
 	constexpr float def_Kr = 0.8f;		// 반발 계수
 	constexpr float def_Kmu = 0.1f; 	// 마찰 계수
-	constexpr float def_Ks = 50.f;		// 스프링 계수
+	constexpr float def_Ks = 10.f;		// 스프링 계수
 	constexpr float def_Kd = 0.014f;	// 스프링 저항 gpu에서 계산할때 왜 과하게 스프링 저항이 들어가는지 모르겠음
 	constexpr float def_collision_eps = 0.001f; // (particle ratius)
 	constexpr float def_stretch_pct = 1.f;
@@ -174,16 +185,8 @@ static void resetParams() {
 	bending_pct = def_bending_pct;
 }
 
-AppGpgpu::AppGpgpu()
-	: AppBase(1280, 720, "gpgpu")
-	, viewport("viewport##gpgpu", new FramebufferTexDepth())
-	, ground(20)
-{
-	viewport.camera.pivot = vec3(0, 1.0, 0);
-    viewport.camera.pos = vec3(0, 1.5, 3.4);
-	viewport.camera.updateViewMat();
-
-
+static void makeClothData() {
+	clearGLBuffers();
 	Transform ctf;
 	ctf.pos = {0,2,0};
 	ctf.ori = quat(rotate(H_PI*0.0f, vec3{1,0,0}));
@@ -202,11 +205,6 @@ AppGpgpu::AppGpgpu()
 	cloth_p_data[nr_p.x-1].w = 0.f;
 
 
-	prog.attatch("im_tests/shaders/cloth.vs").attatch("im_tests/shaders/blue.fs").link();
-	prog_xfb.attatch("im_tests/shaders/cloth_xfb.vs").link();
-	
-
-	
 	glGenVertexArrays(2, vao_update_ids);
 	glGenVertexArrays(2, vao_render_ids);
 	glGenBuffers(2, vbo_pos_ids);
@@ -256,6 +254,23 @@ AppGpgpu::AppGpgpu()
 	glGenTransformFeedbacks(1, &xfb_id);
 
 	resetScene();
+}
+
+AppGpgpu::AppGpgpu()
+	: AppBase(1280, 720, "gpgpu")
+	, viewport("viewport##gpgpu", new FramebufferTexDepth())
+	, ground(20)
+{
+	makeClothData();
+
+	viewport.camera.pivot = vec3(0, 1.0, 0);
+    viewport.camera.pos = vec3(0, 1.5, 3.4);
+	viewport.camera.updateViewMat();
+
+	prog.attatch("im_tests/shaders/cloth.vs").attatch("im_tests/shaders/blue.fs").link();
+	prog_xfb.attatch("im_tests/shaders/cloth_xfb.vs").link();
+	
+	makeClothData();
 }
 AppGpgpu::~AppGpgpu()
 {
@@ -379,6 +394,14 @@ void AppGpgpu::updateImGui()
 
 	if(ImGui::Button("step one frame")) {
 		is_rendered_frame = false;
+	}
+
+	// if(ImGui::SliderInt2("nr cloth ptcls", (int*)&nr_p, 2, 200)) {
+	// 	makeClothData();
+	// }
+	if(ImGui::SliderInt("nr cloth ptcls", (int*)&nr_p.x, 2, 200)) {
+		nr_p.y = nr_p.x;
+		makeClothData();
 	}
 
 	ImGui::End();

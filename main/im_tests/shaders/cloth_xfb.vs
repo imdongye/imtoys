@@ -57,7 +57,7 @@ vec3 getSpringForce(ivec2 dxy, float ks, float kd) {
     float curLength = length(diffP);
     vec3 dir = diffP/curLength;
 
-    float force = ks * (curLength - oriLength);
+    float force = ks * (curLength - oriLength)/oriLength;
     force += kd * dot(diffV, dir);
 
     return force*dir;
@@ -104,15 +104,10 @@ void main()
         // todo kmu
     }
     vec3 newPos = cur_pos + newVel*dt;
-
     // vec3 newPos = 2.0*cur_pos-cur_prev_pos + acc*dt*dt;
 
     out_posm = vec4(newPos, cur_mass);
     out_prev_posm = vec4(cur_pos, cur_mass);
-
-    // vec4 myPos = texelFetch(tex_posm, index);
-    // out_posm = myPos + vec4(0.01,0,0, 0);
-    // out_prev_posm = myPos + vec4(0.01,0,0, 0);
 }
 
 
