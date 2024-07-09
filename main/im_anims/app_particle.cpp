@@ -40,7 +40,7 @@ namespace {
 	float Kd = def_Kd;
 	
 	bool is_pause = true;
-	float cloth_p_m = def_M;
+	float cloth_p_mass = def_M;
 	float stretch_pct = def_stretch_pct;
 	float shear_pct = def_shear_pct;
 	float bending_pct = def_bending_pct;
@@ -119,39 +119,39 @@ struct Spring {
 };
 
 struct Cloth {
-	int nr_width, nr_height;
+	ivec2 nr_p;
 	vector<Particle*> p_ptcls;
 	vector<Spring*> p_sprs;
 
 	inline int idxP(int x, int y) {
-		return x+nr_width*y;
+		return x+nr_p.x*y;
 	}
-	Cloth(int nrWidth=10, int nrHeight=10)
-		: nr_width(nrWidth), nr_height(nrHeight)
+	Cloth(ivec2 nrP)
+		: nr_p(nrP)
 	{
-		p_ptcls.reserve(nr_width*nr_height);
-		for(int x=0; x<nr_width; x++) for(int y=0; y<nr_height; y++) {
+		p_ptcls.reserve(nr_p.x*nr_p.y);
+		for(int x=0; x<nr_p.x; x++) for(int y=0; y<nr_p.y; y++) {
 			particles.emplace_back();
 			p_ptcls.push_back(&particles.back());
 		}
 
-		int nr_stretch 	= (nr_width-1)*(nr_height)   + (nr_width)  *(nr_height-1);
-		int nr_shear 	= (nr_width-1)*(nr_height-1) + (nr_width-1)*(nr_height-1);
-		int nr_bending 	= glm::max(0, (nr_width-2)*(nr_height) + (nr_width)*(nr_height-2));
+		int nr_stretch 	= (nr_p.x-1)*(nr_p.y)   + (nr_p.x)  *(nr_p.y-1);
+		int nr_shear 	= (nr_p.x-1)*(nr_p.y-1) + (nr_p.x-1)*(nr_p.y-1);
+		int nr_bending 	= glm::max(0, (nr_p.x-2)*(nr_p.y) + (nr_p.x)*(nr_p.y-2));
 		p_sprs.reserve(nr_stretch + nr_shear + nr_bending);
 
 		// stretch
-		for(int x=0; x<nr_width-1; x++) for(int y=0; y<nr_height; y++) {
+		for(int x=0; x<nr_p.x-1; x++) for(int y=0; y<nr_p.y; y++) {
 			springs.emplace_back(*p_ptcls[idxP(x, y)], *p_ptcls[idxP(x+1,y)], stretch_pct);
 			p_sprs.push_back(&springs.back());
 		}
-		for(int x=0; x<nr_width; x++) for(int y=0; y<nr_height-1; y++) {
+		for(int x=0; x<nr_p.x; x++) for(int y=0; y<nr_p.y-1; y++) {
 			springs.emplace_back(*p_ptcls[idxP(x, y)], *p_ptcls[idxP(x,y+1)], stretch_pct);
 			p_sprs.push_back(&springs.back());
 		}
 		
 		// shear
-		for(int x=0; x<nr_width-1; x++) for(int y=0; y<nr_height-1; y++) {
+		for(int x=0; x<nr_p.x-1; x++) for(int y=0; y<nr_p.y-1; y++) {
 			springs.emplace_back(*p_ptcls[idxP(x, y)], *p_ptcls[idxP(x+1,y+1)], shear_pct);
 			p_sprs.push_back(&springs.back());
 			springs.emplace_back(*p_ptcls[idxP(x+1, y)], *p_ptcls[idxP(x,y+1)], shear_pct);
@@ -159,12 +159,12 @@ struct Cloth {
 		}
 
 		// bending
-		for(int x=0; x<nr_width-2; x++) for(int y=0; y<nr_height; y++) {
+		for(int x=0; x<nr_p.x-2; x++) for(int y=0; y<nr_p.y; y++) {
 			springs.emplace_back(*p_ptcls[idxP(x, y)], *p_ptcls[idxP(x+2,y)], bending_pct);
 			p_sprs.push_back(&springs.back());
 
 		}
-		for(int x=0; x<nr_width; x++) for(int y=0; y<nr_height-2; y++){
+		for(int x=0; x<nr_p.x; x++) for(int y=0; y<nr_p.y-2; y++){
 			springs.emplace_back(*p_ptcls[idxP(x, y)], *p_ptcls[idxP(x,y+2)], bending_pct);
 			p_sprs.push_back(&springs.back());
 		}
@@ -172,14 +172,14 @@ struct Cloth {
 	void setPose(const mat4& tf) {
 		vec2 startUv = {-1.f, -1.f};
 		// 2m 2m
-		vec2 stepUv = {2.f/(nr_width-1), 2.f/(nr_height-1)};
-		for(int x=0; x<nr_width; x++) for(int y=0; y<nr_height; y++) {
+		vec2 stepUv = {2.f/(nr_p.x-1), 2.f/(nr_p.y-1)};
+		for(int x=0; x<nr_p.x; x++) for(int y=0; y<nr_p.y; y++) {
 			vec2 uv = startUv + stepUv*vec2(x,y);
 			vec3 wPos = vec3(tf * vec4(uv.x, 0, uv.y, 1));
 			Particle& p = *p_ptcls[idxP(x,y)];
 			p.p = wPos;
 			p.v = vec3(0.f);
-			p.m = cloth_p_m;
+			p.m = cloth_p_mass;
 		}
 		for(Spring* s : p_sprs) {
 			s->setLength();
@@ -299,7 +299,7 @@ static void initScene() {
 	// p0
 	particles.emplace_back();
 
-	cloths.push_back(Cloth(7, 7));
+	cloths.push_back(Cloth({7, 7}));
 
 	ColPlane* plane = new ColPlane();
 	colliders.push_back(plane);
@@ -334,7 +334,8 @@ static void resetScene() {
 	//70cm
 	Transform ctf;
 	ctf.pos = {0,1,0};
-	ctf.ori = quat(rotate(H_PI*0.8f, vec3{1,0,0}));
+	ctf.ori = quat(rotate(H_PI*0.0f, vec3{1,0,0}));
+
 	ctf.scale = vec3(0.7f*0.5f);
 	ctf.update();
 	Cloth& cloth = cloths.back();
@@ -417,7 +418,7 @@ void AppParticle::renderImGui()
 
 	ImGui::SliderFloat("air damping", &Ka, 0.0001f, 0.09f, "%.5f");
 
-	ImGui::SliderFloat("spring mass", &cloth_p_m, 0.001f, 0.1f);
+	ImGui::SliderFloat("spring mass", &cloth_p_mass, 0.001f, 0.1f);
 	ImGui::SliderFloat("spring coef", &Ks, 10.f, 50.f);
 	ImGui::SliderFloat("spring damping coef", &Kd, 0.00f, 1.f);
 

@@ -107,24 +107,26 @@ namespace {
 }
 
 namespace {
+	constexpr float def_time_speed = 1.f;
+	constexpr int 	def_step_size = 50;
 	constexpr float def_Ka = 0.026f;	// vicous drag 공기저항
 	constexpr float def_Kr = 0.8f;		// 반발 계수
 	constexpr float def_Kmu = 0.1f; 	// 마찰 계수
-	constexpr float def_Ks = 30.f;		// 스프링 계수
-	constexpr float def_Kd = 0.4f;		// 스프링 저항
+	constexpr float def_Ks = 50.f;		// 스프링 계수
+	constexpr float def_Kd = 0.014f;	// 스프링 저항 gpu에서 계산할때 왜 과하게 스프링 저항이 들어가는지 모르겠음
 	constexpr float def_collision_eps = 0.001f; // (particle ratius)
 	constexpr float def_stretch_pct = 1.f;
 	constexpr float def_shear_pct = 0.9f;
 	constexpr float def_bending_pct = 0.75f;
 	constexpr float def_M = 0.01f; // 10g 질량
 
-	int nr_p_x = 20;
-	int nr_p_y = 20;
-	vec2 cloth_size = {0.7, 0.7};
+
+	ivec2 nr_p{7, 7};
+	vec2 cloth_size{0.7, 0.7};
 	vec2 inter_p_size;
 
-	float time_speed = 1.f;
-	int step_size = 50;
+	float time_speed = def_time_speed;
+	int step_size = def_step_size;
 	float Ka = def_Ka; 	
 	float Kr = def_Kr;
 	float Kmu = def_Kmu;
@@ -132,13 +134,15 @@ namespace {
 	float Kd = def_Kd;
 	
 	bool is_pause = true;
-	float cloth_p_m = def_M;
+	float cloth_p_mass = def_M;
 	float stretch_pct = def_stretch_pct;
 	float shear_pct = def_shear_pct;
 	float bending_pct = def_bending_pct;
 
 	const vec3 G = {0, -9.8, 0};
 	std::vector<vec4> cloth_p_data;
+
+	bool is_rendered_frame = true;
 }
 
 static void resetScene() {
@@ -149,26 +153,25 @@ static void resetScene() {
 		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vec4)*nr_ptcls, cloth_p_data.data());
 
 		glBindBuffer(GL_ARRAY_BUFFER, vbo_prev_pos_ids[i]);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(vec4)*nr_ptcls, cloth_p_data.data(), GL_DYNAMIC_COPY);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vec4)*nr_ptcls, cloth_p_data.data());
 		glBindVertexArray(0);
 	}
 }
 
 static void resetParams() {
-	time_speed = 1.f;
-	step_size = 3;
-	cloth_p_m = def_M;
-
+	time_speed = def_time_speed;
+	step_size = def_step_size;
+	Ka = def_Ka; 	
 	Kr = def_Kr;
 	Kmu = def_Kmu;
-
+	Ks = def_Ks; 		
+	Kd = def_Kd;
+	
+	is_pause = true;
+	cloth_p_mass = def_M;
 	stretch_pct = def_stretch_pct;
 	shear_pct = def_shear_pct;
 	bending_pct = def_bending_pct;
-
-	Ka = def_Ka;
-	Kd = def_Kd;
-	Ks = def_Ks;
 }
 
 AppGpgpu::AppGpgpu()
@@ -187,16 +190,16 @@ AppGpgpu::AppGpgpu()
 	ctf.scale = vec3(cloth_size.x, 1, cloth_size.y);
 	ctf.scale *= 0.5f;
 	ctf.update();
-	inter_p_size = cloth_size/vec2{nr_p_x-1, nr_p_y-1};
-	MeshPlane plane(1, nr_p_x-1, nr_p_y-1);
+	inter_p_size = cloth_size/vec2{nr_p.x-1, nr_p.y-1};
+	MeshPlane plane(1, nr_p.x-1, nr_p.y-1);
 	nr_ptcls = plane.poss.size();
 	cloth_p_data.resize(nr_ptcls);
 	for(int i=0; i<nr_ptcls; i++) {
 		vec3 newPos = vec3(ctf.mtx*vec4(plane.poss[i],1));
-		cloth_p_data[i] = vec4(newPos, cloth_p_m);
+		cloth_p_data[i] = vec4(newPos, 1.f);
 	}
 	cloth_p_data[0].w = 0.f;
-	cloth_p_data[nr_p_x-1].w = 0.f;
+	cloth_p_data[nr_p.x-1].w = 0.f;
 
 
 	prog.attatch("im_tests/shaders/cloth.vs").attatch("im_tests/shaders/blue.fs").link();
@@ -269,13 +272,15 @@ void AppGpgpu::update()
 	static int srcIdx=0;
 	static int dstIdx=1;
 
-	if(!is_pause)
+	bool frameByFrame = is_pause && (is_rendered_frame==false);
+	if(!is_pause || frameByFrame)
 	{
+		is_rendered_frame = true;
 		prog_xfb.use();
 		float dt = (delta_time*time_speed)/float(step_size);
+		prog_xfb.setUniform("cloth_p_mass", cloth_p_mass);
 		prog_xfb.setUniform("inter_p_size", inter_p_size);
-		prog_xfb.setUniform("nr_p_x", nr_p_x);
-		prog_xfb.setUniform("nr_p_y", nr_p_y);
+		prog_xfb.setUniform("nr_p", nr_p);
 		prog_xfb.setUniform("dt", dt);
 		prog_xfb.setUniform("ka", Ka);
 		prog_xfb.setUniform("kr", Kr);
@@ -359,20 +364,22 @@ void AppGpgpu::updateImGui()
 
 	ImGui::SliderFloat("time speed", &time_speed, 0.1f, 2.f);
 	ImGui::SliderInt("step size", &step_size, 1, 60);
-	ImGui::SliderFloat("p0 mass", &cloth_p_m, 0.01f, 3.f);
 
 	ImGui::SliderFloat("plane bounce damping", &Kr, 0.01f, 1.f);
 	ImGui::SliderFloat("plane friction", &Kmu, 0.01f, 1.f);
 
 	ImGui::SliderFloat("air damping", &Ka, 0.0001f, 0.09f, "%.5f");
 
-	ImGui::SliderFloat("spring mass", &cloth_p_m, 0.001f, 0.1f);
-	ImGui::SliderFloat("spring coef", &Ks, 10.f, 50.f);
-	ImGui::SliderFloat("spring damping coef", &Kd, 0.00f, 1.f);
-
+	ImGui::SliderFloat("cloth p mass", &cloth_p_mass, 0.001f, 0.1f);
+	ImGui::SliderFloat("spring coef", &Ks, 10.f, 70.f);
 	ImGui::SliderFloat("stretch", &stretch_pct, 0.1f, 1.f);
 	ImGui::SliderFloat("shear", &shear_pct, 0.1f, 1.f);
 	ImGui::SliderFloat("bending", &bending_pct, 0.1f, 1.f);
+	ImGui::SliderFloat("spring damping coef", &Kd, 0.00f, 0.4f);
+
+	if(ImGui::Button("step one frame")) {
+		is_rendered_frame = false;
+	}
 
 	ImGui::End();
 }
