@@ -326,6 +326,7 @@ static void deinitScene() {
 	springs.clear();
 	animators.clear();
 }
+
 static void resetScene() {
 	Particle& ptcl = particles[0];
 	ptcl.p = vec3(1, 2, 0);

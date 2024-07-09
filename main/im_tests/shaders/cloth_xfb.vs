@@ -2,13 +2,15 @@
 precision highp float;
 
 layout(location=0) in vec4 aPosm;
-layout(location=1) in vec4 aPrevPosm;
+layout(location=1) in vec4 aVel;
 
 layout(xfb_buffer=0, xfb_offset=0) out vec4 out_posm;
-layout(xfb_buffer=1, xfb_offset=0) out vec4 out_prev_posm;
+layout(xfb_buffer=1, xfb_offset=0) out vec4 out_vel;
+
+
 
 uniform samplerBuffer tex_posm;
-uniform samplerBuffer tex_prev_posm;
+uniform samplerBuffer tex_vel;
 
 uniform float cloth_p_mass;
 uniform vec2 inter_p_size;
@@ -33,7 +35,6 @@ const ivec2 bendingDxy[] = {
 ivec2 cur_ixy;
 vec3 cur_pos;
 float cur_mass;
-vec3 cur_prev_pos;
 vec3 cur_vel;
 
 
@@ -47,8 +48,7 @@ vec3 getSpringForce(ivec2 dxy, float ks, float kd) {
     }
     int p2_idx = p2_ixy.x + p2_ixy.y*nr_p.x;
     vec3 p2_pos = texelFetch(tex_posm, p2_idx).xyz;
-    vec3 p2_prev_pos = texelFetch(tex_prev_posm, p2_idx).xyz;
-    vec3 p2_vel = (p2_pos-p2_prev_pos)/dt;
+    vec3 p2_vel = texelFetch(tex_vel, p2_idx).xyz;
 
     vec3 diffP = p2_pos - cur_pos;
     vec3 diffV = p2_vel - cur_vel;
@@ -58,7 +58,7 @@ vec3 getSpringForce(ivec2 dxy, float ks, float kd) {
     vec3 dir = diffP/curLength;
 
     float force = ks * (curLength - oriLength)/oriLength;
-    force += kd * dot(diffV, dir);
+    force += kd * dot(diffV*dt, dir);
 
     return force*dir;
 }
@@ -78,8 +78,7 @@ void main()
         cur_mass = cloth_p_mass;
 
     cur_pos = aPosm.xyz;
-    cur_prev_pos = aPrevPosm.xyz;
-    cur_vel = (cur_pos-cur_prev_pos)/dt; // todo dt 최적화
+    cur_vel = aVel.xyz;
 
     vec3 F = vec3(0);
     F -= ka*cur_vel;
@@ -107,7 +106,7 @@ void main()
     // vec3 newPos = 2.0*cur_pos-cur_prev_pos + acc*dt*dt;
 
     out_posm = vec4(newPos, cur_mass);
-    out_prev_posm = vec4(cur_pos, cur_mass);
+    out_vel = vec4(newVel, cur_mass);
 }
 
 

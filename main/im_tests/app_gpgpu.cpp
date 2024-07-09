@@ -100,10 +100,10 @@ namespace {
 	GLuint vao_update_ids[2];
 	GLuint vao_render_ids[2];
 	GLuint vbo_pos_ids[2];
-	GLuint vbo_prev_pos_ids[2];
+	GLuint vbo_vel_ids[2];
 	GLuint vbo_indices;
 	GLuint tbo_pos_ids[2];
-	GLuint tbo_prev_pos_ids[2];
+	GLuint tbo_vel_ids[2];
 	int nr_ptcls, nr_tris;
 }
 static void clearGLBuffers() {
@@ -111,10 +111,10 @@ static void clearGLBuffers() {
 	gl::safeDelVertArrs(2, vao_update_ids);
 	gl::safeDelVertArrs(2, vao_render_ids);
 	gl::safeDelBufs(2, vbo_pos_ids);
-	gl::safeDelBufs(2, vbo_prev_pos_ids);
+	gl::safeDelBufs(2, vbo_vel_ids);
 	gl::safeDelBufs(1, &vbo_indices);
 	gl::safeDelTexs(2, tbo_pos_ids);
-	gl::safeDelTexs(2, tbo_prev_pos_ids);
+	gl::safeDelTexs(2, tbo_vel_ids);
 }
 
 namespace {
@@ -152,6 +152,7 @@ namespace {
 
 	const vec3 G = {0, -9.8, 0};
 	std::vector<vec4> cloth_p_data;
+	std::vector<vec4> cloth_v_data;
 
 	bool is_rendered_frame = true;
 }
@@ -163,8 +164,8 @@ static void resetScene() {
 		glBindBuffer(GL_ARRAY_BUFFER, vbo_pos_ids[i]);
 		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vec4)*nr_ptcls, cloth_p_data.data());
 
-		glBindBuffer(GL_ARRAY_BUFFER, vbo_prev_pos_ids[i]);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vec4)*nr_ptcls, cloth_p_data.data());
+		glBindBuffer(GL_ARRAY_BUFFER, vbo_vel_ids[i]);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vec4)*nr_ptcls, cloth_v_data.data());
 		glBindVertexArray(0);
 	}
 }
@@ -204,11 +205,13 @@ static void makeClothData() {
 	cloth_p_data[0].w = 0.f;
 	cloth_p_data[nr_p.x-1].w = 0.f;
 
+	cloth_v_data.resize(nr_ptcls, vec4(0));
+
 
 	glGenVertexArrays(2, vao_update_ids);
 	glGenVertexArrays(2, vao_render_ids);
 	glGenBuffers(2, vbo_pos_ids);
-	glGenBuffers(2, vbo_prev_pos_ids);
+	glGenBuffers(2, vbo_vel_ids);
 	for(int i=0; i<2 ; i++) {
 		glBindVertexArray(vao_update_ids[i]);
 
@@ -217,7 +220,7 @@ static void makeClothData() {
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0);
 
-		glBindBuffer(GL_ARRAY_BUFFER, vbo_prev_pos_ids[i]);
+		glBindBuffer(GL_ARRAY_BUFFER, vbo_vel_ids[i]);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(vec4)*nr_ptcls, nullptr, GL_DYNAMIC_COPY);
 		glEnableVertexAttribArray(1);
 		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, 0);
@@ -225,13 +228,13 @@ static void makeClothData() {
 	}
 
 	glGenTextures(2, tbo_pos_ids);
-	glGenTextures(2, tbo_prev_pos_ids);
+	glGenTextures(2, tbo_vel_ids);
 	for(int i=0; i<2; i++) {
 		glBindTexture(GL_TEXTURE_BUFFER, tbo_pos_ids[i]);
 		glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, vbo_pos_ids[i]);
 
-		glBindTexture(GL_TEXTURE_BUFFER, tbo_prev_pos_ids[i]);
-		glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, vbo_prev_pos_ids[i]);
+		glBindTexture(GL_TEXTURE_BUFFER, tbo_vel_ids[i]);
+		glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, vbo_vel_ids[i]);
 
 		glBindTexture(GL_TEXTURE_BUFFER, 0);
 	}
@@ -314,14 +317,14 @@ void AppGpgpu::update()
 				for(int i=0; i<step_size; i++)
 				{
 					glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, vbo_pos_ids[dstIdx]);
-					glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 1, vbo_prev_pos_ids[dstIdx]);
+					glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 1, vbo_vel_ids[dstIdx]);
 
 					glActiveTexture(GL_TEXTURE0);
 					glBindTexture(GL_TEXTURE_BUFFER, tbo_pos_ids[srcIdx]);
 					prog.setUniform("tex_posm", 0);
 					glActiveTexture(GL_TEXTURE1);
-					glBindTexture(GL_TEXTURE_BUFFER, tbo_prev_pos_ids[srcIdx]);
-					prog.setUniform("tex_prev_posm", 1);
+					glBindTexture(GL_TEXTURE_BUFFER, tbo_vel_ids[srcIdx]);
+					prog.setUniform("tex_vel", 1);
 
 					glBeginTransformFeedback(GL_POINTS);
 					{
@@ -390,7 +393,7 @@ void AppGpgpu::updateImGui()
 	ImGui::SliderFloat("stretch", &stretch_pct, 0.1f, 1.f);
 	ImGui::SliderFloat("shear", &shear_pct, 0.1f, 1.f);
 	ImGui::SliderFloat("bending", &bending_pct, 0.1f, 1.f);
-	ImGui::SliderFloat("spring damping coef", &Kd, 0.00f, 0.4f);
+	ImGui::SliderFloat("spring damping coef", &Kd, 0.00f, 1.4f);
 
 	if(ImGui::Button("step one frame")) {
 		is_rendered_frame = false;
