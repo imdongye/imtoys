@@ -76,7 +76,7 @@ struct Particle {
 	}
 	void integrate(float dt) {
 		if( fixed ) return;
-		p += v*dt;
+		p += v*dt; // p먼저 업데이트해야 발산안하는 이유가 뭐지
 		v += f/m*dt;
 	}
 	void draw() {
@@ -103,11 +103,11 @@ struct Spring {
 		vec3 diffP = p2.p - p1.p;
 		vec3 diffV = p2.v - p1.v;
 
-		float curR = glm::length(diffP);
-		vec3 dir = diffP/curR;
+		float curLength = glm::length(diffP);
+		vec3 dir = diffP/curLength;
 		
 		// force : p1이 당겨지는 힘
-		float force = ks_pct*Ks*(curR-length);
+		float force = ks_pct*Ks*(curLength-length);
 		force += Kd * dot(diffV, dir);
 
 		p1.addForce( force * dir);

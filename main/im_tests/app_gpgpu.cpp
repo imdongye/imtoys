@@ -103,9 +103,6 @@ namespace {
 	GLuint vbo_indices;
 	GLuint tbo_pos_ids[2];
 	GLuint tbo_prev_pos_ids[2];
-	int p_size_x = 16;
-	int p_size_y = 21;
-
 	int nr_ptcls, nr_tris;
 }
 
@@ -120,6 +117,11 @@ namespace {
 	constexpr float def_shear_pct = 0.9f;
 	constexpr float def_bending_pct = 0.75f;
 	constexpr float def_M = 0.01f; // 10g 질량
+
+	int nr_p_x = 20;
+	int nr_p_y = 20;
+	vec2 cloth_size = {0.7, 0.7};
+	vec2 inter_p_size;
 
 	float time_speed = 1.f;
 	int step_size = 50;
@@ -144,7 +146,7 @@ static void resetScene() {
 		glBindVertexArray(vao_update_ids[i]);
 
 		glBindBuffer(GL_ARRAY_BUFFER, vbo_pos_ids[i]);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(vec4)*nr_ptcls, cloth_p_data.data(), GL_DYNAMIC_COPY);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vec4)*nr_ptcls, cloth_p_data.data());
 
 		glBindBuffer(GL_ARRAY_BUFFER, vbo_prev_pos_ids[i]);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(vec4)*nr_ptcls, cloth_p_data.data(), GL_DYNAMIC_COPY);
@@ -180,17 +182,21 @@ AppGpgpu::AppGpgpu()
 
 
 	Transform ctf;
-	ctf.pos = {0,1,0};
-	ctf.ori = quat(rotate(H_PI*0.8f, vec3{1,0,0}));
-	ctf.scale = vec3(0.7f*0.5f);
+	ctf.pos = {0,2,0};
+	ctf.ori = quat(rotate(H_PI*0.0f, vec3{1,0,0}));
+	ctf.scale = vec3(cloth_size.x, 1, cloth_size.y);
+	ctf.scale *= 0.5f;
 	ctf.update();
-	MeshPlane plane(1, p_size_x-1, p_size_y-1);
+	inter_p_size = cloth_size/vec2{nr_p_x-1, nr_p_y-1};
+	MeshPlane plane(1, nr_p_x-1, nr_p_y-1);
 	nr_ptcls = plane.poss.size();
 	cloth_p_data.resize(nr_ptcls);
 	for(int i=0; i<nr_ptcls; i++) {
 		vec3 newPos = vec3(ctf.mtx*vec4(plane.poss[i],1));
 		cloth_p_data[i] = vec4(newPos, cloth_p_m);
 	}
+	cloth_p_data[0].w = 0.f;
+	cloth_p_data[nr_p_x-1].w = 0.f;
 
 
 	prog.attatch("im_tests/shaders/cloth.vs").attatch("im_tests/shaders/blue.fs").link();
@@ -266,11 +272,10 @@ void AppGpgpu::update()
 	if(!is_pause)
 	{
 		prog_xfb.use();
-		vec2 interSize = vec2(2.f*0.7f*0.5f)/vec2(p_size_x-1, p_size_y-1);
 		float dt = (delta_time*time_speed)/float(step_size);
-		prog_xfb.setUniform("inter_size", interSize);
-		prog_xfb.setUniform("p_size_x", p_size_x);
-		prog_xfb.setUniform("p_size_y", p_size_y);
+		prog_xfb.setUniform("inter_p_size", inter_p_size);
+		prog_xfb.setUniform("nr_p_x", nr_p_x);
+		prog_xfb.setUniform("nr_p_y", nr_p_y);
 		prog_xfb.setUniform("dt", dt);
 		prog_xfb.setUniform("ka", Ka);
 		prog_xfb.setUniform("kr", Kr);
@@ -295,7 +300,7 @@ void AppGpgpu::update()
 					glBindTexture(GL_TEXTURE_BUFFER, tbo_pos_ids[srcIdx]);
 					prog.setUniform("tex_posm", 0);
 					glActiveTexture(GL_TEXTURE1);
-					glBindTexture(GL_TEXTURE_BUFFER, tbo_pos_ids[srcIdx]);
+					glBindTexture(GL_TEXTURE_BUFFER, tbo_prev_pos_ids[srcIdx]);
 					prog.setUniform("tex_prev_posm", 1);
 
 					glBeginTransformFeedback(GL_POINTS);
