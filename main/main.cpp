@@ -30,7 +30,7 @@
 #include "im_mine_sweeper/app_mine_sweeper.h"
 #include "im_model_viewer/app_model_viewer.h"
 #include "im_anims/app_skeletal.h"
-#include "im_tests/app_gpgpu.h"
+#include "im_anims/app_gpgpu.h"
 #include "im_anims/app_particle.h"
 
 
@@ -82,9 +82,9 @@ static void pushAppData()
 
 int main()
 {
-	pushAppData<lim::AppSkeletal>();
-	pushAppData<lim::AppGpgpu>();
 	pushAppData<lim::AppParticle>();
+	pushAppData<lim::AppGpgpu>();
+	pushAppData<lim::AppSkeletal>();
 	pushAppData<lim::AppMineSweeper>();
 	pushAppData<lim::AppModelViewer>();
 	pushAppData<lim::AppSdfModeler>();

@@ -56,9 +56,10 @@ vec3 getSpringForce(ivec2 dxy, float ks, float kd) {
     float oriLength = length(inter_p_size*dxy);
     float curLength = length(diffP);
     vec3 dir = diffP/curLength;
+    float diffL = curLength - oriLength;
 
-    float force = ks * (curLength - oriLength)/oriLength;
-    force += kd * dot(diffV*dt, dir); // todo
+    float force = ks * diffL/oriLength;
+    force += kd * dot(diffV*dt, dir)*oriLength; // todo
 
     return force*dir;
 }
@@ -66,17 +67,15 @@ vec3 getSpringForce(ivec2 dxy, float ks, float kd) {
 
 void main()
 {
-    if(dt == 0)
+    if(dt == 0 || aPosm.w==0.0) {
+        out_posm = aPosm;
+        out_vel = aVel;
         return;
+    }
     const int index = gl_VertexID;
     cur_ixy = ivec2( index % nr_p.x, index / nr_p.x );
-    // cur_mass = aPosm.w*cloth_p_mass; // todo early out
-    // cur_mass = aPosm.w;
-    if(aPosm.w==0)
-        cur_mass = 0;
-    else
-        cur_mass = cloth_p_mass;
-
+    
+    cur_mass = cloth_p_mass;
     cur_pos = aPosm.xyz;
     cur_vel = aVel.xyz;
 
@@ -84,20 +83,20 @@ void main()
     F -= ka*cur_vel;
     F += gravity*cur_mass;
 
-    for( int i=0; i<4; i++ ) {
-        F += getSpringForce(stretchDxy[i], stretchKs, stretchKd);
-    }
-    for( int i=0; i<4; i++ ) {
-        F += getSpringForce(shearDxy[i], shearKs, shearKd);
-    }
-    for( int i=0; i<4; i++ ) {
-        F += getSpringForce(bendingDxy[i], bendingKs, bendingKd);
-    }
+    // for( int i=0; i<4; i++ ) {
+    //     F += getSpringForce(stretchDxy[i], stretchKs, stretchKd);
+    // }
+    // for( int i=0; i<4; i++ ) {
+    //     F += getSpringForce(shearDxy[i], shearKs, shearKd);
+    // }
+    // for( int i=0; i<4; i++ ) {
+    //     F += getSpringForce(bendingDxy[i], bendingKs, bendingKd);
+    // }
     vec3 acc = vec3(0);
     if(cur_mass!=0)
         acc = F/cur_mass;
-
     vec3 newVel = cur_vel + acc*dt;
+    
     if(cur_pos.y<0 && newVel.y<0) {
         newVel.y = -kr*newVel.y;
         // todo kmu
@@ -105,8 +104,8 @@ void main()
     vec3 newPos = cur_pos + newVel*dt;
     // vec3 newPos = 2.0*cur_pos-cur_prev_pos + acc*dt*dt;
 
-    out_posm = vec4(newPos, cur_mass);
-    out_vel = vec4(newVel, cur_mass);
+    out_posm = vec4(newPos, 1);
+    out_vel = vec4(newVel, 1);
 }
 
 

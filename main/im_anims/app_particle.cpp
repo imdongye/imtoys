@@ -10,60 +10,20 @@ using namespace glm;
 using namespace std;
 using namespace lim;
 
+#include "cloth_coef.h"
+
 /*
 	1unit : m, kg, sec
 */
-struct ICollider;
-struct Particle;
-struct Spring;
-struct Cloth;
-struct ColAnimator;
-
 namespace {
 	AppParticle* g_app = nullptr;
-
-	constexpr float def_Ka = 0.026f;	// vicous drag 공기저항
-	constexpr float def_Kmu = 0.1f; 	// 마찰 계수
-	constexpr float def_Kr = 0.8f;		// 반발 계수
-	constexpr float def_Ks = 30.f;		// 스프링 계수
-	constexpr float def_Kd = 0.4f;		// 스프링 저항
-	constexpr float def_collision_eps = 0.001f; // (particle ratius)
-	constexpr float def_stretch_pct = 1.f;
-	constexpr float def_shear_pct = 0.9f;
-	constexpr float def_bending_pct = 0.75f;
-	constexpr float def_M = 0.01f; // 10g 질량
-
-	float time_speed = 1.f;
-	int step_size = 3;
-	float Ka = def_Ka; 	
-	float Ks = def_Ks; 		
-	float Kd = def_Kd;
-	
-	bool is_pause = true;
-	float cloth_p_mass = def_M;
-	float stretch_pct = def_stretch_pct;
-	float shear_pct = def_shear_pct;
-	float bending_pct = def_bending_pct;
-
-	const vec3 G = {0, -9.8, 0};
-
-	
-	vector<ICollider*> colliders;
-	vector<Particle> particles;
-	vector<Spring> springs;
-	vector<Cloth> cloths;
-	vector<ColAnimator> animators;
-
-	Particle* picked_ptcl = nullptr;
 }
-
 
 
 struct Particle {
 	vec3 p = vec3{0};
 	vec3 v = vec3{0};
 	vec3 f = vec3{0};
-	float m = def_M;
 
 	vec3 color = {1.f,1.f,0.f};
 	bool fixed = false;
@@ -74,10 +34,13 @@ struct Particle {
 	void addForce(const vec3& force) {
 		f += force;
 	}
-	void integrate(float dt) {
+	void updateVel(float dt) {
 		if( fixed ) return;
+		vec3 acc = f/cloth_p_mass;
+		v += acc*dt;
+	}
+	void updatePos(float dt) {
 		p += v*dt; // p먼저 업데이트해야 발산안하는 이유가 뭐지
-		v += f/m*dt;
 	}
 	void draw() {
 		g_app->drawSphere(p, (fixed)?vec3{1,0,0}:color);
@@ -87,28 +50,28 @@ struct Particle {
 struct Spring {
 	Particle& p1;
 	Particle& p2;
-	float ks_pct;
-	float length;
+	float oriLength;
 	vec3 color = {1.f,0.8f,0.f};
 
-
-	Spring(Particle& p1, Particle& p2, float ksPct=1.f) 
-		: p1(p1), p2(p2), ks_pct(ksPct) {
+	Spring(Particle& p1, Particle& p2) 
+		: p1(p1), p2(p2) {
 		setLength();
 	}
 	void setLength() {
-		length = glm::length(p1.p-p2.p);
+		oriLength = glm::length(p1.p-p2.p);
 	}
-	void applyForce() {
+	void applyForce(float ks, float kd)
+	{
 		vec3 diffP = p2.p - p1.p;
 		vec3 diffV = p2.v - p1.v;
 
 		float curLength = glm::length(diffP);
 		vec3 dir = diffP/curLength;
+		float diffL = curLength - oriLength;
 		
 		// force : p1이 당겨지는 힘
-		float force = ks_pct*Ks*(curLength-length);
-		force += Kd * dot(diffV, dir);
+		float force = ks*diffL/oriLength;
+		force += kd * dot(diffV, dir)*oriLength;
 
 		p1.addForce( force * dir);
 		p2.addForce(-force * dir);
@@ -118,83 +81,9 @@ struct Spring {
 	}
 };
 
-struct Cloth {
-	ivec2 nr_p;
-	vector<Particle*> p_ptcls;
-	vector<Spring*> p_sprs;
-
-	inline int idxP(int x, int y) {
-		return x+nr_p.x*y;
-	}
-	Cloth(ivec2 nrP)
-		: nr_p(nrP)
-	{
-		p_ptcls.reserve(nr_p.x*nr_p.y);
-		for(int x=0; x<nr_p.x; x++) for(int y=0; y<nr_p.y; y++) {
-			particles.emplace_back();
-			p_ptcls.push_back(&particles.back());
-		}
-
-		int nr_stretch 	= (nr_p.x-1)*(nr_p.y)   + (nr_p.x)  *(nr_p.y-1);
-		int nr_shear 	= (nr_p.x-1)*(nr_p.y-1) + (nr_p.x-1)*(nr_p.y-1);
-		int nr_bending 	= glm::max(0, (nr_p.x-2)*(nr_p.y) + (nr_p.x)*(nr_p.y-2));
-		p_sprs.reserve(nr_stretch + nr_shear + nr_bending);
-
-		// stretch
-		for(int x=0; x<nr_p.x-1; x++) for(int y=0; y<nr_p.y; y++) {
-			springs.emplace_back(*p_ptcls[idxP(x, y)], *p_ptcls[idxP(x+1,y)], stretch_pct);
-			p_sprs.push_back(&springs.back());
-		}
-		for(int x=0; x<nr_p.x; x++) for(int y=0; y<nr_p.y-1; y++) {
-			springs.emplace_back(*p_ptcls[idxP(x, y)], *p_ptcls[idxP(x,y+1)], stretch_pct);
-			p_sprs.push_back(&springs.back());
-		}
-		
-		// shear
-		for(int x=0; x<nr_p.x-1; x++) for(int y=0; y<nr_p.y-1; y++) {
-			springs.emplace_back(*p_ptcls[idxP(x, y)], *p_ptcls[idxP(x+1,y+1)], shear_pct);
-			p_sprs.push_back(&springs.back());
-			springs.emplace_back(*p_ptcls[idxP(x+1, y)], *p_ptcls[idxP(x,y+1)], shear_pct);
-			p_sprs.push_back(&springs.back());
-		}
-
-		// bending
-		for(int x=0; x<nr_p.x-2; x++) for(int y=0; y<nr_p.y; y++) {
-			springs.emplace_back(*p_ptcls[idxP(x, y)], *p_ptcls[idxP(x+2,y)], bending_pct);
-			p_sprs.push_back(&springs.back());
-
-		}
-		for(int x=0; x<nr_p.x; x++) for(int y=0; y<nr_p.y-2; y++){
-			springs.emplace_back(*p_ptcls[idxP(x, y)], *p_ptcls[idxP(x,y+2)], bending_pct);
-			p_sprs.push_back(&springs.back());
-		}
-	}
-	void setPose(const mat4& tf) {
-		vec2 startUv = {-1.f, -1.f};
-		// 2m 2m
-		vec2 stepUv = {2.f/(nr_p.x-1), 2.f/(nr_p.y-1)};
-		for(int x=0; x<nr_p.x; x++) for(int y=0; y<nr_p.y; y++) {
-			vec2 uv = startUv + stepUv*vec2(x,y);
-			vec3 wPos = vec3(tf * vec4(uv.x, 0, uv.y, 1));
-			Particle& p = *p_ptcls[idxP(x,y)];
-			p.p = wPos;
-			p.v = vec3(0.f);
-			p.m = cloth_p_mass;
-		}
-		for(Spring* s : p_sprs) {
-			s->setLength();
-		}
-	}
-};
-
-
-
-
 struct ICollider {
 	vec3 p = vec3{0};
 	vec3 old_p = vec3{0};
-	float k_r = def_Kr;
-	float k_mu = def_Kmu;
 	vec3 color = vec3(1.f);
 	virtual void applyCollision(vector<Particle>& ptcls) const = 0;
 	virtual void draw() = 0;
@@ -215,8 +104,8 @@ struct ColPlane : ICollider {
 			vec3 pv = ptcl.v;
 			vec3 pvn = -dot(ptcl.v, n) * n;
 			vec3 pvt = pv + pvn;
-			ptcl.v = pvt + k_r*pvn;
-			ptcl.addForce(-k_mu*pvt);
+			ptcl.v = pvt + Kr*pvn;
+			ptcl.addForce(-Kmu*pvt);
 		}
 
 	}
@@ -241,16 +130,14 @@ struct ColSphere : ICollider {
 			vec3 pv = ptcl.v;
 			vec3 pvn = -dot(pv, n) * n;
 			vec3 pvt = pv + pvn;
-			ptcl.v = pvt + k_r*pvn;
-			ptcl.addForce(-k_mu*pvt);
+			ptcl.v = pvt + Kr*pvn;
+			ptcl.addForce(-Kmu*pvt);
 		}
 	}
 	virtual void draw() override {
 		g_app->drawSphere(p, color, r);
 	}
 };
-
-
 
 struct ColAnimator {
 	struct KeyPos {
@@ -290,32 +177,135 @@ struct ColAnimator {
 };
 
 
+
+struct Cloth {
+	vector<Particle> ptcls;
+	vector<Spring> stretch_sprs;
+	vector<Spring> shear_sprs;
+	vector<Spring> bending_sprs;
+
+
+	inline int idxP(int x, int y) {
+		return x+nr_p.x*y;
+	}
+	void resize() {
+		inter_p_size = cloth_size/vec2{nr_p.x-1, nr_p.y-1};
+
+		ptcls.clear();
+		ptcls.reserve(nr_p.x*nr_p.y);
+		for(int x=0; x<nr_p.x; x++) for(int y=0; y<nr_p.y; y++) {
+			ptcls.emplace_back();
+		}
+
+		// stretch
+		int nrSprs = (nr_p.x-1)*(nr_p.y) + (nr_p.x)*(nr_p.y-1);
+		stretch_sprs.clear();
+		stretch_sprs.reserve(nrSprs);
+		for(int x=0; x<nr_p.x-1; x++) for(int y=0; y<nr_p.y; y++) {
+			stretch_sprs.emplace_back(ptcls[idxP(x, y)], ptcls[idxP(x+1,y)]);
+		}
+		for(int x=0; x<nr_p.x; x++) for(int y=0; y<nr_p.y-1; y++) {
+			stretch_sprs.emplace_back(ptcls[idxP(x, y)], ptcls[idxP(x,y+1)]);
+		}
+		
+		// shear
+		nrSprs = (nr_p.x-1)*(nr_p.y-1) + (nr_p.x-1)*(nr_p.y-1);
+		shear_sprs.clear();
+		shear_sprs.reserve(nrSprs);
+		for(int x=0; x<nr_p.x-1; x++) for(int y=0; y<nr_p.y-1; y++) {
+			shear_sprs.emplace_back(ptcls[idxP(x,  y)], ptcls[idxP(x+1,y+1)]);
+			shear_sprs.emplace_back(ptcls[idxP(x+1,y)], ptcls[idxP(x,  y+1)]);
+		}
+
+		// bending
+		nrSprs = glm::max(0, (nr_p.x-2)*(nr_p.y) + (nr_p.x)*(nr_p.y-2));
+		bending_sprs.clear();
+		bending_sprs.reserve(nrSprs);
+		for(int x=0; x<nr_p.x-2; x++) for(int y=0; y<nr_p.y; y++) {
+			bending_sprs.emplace_back(ptcls[idxP(x, y)], ptcls[idxP(x+2,y)]);
+		}
+		for(int x=0; x<nr_p.x; x++) for(int y=0; y<nr_p.y-2; y++){
+			bending_sprs.emplace_back(ptcls[idxP(x, y)], ptcls[idxP(x,y+2)]);
+		}
+
+		Transform ctf;
+		ctf.pos = {0,2,0};
+		ctf.ori = quat(rotate(H_PI*0.0f, vec3{1,0,0}));
+		ctf.scale = vec3(cloth_size.x, 1, cloth_size.y);
+		ctf.scale *= 0.5f;
+		ctf.update();
+
+		vec2 startUv = {-1.f, -1.f};
+		vec2 stepSize = vec2{2.f}/vec2{nr_p.x-1, nr_p.y-1};
+		for(int x=0; x<nr_p.x; x++) for(int y=0; y<nr_p.y; y++) {
+			vec2 uv = startUv + stepSize*vec2(x,y);
+			vec3 wPos = vec3(ctf.mtx*vec4(uv.x, 0, uv.y, 1));
+			Particle& p = ptcls[idxP(x,y)];
+			p.p = wPos;
+			p.v = vec3(0.f);
+		}
+		ptcls[0].fixed = true;
+		for(auto& spr: stretch_sprs) spr.setLength();
+		for(auto& spr: shear_sprs) 	 spr.setLength();
+		for(auto& spr: bending_sprs) spr.setLength();
+
+
+		ptcls[0].fixed = true;
+		ptcls[nr_p.x-1].fixed = true;
+	}
+	void update(float dt, vector<ICollider*>& colliders) {
+		for(auto& p : ptcls) {
+			p.clearForce();
+			p.addForce(-Ka*p.v); // 공기저항
+			p.addForce(G*cloth_p_mass); // 자유낙하법칙
+		}
+		// for(auto& s : stretch_sprs) s.applyForce(stretch_pct*Ks, Kd);
+		// for(auto& s : shear_sprs)   s.applyForce(shear_pct*Ks,   Kd);
+		// for(auto& s : bending_sprs) s.applyForce(bending_pct*Ks, Kd);
+		for(auto& p : ptcls) p.updateVel(dt);
+		for(auto& c : colliders) c->applyCollision(ptcls);
+		for(auto& p : ptcls) p.updatePos(dt);
+	}
+	void draw() {
+		for(auto& s : stretch_sprs) s.draw();
+		for(auto& s : shear_sprs)   s.draw();
+		for(auto& s : bending_sprs) s.draw();
+		for(auto& p : ptcls) p.draw();
+	}
+};
+
+
+namespace {
+	vector<Particle> particles;
+	Cloth cloth;
+	vector<ICollider*> colliders;
+	vector<ColAnimator> animators;
+	Particle* picked_ptcl = nullptr;
+}
+
 static void initScene() {
 	colliders.reserve(5);
-	particles.reserve(100+25*25);
-	springs.reserve(25*25*6);
+	particles.reserve(100);
 	animators.reserve(5);
 	
 	// p0
 	particles.emplace_back();
 
-	cloths.push_back(Cloth({7, 7}));
-
 	ColPlane* plane = new ColPlane();
 	colliders.push_back(plane);
 
-	ColSphere* sphere = new ColSphere();
-	sphere->p = {-0.2, 0, 0.3};
-	colliders.push_back(sphere);
+	// ColSphere* sphere = new ColSphere();
+	// sphere->p = {-0.2, 0, 0.3};
+	// colliders.push_back(sphere);
 
-	vector<ColAnimator::KeyPos> keys =  {
-		{0.f, vec3(0,0,0)},
-		{1.f, vec3(2,0,0)},
-		{2.f, vec3(1,0,0)},
-		{3.f, vec3(2,0,0)},
-		{4.f, vec3(0,0,0)},
-	};
-	animators.emplace_back(sphere, move(keys));
+	// vector<ColAnimator::KeyPos> keys =  {
+	// 	{0.f, vec3(0,0,0)},
+	// 	{1.f, vec3(2,0,0)},
+	// 	{2.f, vec3(1,0,0)},
+	// 	{3.f, vec3(2,0,0)},
+	// 	{4.f, vec3(0,0,0)},
+	// };
+	// animators.emplace_back(sphere, move(keys));
 }
 static void deinitScene() {
 	for( auto* p : colliders ) {
@@ -323,7 +313,6 @@ static void deinitScene() {
 	}
 	colliders.clear();
 	particles.clear();
-	springs.clear();
 	animators.clear();
 }
 
@@ -332,40 +321,30 @@ static void resetScene() {
 	ptcl.p = vec3(1, 2, 0);
 	ptcl.v = {1.1f,0,0};
 
-	//70cm
-	Transform ctf;
-	ctf.pos = {0,1,0};
-	ctf.ori = quat(rotate(H_PI*0.0f, vec3{1,0,0}));
-
-	ctf.scale = vec3(0.7f*0.5f);
-	ctf.update();
-	Cloth& cloth = cloths.back();
-	cloth.setPose(ctf.mtx);
-	cloth.p_ptcls[0]->fixed = true;
+	cloth.resize();
 }
 static void resetParams() {
-	time_speed = 1.f;
-	step_size = 3;
-	particles[0].m = def_M;
-
-	colliders[0]->k_r = def_Kr;
-	colliders[0]->k_mu = def_Kmu;
-
+	time_speed = def_time_speed;
+	step_size = def_step_size;
+	Ka = def_Ka; 	
+	Kr = def_Kr;
+	Kmu = def_Kmu;
+	Ks = def_Ks; 		
+	Kd = def_Kd;
+	
+	is_pause = true;
+	cloth_p_mass = def_M;
 	stretch_pct = def_stretch_pct;
 	shear_pct = def_shear_pct;
 	bending_pct = def_bending_pct;
-
-	Ka = def_Ka;
-	Kd = def_Kd;
-	Ks = def_Ks;
 }
 
-AppParticle::AppParticle() : AppBaseCanvas3d(1200, 780, APP_NAME, false)
+AppParticle::AppParticle() : AppBaseCanvas3d(1200, 780, APP_NAME, true)
 {
 	g_app = this;	
 	initScene();
-	resetScene();
 	resetParams();
+	resetScene();
 }
 AppParticle::~AppParticle()
 {
@@ -374,21 +353,25 @@ AppParticle::~AppParticle()
 void AppParticle::render() 
 {
 	float dt = (is_pause)? 0 : (delta_time*time_speed)/float(step_size);
-	dt = glm::min(dt, 1.f/165.f);
+
 	for(int i=0; i<step_size; i++)
 	{
 		for(auto& a : animators) a.animate(dt);
-		for(auto& p : particles) p.clearForce();
-		for(auto& p : particles) p.addForce(-Ka*p.v); // 공기저항
-		for(auto& p : particles) p.addForce(G*p.m); // 자유낙하법칙
-		for(auto& s : springs) 	 s.applyForce();
+		for(auto& p : particles) {
+			p.clearForce();
+			p.addForce(-Ka*p.v); // 공기저항
+			p.addForce(G*cloth_p_mass); // 자유낙하법칙
+			p.updateVel(dt);
+		}
 		for(auto& c : colliders) c->applyCollision(particles);
-		for(auto& p : particles) p.integrate(dt);
-		for(auto& c : colliders) c->draw();
-		for(auto& p : particles) p.draw();
-		for(auto& s : springs)   s.draw();
+		for(auto& p : particles) p.updatePos(dt);
+
+		cloth.update(dt, colliders);	
 	}
 
+	for(auto& c : colliders) c->draw();
+	for(auto& p : particles) p.draw();
+	cloth.draw();
 
 	// basis object 10cm
 	drawCylinder({0,0,0}, {0.1f,0,0}, {1,0,0});
@@ -398,6 +381,8 @@ void AppParticle::render()
 void AppParticle::renderImGui()
 {
 	log::drawViewer("logger##particle");
+
+
 
 	ImGui::Begin("test window##particle");
 	LimGui::PlotVal("fps", "", ImGui::GetIO().Framerate);
@@ -409,27 +394,55 @@ void AppParticle::renderImGui()
 	}
 	ImGui::Checkbox("pause", &is_pause);
 
-
 	ImGui::SliderFloat("time speed", &time_speed, 0.1f, 2.f);
-	ImGui::SliderInt("step size", &step_size, 1, 10);
-	ImGui::SliderFloat("p0 mass", &particles[0].m, 0.01f, 3.f);
+	ImGui::SliderInt("step size", &step_size, 1, 60);
 
-	ImGui::SliderFloat("plane bounce damping", &colliders[0]->k_r, 0.01f, 1.f);
-	ImGui::SliderFloat("plane friction", &colliders[0]->k_mu, 0.01f, 1.f);
+	ImGui::SliderFloat("plane bounce damping", &Kr, 0.01f, 1.f);
+	ImGui::SliderFloat("plane friction", &Kmu, 0.01f, 1.f);
 
 	ImGui::SliderFloat("air damping", &Ka, 0.0001f, 0.09f, "%.5f");
 
-	ImGui::SliderFloat("spring mass", &cloth_p_mass, 0.001f, 0.1f);
-	ImGui::SliderFloat("spring coef", &Ks, 10.f, 50.f);
-	ImGui::SliderFloat("spring damping coef", &Kd, 0.00f, 1.f);
-
+	ImGui::SliderFloat("cloth p mass", &cloth_p_mass, 0.001f, 0.1f);
+	ImGui::SliderFloat("spring coef", &Ks, 10.f, 70.f);
 	ImGui::SliderFloat("stretch", &stretch_pct, 0.1f, 1.f);
 	ImGui::SliderFloat("shear", &shear_pct, 0.1f, 1.f);
 	ImGui::SliderFloat("bending", &bending_pct, 0.1f, 1.f);
+	ImGui::SliderFloat("spring damping coef", &Kd, 0.00f, 1.4f);
 
+	// if(ImGui::SliderInt2("nr cloth ptcls", (int*)&nr_p, 2, 200)) {
+	// 	makeClothData();
+	// }
+	if(ImGui::SliderInt("nr cloth ptcls", (int*)&nr_p.x, 2, 200)) {
+		nr_p.y = nr_p.x;
+		cloth.resize();
+	}
 	ImGui::End();
 }
 
+static void pickClosestPtclInRay(vec3 ray, vec3 rayO, vector<Particle>& ps) {
+	float minDepth = FLT_MAX;
+	int minDepthPtclIdx = -1;
+	for(int i=0; i<ps.size(); i++) {
+		Particle& p = ps[i];
+		vec3 toObj = p.p - rayO;
+		float distFromLine = glm::length( glm::cross(ray, toObj) );
+        float distProjLine = glm::dot(ray, toObj);
+
+        if( distFromLine < 0.02f ) {
+            if( distProjLine>0 && minDepth>distProjLine ) {
+				minDepth = distProjLine;
+				minDepthPtclIdx = i;
+            }
+		}
+	}
+	if( minDepthPtclIdx!=-1 ) {
+		ps[minDepthPtclIdx].fixed = !ps[minDepthPtclIdx].fixed;
+		if(ps[minDepthPtclIdx].fixed) {
+			picked_ptcl = &ps[minDepthPtclIdx];
+			picked_ptcl->v = vec3(0);
+		}
+	}
+}
 void AppParticle::mouseBtnCallback(int btn, int action, int mods) {
 	if(btn==GLFW_MOUSE_BUTTON_1)
 		return;
@@ -444,28 +457,8 @@ void AppParticle::mouseBtnCallback(int btn, int action, int mods) {
 		return;
 	}
 	const vec3 mouseRay = vp.getMousePosRayDir();
-
-	float minDepth = FLT_MAX;
-	int minDepthPtclIdx = -1;
-	for(int i=0; i<particles.size(); i++) {
-		Particle& p = particles[i];
-		vec3 toObj = p.p - vp.camera.pos;
-		float distFromLine = glm::length( glm::cross(mouseRay, toObj) );
-        float distProjLine = glm::dot(mouseRay, toObj);
-
-        if( distFromLine < 0.02f ) {
-            if( distProjLine>0 && minDepth>distProjLine ) {
-				minDepth = distProjLine;
-				minDepthPtclIdx = i;
-            }
-		}
-	}
-	if( minDepthPtclIdx!=-1 ) {
-		particles[minDepthPtclIdx].fixed = !particles[minDepthPtclIdx].fixed;
-		if(particles[minDepthPtclIdx].fixed) {
-			picked_ptcl = &particles[minDepthPtclIdx];
-		}
-	}
+	pickClosestPtclInRay(mouseRay, vp.camera.pos, particles);
+	pickClosestPtclInRay(mouseRay, vp.camera.pos, cloth.ptcls);
 }
 
 void AppParticle::cursorPosCallback(double xPos, double yPos) {
