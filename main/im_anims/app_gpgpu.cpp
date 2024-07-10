@@ -195,6 +195,9 @@ void AppGpgpu::update()
 		prog_xfb.setUniform("bendingKd", 	Kd);
 		prog_xfb.setUniform("gravity", G);
 
+		prog.setUniform("tex_posm", 0);
+		prog.setUniform("tex_vel", 1);
+
 		glEnable(GL_RASTERIZER_DISCARD);
 		{
 			glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, xfb_id);
@@ -206,10 +209,8 @@ void AppGpgpu::update()
 
 					glActiveTexture(GL_TEXTURE0);
 					glBindTexture(GL_TEXTURE_BUFFER, tbo_pos_ids[srcIdx]);
-					prog.setUniform("tex_posm", 0);
 					glActiveTexture(GL_TEXTURE1);
 					glBindTexture(GL_TEXTURE_BUFFER, tbo_vel_ids[srcIdx]);
-					prog.setUniform("tex_vel", 1);
 
 					glBeginTransformFeedback(GL_POINTS);
 					{
@@ -231,7 +232,7 @@ void AppGpgpu::update()
 	prog.use();
 	viewport.camera.setUniformTo(prog);
 	// prog.setUniform("mtx_Model", tf.mtx);
-	glBindVertexArray(vao_render_ids[dstIdx]);
+	glBindVertexArray(vao_render_ids[srcIdx]);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_indices);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glDrawElements(GL_TRIANGLES, nr_tris*3, GL_UNSIGNED_INT, nullptr);
@@ -243,7 +244,6 @@ void AppGpgpu::update()
 	groundProg.setUniform("mtx_Model", mat4(1));
 	ground.bindAndDrawGL();
 	viewport.getFb().unbind();
-	std::swap(srcIdx, dstIdx);
 }
 
 void AppGpgpu::updateImGui()

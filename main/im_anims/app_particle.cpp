@@ -259,9 +259,9 @@ struct Cloth {
 			p.addForce(-Ka*p.v); // 공기저항
 			p.addForce(G*cloth_p_mass); // 자유낙하법칙
 		}
-		// for(auto& s : stretch_sprs) s.applyForce(stretch_pct*Ks, Kd);
-		// for(auto& s : shear_sprs)   s.applyForce(shear_pct*Ks,   Kd);
-		// for(auto& s : bending_sprs) s.applyForce(bending_pct*Ks, Kd);
+		for(auto& s : stretch_sprs) s.applyForce(stretch_pct*Ks, Kd);
+		for(auto& s : shear_sprs)   s.applyForce(shear_pct*Ks,   Kd);
+		for(auto& s : bending_sprs) s.applyForce(bending_pct*Ks, Kd);
 		for(auto& p : ptcls) p.updateVel(dt);
 		for(auto& c : colliders) c->applyCollision(ptcls);
 		for(auto& p : ptcls) p.updatePos(dt);
@@ -350,13 +350,13 @@ AppParticle::~AppParticle()
 {
 	deinitScene();
 }
-void AppParticle::render() 
+void AppParticle::canvasUpdate() 
 {
-	float dt = (is_pause)? 0 : (delta_time*time_speed)/float(step_size);
-
+	float dt = (is_pause)? 0 : delta_time*time_speed;
+	for(auto& a : animators) a.animate(dt);
+	dt /= float(step_size);
 	for(int i=0; i<step_size; i++)
 	{
-		for(auto& a : animators) a.animate(dt);
 		for(auto& p : particles) {
 			p.clearForce();
 			p.addForce(-Ka*p.v); // 공기저항
@@ -368,7 +368,8 @@ void AppParticle::render()
 
 		cloth.update(dt, colliders);	
 	}
-
+}
+void AppParticle::canvasDraw() {
 	for(auto& c : colliders) c->draw();
 	for(auto& p : particles) p.draw();
 	cloth.draw();
@@ -378,7 +379,7 @@ void AppParticle::render()
 	drawCylinder({0,0,0}, {0,0.1f,0}, {0,1,0});
 	drawCylinder({0,0,0}, {0,0,0.1f}, {0,0,1});
 }
-void AppParticle::renderImGui()
+void AppParticle::canvasImGui()
 {
 	log::drawViewer("logger##particle");
 

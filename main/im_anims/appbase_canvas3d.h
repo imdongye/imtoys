@@ -31,8 +31,9 @@ namespace lim
 
         virtual void update() final;
 		virtual void updateImGui() final;
-        virtual void render()=0;
-        virtual void renderImGui()=0;
+        virtual void canvasUpdate()=0;
+        virtual void canvasDraw()=0;
+        virtual void canvasImGui()=0;
 
         void drawQuad( const glm::vec3& p, const glm::vec3& n, const glm::vec3& color, const glm::vec2& sz={100, 100} ) const;
         void drawSphere( const glm::vec3& p, const glm::vec3& color, const float r=0.02 ) const;

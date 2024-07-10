@@ -35,9 +35,11 @@ void AppBaseCanvas3d::update() {
 	glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    canvasUpdate();
+
     if( light.shadow ) {
         light.bakeShadowMap([&]() {
-            render();
+            canvasDraw();
         });
     }
 
@@ -53,7 +55,7 @@ void AppBaseCanvas3d::update() {
         drawCylinder(p1, p2, vec3(1));
 	}
 
-    render();
+    canvasDraw();
 
 	vp.getFb().unbind();
 }
@@ -61,7 +63,7 @@ void AppBaseCanvas3d::updateImGui() {
     ImGui::DockSpaceOverViewport();
     vp.drawImGui();
     LimGui::LightDirectionalEditor(light);
-    renderImGui();
+    canvasImGui();
 }
 
 

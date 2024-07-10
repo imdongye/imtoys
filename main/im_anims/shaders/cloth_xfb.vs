@@ -83,15 +83,15 @@ void main()
     F -= ka*cur_vel;
     F += gravity*cur_mass;
 
-    // for( int i=0; i<4; i++ ) {
-    //     F += getSpringForce(stretchDxy[i], stretchKs, stretchKd);
-    // }
-    // for( int i=0; i<4; i++ ) {
-    //     F += getSpringForce(shearDxy[i], shearKs, shearKd);
-    // }
-    // for( int i=0; i<4; i++ ) {
-    //     F += getSpringForce(bendingDxy[i], bendingKs, bendingKd);
-    // }
+    for( int i=0; i<4; i++ ) {
+        F += getSpringForce(stretchDxy[i], stretchKs, stretchKd);
+    }
+    for( int i=0; i<4; i++ ) {
+        F += getSpringForce(shearDxy[i], shearKs, shearKd);
+    }
+    for( int i=0; i<4; i++ ) {
+        F += getSpringForce(bendingDxy[i], bendingKs, bendingKd);
+    }
     vec3 acc = vec3(0);
     if(cur_mass!=0)
         acc = F/cur_mass;
