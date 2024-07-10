@@ -262,6 +262,7 @@ void lim::render( const IFramebuffer& fb,
                 const Scene& scn,
                 const bool isDrawLight )
 {
+    // bake shadow map
     for( const ILight* lit : scn.lights ) {
         lit->bakeShadowMap([&scn]() {
             for( const ModelView* md : scn.models ) {
@@ -273,8 +274,37 @@ void lim::render( const IFramebuffer& fb,
         });
     }
 
-    fb.bind();
+    // bake skinned mesh
+    const Program& skinXfbProg = AssetLib::get().skin_xfb_prog;
+    GLuint skinXfbId = AssetLib::get().skin_xfb_id;
+    skinXfbProg.use();
+    glEnable(GL_RASTERIZER_DISCARD);
+    glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, skinXfbId);
+    for( const ModelView* md : scn.models ) {
+        if( md->animator.cur_anim == nullptr || md->animator.state==Animator::State::STOP  )
+            continue;
+        md->animator.setUniformTo(skinXfbProg);
+        md->root.treversalEnabled([&](const Mesh* ms, const Material* mat, const glm::mat4& transform)
+        {
+            if( ms->skinning_vao==0 )
+                return;
+            glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, ms->skinned_pos_buf);
+            glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 1, ms->skinned_nor_buf);
 
+            glBeginTransformFeedback(GL_POINTS);
+            glBindVertexArray(ms->skinning_vao);
+            glDrawArrays(GL_POINTS, 0, ms->poss.size());
+            glEndTransformFeedback();
+        });
+    }
+    glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
+    glDisable(GL_RASTERIZER_DISCARD);
+    glFlush();
+
+
+
+    // main rendering
+    fb.bind();
     if( scn.is_draw_env_map ) {
         utils::drawEnvSphere(scn.ib_light->map_Light, cam.mtx_View, cam.mtx_Proj);
     }
@@ -312,14 +342,10 @@ void lim::render( const IFramebuffer& fb,
                 if( scn.ib_light ) {
                     scn.ib_light->setUniformTo(*curProg);
                 }
-                md->animator.setUniformTo(*curProg);
                 curMat->setUniformTo(*curProg);
             }
             if( !isProgChanged && isMatChanged ) {
                 curMat->setUniformTo(*curProg);
-            }
-            if( !isProgChanged && isModelChanged ) {
-                md->animator.setUniformTo(*curProg);
             }
             if( isMeshChanged ) {
                 curMesh->bindGL();

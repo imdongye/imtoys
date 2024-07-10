@@ -38,17 +38,24 @@ namespace lim
 		std::vector<glm::vec3> cols;
 		std::vector<glm::vec3> tangents;
 		std::vector<glm::vec3> bitangents;
-		std::vector<VertBoneInfo> bone_infos;
 		std::vector<glm::uvec3> tris;
+		
 		GLuint pos_buf = 0; 			// 0
 		GLuint nor_buf = 0; 			// 1
+		GLuint skinned_pos_buf = 0;		// 0
+		GLuint skinned_nor_buf = 0;		// 1
+
 		GLuint uv_buf  = 0;				// 2
 		GLuint color_buf = 0;			// 3
 		GLuint tangent_buf = 0; 		// 4
 		GLuint bitangent_buf = 0;		// 5
-		GLuint bone_infos_buf = 0;		// 6, 7
 		GLuint element_buf = 0;
-		GLuint vert_array = 0;
+		GLuint vao = 0;
+
+
+		std::vector<VertBoneInfo> bone_infos;
+		GLuint bone_infos_buf = 0;		// 2, 3
+		GLuint skinning_vao = 0;
 
 	public:
 		Mesh(Mesh&& src)			 = delete;
@@ -59,13 +66,16 @@ namespace lim
 		Mesh(const Mesh& src); // clone
 		virtual ~Mesh();
 		
-		void initGL();
+		void initGL(bool withClearMem = false);
 		void deinitGL();
+		void clearMem();
 		void print() const;
 		void bindGL() const;
 		void drawGL() const;
 		void bindAndDrawGL() const;
 	};
+
+
 }
 
 #endif

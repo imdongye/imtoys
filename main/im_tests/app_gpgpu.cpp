@@ -101,20 +101,20 @@ namespace {
 	GLuint vao_render_ids[2];
 	GLuint vbo_pos_ids[2];
 	GLuint vbo_vel_ids[2];
-	GLuint vbo_indices;
+	GLuint ebo_indices;
 	GLuint tbo_pos_ids[2];
 	GLuint tbo_vel_ids[2];
 	int nr_ptcls, nr_tris;
 }
 static void clearGLBuffers() {
-	gl::safeDelXfbs(1, &xfb_id);
-	gl::safeDelVertArrs(2, vao_update_ids);
-	gl::safeDelVertArrs(2, vao_render_ids);
-	gl::safeDelBufs(2, vbo_pos_ids);
-	gl::safeDelBufs(2, vbo_vel_ids);
-	gl::safeDelBufs(1, &vbo_indices);
-	gl::safeDelTexs(2, tbo_pos_ids);
-	gl::safeDelTexs(2, tbo_vel_ids);
+	gl::safeDelXfbs(&xfb_id);
+	gl::safeDelVertArrs(vao_update_ids, 2);
+	gl::safeDelVertArrs(vao_render_ids, 2);
+	gl::safeDelBufs(vbo_pos_ids, 2);
+	gl::safeDelBufs(vbo_vel_ids, 2);
+	gl::safeDelBufs(&ebo_indices);
+	gl::safeDelTexs(tbo_pos_ids, 2);
+	gl::safeDelTexs(tbo_vel_ids, 2);
 }
 
 namespace {
@@ -249,8 +249,8 @@ static void makeClothData() {
 	}
 
 	nr_tris = plane.tris.size();
-	glGenBuffers(1, &vbo_indices);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo_indices);
+	glGenBuffers(1, &ebo_indices);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_indices);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uvec3)*nr_tris, plane.tris.data(), GL_STATIC_DRAW);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
@@ -347,7 +347,7 @@ void AppGpgpu::update()
 	viewport.camera.setUniformTo(prog);
 	// prog.setUniform("mtx_Model", tf.mtx);
 	glBindVertexArray(vao_render_ids[dstIdx]);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo_indices);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_indices);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glDrawElements(GL_TRIANGLES, nr_tris*3, GL_UNSIGNED_INT, nullptr);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);

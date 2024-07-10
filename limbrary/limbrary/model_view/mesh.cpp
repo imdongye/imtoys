@@ -6,6 +6,7 @@
 //	1. bumpmap normalmap확인
 
 #include <limbrary/model_view/mesh.h>
+#include <limbrary/gl_tools.h>
 #include <limbrary/log.h>
 
 using namespace std;
@@ -42,15 +43,17 @@ Mesh::~Mesh()
 	deinitGL();
 }
 // upload VRAM
-void Mesh::initGL()
+void Mesh::initGL(bool withClearMem)
 {
 	if( poss.size()==0 ){
 		log::err("no verts in mesh\n\n");
 		std::exit(-1);
 		return;
 	}
-	glGenVertexArrays(1, &vert_array);
-	glBindVertexArray(vert_array);
+	deinitGL();
+
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
 
 	glGenBuffers(1, &pos_buf);
 	glBindBuffer(GL_ARRAY_BUFFER, pos_buf);
@@ -93,47 +96,94 @@ void Mesh::initGL()
 		glEnableVertexAttribArray(5);
 		glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	}
-	if( bone_infos.size()>0 ){
-		glGenBuffers(1, &bone_infos_buf);
-		glBindBuffer(GL_ARRAY_BUFFER, bone_infos_buf);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(bone_infos[0])*bone_infos.size(), bone_infos.data(), GL_STATIC_DRAW);
-		GLsizei stride = sizeof(VertBoneInfo);
-		const void* weightOffset = (void *)(MAX_BONE_PER_VERT*sizeof(int));
-		glEnableVertexAttribArray(6);
-		glVertexAttribIPointer(6, MAX_BONE_PER_VERT, GL_INT, stride, 0);
-		glEnableVertexAttribArray(7);
-		glVertexAttribPointer(7, MAX_BONE_PER_VERT, GL_FLOAT, GL_FALSE, stride, weightOffset);
-	}
 	if( tris.size()>0 ){
 		glGenBuffers(1, &element_buf);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, element_buf);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uvec3)*tris.size(), tris.data(), GL_STATIC_DRAW);
 	}
+
+
+
+	if( bone_infos.size()>0 ){
+		// override vbo in main vao
+		glBindVertexArray(vao);
+		glGenBuffers(1, &skinned_pos_buf);
+		glBindBuffer(GL_ARRAY_BUFFER, skinned_pos_buf);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(poss[0])*poss.size(), poss.data(), GL_DYNAMIC_COPY);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+		if( nors.size()>0 ){
+			glGenBuffers(1, &skinned_nor_buf);
+			glBindBuffer(GL_ARRAY_BUFFER, skinned_nor_buf);
+			glBufferData(GL_ARRAY_BUFFER, sizeof(nors[0])*nors.size(), nors.data(), GL_DYNAMIC_COPY);
+			glEnableVertexAttribArray(1);
+			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+		}
+
+
+		// for baking skkend mesh
+		glGenVertexArrays(1, &skinning_vao);
+		glBindVertexArray(skinning_vao);
+		
+		glBindBuffer(GL_ARRAY_BUFFER, pos_buf);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+		glBindBuffer(GL_ARRAY_BUFFER, nor_buf);
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+		glGenBuffers(1, &bone_infos_buf);
+		glBindBuffer(GL_ARRAY_BUFFER, bone_infos_buf);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(bone_infos[0])*bone_infos.size(), bone_infos.data(), GL_STATIC_DRAW);
+		GLsizei stride = sizeof(VertBoneInfo);
+		const void* weightOffset = (void *)(MAX_BONE_PER_VERT*sizeof(int));
+		glEnableVertexAttribArray(2);
+		glVertexAttribIPointer(2, MAX_BONE_PER_VERT, GL_INT, stride, 0);
+		glEnableVertexAttribArray(3);
+		glVertexAttribPointer(3, MAX_BONE_PER_VERT, GL_FLOAT, GL_FALSE, stride, weightOffset);
+	}
+
+	if( withClearMem )
+		clearMem();
 }
 void Mesh::deinitGL()
 {
-	deleteGLBuf(pos_buf);
-	deleteGLBuf(nor_buf);
-	deleteGLBuf(uv_buf);
-	deleteGLBuf(tangent_buf);
-	deleteGLBuf(bitangent_buf);
-	deleteGLBuf(color_buf);
-	deleteGLBuf(bone_infos_buf);
-	deleteGLBuf(element_buf);
-	if( vert_array>0 ){
-		glDeleteVertexArrays(1, &vert_array);
-		vert_array = 0;
-	}
+	gl::safeDelBufs(&pos_buf);
+	gl::safeDelBufs(&nor_buf);
+	gl::safeDelBufs(&skinned_pos_buf);
+	gl::safeDelBufs(&skinned_nor_buf);
+
+	gl::safeDelBufs(&uv_buf);
+	gl::safeDelBufs(&tangent_buf);
+	gl::safeDelBufs(&bitangent_buf);
+	gl::safeDelBufs(&color_buf);
+	gl::safeDelBufs(&element_buf);
+	gl::safeDelVertArrs(&vao);
+
+	gl::safeDelBufs(&bone_infos_buf);
+	gl::safeDelVertArrs(&skinning_vao);
+}
+void Mesh::clearMem() {
+	poss.clear(); poss.shrink_to_fit();
+	nors.clear(); nors.shrink_to_fit();
+	uvs.clear(); uvs.shrink_to_fit();
+	cols.clear(); cols.shrink_to_fit();
+	tangents.clear(); tangents.shrink_to_fit();
+	bitangents.clear(); bitangents.shrink_to_fit();
+	bone_infos.clear(); bone_infos.shrink_to_fit();
+	tris.clear(); tris.shrink_to_fit();
 }
 void Mesh::bindGL() const {
-	glBindVertexArray(vert_array);
+	glBindVertexArray(vao);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, element_buf);
 }
 void Mesh::drawGL() const {
 	glDrawElements(GL_TRIANGLES, tris.size()*3, GL_UNSIGNED_INT, nullptr);
 }
 void Mesh::bindAndDrawGL() const {
-	glBindVertexArray(vert_array);
+	glBindVertexArray(vao);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, element_buf);
 	glDrawElements(GL_TRIANGLES, tris.size()*3, GL_UNSIGNED_INT, nullptr);
 }

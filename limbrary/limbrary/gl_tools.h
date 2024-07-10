@@ -9,7 +9,7 @@
 
 namespace lim {
 namespace gl {
-    inline void safeDelBufs(int n, GLuint* ids) {
+    inline void safeDelBufs(GLuint* ids, int n=1) {
         for(int i=0; i<n; i++) {
             GLuint& id = ids[i];
             if( id!=0 ) {
@@ -18,7 +18,7 @@ namespace gl {
             }
         }
     }
-    inline void safeDelVertArrs(int n, GLuint* ids) {
+    inline void safeDelVertArrs(GLuint* ids, int n=1) {
         for(int i=0; i<n; i++) {
             GLuint& id = ids[i];
             if( id!=0 ) {
@@ -27,7 +27,7 @@ namespace gl {
             }
         }
     }
-    inline void safeDelXfbs(int n, GLuint* ids) {
+    inline void safeDelXfbs(GLuint* ids, int n=1) {
         for(int i=0; i<n; i++) {
             GLuint& id = ids[i];
             if( id!=0 ) {
@@ -36,7 +36,7 @@ namespace gl {
             }
         }
     }
-    inline void safeDelTexs(int n, GLuint* ids) {
+    inline void safeDelTexs(GLuint* ids, int n=1) {
         for(int i=0; i<n; i++) {
             GLuint& id = ids[i];
             if( id!=0 ) {

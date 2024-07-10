@@ -36,11 +36,8 @@ void main()
             mtxBone += mtx_Bones[aBoneIdxs[i]] * aBoneWeights[i];
         }
         mat4 mtxFinal = mtx_Model * mtxBone;
-        vec4 bPos = mtxBone * vec4(aPos, 1.f);
-        vec4 bNor = mtxBone * vec4(aNor, 0.f);
-
-        wPos = vec3(mtx_Model*bPos);
-        wNor = vec3(mtx_Model*bNor);
+        wPos = vec3(mtxFinal * vec4(aPos, 1.f));
+        wNor = vec3(mtxFinal * vec4(aNor, 0.f));
         wNor = normalize(wNor);
     } else {
         wPos = vec3(mtx_Model*vec4(aPos, 1.f));

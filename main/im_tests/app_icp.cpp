@@ -212,12 +212,12 @@ namespace lim
         prog.setUniform("cam_Pos", camera.pos);
 
         prog.setUniform("modelMat", glm::mat4(1));
-        glBindVertexArray(dst_ms.vert_array);
+        glBindVertexArray(dst_ms.vao);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, dst_ms.element_buf);
 		glDrawElements(GL_POINTS, dst_ms.tris.size()*3, GL_UNSIGNED_INT, 0);
 		
         prog.setUniform("modelMat", icp_mat);
-        glBindVertexArray(src_ms.vert_array);
+        glBindVertexArray(src_ms.vao);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, src_ms.element_buf);
 		glDrawElements(GL_POINTS, src_ms.tris.size()*3, GL_UNSIGNED_INT, 0);
     }

@@ -27,7 +27,7 @@ lim::AppSkeletal::AppSkeletal() : AppBase(1200, 780, APP_NAME)
 
 	program.name = "skeletal prog";
 	program.home_dir = APP_DIR;
-	program.attatch("skel.vs").attatch("skel.fs").link();
+	program.attatch("mvp.vs").attatch("skel.fs").link();
 
 	
 	importModel("assets/models/jump.fbx");

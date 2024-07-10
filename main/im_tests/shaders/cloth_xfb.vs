@@ -58,7 +58,7 @@ vec3 getSpringForce(ivec2 dxy, float ks, float kd) {
     vec3 dir = diffP/curLength;
 
     float force = ks * (curLength - oriLength)/oriLength;
-    force += kd * dot(diffV*dt, dir);
+    force += kd * dot(diffV*dt, dir); // todo
 
     return force*dir;
 }
