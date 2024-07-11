@@ -13,7 +13,7 @@ AppBaseCanvas3d::AppBaseCanvas3d(int winWidth, int winHeight, const char* title,
     , vp("canvas3d", new FramebufferMs())
     , light()
     , quad(true, false)
-    , sphere(1.f, 10, 5, true, false)
+    , sphere(1, true, false)
     , cylinder(1.f, 1.f, 10, true, false)
 {
     prog.attatch("smvp.vs").attatch("im_anims/shaders/lit_color.fs").link();

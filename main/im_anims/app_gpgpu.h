@@ -10,6 +10,7 @@
 #include <limbrary/model_view/mesh_maked.h>
 #include <limbrary/model_view/camera_man.h>
 #include <limbrary/model_view/transform.h>
+#include <limbrary/model_view/model.h>
 
 namespace lim
 {
@@ -25,6 +26,7 @@ namespace lim
 		Program prog_xfb;
 		MeshPlane ground;
 		ViewportWithCamera viewport;
+		Model model;
 
 	public:
 		AppGpgpu();

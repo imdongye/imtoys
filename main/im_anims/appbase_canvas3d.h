@@ -21,7 +21,7 @@ namespace lim
         Program prog;
         LightDirectional light;
         MeshQuad quad;
-		MeshSphere sphere;
+		MeshIcoSphere sphere;
         MeshCylinder cylinder;
     protected:
         ViewportWithCamera vp;

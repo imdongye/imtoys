@@ -42,7 +42,7 @@ namespace {
 	bool is_rendered_frame = true; // for step debugging
 }
 
-static void resetScene() {
+static void copyMemToBuf() {
 	for(int i=0; i<2 ; i++) {
 		glBindVertexArray(vao_update_ids[i]);
 
@@ -71,7 +71,7 @@ static void resetParams() {
 	bending_pct = def_bending_pct;
 }
 
-static void makeClothData() {
+static void makeClothDataAndInitGL() {
 	clearGLBuffers();
 	inter_p_size = cloth_size/vec2{nr_p.x-1, nr_p.y-1};
 
@@ -141,9 +141,9 @@ static void makeClothData() {
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uvec3)*nr_tris, plane.tris.data(), GL_STATIC_DRAW);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-	glGenTransformFeedbacks(1, &xfb_id);
+	copyMemToBuf();
 
-	resetScene();
+	glGenTransformFeedbacks(1, &xfb_id);
 }
 
 AppGpgpu::AppGpgpu()
@@ -155,10 +155,41 @@ AppGpgpu::AppGpgpu()
     viewport.camera.pos = vec3(0, 1.5, 3.4);
 	viewport.camera.updateViewMat();
 
+	makeClothDataAndInitGL();
+
 	prog.attatch("im_anims/shaders/cloth.vs").attatch("im_anims/shaders/blue.fs").link();
 	prog_xfb.attatch("im_anims/shaders/cloth_xfb.vs").link();
+
+	model.importFromFile("assets/models/jump.fbx", true);
+	model.setUnitScaleAndPivot();
+	model.tf->pos.y += model.pivoted_scaled_bottom_height;
+	model.tf->update();
+	model.animator.setTimeline(0.5f, true);
 	
-	makeClothData();
+
+	const Program& skinXfbProg = AssetLib::get().skin_xfb_prog;
+    GLuint skinXfbId = AssetLib::get().skin_xfb_id;
+    skinXfbProg.use();
+    glEnable(GL_RASTERIZER_DISCARD);
+    glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, skinXfbId);
+	if( model.animator.cur_anim ) {
+		model.animator.setUniformTo(skinXfbProg);
+		model.root.treversalEnabled([&](const Mesh* ms, const Material* mat, const glm::mat4& transform)
+		{
+			if( ms->skinning_vao==0 )
+				return;
+			glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, ms->skinned_pos_buf);
+			glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 1, ms->skinned_nor_buf);
+
+			glBeginTransformFeedback(GL_POINTS);
+			glBindVertexArray(ms->skinning_vao);
+			glDrawArrays(GL_POINTS, 0, ms->poss.size());
+			glEndTransformFeedback();
+		});
+	}
+    glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
+    glDisable(GL_RASTERIZER_DISCARD);
+    glFlush();
 }
 AppGpgpu::~AppGpgpu()
 {
@@ -171,6 +202,8 @@ void AppGpgpu::update()
 	glViewport(0, 0, fb_width, fb_height);
 	glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	
 
 	static int srcIdx=0;
 	static int dstIdx=1;
@@ -238,11 +271,18 @@ void AppGpgpu::update()
 	glDrawElements(GL_TRIANGLES, nr_tris*3, GL_UNSIGNED_INT, nullptr);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	
-	Program& groundProg = AssetLib::get().ndv_prog;
-	groundProg.use();
-	viewport.camera.setUniformTo(groundProg);
-	groundProg.setUniform("mtx_Model", mat4(1));
+	Program& ndvProg = AssetLib::get().ndv_prog;
+	ndvProg.use();
+	viewport.camera.setUniformTo(ndvProg);
+	
+	ndvProg.setUniform("mtx_Model", mat4(1));
 	ground.bindAndDrawGL();
+
+	model.root.treversalEnabled([&ndvProg](const Mesh* ms, const Material* mat, const glm::mat4& tf) {
+		ndvProg.setUniform("mtx_Model", tf);
+		ms->bindAndDrawGL();
+	});
+
 	viewport.getFb().unbind();
 }
 
@@ -257,7 +297,7 @@ void AppGpgpu::updateImGui()
 	ImGui::Begin("test window##gpgpu");
 	LimGui::PlotVal("fps", "", ImGui::GetIO().Framerate);
 	if(ImGui::Button("restart")) {
-		resetScene();
+		copyMemToBuf();
 	}
 	if(ImGui::Button("reset params")) {
 		resetParams();
@@ -284,7 +324,7 @@ void AppGpgpu::updateImGui()
 	// }
 	if(ImGui::SliderInt("nr cloth ptcls", (int*)&nr_p.x, 2, 200)) {
 		nr_p.y = nr_p.x;
-		makeClothData();
+		makeClothDataAndInitGL();
 	}
 	
 	if(ImGui::Button("step one frame")) {

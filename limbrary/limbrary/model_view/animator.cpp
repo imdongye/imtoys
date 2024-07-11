@@ -60,6 +60,15 @@ void Animator::setAnim(const Animation* anim) {
     duration_sec = cur_anim->nr_ticks/cur_anim->ticks_per_sec;
     state = State::STOP;
 }
+void Animator::setTimeline(const float pct, bool updateMenualy) {
+    elapsed_sec = duration_sec*pct;
+    if(updateMenualy) {
+        State temp = state;
+        state = State::PLAY;
+        update(0.f);
+        state = temp;
+    }
+}
 void Animator::play() {
     if( !cur_anim ) {
         log::err("no selected animation\n");
@@ -83,14 +92,8 @@ void Animator::stop() {
     elapsed_sec = 0;
 }
 void Animator::setUniformTo(const Program& prog) const {
-    // if( !cur_anim ) {
-    if( state == State::STOP ) {
-        prog.setUniform("is_Animated", false);
-    } else {
-        prog.setUniform("is_Animated", true);
-        prog.setUniform("mtx_Bones", mtx_Bones);
-    }
-    
+    // Todo : 애니메이션되어서 바뀌었을때만 스키닝 인스턴싱
+    prog.setUniform("mtx_Bones", mtx_Bones);
 }
 
 
@@ -127,7 +130,7 @@ void Animator::updateMtxBones() {
 void Animator::update(float dt) {
     if( state!=State::PLAY || !cur_anim )
         return;
-    elapsed_sec = glfwGetTime() - start_sec;
+    elapsed_sec += dt;
     if( elapsed_sec > duration_sec ) {
         if( is_loop ) {
             elapsed_sec = elapsed_sec - duration_sec;

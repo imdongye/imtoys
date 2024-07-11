@@ -95,6 +95,7 @@ namespace lim
 		Animator& operator=(const Animator& src); // todo default
         
         void setAnim(const Animation* anim);
+        void setTimeline(const float pct, bool updateMenualy=false);
         void play();
         void pause();
         void stop();

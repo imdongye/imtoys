@@ -82,8 +82,8 @@ static void pushAppData()
 
 int main()
 {
-	pushAppData<lim::AppParticle>();
 	pushAppData<lim::AppGpgpu>();
+	pushAppData<lim::AppParticle>();
 	pushAppData<lim::AppSkeletal>();
 	pushAppData<lim::AppMineSweeper>();
 	pushAppData<lim::AppModelViewer>();

@@ -316,7 +316,7 @@ static void deinitScene() {
 	animators.clear();
 }
 
-static void resetScene() {
+static void copyMemToBuf() {
 	Particle& ptcl = particles[0];
 	ptcl.p = vec3(1, 2, 0);
 	ptcl.v = {1.1f,0,0};
@@ -344,7 +344,7 @@ AppParticle::AppParticle() : AppBaseCanvas3d(1200, 780, APP_NAME, true)
 	g_app = this;	
 	initScene();
 	resetParams();
-	resetScene();
+	copyMemToBuf();
 }
 AppParticle::~AppParticle()
 {
@@ -388,7 +388,7 @@ void AppParticle::canvasImGui()
 	ImGui::Begin("test window##particle");
 	LimGui::PlotVal("fps", "", ImGui::GetIO().Framerate);
 	if(ImGui::Button("restart")) {
-		resetScene();
+		copyMemToBuf();
 	}
 	if(ImGui::Button("reset params")) {
 		resetParams();

@@ -191,7 +191,7 @@ namespace lim
 			return *this;
 		}
 		inline const Program& setUniform(const std::string& vname, const std::vector<glm::mat4> v) const {
-			glUniformMatrix4fv(getUniformLocation(vname), v.size(), GL_FALSE, glm::value_ptr(v[0]));
+			glUniformMatrix4fv(getUniformLocation(vname), (GLsizei)v.size(), GL_FALSE, glm::value_ptr(v[0]));
 			return *this;
 		}
 	private:
