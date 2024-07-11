@@ -29,6 +29,11 @@ namespace {
 	GLuint tex_geo_tri;
 	mat4 mtx_geo_model;
 	int nr_geo_tris;
+
+	int src_buf_idx = 0;
+	int dst_buf_idx = 1;
+
+	bool need_release = false;
 }
 static void clearGLBuffers() {
 	gl::safeDelXfbs(&xfb_id);
@@ -97,6 +102,8 @@ static void makeClothDataAndInitGL() {
 		vec3 wPos = vec3(ctf.mtx*vec4(plane.poss[i],1));
 		cloth_pm_data[i] = vec4(wPos, 1.f);
 	}
+
+	// fix first and last in first row
 	cloth_pm_data[0].w = 0.f;
 	cloth_pm_data[nr_p.x-1].w = 0.f;
 
@@ -159,6 +166,9 @@ AppGpgpu::AppGpgpu()
 	, viewport("viewport##gpgpu", new FramebufferTexDepth())
 	, ground(20)
 {
+	nr_p = {10, 20};
+	cloth_size = {0.7, 1.4};
+
 	viewport.camera.pivot = vec3(0, 1.0, 0);
     viewport.camera.pos = vec3(0, 1.5, 3.4);
 	viewport.camera.updateViewMat();
@@ -236,11 +246,6 @@ void AppGpgpu::update()
 	glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	
-
-	static int srcIdx=0;
-	static int dstIdx=1;
-
 	bool frameByFrame = is_pause && (is_rendered_frame==false);
 	if(!is_pause || frameByFrame)
 	{
@@ -281,21 +286,21 @@ void AppGpgpu::update()
 			{
 				for(int i=0; i<step_size; i++)
 				{
-					glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, vbo_posm_ids[dstIdx]);
-					glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 1, vbo_vel_ids[dstIdx]);
+					glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, vbo_posm_ids[dst_buf_idx]);
+					glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 1, vbo_vel_ids[dst_buf_idx]);
 
 					glActiveTexture(GL_TEXTURE0);
-					glBindTexture(GL_TEXTURE_BUFFER, tbo_pos_ids[srcIdx]);
+					glBindTexture(GL_TEXTURE_BUFFER, tbo_pos_ids[src_buf_idx]);
 					glActiveTexture(GL_TEXTURE1);
-					glBindTexture(GL_TEXTURE_BUFFER, tbo_vel_ids[srcIdx]);
+					glBindTexture(GL_TEXTURE_BUFFER, tbo_vel_ids[src_buf_idx]);
 
 					glBeginTransformFeedback(GL_POINTS);
 					{
-						glBindVertexArray(vao_update_ids[srcIdx]);
+						glBindVertexArray(vao_update_ids[src_buf_idx]);
 						glDrawArrays(GL_POINTS, 0, nr_ptcls);
 					}
 					glEndTransformFeedback();
-					std::swap(srcIdx, dstIdx);
+					std::swap(src_buf_idx, dst_buf_idx);
 				}
 			}
 			glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
@@ -309,7 +314,7 @@ void AppGpgpu::update()
 	prog.use();
 	viewport.camera.setUniformTo(prog);
 	// prog.setUniform("mtx_Model", tf.mtx);
-	glBindVertexArray(vao_render_ids[srcIdx]);
+	glBindVertexArray(vao_render_ids[src_buf_idx]);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_indices);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glDrawElements(GL_TRIANGLES, nr_tris*3, GL_UNSIGNED_INT, nullptr);
@@ -326,6 +331,17 @@ void AppGpgpu::update()
 	ori_geo_ms->bindAndDrawGL();
 
 	viewport.getFb().unbind();
+
+	if(need_release) {
+		need_release = false;
+		glBindBuffer(GL_ARRAY_BUFFER, vbo_posm_ids[src_buf_idx]);
+		vec4 temp;
+		vec4* ptr = (vec4*)glMapBufferRange(GL_ARRAY_BUFFER, 0, sizeof(vec4),  GL_MAP_WRITE_BIT);
+		log::glError();
+		float aaa = 1.f;
+		memcpy(ptr+3, &aaa, sizeof(float));
+		glUnmapBuffer(GL_ARRAY_BUFFER);
+	}
 }
 
 void AppGpgpu::updateImGui()
@@ -337,6 +353,9 @@ void AppGpgpu::updateImGui()
 
 
 	ImGui::Begin("test window##gpgpu");
+	if(ImGui::Button("release fixed ptcl")) {
+		need_release = true;
+	}
 	LimGui::PlotVal("fps", "", ImGui::GetIO().Framerate);
 	if(ImGui::Button("restart")) {
 		copyMemToBuf();
@@ -356,10 +375,10 @@ void AppGpgpu::updateImGui()
 
 	ImGui::SliderFloat("cloth p mass", &cloth_p_mass, 0.001f, 0.1f);
 	ImGui::SliderFloat("spring coef", &Ks, 10.f, 70.f);
+	ImGui::SliderFloat("spring damping coef", &Kd, 0.00f, 1.4f);
 	ImGui::SliderFloat("stretch", &stretch_pct, 0.1f, 1.f);
 	ImGui::SliderFloat("shear", &shear_pct, 0.1f, 1.f);
 	ImGui::SliderFloat("bending", &bending_pct, 0.1f, 1.f);
-	ImGui::SliderFloat("spring damping coef", &Kd, 0.00f, 1.4f);
 
 	// if(ImGui::SliderInt2("nr cloth ptcls", (int*)&nr_p, 2, 200)) {
 	// 	makeClothData();

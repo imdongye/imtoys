@@ -431,10 +431,10 @@ void AppParticle::canvasImGui()
 
 	ImGui::SliderFloat("cloth p mass", &cloth_p_mass, 0.001f, 0.1f);
 	ImGui::SliderFloat("spring coef", &Ks, 10.f, 70.f);
+	ImGui::SliderFloat("spring damping coef", &Kd, 0.00f, 1.4f);
 	ImGui::SliderFloat("stretch", &stretch_pct, 0.1f, 1.f);
 	ImGui::SliderFloat("shear", &shear_pct, 0.1f, 1.f);
 	ImGui::SliderFloat("bending", &bending_pct, 0.1f, 1.f);
-	ImGui::SliderFloat("spring damping coef", &Kd, 0.00f, 1.4f);
 
 	// if(ImGui::SliderInt2("nr cloth ptcls", (int*)&nr_p, 2, 200)) {
 	// 	makeClothData();
