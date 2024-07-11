@@ -1,8 +1,5 @@
 #include "app_particle.h"
-#include <stb_image.h>
-#include <glad/glad.h>
 #include <limbrary/log.h>
-#include <imgui.h>
 #include <limbrary/asset_lib.h>
 #include <limbrary/limgui.h>
 
@@ -369,7 +366,7 @@ void AppParticle::canvasUpdate()
 		cloth.update(dt, colliders);	
 	}
 }
-void AppParticle::canvasDraw() {
+void AppParticle::canvasDraw() const {
 	for(auto& c : colliders) c->draw();
 	for(auto& p : particles) p.draw();
 	cloth.draw();

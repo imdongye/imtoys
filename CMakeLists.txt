@@ -290,6 +290,7 @@ add_dependencies(${exe_name} limbrary)
 if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     target_compile_options(${exe_name} PRIVATE
         /W4
+        /bigobj # for Eigen
         #/WX
     )
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")

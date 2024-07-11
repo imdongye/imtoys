@@ -1,3 +1,10 @@
+/*
+	imdongye / 2024.07.10
+	Fast Simulation of Mass-Spring Systems
+	From: http://graphics.berkeley.edu/papers/Liu-FSM-2013-11/Liu-FSM-2013-11.pdf
+	
+*/
+
 #include "app_gpgpu.h"
 #include <stb_image.h>
 #include <glad/glad.h>

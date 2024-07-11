@@ -1,6 +1,6 @@
 /*
-	framework template
-	2022-11-14 / im dong ye
+	cloth simulation with particle mass system in cpu
+	2024-07-01 / im dong ye
 */
 
 #ifndef __app_particle_h_
@@ -22,7 +22,7 @@ namespace lim
 		AppParticle();
 		~AppParticle();
 		virtual void canvasUpdate() final;
-		virtual void canvasDraw() final;
+		virtual void canvasDraw() const final;
 		virtual void canvasImGui() final;
 	};
 }
