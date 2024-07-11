@@ -20,6 +20,11 @@ uniform float stretchKs, shearKs, bendingKs;
 uniform float stretchKd, shearKd, bendingKd;
 uniform vec3 gravity;
 
+uniform mat4 mtx_geo_model;
+uniform samplerBuffer tex_geo_pos;
+uniform isamplerBuffer tex_geo_tri;
+uniform int nr_geo_tris;
+
 
 
 const ivec2 stretchDxy[] = {
@@ -64,6 +69,44 @@ vec3 getSpringForce(ivec2 dxy, float ks, float kd) {
     return force*dir;
 }
 
+bool intersect(vec3 p1, vec3 p2, vec3 t1, vec3 t2, vec3 t3, out vec3 point) {
+    vec3 diff, u, v, n, w0, w;
+    float r, a, b;
+
+    diff = p2 - p1;
+    u = t2-t1;
+    v = t3-t1;
+    n = cross(u, v);
+
+    w0 = t1-p1;
+    a = dot(w0, n);
+    b = dot(diff, n);
+
+    r = a/b;
+    if( r<0.0 || r>1.0 )
+        return false;
+    
+    point = p1 + r*diff;
+    w = t1-point;
+
+    float uu, uv, vv, wu, wv, D;
+    uu = dot(u,u);
+    uv = dot(u,v);
+    vv = dot(v,v);
+    wu = dot(w,u);
+    wv = dot(w,v);
+    D = uv*uv - uu*vv;
+
+    float s, t;
+    s = (uv*wv - vv*wu) / D;
+    if( s<0.0 || s>1.0 ) 
+        return false;
+    t = (uv*wu - uu*wv) / D;
+    if( t<0.0 || t>1.0 ) 
+        return false;
+
+    return true;
+}
 
 void main()
 {
@@ -103,6 +146,22 @@ void main()
     }
     vec3 newPos = cur_pos + newVel*dt;
     // vec3 newPos = 2.0*cur_pos-cur_prev_pos + acc*dt*dt;
+
+
+    vec3 t1, t2, t3, intersectPos;
+    for( int i=0; i<nr_geo_tris; i++ ) {
+        ivec3 tIdx = texelFetch(tex_geo_tri, i).xyz;
+        t1 = vec3(mtx_geo_model*vec4(texelFetch(tex_geo_pos, tIdx.x).xyz,1));
+        t2 = vec3(mtx_geo_model*vec4(texelFetch(tex_geo_pos, tIdx.y).xyz,1));
+        t3 = vec3(mtx_geo_model*vec4(texelFetch(tex_geo_pos, tIdx.z).xyz,1));
+        if( intersect(cur_pos, newPos, t1, t2, t3, intersectPos) ) {
+            vec3 n = normalize(cross(t2-t1, t3-t1));
+            newPos = intersectPos + reflect(newPos-intersectPos, n);
+            newVel = kr* reflect(newVel, n);
+            break;
+        }
+    }
+
 
     out_posm = vec4(newPos, 1);
     out_vel = vec4(newVel, 1);

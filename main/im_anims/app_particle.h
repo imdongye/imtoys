@@ -24,8 +24,6 @@ namespace lim
 		virtual void canvasUpdate() final;
 		virtual void canvasDraw() final;
 		virtual void canvasImGui() final;
-		virtual void mouseBtnCallback(int button, int action, int mods) final;
-		virtual void cursorPosCallback(double xPos, double yPos) final;
 	};
 }
 

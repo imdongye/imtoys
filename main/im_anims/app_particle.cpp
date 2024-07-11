@@ -379,6 +379,32 @@ void AppParticle::canvasDraw() {
 	drawCylinder({0,0,0}, {0,0.1f,0}, {0,1,0});
 	drawCylinder({0,0,0}, {0,0,0.1f}, {0,0,1});
 }
+
+static void pickClosestPtclInRay(vec3 ray, vec3 rayO, vector<Particle>& ps) {
+	float minDepth = FLT_MAX;
+	int minDepthPtclIdx = -1;
+	for(int i=0; i<ps.size(); i++) {
+		Particle& p = ps[i];
+		vec3 toObj = p.p - rayO;
+		float distFromLine = glm::length( glm::cross(ray, toObj) );
+        float distProjLine = glm::dot(ray, toObj);
+
+        if( distFromLine < 0.02f ) {
+            if( distProjLine>0 && minDepth>distProjLine ) {
+				minDepth = distProjLine;
+				minDepthPtclIdx = i;
+            }
+		}
+	}
+	if( minDepthPtclIdx!=-1 ) {
+		ps[minDepthPtclIdx].fixed = !ps[minDepthPtclIdx].fixed;
+		if(ps[minDepthPtclIdx].fixed) {
+			picked_ptcl = &ps[minDepthPtclIdx];
+			picked_ptcl->v = vec3(0);
+		}
+	}
+}
+
 void AppParticle::canvasImGui()
 {
 	log::drawViewer("logger##particle");
@@ -418,57 +444,27 @@ void AppParticle::canvasImGui()
 		cloth.resize();
 	}
 	ImGui::End();
-}
 
-static void pickClosestPtclInRay(vec3 ray, vec3 rayO, vector<Particle>& ps) {
-	float minDepth = FLT_MAX;
-	int minDepthPtclIdx = -1;
-	for(int i=0; i<ps.size(); i++) {
-		Particle& p = ps[i];
-		vec3 toObj = p.p - rayO;
-		float distFromLine = glm::length( glm::cross(ray, toObj) );
-        float distProjLine = glm::dot(ray, toObj);
 
-        if( distFromLine < 0.02f ) {
-            if( distProjLine>0 && minDepth>distProjLine ) {
-				minDepth = distProjLine;
-				minDepthPtclIdx = i;
-            }
-		}
+	if(ImGui::IsMouseClicked(ImGuiMouseButton_Right, false)) {
+		const vec3 mouseRay = vp.getMousePosRayDir();
+		pickClosestPtclInRay(mouseRay, vp.camera.pos, particles);
+		pickClosestPtclInRay(mouseRay, vp.camera.pos, cloth.ptcls);
+	} else if(picked_ptcl && ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
+		vec3& dstP = picked_ptcl->p;
+		const vec3 toObj = dstP-vp.camera.pos;
+		const vec3 mouseRay = vp.getMousePosRayDir();
+		const float depth = dot(vp.camera.front, toObj)/dot(vp.camera.front, mouseRay);
+		picked_ptcl->p = depth*mouseRay+vp.camera.pos;
+		picked_ptcl->v = vec3(0);
+	} else if(ImGui::IsMouseReleased(ImGuiMouseButton_Right)) {
+		picked_ptcl = nullptr;
 	}
-	if( minDepthPtclIdx!=-1 ) {
-		ps[minDepthPtclIdx].fixed = !ps[minDepthPtclIdx].fixed;
-		if(ps[minDepthPtclIdx].fixed) {
-			picked_ptcl = &ps[minDepthPtclIdx];
-			picked_ptcl->v = vec3(0);
-		}
-	}
-}
-void AppParticle::mouseBtnCallback(int btn, int action, int mods) {
-	if(btn==GLFW_MOUSE_BUTTON_1)
-		return;
-	if(btn==GLFW_MOUSE_BUTTON_3 && action==GLFW_PRESS) {
+
+	if(ImGui::IsMouseClicked(ImGuiMouseButton_Middle, false)) {
 		particles.emplace_back();
 		Particle& p = particles.back();
 		p.p = vp.camera.pos;
 		p.v = vp.getMousePosRayDir()*20.f;
 	}
-	if(action==GLFW_RELEASE) {
-		picked_ptcl = nullptr;
-		return;
-	}
-	const vec3 mouseRay = vp.getMousePosRayDir();
-	pickClosestPtclInRay(mouseRay, vp.camera.pos, particles);
-	pickClosestPtclInRay(mouseRay, vp.camera.pos, cloth.ptcls);
-}
-
-void AppParticle::cursorPosCallback(double xPos, double yPos) {
-	if(!picked_ptcl)
-		return;
-	vec3& dstP = picked_ptcl->p;
-	const vec3 toObj = dstP-vp.camera.pos;
-	const vec3 mouseRay = vp.getMousePosRayDir();
-	const float depth = dot(vp.camera.front, toObj)/dot(vp.camera.front, mouseRay);
-	picked_ptcl->p = depth*mouseRay+vp.camera.pos;
-	picked_ptcl->v = vec3(0);
 }
