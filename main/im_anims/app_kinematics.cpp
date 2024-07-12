@@ -215,7 +215,6 @@ void AppKinematics::canvasImGui() {
 			if( distFromLine < 0.02f ) {
 				if( distProjLine>0 && minDepth>distProjLine ) {
 					minDepth = distProjLine;
-					target_pos = objP;
 					target_jnt = &body.joints[i];
 				}
 			}

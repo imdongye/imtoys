@@ -25,6 +25,7 @@ uniform mat4 mtx_geo_model;
 uniform samplerBuffer tex_geo_pos;
 uniform isamplerBuffer tex_geo_tri;
 uniform int nr_geo_tris;
+uniform bool collision_enabled;
 
 
 
@@ -150,19 +151,21 @@ void main()
     // vec3 newPos = 2.0*cur_pos-cur_prev_pos + acc*dt*dt;
 
 
-    // vec3 t1, t2, t3, intersectPos;
-    // for( int i=0; i<nr_geo_tris; i++ ) {
-    //     ivec3 tIdx = texelFetch(tex_geo_tri, i).xyz;
-    //     t1 = vec3(mtx_geo_model*vec4(texelFetch(tex_geo_pos, tIdx.x).xyz,1));
-    //     t2 = vec3(mtx_geo_model*vec4(texelFetch(tex_geo_pos, tIdx.y).xyz,1));
-    //     t3 = vec3(mtx_geo_model*vec4(texelFetch(tex_geo_pos, tIdx.z).xyz,1));
-    //     if( intersect(cur_pos, newPos, t1, t2, t3, intersectPos) ) {
-    //         vec3 n = normalize(cross(t2-t1, t3-t1));
-    //         newPos = intersectPos + reflect(newPos-intersectPos, n);
-    //         newVel = kr* reflect(newVel, n);
-    //         break;
-    //     }
-    // }
+    if(collision_enabled) {
+        vec3 t1, t2, t3, intersectPos;
+        for( int i=0; i<nr_geo_tris; i++ ) {
+            ivec3 tIdx = texelFetch(tex_geo_tri, i).xyz;
+            t1 = vec3(mtx_geo_model*vec4(texelFetch(tex_geo_pos, tIdx.x).xyz,1));
+            t2 = vec3(mtx_geo_model*vec4(texelFetch(tex_geo_pos, tIdx.y).xyz,1));
+            t3 = vec3(mtx_geo_model*vec4(texelFetch(tex_geo_pos, tIdx.z).xyz,1));
+            if( intersect(cur_pos, newPos, t1, t2, t3, intersectPos) ) {
+                vec3 n = normalize(cross(t2-t1, t3-t1));
+                newPos = intersectPos + reflect(newPos-intersectPos, n);
+                newVel = kr* reflect(newVel, n);
+                break;
+            }
+        }
+    }
 
 
     out_posm = vec4(newPos, 1);

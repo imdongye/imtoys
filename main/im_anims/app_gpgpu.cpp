@@ -39,8 +39,7 @@ namespace {
 
 	int src_buf_idx = 0;
 	int dst_buf_idx = 1;
-
-	bool need_release = false;
+	int picked_ptcl_idx = -1;
 }
 static void clearGLBuffers() {
 	gl::safeDelXfbs(&xfb_id);
@@ -59,6 +58,8 @@ namespace {
 	std::vector<vec4> cloth_pm_data;
 	std::vector<vec4> cloth_v_data;
 
+	bool collision_enabled = false;
+
 	bool is_rendered_frame = true; // for step debugging
 }
 
@@ -76,8 +77,8 @@ static void copyMemToBuf() {
 }
 
 static void resetParams() {
-	// nr_p = {10, 20};
-	// cloth_size = {0.7, 1.4};
+	nr_p = {10, 20};
+	cloth_size = {0.7, 1.4};
 
 
 	time_speed = def_time_speed;
@@ -188,7 +189,7 @@ AppGpgpu::AppGpgpu()
 	resetParams();
 	makeClothDataAndInitGL();
 
-	prog.attatch("im_anims/shaders/cloth.vs").attatch("im_anims/shaders/blue.fs").link();
+	prog.attatch("im_anims/shaders/cloth.vs").attatch("im_anims/shaders/cloth.fs").link();
 	prog_xfb.attatch("im_anims/shaders/cloth_xfb.vs").link();
 
 	model.importFromFile("assets/models/jump.fbx", true);
@@ -241,6 +242,7 @@ AppGpgpu::AppGpgpu()
 	glBindTexture(GL_TEXTURE_BUFFER, tex_geo_pos);
 	glTexBuffer(GL_TEXTURE_BUFFER, GL_RGB32F, ori_geo_ms->skinned_pos_buf);
 
+	
 	glGenTextures(1, &tex_geo_tri);
 	glBindTexture(GL_TEXTURE_BUFFER, tex_geo_tri);
 	glTexBuffer(GL_TEXTURE_BUFFER, GL_RGB32I, ori_geo_ms->element_buf);
@@ -282,6 +284,8 @@ void AppGpgpu::update()
 
 		prog_xfb.setUniform("tex_posm", 0);
 		prog_xfb.setUniform("tex_vel", 1);
+
+		prog_xfb.setUniform("collision_enabled", collision_enabled);
 
 
 		prog_xfb.setUniform("mtx_geo_model", mtx_geo_model);
@@ -341,20 +345,11 @@ void AppGpgpu::update()
 	ndvProg.setUniform("mtx_Model", mat4(1));
 	ground.bindAndDrawGL();
 
-	// ndvProg.setUniform("mtx_Model", mtx_geo_model);
-	// ori_geo_ms->bindAndDrawGL();
-
-	viewport.getFb().unbind();
-
-	if(need_release) {
-		need_release = false;
-		glBindBuffer(GL_ARRAY_BUFFER, vbo_posm_ids[src_buf_idx]);
-		float* ptr = (float*)glMapBufferRange(GL_ARRAY_BUFFER, sizeof(vec3), sizeof(float),  GL_MAP_WRITE_BIT);
-		log::glError();
-		float aaa = 1.f;
-		memcpy(ptr, &aaa, sizeof(float));
-		glUnmapBuffer(GL_ARRAY_BUFFER);
+	if(collision_enabled) {
+		ndvProg.setUniform("mtx_Model", mtx_geo_model);
+		ori_geo_ms->bindAndDrawGL();
 	}
+	viewport.getFb().unbind();
 }
 
 void AppGpgpu::updateImGui()
@@ -367,8 +362,14 @@ void AppGpgpu::updateImGui()
 
 	ImGui::Begin("test window##gpgpu");
 	if(ImGui::Button("release fixed ptcl")) {
-		need_release = true;
+		glBindBuffer(GL_ARRAY_BUFFER, vbo_posm_ids[src_buf_idx]);
+		float* ptr = (float*)glMapBufferRange(GL_ARRAY_BUFFER, sizeof(vec3), sizeof(float),  GL_MAP_WRITE_BIT);
+		log::glError();
+		float aaa = 1.f;
+		memcpy(ptr, &aaa, sizeof(float));
+		glUnmapBuffer(GL_ARRAY_BUFFER);
 	}
+	ImGui::Checkbox("collision enabled", &collision_enabled);
 	LimGui::PlotVal("fps", "", ImGui::GetIO().Framerate);
 	if(ImGui::Button("restart")) {
 		copyMemToBuf();
@@ -409,17 +410,56 @@ void AppGpgpu::updateImGui()
 	ImGui::End();
 
 	
-	// if(ImGui::IsMouseClicked(ImGuiMouseButton_Right, false)) {
-	// 	const vec3 mouseRay = viewport.getMousePosRayDir();
-	// 	pickClosestPtclInRay(mouseRay, viewport.camera.pos, particles);
-	// } else if(picked_ptcl && ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
-	// 	vec3& dstP = picked_ptcl->p;
-	// 	const vec3 toObj = dstP-vp.camera.pos;
-	// 	const vec3 mouseRay = vp.getMousePosRayDir();
-	// 	const float depth = dot(vp.camera.front, toObj)/dot(vp.camera.front, mouseRay);
-	// 	picked_ptcl->p = depth*mouseRay+vp.camera.pos;
-	// 	picked_ptcl->v = vec3(0);
-	// } else if(ImGui::IsMouseReleased(ImGuiMouseButton_Right)) {
-	// 	picked_ptcl = nullptr;
-	// }
+	if(ImGui::IsMouseClicked(ImGuiMouseButton_Right, false))
+	{
+		const int nrPms = cloth_pm_data.size();
+		const vec3 mouseRay = viewport.getMousePosRayDir();
+		const vec3 cameraPos = viewport.camera.pos;
+		float minDepth = FLT_MAX;
+
+		glBindBuffer(GL_ARRAY_BUFFER, vbo_posm_ids[src_buf_idx]);
+		vec4* posms = (vec4*)glMapBuffer(GL_ARRAY_BUFFER, GL_READ_WRITE);
+		for( int i=0; i<nrPms; i++ ) {
+			const vec3 objP = vec3(posms[i]);
+			vec3 toObj = objP - cameraPos;
+			float distFromLine = glm::length( glm::cross(mouseRay, toObj) );
+			float distProjLine = glm::dot(mouseRay, toObj);
+
+			if( distFromLine < 0.01f ) {
+				if( distProjLine>0 && minDepth>distProjLine ) {
+					minDepth = distProjLine;
+					picked_ptcl_idx  = i;
+				}
+			}
+		}
+		if(picked_ptcl_idx>=0) {
+			vec4* posm = &posms[picked_ptcl_idx];
+			if( posm->w==0.f ) {
+				posm->w = 1.f;
+				picked_ptcl_idx = -1;
+			}
+			else {
+				posm->w = 0.f;
+			}
+		}
+		glUnmapBuffer(GL_ARRAY_BUFFER);
+	}
+	else if(picked_ptcl_idx>=0 && ImGui::IsMouseDown(ImGuiMouseButton_Right))
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, vbo_posm_ids[src_buf_idx]);
+		vec3 objPos = *(vec3*)glMapBufferRange(GL_ARRAY_BUFFER, sizeof(vec4)*picked_ptcl_idx, sizeof(vec3), GL_MAP_READ_BIT); 
+		glUnmapBuffer(GL_ARRAY_BUFFER);
+		const vec3 toObj = objPos-viewport.camera.pos;
+		const vec3 mouseRay = viewport.getMousePosRayDir();
+		const float depth = dot(viewport.camera.front, toObj)/dot(viewport.camera.front, mouseRay);
+		objPos = depth*mouseRay+viewport.camera.pos;
+		glUnmapBuffer(GL_ARRAY_BUFFER);
+		vec3* pObjPos = (vec3*)glMapBufferRange(GL_ARRAY_BUFFER, sizeof(vec4)*picked_ptcl_idx, sizeof(vec3), GL_MAP_WRITE_BIT); 
+		*pObjPos = objPos;
+		glUnmapBuffer(GL_ARRAY_BUFFER);
+	} 
+	else if( picked_ptcl_idx>=0 && ImGui::IsMouseReleased(ImGuiMouseButton_Right))
+	{
+		picked_ptcl_idx = -1;
+	}
 }
