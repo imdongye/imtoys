@@ -82,9 +82,9 @@ static void pushAppData()
 
 int main()
 {
-	pushAppData<lim::AppKinematics>();
 	pushAppData<lim::AppGpgpu>();
 	pushAppData<lim::AppParticle>();
+	pushAppData<lim::AppKinematics>();
 	pushAppData<lim::AppSkeletal>();
 	pushAppData<lim::AppMineSweeper>();
 	pushAppData<lim::AppModelViewer>();

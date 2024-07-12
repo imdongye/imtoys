@@ -33,7 +33,7 @@ struct Particle {
 	}
 	void updateVel(float dt) {
 		if( fixed ) return;
-		vec3 acc = f/cloth_p_mass;
+		vec3 acc = f/ptcl_mass;
 		v += acc*dt;
 	}
 	void updatePos(float dt) {
@@ -187,6 +187,7 @@ struct Cloth {
 	}
 	void resize() {
 		inter_p_size = cloth_size/vec2{nr_p.x-1, nr_p.y-1};
+		ptcl_mass = cloth_mass/(nr_p.x*nr_p.y);
 
 		ptcls.clear();
 		ptcls.reserve(nr_p.x*nr_p.y);
@@ -253,8 +254,8 @@ struct Cloth {
 	void update(float dt, vector<ICollider*>& colliders) {
 		for(auto& p : ptcls) {
 			p.clearForce();
-			p.addForce(-Ka*p.v); // 공기저항
-			p.addForce(G*cloth_p_mass); // 자유낙하법칙
+			p.addForce(-(Ka*p.v*ptcl_mass)/cloth_mass); // 공기저항
+			p.addForce(G*ptcl_mass); // 자유낙하법칙
 		}
 		for(auto& s : stretch_sprs) s.applyForce(stretch_pct*Ks, Kd);
 		for(auto& s : shear_sprs)   s.applyForce(shear_pct*Ks,   Kd);
@@ -313,7 +314,7 @@ static void deinitScene() {
 	animators.clear();
 }
 
-static void copyMemToBuf() {
+static void resetScene() {
 	Particle& ptcl = particles[0];
 	ptcl.p = vec3(1, 2, 0);
 	ptcl.v = {1.1f,0,0};
@@ -330,18 +331,18 @@ static void resetParams() {
 	Kd = def_Kd;
 	
 	is_pause = true;
-	cloth_p_mass = def_M;
+	ptcl_mass = def_cloth_m;
 	stretch_pct = def_stretch_pct;
 	shear_pct = def_shear_pct;
 	bending_pct = def_bending_pct;
 }
 
-AppParticle::AppParticle() : AppBaseCanvas3d(1200, 780, APP_NAME, true)
+AppParticle::AppParticle() : AppBaseCanvas3d(1200, 780, APP_NAME, false)
 {
 	g_app = this;	
 	initScene();
 	resetParams();
-	copyMemToBuf();
+	resetScene();
 }
 AppParticle::~AppParticle()
 {
@@ -356,8 +357,8 @@ void AppParticle::canvasUpdate()
 	{
 		for(auto& p : particles) {
 			p.clearForce();
-			p.addForce(-Ka*p.v); // 공기저항
-			p.addForce(G*cloth_p_mass); // 자유낙하법칙
+			p.addForce(-(Ka*p.v*ptcl_mass)/cloth_mass); // 공기저항
+			p.addForce(G*ptcl_mass); // 자유낙하법칙
 			p.updateVel(dt);
 		}
 		for(auto& c : colliders) c->applyCollision(particles);
@@ -379,9 +380,7 @@ void AppParticle::canvasDraw() const {
 
 static void pickClosestPtclInRay(vec3 ray, vec3 rayO, vector<Particle>& ps) {
 	float minDepth = FLT_MAX;
-	int minDepthPtclIdx = -1;
-	for(int i=0; i<ps.size(); i++) {
-		Particle& p = ps[i];
+	for( Particle& p : ps ) {
 		vec3 toObj = p.p - rayO;
 		float distFromLine = glm::length( glm::cross(ray, toObj) );
         float distProjLine = glm::dot(ray, toObj);
@@ -389,16 +388,13 @@ static void pickClosestPtclInRay(vec3 ray, vec3 rayO, vector<Particle>& ps) {
         if( distFromLine < 0.02f ) {
             if( distProjLine>0 && minDepth>distProjLine ) {
 				minDepth = distProjLine;
-				minDepthPtclIdx = i;
+				picked_ptcl = &p;
             }
 		}
 	}
-	if( minDepthPtclIdx!=-1 ) {
-		ps[minDepthPtclIdx].fixed = !ps[minDepthPtclIdx].fixed;
-		if(ps[minDepthPtclIdx].fixed) {
-			picked_ptcl = &ps[minDepthPtclIdx];
-			picked_ptcl->v = vec3(0);
-		}
+	if( picked_ptcl ) {
+		picked_ptcl->fixed = !picked_ptcl->fixed;
+		picked_ptcl->v = vec3(0);
 	}
 }
 
@@ -411,7 +407,7 @@ void AppParticle::canvasImGui()
 	ImGui::Begin("test window##particle");
 	LimGui::PlotVal("fps", "", ImGui::GetIO().Framerate);
 	if(ImGui::Button("restart")) {
-		copyMemToBuf();
+		resetScene();
 	}
 	if(ImGui::Button("reset params")) {
 		resetParams();
@@ -424,9 +420,11 @@ void AppParticle::canvasImGui()
 	ImGui::SliderFloat("plane bounce damping", &Kr, 0.01f, 1.f);
 	ImGui::SliderFloat("plane friction", &Kmu, 0.01f, 1.f);
 
-	ImGui::SliderFloat("air damping", &Ka, 0.0001f, 0.09f, "%.5f");
+	ImGui::SliderFloat("air damping", &Ka, 0.0001f, 0.9f, "%.5f");
 
-	ImGui::SliderFloat("cloth p mass", &cloth_p_mass, 0.001f, 0.1f);
+	if(ImGui::SliderFloat("cloth mass", &cloth_mass, 0.05f, 0.7f)) {
+		ptcl_mass = cloth_mass/(nr_p.x*nr_p.y);
+	}
 	ImGui::SliderFloat("spring coef", &Ks, 10.f, 70.f);
 	ImGui::SliderFloat("spring damping coef", &Kd, 0.00f, 1.4f);
 	ImGui::SliderFloat("stretch", &stretch_pct, 0.1f, 1.f);

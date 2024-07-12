@@ -5,8 +5,8 @@
 #include "app_kinematics.h"
 #include <limbrary/log.h>
 #include <limbrary/limgui.h>
-#include <Eigen/core>
 #include <Eigen/Dense>
+#include <Eigen/SVD>
 
 using namespace glm;
 using namespace std;

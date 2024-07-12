@@ -76,8 +76,13 @@ static void copyMemToBuf() {
 }
 
 static void resetParams() {
+	// nr_p = {10, 20};
+	// cloth_size = {0.7, 1.4};
+
+
 	time_speed = def_time_speed;
-	step_size = def_step_size;
+	// step_size = def_step_size;
+	step_size = 30;
 	Ka = def_Ka; 	
 	Kr = def_Kr;
 	Kmu = def_Kmu;
@@ -85,7 +90,8 @@ static void resetParams() {
 	Kd = def_Kd;
 	
 	is_pause = true;
-	cloth_p_mass = def_M;
+	cloth_mass = def_cloth_m;
+	ptcl_mass = cloth_mass/(nr_p.x*nr_p.y);
 	stretch_pct = def_stretch_pct;
 	shear_pct = def_shear_pct;
 	bending_pct = def_bending_pct;
@@ -93,7 +99,9 @@ static void resetParams() {
 
 static void makeClothDataAndInitGL() {
 	clearGLBuffers();
+
 	inter_p_size = cloth_size/vec2{nr_p.x-1, nr_p.y-1};
+	ptcl_mass = cloth_mass/(nr_p.x*nr_p.y);
 
 	Transform ctf;
 	ctf.pos = {0,2,0};
@@ -169,17 +177,15 @@ static void makeClothDataAndInitGL() {
 }
 
 AppGpgpu::AppGpgpu()
-	: AppBase(1280, 720, "gpgpu")
+	: AppBase(900, 600, "gpgpu", false)
 	, viewport("viewport##gpgpu", new FramebufferTexDepth())
 	, ground(20)
 {
-	nr_p = {10, 20};
-	cloth_size = {0.7, 1.4};
-
 	viewport.camera.pivot = vec3(0, 1.0, 0);
     viewport.camera.pos = vec3(0, 1.5, 3.4);
 	viewport.camera.updateViewMat();
 
+	resetParams();
 	makeClothDataAndInitGL();
 
 	prog.attatch("im_anims/shaders/cloth.vs").attatch("im_anims/shaders/blue.fs").link();
@@ -259,7 +265,8 @@ void AppGpgpu::update()
 		is_rendered_frame = true;
 		prog_xfb.use();
 		float dt = (delta_time*time_speed)/float(step_size);
-		prog_xfb.setUniform("cloth_p_mass", cloth_p_mass);
+		prog_xfb.setUniform("cloth_mass", cloth_mass);
+		prog_xfb.setUniform("ptcl_mass", ptcl_mass);
 		prog_xfb.setUniform("inter_p_size", inter_p_size);
 		prog_xfb.setUniform("nr_p", nr_p);
 		prog_xfb.setUniform("dt", dt);
@@ -334,19 +341,18 @@ void AppGpgpu::update()
 	ndvProg.setUniform("mtx_Model", mat4(1));
 	ground.bindAndDrawGL();
 
-	ndvProg.setUniform("mtx_Model", mtx_geo_model);
-	ori_geo_ms->bindAndDrawGL();
+	// ndvProg.setUniform("mtx_Model", mtx_geo_model);
+	// ori_geo_ms->bindAndDrawGL();
 
 	viewport.getFb().unbind();
 
 	if(need_release) {
 		need_release = false;
 		glBindBuffer(GL_ARRAY_BUFFER, vbo_posm_ids[src_buf_idx]);
-		vec4 temp;
-		vec4* ptr = (vec4*)glMapBufferRange(GL_ARRAY_BUFFER, 0, sizeof(vec4),  GL_MAP_WRITE_BIT);
+		float* ptr = (float*)glMapBufferRange(GL_ARRAY_BUFFER, sizeof(vec3), sizeof(float),  GL_MAP_WRITE_BIT);
 		log::glError();
 		float aaa = 1.f;
-		memcpy(ptr+3, &aaa, sizeof(float));
+		memcpy(ptr, &aaa, sizeof(float));
 		glUnmapBuffer(GL_ARRAY_BUFFER);
 	}
 }
@@ -378,9 +384,11 @@ void AppGpgpu::updateImGui()
 	ImGui::SliderFloat("plane bounce damping", &Kr, 0.01f, 1.f);
 	ImGui::SliderFloat("plane friction", &Kmu, 0.01f, 1.f);
 
-	ImGui::SliderFloat("air damping", &Ka, 0.0001f, 0.09f, "%.5f");
+	ImGui::SliderFloat("air damping", &Ka, 0.0001f, 0.9f, "%.5f");
 
-	ImGui::SliderFloat("cloth p mass", &cloth_p_mass, 0.001f, 0.1f);
+	if(ImGui::SliderFloat("cloth mass", &cloth_mass, 0.05f, 0.7f)) {
+		ptcl_mass = cloth_mass/(nr_p.x*nr_p.y);
+	}
 	ImGui::SliderFloat("spring coef", &Ks, 10.f, 70.f);
 	ImGui::SliderFloat("spring damping coef", &Kd, 0.00f, 1.4f);
 	ImGui::SliderFloat("stretch", &stretch_pct, 0.1f, 1.f);

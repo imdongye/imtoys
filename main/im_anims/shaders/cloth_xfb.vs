@@ -12,7 +12,8 @@ layout(xfb_buffer=1, xfb_offset=0) out vec4 out_vel;
 uniform samplerBuffer tex_posm;
 uniform samplerBuffer tex_vel;
 
-uniform float cloth_p_mass;
+uniform float cloth_mass;
+uniform float ptcl_mass;
 uniform vec2 inter_p_size;
 uniform ivec2 nr_p;
 uniform float dt, ka, kr;
@@ -39,7 +40,6 @@ const ivec2 bendingDxy[] = {
 
 ivec2 cur_ixy;
 vec3 cur_pos;
-float cur_mass;
 vec3 cur_vel;
 
 
@@ -63,8 +63,9 @@ vec3 getSpringForce(ivec2 dxy, float ks, float kd) {
     vec3 dir = diffP/curLength;
     float diffL = curLength - oriLength;
 
-    float force = ks * diffL/oriLength;
-    force += kd * dot(diffV*dt, dir)*oriLength; // todo
+    float force = ks * diffL;
+    // float force = ks * diffL/oriLength;
+    force += kd * dot(diffV*dt, dir); // todo
 
     return force*dir;
 }
@@ -118,13 +119,13 @@ void main()
     const int index = gl_VertexID;
     cur_ixy = ivec2( index % nr_p.x, index / nr_p.x );
     
-    cur_mass = cloth_p_mass;
     cur_pos = aPosm.xyz;
     cur_vel = aVel.xyz;
 
     vec3 F = vec3(0);
-    F -= ka*cur_vel;
-    F += gravity*cur_mass;
+    // F -= ka*cur_vel;
+    F -= (ka*cur_vel*ptcl_mass)/cloth_mass;
+    F += gravity*ptcl_mass;
 
     for( int i=0; i<4; i++ ) {
         F += getSpringForce(stretchDxy[i], stretchKs, stretchKd);
@@ -136,8 +137,9 @@ void main()
         F += getSpringForce(bendingDxy[i], bendingKs, bendingKd);
     }
     vec3 acc = vec3(0);
-    if(cur_mass!=0)
-        acc = F/cur_mass;
+    if(ptcl_mass!=0) {
+        acc = F/ptcl_mass;
+    }
     vec3 newVel = cur_vel + acc*dt;
     
     if(cur_pos.y<0 && newVel.y<0) {
@@ -148,19 +150,19 @@ void main()
     // vec3 newPos = 2.0*cur_pos-cur_prev_pos + acc*dt*dt;
 
 
-    vec3 t1, t2, t3, intersectPos;
-    for( int i=0; i<nr_geo_tris; i++ ) {
-        ivec3 tIdx = texelFetch(tex_geo_tri, i).xyz;
-        t1 = vec3(mtx_geo_model*vec4(texelFetch(tex_geo_pos, tIdx.x).xyz,1));
-        t2 = vec3(mtx_geo_model*vec4(texelFetch(tex_geo_pos, tIdx.y).xyz,1));
-        t3 = vec3(mtx_geo_model*vec4(texelFetch(tex_geo_pos, tIdx.z).xyz,1));
-        if( intersect(cur_pos, newPos, t1, t2, t3, intersectPos) ) {
-            vec3 n = normalize(cross(t2-t1, t3-t1));
-            newPos = intersectPos + reflect(newPos-intersectPos, n);
-            newVel = kr* reflect(newVel, n);
-            break;
-        }
-    }
+    // vec3 t1, t2, t3, intersectPos;
+    // for( int i=0; i<nr_geo_tris; i++ ) {
+    //     ivec3 tIdx = texelFetch(tex_geo_tri, i).xyz;
+    //     t1 = vec3(mtx_geo_model*vec4(texelFetch(tex_geo_pos, tIdx.x).xyz,1));
+    //     t2 = vec3(mtx_geo_model*vec4(texelFetch(tex_geo_pos, tIdx.y).xyz,1));
+    //     t3 = vec3(mtx_geo_model*vec4(texelFetch(tex_geo_pos, tIdx.z).xyz,1));
+    //     if( intersect(cur_pos, newPos, t1, t2, t3, intersectPos) ) {
+    //         vec3 n = normalize(cross(t2-t1, t3-t1));
+    //         newPos = intersectPos + reflect(newPos-intersectPos, n);
+    //         newVel = kr* reflect(newVel, n);
+    //         break;
+    //     }
+    // }
 
 
     out_posm = vec4(newPos, 1);
