@@ -11,7 +11,7 @@
 
 namespace lim
 {
-	class AppKinematics: public AppBaseCanvas3d
+	class AppIK: public AppBaseCanvas3d
 	{
 	public:
 		inline static constexpr CStr APP_NAME = "imkenematics";
@@ -19,8 +19,8 @@ namespace lim
 		inline static constexpr CStr APP_DESCRIPTION = "hello, world";
 
 	public:
-		AppKinematics();
-		~AppKinematics();
+		AppIK();
+		~AppIK();
 		virtual void canvasUpdate() final;
 		virtual void canvasDraw() const final;
 		virtual void canvasImGui() final;

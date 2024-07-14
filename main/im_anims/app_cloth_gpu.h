@@ -3,8 +3,8 @@
 	2022-11-14 / im dong ye
 */
 
-#ifndef __app_gpgpu_h_
-#define __app_gpgpu_h_
+#ifndef __app_cloth_gpu_
+#define __app_cloth_gpu_
 
 #include <limbrary/application.h>
 #include <limbrary/model_view/mesh_maked.h>
@@ -14,7 +14,7 @@
 
 namespace lim
 {
-	class AppGpgpu : public AppBase
+	class AppClothGPU : public AppBase
 	{
 	public:
 		inline static constexpr CStr APP_NAME = "gpgpu";
@@ -29,8 +29,8 @@ namespace lim
 		Model model;
 
 	public:
-		AppGpgpu();
-		~AppGpgpu();
+		AppClothGPU();
+		~AppClothGPU();
 		virtual void update() override;
 		virtual void updateImGui() override;
 

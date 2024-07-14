@@ -23,14 +23,15 @@
 #include "im_npr/app_hatching.h"
 #include "im_hdr/app_hdr.h"
 #include "im_anims/app_nano.h"
-#include "im_anims/app_kinematics.h"
+#include "im_anims/app_cloth_cpu.h"
 #include "im_anims/app_fluid.h"
 #include "im_shadertoy/app_shadertoy.h"
 #include "im_sdf_modeler/app_sdf_modeler.h"
 #include "im_mine_sweeper/app_mine_sweeper.h"
 #include "im_model_viewer/app_model_viewer.h"
 #include "im_anims/app_skeletal.h"
-#include "im_anims/app_gpgpu.h"
+#include "im_anims/app_cloth_gpu.h"
+#include "im_anims/app_ik.h"
 #include "im_anims/app_particle.h"
 
 
@@ -82,9 +83,10 @@ static void pushAppData()
 
 int main()
 {
-	pushAppData<lim::AppGpgpu>();
 	pushAppData<lim::AppParticle>();
-	pushAppData<lim::AppKinematics>();
+	pushAppData<lim::AppClothGPU>();
+	pushAppData<lim::AppClothCPU>();
+	pushAppData<lim::AppIK>();
 	pushAppData<lim::AppSkeletal>();
 	pushAppData<lim::AppMineSweeper>();
 	pushAppData<lim::AppModelViewer>();

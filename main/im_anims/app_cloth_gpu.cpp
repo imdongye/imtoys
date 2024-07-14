@@ -5,7 +5,7 @@
 	
 */
 
-#include "app_gpgpu.h"
+#include "app_cloth_gpu.h"
 #include <stb_image.h>
 #include <glad/glad.h>
 #include <limbrary/log.h>
@@ -77,8 +77,8 @@ static void copyMemToBuf() {
 }
 
 static void resetParams() {
-	nr_p = {10, 20};
-	cloth_size = {0.7, 1.4};
+	// nr_p = {10, 20};
+	// cloth_size = {0.7, 1.4};
 
 
 	time_speed = def_time_speed;
@@ -177,7 +177,7 @@ static void makeClothDataAndInitGL() {
 	glGenTransformFeedbacks(1, &xfb_id);
 }
 
-AppGpgpu::AppGpgpu()
+AppClothGPU::AppClothGPU()
 	: AppBase(900, 600, "gpgpu", false)
 	, viewport("viewport##gpgpu", new FramebufferTexDepth())
 	, ground(20)
@@ -249,11 +249,11 @@ AppGpgpu::AppGpgpu()
 
 	glBindTexture(GL_TEXTURE_BUFFER, 0);
 }
-AppGpgpu::~AppGpgpu()
+AppClothGPU::~AppClothGPU()
 {
 	clearGLBuffers();
 }
-void AppGpgpu::update() 
+void AppClothGPU::update() 
 {
 	glEnable(GL_DEPTH_TEST);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -352,7 +352,7 @@ void AppGpgpu::update()
 	viewport.getFb().unbind();
 }
 
-void AppGpgpu::updateImGui()
+void AppClothGPU::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
 	log::drawViewer("logger##gpgpu");

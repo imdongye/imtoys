@@ -2,7 +2,7 @@
 	Todo: 
 */
 
-#include "app_kinematics.h"
+#include "app_ik.h"
 #include <limbrary/log.h>
 #include <limbrary/limgui.h>
 #include <Eigen/Dense>
@@ -13,7 +13,7 @@ using namespace std;
 using namespace lim;
 
 namespace {
-	AppKinematics* g_app = nullptr;
+	AppIK* g_app = nullptr;
 
 	int step_size = 10;
 	float ik_speed = 3.f;
@@ -158,19 +158,19 @@ static void resetScene() {
 	// body.setLength();
 }
 
-AppKinematics::AppKinematics() : AppBaseCanvas3d(1200, 780, APP_NAME, true) {
+AppIK::AppIK() : AppBaseCanvas3d(1200, 780, APP_NAME, true) {
 	g_app = this;
 	resetScene();
 }
-AppKinematics::~AppKinematics() {
+AppIK::~AppIK() {
 }
-void AppKinematics::canvasUpdate() {
+void AppIK::canvasUpdate() {
 	if( target_jnt ) {
 		target_jnt->solveIK( target_pos, delta_time );
 	}
 	body.update();
 }
-void AppKinematics::canvasDraw() const {
+void AppIK::canvasDraw() const {
 	if( target_jnt ) {
 		drawSphere(target_pos, {1,0,0}, 0.03f);
 	}
@@ -186,7 +186,7 @@ void AppKinematics::canvasDraw() const {
 	drawQuad({0,0,0}, {0,1,0}, {0,0.3f,0});
 }
 
-void AppKinematics::canvasImGui() {
+void AppIK::canvasImGui() {
 	log::drawViewer("logger##ik");
 
 	ImGui::Begin("test window##ik");

@@ -1,30 +1,34 @@
 /*
-	cloth simulation with particle mass system in cpu
-	2024-07-01 / im dong ye
-*/
+    2023-07-14 / im dong ye
 
-#ifndef __app_particle_h_
-#define __app_particle_h_
+
+*/
+#ifndef __app_particle_h__
+#define __app_particle_h__
 
 #include <limbrary/application.h>
-#include "appbase_canvas3d.h"
+#include <limbrary/viewport.h>
 
 namespace lim
 {
-	class AppParticle : public AppBaseCanvas3d
+	class AppParticle : public AppBase
 	{
 	public:
-		inline static constexpr CStr APP_NAME = "particle";
-		inline static constexpr CStr APP_DIR  = "im_anims";
-		inline static constexpr CStr APP_DESCRIPTION = "limbrary template application";
+		inline static constexpr const char *APP_NAME = "particle system";
+		inline static constexpr const char *APP_DIR  = "im_anims";
+		inline static constexpr const char *APP_DESCRIPTION = "hello, world";
+
+	private:
+		Viewport viewport;
 
 	public:
 		AppParticle();
 		~AppParticle();
-		virtual void canvasUpdate() final;
-		virtual void canvasDraw() const final;
-		virtual void canvasImGui() final;
-	};
+
+	private:
+		virtual void update() override;
+		virtual void updateImGui() override;
+    };
 }
 
 #endif
