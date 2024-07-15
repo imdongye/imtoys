@@ -1,4 +1,9 @@
 #version 460 core
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+
+
 const int MAX_BONES = 200;
 const int MAX_BONE_PER_VERT = 4;
 
@@ -7,8 +12,8 @@ layout(location=1) in vec3 aNor;
 layout(location=2) in ivec4 aBoneIdxs;
 layout(location=3) in vec4 aBoneWeights;
 
-layout(xfb_buffer=0, xfb_stride=16, xfb_offset=0) out vec3 sPos;
-layout(xfb_buffer=1, xfb_stride=16, xfb_offset=0) out vec3 sNor;
+layout(xfb_buffer=0, xfb_offset=0) out vec3 sPos;
+layout(xfb_buffer=1, xfb_offset=0) out vec3 sNor;
 
 uniform mat4 mtx_Bones[MAX_BONES];
 

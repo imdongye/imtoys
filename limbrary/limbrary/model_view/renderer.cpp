@@ -206,7 +206,7 @@ void lim::render( const IFramebuffer& fb,
         });
     }
 
-    // bake skinned mesh
+    // bake skinned mesh with xtf
     const Program& skinXfbProg = AssetLib::get().skin_xfb_prog;
     GLuint skinXfbId = AssetLib::get().skin_xfb_id;
     skinXfbProg.use();

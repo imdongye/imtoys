@@ -45,6 +45,9 @@ Mesh::~Mesh()
 // upload VRAM
 void Mesh::initGL(bool withClearMem)
 {
+	static GLsizei bufSize;
+	static vector<vec4> tempVec4;
+
 	if( poss.size()==0 ){
 		log::err("no verts in mesh\n\n");
 		std::exit(-1);
@@ -53,20 +56,37 @@ void Mesh::initGL(bool withClearMem)
 	deinitGL();
 
 	glGenVertexArrays(1, &vao);
+
+
+
 	glBindVertexArray(vao);
+	{
+		tempVec4.clear();
+		tempVec4.reserve(poss.size());
+		for( vec3 v : poss ) {
+			tempVec4.emplace_back(v.x, v.y, v.z, 1.f);
+		}
 
-	glGenBuffers(1, &pos_buf);
-	glBindBuffer(GL_ARRAY_BUFFER, pos_buf);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(poss[0])*poss.size(), poss.data(), GL_STATIC_DRAW);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-
+		bufSize = sizeof(vec4)*poss.size();
+		glGenBuffers(1, &pos_buf);
+		glBindBuffer(GL_ARRAY_BUFFER, pos_buf);
+		glBufferData(GL_ARRAY_BUFFER, bufSize, tempVec4.data(), GL_STATIC_DRAW);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vec4), 0);
+	}
 	if( nors.size()>0 ){
+		tempVec4.clear();
+		tempVec4.reserve(nors.size());
+		for( vec3 v : nors ) {
+			tempVec4.emplace_back(v.x, v.y, v.z, 1.f);
+		}
+
+		bufSize = sizeof(vec4)*nors.size();
 		glGenBuffers(1, &nor_buf);
 		glBindBuffer(GL_ARRAY_BUFFER, nor_buf);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(nors[0])*nors.size(), nors.data(), GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, bufSize, tempVec4.data(), GL_STATIC_DRAW);
 		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vec4), 0);
 	}
 	if( uvs.size()>0 ){
 		glGenBuffers(1, &uv_buf);
@@ -107,18 +127,30 @@ void Mesh::initGL(bool withClearMem)
 	if( bone_infos.size()>0 ){
 		// override vbo in main vao
 		glBindVertexArray(vao);
-		glGenBuffers(1, &skinned_pos_buf);
-		glBindBuffer(GL_ARRAY_BUFFER, skinned_pos_buf);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(poss[0])*poss.size(), poss.data(), GL_DYNAMIC_COPY);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
+		{
+			bufSize = sizeof(vec4)*poss.size();
+			glGenBuffers(1, &skinned_pos_buf);
+			glBindBuffer(GL_ARRAY_BUFFER, skinned_pos_buf);
+			glBufferData(GL_ARRAY_BUFFER, bufSize, nullptr, GL_DYNAMIC_COPY);
+			glEnableVertexAttribArray(0);
+			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vec4), 0);
+
+			glBindBuffer(GL_COPY_READ_BUFFER, pos_buf);
+			glBindBuffer(GL_COPY_WRITE_BUFFER, skinned_pos_buf);
+			glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, 0, bufSize);
+		}
 		if( nors.size()>0 ){
+			bufSize = sizeof(vec4)*nors.size();
 			glGenBuffers(1, &skinned_nor_buf);
 			glBindBuffer(GL_ARRAY_BUFFER, skinned_nor_buf);
-			glBufferData(GL_ARRAY_BUFFER, sizeof(nors[0])*nors.size(), nors.data(), GL_DYNAMIC_COPY);
+			glBufferData(GL_ARRAY_BUFFER, bufSize, nullptr, GL_DYNAMIC_COPY);
 			glEnableVertexAttribArray(1);
-			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vec4), 0);
+
+			glBindBuffer(GL_COPY_READ_BUFFER, nor_buf);
+			glBindBuffer(GL_COPY_WRITE_BUFFER, skinned_nor_buf);
+			glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, 0, bufSize);
 		}
 
 
@@ -128,11 +160,11 @@ void Mesh::initGL(bool withClearMem)
 		
 		glBindBuffer(GL_ARRAY_BUFFER, pos_buf);
 		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vec4), 0);
 
 		glBindBuffer(GL_ARRAY_BUFFER, nor_buf);
 		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vec4), 0);
 
 		glGenBuffers(1, &bone_infos_buf);
 		glBindBuffer(GL_ARRAY_BUFFER, bone_infos_buf);
