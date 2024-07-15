@@ -54,7 +54,7 @@ namespace lim
 
 
 		std::vector<VertBoneInfo> bone_infos;
-		GLuint bone_infos_buf = 0;		// 2, 3
+		GLuint bone_info_buf = 0;		// 2, 3
 		GLuint skinning_vao = 0;
 
 	public:

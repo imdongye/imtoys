@@ -2,20 +2,34 @@
 
 layout(local_size_x = 16, local_size_y = 16) in;
 
-
-
 const int MAX_BONES = 200;
 const int MAX_BONE_PER_VERT = 4;
+struct VertBoneInfo {
+    int idxs[MAX_BONE_PER_VERT];
+    float weights[MAX_BONE_PER_VERT];
+};
 
-layout(location=0) in vec3 aPos;
-layout(location=1) in vec3 aNor;
-layout(location=2) in ivec4 aBoneIdxs;
-layout(location=3) in vec4 aBoneWeights;
 
-layout(xfb_buffer=0, xfb_offset=0) out vec3 sPos;
-layout(xfb_buffer=1, xfb_offset=0) out vec3 sNor;
+layout(std430, binding=0) readonly buffer pos_buf {
+    vec4 poss[];
+};
+layout(std430, binding=1) readonly buffer nor_buf {
+    vec4 nors[];
+};
+layout(std430, binding=2) readonly buffer bone_infos_buf {
+    VertBoneInfo bone_infos[];
+};
+layout(std430, binding=3) readonly buffer mtx_bone_buf {
+    mat4 mtx_Bones[];
+};
 
-uniform mat4 mtx_Bones[MAX_BONES];
+layout(std430, binding=0) writeonly buffer skinned_pos_buf {
+    vec4 skinned_poss[];
+};
+layout(std430, binding=1) writeonly buffer skinned_nor_buf {
+    vec4 skinned_nors[];
+};
+
 
 void main()
 {

@@ -166,8 +166,8 @@ void Mesh::initGL(bool withClearMem)
 		glEnableVertexAttribArray(1);
 		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vec4), 0);
 
-		glGenBuffers(1, &bone_infos_buf);
-		glBindBuffer(GL_ARRAY_BUFFER, bone_infos_buf);
+		glGenBuffers(1, &bone_info_buf);
+		glBindBuffer(GL_ARRAY_BUFFER, bone_info_buf);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(bone_infos[0])*bone_infos.size(), bone_infos.data(), GL_STATIC_DRAW);
 		GLsizei stride = sizeof(VertBoneInfo);
 		const void* weightOffset = (void *)(MAX_BONE_PER_VERT*sizeof(int));
@@ -194,7 +194,7 @@ void Mesh::deinitGL()
 	gl::safeDelBufs(&element_buf);
 	gl::safeDelVertArrs(&vao);
 
-	gl::safeDelBufs(&bone_infos_buf);
+	gl::safeDelBufs(&bone_info_buf);
 	gl::safeDelVertArrs(&skinning_vao);
 }
 void Mesh::clearMem() {
