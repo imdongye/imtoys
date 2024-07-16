@@ -269,7 +269,7 @@ void lim::AppModelViewer::updateImGui()
 				scenes[i]->addRef(&floor_md);
 			}
 			else {
-				scenes[i]->models.pop_back();
+				scenes[i]->mds.pop_back();
 			}
 		}
 

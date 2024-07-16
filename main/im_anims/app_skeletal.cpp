@@ -9,6 +9,7 @@
 #include <limbrary/asset_lib.h>
 
 using namespace lim;
+using namespace glm;
 
 
 void AppSkeletal::importModel(const char* path) {
@@ -19,7 +20,7 @@ void AppSkeletal::importModel(const char* path) {
 	model.setProgToAllMat(&program);
 	LimGui::ModelEditorReset();
 }
-lim::AppSkeletal::AppSkeletal() : AppBase(1200, 780, APP_NAME)
+lim::AppSkeletal::AppSkeletal() : AppBase(1200, 780, APP_NAME, false)
 	, viewport("viewport##skeletal", new FramebufferTexDepth())
 {
 	LightDirectional* lit = new LightDirectional();
@@ -31,10 +32,26 @@ lim::AppSkeletal::AppSkeletal() : AppBase(1200, 780, APP_NAME)
 
 	
 	importModel("assets/models/jump.fbx");
-	scene.addRef(&model);
+	// scene.addRefSkinned(&model);
+	scene.addOwnSkinned(new ModelView(model));
+
+	int nrWidth = 10;
+	vec2 posSize{10, 10};
+	vec2 startPos{-posSize/vec2{2.f}};
+	vec2 stepSize = posSize/vec2{nrWidth-1, nrWidth-1};
+
+	for(int i=0; i<nrWidth; i++) for(int j=0; j<nrWidth; j++)  {
+		scene.addOwnSkinned(new ModelView(model));
+		vec2 targetPos = startPos+stepSize*vec2{i, j};
+		scene.own_mds.back()->tf->pos.x = targetPos.x;
+		scene.own_mds.back()->tf->pos.z = targetPos.y;
+		scene.own_mds.back()->tf->update();
+		scene.own_mds.back()->animator.is_loop = true;
+		scene.own_mds.back()->animator.play();
+	}
 
 	Model* floor = new Model();
-	Mesh* ms = floor->addOwn(new MeshPlane(1));
+	Mesh* ms = floor->addOwn(new MeshPlane(10.f));
 	Material* mat = floor->addOwn(new Material());
 	floor->root.addMsMat(ms, mat);
 	floor->setProgToAllMat(&program);
@@ -97,9 +114,11 @@ void lim::AppSkeletal::updateImGui()
 
 	viewport.drawImGui();
 
-	LimGui::ModelEditor(model);
+	// LimGui::ModelEditor(model);
+	LimGui::ModelEditor(*scene.own_mds.front());
 
 	ImGui::Begin("skeletal ctrl");
+	LimGui::PlotVal("dt", "ms", delta_time);
 	ImGui::Checkbox("draw offset", &drawOffset);
 	ImGui::End();
 }

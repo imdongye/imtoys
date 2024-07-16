@@ -64,16 +64,6 @@ void RdNode::clear() {
 }
 
 
-
-
-ModelView::ModelView() {
-	tf = &root.tf;
-}
-ModelView::~ModelView() {
-}
-ModelView::ModelView(const ModelView& src) {
-	operator=(src);
-}
 static Transform* findTf(RdNode& dst, const RdNode& src, const Transform* srcTf) {
 	if(srcTf == &src.tf) {
 		return &dst.tf;
@@ -85,6 +75,16 @@ static Transform* findTf(RdNode& dst, const RdNode& src, const Transform* srcTf)
 			return rst;
 	}
 	return nullptr;
+}
+
+
+ModelView::ModelView() {
+	tf = &root.tf;
+}
+ModelView::~ModelView() {
+}
+ModelView::ModelView(const ModelView& src) {
+	operator=(src);
 }
 ModelView& ModelView::operator=(const ModelView& src) {
 	root = src.root;

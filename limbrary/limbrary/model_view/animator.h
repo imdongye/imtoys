@@ -74,6 +74,7 @@ namespace lim
 
         BoneNode bone_root;
         std::vector<Transform*> bone_tfs;
+        std::vector<glm::mat4> mtx_Bones;
 
         const Animation* cur_anim = nullptr;
         const Model* md_data = nullptr;
@@ -81,7 +82,6 @@ namespace lim
         double cur_tick = 0.0;
         bool is_loop = false;
 
-        std::vector<glm::mat4> mtx_Bones;
         
     public:
         Animator(const Animator& src)		 = delete;
@@ -89,10 +89,10 @@ namespace lim
 		Animator& operator=(Animator&&)      = delete;
 
         Animator();
-        void init(const Model* md);
-        ~Animator();
-        void clear();
 		Animator& operator=(const Animator& src); // todo default
+        ~Animator();
+        void init(const Model* md);
+        void clear();
         
         void setAnim(const Animation* anim);
         void setTimeline(const float pct, bool updateMenualy=false);

@@ -150,12 +150,18 @@ void Scene::releaseData() {
     }
     own_mds.clear();
     own_lits.clear();
-    models.clear();
+    mds.clear();
     lights.clear();
 }
 
 ModelView* Scene::addOwn(ModelView* md)  {
-    models.push_back(md);
+    mds.push_back(md);
+    own_mds.push_back(md);
+    return md;
+}
+ModelView* Scene::addOwnSkinned(ModelView* md)  {
+    mds.push_back(md);
+    mds_skinned.push_back(md);
     own_mds.push_back(md);
     return md;
 }
@@ -165,7 +171,12 @@ ILight* Scene::addOwn(ILight* lit) {
     return lit;
 }
 const ModelView* Scene::addRef(const ModelView* md)  {
-    models.push_back(md);
+    mds.push_back(md);
+    return md;
+}
+const ModelView* Scene::addRefSkinned(const ModelView* md)  {
+    mds.push_back(md);
+    mds_skinned.push_back(md);
     return md;
 }
 const ILight* Scene::addRef(const ILight* lit) {
@@ -197,7 +208,7 @@ void lim::render( const IFramebuffer& fb,
     // bake shadow map
     for( const ILight* lit : scn.lights ) {
         lit->bakeShadowMap([&scn]() {
-            for( const ModelView* md : scn.models ) {
+            for( const ModelView* md : scn.mds ) {
                 md->root.treversal([&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
                     g_cur_prog->setUniform("mtx_Model", transform);
                     ms->bindAndDrawGL();
@@ -212,7 +223,7 @@ void lim::render( const IFramebuffer& fb,
     skinXfbProg.use();
     glEnable(GL_RASTERIZER_DISCARD);
     glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, skinXfbId);
-    for( const ModelView* md : scn.models ) {
+    for( const ModelView* md : scn.mds_skinned ) {
         if( md->animator.cur_anim == nullptr || md->animator.state==Animator::State::STOP  )
             continue;
         md->animator.setUniformTo(skinXfbProg);
@@ -249,7 +260,7 @@ void lim::render( const IFramebuffer& fb,
     bool isMeshChanged = true;
     bool isModelChanged = true;
 
-    for( const ModelView* md : scn.models ) {
+    for( const ModelView* md : scn.mds ) {
         isModelChanged = true;
         md->root.treversalEnabled([&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
             if( curMat != mat ) {

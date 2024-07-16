@@ -66,9 +66,9 @@ namespace lim
 
 
 		const float interModels = 3.5f;
-		const float biasModels = -interModels * scene.models.size() / 2.f;
+		const float biasModels = -interModels * scene.mds.size() / 2.f;
 
-		for( int i = 0; i < scene.models.size(); i++ )
+		for( int i = 0; i < scene.mds.size(); i++ )
 		{
 			scene.own_mds[i]->tf->pos = {biasModels + interModels * i, 0, 0};
 			scene.own_mds[i]->tf->update();

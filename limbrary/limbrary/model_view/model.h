@@ -57,6 +57,8 @@ namespace lim
 		void treversalEnabled(std::function<void(const Mesh* ms, const Material* mat, const glm::mat4& transform)> callback, const glm::mat4& mtxPrevTf = glm::mat4(1) ) const;
 		void clear();
 	};
+
+
 	class Model;
 	class ModelView 
 	{
@@ -76,6 +78,7 @@ namespace lim
 		
 		const glm::mat4& getGlobalTfMtx() const;
 	};
+
 
 	class Model: public ModelView
 	{

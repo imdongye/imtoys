@@ -8,18 +8,11 @@
 #include <limbrary/model_view/mesh.h>
 #include <limbrary/gl_tools.h>
 #include <limbrary/log.h>
+#include <limbrary/gl_tools.h>
 
 using namespace std;
 using namespace glm;
 using namespace lim;
-
-
-inline static void deleteGLBuf(GLuint& buf) {
-	if( buf>0 ){
-		glDeleteBuffers(1, &buf);
-		buf = 0;
-	}
-}
 
 
 Mesh::Mesh()

@@ -37,21 +37,42 @@ Animator::~Animator() {
     } 
 }
 void Animator::clear() {
-    cur_anim = nullptr;
-    state = State::STOP;
     bone_root.clear();
     bone_tfs.clear();
     mtx_Bones.clear();
+    cur_anim = nullptr;
+    state = State::STOP;
+}
+static Transform* getDstBoneTf(BoneNode& dst, const BoneNode& src, const Transform* srcTf) {
+    if( &src.tf == srcTf ) {
+        return &dst.tf;
+    }
+    for(int i=0; i<src.childs.size(); i++) {
+        Transform* ptr = getDstBoneTf(dst.childs[i], src.childs[i], srcTf);
+        if(ptr)
+            return ptr;
+    }
+    return nullptr;
+}
+static void copyBoneTfs(Animator& dst, const Animator& src) {
+    dst.bone_tfs.clear();
+    dst.bone_tfs.reserve(src.bone_tfs.size());
+    for(const Transform* pSrcTf: src.bone_tfs) {
+        dst.bone_tfs.push_back(getDstBoneTf(dst.bone_root, src.bone_root, pSrcTf));
+    }
 }
 Animator& Animator::operator=(const Animator& src) {
     bone_root = src.bone_root;
+    // bone_tfs = src.bone_tfs;
+    copyBoneTfs(*this, src);
+    mtx_Bones = src.mtx_Bones;
+
     cur_anim = src.cur_anim;
     init(src.md_data);
     start_sec = src.start_sec;
     elapsed_sec = src.elapsed_sec;
     duration_sec = src.duration_sec;
     is_loop = src.is_loop;
-    mtx_Bones = src.mtx_Bones;
     return *this;
 }
 
