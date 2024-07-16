@@ -17,7 +17,7 @@ namespace lim
 	class AppClothGPU : public AppBase
 	{
 	public:
-		inline static constexpr CStr APP_NAME = "gpgpu";
+		inline static constexpr CStr APP_NAME = "cloth_gpu";
 		inline static constexpr CStr APP_DIR  = "im_anims";
 		inline static constexpr CStr APP_DESCRIPTION = "limbrary template application";
 

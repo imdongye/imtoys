@@ -7,7 +7,7 @@
 #define __app_particle_h__
 
 #include <limbrary/application.h>
-#include <limbrary/viewport.h>
+#include <limbrary/model_view/camera_man.h>
 
 namespace lim
 {
@@ -19,7 +19,7 @@ namespace lim
 		inline static constexpr const char *APP_DESCRIPTION = "hello, world";
 
 	private:
-		Viewport viewport;
+		ViewportWithCamera viewport;
 
 	public:
 		AppParticle();

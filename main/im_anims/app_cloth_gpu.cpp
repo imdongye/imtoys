@@ -170,7 +170,7 @@ static void makeClothDataAndInitGL() {
 }
 
 AppClothGPU::AppClothGPU()
-	: AppBase(900, 600, "gpgpu", false)
+	: AppBase(900, 600, APP_NAME, false)
 	, viewport("viewport##gpgpu", new FramebufferTexDepth())
 	, ground(20)
 {
