@@ -6,7 +6,7 @@ namespace {
 	constexpr float def_Ka = 0.5f;	// vicous drag 공기저항
 	constexpr float def_Kr = 0.8f;		// 반발 계수
 	constexpr float def_Kmu = 0.1f; 	// 마찰 계수
-	constexpr float def_Ks = 10.f;		// 스프링 계수
+	constexpr float def_Ks = 30.f;		// 스프링 계수
 	constexpr float def_Kd = 0.2f;	// 스프링 저항
 	constexpr float def_collision_eps = 0.001f; // (particle ratius)
 	constexpr float def_stretch_pct = 1.f;

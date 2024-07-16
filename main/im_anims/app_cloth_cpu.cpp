@@ -426,7 +426,7 @@ void AppClothCPU::canvasImGui()
 		ptcl_mass = cloth_mass/(nr_p.x*nr_p.y);
 	}
 	ImGui::SliderFloat("spring coef", &Ks, 10.f, 70.f);
-	ImGui::SliderFloat("spring damping coef", &Kd, 0.00f, 1.4f);
+	ImGui::SliderFloat("spring damping coef", &Kd, 0.00f, 0.5f);
 	ImGui::SliderFloat("stretch", &stretch_pct, 0.1f, 1.f);
 	ImGui::SliderFloat("shear", &shear_pct, 0.1f, 1.f);
 	ImGui::SliderFloat("bending", &bending_pct, 0.1f, 1.f);
