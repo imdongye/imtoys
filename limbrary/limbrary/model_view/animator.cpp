@@ -69,7 +69,6 @@ Animator& Animator::operator=(const Animator& src) {
 
     cur_anim = src.cur_anim;
     init(src.md_data);
-    start_sec = src.start_sec;
     elapsed_sec = src.elapsed_sec;
     duration_sec = src.duration_sec;
     is_loop = src.is_loop;
@@ -95,10 +94,7 @@ void Animator::play() {
         log::err("no selected animation\n");
         assert(false);
     }
-    if( state == State::PAUSE )
-        start_sec = glfwGetTime() - elapsed_sec;
-    else {
-        start_sec = glfwGetTime();
+    if( state != State::PAUSE ) {
         elapsed_sec = 0;
     }
     state = State::PLAY;
@@ -113,8 +109,12 @@ void Animator::stop() {
     elapsed_sec = 0;
 }
 void Animator::setUniformTo(const Program& prog) const {
-    // Todo : 애니메이션되어서 바뀌었을때만 스키닝 인스턴싱
-    prog.setUniform("mtx_Bones", mtx_Bones);
+    if( state == State::STOP ) {
+        prog.setUniform("is_Skinned", false);
+    } else {
+        prog.setUniform("is_Skinned", true);
+        prog.setUniform("mtx_Bones", mtx_Bones);
+    }
 }
 
 
@@ -154,15 +154,13 @@ void Animator::update(float dt) {
     elapsed_sec += dt;
     if( elapsed_sec > duration_sec ) {
         if( is_loop ) {
-            elapsed_sec = elapsed_sec - duration_sec;
-            start_sec += duration_sec;
+            elapsed_sec = fmod(elapsed_sec, duration_sec);
         } else {
             state = State::STOP;
             return;
         }
     }
     cur_tick = elapsed_sec * cur_anim->ticks_per_sec;
-    // cur_tick = fmod(cur_tick, cur_anim->nr_ticks);
 
     for( const Animation::Track& track : cur_anim->tracks ) {
         int idx;

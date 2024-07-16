@@ -106,6 +106,10 @@ namespace lim
 	}
 
 
+	inline float randFloat() {
+  		return (float)rand() / RAND_MAX;
+	}
+
 	//template <class Ftype>
 	//using Callbacks = std::map<const void*, std::function<Ftype>>;
 	template <typename Ftype>

@@ -35,27 +35,21 @@ namespace lim
 		std::vector<glm::vec3> poss;
 		std::vector<glm::vec3> nors;
 		std::vector<glm::vec2> uvs;
-		std::vector<glm::vec3> cols;
 		std::vector<glm::vec3> tangents;
 		std::vector<glm::vec3> bitangents;
+		std::vector<glm::vec3> cols;
+		std::vector<VertBoneInfo> bone_infos;
 		std::vector<glm::uvec3> tris;
 		
-		GLuint pos_buf = 0; 			// 0
-		GLuint nor_buf = 0; 			// 1
-		GLuint skinned_pos_buf = 0;		// 0
-		GLuint skinned_nor_buf = 0;		// 1
-
-		GLuint uv_buf  = 0;				// 2
-		GLuint color_buf = 0;			// 3
-		GLuint tangent_buf = 0; 		// 4
-		GLuint bitangent_buf = 0;		// 5
-		GLuint element_buf = 0;
+		GLuint buf_pos = 0; 			// 0
+		GLuint buf_nor = 0; 			// 1
+		GLuint buf_uv  = 0;				// 2
+		GLuint buf_color = 0;			// 3
+		GLuint buf_tangent = 0; 		// 4
+		GLuint buf_bitangent = 0;		// 5
+		GLuint buf_bone_info = 0;		// 6, 7
+		GLuint buf_tris = 0;
 		GLuint vao = 0;
-
-
-		std::vector<VertBoneInfo> bone_infos;
-		GLuint bone_info_buf = 0;		// 2, 3
-		GLuint skinning_vao = 0;
 
 	public:
 		Mesh(Mesh&& src)			 = delete;
@@ -74,8 +68,6 @@ namespace lim
 		void drawGL() const;
 		void bindAndDrawGL() const;
 	};
-
-
 }
 
 #endif

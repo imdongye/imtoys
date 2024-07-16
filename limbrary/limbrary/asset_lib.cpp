@@ -36,6 +36,9 @@ lim::AssetLib::AssetLib()
 	skin_xfb_prog.attatch("skin_xfb.vs").link();
 	glGenTransformFeedbacks(1, &skin_xfb_id);
 
+	skin_comp_prog.name = "skinning_comp";
+	skin_comp_prog.attatch("skin.comp").link();
+
 	env_prog = new Program("env");
 	env_prog->attatch("mvp.vs").attatch("env.fs").link();
 

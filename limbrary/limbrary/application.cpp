@@ -153,11 +153,15 @@ AppBase::AppBase(int winWidth, int winHeight, const char* title, bool vsync)
 		log::pure("GL Renderer          : %s\n", renderer);
 		log::pure("GL Version (string)  : %s\n", version);
 		log::pure("GLSL Version         : %s\n", glslVersion);
-		int nrAttributes, nrTextureUnits;
-		glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &nrAttributes);
-		log::pure("#Vertex Attributes   : %d\n", nrAttributes);
-		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &nrTextureUnits);
-		log::pure("#Texture Slots       : %d\n", nrTextureUnits);
+		int iTemp;
+		glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &iTemp);
+		log::pure("#Vertex Attributes   : %d\n", iTemp);
+
+		glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &iTemp);
+		log::pure("#comp invocations    : %d\n", iTemp);
+		
+		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &iTemp);
+		log::pure("#Texture Slots       : %d\n", iTemp);
 		log::pure("Current Path : %s\n\n", std::filesystem::current_path().string().c_str());
 	}
 

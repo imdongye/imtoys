@@ -7,6 +7,7 @@
 #include <limbrary/limgui.h>
 #include <functional>
 #include <limbrary/asset_lib.h>
+#include <glm/gtc/random.hpp>
 
 using namespace lim;
 using namespace glm;
@@ -27,13 +28,11 @@ lim::AppSkeletal::AppSkeletal() : AppBase(1200, 780, APP_NAME, false)
 	scene.addOwn(lit);
 
 	program.name = "skeletal prog";
-	program.home_dir = APP_DIR;
-	program.attatch("mvp.vs").attatch("skel.fs").link();
+	program.attatch("mvp_skinned.vs").attatch("ndv.fs").link();
 
 	
 	importModel("assets/models/jump.fbx");
 	// scene.addRefSkinned(&model);
-	scene.addOwnSkinned(new ModelView(model));
 
 	int nrWidth = 10;
 	vec2 posSize{10, 10};
@@ -41,13 +40,15 @@ lim::AppSkeletal::AppSkeletal() : AppBase(1200, 780, APP_NAME, false)
 	vec2 stepSize = posSize/vec2{nrWidth-1, nrWidth-1};
 
 	for(int i=0; i<nrWidth; i++) for(int j=0; j<nrWidth; j++)  {
-		scene.addOwnSkinned(new ModelView(model));
+		scene.addOwn(new ModelView(model));
 		vec2 targetPos = startPos+stepSize*vec2{i, j};
 		scene.own_mds.back()->tf->pos.x = targetPos.x;
 		scene.own_mds.back()->tf->pos.z = targetPos.y;
 		scene.own_mds.back()->tf->update();
 		scene.own_mds.back()->animator.is_loop = true;
 		scene.own_mds.back()->animator.play();
+		float time = linearRand(0.f, 1.f);
+		scene.own_mds.back()->animator.setTimeline(time, true);
 	}
 
 	Model* floor = new Model();
@@ -119,6 +120,7 @@ void lim::AppSkeletal::updateImGui()
 
 	ImGui::Begin("skeletal ctrl");
 	LimGui::PlotVal("dt", "ms", delta_time);
+	LimGui::PlotVal("fps", "", ImGui::GetIO().Framerate);
 	ImGui::Checkbox("draw offset", &drawOffset);
 	ImGui::End();
 }

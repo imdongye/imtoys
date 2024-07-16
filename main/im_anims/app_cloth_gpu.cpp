@@ -31,12 +31,6 @@ namespace {
 	GLuint tbo_vel_ids[2];
 	int nr_ptcls, nr_tris;
 
-	Mesh* ori_geo_ms;
-	GLuint tex_geo_pos;
-	GLuint tex_geo_tri;
-	mat4 mtx_geo_model;
-	int nr_geo_tris;
-
 	int src_buf_idx = 0;
 	int dst_buf_idx = 1;
 	int picked_ptcl_idx = -1;
@@ -50,8 +44,6 @@ static void clearGLBuffers() {
 	gl::safeDelBufs(&ebo_indices);
 	gl::safeDelTexs(tbo_pos_ids, 2);
 	gl::safeDelTexs(tbo_vel_ids, 2);
-	gl::safeDelTexs(&tex_geo_pos, 1);
-	gl::safeDelTexs(&tex_geo_tri, 1);
 }
 
 namespace {
@@ -197,57 +189,6 @@ AppClothGPU::AppClothGPU()
 	model.tf->pos.y += model.pivoted_scaled_bottom_height;
 	model.tf->update();
 	model.animator.setTimeline(0.5f, true);
-
-	const Program& skinXfbProg = AssetLib::get().skin_xfb_prog;
-    GLuint skinXfbId = AssetLib::get().skin_xfb_id;
-    skinXfbProg.use();
-	model.animator.setUniformTo(skinXfbProg);
-    glEnable(GL_RASTERIZER_DISCARD);
-    glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, skinXfbId);
-	{
-		// model.root.treversalEnabled([&](const Mesh* ms, const Material* mat, const glm::mat4& transform)
-		// {
-		// 	if( ms->skinning_vao==0 )
-		// 		return;
-		// 	glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, ms->skinned_pos_buf);
-		// 	glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 1, ms->skinned_nor_buf);
-
-		// 	glBeginTransformFeedback(GL_POINTS);
-		// 	glBindVertexArray(ms->skinning_vao);
-		// 	glDrawArrays(GL_POINTS, 0, ms->poss.size());
-		// 	glEndTransformFeedback();
-		// });
-		ori_geo_ms = model.own_meshes[0];
-		nr_geo_tris = ori_geo_ms->tris.size();
-		model.root.treversalEnabled([&](const Mesh* ms, const Material* mat, const glm::mat4& transform)
-		{
-			if( ms==ori_geo_ms ) {
-				mtx_geo_model = transform;
-				return;
-			}
-		});
-		glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, ori_geo_ms->skinned_pos_buf);
-		glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 1, ori_geo_ms->skinned_nor_buf);
-
-		glBeginTransformFeedback(GL_POINTS);
-		glBindVertexArray(ori_geo_ms->skinning_vao);
-		glDrawArrays(GL_POINTS, 0, ori_geo_ms->poss.size());
-		glEndTransformFeedback();
-	}
-    glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
-    glDisable(GL_RASTERIZER_DISCARD);
-    glFlush();
-
-	glGenTextures(1, &tex_geo_pos);
-	glBindTexture(GL_TEXTURE_BUFFER, tex_geo_pos);
-	glTexBuffer(GL_TEXTURE_BUFFER, GL_RGB32F, ori_geo_ms->skinned_pos_buf);
-
-	
-	glGenTextures(1, &tex_geo_tri);
-	glBindTexture(GL_TEXTURE_BUFFER, tex_geo_tri);
-	glTexBuffer(GL_TEXTURE_BUFFER, GL_RGB32I, ori_geo_ms->element_buf);
-
-	glBindTexture(GL_TEXTURE_BUFFER, 0);
 }
 AppClothGPU::~AppClothGPU()
 {
@@ -286,17 +227,6 @@ void AppClothGPU::update()
 		prog_xfb.setUniform("tex_vel", 1);
 
 		prog_xfb.setUniform("collision_enabled", collision_enabled);
-
-
-		prog_xfb.setUniform("mtx_geo_model", mtx_geo_model);
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_BUFFER, tex_geo_pos);
-		prog_xfb.setUniform("tex_geo_pos", 2);
-		glActiveTexture(GL_TEXTURE3);
-		glBindTexture(GL_TEXTURE_BUFFER, tex_geo_tri);
-		prog_xfb.setUniform("tex_geo_tri", 3);
-
-		prog_xfb.setUniform("nr_geo_tris", nr_geo_tris);
 
 		glEnable(GL_RASTERIZER_DISCARD);
 		{
@@ -346,8 +276,8 @@ void AppClothGPU::update()
 	ground.bindAndDrawGL();
 
 	if(collision_enabled) {
-		ndvProg.setUniform("mtx_Model", mtx_geo_model);
-		ori_geo_ms->bindAndDrawGL();
+		// ndvProg.setUniform("mtx_Model", mtx_geo_model);
+		// ori_geo_ms->bindAndDrawGL();
 	}
 	viewport.getFb().unbind();
 }

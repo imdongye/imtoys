@@ -159,12 +159,6 @@ ModelView* Scene::addOwn(ModelView* md)  {
     own_mds.push_back(md);
     return md;
 }
-ModelView* Scene::addOwnSkinned(ModelView* md)  {
-    mds.push_back(md);
-    mds_skinned.push_back(md);
-    own_mds.push_back(md);
-    return md;
-}
 ILight* Scene::addOwn(ILight* lit) {
     lights.push_back(lit);
     own_lits.push_back(lit);
@@ -172,11 +166,6 @@ ILight* Scene::addOwn(ILight* lit) {
 }
 const ModelView* Scene::addRef(const ModelView* md)  {
     mds.push_back(md);
-    return md;
-}
-const ModelView* Scene::addRefSkinned(const ModelView* md)  {
-    mds.push_back(md);
-    mds_skinned.push_back(md);
     return md;
 }
 const ILight* Scene::addRef(const ILight* lit) {
@@ -217,35 +206,6 @@ void lim::render( const IFramebuffer& fb,
         });
     }
 
-    // bake skinned mesh with xtf
-    const Program& skinXfbProg = AssetLib::get().skin_xfb_prog;
-    GLuint skinXfbId = AssetLib::get().skin_xfb_id;
-    skinXfbProg.use();
-    glEnable(GL_RASTERIZER_DISCARD);
-    glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, skinXfbId);
-    for( const ModelView* md : scn.mds_skinned ) {
-        if( md->animator.cur_anim == nullptr || md->animator.state==Animator::State::STOP  )
-            continue;
-        md->animator.setUniformTo(skinXfbProg);
-        md->root.treversalEnabled([&](const Mesh* ms, const Material* mat, const glm::mat4& transform)
-        {
-            if( ms->skinning_vao==0 )
-                return;
-            glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, ms->skinned_pos_buf);
-            glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 1, ms->skinned_nor_buf);
-
-            glBeginTransformFeedback(GL_POINTS);
-            glBindVertexArray(ms->skinning_vao);
-            glDrawArrays(GL_POINTS, 0, ms->poss.size());
-            glEndTransformFeedback();
-        });
-    }
-    glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
-    glDisable(GL_RASTERIZER_DISCARD);
-    glFlush();
-
-
-
     // main rendering
     fb.bind();
     if( scn.is_draw_env_map ) {
@@ -285,10 +245,16 @@ void lim::render( const IFramebuffer& fb,
                 if( scn.ib_light ) {
                     scn.ib_light->setUniformTo(*curProg);
                 }
+                md->animator.setUniformTo(*curProg);
                 curMat->setUniformTo(*curProg);
             }
-            if( !isProgChanged && isMatChanged ) {
-                curMat->setUniformTo(*curProg);
+            else {
+                if( isMatChanged ) {
+                    curMat->setUniformTo(*curProg);
+                }
+                if( isModelChanged ) {
+                    md->animator.setUniformTo(*curProg);
+                }
             }
             if( isMeshChanged ) {
                 curMesh->bindGL();

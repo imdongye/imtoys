@@ -53,7 +53,7 @@ namespace lim
     struct BoneNode {
         std::string name = "nonamed node";
         Transform tf;
-        int bone_idx = -1;
+        int bone_idx = -1; // for mtx_Bones in ModelView, bone_offsets in Model
         std::vector<BoneNode> childs;
         
         void treversal(std::function<void(BoneNode& node, const glm::mat4& transform)> callback, const glm::mat4& mtxPrevTf = glm::mat4(1));
@@ -78,7 +78,7 @@ namespace lim
 
         const Animation* cur_anim = nullptr;
         const Model* md_data = nullptr;
-        double start_sec, elapsed_sec, duration_sec;
+        double elapsed_sec, duration_sec;
         double cur_tick = 0.0;
         bool is_loop = false;
 

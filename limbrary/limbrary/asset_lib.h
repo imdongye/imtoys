@@ -37,6 +37,7 @@ namespace lim
 		
 		GLuint skin_xfb_id;
 		Program skin_xfb_prog;
+		Program skin_comp_prog;
 
 		
 		MeshQuad screen_quad; // only poss

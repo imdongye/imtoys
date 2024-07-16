@@ -213,12 +213,12 @@ namespace lim
 
         prog.setUniform("modelMat", glm::mat4(1));
         glBindVertexArray(dst_ms.vao);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, dst_ms.element_buf);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, dst_ms.buf_tris);
 		glDrawElements(GL_POINTS, dst_ms.tris.size()*3, GL_UNSIGNED_INT, 0);
 		
         prog.setUniform("modelMat", icp_mat);
         glBindVertexArray(src_ms.vao);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, src_ms.element_buf);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, src_ms.buf_tris);
 		glDrawElements(GL_POINTS, src_ms.tris.size()*3, GL_UNSIGNED_INT, 0);
     }
     void AppICP::updateImGui()

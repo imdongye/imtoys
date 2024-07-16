@@ -11,10 +11,10 @@ struct VertBoneInfo {
 
 
 layout(std430, binding=0) readonly buffer pos_buf {
-    vec4 poss[];
+    vec3 poss[];
 };
 layout(std430, binding=1) readonly buffer nor_buf {
-    vec4 nors[];
+    vec3 nors[];
 };
 layout(std430, binding=2) readonly buffer bone_infos_buf {
     VertBoneInfo bone_infos[];
@@ -24,21 +24,26 @@ layout(std430, binding=3) readonly buffer mtx_bone_buf {
 };
 
 layout(std430, binding=0) writeonly buffer skinned_pos_buf {
-    vec4 skinned_poss[];
+    vec3 skinned_poss[];
 };
 layout(std430, binding=1) writeonly buffer skinned_nor_buf {
-    vec4 skinned_nors[];
+    vec3 skinned_nors[];
 };
 
 
 void main()
 {
+    uint idx = gl_GlobalInvocationID.x;
+    VertBoneInfo boneInfo = bone_infos[idx];
+
     mat4 mtxBone = mat4(0.f);
     for(int i = 0; i < MAX_BONE_PER_VERT; i++) {
-        if(aBoneIdxs[i] == -1) break;
-        mtxBone += mtx_Bones[aBoneIdxs[i]] * aBoneWeights[i];
+        int boneIdx = boneInfo.idxs[i];
+        if(boneIdx == -1) break;
+        mtxBone += mtx_Bones[boneIdx] * boneInfo.weights[i];
     }
-    sPos = vec3(mtxBone * vec4(aPos, 1.f));
-    sNor = vec3(mtxBone * vec4(aNor, 0.f));
-    sNor = normalize(sNor);
+    vec3 aPos = poss[idx];
+    vec3 aNor = nors[idx];
+    skinned_poss[idx] = vec3(mtxBone * vec4(poss[idx], 1.f));
+    skinned_nors[idx] = normalize(vec3(mtxBone * vec4(nors[idx], 0.f)));
 }
