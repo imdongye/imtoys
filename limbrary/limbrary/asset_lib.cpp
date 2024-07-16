@@ -36,10 +36,6 @@ lim::AssetLib::AssetLib()
 	env_prog->attatch("mvp.vs").attatch("env.fs").link();
 
 	env_sphere = new MeshEnvSphere(20.f);
-
-
-	glGetIntegerv(GL_MAX_SAMPLES, &ms_max_samples);
-	log::pure("GL_MAX_SAMPLES : %d\n\n", ms_max_samples);
 }
 lim::AssetLib::~AssetLib()
 {

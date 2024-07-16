@@ -34,6 +34,7 @@ namespace {
 	int src_buf_idx = 0;
 	int dst_buf_idx = 1;
 	int picked_ptcl_idx = -1;
+	constexpr int invocations_width = 16;
 }
 static void clearGLBuffers() {
 	gl::safeDelXfbs(&xfb_id);
@@ -184,6 +185,8 @@ AppClothGPU::AppClothGPU()
 	prog.attatch("im_anims/shaders/cloth.vs").attatch("im_anims/shaders/cloth.fs").link();
 	prog_xfb.attatch("im_anims/shaders/cloth_xfb.vs").link();
 
+	prog_comp.attatch("im_anims/shaders/cloth.comp").link();
+
 	model.importFromFile("assets/models/jump.fbx", true);
 	model.setUnitScaleAndPivot();
 	model.tf->pos.y += model.pivoted_scaled_bottom_height;
@@ -206,55 +209,90 @@ void AppClothGPU::update()
 	if(!is_pause || frameByFrame)
 	{
 		is_rendered_frame = true;
-		prog_xfb.use();
+
+
+		// prog_xfb.use();
+		// float dt = (delta_time*time_speed)/float(step_size);
+		// prog_xfb.setUniform("cloth_mass", cloth_mass);
+		// prog_xfb.setUniform("ptcl_mass", ptcl_mass);
+		// prog_xfb.setUniform("inter_p_size", inter_p_size);
+		// prog_xfb.setUniform("nr_p", nr_p);
+		// prog_xfb.setUniform("dt", dt);
+		// prog_xfb.setUniform("ka", Ka);
+		// prog_xfb.setUniform("kr", Kr);
+		// prog_xfb.setUniform("stretchKs", 	stretch_pct*Ks);
+		// prog_xfb.setUniform("shearKs", 		shear_pct*Ks);
+		// prog_xfb.setUniform("bendingKs", 	bending_pct*Ks);
+		// prog_xfb.setUniform("stretchKd", 	Kd);
+		// prog_xfb.setUniform("shearKd", 		Kd);
+		// prog_xfb.setUniform("bendingKd", 	Kd);
+		// prog_xfb.setUniform("gravity", G);
+
+		// prog_xfb.setUniform("tex_posm", 0);
+		// prog_xfb.setUniform("tex_vel", 1);
+
+		// prog_xfb.setUniform("collision_enabled", collision_enabled);
+
+		// glEnable(GL_RASTERIZER_DISCARD);
+		// {
+		// 	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, xfb_id);
+		// 	{
+		// 		for(int i=0; i<step_size; i++)
+		// 		{
+		// 			glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, vbo_posm_ids[dst_buf_idx]);
+		// 			glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 1, vbo_vel_ids[dst_buf_idx]);
+
+		// 			glActiveTexture(GL_TEXTURE0);
+		// 			glBindTexture(GL_TEXTURE_BUFFER, tbo_pos_ids[src_buf_idx]);
+		// 			glActiveTexture(GL_TEXTURE1);
+		// 			glBindTexture(GL_TEXTURE_BUFFER, tbo_vel_ids[src_buf_idx]);
+
+		// 			glBeginTransformFeedback(GL_POINTS);
+		// 			{
+		// 				glBindVertexArray(vao_update_ids[src_buf_idx]);
+		// 				glDrawArrays(GL_POINTS, 0, nr_ptcls);
+		// 			}
+		// 			glEndTransformFeedback();
+		// 			std::swap(src_buf_idx, dst_buf_idx);
+		// 		}
+		// 	}
+		// 	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
+		// }
+		// glDisable(GL_RASTERIZER_DISCARD);
+		// glFlush();
+
+		prog_comp.use();
 		float dt = (delta_time*time_speed)/float(step_size);
-		prog_xfb.setUniform("cloth_mass", cloth_mass);
-		prog_xfb.setUniform("ptcl_mass", ptcl_mass);
-		prog_xfb.setUniform("inter_p_size", inter_p_size);
-		prog_xfb.setUniform("nr_p", nr_p);
-		prog_xfb.setUniform("dt", dt);
-		prog_xfb.setUniform("ka", Ka);
-		prog_xfb.setUniform("kr", Kr);
-		prog_xfb.setUniform("stretchKs", 	stretch_pct*Ks);
-		prog_xfb.setUniform("shearKs", 		shear_pct*Ks);
-		prog_xfb.setUniform("bendingKs", 	bending_pct*Ks);
-		prog_xfb.setUniform("stretchKd", 	Kd);
-		prog_xfb.setUniform("shearKd", 		Kd);
-		prog_xfb.setUniform("bendingKd", 	Kd);
-		prog_xfb.setUniform("gravity", G);
+		prog_comp.setUniform("cloth_mass", cloth_mass);
+		prog_comp.setUniform("ptcl_mass", ptcl_mass);
+		prog_comp.setUniform("inter_p_size", inter_p_size);
+		prog_comp.setUniform("nr_p", nr_p);
+		prog_comp.setUniform("dt", dt);
+		prog_comp.setUniform("ka", Ka);
+		prog_comp.setUniform("kr", Kr);
+		prog_comp.setUniform("stretchKs", 	stretch_pct*Ks);
+		prog_comp.setUniform("shearKs", 		shear_pct*Ks);
+		prog_comp.setUniform("bendingKs", 	bending_pct*Ks);
+		prog_comp.setUniform("stretchKd", 	Kd);
+		prog_comp.setUniform("shearKd", 		Kd);
+		prog_comp.setUniform("bendingKd", 	Kd);
+		prog_comp.setUniform("gravity", G);
 
-		prog_xfb.setUniform("tex_posm", 0);
-		prog_xfb.setUniform("tex_vel", 1);
+		prog_comp.setUniform("tex_posm", 0);
+		prog_comp.setUniform("tex_vel", 1);
 
-		prog_xfb.setUniform("collision_enabled", collision_enabled);
+		prog_comp.setUniform("collision_enabled", collision_enabled);
 
-		glEnable(GL_RASTERIZER_DISCARD);
+		for(int i=0; i<step_size; i++)
 		{
-			glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, xfb_id);
-			{
-				for(int i=0; i<step_size; i++)
-				{
-					glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, vbo_posm_ids[dst_buf_idx]);
-					glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 1, vbo_vel_ids[dst_buf_idx]);
-
-					glActiveTexture(GL_TEXTURE0);
-					glBindTexture(GL_TEXTURE_BUFFER, tbo_pos_ids[src_buf_idx]);
-					glActiveTexture(GL_TEXTURE1);
-					glBindTexture(GL_TEXTURE_BUFFER, tbo_vel_ids[src_buf_idx]);
-
-					glBeginTransformFeedback(GL_POINTS);
-					{
-						glBindVertexArray(vao_update_ids[src_buf_idx]);
-						glDrawArrays(GL_POINTS, 0, nr_ptcls);
-					}
-					glEndTransformFeedback();
-					std::swap(src_buf_idx, dst_buf_idx);
-				}
-			}
-			glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, vbo_posm_ids[src_buf_idx]);
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, vbo_vel_ids[src_buf_idx]);
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, vbo_posm_ids[dst_buf_idx]);
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, vbo_vel_ids[dst_buf_idx]);
+			glDispatchCompute(fastIntCeil(nr_p.x, invocations_width), fastIntCeil(nr_p.y, invocations_width), 1);
+			glMemoryBarrier( GL_SHADER_STORAGE_BARRIER_BIT );
+			std::swap(src_buf_idx, dst_buf_idx);
 		}
-		glDisable(GL_RASTERIZER_DISCARD);
-		glFlush();
 	}
 
 
@@ -301,6 +339,7 @@ void AppClothGPU::updateImGui()
 	}
 	ImGui::Checkbox("collision enabled", &collision_enabled);
 	LimGui::PlotVal("fps", "", ImGui::GetIO().Framerate);
+	LimGui::PlotVal("dt", "ms", delta_time*1000.f);
 	if(ImGui::Button("restart")) {
 		copyMemToBuf();
 	}

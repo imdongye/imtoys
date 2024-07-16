@@ -59,6 +59,11 @@ namespace lim
 		}
 	}
 
+	// From: https://stackoverflow.com/questions/2745074/fast-ceiling-of-an-integer-division-in-c-c
+	inline int fastIntCeil(int x, int y) {
+		return (x % y) ? x / y + 1 : x / y;
+	}
+
 	std::string readStrFromFile(std::string_view path);
 	void writeStrToFile(std::string_view path, std::string_view text);
 

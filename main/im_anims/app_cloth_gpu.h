@@ -24,6 +24,7 @@ namespace lim
 
 		Program prog;
 		Program prog_xfb;
+		Program prog_comp;
 		MeshPlane ground;
 		ViewportWithCamera viewport;
 		Model model;
