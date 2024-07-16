@@ -7,7 +7,7 @@ using namespace glm;
 using namespace std;
 using namespace lim;
 
-#include "cloth_coef.h"
+#include "app_cloth_coef.h"
 
 /*
 	1unit : m, kg, sec

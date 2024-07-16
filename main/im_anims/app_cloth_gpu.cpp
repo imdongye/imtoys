@@ -18,7 +18,7 @@
 using namespace lim;
 using namespace glm;
 
-#include "cloth_coef.h"
+#include "app_cloth_coef.h"
 
 namespace {
 	GLuint xfb_id;
