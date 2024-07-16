@@ -67,8 +67,8 @@ struct Spring {
 		float diffL = curLength - oriLength;
 		
 		// force : p1이 당겨지는 힘
-		float force = ks*diffL/oriLength;
-		force += kd * dot(diffV, dir)*oriLength;
+		float force = ks*diffL;
+		force += kd * dot(diffV, dir);
 
 		p1.addForce( force * dir);
 		p2.addForce(-force * dir);

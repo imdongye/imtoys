@@ -262,7 +262,8 @@ void AppClothGPU::update()
 		// glFlush();
 
 		prog_comp.use();
-		float dt = (delta_time*time_speed)/float(step_size);
+		// float dt = (delta_time*time_speed)/float(step_size);
+		float dt = (delta_time*time_speed);
 		prog_comp.setUniform("cloth_mass", cloth_mass);
 		prog_comp.setUniform("ptcl_mass", ptcl_mass);
 		prog_comp.setUniform("inter_p_size", inter_p_size);
@@ -283,16 +284,24 @@ void AppClothGPU::update()
 
 		prog_comp.setUniform("collision_enabled", collision_enabled);
 
-		for(int i=0; i<step_size; i++)
-		{
-			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, vbo_posm_ids[src_buf_idx]);
-			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, vbo_vel_ids[src_buf_idx]);
-			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, vbo_posm_ids[dst_buf_idx]);
-			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, vbo_vel_ids[dst_buf_idx]);
-			glDispatchCompute(fastIntCeil(nr_p.x, invocations_width), fastIntCeil(nr_p.y, invocations_width), 1);
-			glMemoryBarrier( GL_SHADER_STORAGE_BARRIER_BIT );
-			std::swap(src_buf_idx, dst_buf_idx);
-		}
+		prog_comp.setUniform("step_size", step_size);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, vbo_posm_ids[src_buf_idx]);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, vbo_vel_ids[src_buf_idx]);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, vbo_posm_ids[dst_buf_idx]);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, vbo_vel_ids[dst_buf_idx]);
+		glDispatchCompute(fastIntCeil(nr_p.x, invocations_width), fastIntCeil(nr_p.y, invocations_width), 1);
+		glMemoryBarrier( GL_SHADER_STORAGE_BARRIER_BIT );
+
+		// for(int i=0; i<step_size; i++)
+		// {
+		// 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, vbo_posm_ids[src_buf_idx]);
+		// 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, vbo_vel_ids[src_buf_idx]);
+		// 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, vbo_posm_ids[dst_buf_idx]);
+		// 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, vbo_vel_ids[dst_buf_idx]);
+		// 	glDispatchCompute(fastIntCeil(nr_p.x, invocations_width), fastIntCeil(nr_p.y, invocations_width), 1);
+		// 	glMemoryBarrier( GL_SHADER_STORAGE_BARRIER_BIT );
+		// 	std::swap(src_buf_idx, dst_buf_idx);
+		// }
 	}
 
 
@@ -300,7 +309,8 @@ void AppClothGPU::update()
 	prog.use();
 	viewport.camera.setUniformTo(prog);
 	// prog.setUniform("mtx_Model", tf.mtx);
-	glBindVertexArray(vao_render_ids[src_buf_idx]);
+	// glBindVertexArray(vao_render_ids[src_buf_idx]);
+	glBindVertexArray(vao_render_ids[dst_buf_idx]);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_indices);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glDrawElements(GL_TRIANGLES, nr_tris*3, GL_UNSIGNED_INT, nullptr);

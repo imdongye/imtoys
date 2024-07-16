@@ -22,6 +22,7 @@ uniform float dt, ka, kr;
 uniform float stretchKs, shearKs, bendingKs;
 uniform float stretchKd, shearKd, bendingKd;
 uniform vec3 gravity;
+uniform int step_size;
 
 
 
@@ -63,7 +64,7 @@ vec3 getSpringForce(ivec2 dxy, float ks, float kd) {
 
     float force = ks * diffL;
     // float force = ks * diffL/oriLength;
-    force += kd * dot(diffV*dt, dir); // todo
+    force += kd * dot(diffV, dir); // todo
 
     return force*dir;
 }
@@ -74,6 +75,8 @@ void main()
     if( isOutSide(cur_ixy) ) {
         return;
     }
+    int stepSize = (step_size%)
+    float deltaTime = dt/step_size
     int idx = cur_ixy.x + cur_ixy.y*nr_p.x;
     cur_pos = poss[idx].xyz;
     cur_m = poss[idx].w;
