@@ -2,6 +2,7 @@
 #include <limbrary/asset_lib.h>
 #include <limbrary/application.h>
 #include <limbrary/model_view/model.h>
+#include <algorithm>
 
 using namespace lim;
 using namespace glm;
@@ -67,7 +68,7 @@ Animator& Animator::operator=(const Animator& src) {
     copyBoneTfs(*this, src);
     mtx_Bones = src.mtx_Bones;
 
-    cur_anim = src.cur_anim;
+    setAnim(src.cur_anim);
     init(src.md_data);
     elapsed_sec = src.elapsed_sec;
     duration_sec = src.duration_sec;
@@ -77,6 +78,8 @@ Animator& Animator::operator=(const Animator& src) {
 
 void Animator::setAnim(const Animation* anim) {
     cur_anim = anim;
+    prev_key_idxs.clear();
+    prev_key_idxs.resize(cur_anim->tracks.size(), Animation::TrackIdx());
     duration_sec = cur_anim->nr_ticks/cur_anim->ticks_per_sec;
     state = State::STOP;
 }
@@ -117,29 +120,21 @@ void Animator::setUniformTo(const Program& prog) const {
     }
 }
 
+template<typename T>
+static void getKeyIdx(const std::vector<T>& keys, const int nrKeys, double curTick, int& idx, float& factor ) {
+    const int prevIdx = idx;
+    int i;
+    for( i=prevIdx; i<nrKeys; i++ ) {
+        if( curTick < keys[i].tick ) {
+            idx = i;
+            float dt = keys[i].tick - keys[i-1].tick;
+            float diff = curTick - keys[i-1].tick;
+            factor = diff / dt;
+            return;
+        }
+    }
+}
 
-static void getKeyIdx(const std::vector<Animation::KeyVec3>& keys, double cur_tick, int& idx, float& factor ) {
-    for( int i=0; i<keys.size(); i++ ) {
-        if( cur_tick < keys[i].tick ) {
-            idx = i;
-            float dt = keys[i].tick - keys[i-1].tick;
-            float diff = cur_tick - keys[i-1].tick;
-            factor = diff / dt;
-            return;
-        }
-    }
-}
-static void getKeyIdx(const std::vector<Animation::KeyQuat>& keys, double cur_tick, int& idx, float& factor ) {
-    for( int i=0; i<keys.size(); i++ ) {
-        if( cur_tick < keys[i].tick ) {
-            idx = i;
-            float dt = keys[i].tick - keys[i-1].tick;
-            float diff = cur_tick - keys[i-1].tick;
-            factor = diff / dt;
-            return;
-        }
-    }
-}
 void Animator::updateMtxBones() {
     bone_root.treversal([&](const BoneNode& node, const glm::mat4& transform) {
         int boneIdx = node.bone_idx;
@@ -159,16 +154,22 @@ void Animator::update(float dt) {
             state = State::STOP;
             return;
         }
+        std::fill(prev_key_idxs.begin(), prev_key_idxs.end(), Animation::TrackIdx());
     }
     cur_tick = elapsed_sec * cur_anim->ticks_per_sec;
 
-    for( const Animation::Track& track : cur_anim->tracks ) {
+    for( int i=0; i<cur_anim->nr_tracks; i++ ) {
+        const Animation::Track& track = cur_anim->tracks[i];
+        Animation::TrackIdx& prevKeyIdx = prev_key_idxs[i];
         int idx;
         float factor;
         vec3 v1, v2, vDt;
         Transform& nodeTf = *bone_tfs[track.bone_tf_idx];
         if( track.nr_poss>1 ) {
-            getKeyIdx(track.poss, cur_tick, idx, factor);
+            idx = prevKeyIdx.pos;
+            getKeyIdx(track.poss, track.nr_poss, cur_tick, idx, factor);
+            prevKeyIdx.pos = idx;
+
             v1 = track.poss[idx-1].value;
             v2 = track.poss[idx].value;
             vDt = v2 - v1;
@@ -177,7 +178,10 @@ void Animator::update(float dt) {
             nodeTf.pos = track.poss[0].value;
         }
         if( track.nr_scales>1 ) {
-            getKeyIdx(track.scales, cur_tick, idx, factor);
+            idx = prevKeyIdx.scale;
+            getKeyIdx(track.scales, track.nr_scales, cur_tick, idx, factor);
+            prevKeyIdx.scale = idx;
+
             v1 = track.scales[idx-1].value;
             v2 = track.scales[idx].value;
             vDt = v2 - v1;
@@ -186,7 +190,10 @@ void Animator::update(float dt) {
             nodeTf.scale = track.scales[0].value;
         }
         if( track.nr_oris>1 ) {
-            getKeyIdx(track.oris, cur_tick, idx, factor);
+            idx = prevKeyIdx.ori;
+            getKeyIdx(track.oris, track.nr_oris, cur_tick, idx, factor);
+            prevKeyIdx.ori = idx;
+
             quat o1 = track.oris[idx-1].value;
             quat o2 = track.oris[idx].value;
             nodeTf.ori = slerp(o1,o2,factor);

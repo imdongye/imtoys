@@ -357,9 +357,10 @@ static void convertAnim(Animation& dst, const aiAnimation& src) {
 	dst.name = src.mName.C_Str();
 	dst.ticks_per_sec = (src.mTicksPerSecond==0.f) ? 25.f : src.mTicksPerSecond;
 	dst.nr_ticks = src.mDuration;
+	dst.nr_tracks = src.mNumChannels;
 
-	dst.tracks.resize(src.mNumChannels);
-	for( uint i=0; i<src.mNumChannels; i++ ) {
+	dst.tracks.resize(dst.nr_tracks);
+	for( uint i=0; i<dst.nr_tracks; i++ ) {
 		const aiNodeAnim& srcTrack = *(src.mChannels[i]);
 		Animation::Track& track = dst.tracks[i];
 		track.name = srcTrack.mNodeName.C_Str();

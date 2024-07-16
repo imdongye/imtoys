@@ -307,6 +307,7 @@ void AppBase::run()
 
 	while( !glfwWindowShouldClose(window) )
 	{
+		// delta_time = glm::min(io.DeltaTime, 0.2f);
 		delta_time = io.DeltaTime;
 
 		glfwPollEvents();

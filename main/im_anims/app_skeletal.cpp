@@ -32,7 +32,7 @@ lim::AppSkeletal::AppSkeletal() : AppBase(1200, 780, APP_NAME, false)
 
 	
 	importModel("assets/models/jump.fbx");
-	// scene.addRefSkinned(&model);
+	// scene.addRef(&model);
 
 	int nrWidth = 10;
 	vec2 posSize{10, 10};
@@ -47,9 +47,10 @@ lim::AppSkeletal::AppSkeletal() : AppBase(1200, 780, APP_NAME, false)
 		scene.own_mds.back()->tf->update();
 		scene.own_mds.back()->animator.is_loop = true;
 		scene.own_mds.back()->animator.play();
-		float time = linearRand(0.f, 1.f);
-		scene.own_mds.back()->animator.setTimeline(time, true);
+		// scene.own_mds.back()->animator.setTimeline(randFloat(), true);
 	}
+
+
 
 	Model* floor = new Model();
 	Mesh* ms = floor->addOwn(new MeshPlane(10.f));

@@ -24,7 +24,6 @@ namespace lim
 {
     struct Animation 
     {
-    public:
         struct KeyVec3 {
             float tick;
             glm::vec3 value;
@@ -42,11 +41,18 @@ namespace lim
             std::vector<KeyVec3> scales;
             std::vector<KeyQuat> oris;
         };
+        // for animator
+        struct TrackIdx
+        {
+            int pos=0, scale=0, ori=0;
+        };
         std::string name;
+        int nr_tracks;
         std::vector<Track> tracks;
         double nr_ticks;
         int ticks_per_sec;
     };
+    
 
 
 
@@ -75,8 +81,8 @@ namespace lim
         BoneNode bone_root;
         std::vector<Transform*> bone_tfs;
         std::vector<glm::mat4> mtx_Bones;
-
         const Animation* cur_anim = nullptr;
+        std::vector<Animation::TrackIdx> prev_key_idxs;
         const Model* md_data = nullptr;
         double elapsed_sec, duration_sec;
         double cur_tick = 0.0;
