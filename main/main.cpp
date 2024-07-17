@@ -33,6 +33,8 @@
 #include "im_anims/app_cloth_gpu.h"
 #include "im_anims/app_ik.h"
 #include "im_anims/app_particle.h"
+#include "im_pbd/app_pbd.h"
+#include "im_anims/app_curve.h"
 
 
 static int _selected_app_idx;
@@ -83,6 +85,8 @@ static void pushAppData()
 
 int main()
 {
+	pushAppData<lim::AppPBD>();
+	pushAppData<lim::AppCurve>();
 	pushAppData<lim::AppClothGPU>();
 	pushAppData<lim::AppParticle>();
 	pushAppData<lim::AppSkeletal>();
