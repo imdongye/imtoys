@@ -32,6 +32,11 @@ namespace LimGui
 
     void PlotVal(const char* name, const char* postFix, float value, int bufSize=90);
 }
+namespace lim
+{
+    inline ImVec2 toIG(const glm::vec2& v) { return {v.x, v.y}; }
+    inline glm::vec2 toGLM(const ImVec2& v) { return {v.x, v.y}; }
+}
 
 
 #endif

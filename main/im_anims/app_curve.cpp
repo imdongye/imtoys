@@ -8,8 +8,34 @@ using namespace lim;
 using namespace glm;
 
 namespace {
+	enum CurveType {
+		LINEAR,
+		LAGLANGIAN,
+		BEZIER,
+		CATMULL,
+		BSPLINE,
+		CUBIC_NATURAL,
+		CUBIC_CLOSED,
+		CUBIC_NATURAL_QR,
+	};
+	CurveType curve_type = LINEAR;
+	bool closed = false;
+
+
 	vector<vec2> ctrl_pts;
 	vector<vec2> draw_pts;
+}
+
+static void updateCurve() {
+
+}
+
+static void resetState() {
+	ctrl_pts.clear();
+	ctrl_pts.resize(10);
+	// for(auto& p : ctrl_pts) {
+	// 	p
+	// }
 }
 AppCurve::AppCurve()
 	: AppBase(1200, 780, APP_NAME, false)
@@ -71,6 +97,7 @@ void AppCurve::updateImGui()
 	const bool is_hovered = ImGui::IsItemHovered(); // Hovered
 	const bool is_active = ImGui::IsItemActive();   // Held
 	const ImVec2 origin(canvas_p0.x + scrolling.x, canvas_p0.y + scrolling.y); // Lock scrolled origin
+	const vec2 ori = toGLM(origin);
 	const ImVec2 mouse_pos_in_canvas(io.MousePos.x - origin.x, io.MousePos.y - origin.y);
 
 	// Add first and second point
@@ -78,11 +105,13 @@ void AppCurve::updateImGui()
 	{
 		points.push_back(mouse_pos_in_canvas);
 		points.push_back(mouse_pos_in_canvas);
+		ctrl_pts.push_back(toGLM(mouse_pos_in_canvas));
 		adding_line = true;
 	}
 	if (adding_line)
 	{
 		points.back() = mouse_pos_in_canvas;
+		ctrl_pts.back() = toGLM(mouse_pos_in_canvas);
 		if (!ImGui::IsMouseDown(ImGuiMouseButton_Left))
 			adding_line = false;
 	}
@@ -112,13 +141,15 @@ void AppCurve::updateImGui()
 
 	// Draw grid + all lines in the canvas
 	draw_list->PushClipRect(canvas_p0, canvas_p1, true);
-	if (opt_enable_grid)
-	{
+	if( opt_enable_grid ) {
 		const float GRID_STEP = 64.0f;
 		for (float x = fmodf(scrolling.x, GRID_STEP); x < canvas_sz.x; x += GRID_STEP)
 			draw_list->AddLine(ImVec2(canvas_p0.x + x, canvas_p0.y), ImVec2(canvas_p0.x + x, canvas_p1.y), IM_COL32(200, 200, 200, 40));
 		for (float y = fmodf(scrolling.y, GRID_STEP); y < canvas_sz.y; y += GRID_STEP)
 			draw_list->AddLine(ImVec2(canvas_p0.x, canvas_p0.y + y), ImVec2(canvas_p1.x, canvas_p0.y + y), IM_COL32(200, 200, 200, 40));
+	}
+	for( auto& p : ctrl_pts ) {
+		draw_list->AddCircleFilled(toIG(ori+p), 3, IM_COL32(255, 0, 0, 255));
 	}
 	for (int n = 0; n < points.Size; n += 2)
 		draw_list->AddLine(ImVec2(origin.x + points[n].x, origin.y + points[n].y), ImVec2(origin.x + points[n + 1].x, origin.y + points[n + 1].y), IM_COL32(255, 255, 0, 255), 2.0f);
