@@ -215,16 +215,8 @@ void AppClothGPU::update()
 	// get skind vert pos
 	{
 		int idxClothVert = 0;
-		
-		int nrDepth = 3;
-		mat4 boneMtx = model.getGlobalTfMtx();
-		vec3 target{0};
-		model.animator.bone_root.treversal([&](BoneNode& nd, const mat4& tf) {
-			if(nd.bone_idx == 22) {
-				boneMtx = boneMtx * tf;
-			}
-		});
-		target = vec3(boneMtx*vec4(0,0,0,1));
+		mat4 boneMtx = model.getGlobalTfMtx() * model.animator.skeleton[22].tf_model_space;
+		vec3 target = vec3(boneMtx*vec4(0,0,0,1));
 
 		glBindBuffer(GL_ARRAY_BUFFER, buf_posm_ids[src_buf_idx]);
 		vec3* pPos = (vec3*)glMapBufferRange(GL_ARRAY_BUFFER, sizeof(vec4)*idxClothVert, sizeof(vec3), GL_MAP_WRITE_BIT); 

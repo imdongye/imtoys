@@ -28,6 +28,11 @@ namespace lim
         std::function<void(const Transform* tf)> update_callback = nullptr;
         void update();
         void decomposeMtx();
+        // inline Transform operator*(const Transform& tf) {
+        //     Transform rst;
+        //     rst.mtx = mtx*tf.mtx;
+        //     return rst;
+        // }
     };
     struct TransformPivoted : public Transform
     {

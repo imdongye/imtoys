@@ -31,8 +31,11 @@ namespace
 {
 	Model* g_model = nullptr; // temp model
 	Animator* g_animator = nullptr;
+	bool g_is_ms_has_bone = false;
+	bool g_is_find_bone_node = false;
 	const aiScene* g_scn;
 	std::string g_model_dir;
+	mat4 global_transform = mat4(1);
 
 	const int g_nr_formats = (int)aiGetImportFormatCount();
 	const char* g_formats[32] = { nullptr, };
@@ -289,6 +292,7 @@ static Mesh* convertMesh(const aiMesh* aiMs)
 	}
 
 	if( g_animator && aiMs->HasBones() ) {
+		g_is_ms_has_bone = true;
 		ms.bone_infos.resize( aiMs->mNumVertices );
 		for( GLuint i=0; i<aiMs->mNumVertices; i++ ) {
 			for( GLuint j=0; j<Mesh::MAX_BONE_PER_VERT; j++ ) {
@@ -324,8 +328,6 @@ static Mesh* convertMesh(const aiMesh* aiMs)
 				}
 			}		
 		}
-	} else {
-		g_animator = false;
 	}
 
 	int nrNotTriFace = 0;
@@ -364,7 +366,7 @@ static void convertAnim(Animation& dst, const aiAnimation& src) {
 		const aiNodeAnim& srcTrack = *(src.mChannels[i]);
 		Animation::Track& track = dst.tracks[i];
 		track.name = srcTrack.mNodeName.C_Str();
-		track.bone_tf_idx = -1; // after convertTree
+		track.idx_bone_node = -1; // after convertTree
 
 		track.nr_poss = srcTrack.mNumPositionKeys;
 		track.poss.resize(track.nr_poss);
@@ -392,21 +394,25 @@ static bool isEndPostfix(std::string name) {
 	name = name.substr(name.size()-4, 4);
 	return name=="_end";
 }
-static void convertBoneTree(BoneNode& dst, const aiNode* src) {
+static void addBoneNode(int idxParent, const mat4 mtxParent, const aiNode* src) {
+	g_animator->nr_bone_nodes++;
+	g_animator->skeleton.emplace_back();
+	int curIdx = g_animator->nr_bone_nodes-1;
+	BoneNode& dst = g_animator->skeleton.back();
 	dst.name = src->mName.C_Str();
+	dst.nr_childs = src->mNumChildren;
 
 	if( isIn(g_model->bone_name_to_idx, dst.name) ) {
-		dst.bone_idx = g_model->bone_name_to_idx[dst.name];
+		dst.idx_bone = g_model->bone_name_to_idx[dst.name];
 	} else {
-		dst.bone_idx = -1;
+		dst.idx_bone = -1;
 	}
-	g_animator->bone_tfs.push_back(&dst.tf);
-	int tfIdx = g_animator->bone_tfs.size()-1;
+	dst.idx_parent_bone_node = idxParent;
 
 	for( Animation& anim : g_model->animations ) {
 		for( Animation::Track& track : anim.tracks ) {
 			if( track.name == dst.name ) {
-				track.bone_tf_idx = tfIdx;
+				track.idx_bone_node = curIdx;
 				break;
 			}
 		}
@@ -414,15 +420,18 @@ static void convertBoneTree(BoneNode& dst, const aiNode* src) {
 
 	dst.tf.mtx = toGLM(src->mTransformation);
 	dst.tf.decomposeMtx();
+	dst.tf_model_space = mtxParent * dst.tf.mtx;
 
-	dst.childs.reserve(src->mNumChildren);
+	
 	for( size_t i=0; i< src->mNumChildren; i++ ) {
 		aiNode* aiChild = src->mChildren[i];
 		// if(isEndPostfix(aiChild->mName.C_Str())) {
 		// 	continue;
 		// }
-		dst.childs.push_back({});
-		convertBoneTree( dst.childs.back(), aiChild );
+
+		// Fucking ref bug
+		// addBoneNode( curIdx, dst.tf_model_space, aiChild );
+		addBoneNode( curIdx, g_animator->skeleton[curIdx].tf_model_space, aiChild );
 	}
 }
 static bool isBoneNode(std::string name) {
@@ -438,14 +447,12 @@ static bool isBoneNode(std::string name) {
 	}
 	return false;
 }
-static bool is_find_bone_node = false;
-static mat4 global_transform = mat4(1);
 static void convertRdTree(RdNode& dst, const aiNode* src) 
 {
 	dst.name = src->mName.C_Str();
 	dst.tf.mtx = toGLM(src->mTransformation);
 	dst.tf.decomposeMtx();
-	if( !is_find_bone_node ) {
+	if( !g_is_find_bone_node ) {
 		global_transform = global_transform * dst.tf.mtx;
 	}
 
@@ -459,9 +466,9 @@ static void convertRdTree(RdNode& dst, const aiNode* src)
 	dst.childs.reserve(src->mNumChildren);
 	for( size_t i=0; i< src->mNumChildren; i++ ) {
 		aiNode* aiChild = src->mChildren[i];
-		if( !is_find_bone_node && isBoneNode(aiChild->mName.C_Str()) ) {
-			is_find_bone_node = true;
-			convertBoneTree(g_animator->bone_root, aiChild);
+		if( !g_is_find_bone_node && isBoneNode(aiChild->mName.C_Str()) ) {
+			g_is_find_bone_node = true;
+			addBoneNode( -1, mat4(1), aiChild );
 			continue;
 		}
 		dst.childs.push_back({});
@@ -487,9 +494,12 @@ bool lim::Model::importFromFile(string_view modelPath, bool withAnims)
 	}
 
 	clear();
+	
+	g_is_ms_has_bone = false;
 	if(withAnims) {
 		g_animator = &animator;
 	}
+
 	g_model = this;
 	path = modelPath;
 	const size_t lastSlashPos = path.find_last_of("/\\");
@@ -541,16 +551,15 @@ bool lim::Model::importFromFile(string_view modelPath, bool withAnims)
 		own_materials.push_back(convertMaterial(g_scn->mMaterials[i]));
 	}
 
-	/* import my_meshes ( bone-1 ) */
+	/* import my_meshes, make bone_name_map ( bone-1 ) */
 	own_meshes.reserve(g_scn->mNumMeshes);
 	for( GLuint i=0; i<g_scn->mNumMeshes; i++ ) {
 		own_meshes.push_back(convertMesh(g_scn->mMeshes[i]));
 	}
-	withAnims = (g_animator!=nullptr);
 
 	/* import anims( bone-2 ) */
-	if( withAnims ) {
-		g_animator->init(this);
+	if( g_is_ms_has_bone ) {
+		animator.init(this);
 		animations.resize(g_scn->mNumAnimations);
 		for( uint i=0; i<g_scn->mNumAnimations; i++ ) {
 			convertAnim(animations[i], *(g_scn->mAnimations[i]));
@@ -558,12 +567,16 @@ bool lim::Model::importFromFile(string_view modelPath, bool withAnims)
 		animator.setAnim(&animations[0]);
 	}
 
-	/* set node tree structure (bone-3,4) */
-	animator.bone_root.name = "empty";
-	is_find_bone_node = false;
+	/* set bone node tree structure (bone-3)
+	   and link animation (bone-4) */
+	g_is_find_bone_node = false; // for escape convertRdTree
 	global_transform = mat4(1);
+	animator.nr_bone_nodes = 0;
+	animator.skeleton.clear();
 	convertRdTree(root, g_scn->mRootNode);
-	if( withAnims ) {
+
+	/* update bone offset with bind pose (bone-5) */
+	if( g_is_ms_has_bone ) {
 
 		/* sometimes defualt offset mtx is wrong */
 		// mat4 invGlobalTf = inverse(global_transform);
@@ -571,15 +584,13 @@ bool lim::Model::importFromFile(string_view modelPath, bool withAnims)
 		// 	offset = offset*global_transform;
 		// }
 
-
-		animator.bone_root.treversal([&](const BoneNode& node, const glm::mat4& transform) {
-			int boneIdx = node.bone_idx;
+		for( const BoneNode& nd : animator.skeleton ) {
+			int boneIdx = nd.idx_bone;
 			if( boneIdx<0 )
-				return;
-			bone_offsets[boneIdx] = inverse(transform);
-		});
-
-		g_animator->updateMtxBones();
+				continue;
+			bone_offsets[boneIdx] = glm::inverse(nd.tf_model_space);
+		}
+		animator.updateMtxBones();
 	}
 
 	updateNrAndBoundary();

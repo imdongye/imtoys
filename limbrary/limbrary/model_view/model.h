@@ -76,7 +76,7 @@ namespace lim
 		ModelView(const ModelView& src);
 		ModelView& operator=(const ModelView& src);
 		
-		const glm::mat4& getGlobalTfMtx() const;
+		const glm::mat4 getGlobalTfMtx() const;
 	};
 
 

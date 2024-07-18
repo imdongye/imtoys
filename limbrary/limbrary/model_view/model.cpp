@@ -96,7 +96,7 @@ ModelView& ModelView::operator=(const ModelView& src) {
 	return *this;
 }
 
-const glm::mat4& ModelView::getGlobalTfMtx() const {
+const glm::mat4 ModelView::getGlobalTfMtx() const {
 	glm::mat4 mtx = glm::mat4(1);
 	if( tf_prev ) {
 		mtx = tf_prev->mtx;

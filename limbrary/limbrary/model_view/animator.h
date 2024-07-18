@@ -35,7 +35,7 @@ namespace lim
         struct Track
         {
             std::string name;
-            int bone_tf_idx = -1;
+            int idx_bone_node = -1;
             int nr_poss, nr_scales, nr_oris;
             std::vector<KeyVec3> poss;
             std::vector<KeyVec3> scales;
@@ -55,15 +55,14 @@ namespace lim
     
 
 
-
+    // assume nr_bone_nodes(skeleton) >= nr_bones
     struct BoneNode {
         std::string name = "nonamed node";
-        Transform tf;
-        int bone_idx = -1; // for mtx_Bones in ModelView, bone_offsets in Model
-        std::vector<BoneNode> childs;
-        
-        void treversal(std::function<void(BoneNode& node, const glm::mat4& transform)> callback, const glm::mat4& mtxPrevTf = glm::mat4(1));
-        void clear();
+        Transform tf; // bone space
+        glm::mat4 tf_model_space;
+        int idx_bone = -1; // for mtx_Bones in ModelView, bone_offsets in Model
+        int idx_parent_bone_node = -1; // for skeleton in ModelView
+        int nr_childs;
     };
 
     class Model;
@@ -78,8 +77,8 @@ namespace lim
         };
         State state = State::STOP;
 
-        BoneNode bone_root;
-        std::vector<Transform*> bone_tfs;
+        int nr_bone_nodes;
+        std::vector<BoneNode> skeleton;
         std::vector<glm::mat4> mtx_Bones;
         const Animation* cur_anim = nullptr;
         std::vector<Animation::TrackIdx> prev_key_idxs;

@@ -7,18 +7,6 @@
 using namespace lim;
 using namespace glm;
 
-void BoneNode::treversal(std::function<void(BoneNode& node, const glm::mat4& transform)> callback, const glm::mat4& prevTransform ) {
-	const glm::mat4 curTf = prevTransform * tf.mtx;
-	callback(*this, curTf);
-
-	for( BoneNode& child : childs ) {
-		child.treversal(callback, curTf);
-	}
-}
-void BoneNode::clear() {
-    bone_idx = -1;
-	childs.clear();
-}
 
 Animator::Animator() {
 }
@@ -38,34 +26,15 @@ Animator::~Animator() {
     } 
 }
 void Animator::clear() {
-    bone_root.clear();
-    bone_tfs.clear();
+    nr_bone_nodes = 0;
+    skeleton.clear();
     mtx_Bones.clear();
     cur_anim = nullptr;
     state = State::STOP;
 }
-static Transform* getDstBoneTf(BoneNode& dst, const BoneNode& src, const Transform* srcTf) {
-    if( &src.tf == srcTf ) {
-        return &dst.tf;
-    }
-    for(int i=0; i<src.childs.size(); i++) {
-        Transform* ptr = getDstBoneTf(dst.childs[i], src.childs[i], srcTf);
-        if(ptr)
-            return ptr;
-    }
-    return nullptr;
-}
-static void copyBoneTfs(Animator& dst, const Animator& src) {
-    dst.bone_tfs.clear();
-    dst.bone_tfs.reserve(src.bone_tfs.size());
-    for(const Transform* pSrcTf: src.bone_tfs) {
-        dst.bone_tfs.push_back(getDstBoneTf(dst.bone_root, src.bone_root, pSrcTf));
-    }
-}
 Animator& Animator::operator=(const Animator& src) {
-    bone_root = src.bone_root;
-    // bone_tfs = src.bone_tfs;
-    copyBoneTfs(*this, src);
+    nr_bone_nodes = src.nr_bone_nodes;
+    skeleton = src.skeleton;
     mtx_Bones = src.mtx_Bones;
 
     setAnim(src.cur_anim);
@@ -136,12 +105,24 @@ static void getKeyIdx(const std::vector<T>& keys, const int nrKeys, double curTi
 }
 
 void Animator::updateMtxBones() {
-    bone_root.treversal([&](const BoneNode& node, const glm::mat4& transform) {
-        int boneIdx = node.bone_idx;
-        if( boneIdx<0 )
-            return;
-        mtx_Bones[boneIdx] = transform * md_data->bone_offsets[boneIdx];
-    });
+    BoneNode& rootBoneNode = skeleton[0];
+    rootBoneNode.tf_model_space = rootBoneNode.tf.mtx;
+    if( rootBoneNode.idx_bone == 0) {
+        mtx_Bones[0] = rootBoneNode.tf_model_space * md_data->bone_offsets[0];
+    }
+
+    for(int i=1; i<nr_bone_nodes; i++) {
+        BoneNode& curBoneNode = skeleton[i];
+        BoneNode& parentBoneNode = skeleton[curBoneNode.idx_parent_bone_node];
+        curBoneNode.tf_model_space = parentBoneNode.tf_model_space * curBoneNode.tf.mtx;
+        int idxBone = curBoneNode.idx_bone;
+        if( idxBone<0 ){
+            continue;
+        }
+        else {
+            mtx_Bones[idxBone] = curBoneNode.tf_model_space * md_data->bone_offsets[idxBone];
+        }
+    }
 }
 void Animator::update(float dt) {
     if( state!=State::PLAY || !cur_anim )
@@ -164,7 +145,7 @@ void Animator::update(float dt) {
         int idx;
         float factor;
         vec3 v1, v2, vDt;
-        Transform& nodeTf = *bone_tfs[track.bone_tf_idx];
+        Transform& nodeTf = skeleton[track.idx_bone_node].tf;
         if( track.nr_poss>1 ) {
             idx = prevKeyIdx.pos;
             getKeyIdx(track.poss, track.nr_poss, cur_tick, idx, factor);
