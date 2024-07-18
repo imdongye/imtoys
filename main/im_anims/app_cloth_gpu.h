@@ -24,7 +24,7 @@ namespace lim
 
 
 		Program prog_render;
-		Program prog_xfb;
+		Program prog_skin;
 		Program prog_comp;
 		Program prog_comp_nor;
 		MeshPlane ground;

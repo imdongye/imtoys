@@ -190,7 +190,7 @@ AppClothGPU::AppClothGPU()
 	viewport.camera.updateViewMat();
 
 	prog_render.attatch("im_anims/shaders/cloth.vs").attatch("im_anims/shaders/cloth.fs").link();
-	prog_xfb.attatch("im_anims/shaders/cloth_xfb.vs").link();
+	prog_skin.attatch("mvp_skinned.vs").attatch("ndv.fs").link();
 
 	prog_comp.attatch("im_anims/shaders/cloth.comp").link();
 
@@ -200,7 +200,8 @@ AppClothGPU::AppClothGPU()
 	model.setUnitScaleAndPivot();
 	model.tf->pos.y += model.pivoted_scaled_bottom_height;
 	model.tf->update();
-	model.animator.setTimeline(0.5f, true);
+	model.animator.play();
+	model.animator.is_loop = true;
 
 	resetParams();
 	makeClothDataAndInitGL();
@@ -211,6 +212,26 @@ AppClothGPU::~AppClothGPU()
 }
 void AppClothGPU::update() 
 {
+	// get skind vert pos
+	{
+		int idxClothVert = 0;
+		
+		int nrDepth = 3;
+		mat4 boneMtx = model.getGlobalTfMtx();
+		vec3 target{0};
+		model.animator.bone_root.treversal([&](BoneNode& nd, const mat4& tf) {
+			if(nd.bone_idx == 22) {
+				boneMtx = boneMtx * tf;
+			}
+		});
+		target = vec3(boneMtx*vec4(0,0,0,1));
+
+		glBindBuffer(GL_ARRAY_BUFFER, buf_posm_ids[src_buf_idx]);
+		vec3* pPos = (vec3*)glMapBufferRange(GL_ARRAY_BUFFER, sizeof(vec4)*idxClothVert, sizeof(vec3), GL_MAP_WRITE_BIT); 
+		*pPos = target;
+		glUnmapBuffer(GL_ARRAY_BUFFER);
+	}
+
 	glEnable(GL_DEPTH_TEST);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(0, 0, fb_width, fb_height);
@@ -283,6 +304,14 @@ void AppClothGPU::update()
 	
 	ndvProg.setUniform("mtx_Model", mat4(1));
 	ground.bindAndDrawGL();
+
+	prog_skin.use();
+	viewport.camera.setUniformTo(prog_skin);
+	model.animator.setUniformTo(prog_skin);
+	model.root.treversalEnabled([&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
+		prog_skin.setUniform("mtx_Model", transform);
+		ms->bindAndDrawGL();
+	});
 
 	if(collision_enabled) {
 		// ndvProg.setUniform("mtx_Model", mtx_geo_model);
