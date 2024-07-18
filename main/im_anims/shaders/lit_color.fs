@@ -7,6 +7,10 @@ in vec3 wNor;
 in vec4 lPos;
 
 uniform vec3 cam_Pos;
+uniform float gamma = 2.2;
+uniform vec3 color;
+
+
 struct LightDirectional {
 	vec3 Pos;
 	vec3 Dir;
@@ -14,8 +18,6 @@ struct LightDirectional {
 	float Intensity;
 };
 uniform LightDirectional lit;
-uniform float gamma = 2.2;
-uniform vec3 color;
 
 struct ShadowDirectional {
 	bool Enabled;

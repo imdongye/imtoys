@@ -21,30 +21,27 @@ using namespace glm;
 #include "app_cloth_coef.h"
 
 namespace {
-	GLuint xfb_id;
 	GLuint vao_update_ids[2];
 	GLuint vao_render_ids[2];
-	GLuint vbo_posm_ids[2];
-	GLuint vbo_vel_ids[2];
-	GLuint ebo_indices;
-	GLuint tbo_pos_ids[2];
-	GLuint tbo_vel_ids[2];
+	GLuint buf_posm_ids[2];
+	GLuint buf_vel_ids[2];
+	GLuint buf_nor_id;
+	GLuint buf_indices;
 	int nr_ptcls, nr_tris;
 
 	int src_buf_idx = 0;
 	int dst_buf_idx = 1;
 	int picked_ptcl_idx = -1;
 	constexpr int invocations_width = 16;
+	lim::AppClothGPU* g_app;
 }
 static void clearGLBuffers() {
-	gl::safeDelXfbs(&xfb_id);
 	gl::safeDelVertArrs(vao_update_ids, 2);
 	gl::safeDelVertArrs(vao_render_ids, 2);
-	gl::safeDelBufs(vbo_posm_ids, 2);
-	gl::safeDelBufs(vbo_vel_ids, 2);
-	gl::safeDelBufs(&ebo_indices);
-	gl::safeDelTexs(tbo_pos_ids, 2);
-	gl::safeDelTexs(tbo_vel_ids, 2);
+	gl::safeDelBufs(buf_posm_ids, 2);
+	gl::safeDelBufs(buf_vel_ids, 2);
+	gl::safeDelBufs(&buf_nor_id);
+	gl::safeDelBufs(&buf_indices);
 }
 
 namespace {
@@ -60,10 +57,10 @@ static void copyMemToBuf() {
 	for(int i=0; i<2 ; i++) {
 		glBindVertexArray(vao_update_ids[i]);
 
-		glBindBuffer(GL_ARRAY_BUFFER, vbo_posm_ids[i]);
+		glBindBuffer(GL_ARRAY_BUFFER, buf_posm_ids[i]);
 		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vec4)*nr_ptcls, cloth_pm_data.data());
 
-		glBindBuffer(GL_ARRAY_BUFFER, vbo_vel_ids[i]);
+		glBindBuffer(GL_ARRAY_BUFFER, buf_vel_ids[i]);
 		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vec4)*nr_ptcls, cloth_v_data.data());
 		glBindVertexArray(0);
 	}
@@ -72,7 +69,6 @@ static void copyMemToBuf() {
 static void resetParams() {
 	// nr_p = {10, 20};
 	// cloth_size = {0.7, 1.4};
-
 
 	time_speed = def_time_speed;
 	// step_size = def_step_size;
@@ -121,77 +117,93 @@ static void makeClothDataAndInitGL() {
 
 	glGenVertexArrays(2, vao_update_ids);
 	glGenVertexArrays(2, vao_render_ids);
-	glGenBuffers(2, vbo_posm_ids);
-	glGenBuffers(2, vbo_vel_ids);
+	glGenBuffers(2, buf_posm_ids);
+	glGenBuffers(2, buf_vel_ids);
+	glGenBuffers(1, &buf_nor_id);
+
+
+	// init update vao
 	for(int i=0; i<2 ; i++) {
 		glBindVertexArray(vao_update_ids[i]);
 
-		glBindBuffer(GL_ARRAY_BUFFER, vbo_posm_ids[i]);
+		glBindBuffer(GL_ARRAY_BUFFER, buf_posm_ids[i]);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(vec4)*nr_ptcls, nullptr, GL_DYNAMIC_COPY);
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0);
 
-		glBindBuffer(GL_ARRAY_BUFFER, vbo_vel_ids[i]);
+		glBindBuffer(GL_ARRAY_BUFFER, buf_vel_ids[i]);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(vec4)*nr_ptcls, nullptr, GL_DYNAMIC_COPY);
 		glEnableVertexAttribArray(1);
 		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, 0);
+
 		glBindVertexArray(0);
 	}
 
-	glGenTextures(2, tbo_pos_ids);
-	glGenTextures(2, tbo_vel_ids);
-	for(int i=0; i<2; i++) {
-		glBindTexture(GL_TEXTURE_BUFFER, tbo_pos_ids[i]);
-		glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, vbo_posm_ids[i]);
 
-		glBindTexture(GL_TEXTURE_BUFFER, tbo_vel_ids[i]);
-		glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, vbo_vel_ids[i]);
 
-		glBindTexture(GL_TEXTURE_BUFFER, 0);
-	}
 
+	// init render vao
+	glBindBuffer(GL_ARRAY_BUFFER, buf_nor_id);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vec4)*nr_ptcls, nullptr, GL_DYNAMIC_COPY);
 
 	for(int i=0; i<2 ; i++) {
 		glBindVertexArray(vao_render_ids[i]);
-		glBindBuffer(GL_ARRAY_BUFFER, vbo_posm_ids[i]);
+
+		glBindBuffer(GL_ARRAY_BUFFER, buf_posm_ids[i]);
 		glEnableVertexAttribArray(0);
+		// mass debuging draw를위해서 mass까지 넘긴다.
 		glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0);
+
+		glBindBuffer(GL_ARRAY_BUFFER, buf_nor_id);
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vec4), 0);
+
 		glBindVertexArray(0);
 	}
 
+	// init element buf
 	nr_tris = plane.tris.size();
-	glGenBuffers(1, &ebo_indices);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_indices);
+	glGenBuffers(1, &buf_indices);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buf_indices);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uvec3)*nr_tris, plane.tris.data(), GL_STATIC_DRAW);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 	copyMemToBuf();
 
-	glGenTransformFeedbacks(1, &xfb_id);
+
+	g_app->prog_comp_nor.use();
+	g_app->prog_comp_nor.setUniform("nr_p", nr_p);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, buf_posm_ids[src_buf_idx]);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, buf_nor_id);
+	glDispatchCompute(fastIntCeil(nr_p.x, invocations_width), fastIntCeil(nr_p.y, invocations_width), 1);
+	glMemoryBarrier( GL_SHADER_STORAGE_BARRIER_BIT );
 }
 
 AppClothGPU::AppClothGPU()
 	: AppBase(900, 600, APP_NAME, false)
-	, viewport("viewport##gpgpu", new FramebufferTexDepth())
+	, viewport("viewport##gpgpu", new FramebufferMs())
 	, ground(20)
 {
+	g_app = this;
 	viewport.camera.pivot = vec3(0, 1.0, 0);
     viewport.camera.pos = vec3(0, 1.5, 3.4);
 	viewport.camera.updateViewMat();
 
-	resetParams();
-	makeClothDataAndInitGL();
-
-	prog.attatch("im_anims/shaders/cloth.vs").attatch("im_anims/shaders/cloth.fs").link();
+	prog_render.attatch("im_anims/shaders/cloth.vs").attatch("im_anims/shaders/cloth.fs").link();
 	prog_xfb.attatch("im_anims/shaders/cloth_xfb.vs").link();
 
 	prog_comp.attatch("im_anims/shaders/cloth.comp").link();
+
+	prog_comp_nor.attatch("im_anims/shaders/cloth_normal.comp").link();
 
 	model.importFromFile("assets/models/jump.fbx", true);
 	model.setUnitScaleAndPivot();
 	model.tf->pos.y += model.pivoted_scaled_bottom_height;
 	model.tf->update();
 	model.animator.setTimeline(0.5f, true);
+
+	resetParams();
+	makeClothDataAndInitGL();
 }
 AppClothGPU::~AppClothGPU()
 {
@@ -210,59 +222,7 @@ void AppClothGPU::update()
 	{
 		is_rendered_frame = true;
 
-
-		// prog_xfb.use();
-		// float dt = (delta_time*time_speed)/float(step_size);
-		// prog_xfb.setUniform("cloth_mass", cloth_mass);
-		// prog_xfb.setUniform("ptcl_mass", ptcl_mass);
-		// prog_xfb.setUniform("inter_p_size", inter_p_size);
-		// prog_xfb.setUniform("nr_p", nr_p);
-		// prog_xfb.setUniform("dt", dt);
-		// prog_xfb.setUniform("ka", Ka);
-		// prog_xfb.setUniform("kr", Kr);
-		// prog_xfb.setUniform("stretchKs", 	stretch_pct*Ks);
-		// prog_xfb.setUniform("shearKs", 		shear_pct*Ks);
-		// prog_xfb.setUniform("bendingKs", 	bending_pct*Ks);
-		// prog_xfb.setUniform("stretchKd", 	Kd);
-		// prog_xfb.setUniform("shearKd", 		Kd);
-		// prog_xfb.setUniform("bendingKd", 	Kd);
-		// prog_xfb.setUniform("gravity", G);
-
-		// prog_xfb.setUniform("tex_posm", 0);
-		// prog_xfb.setUniform("tex_vel", 1);
-
-		// prog_xfb.setUniform("collision_enabled", collision_enabled);
-
-		// glEnable(GL_RASTERIZER_DISCARD);
-		// {
-		// 	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, xfb_id);
-		// 	{
-		// 		for(int i=0; i<step_size; i++)
-		// 		{
-		// 			glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, vbo_posm_ids[dst_buf_idx]);
-		// 			glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 1, vbo_vel_ids[dst_buf_idx]);
-
-		// 			glActiveTexture(GL_TEXTURE0);
-		// 			glBindTexture(GL_TEXTURE_BUFFER, tbo_pos_ids[src_buf_idx]);
-		// 			glActiveTexture(GL_TEXTURE1);
-		// 			glBindTexture(GL_TEXTURE_BUFFER, tbo_vel_ids[src_buf_idx]);
-
-		// 			glBeginTransformFeedback(GL_POINTS);
-		// 			{
-		// 				glBindVertexArray(vao_update_ids[src_buf_idx]);
-		// 				glDrawArrays(GL_POINTS, 0, nr_ptcls);
-		// 			}
-		// 			glEndTransformFeedback();
-		// 			std::swap(src_buf_idx, dst_buf_idx);
-		// 		}
-		// 	}
-		// 	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
-		// }
-		// glDisable(GL_RASTERIZER_DISCARD);
-		// glFlush();
-
 		prog_comp.use();
-		// float dt = (delta_time*time_speed);
 		float dt = (delta_time*time_speed)/float(step_size);
 		prog_comp.setUniform("cloth_mass", cloth_mass);
 		prog_comp.setUniform("ptcl_mass", ptcl_mass);
@@ -284,37 +244,38 @@ void AppClothGPU::update()
 
 		prog_comp.setUniform("collision_enabled", collision_enabled);
 
-		// prog_comp.setUniform("step_size", step_size);
-		// glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, vbo_posm_ids[src_buf_idx]);
-		// glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, vbo_vel_ids[src_buf_idx]);
-		// glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, vbo_posm_ids[dst_buf_idx]);
-		// glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, vbo_vel_ids[dst_buf_idx]);
-		// glDispatchCompute(fastIntCeil(nr_p.x, invocations_width), fastIntCeil(nr_p.y, invocations_width), 1);
-		// glMemoryBarrier( GL_SHADER_STORAGE_BARRIER_BIT );
-
 		for(int i=0; i<step_size; i++)
 		{
-			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, vbo_posm_ids[src_buf_idx]);
-			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, vbo_vel_ids[src_buf_idx]);
-			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, vbo_posm_ids[dst_buf_idx]);
-			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, vbo_vel_ids[dst_buf_idx]);
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, buf_posm_ids[src_buf_idx]);
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, buf_vel_ids[src_buf_idx]);
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, buf_posm_ids[dst_buf_idx]);
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, buf_vel_ids[dst_buf_idx]);
 			glDispatchCompute(fastIntCeil(nr_p.x, invocations_width), fastIntCeil(nr_p.y, invocations_width), 1);
 			glMemoryBarrier( GL_SHADER_STORAGE_BARRIER_BIT );
 			std::swap(src_buf_idx, dst_buf_idx);
 		}
+
+		prog_comp_nor.use();
+		prog_comp_nor.setUniform("nr_p", nr_p);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, buf_posm_ids[src_buf_idx]);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, buf_nor_id);
+		glDispatchCompute(fastIntCeil(nr_p.x, invocations_width), fastIntCeil(nr_p.y, invocations_width), 1);
+		glMemoryBarrier( GL_SHADER_STORAGE_BARRIER_BIT );
 	}
 
 
 	viewport.getFb().bind();
-	prog.use();
-	viewport.camera.setUniformTo(prog);
-	// prog.setUniform("mtx_Model", tf.mtx);
-	// glBindVertexArray(vao_render_ids[src_buf_idx]);
-	glBindVertexArray(vao_render_ids[dst_buf_idx]);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_indices);
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	prog_render.use();
+	viewport.camera.setUniformTo(prog_render);
+	prog_render.setUniform("mtx_Model", mat4(1));
+	glBindVertexArray(vao_render_ids[src_buf_idx]);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buf_indices);
+
 	glDrawElements(GL_TRIANGLES, nr_tris*3, GL_UNSIGNED_INT, nullptr);
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+	// glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	// glDrawElements(GL_TRIANGLES, nr_tris*3, GL_UNSIGNED_INT, nullptr);
+	// glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	
 	Program& ndvProg = AssetLib::get().ndv_prog;
 	ndvProg.use();
@@ -340,7 +301,7 @@ void AppClothGPU::updateImGui()
 
 	ImGui::Begin("test window##gpgpu");
 	if(ImGui::Button("release fixed ptcl")) {
-		glBindBuffer(GL_ARRAY_BUFFER, vbo_posm_ids[src_buf_idx]);
+		glBindBuffer(GL_ARRAY_BUFFER, buf_posm_ids[src_buf_idx]);
 		float* ptr = (float*)glMapBufferRange(GL_ARRAY_BUFFER, sizeof(vec3), sizeof(float),  GL_MAP_WRITE_BIT);
 		log::glError();
 		float aaa = 1.f;
@@ -396,7 +357,7 @@ void AppClothGPU::updateImGui()
 		const vec3 cameraPos = viewport.camera.pos;
 		float minDepth = FLT_MAX;
 
-		glBindBuffer(GL_ARRAY_BUFFER, vbo_posm_ids[src_buf_idx]);
+		glBindBuffer(GL_ARRAY_BUFFER, buf_posm_ids[src_buf_idx]);
 		vec4* posms = (vec4*)glMapBuffer(GL_ARRAY_BUFFER, GL_READ_WRITE);
 		for( int i=0; i<nrPms; i++ ) {
 			const vec3 objP = vec3(posms[i]);
@@ -425,7 +386,7 @@ void AppClothGPU::updateImGui()
 	}
 	else if(picked_ptcl_idx>=0 && ImGui::IsMouseDown(ImGuiMouseButton_Right))
 	{
-		glBindBuffer(GL_ARRAY_BUFFER, vbo_posm_ids[src_buf_idx]);
+		glBindBuffer(GL_ARRAY_BUFFER, buf_posm_ids[src_buf_idx]);
 		vec3 objPos = *(vec3*)glMapBufferRange(GL_ARRAY_BUFFER, sizeof(vec4)*picked_ptcl_idx, sizeof(vec3), GL_MAP_READ_BIT); 
 		glUnmapBuffer(GL_ARRAY_BUFFER);
 		const vec3 toObj = objPos-viewport.camera.pos;

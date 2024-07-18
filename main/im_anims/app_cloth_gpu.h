@@ -11,6 +11,7 @@
 #include <limbrary/model_view/camera_man.h>
 #include <limbrary/model_view/transform.h>
 #include <limbrary/model_view/model.h>
+#include <limbrary/model_view/light.h>
 
 namespace lim
 {
@@ -22,12 +23,14 @@ namespace lim
 		inline static constexpr CStr APP_DESCRIPTION = "limbrary template application";
 
 
-		Program prog;
+		Program prog_render;
 		Program prog_xfb;
 		Program prog_comp;
+		Program prog_comp_nor;
 		MeshPlane ground;
 		ViewportWithCamera viewport;
 		Model model;
+		LightDirectional light;
 
 	public:
 		AppClothGPU();

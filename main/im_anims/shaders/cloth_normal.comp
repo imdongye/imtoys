@@ -1,0 +1,102 @@
+#version 460 core
+layout(local_size_x = 16, local_size_y = 16) in;
+
+layout(std430, binding=0) readonly buffer pos_buf {
+    vec4 poss[];
+};
+layout(std430, binding=1) writeonly buffer out_nor_buf {
+    vec4 out_nors[];
+};
+
+uniform ivec2 nr_p;
+
+vec3 center_p;
+
+
+bool isOutSide(ivec2 p) {
+    return p.x<0 || p.x>=nr_p.x || p.y<0 || p.y>=nr_p.y;
+}
+vec3 getPos(ivec2 p) {
+    return poss[p.x + nr_p.x*p.y].xyz;
+}
+vec3 getNor(ivec2 p1, ivec2 p2) {
+    vec3 v1 = getPos(p1) - center_p;
+    vec3 v2 = getPos(p2) - center_p;
+    return normalize(cross(v1, v2));
+} 
+
+void main()
+{
+    const ivec2 center = ivec2(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y);
+    if( isOutSide(center) ) {
+        return;
+    }
+    center_p = getPos(center);
+    const ivec2 left  = center + ivec2(-1,0);
+    const ivec2 right = center + ivec2( 1,0);
+    const ivec2 top   = center + ivec2( 0,-1);
+    const ivec2 down  = center + ivec2( 0,1);
+    const int idx = center.x + center.y*nr_p.x;
+
+    // left
+    if( isOutSide(left) ) {
+        if( isOutSide(top) ) {
+            out_nors[idx] = vec4(getNor(down, right), 0);
+            return;
+        }
+        if( isOutSide(down) ) {
+            out_nors[idx] = vec4(getNor(right, top), 0);
+            return;
+        }
+        const vec3 rst = normalize(getNor(down, right) + getNor(right, top));
+        out_nors[idx] = vec4(rst, 0);
+        return;
+    }
+    // right
+    if( isOutSide(right) ) {
+        if( isOutSide(top) ) {
+            out_nors[idx] = vec4(getNor(left, down), 0);
+            return;
+        }
+        if( isOutSide(down) ) {
+            out_nors[idx] = vec4(getNor(top, left), 0);
+            return;
+        }
+        const vec3 rst = normalize(getNor(left, down) + getNor(top, left));
+        out_nors[idx] = vec4(rst, 0);
+        return;
+    }
+    // top
+    if( isOutSide(top) ) {
+        if( isOutSide(left) ) {
+            out_nors[idx] = vec4(getNor(down, right), 0);
+            return;
+        }
+        if( isOutSide(right) ) {
+            out_nors[idx] = vec4(getNor(left, down), 0);
+            return;
+        }
+        const vec3 rst = normalize(getNor(down, right) + getNor(left, down));
+        out_nors[idx] = vec4(rst, 0);
+        return;
+    }
+    // down
+    if( isOutSide(down) ) {
+        if( isOutSide(left) ) {
+            out_nors[idx] = vec4(getNor(right, top), 0);
+            return;
+        }
+        if( isOutSide(right) ) {
+            out_nors[idx] = vec4(getNor(top, left), 0);
+            return;
+        }
+        const vec3 rst = normalize(getNor(top, left) + getNor(top, left));
+        out_nors[idx] = vec4(rst, 0);
+        return;
+    }
+
+    const vec3 rst = normalize(getNor(right, top) + getNor(left, down));
+    out_nors[idx] = vec4(rst, 0);
+}
+
+
