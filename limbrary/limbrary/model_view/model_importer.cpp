@@ -428,9 +428,9 @@ static void addBoneNode(int idxParent, const mat4 mtxParent, const aiNode* src) 
 		// if(isEndPostfix(aiChild->mName.C_Str())) {
 		// 	continue;
 		// }
-
-		// Fucking ref bug
-		// addBoneNode( curIdx, dst.tf_model_space, aiChild );
+		
+		// !! do not use dst pointer 
+		// 	  because vector array memory can be moved by under recursive func
 		addBoneNode( curIdx, g_animator->skeleton[curIdx].tf_model_space, aiChild );
 	}
 }
@@ -573,6 +573,7 @@ bool lim::Model::importFromFile(string_view modelPath, bool withAnims)
 	global_transform = mat4(1);
 	animator.nr_bone_nodes = 0;
 	animator.skeleton.clear();
+	animator.skeleton.reserve(nr_bones+10);
 	convertRdTree(root, g_scn->mRootNode);
 
 	/* update bone offset with bind pose (bone-5) */
