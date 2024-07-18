@@ -135,8 +135,7 @@ void Animator::update(float dt) {
     }
     cur_tick = elapsed_sec * cur_anim->ticks_per_sec;
 
-    for( int i=0; i<cur_anim->nr_tracks; i++ ) {
-        const Animation::Track& track = cur_anim->tracks[i];
+    for( const Animation::Track& track : cur_anim->tracks ) {
         int idx;
         float factor;
         vec3 v1, v2, vDt;
@@ -167,7 +166,6 @@ void Animator::update(float dt) {
         } else {
             nodeTf.ori = track.oris[0].value;
         }
-        
         nodeTf.update();
     }
 
