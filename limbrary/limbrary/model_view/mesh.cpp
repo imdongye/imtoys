@@ -58,7 +58,7 @@ void Mesh::initGL(bool withClearMem)
 		}
 		glGenBuffers(1, &buf_pos);
 		glBindBuffer(GL_ARRAY_BUFFER, buf_pos);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(vec4)*nors.size(), tempVec4.data(), GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vec4)*poss.size(), tempVec4.data(), GL_STATIC_DRAW);
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vec4), 0);
 	}
