@@ -369,22 +369,19 @@ static void convertAnim(Animation& dst, const aiAnimation& src) {
 		track.idx_bone_node = -1; // after convertTree
 
 		track.nr_poss = srcTrack.mNumPositionKeys;
-		track.poss.resize(track.nr_poss);
 		for( uint j=0; j<track.nr_poss; j++ ) {
 			const aiVectorKey& k = srcTrack.mPositionKeys[j];
-			track.poss[j] = {float(k.mTime), toGLM(k.mValue)};
+			track.poss[float(k.mTime)] = toGLM(k.mValue);
 		}
 		track.nr_scales = srcTrack.mNumScalingKeys;
-		track.scales.resize(track.nr_scales);
 		for( uint j=0; j<track.nr_scales; j++ ) {
 			const aiVectorKey& k = srcTrack.mScalingKeys[j];
-			track.scales[j] = {float(k.mTime), toGLM(k.mValue)};
+			track.scales[float(k.mTime)] = toGLM(k.mValue);
 		}
 		track.nr_oris = srcTrack.mNumRotationKeys;
-		track.oris.resize(track.nr_oris);
 		for( uint j=0; j<track.nr_oris; j++ ) {
 			const aiQuatKey& k = srcTrack.mRotationKeys[j];
-			track.oris[j] = {float(k.mTime), toGLM(k.mValue)};
+			track.oris[float(k.mTime)] = toGLM(k.mValue);
 		}
 	}
 }

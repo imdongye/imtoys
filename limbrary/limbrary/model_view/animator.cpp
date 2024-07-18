@@ -100,6 +100,31 @@ static void getKeyIdx(const std::vector<T>& keys, const int nrKeys, double curTi
     }
 }
 
+static vec3 getInterpolatedValue( const std::map<float, vec3>& keys, float curTick ) {
+    auto it = keys.lower_bound( curTick );
+    float t2 = it->first;
+    vec3 v2 = it->second;
+    it--;
+    float t1 = it->first;
+    vec3 v1 = it->second;
+    float dt = t2 - t1;
+    float factor = (curTick - t1) / dt;
+    return v1 + (v2 - v1) * factor;
+}
+
+static quat getInterpolatedValue( const std::map<float, quat>& keys, float curTick ) {
+    auto it = keys.lower_bound( curTick );
+    float t2 = it->first;
+    quat v2 = it->second;
+    it--;
+    float t1 = it->first;
+    quat v1 = it->second;
+    float dt = t2 - t1;
+    float factor = (curTick - t1) / dt;
+    return slerp(v1, v2, factor);
+}
+
+
 void Animator::updateMtxBones() {
     BoneNode& rootBoneNode = skeleton[0];
     rootBoneNode.tf_model_space = rootBoneNode.tf.mtx;
@@ -136,35 +161,21 @@ void Animator::update(float dt) {
     cur_tick = elapsed_sec * cur_anim->ticks_per_sec;
 
     for( const Animation::Track& track : cur_anim->tracks ) {
-        int idx;
-        float factor;
-        vec3 v1, v2, vDt;
         Transform& nodeTf = skeleton[track.idx_bone_node].tf;
         if( track.nr_poss>1 ) {
-            getKeyIdx(track.poss, track.nr_poss, cur_tick, idx, factor);
-            v1 = track.poss[idx-1].value;
-            v2 = track.poss[idx].value;
-            vDt = v2 - v1;
-            nodeTf.pos = v1 + vDt * factor;
+            nodeTf.pos = getInterpolatedValue(track.poss, cur_tick);
         } else {
-            nodeTf.pos = track.poss[0].value;
+            nodeTf.pos = track.poss.begin()->second;
         }
         if( track.nr_scales>1 ) {
-            getKeyIdx(track.scales, track.nr_scales, cur_tick, idx, factor);
-            v1 = track.scales[idx-1].value;
-            v2 = track.scales[idx].value;
-            vDt = v2 - v1;
-            nodeTf.scale = v1 + vDt * factor;
+            nodeTf.scale = getInterpolatedValue(track.scales, cur_tick);
         } else {
-            nodeTf.scale = track.scales[0].value;
+            nodeTf.scale = track.scales.begin()->second;
         }
         if( track.nr_oris>1 ) {
-            getKeyIdx(track.oris, track.nr_oris, cur_tick, idx, factor);
-            quat o1 = track.oris[idx-1].value;
-            quat o2 = track.oris[idx].value;
-            nodeTf.ori = slerp(o1,o2,factor);
+            nodeTf.ori = getInterpolatedValue(track.oris, cur_tick);
         } else {
-            nodeTf.ori = track.oris[0].value;
+            nodeTf.ori = track.oris.begin()->second;
         }
         nodeTf.update();
     }

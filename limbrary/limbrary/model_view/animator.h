@@ -47,14 +47,10 @@ namespace lim
             std::string name;
             int idx_bone_node = -1;
             int nr_poss, nr_scales, nr_oris;
-            std::vector<KeyVec3> poss;
-            std::vector<KeyVec3> scales;
-            std::vector<KeyQuat> oris;
-        };
-        // for animator
-        struct TrackIdx
-        {
-            int pos=0, scale=0, ori=0;
+            // tick, value
+            std::map<float, glm::vec3> poss;
+            std::map<float, glm::vec3> scales;
+            std::map<float, glm::quat> oris;
         };
         std::string name;
         int nr_tracks;
