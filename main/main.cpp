@@ -33,7 +33,8 @@
 #include "im_anims/app_cloth_gpu.h"
 #include "im_anims/app_ik.h"
 #include "im_anims/app_particle.h"
-#include "im_pbd/app_pbd.h"
+#include "im_pbd/app_pbd_cpu.h"
+#include "im_pbd/app_pbd_gpu.h"
 #include "im_anims/app_curve.h"
 
 
@@ -85,10 +86,11 @@ static void pushAppData()
 
 int main()
 {
+	pushAppData<lim::AppPbdCPU>();
 	pushAppData<lim::AppClothGPU>();
 	pushAppData<lim::AppClothCPU>();
+	pushAppData<lim::AppPbdGPU>();
 	pushAppData<lim::AppCurve>();
-	pushAppData<lim::AppPBD>();
 	pushAppData<lim::AppParticle>();
 	pushAppData<lim::AppSkeletal>();
 	pushAppData<lim::AppIK>();
@@ -112,11 +114,11 @@ int main()
 
 	_selected_app_idx = 0;
 
-	if(_app_names.size()>1)
+	if( _app_names.size()>1 ) {
 		lim::AppBase::draw_appselector = drawAppSellector;
+	}
 
-	while (_selected_app_idx>=0)
-	{
+	while( _selected_app_idx>=0 ) {
 		lim::AppBase* app = _app_constructors[_selected_app_idx]();
 		_selected_app_idx = -1;
 

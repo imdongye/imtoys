@@ -1,21 +1,21 @@
-#include "app_pbd.h"
+#include "app_pbd_gpu.h"
 #include <limbrary/limgui.h>
 
 using namespace lim;
 using namespace glm;
 
 
-AppPBD::AppPBD() : AppBase(1200, 780, APP_NAME, false)
+AppPbdGPU::AppPbdGPU() : AppBase(1200, 780, APP_NAME, false)
 	, viewport("viewport##pbd", new FramebufferMs())
 {
 
 
 	
 }
-AppPBD::~AppPBD()
+AppPbdGPU::~AppPbdGPU()
 {
 }
-void AppPBD::update() 
+void AppPbdGPU::update() 
 {
 	glEnable(GL_DEPTH_TEST);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -24,7 +24,7 @@ void AppPBD::update()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 }
-void AppPBD::updateImGui()
+void AppPbdGPU::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
 
@@ -37,5 +37,6 @@ void AppPBD::updateImGui()
 	LimGui::PlotVal("fps", "", ImGui::GetIO().Framerate);
 	ImGui::End();
 }
-void AppPBD::dndCallback(int cnt, const char **paths) {
+void AppPbdGPU::dndCallback(int cnt, const char **paths)
+{
 }

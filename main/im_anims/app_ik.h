@@ -3,11 +3,10 @@
 	2024-07-11 / imdongye
 
 */
-#ifndef __app_kinematics_h_
-#define __app_kinematics_h_
+#ifndef __app_ik_h_
+#define __app_ik_h_
 
-#include <limbrary/application.h>
-#include "appbase_canvas3d.h"
+#include <limbrary/extension/appbase_canvas3d.h>
 
 namespace lim
 {

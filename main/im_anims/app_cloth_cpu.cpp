@@ -368,14 +368,14 @@ void AppClothCPU::canvasUpdate()
 	}
 }
 void AppClothCPU::canvasDraw() const {
-	for(auto& c : colliders) c->draw();
-	for(auto& p : particles) p.draw();
-	cloth.draw();
-
 	// basis object 10cm
 	drawCylinder({0,0,0}, {0.1f,0,0}, {1,0,0});
 	drawCylinder({0,0,0}, {0,0.1f,0}, {0,1,0});
 	drawCylinder({0,0,0}, {0,0,0.1f}, {0,0,1});
+
+	for(auto& c : colliders) c->draw();
+	for(auto& p : particles) p.draw();
+	cloth.draw();
 }
 
 static void pickClosestPtclInRay(vec3 ray, vec3 rayO, vector<Particle>& ps) {

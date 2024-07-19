@@ -7,7 +7,6 @@ in vec3 wNor;
 in vec4 lPos;
 
 uniform vec3 cam_Pos;
-uniform float gamma = 2.2;
 uniform vec3 color;
 
 
@@ -29,6 +28,14 @@ struct ShadowDirectional {
 };
 uniform ShadowDirectional shadow;
 uniform sampler2D map_Shadow;
+
+
+// gamma correction
+void convertLinearToSRGB( inout vec3 rgb ){
+    rgb.r = rgb.r<0.0031308?(12.92*rgb.r):(1.055*pow(rgb.r,0.41667)-0.055);
+    rgb.g = rgb.g<0.0031308?(12.92*rgb.g):(1.055*pow(rgb.g,0.41667)-0.055);
+    rgb.b = rgb.b<0.0031308?(12.92*rgb.b):(1.055*pow(rgb.b,0.41667)-0.055);
+}
 
 
 // iqint3 From: https://www.shadertoy.com/view/4tXyWN
@@ -168,6 +175,6 @@ void main()
 	// outColor = vec3(shadowing());
 	// outColor = N*0.5+vec3(0.5);
 
-    outColor = pow(outColor, vec3(1/gamma));
+	convertLinearToSRGB(outColor);
     FragColor = vec4(outColor, 1);
 }

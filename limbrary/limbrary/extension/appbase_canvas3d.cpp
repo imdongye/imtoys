@@ -7,7 +7,8 @@ using namespace lim;
 using namespace glm;
 using namespace std;
 
-AppBaseCanvas3d::AppBaseCanvas3d(int winWidth, int winHeight, const char* title, bool vsync) 
+AppBaseCanvas3d::AppBaseCanvas3d(int winWidth, int winHeight, const char* title, bool vsync
+    , int nrMaxQuads, int nrMaxSpheres, int nrMaxCylinders) 
     : AppBase(winWidth, winHeight, title, vsync)
     , prog("lit_color")
     , vp("canvas3d", new FramebufferMs())
@@ -16,7 +17,7 @@ AppBaseCanvas3d::AppBaseCanvas3d(int winWidth, int winHeight, const char* title,
     , sphere(1, true, false)
     , cylinder(1.f, 1.f, 10, true, false)
 {
-    prog.attatch("smvp.vs").attatch("im_anims/shaders/lit_color.fs").link();
+    prog.attatch("smvp.vs").attatch("canvas3d.fs").link();
     vp.camera.pivot = vec3(0, 1.0, 0);
     vp.camera.pos = vec3(0, 1.5, 3.4);
 	vp.camera.updateViewMat();

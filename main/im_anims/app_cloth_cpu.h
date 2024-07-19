@@ -3,11 +3,10 @@
 	2024-07-01 / im dong ye
 */
 
-#ifndef __app_particle_h_
-#define __app_particle_h_
+#ifndef __app_cloth_cpu_h_
+#define __app_cloth_cpu_h_
 
-#include <limbrary/application.h>
-#include "appbase_canvas3d.h"
+#include <limbrary/extension/appbase_canvas3d.h>
 
 namespace lim
 {
