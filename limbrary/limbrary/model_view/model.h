@@ -92,8 +92,8 @@ namespace lim
 		std::vector<Mesh*> own_meshes;
 
 		/* infos */
-		GLuint nr_vertices = 0;
-		GLuint nr_triangles = 0;
+		GLuint total_verts = 0;
+		GLuint total_tris = 0;
 		glm::vec3 boundary_size = glm::vec3(1);
 		glm::vec3 boundary_min = glm::vec3(std::numeric_limits<float>::max());
 		glm::vec3 boundary_max = glm::vec3(std::numeric_limits<float>::min());

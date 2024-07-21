@@ -33,6 +33,7 @@ void Animator::clear() {
     state = State::STOP;
 }
 Animator& Animator::operator=(const Animator& src) {
+    is_enabled = src.is_enabled;
     nr_bone_nodes = src.nr_bone_nodes;
     skeleton = src.skeleton;
     mtx_Bones = src.mtx_Bones;
@@ -46,6 +47,7 @@ Animator& Animator::operator=(const Animator& src) {
 }
 
 void Animator::setAnim(const Animation* anim) {
+    is_enabled = true;
     cur_anim = anim;
     duration_sec = cur_anim->nr_ticks/cur_anim->ticks_per_sec;
     state = State::STOP;
@@ -79,12 +81,7 @@ void Animator::stop() {
     elapsed_sec = 0;
 }
 void Animator::setUniformTo(const Program& prog) const {
-    if( state == State::STOP ) {
-        prog.setUniform("is_Skinned", false);
-    } else {
-        prog.setUniform("is_Skinned", true);
-        prog.setUniform("mtx_Bones", mtx_Bones);
-    }
+    prog.setUniform("mtx_Bones", mtx_Bones);
 }
 
 template<typename T>

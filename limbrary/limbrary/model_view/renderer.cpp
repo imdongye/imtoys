@@ -150,17 +150,12 @@ void Scene::releaseData() {
     }
     own_mds.clear();
     own_lits.clear();
-    mds_static.clear();
+    mds.clear();
     lights.clear();
 }
 
-ModelView* Scene::addOwnStatic(ModelView* md)  {
-    mds_static.push_back(md);
-    own_mds.push_back(md);
-    return md;
-}
-ModelView* Scene::addOwnSkinned(ModelView* md)  {
-    mds_skinned.push_back(md);
+ModelView* Scene::addOwn(ModelView* md)  {
+    mds.push_back(md);
     own_mds.push_back(md);
     return md;
 }
@@ -169,12 +164,8 @@ ILight* Scene::addOwn(ILight* lit) {
     own_lits.push_back(lit);
     return lit;
 }
-const ModelView* Scene::addRefStatic(const ModelView* md)  {
-    mds_static.push_back(md);
-    return md;
-}
-const ModelView* Scene::addRefSkinned(const ModelView* md)  {
-    mds_skinned.push_back(md);
+const ModelView* Scene::addRef(const ModelView* md)  {
+    mds.push_back(md);
     return md;
 }
 const ILight* Scene::addRef(const ILight* lit) {
@@ -209,16 +200,19 @@ void lim::render( const IFramebuffer& fb,
     // bake shadow map
     for( const ILight* lit : scn.lights ) {
         lit->bakeShadowMap([&](const glm::mat4& mtx_View, const glm::mat4& mtx_Proj) {
-            shadowStatic.use();
-            for( const ModelView* md : scn.mds_static ) {
-                md->root.treversal([](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
-                    g_cur_prog->setUniform("mtx_Model", transform);
-                    ms->bindAndDrawGL();
-                }, getMtxTf(md->tf_prev) );
-            }
-            shadowSkinned.use();
-            for( const ModelView* md : scn.mds_skinned ) {
-                md->animator.setUniformTo(shadowSkinned);
+            for( const ModelView* md : scn.mds ) {
+                if( md->animator.is_enabled ) {
+                    shadowSkinned.use();
+                    md->animator.setUniformTo(shadowSkinned);
+                    shadowSkinned.setUniform("mtx_View", mtx_View);
+                    shadowSkinned.setUniform("mtx_Proj", mtx_Proj);
+                }
+                else {
+                    shadowStatic.use();
+                    shadowStatic.setUniform("mtx_View", mtx_View);
+                    shadowStatic.setUniform("mtx_Proj", mtx_Proj);
+                }
+
                 md->root.treversal([](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
                     g_cur_prog->setUniform("mtx_Model", transform);
                     ms->bindAndDrawGL();
@@ -241,7 +235,7 @@ void lim::render( const IFramebuffer& fb,
     bool isMeshChanged = true;
     bool isModelChanged = true;
 
-    for( const ModelView* md : scn.mds_static ) {
+    for( const ModelView* md : scn.mds ) {
         isModelChanged = true;
         md->root.treversalEnabled([&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
             if( curMat != mat ) {
@@ -259,6 +253,7 @@ void lim::render( const IFramebuffer& fb,
             }
             if( isProgChanged ) {
                 curProg->use();
+                curMat->setUniformTo(*curProg);
                 cam.setUniformTo(*curProg);
                 for( const ILight* lit : scn.lights ) {
                     lit->setUniformTo(*curProg);
@@ -266,15 +261,18 @@ void lim::render( const IFramebuffer& fb,
                 if( scn.ib_light ) {
                     scn.ib_light->setUniformTo(*curProg);
                 }
-                md->animator.setUniformTo(*curProg);
-                curMat->setUniformTo(*curProg);
+                if( md->animator.is_enabled ) {
+                    md->animator.setUniformTo(*curProg);
+                }
             }
             else {
                 if( isMatChanged ) {
                     curMat->setUniformTo(*curProg);
                 }
                 if( isModelChanged ) {
-                    md->animator.setUniformTo(*curProg);
+                    if( md->animator.is_enabled ) {
+                        md->animator.setUniformTo(*curProg);
+                    }
                 }
             }
             if( isMeshChanged ) {

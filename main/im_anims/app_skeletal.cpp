@@ -18,7 +18,7 @@ void AppSkeletal::importModel(const char* path) {
 	model.setUnitScaleAndPivot();
 	model.tf->pos.y += model.pivoted_scaled_bottom_height;
 	model.tf->update();
-	model.setProgToAllMat(&program);
+	model.setProgToAllMat(&prog_skinned);
 	LimGui::ModelEditorReset();
 }
 lim::AppSkeletal::AppSkeletal() : AppBase(1200, 780, APP_NAME, false)
@@ -27,12 +27,15 @@ lim::AppSkeletal::AppSkeletal() : AppBase(1200, 780, APP_NAME, false)
 	LightDirectional* lit = new LightDirectional();
 	scene.addOwn(lit);
 
-	program.name = "skeletal prog";
-	program.attatch("mvp_skinned.vs").attatch("ndv.fs").link();
+	prog_skinned.name = "skeletal prog";
+	prog_skinned.attatch("mvp_skinned.vs").attatch("ndv.fs").link();
 
+
+	prog_static.name = "static prog";
+	prog_static.attatch("mvp.vs").attatch("ndv.fs").link();
 	
 	importModel("assets/models/jump.fbx");
-	scene.addRefStatic(&model);
+	scene.addRef(&model);
 
 
 	{
@@ -42,7 +45,7 @@ lim::AppSkeletal::AppSkeletal() : AppBase(1200, 780, APP_NAME, false)
 		vec2 stepSize = posSize/vec2{nrWidth-1, nrWidth-1};
 
 		for(int i=0; i<nrWidth; i++) for(int j=0; j<nrWidth; j++)  {
-			scene.addOwnStatic(new ModelView(model));
+			scene.addOwn(new ModelView(model));
 			vec2 targetPos = startPos+stepSize*vec2{i, j};
 			scene.own_mds.back()->tf->pos.x = targetPos.x;
 			scene.own_mds.back()->tf->pos.z = targetPos.y;
@@ -59,8 +62,8 @@ lim::AppSkeletal::AppSkeletal() : AppBase(1200, 780, APP_NAME, false)
 	Mesh* ms = floor->addOwn(new MeshPlane(30.f));
 	Material* mat = floor->addOwn(new Material());
 	floor->root.addMsMat(ms, mat);
-	floor->setProgToAllMat(&program);
-	scene.addOwnStatic(floor);
+	floor->setProgToAllMat(&prog_static);
+	scene.addOwn(floor);
 
 	viewport.camera.moveShift(glm::vec3(0,model.tf->pos.y,0));
 	viewport.camera.updateViewMat();

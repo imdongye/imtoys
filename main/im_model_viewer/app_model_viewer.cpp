@@ -81,7 +81,7 @@ lim::AppModelViewer::AppModelViewer() : AppBase(1373, 780, APP_NAME, false)
 	scenes.reserve(5);
 	
 	program.name = "brdf_prog";
-	program.attatch("smvp.vs").attatch("im_model_viewer/shaders/brdf.fs").link();
+	program.attatch("mvp_shadow.vs").attatch("im_model_viewer/shaders/brdf.fs").link();
 
 	d_light.tf.theta = 35.f;
 	d_light.tf.phi =  -35.f;
@@ -149,8 +149,8 @@ void lim::AppModelViewer::addModelViewer(string path)
 
 	Scene* scn = new Scene();
 	scn->addRef(&d_light);
-	scn->addRefStatic(&floor_md);
-	scn->addOwnStatic(md);
+	scn->addRef(&floor_md);
+	scn->addOwn(md);
 	scn->ib_light = &ib_light;
 	scenes.push_back(scn);
 
@@ -266,10 +266,10 @@ void lim::AppModelViewer::updateImGui()
 		
 		if( ImGui::Checkbox("floor", &tInfo.is_draw_floor) ) {
 			if(tInfo.is_draw_floor) {
-				scenes[i]->addRefStatic(&floor_md);
+				scenes[i]->addRef(&floor_md);
 			}
 			else {
-				scenes[i]->mds_static.pop_back();
+				scenes[i]->mds.pop_back();
 			}
 		}
 

@@ -31,5 +31,8 @@ void AppPbdCPU::canvasDraw() const
 }
 void AppPbdCPU::canvasImGui()
 {
-
+	ImGui::Begin("pbd ctrl");
+	LimGui::PlotVal("dt", "ms", delta_time*1000.f);
+	LimGui::PlotVal("fps", "", ImGui::GetIO().Framerate);
+	ImGui::End();
 }

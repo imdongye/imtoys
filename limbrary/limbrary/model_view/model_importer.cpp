@@ -344,7 +344,7 @@ static Mesh* convertMesh(const aiMesh* aiMs)
 				nrNotTriFace++;
 			}
 		}
-		g_model->nr_triangles += ms.tris.size();
+		g_model->total_tris += ms.tris.size();
 	}
 	if( nrNotTriFace>0 ) {
 		log::err("find not tri face : nr %d\n", nrNotTriFace);
@@ -594,7 +594,7 @@ bool lim::Model::importFromFile(string_view modelPath, bool withAnims)
 	updateNrAndBoundary();
 
 
-	log::pure("#meshs %d, #mats %d, #verts %d, #tris %d\n", own_meshes.size(), own_materials.size(), nr_vertices, nr_triangles);
+	log::pure("#meshs %d, #mats %d, #verts %d, #tris %d\n", own_meshes.size(), own_materials.size(), total_verts, total_tris);
 	log::pure("boundary size : %f, %f, %f\n", boundary_size.x, boundary_size.y, boundary_size.z);
 	log::pure("done! convert aiScene in %.2fsec\n\n", glfwGetTime()-elapsedTime);
 

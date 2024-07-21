@@ -81,6 +81,7 @@ void AppParticle::update()
 	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
 	compute_prog.use();
+	compute_prog.setUniform("DeltaT", delta_time*0.1f);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, buf_poss);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, buf_vels);
 	glDispatchCompute(total_ptcls/nr_invocations, 1, 1);
@@ -111,7 +112,7 @@ void AppParticle::updateImGui()
 	viewport.drawImGui();
 
 	ImGui::Begin("controller##ptcl");
-	LimGui::PlotVal("dt", "ms", delta_time);
+	LimGui::PlotVal("dt", "ms", delta_time*1000.f);
 	LimGui::PlotVal("fps", "", ImGui::GetIO().Framerate);
 	ImGui::End();
 }

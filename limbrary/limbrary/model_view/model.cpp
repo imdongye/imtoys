@@ -183,15 +183,15 @@ void Model::setSameMat(const Material* mat) {
 
 void Model::updateNrAndBoundary()
 {
-	nr_vertices = 0;
-	nr_triangles = 0;
+	total_verts = 0;
+	total_tris = 0;
 	boundary_max = glm::vec3(std::numeric_limits<float>::min());
 	boundary_min = glm::vec3(std::numeric_limits<float>::max());
 	boundary_size = glm::vec3(0);
 
 	root.treversal([&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
-		nr_vertices += ms->poss.size();
-		nr_triangles += ms->tris.size();
+		total_verts += ms->poss.size();
+		total_tris += ms->tris.size();
 		for(glm::vec3 p : ms->poss) {
 			p = transform * glm::vec4(p, 1);
 			boundary_max = glm::max(boundary_max, p);
@@ -297,8 +297,8 @@ void Model::copyFrom(const Model& src) {
 	matchRdTree(root, src.root, *this, src);
 
 
-	nr_vertices = src.nr_vertices;
-	nr_triangles = src.nr_triangles;
+	total_verts = src.total_verts;
+	total_tris = src.total_tris;
 	boundary_max = src.boundary_max;
 	boundary_min = src.boundary_min;
 	boundary_size = src.boundary_size;

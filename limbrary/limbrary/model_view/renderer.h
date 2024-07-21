@@ -76,8 +76,7 @@ namespace lim
   	public:
 		std::vector<ModelView*> own_mds;
         std::vector<ILight*> own_lits;
-		std::vector<const ModelView*> mds_static;
-		std::vector<const ModelView*> mds_skinned;
+		std::vector<const ModelView*> mds;
 		std::vector<const ILight*> lights;
         const IBLight* ib_light = nullptr;
         bool is_draw_env_map = false;
@@ -93,11 +92,9 @@ namespace lim
 
         void releaseData();
 
-        ModelView* addOwnStatic(ModelView* md);
-        ModelView* addOwnSkinned(ModelView* md);
+        ModelView* addOwn(ModelView* md);
         ILight* addOwn(ILight* lit);
-        const ModelView* addRefStatic(const ModelView* md);
-        const ModelView* addRefSkinned(const ModelView* md);
+        const ModelView* addRef(const ModelView* md);
         const ILight* addRef(const ILight* lit);
 
 	};

@@ -13,7 +13,6 @@ using namespace std;
 AppBaseCanvas3d::AppBaseCanvas3d(int winWidth, int winHeight, const char* title, bool vsync
     , int nrMaxQuads, int nrMaxSpheres, int nrMaxCylinders) 
     : AppBase(winWidth, winHeight, title, vsync)
-    , prog("lit_color")
     , vp("canvas3d", new FramebufferMs())
     , light()
     , nr_max_quads(nrMaxQuads)
@@ -47,7 +46,9 @@ AppBaseCanvas3d::AppBaseCanvas3d(int winWidth, int winHeight, const char* title,
     glBufferData(GL_ARRAY_BUFFER, bufSize, nullptr, GL_DYNAMIC_DRAW);
     log::glError();
 
+    prog.name = "canvas3d_render";
     prog.attatch("canvas3d.vs").attatch("canvas3d.fs").link();
+    prog.name = "canvas3d_shadow";
     prog_shadow.attatch("canvas3d.vs").attatch("depth.fs").link();
 
     vp.camera.pivot = vec3(0, 1.0, 0);
@@ -141,13 +142,6 @@ void AppBaseCanvas3d::update()
 	prog.use();
 	vp.camera.setUniformTo(prog);
 	light.setUniformTo(prog);
-	
-    {
-		// drawSphere(light.tf.pos, vec3(1));
-        // vec3 p1 = light.tf.pos;
-        // vec3 p2 = p1+light.tf.dir*-0.6f;
-        // drawCylinder(p1, p2, vec3(1));
-	}
 
     drawInstance();
 

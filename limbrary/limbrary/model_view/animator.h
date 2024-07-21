@@ -82,14 +82,14 @@ namespace lim
             STOP,
         };
         State state = State::STOP;
-
-        int nr_bone_nodes;
+        bool is_enabled = false;
+        int nr_bone_nodes; // skeletion.size()
         std::vector<BoneNode> skeleton;
-        std::vector<glm::mat4> mtx_Bones;
+        std::vector<glm::mat4> mtx_Bones; // nr_bones
         const Animation* cur_anim = nullptr;
         const Model* md_data = nullptr;
         double elapsed_sec, duration_sec;
-        double cur_tick = 0.0;
+        float cur_tick = 0.f;
         bool is_loop = false;
 
         

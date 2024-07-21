@@ -12,7 +12,7 @@ namespace lim
 		Model* md = new Model("sphere");
 		md->addOwn(ms);
 		md->root.addMsMat(ms, &default_mat);
-		scene.addOwnStatic(md);
+		scene.addOwn(md);
 	}
 }
 
@@ -56,19 +56,19 @@ namespace lim
 		md->setUnitScaleAndPivot();
 		md->setSameMat(&default_mat);
 
-		scene.addOwnStatic(md);
+		scene.addOwn(md);
 
 		md = new Model();
 		md->importFromFile("assets/models/objs/Wooden Crate.obj");
 		md->setUnitScaleAndPivot();
 		md->setSameMat(&default_mat);
-		scene.addOwnStatic(md);
+		scene.addOwn(md);
 
 
 		const float interModels = 3.5f;
-		const float biasModels = -interModels * scene.mds_static.size() / 2.f;
+		const float biasModels = -interModels * scene.mds.size() / 2.f;
 
-		for( int i = 0; i < scene.mds_static.size(); i++ )
+		for( int i = 0; i < scene.mds.size(); i++ )
 		{
 			scene.own_mds[i]->tf->pos = {biasModels + interModels * i, 0, 0};
 			scene.own_mds[i]->tf->update();

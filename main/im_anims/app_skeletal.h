@@ -20,7 +20,8 @@ namespace lim
 		inline static constexpr CStr APP_DIR  = "im_anims";
 		inline static constexpr CStr APP_DESCRIPTION = "learn with LearnOpenGL";
 
-		Program program;
+		Program prog_skinned;
+		Program prog_static;
 		ViewportWithCamera viewport;
 		Scene scene;
 		Model model;

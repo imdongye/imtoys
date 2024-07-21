@@ -88,8 +88,8 @@ void lim::AppSimplification::addEmptyViewport()
 	models.push_back(new Model());
 
 	Scene* scn = new Scene();
-	scn->addRefStatic(&ground);
-	scn->addRefStatic(models.back());
+	scn->addRef(&ground);
+	scn->addRef(models.back());
 	scn->addRef(&light);
 	scenes.push_back(scn);
 	nr_viewports++;
@@ -160,7 +160,7 @@ void lim::AppSimplification::doSimplifyModel(float lived_pct, int version, int a
 	dstMd->copyFrom(*srcMd);
 
 	simplifyModel(*dstMd, lived_pct, version, agressiveness, verbose);
-	int pct = 100.0 * dstMd->nr_vertices / srcMd->nr_vertices;
+	int pct = 100.0 * dstMd->total_verts / srcMd->total_verts;
 	dstMd->name += "_"+std::to_string(pct)+"_pct";
 
 	viewports[dst_vp_idx]->camera.pivot = dstMd->tf->pos;
@@ -374,11 +374,11 @@ void lim::AppSimplification::updateImGui()
 			simplify_trigger = false;
 			doSimplifyModel((float)pct / 100.f, selectedVersion, agressiveness, verbose);
 			simpTime = glfwGetTime()-simpTime;
-			log::pure("Done! %d => %d in %.3f sec. \n\n", srcMd.nr_vertices, dstMd.nr_vertices, simpTime);
+			log::pure("Done! %d => %d in %.3f sec. \n\n", srcMd.total_verts, dstMd.total_verts, simpTime);
 		}
 
 		ImGui::SameLine();
-		ImGui::Text("target triangles = %d", (int)(srcMd.nr_triangles * pct));
+		ImGui::Text("target triangles = %d", (int)(srcMd.total_tris * pct));
 		ImGui::Text("simplified in %lf sec", simpTime);
 		ImGui::NewLine();
 
@@ -500,7 +500,7 @@ void lim::AppSimplification::updateImGui()
 					if( md->own_meshes.size()==0 )
 						ImGui::Text("");
 					else
-						ImGui::Text("%d", md->nr_vertices);
+						ImGui::Text("%d", md->total_verts);
 				}
 			}
 			column = 0;
@@ -514,7 +514,7 @@ void lim::AppSimplification::updateImGui()
 					if( md->own_meshes.size()==0 )
 						ImGui::Text("");
 					else
-						ImGui::Text("%d", md->nr_triangles);
+						ImGui::Text("%d", md->total_tris);
 				}
 			}
 			column = 0;
