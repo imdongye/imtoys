@@ -290,7 +290,7 @@ void AppClothGPU::update()
 	// glDrawElements(GL_TRIANGLES, nr_tris*3, GL_UNSIGNED_INT, nullptr);
 	// glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	
-	Program& ndvProg = AssetLib::get().ndv_prog;
+	Program& ndvProg = AssetLib::get().prog_dnv;
 	ndvProg.use();
 	viewport.camera.setUniformTo(ndvProg);
 	

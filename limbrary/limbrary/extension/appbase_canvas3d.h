@@ -23,23 +23,31 @@ namespace lim
     class AppBaseCanvas3d : public AppBase
     {
     private:
-        struct PrimitiveInfo {
-            glm::mat4 mtx;
-            glm::vec4 col;
+        struct PrimInfo {
+            glm::mat4 mtx; // 64
+            glm::vec4 col; // 16
         };
     private:
         Program prog;
+        Program prog_shadow;
         LightDirectional light;
 
         MeshQuad ms_quad;
 		MeshIcoSphere ms_sphere;
         MeshCylinder ms_cylinder;
+        const int nr_max_quads;
+        const int nr_max_spheres;
+        const int nr_max_cylinders;
         mutable int nr_quads;
         mutable int nr_spheres;
         mutable int nr_cylinders;
-        mutable std::vector<PrimitiveInfo> quads;
-        mutable std::vector<PrimitiveInfo> spheres;
-        mutable std::vector<PrimitiveInfo> cylinders;
+        mutable std::vector<PrimInfo> quads;
+        mutable std::vector<PrimInfo> spheres;
+        mutable std::vector<PrimInfo> cylinders;
+
+        GLuint buf_quads;
+        GLuint buf_spheres;
+        GLuint buf_cylinders;
 
     protected:
         ViewportWithCamera vp;
@@ -56,10 +64,11 @@ namespace lim
         void drawSphere( const glm::vec3& p, const glm::vec3& color, const float r=0.02 ) const;
         void drawCylinder( const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& color, const float r=0.01 ) const;
     private:
-        virtual void update() final;
-		virtual void updateImGui() final;
+        void resetInstance();
         void updateInstance() const;
         void drawInstance() const;
+        virtual void update() final;
+		virtual void updateImGui() final;
     };
 };
 

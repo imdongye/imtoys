@@ -49,7 +49,7 @@ namespace lim
 		virtual ~ILight() = default;
 
 		virtual void setShadowEnabled(bool enabled) = 0;
-		virtual void bakeShadowMap(std::function<void()> draw) const = 0;
+		virtual void bakeShadowMap(std::function<void(const glm::mat4& mtx_View, const glm::mat4& mtx_Proj)> draw) const = 0;
 		virtual void setUniformTo(const Program& prog) const = 0;
 
 	};
@@ -86,7 +86,7 @@ namespace lim
 		LightDirectional();
 		~LightDirectional();
 		virtual void setShadowEnabled(bool enabled) override;
-		virtual void bakeShadowMap(std::function<void()> draw) const override;
+		virtual void bakeShadowMap(std::function<void(const glm::mat4& mtx_View, const glm::mat4& mtx_Proj)> draw) const override;
 		virtual void setUniformTo(const Program& prog) const override;
 	};
 	

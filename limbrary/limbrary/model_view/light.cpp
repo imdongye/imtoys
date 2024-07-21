@@ -69,18 +69,13 @@ void LightDirectional::setShadowEnabled(bool enabled) {
 	shadow->Enabled = enabled;
 }
 
-void LightDirectional::bakeShadowMap(std::function<void()> draw) const
+void LightDirectional::bakeShadowMap(std::function<void(const glm::mat4& mtx_View, const glm::mat4& mtx_Proj)> draw) const
 {
 	if(!shadow || !shadow->Enabled)
 		return;
-	const Program& depthProg = AssetLib::get().depth_prog;
-
 	shadow->map.bind();
-	depthProg.use();
-	depthProg.setUniform("mtx_View", shadow->mtx_View);
-	depthProg.setUniform("mtx_Proj", shadow->mtx_Proj);
-
-	draw();
+	
+	draw(shadow->mtx_View, shadow->mtx_Proj);
 	
 	shadow->map.unbind();
 

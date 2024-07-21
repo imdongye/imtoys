@@ -32,7 +32,7 @@ lim::AppSkeletal::AppSkeletal() : AppBase(1200, 780, APP_NAME, false)
 
 	
 	importModel("assets/models/jump.fbx");
-	scene.addRef(&model);
+	scene.addRefStatic(&model);
 
 
 	{
@@ -42,7 +42,7 @@ lim::AppSkeletal::AppSkeletal() : AppBase(1200, 780, APP_NAME, false)
 		vec2 stepSize = posSize/vec2{nrWidth-1, nrWidth-1};
 
 		for(int i=0; i<nrWidth; i++) for(int j=0; j<nrWidth; j++)  {
-			scene.addOwn(new ModelView(model));
+			scene.addOwnStatic(new ModelView(model));
 			vec2 targetPos = startPos+stepSize*vec2{i, j};
 			scene.own_mds.back()->tf->pos.x = targetPos.x;
 			scene.own_mds.back()->tf->pos.z = targetPos.y;
@@ -60,7 +60,7 @@ lim::AppSkeletal::AppSkeletal() : AppBase(1200, 780, APP_NAME, false)
 	Material* mat = floor->addOwn(new Material());
 	floor->root.addMsMat(ms, mat);
 	floor->setProgToAllMat(&program);
-	scene.addOwn(floor);
+	scene.addOwnStatic(floor);
 
 	viewport.camera.moveShift(glm::vec3(0,model.tf->pos.y,0));
 	viewport.camera.updateViewMat();
@@ -87,7 +87,7 @@ void lim::AppSkeletal::update()
 	glBindFramebuffer(GL_FRAMEBUFFER, fb.fbo);
 	glViewport(0, 0, fb.width, fb.height);
 	glDisable(GL_DEPTH_TEST);
-	Program& prog = AssetLib::get().color_prog;
+	Program& prog = AssetLib::get().prog_color;
 	prog.use();
 	viewport.camera.setUniformTo(prog);
 	glm::mat4 globalMtx = model.getGlobalTfMtx();

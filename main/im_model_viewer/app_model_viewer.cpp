@@ -149,8 +149,8 @@ void lim::AppModelViewer::addModelViewer(string path)
 
 	Scene* scn = new Scene();
 	scn->addRef(&d_light);
-	scn->addRef(&floor_md);
-	scn->addOwn(md);
+	scn->addRefStatic(&floor_md);
+	scn->addOwnStatic(md);
 	scn->ib_light = &ib_light;
 	scenes.push_back(scn);
 
@@ -266,10 +266,10 @@ void lim::AppModelViewer::updateImGui()
 		
 		if( ImGui::Checkbox("floor", &tInfo.is_draw_floor) ) {
 			if(tInfo.is_draw_floor) {
-				scenes[i]->addRef(&floor_md);
+				scenes[i]->addRefStatic(&floor_md);
 			}
 			else {
-				scenes[i]->mds.pop_back();
+				scenes[i]->mds_static.pop_back();
 			}
 		}
 

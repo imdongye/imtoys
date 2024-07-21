@@ -150,12 +150,17 @@ void Scene::releaseData() {
     }
     own_mds.clear();
     own_lits.clear();
-    mds.clear();
+    mds_static.clear();
     lights.clear();
 }
 
-ModelView* Scene::addOwn(ModelView* md)  {
-    mds.push_back(md);
+ModelView* Scene::addOwnStatic(ModelView* md)  {
+    mds_static.push_back(md);
+    own_mds.push_back(md);
+    return md;
+}
+ModelView* Scene::addOwnSkinned(ModelView* md)  {
+    mds_skinned.push_back(md);
     own_mds.push_back(md);
     return md;
 }
@@ -164,8 +169,12 @@ ILight* Scene::addOwn(ILight* lit) {
     own_lits.push_back(lit);
     return lit;
 }
-const ModelView* Scene::addRef(const ModelView* md)  {
-    mds.push_back(md);
+const ModelView* Scene::addRefStatic(const ModelView* md)  {
+    mds_static.push_back(md);
+    return md;
+}
+const ModelView* Scene::addRefSkinned(const ModelView* md)  {
+    mds_skinned.push_back(md);
     return md;
 }
 const ILight* Scene::addRef(const ILight* lit) {
@@ -194,11 +203,23 @@ void lim::render( const IFramebuffer& fb,
                 const Scene& scn,
                 const bool isDrawLight )
 {
+    const Program& shadowStatic = AssetLib::get().prog_shadow_static;
+    const Program& shadowSkinned = AssetLib::get().prog_shadow_skinned;
+
     // bake shadow map
     for( const ILight* lit : scn.lights ) {
-        lit->bakeShadowMap([&scn]() {
-            for( const ModelView* md : scn.mds ) {
-                md->root.treversal([&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
+        lit->bakeShadowMap([&](const glm::mat4& mtx_View, const glm::mat4& mtx_Proj) {
+            shadowStatic.use();
+            for( const ModelView* md : scn.mds_static ) {
+                md->root.treversal([](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
+                    g_cur_prog->setUniform("mtx_Model", transform);
+                    ms->bindAndDrawGL();
+                }, getMtxTf(md->tf_prev) );
+            }
+            shadowSkinned.use();
+            for( const ModelView* md : scn.mds_skinned ) {
+                md->animator.setUniformTo(shadowSkinned);
+                md->root.treversal([](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
                     g_cur_prog->setUniform("mtx_Model", transform);
                     ms->bindAndDrawGL();
                 }, getMtxTf(md->tf_prev) );
@@ -220,7 +241,7 @@ void lim::render( const IFramebuffer& fb,
     bool isMeshChanged = true;
     bool isModelChanged = true;
 
-    for( const ModelView* md : scn.mds ) {
+    for( const ModelView* md : scn.mds_static ) {
         isModelChanged = true;
         md->root.treversalEnabled([&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
             if( curMat != mat ) {
@@ -265,7 +286,7 @@ void lim::render( const IFramebuffer& fb,
     }
 
     if( isDrawLight ) {
-        const Program& prog = AssetLib::get().ndv_prog;
+        const Program& prog = AssetLib::get().prog_dnv;
         prog.use();
         cam.setUniformTo(prog);
 

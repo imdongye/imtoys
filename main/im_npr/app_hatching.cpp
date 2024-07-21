@@ -113,22 +113,22 @@ lim::AppHatching::AppHatching(): AppBase(1200, 780, APP_NAME)
 	md->importFromFile("assets/models/dwarf/Dwarf_2_Low.obj");
 	md->setUnitScaleAndPivot();
 	md->setSameMat(&h_mat);
-	scene.addOwn(md);
+	scene.addOwnStatic(md);
 	
 	md = new Model("sphere");
 	md->root.addMsMat(&AssetLib::get().sphere, &h_mat);
-	scene.addOwn(md);
+	scene.addOwnStatic(md);
 
 	md = new Model();
 	md->importFromFile("assets/models/dwarf/Dwarf_2_Low.obj");
 	md->setUnitScaleAndPivot();
 	md->setSameMat(&h_mat);
-	scene.addOwn(md);
+	scene.addOwnStatic(md);
 
 	const float interModels = 2.f;
-	const float biasModels = -interModels*(scene.mds.size()-1)*0.5f;
+	const float biasModels = -interModels*(scene.mds_static.size()-1)*0.5f;
 
-	for( int i = 0; i<scene.mds.size(); i++ ) {
+	for( int i = 0; i<scene.mds_static.size(); i++ ) {
 		scene.own_mds[i]->tf->pos ={biasModels + interModels*i, 0, 0};
 		scene.own_mds[i]->tf->update();
 	}
@@ -140,7 +140,7 @@ lim::AppHatching::AppHatching(): AppBase(1200, 780, APP_NAME)
 	md->root.addMsMat(md->own_meshes.back(), &h_mat);
 	md->tf->scale = glm::vec3(20);
 	md->tf->update();
-	scene.addOwn(md);
+	scene.addOwnStatic(md);
 
 
 

@@ -5,9 +5,10 @@ const float PI = 3.1415926535;
 in vec3 wPos;
 in vec3 wNor;
 in vec4 lPos;
+in vec4 oColor;
+
 
 uniform vec3 cam_Pos;
-uniform vec3 color;
 
 
 struct LightDirectional {
@@ -168,7 +169,7 @@ void main()
 	// 	N = -N;
 	float NDL = max(dot(N, L),0);
     vec3 outColor;
-	outColor = shadowing() * NDL * vec3(color);
+	outColor = shadowing() * NDL * oColor.xyz;
 
 
 	// debug

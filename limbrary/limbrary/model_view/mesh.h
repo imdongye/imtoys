@@ -5,6 +5,8 @@ shared vertex triangle mesh
 
 Note:
 Material은 Mesh에 종속적이지 않음.
+poss, nors buffer element size = vec4 for ssbo
+
 
 */
 

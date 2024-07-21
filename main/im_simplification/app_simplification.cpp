@@ -88,8 +88,8 @@ void lim::AppSimplification::addEmptyViewport()
 	models.push_back(new Model());
 
 	Scene* scn = new Scene();
-	scn->addRef(&ground);
-	scn->addRef(models.back());
+	scn->addRefStatic(&ground);
+	scn->addRefStatic(models.back());
 	scn->addRef(&light);
 	scenes.push_back(scn);
 	nr_viewports++;

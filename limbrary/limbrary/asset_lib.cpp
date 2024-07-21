@@ -17,20 +17,23 @@ lim::AssetLib::AssetLib()
 {
 	log::pure("init AssetLib\n");
 
-	tex_to_quad_prog.name = "texToQuad";
-	tex_to_quad_prog.attatch("canvas.vs").attatch("canvas_color.fs").link();
+	prog_tex_to_quad.name = "texToQuad";
+	prog_tex_to_quad.attatch("canvas.vs").attatch("canvas_color.fs").link();
 		
-	tex3d_to_quad_prog.name = "tex3dToQuad";
-	tex3d_to_quad_prog.attatch("canvas.vs").attatch("tex3d_to_2d.fs").link();
+	prog_tex3d_to_quad.name = "tex3dToQuad";
+	prog_tex3d_to_quad.attatch("canvas.vs").attatch("tex3d_to_2d.fs").link();
 
-	depth_prog.name = "depth";
-	depth_prog.attatch("mvp_no_out.vs").attatch("depth.fs").link();
+	prog_shadow_static.name = "shadow_skinned";
+	prog_shadow_static.attatch("mvp.vs").attatch("depth.fs").link();
 
-	ndv_prog.name = "ndv";
-	ndv_prog.attatch("mvp.vs").attatch("ndv.fs").link();
+	prog_shadow_skinned.name = "shadow_skinned";
+	prog_shadow_skinned.attatch("mvp_skinned.vs").attatch("depth.fs").link();
 
-	color_prog.name = "red";
-	color_prog.attatch("mvp.vs").attatch("color.fs").link();
+	prog_dnv.name = "ndv";
+	prog_dnv.attatch("mvp.vs").attatch("ndv.fs").link();
+
+	prog_color.name = "red";
+	prog_color.attatch("mvp.vs").attatch("color.fs").link();
 
 	env_prog = new Program("env");
 	env_prog->attatch("mvp.vs").attatch("env.fs").link();

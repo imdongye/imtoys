@@ -255,7 +255,7 @@ void Texture3d::setDataWithDepth(int depth, void* data) {
 
 void lim::drawTexToQuad(const GLuint texId, float gamma, float bias, float gain) 
 {
-	const Program& prog = AssetLib::get().tex_to_quad_prog;
+	const Program& prog = AssetLib::get().prog_tex_to_quad;
 
 	prog.use();
 	prog.setTexture("tex", texId);
@@ -269,7 +269,7 @@ void lim::drawTexToQuad(const GLuint texId, float gamma, float bias, float gain)
 }
 void lim::drawTex3dToQuad(const GLuint texId, float depth, float gamma, float bias, float gain) 
 {
-	const Program& prog = AssetLib::get().tex3d_to_quad_prog;
+	const Program& prog = AssetLib::get().prog_tex3d_to_quad;
 
 	prog.use();
 	prog.setTexture3d("tex", texId);

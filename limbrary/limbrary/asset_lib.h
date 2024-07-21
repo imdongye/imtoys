@@ -29,11 +29,12 @@ namespace lim
 		//****** property ******//
 		AppBase* app;
 
-		Program tex_to_quad_prog;
-		Program tex3d_to_quad_prog;
-		Program depth_prog;
-		Program ndv_prog;
-		Program color_prog;
+		Program prog_tex_to_quad;
+		Program prog_tex3d_to_quad;
+		Program prog_shadow_static;
+		Program prog_shadow_skinned;
+		Program prog_dnv;
+		Program prog_color;
 
 		
 		MeshQuad screen_quad; // only poss
