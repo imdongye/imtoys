@@ -3,6 +3,7 @@
 */
 
 #include "app_ik.h"
+#include <limbrary/glm_tools.h>
 #include <limbrary/log.h>
 #include <limbrary/limgui.h>
 #include <Eigen/Dense>
@@ -19,17 +20,6 @@ namespace {
 	float ik_speed = 3.f;
 	float body_length = 1.f;
 	int nr_joints = 4;
-
-	// glm::exp(quat) fixed version
-	inline quat myexp(const quat& q) {
-		const vec3 u{q.x, q.y, q.z};
-		const float Angle = length(u);
-		if( Angle < epsilon<float>() ) {
-			return {cos(Angle), sin(Angle)*u};
-		}
-		const vec3 v{u/Angle};
-		return {cos(Angle), sin(Angle)*v};
-	}
 }
 
 struct Joint {
@@ -97,13 +87,13 @@ struct Joint {
 			// dThetas = J.colPivHouseholderQr().solve(b);
 			// <SVD>
 			// u 와 v는 필요없어서 작게 계산하도록
-			// 얼마나 싱귤러한지 threshold를 설정하는것 찾아보기
+			// Todo: 얼마나 싱귤러한지 threshold를 설정하는것 찾아보기
 			dThetas = J.bdcSvd(Eigen::ComputeThinU|Eigen::ComputeThinV).solve(b);
 			curCol = 0;
 			for( Joint* curJnt : connection ) {
 				for( const vec3& axis : axes ) {
 					float amout = dt*dThetas[curCol++];
-					curJnt->rotate( myexp(quat(0, amout*axis)) );
+					curJnt->rotate( glim::exp(quat(0, amout*axis)) );
 					curJnt->update();
 				}
 			}

@@ -1,3 +1,12 @@
+/*
+	2023-07-14 / im dong ye
+
+	Todo:
+	convex hull nLogn
+	natural pseudo(QR)로 구현
+	Uniform B-spline
+*/
+
 #include "app_curve.h"
 #include <limbrary/program.h>
 #include <vector>
@@ -8,10 +17,24 @@ using namespace lim;
 using namespace glm;
 
 namespace {
+	constexpr float GRID_STEP = 72.0f;
+	constexpr int nr_types = 9;
+	const char* const curve_type_strs[] = {
+		"linear",
+		"laglangian",
+		"bezier quadratic",
+		"bezier cubic",
+		"catmull",
+		"bspline",
+		"cubic natural",
+		"cubic closed",
+		"cubic natural qr"
+	};
 	enum CurveType {
 		LINEAR,
 		LAGLANGIAN,
-		BEZIER,
+		BEZIER_QUADRATIC,
+		BEZIER_CUBIC,
 		CATMULL,
 		BSPLINE,
 		CUBIC_NATURAL,
@@ -19,27 +42,250 @@ namespace {
 		CUBIC_NATURAL_QR,
 	};
 	CurveType curve_type = LINEAR;
-	bool closed = false;
 
 
-	vector<vec2> ctrl_pts;
-	vector<vec2> draw_pts;
+	bool is_closed = false;
+	constexpr int nr_pts = 10;
+	vector<vec2> src_pts(nr_pts);
+	constexpr int nr_steps = 10; 
+	constexpr float step_size = 1.f/nr_steps;
+	vector<vec2> draw_pts(nr_steps*(nr_pts)+1);
+}
+
+// From: https://namu.wiki/w/%EB%9D%BC%EA%B7%B8%EB%9E%91%EC%A3%BC%20%EB%B3%B4%EA%B0%84%EB%B2%95
+static vec2 evalLaglangian(int k, float t) {
+	vec2 rst(0);
+	float T = k + t;
+	for(int i = 0; i < nr_pts; i++) {
+		float L = 1;
+		for(int j = 0; j < nr_pts; j++) {
+			if (j != i) {
+				L *= (T - j);
+				L /= (i - j);
+			}
+		}
+		rst += L * src_pts[i];
+	}
+	return rst;
+}
+
+// From: https://namu.wiki/w/%EB%B2%A0%EC%A7%80%EC%97%90%20%EA%B3%A1%EC%84%A0
+static vec2 evalBezierQuadratic(const vec2& p0, const vec2& p1, const vec2& p2, float t) {
+	float invT1 = 1-t;
+	float invT2 = invT1*invT1;
+	return invT2*p0 + 2*invT1*t*p1 + t*t*p2;
+}
+static vec2 evalBezierCubic(const vec2& p0, const vec2& p1, const vec2& p2, const vec2& p3, float t) {
+	float invT1 = 1-t;
+	float invT2 = invT1*invT1;
+	float invT3 = invT2*invT1;
+	return invT3*p0 + 3*t*invT2*p1
+		+ 3*t*t*invT1*p2 + t*t*t*p3;
+}
+
+// From: https://en.wikipedia.org/wiki/Centripetal_Catmull%E2%80%93Rom_spline
+static vec2 evalCatmull(int k, float t) {
+	glm::vec2 v0(0), v1(0);
+	const float CM_DV = 2.f;
+	if( k <= 0 ) // bessel
+	{
+		glm::mat3 A = { 0, 1, 4, 0, 1, 2, 1, 1, 1 };
+		{
+			glm::vec3 b = { src_pts[0].x, src_pts[1].x, src_pts[2].x };
+			// 역행렬이 항상 존재함.
+			glm::vec3 x = glm::inverse(A) * b;
+			// x로 만들어진 2차식을 미분하면 2ax + b && x=0
+			v0.x = x.y;
+		}
+		glm::vec3 b = { src_pts[0].y, src_pts[1].y, src_pts[2].y };
+		glm::vec3 x = glm::inverse(A) * b;
+		v0.y = x.y;
+
+		v1 = (src_pts[k+2]-src_pts[k]) / CM_DV;
+	}
+	else if( k >= nr_pts-2 ) // bessel
+	{
+		glm::mat3 A = { (k-1)*(k-1), k*k, (k+1)*(k+1), (k-1), k, (k+1), 1, 1, 1 };
+		{
+			glm::vec3 b = { src_pts[k-1].x, src_pts[k].x, src_pts[k+1].x };
+			glm::vec3 x = glm::inverse(A) * b;
+			// ax^2 + bx + c (d/dx)=> 2ax + b (x=k+1)=> 2a(k+1)+b 
+			v1.x = 2*x.x*(k+1) + x.y;
+		}
+		glm::vec3 b = { src_pts[k-1].y, src_pts[k].y, src_pts[k+1].y };
+		glm::vec3 x = glm::inverse(A) * b;
+		v1.y = 2*x.x*(k+1) + x.y;
+
+		v0 = (src_pts[k+1]-src_pts[k-1]) / CM_DV;
+	}
+	else { // catmull
+		v1 = (src_pts[k+2]-src_pts[k]) / CM_DV;
+		v0 = (src_pts[k+1]-src_pts[k-1]) / CM_DV;
+	}
+
+	glm::vec2 c0 =  v0/3.f + src_pts[k];
+	glm::vec2 c1 = -v1/3.f + src_pts[k+1];
+	return evalBezierCubic(src_pts[k], c0, c1, src_pts[k+1], t);
+}
+
+// From: https://en.wikipedia.org/wiki/B-spline
+static vec2 evalBspline(int k, float t) {
+	// jacobi
+	// Dx = b - Ux - Lx
+	// 4 * x[i] = b[i] - x[i+1] - x[i-1] if i!=0 or i!=N-1
+
+	// O(n^2*i) => 1000
+	// 셈플마다 계산할필요없고 세그먼트에서 같이사용할수있어서 지금은 비효율적이다.
+	constexpr int ns_iter = 10;
+	vector<float> Dx, Dy;
+	{
+		vector<float> D0(nr_pts, 0); // x
+		vector<float> D1(nr_pts, 0);
+		for( int i=0; i<ns_iter; i++ ) {
+			vector<float>& x_n0 = (i%2) ? D1 : D0;
+			vector<float>& x_n1 = (i%2) ? D0 : D1;
+			for( int j=1; j<nr_pts-1; j++ ) {
+				x_n1[j] = ( 3*(src_pts[j+1].x-src_pts[j-1].x) - x_n0[j+1] - x_n0[j-1] )/4.f;
+			}
+		}
+		Dx = D0;
+	}
+	{
+		vector<float> D0(nr_pts, 0); // x
+		vector<float> D1(nr_pts, 0);
+		for( int i=0; i<ns_iter; i++ ) {
+			vector<float>& x_n0 = (i%2) ? D1 : D0;
+			vector<float>& x_n1 = (i%2) ? D0 : D1;
+			for( int j=1; j<nr_pts-1; j++ ) {
+				x_n1[j] = ( 3*(src_pts[j+1].y-src_pts[j-1].y) - x_n0[j+1] - x_n0[j-1] )/4.f;
+			}
+		}
+		Dy = D0;
+	}
+
+	vec2 a = src_pts[k];
+	vec2 b = vec2(Dx[k], Dy[k]);
+	vec2 c = 3.f*(src_pts[k+1] - src_pts[k]) - 2.f * vec2(Dx[k], Dy[k]) - vec2(Dx[k+1], Dy[k+1]);
+	vec2 d = 2.f*(src_pts[k] - src_pts[k+1]) +       vec2(Dx[k], Dy[k]) + vec2(Dx[k+1], Dy[k+1]);
+	return a + b*t + c*t*t + d*t*t*t;
+}
+
+// From: https://en.wikipedia.org/wiki/Spline_(mathematics)
+static vec2 evalCubicNatural(int k, float t) {
+	// gause-seidel + natural end condition
+	const int ns_iter = 4;
+	vector<vec2> D(nr_pts, vec2(0));
+
+	for( int i=0; i<ns_iter; i++ ) {
+		D[0] = ( 3.f*(src_pts[1]-src_pts[0]) - D[1] )/2.f;
+		D[nr_pts-1] = ( 3.f*(src_pts[nr_pts-1]-src_pts[nr_pts-2]) - D[nr_pts-2] )/2.f;
+		for( int j=1; j < nr_pts-1; j++ ) {
+			D[j] = ( 3.f*(src_pts[j+1]-src_pts[j-1]) - D[j+1] - D[j-1] )/4.f;
+		}
+	}
+
+	vec2 a = src_pts[k];
+	vec2 b = vec2(D[k].x, D[k].y);
+	vec2 c = 3.f*(src_pts[k+1] - src_pts[k]) - 2.f*D[k] - D[k+1];
+	vec2 d = 2.f*(src_pts[k] - src_pts[k+1]) +     D[k] + D[k+1];
+	return a + b*t + c*t*t + d*t*t*t;
+}
+static vec2 evalCubicClosed(int k, float t) {
+	// gause-seidel + closed condition
+	const int ns_iter = 4;
+	vector<vec2> D(nr_pts, vec2(0));
+
+	for( int i=0; i<ns_iter; i++ ) {
+		// Dx = b - Lx - Ux
+		// x_n1 = D역 * (b - L*x_n0 - U*x_n0);
+		// if gause-seidel then x_n1 == x_n0
+
+		// doesn't have L
+		D[0] = ( 3.f*(src_pts[1]-src_pts[0]) - (D[1]+D[nr_pts-1]) )/4.f;
+		// doesn't have U
+		D[nr_pts-1] = ( 3.f*(src_pts[nr_pts-1]-src_pts[nr_pts-2]) - (D[0]+D[nr_pts-2]) )/4.f;
+		for( int j=1; j < nr_pts-1; j++ ) {
+			D[j] = ( 3.f*(src_pts[j+1]-src_pts[j-1]) - D[j+1] - D[j-1] )/4.f;
+		}
+	}
+
+	vec2 a = src_pts[k];
+	vec2 b = vec2(D[k].x, D[k].y);
+	vec2 c, d;
+	if (k < nr_pts-1) {
+		c = 3.f*(src_pts[k+1] - src_pts[k]) - 2.f*D[k] - D[k+1];
+		d = 2.f*(src_pts[k] - src_pts[k+1]) +     D[k] + D[k+1];
+	}
+	else { // k == N - 1
+		c = 3.f*(src_pts[0] - src_pts[k]) - 2.f*D[k] - D[0];
+		d = 2.f*(src_pts[k] - src_pts[0]) +     D[k] + D[0];
+	}
+	return a + b*t + c*t*t + d*t*t*t;
+}
+
+
+static vec2 evalLinear(int k, float t) {
+	int nextIdx = (k+1)%nr_pts;
+	return mix(src_pts[k], src_pts[nextIdx], t);
+}
+
+static vec2 evaluateCurve(int k, float t) {
+	switch(curve_type) {
+	case LAGLANGIAN:
+		return evalLaglangian(k, t);
+	case BEZIER_QUADRATIC:
+		if(k!=0)
+			return src_pts[2];
+		return evalBezierQuadratic(src_pts[0],src_pts[1],src_pts[2], t);
+	case BEZIER_CUBIC:
+		if(k!=0)
+			return src_pts[3];
+		return evalBezierCubic(src_pts[0],src_pts[1],src_pts[2],src_pts[3], t);
+	case CATMULL:
+		return evalCatmull(k, t);
+	case BSPLINE:
+		return evalBspline(k, t);
+	case CUBIC_NATURAL:
+		return evalCubicNatural(k, t);
+	case CUBIC_CLOSED:
+		return evalCubicClosed(k, t);
+	case CUBIC_NATURAL_QR:
+	case LINEAR:
+	default:
+		return evalLinear(k,t);
+	}
 }
 
 static void updateCurve() {
-
+	draw_pts.clear();
+	for( int i=0; i<nr_pts-1; i++ ) {
+		for( float t=0; t<1.f; t+=step_size ) {
+			draw_pts.push_back(evaluateCurve(i, t));
+		}
+	}
+	if( is_closed ) {
+		for( float t=0; t<1.f; t+=step_size ) {
+			draw_pts.push_back(evaluateCurve(nr_pts-1, t));
+		}
+		draw_pts.push_back(evaluateCurve(nr_pts-1, 1.f));
+	}
+	else {
+		draw_pts.push_back(evaluateCurve(nr_pts-2, 1.f));
+	}
 }
 
 static void resetState() {
-	ctrl_pts.clear();
-	ctrl_pts.resize(10);
-	// for(auto& p : ctrl_pts) {
-	// 	p
-	// }
+	for(int i=0; i<nr_pts; i++) {
+		vec2& p = src_pts[i];
+		p.x = i*GRID_STEP + GRID_STEP*2.f;
+		p.y = GRID_STEP*3.f;
+	}
+	updateCurve();
 }
 AppCurve::AppCurve()
-	: AppBase(1200, 780, APP_NAME, false)
+	: AppBase(1200, 480, APP_NAME, true)
 {
+	resetState();
 }
 AppCurve::~AppCurve()
 {
@@ -55,35 +301,34 @@ void AppCurve::update()
 void AppCurve::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
+	log::drawViewer("logger##curve");
+
+	static bool opt_enable_grid = true;
+	static bool opt_enable_points = false;
+
+
+	ImGui::Begin("controller##curve");
+	if( ImGui::Combo("curve type", (int*)&curve_type, curve_type_strs, nr_types) ) {
+		is_closed = (curve_type == CUBIC_CLOSED);
+		updateCurve();
+	}
+	ImGui::Checkbox("Enable grid", &opt_enable_grid);
+	ImGui::Checkbox("Enable Points", &opt_enable_points);
+	if( ImGui::Button("Reset") ) {
+		resetState();
+	}
+	ImGui::TextWrapped("Mouse Left: drag to add lines,\nMouse Right: drag to scroll, click for context menu.");
+	if( ImGui::CollapsingHeader("profiler") ) {
+		LimGui::PlotVal("dt", "ms", delta_time);
+		LimGui::PlotVal("fps", "", ImGui::GetIO().Framerate);
+	}
+	ImGui::End();
 
 
 	ImGui::Begin("curve canvas");
-	static ImVector<ImVec2> points;
 	static ImVec2 scrolling(0.0f, 0.0f);
-	static bool opt_enable_grid = true;
-	static bool opt_enable_context_menu = true;
-	static bool adding_line = false;
-
-	ImGui::Checkbox("Enable grid", &opt_enable_grid);
-	ImGui::Checkbox("Enable context menu", &opt_enable_context_menu);
-	ImGui::Text("Mouse Left: drag to add lines,\nMouse Right: drag to scroll, click for context menu.");
-
-	// Typically you would use a BeginChild()/EndChild() pair to benefit from a clipping region + own scrolling.
-	// Here we demonstrate that this can be replaced by simple offsetting + custom drawing + PushClipRect/PopClipRect() calls.
-	// To use a child window instead we could use, e.g:
-	//      ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));      // Disable padding
-	//      ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32(50, 50, 50, 255));  // Set a background color
-	//      ImGui::BeginChild("canvas", ImVec2(0.0f, 0.0f), ImGuiChildFlags_Border, ImGuiWindowFlags_NoMove);
-	//      ImGui::PopStyleColor();
-	//      ImGui::PopStyleVar();
-	//      [...]
-	//      ImGui::EndChild();
-
-	// Using InvisibleButton() as a convenience 1) it will advance the layout cursor and 2) allows us to use IsItemHovered()/IsItemActive()
 	ImVec2 canvas_p0 = ImGui::GetCursorScreenPos();      // ImDrawList API uses screen coordinates!
 	ImVec2 canvas_sz = ImGui::GetContentRegionAvail();   // Resize canvas to what's available
-	if (canvas_sz.x < 50.0f) canvas_sz.x = 50.0f;
-	if (canvas_sz.y < 50.0f) canvas_sz.y = 50.0f;
 	ImVec2 canvas_p1 = ImVec2(canvas_p0.x + canvas_sz.x, canvas_p0.y + canvas_sz.y);
 
 	// Draw border and background color
@@ -94,74 +339,69 @@ void AppCurve::updateImGui()
 
 	// This will catch our interactions
 	ImGui::InvisibleButton("canvas", canvas_sz, ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight);
+	static bool is_picked = false;
+	static int idx_hovered = -1;
 	const bool is_hovered = ImGui::IsItemHovered(); // Hovered
 	const bool is_active = ImGui::IsItemActive();   // Held
-	const ImVec2 origin(canvas_p0.x + scrolling.x, canvas_p0.y + scrolling.y); // Lock scrolled origin
-	const vec2 ori = toGLM(origin);
-	const ImVec2 mouse_pos_in_canvas(io.MousePos.x - origin.x, io.MousePos.y - origin.y);
+	const vec2 ori{canvas_p0.x + scrolling.x, canvas_p0.y + scrolling.y}; 
+	const vec2 mouse_pos_in_canvas{io.MousePos.x-ori.x, io.MousePos.y-ori.y};
+
 
 	// Add first and second point
-	if (is_hovered && !adding_line && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+	if( is_hovered && !is_picked && ImGui::IsMouseClicked(ImGuiMouseButton_Left) )
 	{
-		points.push_back(mouse_pos_in_canvas);
-		points.push_back(mouse_pos_in_canvas);
-		ctrl_pts.push_back(toGLM(mouse_pos_in_canvas));
-		adding_line = true;
+		for( int i=0; i<nr_pts; i++ ) {
+			vec2& p = src_pts[i];
+			if( length2(p-mouse_pos_in_canvas) < 25.f ) {
+				idx_hovered = i;
+				break;
+			}
+		}
 	}
-	if (adding_line)
+	if( idx_hovered>=0 )
 	{
-		points.back() = mouse_pos_in_canvas;
-		ctrl_pts.back() = toGLM(mouse_pos_in_canvas);
+		src_pts[idx_hovered] = mouse_pos_in_canvas;
+		updateCurve();
 		if (!ImGui::IsMouseDown(ImGuiMouseButton_Left))
-			adding_line = false;
+			idx_hovered = -1;
 	}
-
-	// Pan (we use a zero mouse threshold when there's no context menu)
-	// You may decide to make that threshold dynamic based on whether the mouse is hovering something etc.
-	const float mouse_threshold_for_pan = opt_enable_context_menu ? -1.0f : 0.0f;
-	if (is_active && ImGui::IsMouseDragging(ImGuiMouseButton_Right, mouse_threshold_for_pan))
+	if (is_active && ImGui::IsMouseDragging(ImGuiMouseButton_Right))
 	{
 		scrolling.x += io.MouseDelta.x;
 		scrolling.y += io.MouseDelta.y;
 	}
 
-	// Context menu (under default mouse threshold)
-	ImVec2 drag_delta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Right);
-	if (opt_enable_context_menu && drag_delta.x == 0.0f && drag_delta.y == 0.0f)
-		ImGui::OpenPopupOnItemClick("context", ImGuiPopupFlags_MouseButtonRight);
-	if (ImGui::BeginPopup("context"))
-	{
-		if (adding_line)
-			points.resize(points.size() - 2);
-		adding_line = false;
-		if (ImGui::MenuItem("Remove one", NULL, false, points.Size > 0)) { points.resize(points.size() - 2); }
-		if (ImGui::MenuItem("Remove all", NULL, false, points.Size > 0)) { points.clear(); }
-		ImGui::EndPopup();
-	}
-
-	// Draw grid + all lines in the canvas
 	draw_list->PushClipRect(canvas_p0, canvas_p1, true);
 	if( opt_enable_grid ) {
-		const float GRID_STEP = 64.0f;
-		for (float x = fmodf(scrolling.x, GRID_STEP); x < canvas_sz.x; x += GRID_STEP)
+		for( float x = fmodf(scrolling.x, GRID_STEP); x<canvas_sz.x; x+=GRID_STEP ) {
 			draw_list->AddLine(ImVec2(canvas_p0.x + x, canvas_p0.y), ImVec2(canvas_p0.x + x, canvas_p1.y), IM_COL32(200, 200, 200, 40));
-		for (float y = fmodf(scrolling.y, GRID_STEP); y < canvas_sz.y; y += GRID_STEP)
+		}
+		for( float y = fmodf(scrolling.y, GRID_STEP); y<canvas_sz.y; y+=GRID_STEP ) {
 			draw_list->AddLine(ImVec2(canvas_p0.x, canvas_p0.y + y), ImVec2(canvas_p1.x, canvas_p0.y + y), IM_COL32(200, 200, 200, 40));
+		}
 	}
-	for( auto& p : ctrl_pts ) {
-		draw_list->AddCircleFilled(toIG(ori+p), 3, IM_COL32(255, 0, 0, 255));
+	if( opt_enable_points ) {
+		for( const vec2& p : draw_pts ) {
+			draw_list->AddCircleFilled(toIG(ori+p), 2, IM_COL32(255, 255, 0, 255));
+		}
 	}
-	for (int n = 0; n < points.Size; n += 2)
-		draw_list->AddLine(ImVec2(origin.x + points[n].x, origin.y + points[n].y), ImVec2(origin.x + points[n + 1].x, origin.y + points[n + 1].y), IM_COL32(255, 255, 0, 255), 2.0f);
+	else {
+		const int nrPts = (int)draw_pts.size();
+		for( int i = 0; i < nrPts-1; i++ ) {
+			draw_list->AddLine(toIG(ori+draw_pts[i]), toIG(ori+draw_pts[i+1]), IM_COL32(255, 255, 0, 255), 2.0f);
+		}
+	}
+	
+	for( int i=0; i<nr_pts; i++ ) {
+		const vec2& p = src_pts[i];
+		if( i==idx_hovered ) {
+			draw_list->AddCircleFilled(toIG(ori+p), 4, IM_COL32(255, 0, 0, 255));
+		}
+		else {
+			draw_list->AddCircleFilled(toIG(ori+p), 4, IM_COL32(0, 0, 255, 255));
+		}
+	}
 	draw_list->PopClipRect();
 
-	ImGui::End();
-
-
-	log::drawViewer("logger##curve");
-
-	ImGui::Begin("controller##curve");
-	LimGui::PlotVal("dt", "ms", delta_time);
-	LimGui::PlotVal("fps", "", ImGui::GetIO().Framerate);
 	ImGui::End();
 }
