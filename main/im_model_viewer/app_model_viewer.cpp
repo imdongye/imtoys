@@ -144,8 +144,6 @@ void lim::AppModelViewer::addModelViewer(string path)
 
 	md->setProgToAllMat(&program);
 	md->setSetProgToAllMat(makeSetProg(brdf_test_infos.back()));
-	md->tf->pos = {0,md->pivoted_scaled_bottom_height,0};
-	md->tf->update();
 
 	Scene* scn = new Scene();
 	scn->addRef(&d_light);
@@ -157,7 +155,7 @@ void lim::AppModelViewer::addModelViewer(string path)
 	char* vpName = fmtStrToBuf("%s##model_view", md->name.c_str());
 	auto vp = new ViewportWithCamera(vpName, new FramebufferMs(8));
 	vp->camera.setViewMode(CameraManVp::VM_PIVOT);
-	vp->camera.moveShift({0,md->pivoted_scaled_bottom_height,0});
+	vp->camera.moveShift({0,1.f,0});
 	vp->camera.updateViewMat();
 	viewports.push_back(vp);
 }

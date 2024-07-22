@@ -182,7 +182,7 @@ static void makeClothDataAndInitGL() {
 AppClothGPU::AppClothGPU()
 	: AppBase(900, 600, APP_NAME, false)
 	, viewport("viewport##gpgpu", new FramebufferMs())
-	, ground(20)
+	, ground(1.f)
 {
 	g_app = this;
 	viewport.camera.pivot = vec3(0, 1.0, 0);
@@ -198,8 +198,6 @@ AppClothGPU::AppClothGPU()
 
 	model.importFromFile("assets/models/jump.fbx", true);
 	model.setUnitScaleAndPivot();
-	model.tf->pos.y += model.pivoted_scaled_bottom_height;
-	model.tf->update();
 	model.animator.play();
 	model.animator.is_loop = true;
 

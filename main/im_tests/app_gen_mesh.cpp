@@ -49,7 +49,7 @@ namespace lim
 		addMeshToScene(new MeshCubeSphere2(5));
 		addMeshToScene(new MeshQuad());
 		addMeshToScene(new MeshCube());
-		addMeshToScene(new MeshCylinder(20));
+		addMeshToScene(new MeshCylinder());
 
 		Model* md = new Model();
 		md->importFromFile("assets/models/objs/spot.obj");

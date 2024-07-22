@@ -183,7 +183,7 @@ namespace lim
         md.setUnitScaleAndPivot();
         md.setSameMat(mat);
         md.addOwn(mat);
-        const Transform& nomalized_term = *md.tf_normalized;
+        const Transform& nomalized_term = *md.tf_norm;
         log::pure(glm::to_string(nomalized_term.pos).c_str());
         log::pure("\n");
         log::pure(glm::to_string(nomalized_term.scale).c_str());

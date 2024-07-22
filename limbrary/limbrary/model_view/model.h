@@ -66,7 +66,7 @@ namespace lim
 		RdNode root;
 		const Transform* tf_prev = nullptr;
 		Transform* tf = nullptr;
-		Transform* tf_normalized = nullptr;
+		Transform* tf_norm = nullptr;
 		Animator animator;
 		Model* md_data = nullptr;
 	public:
@@ -97,7 +97,6 @@ namespace lim
 		glm::vec3 boundary_size = glm::vec3(1);
 		glm::vec3 boundary_min = glm::vec3(std::numeric_limits<float>::max());
 		glm::vec3 boundary_max = glm::vec3(std::numeric_limits<float>::min());
-		float pivoted_scaled_bottom_height = 0;
 		GLuint ai_backup_flags = 0;
 
 
@@ -124,7 +123,7 @@ namespace lim
 		void setSetProgToAllMat(std::function<void(const Program&)> setProg);
 
 		void updateNrAndBoundary();
-		void setUnitScaleAndPivot();
+		void setUnitScaleAndPivot(glm::vec3 pivot={0,-1,0}, float maxSize = 2.f);
 
 		void copyFrom(const Model& src); // now for model simplification
 		bool importFromFile(std::string_view modelPath, bool withAnim = false);

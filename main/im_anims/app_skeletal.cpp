@@ -16,8 +16,6 @@ using namespace glm;
 void AppSkeletal::importModel(const char* path) {
 	model.importFromFile(path, true);
 	model.setUnitScaleAndPivot();
-	model.tf->pos.y += model.pivoted_scaled_bottom_height;
-	model.tf->update();
 	model.setProgToAllMat(&prog_skinned);
 	LimGui::ModelEditorReset();
 }

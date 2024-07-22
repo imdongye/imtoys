@@ -90,7 +90,7 @@ ModelView& ModelView::operator=(const ModelView& src) {
 	root = src.root;
 	tf_prev = src.tf_prev;
 	tf = findTf(root, src.root, src.tf);
-	tf_normalized = findTf(root, src.root, src.tf_normalized);
+	tf_norm = findTf(root, src.root, src.tf_norm);
 	md_data = src.md_data;
 	animator = src.animator;
 	return *this;
@@ -102,8 +102,8 @@ const glm::mat4 ModelView::getGlobalTfMtx() const {
 		mtx = tf_prev->mtx;
 	}
 	mtx = mtx * tf->mtx;
-	if( tf_normalized ) {
-		mtx = mtx * tf_normalized->mtx;
+	if( tf_norm ) {
+		mtx = mtx * tf_norm->mtx;
 	}
 	return mtx;
 }
@@ -120,7 +120,7 @@ Model::~Model() {
 void Model::clear() {
 	root.clear();
 	tf = &root.tf;
-	tf_normalized = nullptr;
+	tf_norm = nullptr;
 
 	animator.clear();
 	animations.clear();
@@ -200,30 +200,26 @@ void Model::updateNrAndBoundary()
 	});
 	boundary_size = boundary_max-boundary_min;
 }
-void Model::setUnitScaleAndPivot()
+void Model::setUnitScaleAndPivot(glm::vec3 pivot, float maxSize)
 {
-	constexpr float unit_length = 2.f;
 	float max_axis_length = glm::max(glm::max(boundary_size.x, boundary_size.y), boundary_size.z);
-	float min_axis_length = glm::min(glm::min(boundary_size.x, boundary_size.y), boundary_size.z);
-	float normScale = unit_length/max_axis_length;
+	// float min_axis_length = glm::min(glm::min(boundary_size.x, boundary_size.y), boundary_size.z);
+	float normScale = maxSize/max_axis_length;
 
-	if( !tf_normalized ) {
+	if( !tf_norm ) {
 		RdNode real = root;
 		root.meshs_mats.clear();
 		root.childs.clear();
 		root.childs.push_back(real);
 		root.childs.back().name = "pivot";
-		tf_normalized = &(root.childs.back().tf);
-		*tf_normalized = Transform();
+		tf_norm = &(root.childs.back().tf);
 	}
 
-	tf_normalized->scale = glm::vec3(normScale);
-	tf_normalized->pos = -(boundary_min + boundary_size*0.5f)*normScale;
-	tf_normalized->update();
-
-
-	pivoted_scaled_bottom_height = boundary_size.y*0.5f*normScale;
-	// pivoted_scaled_bottom_height = 0;
+	glm::vec3 halfBoundaryBasis = boundary_size*0.5f*normScale;
+	tf_norm->scale = glm::vec3(normScale);
+	tf_norm->pos = -boundary_min*normScale - halfBoundaryBasis - halfBoundaryBasis*pivot;
+	// tf_norm->pos = glm::vec3(0);
+	tf_norm->update();
 }
 
 
@@ -302,7 +298,6 @@ void Model::copyFrom(const Model& src) {
 	boundary_max = src.boundary_max;
 	boundary_min = src.boundary_min;
 	boundary_size = src.boundary_size;
-	pivoted_scaled_bottom_height = src.pivoted_scaled_bottom_height;
 	ai_backup_flags = src.ai_backup_flags;
 
 	

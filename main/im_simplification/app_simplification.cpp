@@ -134,12 +134,10 @@ void lim::AppSimplification::doImportModel(std::string_view path, int vpIdx)
 	}
 
 	md.setUnitScaleAndPivot();
-	md.tf->pos = {0,md.pivoted_scaled_bottom_height, 0};
-	md.tf->update();
 
 	auto& vp = viewports[vpIdx];
-	vp->camera.pivot = md.tf->pos;
-	vp->camera.pos.y = md.tf->pos.y;
+	vp->camera.pivot.y = 1.f;
+	vp->camera.pos.y = 1.5f;
 	vp->camera.updateViewMat();
 
 	AppPrefs::get().saveRecentModelPath(path.data());
