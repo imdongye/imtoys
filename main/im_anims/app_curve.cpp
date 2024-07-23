@@ -24,19 +24,19 @@ namespace {
 		"laglange",
 		"bezier quadratic",
 		"bezier cubic",
-		"catmull",
-		"bspline",
-		"cubic natural",
-		"cubic closed",
-		"cubic natural qr"
+		"catmull rom, bessel",
+		"bspline cubic",
+		"cubic spline natural",
+		"cubic spline closed",
+		"cubic spline natural qr"
 	};
 	enum CurveType {
 		LINEAR,
 		LAGLANGE,
 		BEZIER_QUADRATIC,
 		BEZIER_CUBIC,
-		CATMULL,
-		BSPLINE,
+		CATMULL_ROM,
+		BSPLINE_CUBIC,
 		CUBIC_NATURAL,
 		CUBIC_CLOSED,
 		CUBIC_NATURAL_QR,
@@ -45,11 +45,14 @@ namespace {
 
 
 	bool is_closed = false;
+	bool is_jacobi = false;
+	int nr_iter = 5;
+
 	constexpr int nr_pts = 10;
 	vector<vec2> src_pts(nr_pts);
-	constexpr int nr_steps = 10; 
-	constexpr float step_size = 1.f/nr_steps;
-	vector<vec2> draw_pts(nr_steps*(nr_pts)+1);
+	constexpr int nr_segment_samples = 10; 
+	constexpr float step_size = 1.f/nr_segment_samples;
+	vector<vec2> draw_pts(nr_segment_samples*(nr_pts)+1);
 }
 /*
 	Lagrange polynomial
@@ -166,69 +169,83 @@ static vec2 evalCatmull(int k, float t) {
 /*
 	From: https://en.wikipedia.org/wiki/B-spline
 	basis spline
-	C_2 : cecond derivative matches
+
+	make bezier ctrl pt from ctrl pt
+
+	quadratic : C_1
+	cubic : C_2 : second derivative matches
 	not end point interpolation
-	convex
+	but convex
 	affine invarient
 */
-static vec2 evalBspline(int k, float t) {
+static vec2 evalBsplineCubic(int k, float t) {
+	if( k<1 ) {
+		k = 1;
+		t = 0.f;
+	}
+	else if( k>nr_pts-3 ) {
+		k = nr_pts-3;
+		t = 1.f;
+	}
 
-	//...
+	float B0 = 1.f/6.f * (-t*t*t + 3*t*t - 3*t + 1);
+	float B1 = 1.f/6.f * ( 3*t*t*t - 6*t*t + 4);
+	float B2 = 1.f/6.f * (-3*t*t*t + 3*t*t + 3*t + 1);
+	float B3 = 1.f/6.f * t*t*t;
 
-	return src_pts[k];
+	return B0*src_pts[k-1] + B1*src_pts[k] + B2*src_pts[k+1] + B3*src_pts[k+2];
 }
 
 /*
 	From: https://en.wikipedia.org/wiki/Spline_(mathematics)
 
-
+	cubic spline with natural end condition
 	strictly diagonally dominant => "iterative method"
 	Ax = (D + L + U)x = b
-	Dx_i+1 = b - Ux_i - Lx_i
-		4 * x[i] = b[i] - x[i+1] - x[i-1] if i!=0 or i!=N-1
-	x_i+1 = inv(D)(b - Ux_i - Lx_i)
-		x[i] = ( b[i] - x[i+1] - x[i-1] )/4.f
+	D*x = b - U*x - L*x
+		4*x[i+1] = b[i] - 1*x[i+1] - 1*x[i-1] if i!=0 or i!=N-1
+	x = inv(D)(b - U*x - L*x)
+		x[i] = ( b[i] - 1*x[i+1] - 1*x[i-1] )/4.f
 
 	jacobi iteration
-
+		좌변의 x와 우변의 x를 각각두고 스왑한다.
 	gauss seidel iteration
-		1 iter 안에서 이전에 계산한것을 사용한다.
-
+		좌변의 x와 우변의 x를 같게하여 iter 안에서 이전에 계산한것을 사용한다.
+		더 빨리 수렴함.
 
 	O(n^2*i) => 1000
 	셈플마다 계산할필요없고 세그먼트에서 같이사용할수있어서 지금은 비효율적이다.
-
-
 */
 static vec2 evalCubicNatural(int k, float t) {
-	// gause-seidel + natural end condition
-	const int ns_iter = 4;
 	vector<vec2> D(nr_pts, vec2(0));
 
-
 	// jacobi iteration
-	// {
-	// 	// 여기서 D는 diagonal term이 아닌 x다. 식의 표기법
-	// 	vector<vec2> D0(nr_pts, vec2(0));
-	// 	vector<vec2> D1(nr_pts, vec2(0));
-	// 	for( int i=0; i<ns_iter; i++ ) {
-	// 		vector<vec2>& D_n0 = (i%2) ? D1 : D0;
-	// 		vector<vec2>& D_n1 = (i%2) ? D0 : D1;
-	// 		D_n0[0] = ( 3.f*(src_pts[1]-src_pts[0]) - D_n0[1] )/2.f;
-	// 		D_n0[nr_pts-1] = ( 3.f*(src_pts[nr_pts-1]-src_pts[nr_pts-2]) - D_n0[nr_pts-2] )/2.f;
+	if( is_jacobi )
+	{
+		// 여기서 D는 diagonal term이 아닌 x다. 식의 표기법
+		vector<vec2> D0(nr_pts, vec2(0));
+		vector<vec2> D1(nr_pts, vec2(0));
+		for( int i=0; i<nr_iter; i++ ) {
+			vector<vec2>& D_n0 = (i%2) ? D1 : D0;
+			vector<vec2>& D_n1 = (i%2) ? D0 : D1;
+			// 초기값
+			D_n0[0]        = ( 3.f*(src_pts[1]-src_pts[0])               - D_n0[1]        ) / 2.f;
+			D_n0[nr_pts-1] = ( 3.f*(src_pts[nr_pts-1]-src_pts[nr_pts-2]) - D_n0[nr_pts-2] ) / 2.f;
 
-	// 		for( int j=1; j<nr_pts-1; j++ ) {
-	// 			D_n1[j] = ( 3.f*(src_pts[j+1]-src_pts[j-1]) - D_n0[j+1] - D_n0[j-1] )/4.f;
-	// 		}
-	// 	}
-	// 	D = D0;
-	// }
+			for( int j=1; j<nr_pts-1; j++ ) {
+				D_n1[j] = ( 3.f*(src_pts[j+1]-src_pts[j-1]) - D_n0[j+1] - D_n0[j-1] )/4.f;
+			}
+		}
+		D = (nr_iter%2) ? D1 : D0;
+	}
 
 	// gauss seidel iteration
+	else
 	{
-		for( int i=0; i<ns_iter; i++ ) {
-			D[0] = ( 3.f*(src_pts[1]-src_pts[0]) - D[1] )/2.f;
-			D[nr_pts-1] = ( 3.f*(src_pts[nr_pts-1]-src_pts[nr_pts-2]) - D[nr_pts-2] )/2.f;
+		for( int i=0; i<nr_iter; i++ ) {
+			// 초기값
+			D[0]        = ( 3.f*(src_pts[1]-src_pts[0])               - D[1]        ) / 2.f;
+			D[nr_pts-1] = ( 3.f*(src_pts[nr_pts-1]-src_pts[nr_pts-2]) - D[nr_pts-2] ) / 2.f;
 			for( int j=1; j < nr_pts-1; j++ ) {
 				D[j] = ( 3.f*(src_pts[j+1]-src_pts[j-1]) - D[j+1] - D[j-1] )/4.f;
 			}
@@ -241,29 +258,48 @@ static vec2 evalCubicNatural(int k, float t) {
 	vec2 d = 2.f*(src_pts[k] - src_pts[k+1]) +     D[k] + D[k+1];
 	return a + b*t + c*t*t + d*t*t*t;
 }
+
+
 static vec2 evalCubicClosed(int k, float t) {
-	// gause-seidel + closed condition
-	const int ns_iter = 4;
 	vector<vec2> D(nr_pts, vec2(0));
 
-	for( int i=0; i<ns_iter; i++ ) {
-		// Dx = b - Lx - Ux
-		// x_n1 = D역 * (b - L*x_n0 - U*x_n0);
-		// if gause-seidel then x_n1 == x_n0
+	// jacobi iteration
+	if( is_jacobi )
+	{
+		// 여기서 D는 diagonal term이 아닌 x다. 식의 표기법
+		vector<vec2> D0(nr_pts, vec2(0));
+		vector<vec2> D1(nr_pts, vec2(0));
+		for( int i=0; i<nr_iter; i++ ) {
+			vector<vec2>& D_n0 = (i%2) ? D1 : D0;
+			vector<vec2>& D_n1 = (i%2) ? D0 : D1;
+			// 초기값
+			D_n0[0]        = ( 3.f*(src_pts[1]-src_pts[0])               - D_n0[1] - D_n0[nr_pts-1] ) / 4.f;
+			D_n0[nr_pts-1] = ( 3.f*(src_pts[nr_pts-1]-src_pts[nr_pts-2]) - D_n0[0] - D_n0[nr_pts-2] ) / 4.f;
 
-		// doesn't have L
-		D[0] = ( 3.f*(src_pts[1]-src_pts[0]) - (D[1]+D[nr_pts-1]) )/4.f;
-		// doesn't have U
-		D[nr_pts-1] = ( 3.f*(src_pts[nr_pts-1]-src_pts[nr_pts-2]) - (D[0]+D[nr_pts-2]) )/4.f;
-		for( int j=1; j < nr_pts-1; j++ ) {
-			D[j] = ( 3.f*(src_pts[j+1]-src_pts[j-1]) - D[j+1] - D[j-1] )/4.f;
+			for( int j=1; j<nr_pts-1; j++ ) {
+				D_n1[j] = ( 3.f*(src_pts[j+1]-src_pts[j-1]) - D_n0[j+1] - D_n0[j-1] )/4.f;
+			}
+		}
+		D = (nr_iter%2) ? D1 : D0;
+	}
+
+	// gauss seidel iteration
+	else
+	{
+		for( int i=0; i<nr_iter; i++ ) {
+			// 초기값
+			D[0]        = ( 3.f*(src_pts[1]-src_pts[0])               - D[1] - D[nr_pts-1] ) / 4.f;
+			D[nr_pts-1] = ( 3.f*(src_pts[nr_pts-1]-src_pts[nr_pts-2]) - D[0] - D[nr_pts-2] ) / 4.f;
+			for( int j=1; j < nr_pts-1; j++ ) {
+				D[j] = ( 3.f*(src_pts[j+1]-src_pts[j-1]) - D[j+1] - D[j-1] )/4.f;
+			}
 		}
 	}
 
 	vec2 a = src_pts[k];
 	vec2 b = vec2(D[k].x, D[k].y);
 	vec2 c, d;
-	if (k < nr_pts-1) {
+	if( k < nr_pts-1 ) {
 		c = 3.f*(src_pts[k+1] - src_pts[k]) - 2.f*D[k] - D[k+1];
 		d = 2.f*(src_pts[k] - src_pts[k+1]) +     D[k] + D[k+1];
 	}
@@ -297,10 +333,10 @@ static vec2 evaluateCurve(int k, float t) {
 		if(k!=0)
 			return src_pts[3];
 		return evalBezierCubic(src_pts[0],src_pts[1],src_pts[2],src_pts[3], t);
-	case CATMULL:
+	case CATMULL_ROM:
 		return evalCatmull(k, t);
-	case BSPLINE:
-		return evalBspline(k, t);
+	case BSPLINE_CUBIC:
+		return evalBsplineCubic(k, t);
 	case CUBIC_NATURAL:
 		return evalCubicNatural(k, t);
 	case CUBIC_CLOSED:
@@ -368,6 +404,12 @@ void AppCurve::updateImGui()
 	if( ImGui::Combo("curve type", (int*)&curve_type, curve_type_strs, nr_types) ) {
 		is_closed = (curve_type == CUBIC_CLOSED);
 		updateCurve();
+	}
+	if( curve_type == CUBIC_NATURAL || curve_type == CUBIC_CLOSED ) {
+		if( ImGui::Checkbox("is jacobi(or gauss seidel)", &is_jacobi) )
+			updateCurve();
+		if( ImGui::SliderInt("iterations", &nr_iter, 1, 100) )
+			updateCurve();
 	}
 	ImGui::Checkbox("Enable grid", &opt_enable_grid);
 	ImGui::Checkbox("Enable Points", &opt_enable_points);
