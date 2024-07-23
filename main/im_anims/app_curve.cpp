@@ -21,7 +21,7 @@ namespace {
 	constexpr int nr_types = 9;
 	const char* const curve_type_strs[] = {
 		"linear",
-		"laglangian",
+		"laglange",
 		"bezier quadratic",
 		"bezier cubic",
 		"catmull",
@@ -32,7 +32,7 @@ namespace {
 	};
 	enum CurveType {
 		LINEAR,
-		LAGLANGIAN,
+		LAGLANGE,
 		BEZIER_QUADRATIC,
 		BEZIER_CUBIC,
 		CATMULL,
@@ -51,9 +51,18 @@ namespace {
 	constexpr float step_size = 1.f/nr_steps;
 	vector<vec2> draw_pts(nr_steps*(nr_pts)+1);
 }
-
-// From: https://namu.wiki/w/%EB%9D%BC%EA%B7%B8%EB%9E%91%EC%A3%BC%20%EB%B3%B4%EA%B0%84%EB%B2%95
-static vec2 evalLaglangian(int k, float t) {
+/*
+	Lagrange polynomial
+	From: https://namu.wiki/w/%EB%9D%BC%EA%B7%B8%EB%9E%91%EC%A3%BC%20%EB%B3%B4%EA%B0%84%EB%B2%95
+	#constraints : nr_pts=10
+	#DOF : 10 => 9차식
+	C_INF
+	end point interpolation
+	no inverse, use cardinal polynomial functions
+	L_i(i) == 1
+	f(t) = L_i(t)*p_i + ....
+*/
+static vec2 evalLaglange(int k, float t) {
 	vec2 rst(0);
 	float T = k + t;
 	for(int i = 0; i < nr_pts; i++) {
@@ -69,7 +78,12 @@ static vec2 evalLaglangian(int k, float t) {
 	return rst;
 }
 
-// From: https://namu.wiki/w/%EB%B2%A0%EC%A7%80%EC%97%90%20%EA%B3%A1%EC%84%A0
+/*
+	From: https://namu.wiki/w/%EB%B2%A0%EC%A7%80%EC%97%90%20%EA%B3%A1%EC%84%A0
+	de Casteljau step
+	Convex : coef is not negative
+	Affine Trasf invarient : transf samples == transf ctrl pts and sampling
+*/
 static vec2 evalBezierQuadratic(const vec2& p0, const vec2& p1, const vec2& p2, float t) {
 	float invT1 = 1-t;
 	float invT2 = invT1*invT1;
@@ -83,7 +97,28 @@ static vec2 evalBezierCubic(const vec2& p0, const vec2& p1, const vec2& p2, cons
 		+ 3*t*t*invT1*p2 + t*t*t*p3;
 }
 
-// From: https://en.wikipedia.org/wiki/Centripetal_Catmull%E2%80%93Rom_spline
+/*
+	From: https://en.wikipedia.org/wiki/Centripetal_Catmull%E2%80%93Rom_spline
+	case of Hermite spline
+		Piecewise
+		C_1
+		end point interpolation
+		#constraints : 4 ( end points, tangents )
+		#DOF : 4 => cubic
+		but use bezier
+	catmull rom
+		tangents is side points direction
+		not convex
+		affine invarient
+	bessel
+		make tangent from 3 points
+		to get tangent #DOF:3, #constraints:3
+		use direct method
+	if use bessel to all points (hermit spline with Bessel tangent)
+		Overhauser spline
+	
+	...
+*/
 static vec2 evalCatmull(int k, float t) {
 	glm::vec2 v0(0), v1(0);
 	const float CM_DV = 2.f;
@@ -128,59 +163,75 @@ static vec2 evalCatmull(int k, float t) {
 	return evalBezierCubic(src_pts[k], c0, c1, src_pts[k+1], t);
 }
 
-// From: https://en.wikipedia.org/wiki/B-spline
+/*
+	From: https://en.wikipedia.org/wiki/B-spline
+	basis spline
+	C_2 : cecond derivative matches
+	not end point interpolation
+	convex
+	affine invarient
+*/
 static vec2 evalBspline(int k, float t) {
-	// jacobi
-	// Dx = b - Ux - Lx
-	// 4 * x[i] = b[i] - x[i+1] - x[i-1] if i!=0 or i!=N-1
 
-	// O(n^2*i) => 1000
-	// 셈플마다 계산할필요없고 세그먼트에서 같이사용할수있어서 지금은 비효율적이다.
-	constexpr int ns_iter = 10;
-	vector<float> Dx, Dy;
-	{
-		vector<float> D0(nr_pts, 0); // x
-		vector<float> D1(nr_pts, 0);
-		for( int i=0; i<ns_iter; i++ ) {
-			vector<float>& x_n0 = (i%2) ? D1 : D0;
-			vector<float>& x_n1 = (i%2) ? D0 : D1;
-			for( int j=1; j<nr_pts-1; j++ ) {
-				x_n1[j] = ( 3*(src_pts[j+1].x-src_pts[j-1].x) - x_n0[j+1] - x_n0[j-1] )/4.f;
-			}
-		}
-		Dx = D0;
-	}
-	{
-		vector<float> D0(nr_pts, 0); // x
-		vector<float> D1(nr_pts, 0);
-		for( int i=0; i<ns_iter; i++ ) {
-			vector<float>& x_n0 = (i%2) ? D1 : D0;
-			vector<float>& x_n1 = (i%2) ? D0 : D1;
-			for( int j=1; j<nr_pts-1; j++ ) {
-				x_n1[j] = ( 3*(src_pts[j+1].y-src_pts[j-1].y) - x_n0[j+1] - x_n0[j-1] )/4.f;
-			}
-		}
-		Dy = D0;
-	}
+	//...
 
-	vec2 a = src_pts[k];
-	vec2 b = vec2(Dx[k], Dy[k]);
-	vec2 c = 3.f*(src_pts[k+1] - src_pts[k]) - 2.f * vec2(Dx[k], Dy[k]) - vec2(Dx[k+1], Dy[k+1]);
-	vec2 d = 2.f*(src_pts[k] - src_pts[k+1]) +       vec2(Dx[k], Dy[k]) + vec2(Dx[k+1], Dy[k+1]);
-	return a + b*t + c*t*t + d*t*t*t;
+	return src_pts[k];
 }
 
-// From: https://en.wikipedia.org/wiki/Spline_(mathematics)
+/*
+	From: https://en.wikipedia.org/wiki/Spline_(mathematics)
+
+
+	strictly diagonally dominant => "iterative method"
+	Ax = (D + L + U)x = b
+	Dx_i+1 = b - Ux_i - Lx_i
+		4 * x[i] = b[i] - x[i+1] - x[i-1] if i!=0 or i!=N-1
+	x_i+1 = inv(D)(b - Ux_i - Lx_i)
+		x[i] = ( b[i] - x[i+1] - x[i-1] )/4.f
+
+	jacobi iteration
+
+	gauss seidel iteration
+		1 iter 안에서 이전에 계산한것을 사용한다.
+
+
+	O(n^2*i) => 1000
+	셈플마다 계산할필요없고 세그먼트에서 같이사용할수있어서 지금은 비효율적이다.
+
+
+*/
 static vec2 evalCubicNatural(int k, float t) {
 	// gause-seidel + natural end condition
 	const int ns_iter = 4;
 	vector<vec2> D(nr_pts, vec2(0));
 
-	for( int i=0; i<ns_iter; i++ ) {
-		D[0] = ( 3.f*(src_pts[1]-src_pts[0]) - D[1] )/2.f;
-		D[nr_pts-1] = ( 3.f*(src_pts[nr_pts-1]-src_pts[nr_pts-2]) - D[nr_pts-2] )/2.f;
-		for( int j=1; j < nr_pts-1; j++ ) {
-			D[j] = ( 3.f*(src_pts[j+1]-src_pts[j-1]) - D[j+1] - D[j-1] )/4.f;
+
+	// jacobi iteration
+	// {
+	// 	// 여기서 D는 diagonal term이 아닌 x다. 식의 표기법
+	// 	vector<vec2> D0(nr_pts, vec2(0));
+	// 	vector<vec2> D1(nr_pts, vec2(0));
+	// 	for( int i=0; i<ns_iter; i++ ) {
+	// 		vector<vec2>& D_n0 = (i%2) ? D1 : D0;
+	// 		vector<vec2>& D_n1 = (i%2) ? D0 : D1;
+	// 		D_n0[0] = ( 3.f*(src_pts[1]-src_pts[0]) - D_n0[1] )/2.f;
+	// 		D_n0[nr_pts-1] = ( 3.f*(src_pts[nr_pts-1]-src_pts[nr_pts-2]) - D_n0[nr_pts-2] )/2.f;
+
+	// 		for( int j=1; j<nr_pts-1; j++ ) {
+	// 			D_n1[j] = ( 3.f*(src_pts[j+1]-src_pts[j-1]) - D_n0[j+1] - D_n0[j-1] )/4.f;
+	// 		}
+	// 	}
+	// 	D = D0;
+	// }
+
+	// gauss seidel iteration
+	{
+		for( int i=0; i<ns_iter; i++ ) {
+			D[0] = ( 3.f*(src_pts[1]-src_pts[0]) - D[1] )/2.f;
+			D[nr_pts-1] = ( 3.f*(src_pts[nr_pts-1]-src_pts[nr_pts-2]) - D[nr_pts-2] )/2.f;
+			for( int j=1; j < nr_pts-1; j++ ) {
+				D[j] = ( 3.f*(src_pts[j+1]-src_pts[j-1]) - D[j+1] - D[j-1] )/4.f;
+			}
 		}
 	}
 
@@ -223,6 +274,11 @@ static vec2 evalCubicClosed(int k, float t) {
 	return a + b*t + c*t*t + d*t*t*t;
 }
 
+static vec2 evalCubicNaturalQr(int k, float t) {
+	//...
+
+	return src_pts[k];
+}
 
 static vec2 evalLinear(int k, float t) {
 	int nextIdx = (k+1)%nr_pts;
@@ -231,8 +287,8 @@ static vec2 evalLinear(int k, float t) {
 
 static vec2 evaluateCurve(int k, float t) {
 	switch(curve_type) {
-	case LAGLANGIAN:
-		return evalLaglangian(k, t);
+	case LAGLANGE:
+		return evalLaglange(k, t);
 	case BEZIER_QUADRATIC:
 		if(k!=0)
 			return src_pts[2];
@@ -250,6 +306,7 @@ static vec2 evaluateCurve(int k, float t) {
 	case CUBIC_CLOSED:
 		return evalCubicClosed(k, t);
 	case CUBIC_NATURAL_QR:
+		return evalCubicNaturalQr(k, t);
 	case LINEAR:
 	default:
 		return evalLinear(k,t);

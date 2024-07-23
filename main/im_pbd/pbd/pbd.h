@@ -13,6 +13,15 @@
 
 namespace pbd
 {
+    struct Constraint {
+        virtual void update() = 0;
+    };
+    struct ConstraintSpring : public Constraint {
+    };
+    struct ConstraintCollision : public Constraint {
+        
+    };
+
     // adjust info in mesh VS triangle?
     struct Edge {
         glm::uvec2 idx_ps;
@@ -24,7 +33,7 @@ namespace pbd
             : idx_ps(idxPs), idx_ts(idxTs), length(len), fst_length(len), cangle(cAng), fst_cangle(cAng)
         {}
     };
-    struct Mesh {
+    struct SoftMesh {
         std::vector<glm::vec4> x_s; // pos
         std::vector<glm::vec4> p_s; // temp pos
         std::vector<glm::vec4> v_s;
@@ -33,11 +42,11 @@ namespace pbd
         glm::uint nr_ptcls, nr_edges, nr_tris;
         float volume, fst_volume, lam_volume;
 
-        Mesh(const lim::Mesh& src);
+        SoftMesh(const lim::Mesh& src);
         float updateVolume();
     };
 
-    void simulate( Mesh& mesh, float dt );
+    void simulate( SoftMesh& mesh, float dt );
 }
 
 #endif

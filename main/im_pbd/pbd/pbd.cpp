@@ -57,7 +57,7 @@ static bool getAdjacentEdge( uvec3 t1, uvec3 t2,  uvec2& edge ) {
 
 
 
-pbd::Mesh::Mesh(const lim::Mesh& src) {
+pbd::SoftMesh::SoftMesh(const lim::Mesh& src) {
     nr_ptcls = src.poss.size();
     x_s.reserve(nr_ptcls);
     p_s.reserve(nr_ptcls);
@@ -93,7 +93,7 @@ pbd::Mesh::Mesh(const lim::Mesh& src) {
     fst_volume = updateVolume();
 }
 
-float pbd::Mesh::updateVolume() {
+float pbd::SoftMesh::updateVolume() {
     volume = 0;
     for( const auto& t : tris ) {
         volume += glim::triVolume( x_s[t.x], x_s[t.y], x_s[t.z] );
@@ -126,7 +126,7 @@ static void applyDistanceConstraint( vec4& pm0, vec4& pm1, float fstL, float& la
     }
 }
 
-void pbd::simulate(pbd::Mesh& mesh, float dt) {
+void pbd::simulate(pbd::SoftMesh& mesh, float dt) {
     constexpr int nr_steps = 10;
 
     for( int i=0; i<mesh.nr_ptcls; i++ ) {
