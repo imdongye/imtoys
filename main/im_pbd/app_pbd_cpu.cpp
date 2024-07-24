@@ -2,6 +2,7 @@
 #include <limbrary/limgui.h>
 #include "pbd/pbd.h"
 #include <limbrary/model_view/mesh_maked.h>
+#include <limbrary/glm_tools.h>
 using namespace lim;
 using namespace glm;
 
@@ -15,10 +16,16 @@ namespace {
 }
 
 static void resetApp() {
-	mat4 tf = translate(vec3(0,2,0));
 	simulator.bodies.clear();
-	simulator.bodies.emplace_back( MeshCubeShared(0.5f) );
-	// simulator.meshes.emplace_back( MeshPlane(1.f, 5, 5, false, false), tf );
+
+	mat4 tf = translate(vec3(0,2,0)) * glim::rotateX(H_PI*0.1f);
+	MeshCubeShared ms(0.5);
+	// MeshPlane ms(1.f, ......5, 5, false, false);
+	for( vec3& p : ms.poss ) {
+		p = vec3(tf*vec4(p,1));
+	}
+	pbd::SoftBody::Settings settings;
+	simulator.bodies.emplace_back( ms, settings );
 }
 static void deleteApp() {
 	simulator.bodies.clear();
@@ -43,9 +50,9 @@ static void drawBody(const pbd::SoftBody& body) {
 	for(const vec4& p : body.xw_s) {
 		g_app->drawSphere(vec3{p}, {1,0,0});
 	}
-	// for( const pbd::Edge& e : mesh.edges ) {
-	// 	g_app->drawCylinder( vec3{mesh.xw_s[e.idx_ps.x]}, vec3{mesh.xw_s[e.idx_ps.y]}, {1,0,0} );
-	// }
+	for( const auto& c : body.c_distances ) {
+		g_app->drawCylinder( vec3{body.xw_s[c.idx_ps.x]}, vec3{body.xw_s[c.idx_ps.y]}, {1,0,0} );
+	}
 }
 void AppPbdCPU::canvasDraw() const
 {
@@ -64,9 +71,15 @@ void AppPbdCPU::canvasImGui()
 {
 	ImGui::Begin("pbd ctrl");
 	ImGui::Checkbox("pause", &is_paused);
-	if( is_paused && ImGui::Button("one step") ) {
-		for(int i=0; i<100; i++)
+	if( is_paused && ImGui::Button("one step 0.5sec") ) {
+		float elapsed = 0.f;
+		while( elapsed<0.1f ) {
 			simulator.update(delta_time);
+			elapsed += delta_time;
+		}
+	}
+	if ( ImGui::Button("reset") ) {
+		resetApp();
 	}
 	LimGui::PlotVal("dt", "ms", delta_time*1000.f);
 	LimGui::PlotVal("fps", "", ImGui::GetIO().Framerate);
