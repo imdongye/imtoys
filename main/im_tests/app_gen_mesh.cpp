@@ -38,34 +38,34 @@ namespace lim
 
 		/* gen models */
 		addMeshToScene(new MeshSphere(1.f, 10, 25));
-		addMeshToScene(new MeshEnvSphere(10));
-		addMeshToScene(new MeshDonut(50, 25));
-		addMeshToScene(new MeshCapsule(50, 25));
-		addMeshToScene(new MeshIcoSphere(0));
-		addMeshToScene(new MeshIcoSphere(1));
-		addMeshToScene(new MeshIcoSphere(2));
-		addMeshToScene(new MeshIcoSphere(3));
-		addMeshToScene(new MeshCubeSphere(2));
-		addMeshToScene(new MeshCubeSphere2(5));
+		addMeshToScene(new MeshEnvSphere(1.f, 10));
+		addMeshToScene(new MeshDonut(0.5f, 0.2f, 50, 25));
+		addMeshToScene(new MeshCapsule(1.f, 2.f, 50, 25));
+		addMeshToScene(new MeshIcoSphere(1.f, 0));
+		addMeshToScene(new MeshIcoSphere(1.f, 1));
+		addMeshToScene(new MeshIcoSphere(1.f, 2));
+		addMeshToScene(new MeshIcoSphere(1.f, 3));
+		addMeshToScene(new MeshCubeSphere(1.f, 2));
+		addMeshToScene(new MeshCubeSphere2(1.f, 5));
 		addMeshToScene(new MeshQuad());
 		addMeshToScene(new MeshCube());
 		addMeshToScene(new MeshCylinder());
 
 		Model* md = new Model();
 		md->importFromFile("assets/models/objs/spot.obj");
-		md->setUnitScaleAndPivot();
+		md->setUnitScaleAndPivot({0,0,0}, 1.f);
 		md->setSameMat(&default_mat);
 
 		scene.addOwn(md);
 
 		md = new Model();
 		md->importFromFile("assets/models/objs/Wooden Crate.obj");
-		md->setUnitScaleAndPivot();
+		md->setUnitScaleAndPivot({0,0,0}, 1.f);
 		md->setSameMat(&default_mat);
 		scene.addOwn(md);
 
 
-		const float interModels = 3.5f;
+		const float interModels = 1.2f;
 		const float biasModels = -interModels * scene.mds.size() / 2.f;
 
 		for( int i = 0; i < scene.mds.size(); i++ )
@@ -75,8 +75,8 @@ namespace lim
 		}
 
 		addMeshToScene(new MeshPlane());
-		scene.own_mds.back()->tf->pos = {0, -3.5, 0};
-		scene.own_mds.back()->tf->scale = glm::vec3{50.f};
+		scene.own_mds.back()->tf->pos = {0, -1.f, 0};
+		scene.own_mds.back()->tf->scale = glm::vec3{20.f};
 		scene.own_mds.back()->tf->update();
 
 		scene.addRef(&light);

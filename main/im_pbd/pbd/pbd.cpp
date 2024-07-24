@@ -3,160 +3,239 @@
 
 */
 #include "pbd.h"
+#include <algorithm>
 #include <limbrary/glm_tools.h>
 
 using namespace glm;
 using std::vector;
 
-static inline bool isSameEdges( uint a1, uint a2, uint b1, uint b2 ) {
-    return ( a1 == b1 && a2 == b2 ) || ( a1 == b2 && a2 == b1 );
-}
-static bool getSameEdges( uint a1, uint a2, uint b1, uint b2, uvec2& edge ) {
-    if( isSameEdges( a1, a2, b1, b2 ) ) {
-        edge = (a1<a2)?uvec2{a1,a2}:uvec2{a2,a1};
-        return true;
-    }
-    return false;
-}
-static bool isAdjacentTris( uvec3 t1, uvec3 t2 ) {
-    return  isSameEdges( t1.x, t1.y, t2.x, t2.y ) ||
-            isSameEdges( t1.x, t1.y, t2.x, t2.z ) ||
-            isSameEdges( t1.x, t1.y, t2.y, t2.z ) ||
-            isSameEdges( t1.x, t1.z, t2.x, t2.y ) ||
-            isSameEdges( t1.x, t1.z, t2.x, t2.z ) ||
-            isSameEdges( t1.x, t1.z, t2.y, t2.x ) ||
-            isSameEdges( t1.y, t1.z, t2.x, t2.y ) ||
-            isSameEdges( t1.y, t1.z, t2.x, t2.z ) ||
-            isSameEdges( t1.y, t1.z, t2.y, t2.z );
-}
-static int getNrEdges( const vector<uvec3>& tris ) {
-    int nr_edges = 0;
-    for( const auto& t1 : tris ) {
-        for( const auto& t2: tris ) {
-            if( &t1 == &t2 ) {
-                continue;
-            }
-            if( isAdjacentTris( t1, t2 ) ) {
-                nr_edges++;
-            }
-        }
-    }
-    return nr_edges;
-}
-static bool getAdjacentEdge( uvec3 t1, uvec3 t2,  uvec2& edge ) {
-    return  getSameEdges( t1.x, t1.y, t2.x, t2.y, edge ) ||
-            getSameEdges( t1.x, t1.y, t2.x, t2.z, edge ) ||
-            getSameEdges( t1.x, t1.y, t2.y, t2.z, edge ) ||
-            getSameEdges( t1.x, t1.z, t2.x, t2.y, edge ) ||
-            getSameEdges( t1.x, t1.z, t2.x, t2.z, edge ) ||
-            getSameEdges( t1.x, t1.z, t2.y, t2.x, edge ) ||
-            getSameEdges( t1.y, t1.z, t2.x, t2.y, edge ) ||
-            getSameEdges( t1.y, t1.z, t2.x, t2.z, edge ) ||
-            getSameEdges( t1.y, t1.z, t2.y, t2.z, edge );
+namespace {
+    constexpr glm::vec3 G = {0, -9.8, 0};
 }
 
 
+#pragma region edge_util
 
-pbd::SoftMesh::SoftMesh(const lim::Mesh& src) {
+
+static inline uvec2 makeEdgeIdx(uint a1, uint a2) {
+    return (a1<a2)?uvec2{a1,a2}:uvec2{a2,a1};
+}
+
+
+#pragma endregion edge_util
+
+// ref From: CreateConstraints() in SoftBodySharedSettings.cpp of JoltPhysics
+pbd::SoftBody::SoftBody(const lim::Mesh& src, BendType bendType) {
     nr_ptcls = src.poss.size();
-    x_s.reserve(nr_ptcls);
-    p_s.reserve(nr_ptcls);
-    v_s.reserve(nr_ptcls);
-    for( const auto& p : src.poss ) {
-        x_s.push_back( glm::vec4{p,1} );
-        p_s.push_back( glm::vec4{p,1} );
-        v_s.push_back( glm::vec4{0} );
+    xw_s.reserve(nr_ptcls);
+    pw_s.reserve(nr_ptcls);
+    v0_s.reserve(nr_ptcls);
+    for( const vec3& p : src.poss ) {
+        xw_s.push_back( glm::vec4{p,1} );
+        pw_s.push_back( glm::vec4{p,1} );
+        v0_s.push_back( glm::vec4{0} );
     }
 
     nr_tris = src.tris.size();
     tris = src.tris;
 
-    nr_edges = getNrEdges( tris );
-    edges.reserve( nr_edges );
-    uvec2 edgeIdxs;
-    for( int i=0; i < nr_tris; i++ ) {
-        for( int j=0; j<nr_tris; j++) {
-            if( i==j ) {
-                continue;
+    struct Edge {
+        uvec2 idx_ps;
+        uint idx_opp;
+        uint idx_tri;
+    };
+    vector<Edge> aEdges; // aside edges
+    vector<uvec2> eStretch;
+    vector<uvec2> eShear;
+    vector<uvec2> eBend;
+
+    aEdges.reserve( nr_tris * 3 );
+    for( uint i=0; i<nr_tris; i++ ) {
+        const uvec3& tri = tris[i];
+        aEdges.push_back( {makeEdgeIdx(tri.x, tri.y), tri.z, i} );
+        aEdges.push_back( {makeEdgeIdx(tri.x, tri.z), tri.y, i} );
+        aEdges.push_back( {makeEdgeIdx(tri.y, tri.z), tri.x, i} );
+    }
+    std::sort(aEdges.begin(), aEdges.end(), [](const Edge& a, const Edge& b) {
+        return a.idx_ps.x < b.idx_ps.x || (a.idx_ps.x==b.idx_ps.x && a.idx_ps.y < b.idx_ps.y);
+    });
+
+    for( int i=0; i<nr_tris*3; i++ ) {
+        const Edge& e1 = aEdges[i];
+        bool isShear = false;
+        for( int j=i+1; j<nr_tris*3; j++ ) {
+            const Edge& e2 = aEdges[j];
+            if( e1.idx_ps!=e2.idx_ps ) {
+                i = j-1;
+                break;
             }
-            const uvec3& t1 = tris[i];
-            const uvec3& t2 = tris[j];
-            if( getAdjacentEdge( t1, t2, edgeIdxs ) ) {
-                float edgeLen  = length( x_s[edgeIdxs.x] - x_s[edgeIdxs.y] );
-                vec3 N1 = glim::triNormal( x_s[t1.x], x_s[t1.y], x_s[t1.z] );
-                vec3 N2 = glim::triNormal( x_s[t2.x], x_s[t2.y], x_s[t2.z] );
+
+            // Todo check shear
+            // ...
+
+            switch( bendType ) {
+            case BendType::None:
+                break;
+            case BendType::Distance: {
+                eBend.push_back( makeEdgeIdx(e1.idx_opp, e2.idx_opp));
+            } break;
+            case BendType::CosAngle: {
+                vec3 N1 = glim::triNormal( xw_s[tris[e1.idx_tri].x], xw_s[tris[e1.idx_tri].y], xw_s[tris[e1.idx_tri].z] );
+                vec3 N2 = glim::triNormal( xw_s[tris[e2.idx_tri].x], xw_s[tris[e2.idx_tri].y], xw_s[tris[e2.idx_tri].z] );
                 float cosAngle = dot(N1,N2);
-                edges.emplace_back( edgeIdxs, uvec2{i,j}, edgeLen, cosAngle );
+                c_bendings.emplace_back( uvec2{e1.idx_tri, e2.idx_tri}, cosAngle );
+            } break;
             }
         }
+        if( isShear ) {
+            eShear.push_back( e1.idx_ps );
+        } else {
+            eStretch.push_back( e1.idx_ps );
+        }
     }
-    fst_volume = updateVolume();
+    for( const auto& e : eStretch ) {
+        c_distances.emplace_back( e, length(xw_s[e.x]-xw_s[e.y]) );
+    }
 }
 
-float pbd::SoftMesh::updateVolume() {
-    volume = 0;
+float pbd::SoftBody::getVolume() {
+    float volume = 0;
     for( const auto& t : tris ) {
-        volume += glim::triVolume( x_s[t.x], x_s[t.y], x_s[t.z] );
+        volume += glim::signedTetrahedronVolume( xw_s[t.x], xw_s[t.y], xw_s[t.z] );
     }
     return volume;
 }
 
-namespace {
-    constexpr glm::vec3 G = {0, -9.8, 0};
+
+
+
+/*
+    Distance constraint
+    C = ||p1 - p0|| - d
+*/
+pbd::ConstraintDistance::ConstraintDistance(uvec2 idxPs, float distance)
+    : idx_ps(idxPs), ori_dist(distance)
+{
+}
+void pbd::ConstraintDistance::project(SoftBody& body, float dt) {
+    vec4& pw1 = body.pw_s[idx_ps.x];
+    vec3 p1 = vec3(pw1);
+    float w1 = pw1.w;
+    vec4& pw2 = body.pw_s[idx_ps.y];
+    vec3 p2 = vec3(pw2);
+    float w2 = pw2.w;
+
+    vec3 diff = p2 - p1;
+    float dist = length(diff);
+    vec3 dir = diff / dist;
+
+    float s = (dist-ori_dist) / (w1+w2);
+    vec3 dP1 =  (s*w1) *dir;
+    vec3 dP2 = -(s*w2) *dir;
+
+    pw1 = vec4(p1 + dP1, w1);
+    pw2 = vec4(p2 + dP2, w2);
 }
 
-static void applyDistanceConstraint( vec4& pm0, vec4& pm1, float fstL, float& lambda, float alpha ) {
-    // C(p0, p1) = ||p0 - p1|| - L
-    // dC(p0, p1)/dp0 =  (p0 - p1)/||p0 - p1||
-    // dC(p0, p1)/dp1 = -(p0 - p1)/||p0 - p1||
-    // dL = (-C(p0, p1) - Alpha) / (invM0+invM1 + Alpha)
-    float m0 = pm0.w;
-    float m1 = pm1.w;
-    vec3 p0 = vec3(pm0);
-    vec3 p1 = vec3(pm1);
-    vec3 diff = p1 - p0;
-    float dist = length(diff);
-    float Cj = dist - fstL;
-    if( glim::isZero( Cj ) ) {
-        vec3 dir = {0,1,0};
-        float dLambda = (-Cj - alpha*lambda) / (1.f/m0 + 1.f/m1 + alpha);
-        pm0 = vec4( p0 + dLambda/m0 * dir, m0 );
-        pm1 = vec4( p1 - dLambda/m1 * dir, m0 );
-        lambda += dLambda;
+
+
+/*
+    Bending constraint
+*/
+pbd::ConstraintBending::ConstraintBending(uvec2 idxTs, float cangle)
+    : idx_ts(idxTs), ori_cangle(cangle)
+{
+}
+void pbd::ConstraintBending::project(SoftBody& body, float dt) {
+    
+}
+
+
+
+/*
+    Volume constraint
+*/
+pbd::ConstraintVolume::ConstraintVolume(float volume)
+    : ori_volume(volume)
+{
+}
+void pbd::ConstraintVolume::project(SoftBody& body, float dt)
+{
+    
+}
+
+
+
+
+
+void pbd::SoftBody::updateP(float dt) {
+    // (5) update v with external force (ex. G)
+    for( int i=0; i<nr_ptcls; i++ ) {
+        vec3 v = vec3( v0_s[i] );
+        v += G*dt;
+        v0_s[i] = vec4{v, 0};
+    }
+
+    // (6) dampVel
+    // ...
+
+    // (7) update p
+    for( int i=0; i<nr_ptcls; i++ ) {
+        pw_s[i] = xw_s[i] + v0_s[i]*dt;
     }
 }
 
-void pbd::simulate(pbd::SoftMesh& mesh, float dt) {
+void pbd::SoftBody::updateX(float dt) {
+
+    // (9) solverIterations
+    const int nr_steps = 10;
+    for( int i=0; i<nr_steps; i++ ) {
+        for( auto& c : c_distances ) {
+            c.project( *this, dt );
+        }
+        for( auto& c : c_bendings ) {
+            c.project( *this, dt );
+        }
+        for( auto& c : c_volumes ) {
+            c.project( *this, dt );
+        }
+    }
+
+    // (12) update x, v
+    for( int i=0; i<nr_ptcls; i++ ) {
+        vec3 v = vec3{pw_s[i]} - vec3{xw_s[i]};
+        xw_s[i] = pw_s[i];
+        v0_s[i] = vec4{v, 0}/dt;
+    }
+}
+
+
+
+
+void pbd::Simulator::update(float dt) {
     constexpr int nr_steps = 10;
 
-    for( int i=0; i<mesh.nr_ptcls; i++ ) {
-        const float msss = mesh.x_s[i].w;
-        vec4 newVel = mesh.v_s[i] + vec4(G,0);;
-        mesh.p_s[i] =  mesh.x_s[i] + newVel*dt;
+    for( auto& body : bodies ) {
+        body.updateP( dt );
     }
-
-    for( int i=0; i<mesh.nr_edges; i++ ) {
-        auto& e = mesh.edges[i];
-        e.lam_length = 0.f;
-    }
-
-    float alphaDist = 0.1f/sqrt(dt);
-
-    for( int step=0; step<nr_steps; step++ ) {
-        for( int i=0; i<mesh.nr_edges; i++ ) {
-            auto& e = mesh.edges[i];
-            applyDistanceConstraint( mesh.p_s[e.idx_ps.x], mesh.p_s[e.idx_ps.y], e.fst_length, e.lam_length, alphaDist );
-        }
-
-        for( int i=0; i<mesh.nr_ptcls; i++ ) {
-            if( mesh.p_s[i].y < 0.001f ) {
-                mesh.p_s[i].y = 0.001f;
+    // (8) generate collision constraints
+    for( auto& body : bodies ) {
+        for( int i=0; i<body.nr_ptcls; i++ ) {
+            vec4& pw = body.pw_s[i];
+            vec4& xw = body.xw_s[i];
+            if( pw.y<0 ) {
+                float temp = pw.y;
+                pw.y = xw.y;
+                xw.y = temp;
             }
-        }    
+        }
     }
-    
-    for( int i=0; i<mesh.nr_ptcls; i++ ) {
-        mesh.v_s[i] = (mesh.p_s[i] - mesh.x_s[i]);
-        mesh.x_s[i] = mesh.p_s[i];
+
+    for( auto& body : bodies ) {
+        body.updateX( dt );
     }
+
+    // (16) velocityUpdate
+    // velocities of colliding vertices are modified according to 
+    // friction and restitution coefficients
 }

@@ -7,6 +7,7 @@
 #define __app_pbd_cpu_h_
 
 #include <limbrary/extension/appbase_canvas3d.h>
+#include "pbd/pbd.h"
 
 namespace lim
 {

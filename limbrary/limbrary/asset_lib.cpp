@@ -10,8 +10,8 @@ static lim::MeshEnvSphere* env_sphere;
 static int ms_max_samples = 2;
 
 lim::AssetLib::AssetLib()
-	: screen_quad(false, false)
-	, small_sphere( 0.2f, 8,4,true, false)
+	: screen_quad(2.f, false, false)
+	, small_sphere(0.2f, 8,4,true, false)
 	, thin_cylinder(0.1f)
 	, texture_viewer("replace before drawImGui", new FramebufferNoDepth(3,32))
 {

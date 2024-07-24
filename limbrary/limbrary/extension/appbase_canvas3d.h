@@ -61,8 +61,8 @@ namespace lim
         virtual void canvasImGui() = 0;
 
         void drawQuad( const glm::vec3& p, const glm::vec3& n, const glm::vec3& color, const glm::vec2& sz={100, 100} ) const;
-        void drawSphere( const glm::vec3& p, const glm::vec3& color, const float r=0.02 ) const;
-        void drawCylinder( const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& color, const float r=0.01 ) const;
+        void drawSphere( const glm::vec3& p, const glm::vec3& color, const float w=0.05f ) const;
+        void drawCylinder( const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& color, const float w=0.025f ) const;
     private:
         void resetInstance();
         void updateInstance() const;

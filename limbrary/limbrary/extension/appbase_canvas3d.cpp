@@ -18,8 +18,8 @@ AppBaseCanvas3d::AppBaseCanvas3d(int winWidth, int winHeight, const char* title,
     , nr_max_quads(nrMaxQuads)
     , nr_max_spheres(nrMaxSpheres)
     , nr_max_cylinders(nrMaxCylinders)
-    , ms_quad(true, false)
-    , ms_sphere(1, true, false)
+    , ms_quad(1.f, true, false)
+    , ms_sphere(1.f, 1, true, false)
     , ms_cylinder(1.f, 1.f, 10, true, false)
 {
     quads.resize(nr_max_quads);
@@ -171,17 +171,17 @@ void AppBaseCanvas3d::drawQuad( const vec3& p, const vec3& n, const vec3& color,
     nr_quads++;
 }
 
-void AppBaseCanvas3d::drawSphere( const vec3& p, const vec3& color, const float r ) const {
-    mat4 mtx_Model = translate(p) * scale(vec3(r));
+void AppBaseCanvas3d::drawSphere( const vec3& p, const vec3& color, const float w ) const {
+    mat4 mtx_Model = translate(p) * scale(vec3(w));
 
     spheres[nr_spheres] = {mtx_Model, vec4(color, 1)};
     nr_spheres++;
 }
 
-void AppBaseCanvas3d::drawCylinder( const vec3& p1, const vec3& p2, const vec3& color, const float r ) const {
+void AppBaseCanvas3d::drawCylinder( const vec3& p1, const vec3& p2, const vec3& color, const float w ) const {
     vec3 diff = p1 - p2;
     vec3 mid = (p1 + p2) * 0.5f;
-    vec3 s = {r, length(diff), r};
+    vec3 s = {w, length(diff), w};
     vec3 axis = cross(vec3{0,1,0}, diff);
     float l = length(axis);
     float angle = atan2f(l, diff.y);
