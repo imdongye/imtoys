@@ -12,6 +12,7 @@
 	1. bumpmap normalmap확인
 	2. https://modoocode.com/129
 	3. 최소 최대 slice 예외처리
+	4. reserve vector
 */
 
 #include <limbrary/model_view/mesh_maked.h>
@@ -25,11 +26,11 @@ using namespace lim;
 using namespace glm;
 
 
-MeshQuad::MeshQuad(bool genNors, bool genUvs)
+MeshQuad::MeshQuad(float width, bool genNors, bool genUvs)
 {
 	name = "quad";
 
-	const float half = 1.0f;
+	const float half = width/2.f;
 	const vec3 front = {0, 0, 1};
 
 	poss.push_back({-half, half, 0});
@@ -57,10 +58,9 @@ MeshQuad::MeshQuad(bool genNors, bool genUvs)
 	initGL();
 }
 
-MeshPlane::MeshPlane(float radius, int nrCols, int nrRows, bool genNors, bool genUvs)
+MeshPlane::MeshPlane(float width, int nrCols, int nrRows, bool genNors, bool genUvs)
 {
 	name = fmtStrToBuf("plane_%d_%d", nrCols, nrRows);
-	const float width = 2.f*radius;
 	const float fNrCols = nrCols;
 	const float fNrRows = nrRows;
 	const float start = -width / 2.f;
@@ -101,11 +101,11 @@ MeshPlane::MeshPlane(float radius, int nrCols, int nrRows, bool genNors, bool ge
 	initGL();
 }
 
-MeshCube::MeshCube(bool genNors, bool genUvs)
+MeshCube::MeshCube(float width, bool genNors, bool genUvs)
 {
 	name = "cube";
 	
-	const float half = 1.0f;
+	const float half = width/2.f;
 	const vec3 cbNors[6] = {
 		{0, 1, 0}, {0, 0, 1}, {1, 0, 0}, {-1, 0, 0}, {0, 0, -1}, {0, -1, 0}};
 	const vec3 cbTans[6] = {
@@ -147,28 +147,31 @@ MeshCube::MeshCube(bool genNors, bool genUvs)
 	initGL();
 }
 
+
+
+
 // From: http://www.songho.ca/opengl/gl_sphere.html
 // texture coord가 다른 같은 위치의 vertex가 많음
-MeshSphere::MeshSphere(float radius, int nrSlices, int nrStacks, bool genNors, bool genUvs)
+MeshSphere::MeshSphere(float width, int nrSlices, int nrStacks, bool genNors, bool genUvs)
 {
+	const float radius = width/2.f;
 	name = fmtStrToBuf("sphere_sl%d_st%d", nrSlices, nrStacks);
-
 	// phi : angle form xy-plane [-pi/2, pi/2]
 	// theta : y-axis angle [0, 2pi]
 	for (int stack = 0; stack <= nrStacks; stack++)
 	{
 		float phi = H_PI - F_PI * stack / (float)nrStacks;
-		float y = radius* sin(phi);
-		float r_cosPhi = radius * cos(phi);
+		float y = sin(phi);
+		float cosPhi = cos(phi);
 		for (int slice = 0; slice <= nrSlices; slice++)
 		{
 			float theta = D_PI * slice / (float)nrSlices;
-			float x = r_cosPhi * cos(theta);
-			float z = -r_cosPhi * sin(theta);
-			vec3 pos = {x, y, z};
-			poss.push_back(pos);
+			float x = cosPhi * cos(theta);
+			float z = -cosPhi * sin(theta);
+			vec3 nor = {x, y, z};
+			poss.push_back(nor*radius);
 			if( genNors ) {
-				nors.push_back(normalize(pos));
+				nors.push_back(nor);
 			}
 			if( genUvs ) {
 				uvs.push_back({ 2.f*slice/(float)nrSlices, 1.f - stack/(float)nrStacks });
@@ -197,8 +200,9 @@ MeshSphere::MeshSphere(float radius, int nrSlices, int nrStacks, bool genNors, b
 
 	initGL();
 }
-MeshEnvSphere::MeshEnvSphere(float radius, int nrSlices, int nrStacks)
+MeshEnvSphere::MeshEnvSphere(float width, int nrSlices, int nrStacks)
 {
+	const float radius = width/2.f;
 	name = fmtStrToBuf("env_sphere_sl%d_st%d", nrSlices, nrStacks);
 
 	// phi : angle form xy-plane [-pi/2, pi/2]
@@ -207,15 +211,15 @@ MeshEnvSphere::MeshEnvSphere(float radius, int nrSlices, int nrStacks)
 	{
 		float phi = H_PI - F_PI * stack / (float)nrStacks;
 		float y = sin(phi);
-		float r_cosPhi = radius * cos(phi);
+		float cosPhi = cos(phi);
 		for (int slice = 0; slice <= nrSlices; slice++)
 		{
 			float theta = D_PI * slice / (float)nrSlices;
-			float x = r_cosPhi * cos(theta);
-			float z = r_cosPhi * sin(theta);
-			vec3 pos = {x, y, z};
-			poss.push_back(pos*radius);
-			nors.push_back(normalize(-pos));
+			float x = cosPhi * cos(theta);
+			float z = cosPhi * sin(theta);
+			vec3 nor = {x, y, z};
+			poss.push_back(nor*radius);
+			nors.push_back(nor);
 			uvs.push_back({ slice/(float)nrSlices, 1.f - stack/(float)nrStacks });
 		}
 	}
@@ -243,14 +247,14 @@ MeshEnvSphere::MeshEnvSphere(float radius, int nrSlices, int nrStacks)
 }
 
 // icosahedron, 20면체
-MeshIcoSphere::MeshIcoSphere(int subdivision, bool genNors, bool genUvs)
+MeshIcoSphere::MeshIcoSphere(float width, int subdivision, bool genNors, bool genUvs)
 {
 	name = fmtStrToBuf("icosphere_s%d", subdivision);
 	
 	
 	const float uStep = 1.f / 11.f;
 	const float vStep = 1.f / 3.f;
-	const float radius = 1.f;
+	const float radius = width/2.f;
 
 	// 위 아래 꼭지점
 	for (int i = 0; i < 5; i++)
@@ -362,11 +366,11 @@ MeshIcoSphere::MeshIcoSphere(int subdivision, bool genNors, bool genUvs)
 	initGL();
 }
 
-MeshCubeSphere::MeshCubeSphere(int nrSlices, bool genNors, bool genUvs)
+MeshCubeSphere::MeshCubeSphere(float width, int nrSlices, bool genNors, bool genUvs)
 {
 	name = fmtStrToBuf("cubesphere_s%d", nrSlices);
 
-	const float radius = 1.f;
+	const float radius = width/2.f;
 
 	const vec3 cbNors[6] = {
 		{0, 1, 0}, {0, 0, 1}, {1, 0, 0}, {-1, 0, 0}, {0, 0, -1}, {0, -1, 0}};
@@ -408,12 +412,12 @@ MeshCubeSphere::MeshCubeSphere(int nrSlices, bool genNors, bool genUvs)
 }
 
 // smooth
-MeshCubeSphere2::MeshCubeSphere2(int nrSlices, bool genNors, bool genUvs)
+MeshCubeSphere2::MeshCubeSphere2(float width, int nrSlices, bool genNors, bool genUvs)
 {
 	name = fmtStrToBuf("smoothcubesphere_s%d", nrSlices);
 	
 	
-	const float radius = 1.f;
+	const float radius = width/2.f;
 	const vec3 cbNors[6] = {
 		{0, 1, 0}, {0, 0, 1}, {1, 0, 0}, {-1, 0, 0}, {0, 0, -1}, {0, -1, 0}};
 	const vec3 cbTans[6] = {
@@ -457,8 +461,9 @@ MeshCubeSphere2::MeshCubeSphere2(int nrSlices, bool genNors, bool genUvs)
 	initGL();
 }
 
-MeshCylinder::MeshCylinder(float radius, float height, int nrSlices, bool genNors, bool genUvs)
+MeshCylinder::MeshCylinder(float width, float height, int nrSlices, bool genNors, bool genUvs)
 {
+	const float radius = width/2.f;
 	name = fmtStrToBuf("sylinder_s%d", nrSlices);
 	
 	const float half = height*0.5f;
@@ -518,12 +523,12 @@ MeshCylinder::MeshCylinder(float radius, float height, int nrSlices, bool genNor
 	initGL();
 }
 
-MeshCapsule::MeshCapsule(int nrSlices, int nrStacks, bool genNors, bool genUvs)
+MeshCapsule::MeshCapsule(float width, float height, int nrSlices, int nrStacks, bool genNors, bool genUvs)
 {
+	const float radius = width/2.f;
 	name = fmtStrToBuf("capsule_sl%d_st", nrSlices, nrStacks);
 
-	const float radius = 1.f;
-	const float halfSylinder = 1.f; // height
+	const float halfCylinder = height/2.f - radius;
 	const int halfStacks = nrStacks / 2;
 	nrStacks = halfStacks * 2;
 
@@ -533,16 +538,16 @@ MeshCapsule::MeshCapsule(int nrSlices, int nrStacks, bool genNors, bool genUvs)
 	{
 		float phi = H_PI - F_PI * stack/(float)(nrStacks-1);
 		float y = sin(phi);
-		float r_cosPhi = radius * cos(phi);
+		float cosPhi = cos(phi);
 		for( int slice=0; slice<=nrSlices; slice++ )
 		{
 			float theta = D_PI * slice / (float)nrSlices;
-			float x = r_cosPhi * cos(theta);
-			float z = -r_cosPhi * sin(theta);
-			vec3 pos = {x, y, z};
-			vec3 nor = normalize(pos);
+			float x = cosPhi * cos(theta);
+			float z = -cosPhi * sin(theta);
+			vec3 nor = {x, y, z};
+			vec3 pos = radius * nor;
 			vec2 uv = { 1.f*slice/(float)nrSlices, (1.f-stack/(float)(nrStacks-1)) };
-			pos.y += (stack<halfStacks)? halfSylinder : (-halfSylinder);
+			pos.y += (stack<halfStacks)? halfCylinder : (-halfCylinder);
 			uv.y += (stack<halfStacks)? 0.5f : -0.5f;
 			uv.y = fract(uv.y);
 
@@ -574,13 +579,13 @@ MeshCapsule::MeshCapsule(int nrSlices, int nrStacks, bool genNors, bool genUvs)
 	initGL();
 }
 
-MeshDonut::MeshDonut(int nrSlices, int nrRingVerts, bool genNors, bool genUvs)
+MeshDonut::MeshDonut(float radius, float height, int nrSlices, int nrRingVerts, bool genNors, bool genUvs)
 {
 	name = fmtStrToBuf("donut_s%d_r", nrSlices, nrRingVerts);
 
 	
-	const float ringRad = 1.f;
-	const float donutRad = 1.5f;
+	const float ringRad = height/2.f;
+	const float donutRad = radius;
 
 	// calculus : shell method
 	for( int slice=0; slice<=nrSlices; slice++ )
@@ -614,6 +619,37 @@ MeshDonut::MeshDonut(int nrSlices, int nrRingVerts, bool genNors, bool genUvs)
 			tris.push_back({ curRing+curVert, nextRing+nextVert, curRing+nextVert }); // lower
 		}
 	}
+
+	initGL();
+}
+
+
+static void addTriFace(uvec4 quad, std::vector<uvec3>& tris) {
+	tris.emplace_back(quad.x, quad.z, quad.w);
+	tris.emplace_back(quad.x, quad.y, quad.z);
+}
+
+MeshCubeShared::MeshCubeShared(float width)
+{
+	name = "shared cube";
+/*
+	6 7
+	4 5
+
+	2 3
+	0 1
+*/
+	poss.reserve(8);
+	for( int y=0; y<2; y++) for( int z=0; z<2; z++) for( int x=0; x<2; x++) {
+		poss.emplace_back( (x-0.5f)*width, (y-0.5f)*width, (z-0.5f)*width );
+	}
+	tris.reserve(6*2);
+	addTriFace({0,1,3,2}, tris);
+	addTriFace({4,5,7,6}, tris);
+	addTriFace({0,1,5,4}, tris);
+	addTriFace({1,3,7,5}, tris);
+	addTriFace({3,2,6,7}, tris);
+	addTriFace({2,0,4,6}, tris);
 
 	initGL();
 }

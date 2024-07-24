@@ -21,12 +21,12 @@ namespace glim {
 		return {glm::cos(Angle), glm::sin(Angle)*v};
 	}
     
-    inline glm::vec3 triNormal(const glm::vec3& v0, const glm::vec3& v1, const glm::vec3& v2) {
-        return glm::normalize( glm::cross(v1-v0, v2-v0) );
+    inline glm::vec3 triNormal(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3) {
+        return glm::normalize( glm::cross(p2-p1, p3-p1) );
     }
 	// From: https://stackoverflow.com/questions/1406029/how-to-calculate-the-volume-of-a-3d-mesh-object-the-surface-of-which-is-made-up
-	inline float triVolume(const glm::vec3& v0, const glm::vec3& v1, const glm::vec3& v2) {
-        return glm::abs(glm::dot(v0, glm::cross(v1, v2))/6.f);
+	inline float signedTetrahedronVolume(const glm::vec3& v1, const glm::vec3& v2, const glm::vec3& v3) {
+        return glm::dot(v1, glm::cross(v2, v3))/6.f;
     }
 	inline bool isZero(float a) {
 		return glm::epsilonEqual(a, 0.f, glm::epsilon<float>());

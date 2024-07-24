@@ -13,40 +13,63 @@
 
 namespace pbd
 {
-    struct Constraint {
-        virtual void update() = 0;
-    };
-    struct ConstraintSpring : public Constraint {
-    };
-    struct ConstraintCollision : public Constraint {
-        
-    };
+    struct SoftBody;
 
-    // adjust info in mesh VS triangle?
-    struct Edge {
+    struct ConstraintDistance {
         glm::uvec2 idx_ps;
+        float ori_dist;
+        ConstraintDistance(glm::uvec2 idxPs, float distance);
+        void project(SoftBody& body, float dt);
+    };
+    struct ConstraintBending {
         glm::uvec2 idx_ts;
-        // current first lambda
-        float length, fst_length, lam_length;
-        float cangle, fst_cangle, lam_cangle;
-        Edge(const glm::uvec2& idxPs, const glm::uvec2& idxTs, float len, float cAng)
-            : idx_ps(idxPs), idx_ts(idxTs), length(len), fst_length(len), cangle(cAng), fst_cangle(cAng)
-        {}
+        float ori_cangle; // cos(angle)
+        ConstraintBending(glm::uvec2 idxTs, float cangle);
+        void project(SoftBody& body, float dt);
     };
-    struct SoftMesh {
-        std::vector<glm::vec4> x_s; // pos
-        std::vector<glm::vec4> p_s; // temp pos
-        std::vector<glm::vec4> v_s;
+    struct ConstraintVolume {
+        float ori_volume;
+        ConstraintVolume(float volume);
+        void project(SoftBody& body, float dt);
+    };
+
+
+
+    struct Constraint;
+    struct SoftBody {
+        enum class BendType {
+            None,
+            Distance,
+            CosAngle,
+        };
+
+        // vec4(pos, invM) invM = w
+        std::vector<glm::vec4> xw_s; // pos
+        std::vector<glm::vec4> pw_s; // temp pos
+        std::vector<glm::vec4> v0_s;
         std::vector<glm::uvec3> tris;
-        std::vector<Edge> edges;
-        glm::uint nr_ptcls, nr_edges, nr_tris;
-        float volume, fst_volume, lam_volume;
+        glm::uint nr_ptcls, nr_tris;
+        std::vector<ConstraintDistance> c_distances;
+        std::vector<ConstraintBending> c_bendings;
+        std::vector<ConstraintVolume> c_volumes;
 
-        SoftMesh(const lim::Mesh& src);
-        float updateVolume();
+        SoftBody(const lim::Mesh& src, BendType bendType = BendType::CosAngle);
+        void updateP(float dt);
+        void updateX(float dt);
+        float getVolume();
     };
 
-    void simulate( SoftMesh& mesh, float dt );
+
+
+    
+
+
+
+
+    struct Simulator {
+        std::vector<SoftBody> bodies;
+        void update( float dt );
+    };
 }
 
 #endif
