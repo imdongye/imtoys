@@ -100,7 +100,7 @@ static void makeClothDataAndInitGL() {
 	ctf.scale *= 0.5f;
 	ctf.update();
 
-	MeshPlane plane(1, nr_p.x-1, nr_p.y-1, false, false);
+	MeshPlane plane(2, nr_p.x-1, nr_p.y-1, false, false);
 	nr_ptcls = plane.poss.size();
 	cloth_pm_data.resize(nr_ptcls);
 	for(int i=0; i<nr_ptcls; i++) {

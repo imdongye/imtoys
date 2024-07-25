@@ -47,6 +47,8 @@ Animator& Animator::operator=(const Animator& src) {
 }
 
 void Animator::setAnim(const Animation* anim) {
+    if( !anim )
+        return;
     is_enabled = true;
     cur_anim = anim;
     duration_sec = cur_anim->nr_ticks/cur_anim->ticks_per_sec;

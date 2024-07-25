@@ -17,11 +17,14 @@ namespace lim
 		inline static constexpr CStr APP_NAME = "PBD_CPU";
 		inline static constexpr CStr APP_DIR  = "im_pbd";
 		inline static constexpr CStr APP_DESCRIPTION = "pearlabyss summer internship";
-
+		Program prog_ms;
+		
 	public:
 		AppPbdCPU();
 		~AppPbdCPU();
 		
+		
+		virtual void customRender( const Camera& cam, const LightDirectional& lit ) const final;
 		virtual void canvasUpdate() final;
         virtual void canvasDraw() const final;
         virtual void canvasImGui() final;

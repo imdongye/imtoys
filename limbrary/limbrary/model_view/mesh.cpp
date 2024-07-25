@@ -48,31 +48,19 @@ void Mesh::initGL(bool withClearMem)
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
 
-	// for SSBO memory alignment vec4
-	static vector<vec4> tempVec4;
 	if( poss.size()>0 ){
-		tempVec4.clear();
-		tempVec4.reserve(poss.size());
-		for( vec3 v : poss ) {
-			tempVec4.emplace_back(v.x, v.y, v.z, 1.f);
-		}
 		glGenBuffers(1, &buf_pos);
 		glBindBuffer(GL_ARRAY_BUFFER, buf_pos);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(vec4)*poss.size(), tempVec4.data(), GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vec3)*poss.size(), poss.data(), GL_STATIC_DRAW);
 		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vec4), 0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vec3), 0);
 	}
 	if( nors.size()>0 ){
-		tempVec4.clear();
-		tempVec4.reserve(nors.size());
-		for( vec3 v : nors ) {
-			tempVec4.emplace_back(v.x, v.y, v.z, 0.f);
-		}
 		glGenBuffers(1, &buf_nor);
 		glBindBuffer(GL_ARRAY_BUFFER, buf_nor);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(vec4)*nors.size(), tempVec4.data(), GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vec3)*nors.size(), nors.data(), GL_STATIC_DRAW);
 		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vec4), 0);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vec3), 0);
 	}
 	if( uvs.size()>0 ){
 		glGenBuffers(1, &buf_uv);
@@ -123,6 +111,10 @@ void Mesh::initGL(bool withClearMem)
 
 	if( withClearMem )
 		clearMem();
+}
+void Mesh::restoreGL()
+{
+	
 }
 void Mesh::deinitGL()
 {

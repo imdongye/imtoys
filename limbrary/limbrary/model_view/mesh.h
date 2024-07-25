@@ -63,6 +63,7 @@ namespace lim
 		virtual ~Mesh();
 		
 		void initGL(bool withClearMem = false);
+		void restoreGL();
 		void deinitGL();
 		void clearMem();
 		void print() const;

@@ -139,11 +139,15 @@ void AppBaseCanvas3d::update()
     }
 
 	vp.getFb().bind();
-	prog.use();
+    
+    customRender(vp.camera, light);
+
+    prog.use();
 	vp.camera.setUniformTo(prog);
 	light.setUniformTo(prog);
 
     drawInstance();
+
 
 	vp.getFb().unbind();
 }

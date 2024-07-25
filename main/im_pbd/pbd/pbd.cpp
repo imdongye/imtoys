@@ -25,19 +25,20 @@ static inline uvec2 makeEdgeIdx(uint a1, uint a2) {
 #pragma endregion edge_util
 
 // ref From: CreateConstraints() in SoftBodySharedSettings.cpp of JoltPhysics
-pbd::SoftBody::SoftBody(const lim::Mesh& src, Settings settings) {
-    nr_ptcls = src.poss.size();
-    xw_s.reserve(nr_ptcls);
-    pw_s.reserve(nr_ptcls);
-    v0_s.reserve(nr_ptcls);
-    for( const vec3& p : src.poss ) {
-        xw_s.push_back( glm::vec4{p,1} );
-        pw_s.push_back( glm::vec4{p,1} );
-        v0_s.push_back( glm::vec4{0} );
-    }
+pbd::SoftBody::SoftBody(const lim::Mesh& src, Settings s)
+    : lim::Mesh(src), settings(s)
+{
+    nr_tris = tris.size();
+    nr_ptcls = poss.size();
+    np_s.reserve(nr_ptcls);
+    v_s.reserve(nr_ptcls);
+    w_s.reserve(nr_ptcls);
 
-    nr_tris = src.tris.size();
-    tris = src.tris;
+    for( const vec3& p : poss ) {
+        np_s.push_back( p );
+        v_s.push_back( vec3{0} );
+        w_s.push_back( 1.f );
+    }
 
     struct Edge {
         uvec2 idx_ps;
@@ -82,10 +83,23 @@ pbd::SoftBody::SoftBody(const lim::Mesh& src, Settings settings) {
                 eBend.push_back( makeEdgeIdx(e1.idx_opp, e2.idx_opp));
             } break;
             case Settings::BendType::CosAngle: {
-                vec3 N1 = glim::triNormal( getX(tris[e1.idx_tri].x), getX(tris[e1.idx_tri].y), getX(tris[e1.idx_tri].z) );
-                vec3 N2 = glim::triNormal( getX(tris[e2.idx_tri].x), getX(tris[e2.idx_tri].y), getX(tris[e2.idx_tri].z) );
+                /*
+                   x2
+                e1/  \e3
+                 /    \
+                x0----x1
+                 \ e0 /
+                e2\  /e4
+                   x3
+                */
+                uvec4 idxPs = {e1.idx_ps, e1.idx_opp, e2.idx_opp};
+                vec3 e0 = poss[idxPs.x] - poss[idxPs.y];
+                vec3 e3 = poss[idxPs.z] - poss[idxPs.y];
+                vec3 e4 = poss[idxPs.w] - poss[idxPs.y];
+                vec3 N1 = cross(e3, e0);
+                vec3 N2 = cross(e0, e4);
                 float cosAngle = dot(N1,N2);
-                c_bendings.emplace_back( uvec2{e1.idx_tri, e2.idx_tri}, cosAngle );
+                c_bendings.emplace_back( idxPs, cosAngle );
             } break;
             }
         }
@@ -97,20 +111,20 @@ pbd::SoftBody::SoftBody(const lim::Mesh& src, Settings settings) {
     }
 
     for( const auto& e : eStretch ) {
-        c_distances.emplace_back( e, length(getX(e.x)-getX(e.y)) );
+        c_distances.emplace_back( e, length(poss[e.x]-poss[e.y]) );
     }
     for( const auto& e : eShear ) {
-        c_distances.emplace_back( e, length(getX(e.x)-getX(e.y)) );
+        c_distances.emplace_back( e, length(poss[e.x]-poss[e.y]) );
     }
     for( const auto& e : eBend ) {
-        c_distances.emplace_back( e, length(getX(e.x)-getX(e.y)) );
+        c_distances.emplace_back( e, length(poss[e.x]-poss[e.y]) );
     }
 }
 
 float pbd::SoftBody::getVolume() {
     float volume = 0;
     for( const auto& t : tris ) {
-        volume += glim::signedTetrahedronVolume( getX(t.x), getX(t.y), getX(t.z) );
+        volume += glim::signedTetrahedronVolume( poss[t.x], poss[t.y], poss[t.z] );
     }
     return volume;
 }
@@ -127,10 +141,10 @@ pbd::ConstraintDistance::ConstraintDistance(uvec2 idxPs, float distance)
 {
 }
 void pbd::ConstraintDistance::project(SoftBody& body, float alpha) {
-    vec3 p1 = body.getP(idx_ps.x);
-    float w1 = body.getW(idx_ps.x);
-    vec3 p2 = body.getP(idx_ps.y);
-    float w2 = body.getW(idx_ps.y);
+    vec3 p1 = body.np_s[idx_ps.x];
+    float w1 = body.w_s[idx_ps.x];
+    vec3 p2 = body.np_s[idx_ps.y];
+    float w2 = body.w_s[idx_ps.y];
 
     vec3 diff = p1 - p2;
     float dist = length(diff);
@@ -146,14 +160,20 @@ void pbd::ConstraintDistance::project(SoftBody& body, float alpha) {
     // body.pw_s[idx_ps.y] = {p2+dP2, w2};
 
     // XPBD
-    if( glim::isZero(C) )
-        return; 
-    float dLam = -(C - alpha*lambda)/(w1+w2+alpha);
-    vec3 dP1 =  dLam*w1 * dC;
-    vec3 dP2 = -dLam*w2 * dC;
-    body.pw_s[idx_ps.x] = {p1+dP1, w1};
-    body.pw_s[idx_ps.y] = {p2+dP2, w2};
-    lambda += dLam;
+    // float dLam = (-C - alpha*lambda)/(w1+w2+alpha);
+    // vec3 dP1 =  dLam*w1 * dC;
+    // vec3 dP2 = -dLam*w2 * dC;
+    
+    // lambda -= dLam;
+    // body.pw_s[idx_ps.x] = {p1+dP1, w1};
+    // body.pw_s[idx_ps.y] = {p2+dP2, w2};
+
+
+    float lambda = C / (w1+w2+alpha);
+    vec3 dP1 = -lambda*w1*dC;
+    vec3 dP2 = lambda*w2*dC;
+    body.np_s[idx_ps.x] = p1+dP1;
+    body.np_s[idx_ps.y] = p2+dP2;
 }
 
 
@@ -161,12 +181,20 @@ void pbd::ConstraintDistance::project(SoftBody& body, float alpha) {
 /*
     Bending constraint
 */
-pbd::ConstraintBending::ConstraintBending(uvec2 idxTs, float cangle)
-    : idx_ts(idxTs), ori_cangle(cangle)
+pbd::ConstraintBending::ConstraintBending(uvec4 idxPs, float cangle)
+    : idx_ps(idxPs), ori_cangle(cangle)
 {
 }
 void pbd::ConstraintBending::project(SoftBody& body, float alpha) {
-    
+    vec3 e0 = body.np_s[idx_ps.x] - body.np_s[idx_ps.y];
+    vec3 e3 = body.np_s[idx_ps.z] - body.np_s[idx_ps.y];
+    vec3 e4 = body.np_s[idx_ps.w] - body.np_s[idx_ps.y];
+    vec3 N1 = cross(e3, e0);
+    vec3 N2 = cross(e0, e4);
+    float cosAngle = dot(N1,N2);
+
+    float C = cosAngle - ori_cangle;
+    // float lambda = C / (body.getW(idx_ts.x) + body.getW(idx_ts.y) + alpha);
 }
 
 
@@ -191,9 +219,9 @@ void pbd::SoftBody::updateP(float dt)
 {
     // (5) update v with external force (ex. G)
     for( uint i=0; i<nr_ptcls; i++ ) {
-        vec3 v = vec3( v0_s[i] );
+        vec3 v = vec3( v_s[i] );
         v += G*dt;
-        v0_s[i] = vec4{v, 0};
+        v_s[i] = vec4{v, 0};
     }
 
     // (6) dampVel
@@ -201,7 +229,7 @@ void pbd::SoftBody::updateP(float dt)
 
     // (7) update p
     for( uint i=0; i<nr_ptcls; i++ ) {
-        pw_s[i] = xw_s[i] + v0_s[i]*dt;
+        np_s[i] = poss[i] + v_s[i]*dt;
     }
 }
 
@@ -209,11 +237,12 @@ void pbd::SoftBody::updateX(float dt)
 {
     // (9) solverIterations
     const uint nr_steps = 10;
-    float sqdt = dt*dt;
+    float substepDt = dt/nr_steps;
+    float sqdt = substepDt*substepDt;
     float alpha;
     for( uint i=0; i<nr_steps; i++ ) {
         alpha = settings.a_distance/sqdt;
-        alpha = 0.00002f/sqdt;
+        // alpha = 0.f;
         for( auto& c : c_distances ) {
             c.project( *this, alpha );
         }
@@ -229,36 +258,38 @@ void pbd::SoftBody::updateX(float dt)
 
     // (12) update x, v
     for( int i=0; i<nr_ptcls; i++ ) {
-        vec3 v = vec3{pw_s[i]} - vec3{xw_s[i]};
-        xw_s[i] = pw_s[i];
-        v0_s[i] = vec4{v/dt, 0};
+        v_s[i] = (np_s[i] - poss[i])/dt;
+        poss[i] = np_s[i];
     }
 }
 
 
 
-
+pbd::Simulator::~Simulator()
+{
+    for( auto body : bodies ) {
+        delete body;
+    }
+}
 void pbd::Simulator::update(float dt) 
 {
-    for( auto& body : bodies ) {
-        body.updateP( dt );
+    for( auto body : bodies ) {
+        body->updateP( dt );
     }
     // (8) generate collision constraints
-    for( auto& body : bodies ) {
-        for( uint i=0; i<body.nr_ptcls; i++ ) {
-            vec4& pw = body.pw_s[i];
-            vec4& xw = body.xw_s[i];
-            if( pw.y<0 ) {
+    for( auto body : bodies ) {
+        for( uint i=0; i<body->nr_ptcls; i++ ) {
+            if( body->np_s[i].y<0 ) {
                 // float temp = pw.y;
                 // pw.y = xw.y;
                 // xw.y = temp;
-                pw.y = 0;
+                body->np_s[i].y = 0;
             }
         }
     }
 
-    for( auto& body : bodies ) {
-        body.updateX( dt );
+    for( auto body : bodies ) {
+        body->updateX( dt );
     }
 
     // (16) velocityUpdate

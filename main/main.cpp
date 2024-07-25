@@ -89,8 +89,8 @@ int main()
 	pushAppData<lim::AppPbdCPU>();
 	pushAppData<lim::AppPbdGPU>();
 	pushAppData<lim::AppCurve>();
-	pushAppData<lim::AppClothGPU>();
 	pushAppData<lim::AppClothCPU>();
+	pushAppData<lim::AppClothGPU>();
 	pushAppData<lim::AppParticle>();
 	pushAppData<lim::AppSkeletal>();
 	pushAppData<lim::AppIK>();

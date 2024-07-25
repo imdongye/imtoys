@@ -2,6 +2,7 @@
 #include <limbrary/limgui.h>
 #include "pbd/pbd.h"
 #include <limbrary/model_view/mesh_maked.h>
+#include <limbrary/model_view/model.h>
 #include <limbrary/glm_tools.h>
 using namespace lim;
 using namespace glm;
@@ -11,28 +12,35 @@ namespace {
 	AppPbdCPU* g_app = nullptr;
 	pbd::Simulator simulator;
 
-
+	pbd::SoftBody::Settings settings;
 	bool is_paused = true;
 }
 
 static void resetApp() {
 	simulator.bodies.clear();
-
 	mat4 tf = translate(vec3(0,2,0)) * glim::rotateX(H_PI*0.1f);
+
+	// Model md;
+	// md.importFromFile("exports/simp_rst/bunny.obj");
+	// md.setUnitScaleAndPivot({0,0,0}, 1.f);
+	// Mesh& ms = *md.own_meshes[0];
+	// tf = tf * md.tf_norm->mtx;
+
 	MeshCubeShared ms(0.5);
 	// MeshPlane ms(1.f, ......5, 5, false, false);
+
 	for( vec3& p : ms.poss ) {
 		p = vec3(tf*vec4(p,1));
 	}
-	pbd::SoftBody::Settings settings;
-	simulator.bodies.emplace_back( ms, settings );
+	simulator.bodies.push_back( new pbd::SoftBody(ms, settings) );
 }
 static void deleteApp() {
 	simulator.bodies.clear();
 }
 
-AppPbdCPU::AppPbdCPU() : AppBaseCanvas3d(1200, 780, APP_NAME, false)
+AppPbdCPU::AppPbdCPU() : AppBaseCanvas3d(1200, 780, APP_NAME, false, 10, 1000000, 10000000)
 {
+	prog_ms.attatch("mvp.vs").attatch("ndl.fs").link();
 	g_app = this;
 	resetApp();
 }
@@ -47,17 +55,21 @@ void AppPbdCPU::canvasUpdate()
 	simulator.update(delta_time);
 }
 static void drawBody(const pbd::SoftBody& body) {
-	for(const vec4& p : body.xw_s) {
-		g_app->drawSphere(vec3{p}, {1,0,0});
+	for(const vec3& p : body.poss) {
+		g_app->drawSphere(p, {1,0,0});
 	}
 	for( const auto& c : body.c_distances ) {
-		g_app->drawCylinder( vec3{body.xw_s[c.idx_ps.x]}, vec3{body.xw_s[c.idx_ps.y]}, {1,0,0} );
+		g_app->drawCylinder( body.poss[c.idx_ps.x], body.poss[c.idx_ps.y], {1,0,0} );
 	}
+}
+void AppPbdCPU::customRender(const Camera& cam, const LightDirectional& lit) const 
+{
+
 }
 void AppPbdCPU::canvasDraw() const
 {
-	for( const pbd::SoftBody& body : simulator.bodies ) {
-		drawBody( body );
+	for( auto body : simulator.bodies ) {
+		drawBody( *body );
 	}
 
 	// basis object 10cm
@@ -78,7 +90,8 @@ void AppPbdCPU::canvasImGui()
 			elapsed += delta_time;
 		}
 	}
-	if ( ImGui::Button("reset") ) {
+	ImGui::SliderFloat("a_distance", &settings.a_distance, 0.f, 0.0001f, "%.6f");
+	if( ImGui::Button("reset") ) {
 		resetApp();
 	}
 	LimGui::PlotVal("dt", "ms", delta_time*1000.f);

@@ -56,6 +56,7 @@ namespace lim
             , bool vsync=true, int nrMaxQuads=10, int nrMaxSpheres=10000, int nrMaxCylinders=1000);
         virtual ~AppBaseCanvas3d();
 
+        virtual void customRender( const Camera& cam, const LightDirectional& lit ) const {};
         virtual void canvasUpdate() = 0;
         virtual void canvasDraw() const = 0;
         virtual void canvasImGui() = 0;
