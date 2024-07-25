@@ -12,7 +12,7 @@ out vec3 wPos;
 out vec3 wNor;
 out vec2 mUv;
 
-uniform mat4 mtx_Model = mat4(1);
+uniform mat4 mtx_Model;
 uniform mat4 mtx_View;
 uniform mat4 mtx_Proj;
 uniform mat4 mtx_Bones[MAX_BONES];

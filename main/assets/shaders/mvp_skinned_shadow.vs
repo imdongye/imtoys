@@ -13,10 +13,10 @@ out vec3 wNor;
 out vec2 mUv;
 out vec4 lPos;
 
-uniform mat4 mtx_Model = mat4(1);
+uniform mat4 mtx_Model;
 uniform mat4 mtx_View;
 uniform mat4 mtx_Proj;
-uniform mat4 mtx_ShadowVp = mat4(1);
+uniform mat4 mtx_ShadowVp;
 uniform mat4 mtx_Bones[MAX_BONES];
 
 void main()

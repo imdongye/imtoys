@@ -23,8 +23,8 @@ namespace pbd
     };
     struct ConstraintBending {
         glm::uvec4 idx_ps; // edge, opp1, opp2
-        float ori_cangle;
-        ConstraintBending(glm::uvec4 idxPs, float cangle);
+        float ori_angle;
+        ConstraintBending(glm::uvec4 idxPs, float angle);
         void project(SoftBody& body, float alpha);
     };
     struct ConstraintVolume {
@@ -43,6 +43,7 @@ namespace pbd
                 Distance,
                 CosAngle,
             };
+            bool update_buf = false;
             BendType bendType = BendType::CosAngle;
             // compliance to be alpha : inv stiffness in XPBD
             float a_distance = 0.001f;
