@@ -160,20 +160,20 @@ void pbd::ConstraintDistance::project(SoftBody& body, float alpha) {
     // body.pw_s[idx_ps.y] = {p2+dP2, w2};
 
     // XPBD
-    // float dLam = (-C - alpha*lambda)/(w1+w2+alpha);
-    // vec3 dP1 =  dLam*w1 * dC;
-    // vec3 dP2 = -dLam*w2 * dC;
+    float dLam = (-C - alpha*lambda)/(w1+w2+alpha);
+    vec3 dP1 =  dLam*w1 * dC;
+    vec3 dP2 = -dLam*w2 * dC;
     
-    // lambda -= dLam;
-    // body.pw_s[idx_ps.x] = {p1+dP1, w1};
-    // body.pw_s[idx_ps.y] = {p2+dP2, w2};
-
-
-    float lambda = C / (w1+w2+alpha);
-    vec3 dP1 = -lambda*w1*dC;
-    vec3 dP2 = lambda*w2*dC;
+    lambda -= dLam;
     p1 = p1+dP1;
     p2 = p2+dP2;
+
+
+    // float lambda = C / (w1+w2+alpha);
+    // vec3 dP1 = -lambda*w1*dC;
+    // vec3 dP2 = lambda*w2*dC;
+    // p1 = p1+dP1;
+    // p2 = p2+dP2;
 }
 
 
@@ -262,6 +262,9 @@ void pbd::SoftBody::updateP(float dt)
 
 void pbd::SoftBody::updateX(float dt)
 {
+    for( auto& c : c_distances ) {
+        c.lambda = 0.f;
+    }
     // (9) solverIterations
     const uint nr_steps = 10;
     float substepDt = dt/nr_steps;
@@ -269,18 +272,17 @@ void pbd::SoftBody::updateX(float dt)
     float alpha;
     for( uint i=0; i<nr_steps; i++ ) {
         alpha = settings.a_distance/sqdt;
-        // alpha = 0.f;
         for( auto& c : c_distances ) {
             c.project( *this, alpha );
         }
-        alpha = settings.a_bending/sqdt;
-        for( auto& c : c_bendings ) {
-            c.project( *this, alpha );
-        }
-        alpha = settings.a_volume/sqdt;
-        for( auto& c : c_volumes ) {
-            c.project( *this, alpha );
-        }
+        // alpha = settings.a_bending/sqdt;
+        // for( auto& c : c_bendings ) {
+        //     c.project( *this, alpha );
+        // }
+        // alpha = settings.a_volume/sqdt;
+        // for( auto& c : c_volumes ) {
+        //     c.project( *this, alpha );
+        // }
     }
 
     // (12) update x, v

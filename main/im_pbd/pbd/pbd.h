@@ -17,7 +17,7 @@ namespace pbd
 
     struct ConstraintDistance {
         glm::uvec2 idx_ps;
-        float ori_dist;
+        float ori_dist, lambda;
         ConstraintDistance(glm::uvec2 idxPs, float distance);
         void project(SoftBody& body, float alpha);
     };
@@ -50,6 +50,7 @@ namespace pbd
             float a_bending  = 0.001f;
             float a_volume   = 0.001f;
         };
+        
         Settings settings;
 
         // lim::Mesh poss => current poss (X)

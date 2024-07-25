@@ -14,27 +14,29 @@ namespace {
 	pbd::Simulator simulator;
 
 	pbd::SoftBody::Settings settings;
+	pbd::SoftBody* body;
 	bool is_paused = true;
 }
 
 static void resetApp() {
 	simulator.clear();
-	mat4 tf = translate(vec3(0,2,0)) * glim::rotateX(H_PI*0.1f);
+	mat4 tf = translate(vec3(0,2,0)) * glim::rotateX(H_PI*0.1f)* glim::rotateY(H_PI*0.2f);
 
-	Model md;
-	md.importFromFile("exports/simp_rst/bunny.obj");
-	md.setUnitScaleAndPivot({0,0,0}, 1.f);
-	Mesh& ms = *md.own_meshes[0];
-	tf = tf * md.tf_norm->mtx;
-	settings.update_buf = true;
+	// Model md;
+	// md.importFromFile("exports/simp_rst/bunny.obj");
+	// md.setUnitScaleAndPivot({0,0,0}, 1.f);
+	// Mesh& ms = *md.own_meshes[0];
+	// tf = tf * md.tf_norm->mtx;
+	// settings.update_buf = true;
 
-	// MeshCubeShared ms(0.5);
-	// MeshPlane ms(1.f, ......5, 5, false, false);
+	MeshCubeShared ms(0.5);
+	// MeshPlane ms(1.f, 5, 5, false, false);
 
 	for( vec3& p : ms.poss ) {
 		p = vec3(tf*vec4(p,1));
 	}
 	simulator.bodies.push_back( new pbd::SoftBody(ms, settings) );
+	body = simulator.bodies.back();
 	// simulator.bodies.back()->w_s[0] = 0.f;
 	// simulator.bodies.back()->w_s[1] = 0.f;
 }
@@ -115,7 +117,8 @@ void AppPbdCPU::canvasImGui()
 			elapsed += delta_time;
 		}
 	}
-	ImGui::SliderFloat("a_distance", &settings.a_distance, 0.f, 0.0001f, "%.6f");
+	// ImGui::SliderFloat("a_distance", &settings.a_distance, 0.f, 0.0001f, "%.6f");
+	ImGui::SliderFloat("a_distance", &body->settings.a_distance, 0.f, 0.1f, "%.6f");
 	if( ImGui::Button("reset") ) {
 		resetApp();
 	}
