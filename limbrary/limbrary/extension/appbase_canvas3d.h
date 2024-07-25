@@ -35,9 +35,9 @@ namespace lim
         MeshQuad ms_quad;
 		MeshIcoSphere ms_sphere;
         MeshCylinder ms_cylinder;
-        const int nr_max_quads;
-        const int nr_max_spheres;
-        const int nr_max_cylinders;
+        const int max_nr_quads;
+        const int max_nr_spheres;
+        const int max_nr_cylinders;
         mutable int nr_quads;
         mutable int nr_spheres;
         mutable int nr_cylinders;
@@ -56,10 +56,13 @@ namespace lim
             , bool vsync=true, int nrMaxQuads=10, int nrMaxSpheres=10000, int nrMaxCylinders=1000);
         virtual ~AppBaseCanvas3d();
 
-        virtual void customRender( const Camera& cam, const LightDirectional& lit ) const {};
         virtual void canvasUpdate() = 0;
         virtual void canvasDraw() const = 0;
         virtual void canvasImGui() = 0;
+
+        virtual void customDrawShadow( const glm::mat4& mtx_View, const glm::mat4& mtx_Proj ) const {};
+        virtual void customDraw( const Camera& cam, const LightDirectional& lit ) const {};
+
 
         void drawQuad( const glm::vec3& p, const glm::vec3& n, const glm::vec3& color, const glm::vec2& sz={100, 100} ) const;
         void drawSphere( const glm::vec3& p, const glm::vec3& color, const float w=0.05f ) const;

@@ -4,6 +4,7 @@
 #include <limbrary/model_view/mesh_maked.h>
 #include <limbrary/model_view/model.h>
 #include <limbrary/glm_tools.h>
+#include <limbrary/asset_lib.h>
 using namespace lim;
 using namespace glm;
 
@@ -17,16 +18,16 @@ namespace {
 }
 
 static void resetApp() {
-	simulator.bodies.clear();
+	simulator.clear();
 	mat4 tf = translate(vec3(0,2,0)) * glim::rotateX(H_PI*0.1f);
 
-	// Model md;
-	// md.importFromFile("exports/simp_rst/bunny.obj");
-	// md.setUnitScaleAndPivot({0,0,0}, 1.f);
-	// Mesh& ms = *md.own_meshes[0];
-	// tf = tf * md.tf_norm->mtx;
+	Model md;
+	md.importFromFile("exports/simp_rst/bunny.obj");
+	md.setUnitScaleAndPivot({0,0,0}, 1.f);
+	Mesh& ms = *md.own_meshes[0];
+	tf = tf * md.tf_norm->mtx;
 
-	MeshCubeShared ms(0.5);
+	// MeshCubeShared ms(0.5);
 	// MeshPlane ms(1.f, ......5, 5, false, false);
 
 	for( vec3& p : ms.poss ) {
@@ -62,14 +63,34 @@ static void drawBody(const pbd::SoftBody& body) {
 		g_app->drawCylinder( body.poss[c.idx_ps.x], body.poss[c.idx_ps.y], {1,0,0} );
 	}
 }
-void AppPbdCPU::customRender(const Camera& cam, const LightDirectional& lit) const 
-{
 
+void AppPbdCPU::customDrawShadow(const mat4& mtx_View, const mat4& mtx_Proj) const
+{
+	Program& prog = AssetLib::get().prog_shadow_static;
+	prog.use();
+	prog.setUniform("mtx_View", mtx_View);
+	prog.setUniform("mtx_Proj", mtx_Proj);
+	prog.setUniform("mtx_Model", glm::mat4(1));
+
+	for( auto body : simulator.bodies ) {
+		body->bindAndDrawGL();
+	}
+}
+void AppPbdCPU::customDraw(const Camera& cam, const LightDirectional& lit) const 
+{
+	prog_ms.use();
+	cam.setUniformTo(prog_ms);
+	lit.setUniformTo(prog_ms);
+	prog_ms.setUniform("mtx_Model", glm::mat4(1));
+
+	for( auto body : simulator.bodies ) {
+		body->bindAndDrawGL();
+	}
 }
 void AppPbdCPU::canvasDraw() const
 {
 	for( auto body : simulator.bodies ) {
-		drawBody( *body );
+		// drawBody( *body );
 	}
 
 	// basis object 10cm

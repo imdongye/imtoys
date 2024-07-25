@@ -15,36 +15,33 @@ AppBaseCanvas3d::AppBaseCanvas3d(int winWidth, int winHeight, const char* title,
     : AppBase(winWidth, winHeight, title, vsync)
     , vp("canvas3d", new FramebufferMs())
     , light()
-    , nr_max_quads(nrMaxQuads)
-    , nr_max_spheres(nrMaxSpheres)
-    , nr_max_cylinders(nrMaxCylinders)
+    , max_nr_quads(nrMaxQuads)
+    , max_nr_spheres(nrMaxSpheres)
+    , max_nr_cylinders(nrMaxCylinders)
     , ms_quad(1.f, true, false)
     , ms_sphere(1.f, 1, true, false)
     , ms_cylinder(1.f, 1.f, 10, true, false)
 {
-    quads.resize(nr_max_quads);
-    spheres.resize(nr_max_spheres);
-    cylinders.resize(nr_max_cylinders);
+    quads.resize(max_nr_quads);
+    spheres.resize(max_nr_spheres);
+    cylinders.resize(max_nr_cylinders);
 
     GLsizeiptr bufSize;
 
-    bufSize = nr_max_quads*sizeof(PrimInfo);
+    bufSize = max_nr_quads*sizeof(PrimInfo);
     glGenBuffers(1, &buf_quads);
     glBindBuffer(GL_ARRAY_BUFFER, buf_quads);
     glBufferData(GL_ARRAY_BUFFER, bufSize, nullptr, GL_DYNAMIC_DRAW);
-    log::glError();
 
-    bufSize = nr_max_spheres*sizeof(PrimInfo);
+    bufSize = max_nr_spheres*sizeof(PrimInfo);
     glGenBuffers(1, &buf_spheres);
     glBindBuffer(GL_ARRAY_BUFFER, buf_spheres);
     glBufferData(GL_ARRAY_BUFFER, bufSize, nullptr, GL_DYNAMIC_DRAW);
-    log::glError();
 
-    bufSize = nr_max_cylinders*sizeof(PrimInfo);
+    bufSize = max_nr_cylinders*sizeof(PrimInfo);
     glGenBuffers(1, &buf_cylinders);
     glBindBuffer(GL_ARRAY_BUFFER, buf_cylinders);
     glBufferData(GL_ARRAY_BUFFER, bufSize, nullptr, GL_DYNAMIC_DRAW);
-    log::glError();
 
     prog.name = "canvas3d_render";
     prog.attatch("canvas3d.vs").attatch("canvas3d.fs").link();
@@ -84,7 +81,7 @@ void AppBaseCanvas3d::updateInstance() const
 
     
     glBindBuffer(GL_ARRAY_BUFFER, buf_spheres);
-    bufSize = sizeof(PrimInfo)*nr_max_spheres;
+    bufSize = sizeof(PrimInfo)*nr_spheres;
     pMapped = (PrimInfo*)glMapBufferRange(GL_ARRAY_BUFFER, 0, bufSize, accessFlags);
     memcpy(pMapped, spheres.data(), bufSize);
     glUnmapBuffer(GL_ARRAY_BUFFER);
@@ -131,6 +128,7 @@ void AppBaseCanvas3d::update()
 
     if( light.shadow ) {
         light.bakeShadowMap([&](const glm::mat4& mtx_View, const glm::mat4& mtx_Proj) {
+            customDrawShadow(mtx_View, mtx_Proj);
             prog_shadow.use();
             prog_shadow.setUniform("mtx_View", mtx_View);
             prog_shadow.setUniform("mtx_Proj", mtx_Proj);
@@ -140,7 +138,7 @@ void AppBaseCanvas3d::update()
 
 	vp.getFb().bind();
     
-    customRender(vp.camera, light);
+    customDraw(vp.camera, light);
 
     prog.use();
 	vp.camera.setUniformTo(prog);

@@ -629,7 +629,7 @@ static void addTriFace(uvec4 quad, std::vector<uvec3>& tris) {
 	tris.emplace_back(quad.x, quad.y, quad.z);
 }
 
-MeshCubeShared::MeshCubeShared(float width)
+MeshCubeShared::MeshCubeShared(float width, bool withInitGL)
 {
 	name = "shared cube";
 /*
@@ -650,6 +650,8 @@ MeshCubeShared::MeshCubeShared(float width)
 	addTriFace({1,3,7,5}, tris);
 	addTriFace({3,2,6,7}, tris);
 	addTriFace({2,0,4,6}, tris);
-
-	initGL();
+	
+	if( withInitGL ) {
+		initGL();
+	}
 }

@@ -31,7 +31,7 @@ namespace lim
 	struct MeshDonut : public Mesh { MeshDonut(float width = 1.f, float height = 0.2f, int nrSlices = 50, int nrRingVerts = 10, bool genNors = true, bool genUvs = true); };
 	
 	// no seam, shared all verts
-	struct MeshCubeShared : public Mesh { MeshCubeShared(float width = 1.f); };
+	struct MeshCubeShared : public Mesh { MeshCubeShared(float width = 1.f, bool withInitGL=true); };
 }
 
 #endif

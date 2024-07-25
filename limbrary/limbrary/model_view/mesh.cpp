@@ -112,9 +112,11 @@ void Mesh::initGL(bool withClearMem)
 	if( withClearMem )
 		clearMem();
 }
-void Mesh::restoreGL()
+void Mesh::restorePosBuf()
 {
-	
+	glBindBuffer(GL_ARRAY_BUFFER, buf_pos);
+	// glMap보다 조금 더 빠름, buffer usage dynamic_draw에 따른 차이 없음
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vec3)*poss.size(), poss.data());
 }
 void Mesh::deinitGL()
 {

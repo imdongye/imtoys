@@ -23,8 +23,8 @@ namespace lim
 		AppPbdCPU();
 		~AppPbdCPU();
 		
-		
-		virtual void customRender( const Camera& cam, const LightDirectional& lit ) const final;
+        virtual void customDrawShadow( const glm::mat4& mtx_View, const glm::mat4& mtx_Proj ) const final;
+		virtual void customDraw( const Camera& cam, const LightDirectional& lit ) const final;
 		virtual void canvasUpdate() final;
         virtual void canvasDraw() const final;
         virtual void canvasImGui() final;

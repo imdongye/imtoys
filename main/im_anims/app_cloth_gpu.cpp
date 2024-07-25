@@ -322,7 +322,6 @@ void AppClothGPU::updateImGui()
 	if(ImGui::Button("release fixed ptcl")) {
 		glBindBuffer(GL_ARRAY_BUFFER, buf_posm_ids[src_buf_idx]);
 		float* ptr = (float*)glMapBufferRange(GL_ARRAY_BUFFER, sizeof(vec3), sizeof(float),  GL_MAP_WRITE_BIT);
-		log::glError();
 		float aaa = 1.f;
 		memcpy(ptr, &aaa, sizeof(float));
 		glUnmapBuffer(GL_ARRAY_BUFFER);

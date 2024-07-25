@@ -261,15 +261,20 @@ void pbd::SoftBody::updateX(float dt)
         v_s[i] = (np_s[i] - poss[i])/dt;
         poss[i] = np_s[i];
     }
+    restorePosBuf();
 }
 
 
 
 pbd::Simulator::~Simulator()
 {
+    clear();
+}
+void pbd::Simulator::clear() {
     for( auto body : bodies ) {
         delete body;
     }
+    bodies.clear();
 }
 void pbd::Simulator::update(float dt) 
 {

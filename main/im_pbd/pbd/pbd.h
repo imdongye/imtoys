@@ -70,6 +70,7 @@ namespace pbd
     struct Simulator {
         std::vector<SoftBody*> bodies;
         ~Simulator();
+        void clear();
         void update( float dt );
     };
 }
