@@ -41,7 +41,8 @@ namespace lim
 		int fb_height = 0;
 		float aspect_ratio = 1.f; // width/height;
 		float pixel_ratio = 1.f;    // (DPI)
-		int refresh_rate = 60;
+		int monitor_max_fps = 60;
+		int max_fps = -1;
 		glm::vec2 mouse_pos = {0,0};
 		glm::vec2 mouse_off = {0,0};
 
@@ -65,7 +66,6 @@ namespace lim
 		/* destroy */
 		virtual ~AppBase();
 		void run();
-
 	protected:
 		virtual void update()=0;
 		virtual void updateImGui()=0;

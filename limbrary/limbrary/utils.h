@@ -25,10 +25,6 @@ unordered_map은 헤쉬테이블로 메모리를 많이 차지 하지만 순회�
 namespace lim
 {
 	constexpr int SPRINTF_BUF_SIZE = 128;
-	constexpr float Q_PI = 0.78539816339f; // quarter
-	constexpr float H_PI = 1.57079632679f; // half
-	constexpr float F_PI = 3.14159265359f; // float
-	constexpr float D_PI = 6.28318530718f; // double
 
 	using CStr = const char* const;
 

@@ -40,7 +40,7 @@ namespace
 			if( ImGui::Begin("debug overlay", &isFpsOpened, window_flags) )
 			{
 				static int fpsGraphOffset = 0;
-				const int refreshRate = lim::AssetLib::get().app->refresh_rate;
+				const int refreshRate = lim::AssetLib::get().app->monitor_max_fps;
 				const float framerate = ImGui::GetIO().Framerate;
 				float time = ImGui::GetTime();
 				if( _refresh_time == 0.0 )
@@ -69,7 +69,6 @@ namespace
 		std::fill_n(_fps_graph_data, IM_ARRAYSIZE(_fps_graph_data), glm::vec2(0));
 	}
 }
-
 
 
 
@@ -110,10 +109,12 @@ AppBase::AppBase(int winWidth, int winHeight, const char* title, bool vsync)
 	{
 		GLFWmonitor* monitor = glfwGetPrimaryMonitor();
 		const GLFWvidmode* vidMode = glfwGetVideoMode(monitor);
-		refresh_rate = vidMode->refreshRate;
+		monitor_max_fps = vidMode->refreshRate;
 		glfwSetWindowPos(window, (vidMode->width-win_width)/2, (vidMode->height-win_height)/2);
 		glfwShowWindow(window);
 	}
+
+	
 
 	glfwGetFramebufferSize(window, &fb_width, &fb_height);
 	aspect_ratio = fb_width/(float)fb_height;
@@ -311,7 +312,8 @@ void AppBase::run()
 
 	while( !glfwWindowShouldClose(window) )
 	{
-		// delta_time = glm::min(io.DeltaTime, 0.2f);
+		double nextTime =  glfwGetTime() + 1.0/max_fps;
+
 		delta_time = io.DeltaTime;
 
 		glfwPollEvents();
@@ -348,5 +350,9 @@ void AppBase::run()
 		glFinish();
 
 		glfwSwapBuffers(window);
+
+		if( max_fps<1 )
+			continue;
+		while( glfwGetTime() < nextTime ) {}
 	}
 }

@@ -10,6 +10,13 @@
 
 
 namespace glim {
+	constexpr float PI45 = 0.78539816339f; // quarter
+	constexpr float PI90 = 1.57079632679f; // half
+	constexpr float PI 	 = 3.14159265359f; // float
+	constexpr float PI2  = 6.28318530718f; // double
+
+
+
     // glm::exp(quat) fixed version
 	inline glm::quat exp(const glm::quat& q) {
 		const glm::vec3 u{q.x, q.y, q.z};
@@ -20,11 +27,14 @@ namespace glim {
 		const glm::vec3 v{u/Angle};
 		return {glm::cos(Angle), glm::sin(Angle)*v};
 	}
-    
 
     inline glm::vec3 triNormal(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3) {
         return glm::normalize( glm::cross(p2-p1, p3-p1) );
     }
+
+	inline float cotInterVec(const vec3& a, const vec3& b) {
+		return dot(a, b) / length(cross(a, b));
+	}
 
 
 	// From: https://stackoverflow.com/questions/1406029/how-to-calculate-the-volume-of-a-3d-mesh-object-the-surface-of-which-is-made-up

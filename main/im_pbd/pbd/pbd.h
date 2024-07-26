@@ -27,6 +27,12 @@ namespace pbd
         ConstraintBending(glm::uvec4 idxPs, float angle);
         void project(SoftBody& body, float alpha);
     };
+    struct ConstraintIsometricBending {
+        glm::uvec4 idx_ps; // edge, opp1, opp2
+        glm::mat4 Q;
+        ConstraintIsometricBending(glm::uvec4& idxPs, glm::mat4& _Q);
+        void project(SoftBody& body, float alpha);
+    };
     struct ConstraintVolume {
         float ori_volume;
         ConstraintVolume(float volume);
@@ -42,6 +48,7 @@ namespace pbd
                 None,
                 Distance,
                 CosAngle,
+                Isometric,
             };
             bool update_buf = false;
             BendType bendType = BendType::CosAngle;
@@ -60,6 +67,7 @@ namespace pbd
         glm::uint nr_ptcls, nr_tris;
         std::vector<ConstraintDistance> c_distances;
         std::vector<ConstraintBending>  c_bendings;
+        std::vector<ConstraintIsometricBending>  c_i_bendings;
         std::vector<ConstraintVolume>   c_volumes;
 
         SoftBody(const lim::Mesh& src, Settings s = {});

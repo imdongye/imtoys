@@ -2,7 +2,7 @@
 
 namespace {
     constexpr float def_time_speed = 1.f;
-	constexpr int 	def_step_size = 12;
+	constexpr int 	def_step_size = 20;
 	constexpr float def_Ka = 0.5f;	// vicous drag 공기저항
 	constexpr float def_Kr = 0.8f;		// 반발 계수
 	constexpr float def_Kmu = 0.1f; 	// 마찰 계수

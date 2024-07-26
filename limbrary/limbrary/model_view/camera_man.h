@@ -38,6 +38,7 @@ Todo:
 #include "camera.h"
 #include "../application.h"
 #include "../viewport.h"
+#include <limbrary/glm_tools.h>
 
 namespace lim
 {
@@ -50,13 +51,13 @@ namespace lim
 		const float MIN_DIST = 0.1f;
 
 		float spd_free_move = 2.f/1.f;    // m/sec
-		float spd_free_rot = D_PI/2100.f;  // r/px
+		float spd_free_rot = glim::PI2/2100.f;  // r/px
 
 		float spd_pivot_move = 1.f/120.f;  // m/px
-		float spd_pivot_rot = D_PI/1000.f; // r/px
+		float spd_pivot_rot = glim::PI2/1000.f; // r/px
 
 		float spd_scroll_move = 1.f/100.f; // m/scrollOff
-		float spd_scroll_rot = D_PI/400.f; // r/scrollOff
+		float spd_scroll_rot = glim::PI2/400.f; // r/scrollOff
 	#ifdef WIN32
 		float spd_zoom_fovy = 1;
 		float spd_zoom_dist = 6.f;

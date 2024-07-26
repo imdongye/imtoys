@@ -2,6 +2,7 @@
 #include <limbrary/log.h>
 #include <limbrary/asset_lib.h>
 #include <limbrary/limgui.h>
+#include <limbrary/glm_tools.h>
 
 using namespace glm;
 using namespace std;
@@ -216,19 +217,19 @@ struct Cloth {
 		}
 
 		// bending
-		nrSprs = glm::max(0, (nr_p.x-2)*(nr_p.y) + (nr_p.x)*(nr_p.y-2));
-		bending_sprs.clear();
-		bending_sprs.reserve(nrSprs);
-		for(int x=0; x<nr_p.x-2; x++) for(int y=0; y<nr_p.y; y++) {
-			bending_sprs.emplace_back(ptcls[idxP(x, y)], ptcls[idxP(x+2,y)]);
-		}
-		for(int x=0; x<nr_p.x; x++) for(int y=0; y<nr_p.y-2; y++){
-			bending_sprs.emplace_back(ptcls[idxP(x, y)], ptcls[idxP(x,y+2)]);
-		}
+		// nrSprs = glm::max(0, (nr_p.x-2)*(nr_p.y) + (nr_p.x)*(nr_p.y-2));
+		// bending_sprs.clear();
+		// bending_sprs.reserve(nrSprs);
+		// for(int x=0; x<nr_p.x-2; x++) for(int y=0; y<nr_p.y; y++) {
+		// 	bending_sprs.emplace_back(ptcls[idxP(x, y)], ptcls[idxP(x+2,y)]);
+		// }
+		// for(int x=0; x<nr_p.x; x++) for(int y=0; y<nr_p.y-2; y++){
+		// 	bending_sprs.emplace_back(ptcls[idxP(x, y)], ptcls[idxP(x,y+2)]);
+		// }
 
 		Transform ctf;
 		ctf.pos = {0,2,0};
-		ctf.ori = quat(rotate(H_PI*0.0f, vec3{1,0,0}));
+		ctf.ori = quat(rotate(0.0f, vec3{1,0,0}));
 		ctf.scale = vec3(cloth_size.x, 1, cloth_size.y);
 		ctf.scale *= 0.5f;
 		ctf.update();
@@ -392,10 +393,6 @@ static void pickClosestPtclInRay(vec3 ray, vec3 rayO, vector<Particle>& ps) {
             }
 		}
 	}
-	if( picked_ptcl ) {
-		picked_ptcl->fixed = !picked_ptcl->fixed;
-		picked_ptcl->v = vec3(0);
-	}
 }
 
 void AppClothCPU::canvasImGui()
@@ -405,7 +402,10 @@ void AppClothCPU::canvasImGui()
 
 
 	ImGui::Begin("test window##particle");
+	LimGui::PlotVal("dt", "ms", delta_time*1000.f);
 	LimGui::PlotVal("fps", "", ImGui::GetIO().Framerate);
+	ImGui::SliderInt("max fps", &max_fps, -1, 300);
+
 	if(ImGui::Button("restart")) {
 		resetScene();
 	}
@@ -420,12 +420,12 @@ void AppClothCPU::canvasImGui()
 	ImGui::SliderFloat("plane bounce damping", &Kr, 0.01f, 1.f);
 	ImGui::SliderFloat("plane friction", &Kmu, 0.01f, 1.f);
 
-	ImGui::SliderFloat("air damping", &Ka, 0.0001f, 0.9f, "%.5f");
+	ImGui::SliderFloat("air damping", &Ka, 0.f, 0.9f, "%.5f");
 
 	if(ImGui::SliderFloat("cloth mass", &cloth_mass, 0.05f, 0.7f)) {
 		ptcl_mass = cloth_mass/(nr_p.x*nr_p.y);
 	}
-	ImGui::SliderFloat("spring coef", &Ks, 10.f, 70.f);
+	ImGui::SliderFloat("spring coef", &Ks, 0.f, 200.f);
 	ImGui::SliderFloat("spring damping coef", &Kd, 0.00f, 0.5f);
 	ImGui::SliderFloat("stretch", &stretch_pct, 0.1f, 1.f);
 	ImGui::SliderFloat("shear", &shear_pct, 0.1f, 1.f);
@@ -434,7 +434,7 @@ void AppClothCPU::canvasImGui()
 	// if(ImGui::SliderInt2("nr cloth ptcls", (int*)&nr_p, 2, 200)) {
 	// 	makeClothData();
 	// }
-	if(ImGui::SliderInt("nr cloth ptcls", (int*)&nr_p.x, 2, 200)) {
+	if(ImGui::SliderInt("nr cloth ptcls", (int*)&nr_p.x, 2, 400)) {
 		nr_p.y = nr_p.x;
 		cloth.resize();
 	}
@@ -445,6 +445,10 @@ void AppClothCPU::canvasImGui()
 		const vec3 mouseRay = vp.getMousePosRayDir();
 		pickClosestPtclInRay(mouseRay, vp.camera.pos, particles);
 		pickClosestPtclInRay(mouseRay, vp.camera.pos, cloth.ptcls);
+		if( picked_ptcl ) {
+			picked_ptcl->fixed = !picked_ptcl->fixed;
+			picked_ptcl->v = vec3(0);
+		}
 	} else if(picked_ptcl && ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
 		vec3& dstP = picked_ptcl->p;
 		const vec3 toObj = dstP-vp.camera.pos;

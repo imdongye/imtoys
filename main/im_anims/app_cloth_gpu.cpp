@@ -95,7 +95,7 @@ static void makeClothDataAndInitGL() {
 
 	Transform ctf;
 	ctf.pos = {0,2,0};
-	ctf.ori = quat(rotate(H_PI*0.0f, vec3{1,0,0}));
+	ctf.ori = quat(rotate(0.0f, vec3{1,0,0}));
 	ctf.scale = vec3(cloth_size.x, 1, cloth_size.y);
 	ctf.scale *= 0.5f;
 	ctf.update();

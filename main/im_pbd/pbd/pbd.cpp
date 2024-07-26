@@ -63,50 +63,76 @@ pbd::SoftBody::SoftBody(const lim::Mesh& src, Settings s)
     });
 
     for( uint i=0; i<nr_tris*3; i++ ) {
-        const Edge& e1 = aEdges[i];
+        const Edge& edge1 = aEdges[i];
         bool isShear = false;
         for( uint j=i+1; j<nr_tris*3; j++ )
         {
-            const Edge& e2 = aEdges[j];
+            const Edge& edge2 = aEdges[j];
 
-            if( e1.idx_ps!=e2.idx_ps ) {
+            if( edge1.idx_ps!=edge2.idx_ps ) {
                 i = j-1;
                 break;
             }
+            /*
+               p2
+            e2/  \e1
+             /    \
+            p0----p1 // <-- 주의: 순서 바뀔수있음, 넌리니어한 cos angle의 차이로 계산하면 오차가 더 심해짐
+             \ e0 /
+            e3\  /e4
+               p3
+            e0 = p0-p1
+            e1 = p2-p1
+            e4 = p3-p1
+            e2 = p2-p0
+            e3 = p3-p0
+            */
+            uvec4 idxPs = {edge1.idx_ps, edge1.idx_opp, edge2.idx_opp};
+            vec3 e0 = poss[idxPs.x] - poss[idxPs.y];
+            vec3 e1 = poss[idxPs.z] - poss[idxPs.y];
+            vec3 e4 = poss[idxPs.w] - poss[idxPs.y];
+            vec3 n1 = normalize(cross(e1, e0));
+            vec3 n2 = normalize(cross(e0, e4));
 
-            // Todo check shear
-            // ...
+            // check shear
+            if( abs(dot(e1, e4)) < 0.0001f && abs(dot(n1, n2)) > 0.9999f ) {
+                isShear = true;
+                eShear.push_back(makeEdgeIdx(edge1.idx_opp, edge2.idx_opp));
+                continue;
+            }
 
+            // else is bend
             switch( settings.bendType ) {
             case Settings::BendType::None:
                 break;
             case Settings::BendType::Distance: {
-                eBend.push_back( makeEdgeIdx(e1.idx_opp, e2.idx_opp));
+                eBend.push_back(makeEdgeIdx(edge1.idx_opp, edge2.idx_opp));
             } break;
             case Settings::BendType::CosAngle: {
-                /* PBD, Appendix A: Bending constraint proejection
-                   p3
-                e2/  \e4
-                 /    \
-                p2----p1 // <-- 주의: 순서 바뀔수있음, 넌리니어한 cos angle의 차이로 계산하면 오차가 더 심해짐
-                 \ e1 /
-                e3\  /e5
-                   p4
-                */
-                uvec4 idxPs = {e1.idx_ps, e1.idx_opp, e2.idx_opp};
-                vec3 _e1 = poss[idxPs.y] - poss[idxPs.x];
-                vec3 _e4 = poss[idxPs.z] - poss[idxPs.x];
-                vec3 _e5 = poss[idxPs.w] - poss[idxPs.x];
-                vec3 N1 = cross(_e4, _e1);
-                vec3 N2 = cross(_e1, _e5);
-                c_bendings.emplace_back( idxPs, acos(dot(N1,N2)) );
+                c_bendings.emplace_back( idxPs, acos(dot(n1,n2)) );
+            } break;
+            case Settings::BendType::Isometric: {
+                vec3 e2 = poss[idxPs.z] - poss[idxPs.x];
+                vec3 e3 = poss[idxPs.w] - poss[idxPs.x];
+                // Q = 3/area * Kt*K
+                // K = { c01+c04, c02+c03, -c01-c02, -c03-c04 }
+                // cjk = cot(ej,ek)
+                vec4 K = {
+                     glim::cotInterVec( e1, e0) + glim::cotInterVec( e0, e4),
+                     glim::cotInterVec(-e0, e2) + glim::cotInterVec( e3,-e0),
+                    -glim::cotInterVec( e1, e0) - glim::cotInterVec(-e0, e2),
+                    -glim::cotInterVec( e3,-e0) - glim::cotInterVec( e0, e4),
+                };
+                float area = 0.5f*(length(cross(e1,e0)) + length(cross(e0,e4)));
+                mat4 Q = 3.f/area * outerProduct(K, K);
+                c_i_bendings.emplace_back( idxPs, Q );
             } break;
             }
         }
         if( isShear ) {
-            eShear.push_back( e1.idx_ps );
+            eShear.push_back( edge1.idx_ps );
         } else {
-            eStretch.push_back( e1.idx_ps );
+            eStretch.push_back( edge1.idx_ps );
         }
     }
 
@@ -131,6 +157,25 @@ float pbd::SoftBody::getVolume() {
 
 
 
+void pbd::SoftBody::updateP(float dt)
+{
+    // (5) update v with external force (ex. G)
+    for( uint i=0; i<nr_ptcls; i++ ) {
+        if( w_s[i]==0.f ) {
+            v_s[i] = vec3(0);
+            continue;
+        }
+        v_s[i] += G*dt;
+    }
+
+    // (6) dampVel
+    // ...
+
+    // (7) update p
+    for( uint i=0; i<nr_ptcls; i++ ) {
+        np_s[i] = poss[i] + v_s[i]*dt;
+    }
+}
 
 /*
     Distance constraint
@@ -159,28 +204,25 @@ void pbd::ConstraintDistance::project(SoftBody& body, float alpha) {
     // body.pw_s[idx_ps.x] = {p1+dP1, w1};
     // body.pw_s[idx_ps.y] = {p2+dP2, w2};
 
-    // XPBD
-    float dLam = (-C - alpha*lambda)/(w1+w2+alpha);
-    vec3 dP1 =  dLam*w1 * dC;
-    vec3 dP2 = -dLam*w2 * dC;
-    
-    lambda -= dLam;
-    p1 = p1+dP1;
-    p2 = p2+dP2;
-
-
-    // float lambda = C / (w1+w2+alpha);
-    // vec3 dP1 = -lambda*w1*dC;
-    // vec3 dP2 = lambda*w2*dC;
+    // original XPBD
+    // float dLam = (-C - alpha*lambda)/(w1+w2+alpha);
+    // vec3 dP1 =  dLam*w1 * dC;
+    // vec3 dP2 = -dLam*w2 * dC;
+    // lambda += dLam; // need store lambda in constraints
     // p1 = p1+dP1;
     // p2 = p2+dP2;
+
+    // simplified XPBD
+    float lambda = C / (w1+w2+alpha);
+    vec3 dP1 = -lambda*w1*dC;
+    vec3 dP2 = lambda*w2*dC;
+    p1 = p1+dP1;
+    p2 = p2+dP2;
 }
 
 
+#pragma region Bending-constraint
 
-/*
-    Bending constraint
-*/
 pbd::ConstraintBending::ConstraintBending(uvec4 idxPs, float angle)
     : idx_ps(idxPs), ori_angle(angle)
 {
@@ -191,19 +233,19 @@ void pbd::ConstraintBending::project(SoftBody& body, float alpha) {
     vec3& p3 = body.np_s[idx_ps.z]; float w3 = body.w_s[idx_ps.z];
     vec3& p4 = body.np_s[idx_ps.w]; float w4 = body.w_s[idx_ps.w];
     /* PBD, Appendix A: Bending constraint proejection
-       p3
-    e2/  \e4
+       p2
+    e2/  \e1
      /    \
-    p2----p1 // <-- 주의: 순서 바뀔수있음, 넌리니어한 cos angle의 차이로 계산하면 오차가 더 심해짐
-     \ e1 /
-    e3\  /e5
-       p4
+    p0----p1 
+     \ e0 /
+    e3\  /e4
+       p3
     */
     vec3 e1 = p2 - p1;
     vec3 e4 = p3 - p1;
     vec3 e5 = p4 - p1;
-    vec3 n1 = cross(e4, e1); // p3 inside
-    vec3 n2 = cross(e1, e5); // p4 inside
+    vec3 n1 = normalize(cross(e4, e1)); 
+    vec3 n2 = normalize(cross(e1, e5));
     float d = dot(n1,n2);
     float acosD = acos(d);
 
@@ -213,7 +255,7 @@ void pbd::ConstraintBending::project(SoftBody& body, float alpha) {
     vec3 q2 = ( cross(n2,p3) + cross(p3,n1)*d ) / length(cross(p3, p2))
             - ( cross(n1,p4) + cross(p4,n2)*d ) / length(cross(p4, p2));
     vec3 q1 = -q2-q3-q4;
-    float denum = w1*length2(q1) + w2*length2(q2) + w3*length2(q3) + w4*length2(q4);
+    float denum = w1*length2(q1) + w2*length2(q2) + w3*length2(q3) + w4*length2(q4) + alpha;
     vec3 dP1 = w1*sqrt(1-d*d)*(acosD-ori_angle)/denum * q1;
     vec3 dP2 = w2*sqrt(1-d*d)*(acosD-ori_angle)/denum * q2;
     vec3 dP3 = w3*sqrt(1-d*d)*(acosD-ori_angle)/denum * q3;
@@ -223,6 +265,23 @@ void pbd::ConstraintBending::project(SoftBody& body, float alpha) {
     p3 = p3+dP3;
     p4 = p4+dP4;
 }
+
+
+
+
+
+pbd::ConstraintIsometricBending::ConstraintIsometricBending(uvec4& idxPs, mat4& _q)
+    : idx_ps(idxPs), Q(_q)
+{
+}
+void pbd::ConstraintIsometricBending::project(SoftBody& body, float alpha)
+{
+
+}
+
+
+
+#pragma endregion Bending-constraint
 
 
 
@@ -240,59 +299,33 @@ void pbd::ConstraintVolume::project(SoftBody& body, float alpha)
 
 
 
-
-
-void pbd::SoftBody::updateP(float dt)
-{
-    // (5) update v with external force (ex. G)
-    for( uint i=0; i<nr_ptcls; i++ ) {
-        vec3 v = vec3( v_s[i] );
-        v += G*dt;
-        v_s[i] = vec4{v, 0};
-    }
-
-    // (6) dampVel
-    // ...
-
-    // (7) update p
-    for( uint i=0; i<nr_ptcls; i++ ) {
-        np_s[i] = poss[i] + v_s[i]*dt;
-    }
-}
-
 void pbd::SoftBody::updateX(float dt)
 {
-    for( auto& c : c_distances ) {
-        c.lambda = 0.f;
-    }
     // (9) solverIterations
-    const uint nr_steps = 10;
-    float substepDt = dt/nr_steps;
-    float sqdt = substepDt*substepDt;
+    float sqdt = dt*dt;
     float alpha;
-    for( uint i=0; i<nr_steps; i++ ) {
-        alpha = settings.a_distance/sqdt;
-        for( auto& c : c_distances ) {
-            c.project( *this, alpha );
-        }
-        // alpha = settings.a_bending/sqdt;
-        // for( auto& c : c_bendings ) {
-        //     c.project( *this, alpha );
-        // }
-        // alpha = settings.a_volume/sqdt;
-        // for( auto& c : c_volumes ) {
-        //     c.project( *this, alpha );
-        // }
+
+    alpha = settings.a_volume/sqdt;
+    for( auto& c : c_volumes ) {
+        c.project( *this, alpha );
+    }
+
+    alpha = settings.a_bending/sqdt;
+    for( auto& c : c_bendings ) {
+        c.project( *this, alpha );
+    }
+    
+    alpha = settings.a_distance/(200.f*sqdt);
+    for( auto& c : c_distances ) {
+        c.project( *this, alpha );
     }
 
     // (12) update x, v
-    for( int i=0; i<nr_ptcls; i++ ) {
+    for( uint i=0; i<nr_ptcls; i++ ) {
         v_s[i] = (np_s[i] - poss[i])/dt;
         poss[i] = np_s[i];
     }
-    if( settings.update_buf ) {
-        restorePosBuf();
-    }
+   
 }
 
 
@@ -309,26 +342,39 @@ void pbd::Simulator::clear() {
 }
 void pbd::Simulator::update(float dt) 
 {
-    for( auto body : bodies ) {
-        body->updateP( dt );
-    }
-    // (8) generate collision constraints
-    for( auto body : bodies ) {
-        for( uint i=0; i<body->nr_ptcls; i++ ) {
-            if( body->np_s[i].y<0 ) {
-                // float temp = pw.y;
-                // pw.y = xw.y;
-                // xw.y = temp;
-                body->np_s[i].y = 0;
+    const uint nr_steps = 20;
+    dt = dt/nr_steps;
+
+    for( uint i=0; i<nr_steps; i++ )
+    {
+        for( auto body : bodies ) {
+            body->updateP( dt );
+        }
+
+        // (8) generate collision constraints
+        for( auto body : bodies ) {
+            for( uint i=0; i<body->nr_ptcls; i++ ) {
+                if( body->np_s[i].y<0 ) {
+                    // float temp = pw.y;
+                    // pw.y = xw.y;
+                    // xw.y = temp;
+                    body->np_s[i].y = 0;
+                }
             }
         }
+
+        for( auto body : bodies ) {
+            body->updateX( dt );
+        }
+        // (16) velocityUpdate
+        // velocities of colliding vertices are modified according to 
+        // friction and restitution coefficients
     }
+
 
     for( auto body : bodies ) {
-        body->updateX( dt );
+        if( body->settings.update_buf ) {
+            body->restorePosBuf();
+        }
     }
-
-    // (16) velocityUpdate
-    // velocities of colliding vertices are modified according to 
-    // friction and restitution coefficients
 }

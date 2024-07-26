@@ -21,6 +21,7 @@
 #include <vector>
 #include <memory>
 #include <glad/glad.h>
+#include <limbrary/glm_tools.h>
 
 using namespace lim;
 using namespace glm;
@@ -160,12 +161,12 @@ MeshSphere::MeshSphere(float width, int nrSlices, int nrStacks, bool genNors, bo
 	// theta : y-axis angle [0, 2pi]
 	for (int stack = 0; stack <= nrStacks; stack++)
 	{
-		float phi = H_PI - F_PI * stack / (float)nrStacks;
+		float phi = glim::PI90 - glim::PI * stack / (float)nrStacks;
 		float y = sin(phi);
 		float cosPhi = cos(phi);
 		for (int slice = 0; slice <= nrSlices; slice++)
 		{
-			float theta = D_PI * slice / (float)nrSlices;
+			float theta = glim::PI2 * slice / (float)nrSlices;
 			float x = cosPhi * cos(theta);
 			float z = -cosPhi * sin(theta);
 			vec3 nor = {x, y, z};
@@ -209,12 +210,12 @@ MeshEnvSphere::MeshEnvSphere(float width, int nrSlices, int nrStacks)
 	// theta : y-axis angle [0, 2pi]
 	for (int stack = 0; stack <= nrStacks; stack++)
 	{
-		float phi = H_PI - F_PI * stack / (float)nrStacks;
+		float phi = glim::PI90 - glim::PI * stack / (float)nrStacks;
 		float y = sin(phi);
 		float cosPhi = cos(phi);
 		for (int slice = 0; slice <= nrSlices; slice++)
 		{
-			float theta = D_PI * slice / (float)nrSlices;
+			float theta = glim::PI2 * slice / (float)nrSlices;
 			float x = cosPhi * cos(theta);
 			float z = cosPhi * sin(theta);
 			vec3 nor = {x, y, z};
@@ -272,7 +273,7 @@ MeshIcoSphere::MeshIcoSphere(float width, int subdivision, bool genNors, bool ge
 		}
 	}
 
-	const float aStep = D_PI / 5.f;		 // angle step
+	const float aStep = glim::PI2 / 5.f;		 // angle step
 	const float halfH = radius * 0.5f;	 // half height
 	const float base = halfH * sqrtf(3); // bottom length 밑변
 
@@ -427,10 +428,10 @@ MeshCubeSphere2::MeshCubeSphere2(float width, int nrSlices, bool genNors, bool g
 	std::vector<vec3> facePoints;
 
 	for( int y=0; y<=nrSlices; y++ ) { // z-axis angle
-		float phi = H_PI * y/(float)nrSlices - Q_PI;
+		float phi = glim::PI90 * y/(float)nrSlices - glim::PI45;
 		vec3 n1 = { -sin(phi), cos(phi), 0 };
 		for( int x=0; x<=nrSlices; x++ ) { // y-axis angle
-			float theta = H_PI * (float)x / nrSlices - Q_PI;
+			float theta = glim::PI90 * (float)x / nrSlices - glim::PI45;
 			vec3 n2 = { sin(theta), 0, cos(theta) };
 			facePoints.push_back(normalize(cross(n1, n2)));
 		}
@@ -481,7 +482,7 @@ MeshCylinder::MeshCylinder(float width, float height, int nrSlices, bool genNors
 
 	for( GLuint i=0; i<=nrSlices; i++ )
 	{
-		float theta = D_PI*i/(float)nrSlices;
+		float theta = glim::PI2*i/(float)nrSlices;
 		float x =  radius*cos(theta);
 		float z = -radius*sin(theta);
 		vec3 pos;
@@ -536,12 +537,12 @@ MeshCapsule::MeshCapsule(float width, float height, int nrSlices, int nrStacks, 
 	// theta : y-axis angle [0, 2pi]
 	for( int stack=0; stack<nrStacks; stack++ )
 	{
-		float phi = H_PI - F_PI * stack/(float)(nrStacks-1);
+		float phi = glim::PI90 - glim::PI * stack/(float)(nrStacks-1);
 		float y = sin(phi);
 		float cosPhi = cos(phi);
 		for( int slice=0; slice<=nrSlices; slice++ )
 		{
-			float theta = D_PI * slice / (float)nrSlices;
+			float theta = glim::PI2 * slice / (float)nrSlices;
 			float x = cosPhi * cos(theta);
 			float z = -cosPhi * sin(theta);
 			vec3 nor = {x, y, z};
@@ -590,10 +591,10 @@ MeshDonut::MeshDonut(float radius, float height, int nrSlices, int nrRingVerts, 
 	// calculus : shell method
 	for( int slice=0; slice<=nrSlices; slice++ )
 	{
-		float donutTheta = -D_PI*slice/(float)nrSlices;
+		float donutTheta = -glim::PI2*slice/(float)nrSlices;
 		for( int rv=0; rv<=nrRingVerts; rv++ )
 		{
-			float ringTheta = F_PI + D_PI*rv/(float)nrRingVerts;
+			float ringTheta = glim::PI + glim::PI2*rv/(float)nrRingVerts;
 			float y = ringRad * sin(ringTheta);
 			float relativeX = donutRad + ringRad * cos(ringTheta);
 			float x = relativeX * cos(donutTheta);

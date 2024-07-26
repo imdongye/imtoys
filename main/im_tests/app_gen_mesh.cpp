@@ -129,7 +129,7 @@ namespace lim
 
 		/* state view */
 		ImGui::Begin("camera##genMesh");
-		static float rad = F_PI;
+		static float rad = glm::pi<float>();
 		ImGui::SliderAngle("rad", &rad);
 		ImGui::End();
 	}

@@ -13,6 +13,7 @@ Todo:
 #include <limbrary/model_view/renderer.h>
 #include <limbrary/asset_lib.h>
 #include <limbrary/limgui.h>
+#include <limbrary/glm_tools.h>
 #include <glad/glad.h>
 
 using namespace lim;
@@ -258,7 +259,7 @@ void lim::AppModelViewer::updateImGui()
 		ImGui::Begin(tInfo.ctrl_name.c_str());
 		ImGui::Checkbox("rotate", &tInfo.is_rotate_md);
 		if( tInfo.is_rotate_md ) {
-			md.tf->ori = glm::rotate(md.tf->ori, Q_PI*delta_time, {0,1,0});
+			md.tf->ori = glm::rotate(md.tf->ori, glim::PI45*delta_time, {0,1,0});
 			md.tf->update();
 		}
 		
