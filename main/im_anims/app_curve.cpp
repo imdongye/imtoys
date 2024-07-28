@@ -5,12 +5,17 @@
 	convex hull nLogn
 	natural pseudo(QR)로 구현
 	Uniform B-spline
+	Non-uniform Rational B-spline
+
+	Natural cubic spline D 한번만구하게 나누기
 */
 
 #include "app_curve.h"
 #include <limbrary/program.h>
 #include <vector>
 #include <limbrary/limgui.h>
+#include <Eigen/Core>
+#include <Eigen/QR>
 
 using namespace std;
 using namespace lim;
@@ -18,7 +23,7 @@ using namespace glm;
 
 namespace {
 	constexpr float GRID_STEP = 72.0f;
-	constexpr int nr_types = 9;
+	constexpr int nr_types = 10;
 	const char* const curve_type_strs[] = {
 		"linear",
 		"laglange",
@@ -329,8 +334,43 @@ static vec2 evalCubicClosed(int k, float t) {
 }
 
 static vec2 evalCubicNaturalQr(int k, float t) {
-	//...
+	vector<vec2> D(nr_pts, vec2(0));
 
+	Eigen::Matrix<float, nr_pts, nr_pts> A;
+	A(0,0) = 2.f; A(0,1) = 1.f;
+	A(nr_pts-1,nr_pts-2) = 1.f; A(nr_pts-1,nr_pts-1) = 2.f;
+	for( int i=1; i<nr_pts-1; i++ ) {
+		A(i,i-1) = 1.f; A(i,i) = 4.f; A(i,i+1) = 1.f;
+	}
+	auto qr = A.householderQr();
+
+	Eigen::MatrixXf B(nr_pts, 1);
+	B(0,0) = 3*(src_pts[1].x - src_pts[0].x);
+	B(nr_pts-1,0) = 3*(src_pts[nr_pts-1].x - src_pts[nr_pts-2].x);
+	for( int i=1; i<nr_pts-1; i++ ) {
+		B(i,0) = 3*(src_pts[i+1].x - src_pts[i-1].x);
+	}
+	Eigen::MatrixXf eD = qr.solve(B);
+	for( int i=0; i<nr_pts; i++ ) {
+		D[i].x = eD(i,0);
+	}
+
+	B(0,0) = 3*(src_pts[1].y - src_pts[0].y);
+	B(nr_pts-1,0) = 3*(src_pts[nr_pts-1].y - src_pts[nr_pts-2].y);
+	for( int i=1; i<nr_pts-1; i++ ) {
+		B(i,0) = 3*(src_pts[i+1].y - src_pts[i-1].y);
+	}
+	eD = qr.solve(B);
+	for( int i=0; i<nr_pts; i++ ) {
+		D[i].y = eD(i,0);
+	}
+
+	
+	vec2 a = src_pts[k];
+	vec2 b = vec2(D[k].x, D[k].y);
+	vec2 c = 3.f*(src_pts[k+1] - src_pts[k]) - 2.f*D[k] - D[k+1];
+	vec2 d = 2.f*(src_pts[k] - src_pts[k+1]) +     D[k] + D[k+1];
+	return a + b*t + c*t*t + d*t*t*t;
 	return src_pts[k];
 }
 
