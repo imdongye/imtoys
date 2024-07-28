@@ -35,7 +35,8 @@ namespace pbd
     };
     struct ConstraintVolume {
         float ori_volume;
-        ConstraintVolume(float volume);
+        std::vector<glm::vec3> Jj;
+        ConstraintVolume(float volume, int nrPtcls);
         void project(SoftBody& body, float alpha);
     };
 

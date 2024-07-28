@@ -255,11 +255,11 @@ void pbd::ConstraintBending::project(SoftBody& body, float alpha) {
     vec3 q2 = ( cross(n2,p3) + cross(p3,n1)*d ) / length(cross(p3, p2))
             - ( cross(n1,p4) + cross(p4,n2)*d ) / length(cross(p4, p2));
     vec3 q1 = -q2-q3-q4;
-    float denum = w1*length2(q1) + w2*length2(q2) + w3*length2(q3) + w4*length2(q4) + alpha;
-    vec3 dP1 = w1*sqrt(1-d*d)*(acosD-ori_angle)/denum * q1;
-    vec3 dP2 = w2*sqrt(1-d*d)*(acosD-ori_angle)/denum * q2;
-    vec3 dP3 = w3*sqrt(1-d*d)*(acosD-ori_angle)/denum * q3;
-    vec3 dP4 = w4*sqrt(1-d*d)*(acosD-ori_angle)/denum * q4;
+    float denom = w1*length2(q1) + w2*length2(q2) + w3*length2(q3) + w4*length2(q4) + alpha;
+    vec3 dP1 = w1*sqrt(1-d*d)*(acosD-ori_angle)/denom * q1;
+    vec3 dP2 = w2*sqrt(1-d*d)*(acosD-ori_angle)/denom * q2;
+    vec3 dP3 = w3*sqrt(1-d*d)*(acosD-ori_angle)/denom * q3;
+    vec3 dP4 = w4*sqrt(1-d*d)*(acosD-ori_angle)/denom * q4;
     p1 = p1+dP1;
     p2 = p2+dP2;
     p3 = p3+dP3;
@@ -288,13 +288,35 @@ void pbd::ConstraintIsometricBending::project(SoftBody& body, float alpha)
 /*
     Volume constraint
 */
-pbd::ConstraintVolume::ConstraintVolume(float volume)
-    : ori_volume(volume)
+pbd::ConstraintVolume::ConstraintVolume(float volume, int nrPtcls)
+    : ori_volume(volume), Jj(nrPtcls)
 {
 }
 void pbd::ConstraintVolume::project(SoftBody& body, float alpha)
 {
+    float C = body.getVolume() - ori_volume;
+    if( C == 0.f ) return;
+
+    std::fill(Jj.begin(), Jj.end(), vec3(0));
     
+    for( const uvec3& tri : body.tris ) {
+        vec3& p1 = body.np_s[tri.x]; float w1 = body.w_s[tri.x];
+        vec3& p2 = body.np_s[tri.y]; float w2 = body.w_s[tri.y];
+        vec3& p3 = body.np_s[tri.z]; float w3 = body.w_s[tri.z];
+        Jj[tri.x] = Jj[tri.x] + cross(p2, p3)/6.f;
+        Jj[tri.y] = Jj[tri.y] + cross(p3, p1)/6.f;
+        Jj[tri.z] = Jj[tri.z] + cross(p1, p2)/6.f;
+    }
+
+    float denom = alpha;
+    for( uint i=0; i<body.nr_ptcls; i++ ) {
+        denom += body.w_s[i]*dot(Jj[i], Jj[i]);
+    }
+    if( denom == 0.f ) return;
+
+    for( uint i=0; i<body.nr_ptcls; i++ ) {
+        body.np_s[i] = body.np_s[i] + body.w_s[i]*C*Jj[i] / denom;
+    }
 }
 
 

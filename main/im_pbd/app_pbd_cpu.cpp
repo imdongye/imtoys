@@ -44,7 +44,7 @@ static void resetApp() {
 	simulator.bodies.push_back( new pbd::SoftBody(ms, settings) );
 	cur_body = simulator.bodies.back();
 	simulator.bodies.back()->w_s[0] = 0.f;
-	// simulator.bodies.back()->w_s[nrWidth] = 0.f;
+	simulator.bodies.back()->w_s[nrWidth] = 0.f;
 }
 static void deleteApp() {
 	simulator.bodies.clear();
@@ -123,12 +123,10 @@ static void pickClosestPtclInRay( const vec3& rayDir, const vec3& rayOri ) {
 
 	for(pbd::SoftBody* body : simulator.bodies) {
 		for(int i=0; i<body->nr_ptcls; i++) {
-			vec3& p = body->poss[i];
-			vec3 toObj = p - rayOri;
+			vec3 toObj = body->poss[i] - rayOri;
 			float distFromLine = glm::length( glm::cross(rayDir, toObj) );
-			float distProjLine = glm::dot(rayDir, toObj);
-
 			if( distFromLine < 0.02f ) {
+				float distProjLine = glm::dot(rayDir, toObj);
 				if( distProjLine>0 && minDepth>distProjLine ) {
 					minDepth = distProjLine;
 					picked_body = body;
