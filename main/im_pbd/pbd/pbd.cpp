@@ -117,15 +117,15 @@ pbd::SoftBody::SoftBody(const lim::Mesh& src, Settings s)
                 // Q = 3/area * Kt*K
                 // K = { c01+c04, c02+c03, -c01-c02, -c03-c04 }
                 // cjk = cot(ej,ek)
-                vec4 K = {
-                     glim::cotInterVec( e1, e0) + glim::cotInterVec( e0, e4),
-                     glim::cotInterVec(-e0, e2) + glim::cotInterVec( e3,-e0),
-                    -glim::cotInterVec( e1, e0) - glim::cotInterVec(-e0, e2),
-                    -glim::cotInterVec( e3,-e0) - glim::cotInterVec( e0, e4),
-                };
-                float area = 0.5f*(length(cross(e1,e0)) + length(cross(e0,e4)));
-                mat4 Q = 3.f/area * outerProduct(K, K);
-                c_i_bendings.emplace_back( idxPs, Q );
+                // vec4 K = {
+                //      glim::cotInterVec( e1, e0) + glim::cotInterVec( e0, e4),
+                //      glim::cotInterVec(-e0, e2) + glim::cotInterVec( e3,-e0),
+                //     -glim::cotInterVec( e1, e0) - glim::cotInterVec(-e0, e2),
+                //     -glim::cotInterVec( e3,-e0) - glim::cotInterVec( e0, e4),
+                // };
+                // float area = 0.5f*(length(cross(e1,e0)) + length(cross(e0,e4)));
+                // mat4 Q = 3.f/area * outerProduct(K, K);
+                // c_i_bendings.emplace_back( idxPs, Q );
             } break;
             }
         }

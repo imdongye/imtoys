@@ -32,9 +32,9 @@ namespace glim {
         return glm::normalize( glm::cross(p2-p1, p3-p1) );
     }
 
-	inline float cotInterVec(const vec3& a, const vec3& b) {
-		return dot(a, b) / length(cross(a, b));
-	}
+	// inline float cotInterVec(const vec3& a, const vec3& b) {
+	// 	return dot(a, b) / length(cross(a, b));
+	// }
 
 
 	// From: https://stackoverflow.com/questions/1406029/how-to-calculate-the-volume-of-a-3d-mesh-object-the-surface-of-which-is-made-up

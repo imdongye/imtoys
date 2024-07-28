@@ -24,6 +24,7 @@ namespace {
 		"laglange",
 		"bezier quadratic",
 		"bezier cubic",
+		"hermit segment",
 		"catmull rom, bessel",
 		"bspline cubic",
 		"cubic spline natural",
@@ -35,6 +36,7 @@ namespace {
 		LAGLANGE,
 		BEZIER_QUADRATIC,
 		BEZIER_CUBIC,
+		HERMIT_SEGMENT,
 		CATMULL_ROM,
 		BSPLINE_CUBIC,
 		CUBIC_NATURAL,
@@ -102,7 +104,7 @@ static vec2 evalBezierCubic(const vec2& p0, const vec2& p1, const vec2& p2, cons
 
 /*
 	From: https://en.wikipedia.org/wiki/Centripetal_Catmull%E2%80%93Rom_spline
-	case of Hermite spline
+	case of Hermite spline (both point, tangent constraints)
 		Piecewise
 		C_1
 		end point interpolation
@@ -122,36 +124,52 @@ static vec2 evalBezierCubic(const vec2& p0, const vec2& p1, const vec2& p2, cons
 	
 	...
 */
+static vec2 evalHermitSegment(int k, float t) {
+	t = t*0.5f + (k%2)*0.5f;
+	k = k-(k%2);
+	vec2 p1 = src_pts[k];
+	vec2 p2 = src_pts[k+2];
+	vec2 v1 = src_pts[k+1]-p1;
+	vec2 v2 = src_pts[k+3]-p2;
+	vec4 a = {t*t*t, t*t, t, 1};
+	mat4 b = { 2,-3, 0, 1,
+			  -2, 3, 0, 0,
+			   1,-2, 1, 0,
+			   1,-1, 0, 0 };
+	float x = dot(a, b * vec4{ p1.x, p2.x, v1.x, v2.x });
+	float y = dot(a, b * vec4{ p1.y, p2.y, v1.y, v2.y });
+	return vec2(x, y);
+}
 static vec2 evalCatmull(int k, float t) {
-	glm::vec2 v0(0), v1(0);
+	vec2 v0(0), v1(0);
 	const float CM_DV = 2.f;
 	if( k <= 0 ) // bessel
 	{
-		glm::mat3 A = { 0, 1, 4, 0, 1, 2, 1, 1, 1 };
+		mat3 A = { 0, 1, 4, 0, 1, 2, 1, 1, 1 };
 		{
-			glm::vec3 b = { src_pts[0].x, src_pts[1].x, src_pts[2].x };
+			vec3 b = { src_pts[0].x, src_pts[1].x, src_pts[2].x };
 			// 역행렬이 항상 존재함.
-			glm::vec3 x = glm::inverse(A) * b;
+			vec3 x = inverse(A) * b;
 			// x로 만들어진 2차식을 미분하면 2ax + b && x=0
 			v0.x = x.y;
 		}
-		glm::vec3 b = { src_pts[0].y, src_pts[1].y, src_pts[2].y };
-		glm::vec3 x = glm::inverse(A) * b;
+		vec3 b = { src_pts[0].y, src_pts[1].y, src_pts[2].y };
+		vec3 x = inverse(A) * b;
 		v0.y = x.y;
 
 		v1 = (src_pts[k+2]-src_pts[k]) / CM_DV;
 	}
 	else if( k >= nr_pts-2 ) // bessel
 	{
-		glm::mat3 A = { (k-1)*(k-1), k*k, (k+1)*(k+1), (k-1), k, (k+1), 1, 1, 1 };
+		mat3 A = { (k-1)*(k-1), k*k, (k+1)*(k+1), (k-1), k, (k+1), 1, 1, 1 };
 		{
-			glm::vec3 b = { src_pts[k-1].x, src_pts[k].x, src_pts[k+1].x };
-			glm::vec3 x = glm::inverse(A) * b;
+			vec3 b = { src_pts[k-1].x, src_pts[k].x, src_pts[k+1].x };
+			vec3 x = inverse(A) * b;
 			// ax^2 + bx + c (d/dx)=> 2ax + b (x=k+1)=> 2a(k+1)+b 
 			v1.x = 2*x.x*(k+1) + x.y;
 		}
-		glm::vec3 b = { src_pts[k-1].y, src_pts[k].y, src_pts[k+1].y };
-		glm::vec3 x = glm::inverse(A) * b;
+		vec3 b = { src_pts[k-1].y, src_pts[k].y, src_pts[k+1].y };
+		vec3 x = inverse(A) * b;
 		v1.y = 2*x.x*(k+1) + x.y;
 
 		v0 = (src_pts[k+1]-src_pts[k-1]) / CM_DV;
@@ -161,8 +179,8 @@ static vec2 evalCatmull(int k, float t) {
 		v0 = (src_pts[k+1]-src_pts[k-1]) / CM_DV;
 	}
 
-	glm::vec2 c0 =  v0/3.f + src_pts[k];
-	glm::vec2 c1 = -v1/3.f + src_pts[k+1];
+	vec2 c0 =  v0/3.f + src_pts[k];
+	vec2 c1 = -v1/3.f + src_pts[k+1];
 	return evalBezierCubic(src_pts[k], c0, c1, src_pts[k+1], t);
 }
 
@@ -333,6 +351,10 @@ static vec2 evaluateCurve(int k, float t) {
 		if(k!=0)
 			return src_pts[3];
 		return evalBezierCubic(src_pts[0],src_pts[1],src_pts[2],src_pts[3], t);
+	case HERMIT_SEGMENT:
+		if(k==nr_pts-2)
+			return src_pts[nr_pts-2];
+		return evalHermitSegment(k, t);
 	case CATMULL_ROM:
 		return evalCatmull(k, t);
 	case BSPLINE_CUBIC:
