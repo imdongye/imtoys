@@ -656,3 +656,51 @@ MeshCubeShared::MeshCubeShared(float width, bool withInitGL)
 		initGL();
 	}
 }
+
+MeshPlane::MeshPlane(float width, int nrCols, int nrRows, bool genNors, bool genUvs)
+{
+	name = fmtStrToBuf("plane_%d_%d", nrCols, nrRows);
+	const float fNrCols = nrCols;
+	const float fNrRows = nrRows;
+	const float start = -width / 2.f;
+	const float stepX = width / fNrCols;
+	const float stepY = width / fNrRows;
+	const vec3 up = {0, 1, 0};
+
+
+	for(int i = 0; i <= nrRows; i++) for(int j = 0; j <= nrCols; j++)
+	{
+		poss.push_back({start + stepX * j, 0, start + stepY * i});
+		if( genNors ) {
+			nors.push_back( up );
+		}
+		if( genUvs ) {
+			uvs.push_back({ j/fNrCols, (fNrRows-i)/fNrRows });
+		}
+	}
+
+	const int nrColVerts = nrCols+1;
+	for (int i = 0; i < nrRows; i++) for (int j = 0; j < nrCols; j++)
+	{
+		// 0-1
+		// |\|
+		// 2-3
+		const int ori = i * nrColVerts + j;
+
+		// lower
+		tris.push_back({ori + 0,
+						ori + 0 + nrColVerts,
+						ori + 1 + nrColVerts});
+		// upper
+		tris.push_back({ori + 0,
+						ori + 1 + nrColVerts,
+						ori + 1});
+	}
+	
+	initGL();
+}
+
+
+MeshCloth::MeshCloth(vec2 size, float innerWidth = 0.1f) {
+	
+}

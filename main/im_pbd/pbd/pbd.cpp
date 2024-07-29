@@ -97,7 +97,7 @@ pbd::SoftBody::SoftBody(const lim::Mesh& src, Settings s)
             // check shear
             if( abs(dot(e1, e4)) < 0.0001f && abs(dot(n1, n2)) > 0.9999f ) {
                 isShear = true;
-                // eShear.push_back(makeEdgeIdx(edge1.idx_opp, edge2.idx_opp));
+                eShear.push_back(makeEdgeIdx(edge1.idx_opp, edge2.idx_opp));
                 // continue;
             }
 
@@ -145,9 +145,9 @@ pbd::SoftBody::SoftBody(const lim::Mesh& src, Settings s)
     for( const auto& e : eStretch ) {
         c_distances.emplace_back( e, length(poss[e.x]-poss[e.y]) );
     }
-    // for( const auto& e : eShear ) {
-    //     c_distances.emplace_back( e, length(poss[e.x]-poss[e.y]) );
-    // }
+    for( const auto& e : eShear ) {
+        c_distances.emplace_back( e, length(poss[e.x]-poss[e.y]) );
+    }
     // for( const auto& e : eBend ) {
     //     c_distances.emplace_back( e, length(poss[e.x]-poss[e.y]) );
     // }
@@ -235,10 +235,10 @@ pbd::ConstraintBending::ConstraintBending(uvec4 idxPs, float angle)
 {
 }
 void pbd::ConstraintBending::project(SoftBody& body, float alpha) {
-    vec3& p0 = body.np_s[idx_ps.x]; float w0 = body.w_s[idx_ps.x];
-    vec3& p1 = body.np_s[idx_ps.y]; float w1 = body.w_s[idx_ps.y];
-    vec3& p2 = body.np_s[idx_ps.z]; float w2 = body.w_s[idx_ps.z];
-    vec3& p3 = body.np_s[idx_ps.w]; float w3 = body.w_s[idx_ps.w];
+    vec3& p0 = body.np_s[idx_ps.x];
+    vec3& p1 = body.np_s[idx_ps.y];
+    vec3& p2 = body.np_s[idx_ps.z];
+    vec3& p3 = body.np_s[idx_ps.w];
     /* PBD, Appendix A: Bending constraint proejection
        p2
     e2/  \e1

@@ -36,13 +36,13 @@ static void resetApp() {
 
 	// MeshCubeShared ms(0.5);
 
-	constexpr int nrWidth = 1;
+	constexpr int nrWidth = 11;
 	MeshPlane ms(0.7f, nrWidth, nrWidth, false, false);
 
 	for( vec3& p : ms.poss ) {
 		p = vec3(tf*vec4(p,1));
 	}
-	settings.bendType = pbd::SoftBody::Settings::BendType::CosAngle;
+	settings.bendType = pbd::SoftBody::Settings::BendType::Isometric;
 
 	simulator.bodies.push_back( new pbd::SoftBody(ms, settings) );
 	cur_body = simulator.bodies.back();

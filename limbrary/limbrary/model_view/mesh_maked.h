@@ -30,8 +30,11 @@ namespace lim
 	struct MeshCapsule : public Mesh { MeshCapsule(float width = 1.f, float height = 2.f,  int nrSlices = 50, int nrStacks = 25, bool genNors = true, bool genUvs = true); };
 	struct MeshDonut : public Mesh { MeshDonut(float width = 1.f, float height = 0.2f, int nrSlices = 50, int nrRingVerts = 10, bool genNors = true, bool genUvs = true); };
 	
-	// no seam, shared all verts
+	// no seam, shared all verts for set PBD
 	struct MeshCubeShared : public Mesh { MeshCubeShared(float width = 1.f, bool withInitGL=true); };
+	struct MeshCloth : public Mesh { MeshCloth(glm::vec2 size = {1.f, 1.f}, float innerWidth = 0.1f); };
+
+
 }
 
 #endif
