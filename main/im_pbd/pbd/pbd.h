@@ -17,25 +17,27 @@ namespace pbd
 
     struct ConstraintDistance {
         glm::uvec2 idx_ps;
-        float ori_dist, lambda;
+        float ori_dist;
         ConstraintDistance(glm::uvec2 idxPs, float distance);
         void project(SoftBody& body, float alpha);
     };
     struct ConstraintBending {
         glm::uvec4 idx_ps; // edge, opp1, opp2
         float ori_angle;
+        glm::vec3 dCi[4];
         ConstraintBending(glm::uvec4 idxPs, float angle);
         void project(SoftBody& body, float alpha);
     };
     struct ConstraintIsometricBending {
         glm::uvec4 idx_ps; // edge, opp1, opp2
         glm::mat4 Q;
+        glm::vec3 dCi[4];
         ConstraintIsometricBending(glm::uvec4& idxPs, glm::mat4& _Q);
         void project(SoftBody& body, float alpha);
     };
     struct ConstraintVolume {
         float ori_volume;
-        std::vector<glm::vec3> Jj;
+        std::vector<glm::vec3> dCi;
         ConstraintVolume(float volume, int nrPtcls);
         void project(SoftBody& body, float alpha);
     };
@@ -53,6 +55,7 @@ namespace pbd
             };
             bool update_buf = false;
             BendType bendType = BendType::CosAngle;
+            bool apply_volume_constraint = false;
             // compliance to be alpha : inv stiffness in XPBD
             float a_distance = 0.001f;
             float a_bending  = 0.001f;
@@ -75,6 +78,8 @@ namespace pbd
         void updateP(float dt);
         void updateX(float dt);
         float getVolume();
+
+        void applyDeltaP(int idx, float lambda, const glm::vec3& dC);
     };
 
 

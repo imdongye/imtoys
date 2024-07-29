@@ -15,6 +15,7 @@ namespace {
 
 	pbd::SoftBody* cur_body;
 	bool is_paused = true;
+	bool canvas_view_mode = true;
 }
 
 static void resetApp() {
@@ -31,15 +32,17 @@ static void resetApp() {
 	// Mesh& ms = *md.own_meshes[0];
 	// tf = tf * md.tf_norm->mtx;
 	// settings.update_buf = true;
+	// settings.apply_volume_constraint = true;
 
 	// MeshCubeShared ms(0.5);
-	constexpr int nrWidth = 11;
+
+	constexpr int nrWidth = 1;
 	MeshPlane ms(0.7f, nrWidth, nrWidth, false, false);
 
 	for( vec3& p : ms.poss ) {
 		p = vec3(tf*vec4(p,1));
 	}
-	settings.bendType = pbd::SoftBody::Settings::BendType::None;
+	settings.bendType = pbd::SoftBody::Settings::BendType::CosAngle;
 
 	simulator.bodies.push_back( new pbd::SoftBody(ms, settings) );
 	cur_body = simulator.bodies.back();
@@ -70,26 +73,30 @@ void AppPbdCPU::canvasUpdate()
 
 void AppPbdCPU::customDrawShadow(const mat4& mtx_View, const mat4& mtx_Proj) const
 {
-	// Program& prog = AssetLib::get().prog_shadow_static;
-	// prog.use();
-	// prog.setUniform("mtx_View", mtx_View);
-	// prog.setUniform("mtx_Proj", mtx_Proj);
-	// prog.setUniform("mtx_Model", glm::mat4(1));
+	if( canvas_view_mode )
+		return;
+	Program& prog = AssetLib::get().prog_shadow_static;
+	prog.use();
+	prog.setUniform("mtx_View", mtx_View);
+	prog.setUniform("mtx_Proj", mtx_Proj);
+	prog.setUniform("mtx_Model", glm::mat4(1));
 
-	// for( auto body : simulator.bodies ) {
-	// 	body->bindAndDrawGL();
-	// }
+	for( auto body : simulator.bodies ) {
+		body->bindAndDrawGL();
+	}
 }
 void AppPbdCPU::customDraw(const Camera& cam, const LightDirectional& lit) const 
 {
-	// prog_ms.use();
-	// cam.setUniformTo(prog_ms);
-	// lit.setUniformTo(prog_ms);
-	// prog_ms.setUniform("mtx_Model", glm::mat4(1));
+	if( canvas_view_mode )
+		return;
+	prog_ms.use();
+	cam.setUniformTo(prog_ms);
+	lit.setUniformTo(prog_ms);
+	prog_ms.setUniform("mtx_Model", glm::mat4(1));
 
-	// for( auto body : simulator.bodies ) {
-	// 	body->bindAndDrawGL();
-	// }
+	for( auto body : simulator.bodies ) {
+		body->bindAndDrawGL();
+	}
 }
 static void drawBody(const pbd::SoftBody& body) {
 	for( int i=0; i<body.nr_ptcls; i++ ) {
@@ -98,11 +105,19 @@ static void drawBody(const pbd::SoftBody& body) {
 	for( const auto& c : body.c_distances ) {
 		g_app->drawCylinder( body.poss[c.idx_ps.x], body.poss[c.idx_ps.y], {1,1,0} );
 	}
+	for( const auto& c : body.c_bendings ) {
+		g_app->drawCylinder( body.poss[c.idx_ps.z], body.poss[c.idx_ps.w], {0,0,1} );
+		for( int i=0; i<4; i++ ) {
+			g_app->drawCylinder( body.poss[c.idx_ps[i]], body.poss[c.idx_ps[i]]+c.dCi[i], {0,0,1} );
+		}
+	}
 }
 void AppPbdCPU::canvasDraw() const
 {
-	for( auto b : simulator.bodies ) {
-		drawBody( *b );
+	if( canvas_view_mode ) {
+		for( auto b : simulator.bodies ) {
+			drawBody( *b );
+		}
 	}
 
 	// basis object 10cm
@@ -147,9 +162,11 @@ void AppPbdCPU::canvasImGui()
 			elapsed += delta_time;
 		}
 	}
+	ImGui::Checkbox("canvas view", &canvas_view_mode);
 	// ImGui::SliderFloat("a_distance", &settings.a_distance, 0.f, 0.0001f, "%.6f");
 	ImGui::SliderFloat("a_distance", &cur_body->settings.a_distance, 0.f, 1.f, "%.6f");
-	ImGui::SliderFloat("a_bending", &cur_body->settings.a_bending, 0.f, 1.f, "%.6f");
+	ImGui::SliderFloat("a_bending", &cur_body->settings.a_bending, 0.f, 10.f, "%.6f");
+	ImGui::SliderFloat("a_volume", &cur_body->settings.a_volume, 0.f, 1.f, "%.6f");
 	if( ImGui::Button("reset") ) {
 		resetApp();
 	}

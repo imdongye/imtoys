@@ -97,8 +97,8 @@ pbd::SoftBody::SoftBody(const lim::Mesh& src, Settings s)
             // check shear
             if( abs(dot(e1, e4)) < 0.0001f && abs(dot(n1, n2)) > 0.9999f ) {
                 isShear = true;
-                eShear.push_back(makeEdgeIdx(edge1.idx_opp, edge2.idx_opp));
-                continue;
+                // eShear.push_back(makeEdgeIdx(edge1.idx_opp, edge2.idx_opp));
+                // continue;
             }
 
             // else is bend
@@ -106,6 +106,8 @@ pbd::SoftBody::SoftBody(const lim::Mesh& src, Settings s)
             case Settings::BendType::None:
                 break;
             case Settings::BendType::Distance: {
+                if( isShear )
+                    break;
                 eBend.push_back(makeEdgeIdx(edge1.idx_opp, edge2.idx_opp));
             } break;
             case Settings::BendType::CosAngle: {
@@ -117,15 +119,19 @@ pbd::SoftBody::SoftBody(const lim::Mesh& src, Settings s)
                 // Q = 3/area * Kt*K
                 // K = { c01+c04, c02+c03, -c01-c02, -c03-c04 }
                 // cjk = cot(ej,ek)
-                // vec4 K = {
-                //      glim::cotInterVec( e1, e0) + glim::cotInterVec( e0, e4),
-                //      glim::cotInterVec(-e0, e2) + glim::cotInterVec( e3,-e0),
-                //     -glim::cotInterVec( e1, e0) - glim::cotInterVec(-e0, e2),
-                //     -glim::cotInterVec( e3,-e0) - glim::cotInterVec( e0, e4),
-                // };
-                // float area = 0.5f*(length(cross(e1,e0)) + length(cross(e0,e4)));
-                // mat4 Q = 3.f/area * outerProduct(K, K);
-                // c_i_bendings.emplace_back( idxPs, Q );
+                float c01 = glim::cotInterVec( e1, e0);
+                float c02 = glim::cotInterVec(-e0, e2);
+                float c03 = glim::cotInterVec( e3,-e0);
+                float c04 = glim::cotInterVec( e0, e4);
+                vec4 K = {
+                     c01+c04,
+                     c02+c03,
+                    -c01-c02,
+                    -c03-c04
+                };
+                float area = 0.5f*(length(cross(e1,e0)) + length(cross(e0,e4)));
+                mat4 Q = 3.f/area * outerProduct(K, K);
+                c_i_bendings.emplace_back( idxPs, Q );
             } break;
             }
         }
@@ -139,11 +145,14 @@ pbd::SoftBody::SoftBody(const lim::Mesh& src, Settings s)
     for( const auto& e : eStretch ) {
         c_distances.emplace_back( e, length(poss[e.x]-poss[e.y]) );
     }
-    for( const auto& e : eShear ) {
-        c_distances.emplace_back( e, length(poss[e.x]-poss[e.y]) );
-    }
-    for( const auto& e : eBend ) {
-        c_distances.emplace_back( e, length(poss[e.x]-poss[e.y]) );
+    // for( const auto& e : eShear ) {
+    //     c_distances.emplace_back( e, length(poss[e.x]-poss[e.y]) );
+    // }
+    // for( const auto& e : eBend ) {
+    //     c_distances.emplace_back( e, length(poss[e.x]-poss[e.y]) );
+    // }
+    if( settings.apply_volume_constraint ) {
+        c_volumes.emplace_back( getVolume(), nr_ptcls );
     }
 }
 
@@ -214,10 +223,8 @@ void pbd::ConstraintDistance::project(SoftBody& body, float alpha) {
 
     // simplified XPBD
     float lambda = C / (w1+w2+alpha);
-    vec3 dP1 = -lambda*w1*dC;
-    vec3 dP2 = lambda*w2*dC;
-    p1 = p1+dP1;
-    p2 = p2+dP2;
+    p1 = p1 - lambda*w1*dC;
+    p2 = p2 + lambda*w2*dC;
 }
 
 
@@ -228,10 +235,10 @@ pbd::ConstraintBending::ConstraintBending(uvec4 idxPs, float angle)
 {
 }
 void pbd::ConstraintBending::project(SoftBody& body, float alpha) {
-    vec3& p1 = body.np_s[idx_ps.x]; float w1 = body.w_s[idx_ps.x];
-    vec3& p2 = body.np_s[idx_ps.y]; float w2 = body.w_s[idx_ps.y];
-    vec3& p3 = body.np_s[idx_ps.z]; float w3 = body.w_s[idx_ps.z];
-    vec3& p4 = body.np_s[idx_ps.w]; float w4 = body.w_s[idx_ps.w];
+    vec3& p0 = body.np_s[idx_ps.x]; float w0 = body.w_s[idx_ps.x];
+    vec3& p1 = body.np_s[idx_ps.y]; float w1 = body.w_s[idx_ps.y];
+    vec3& p2 = body.np_s[idx_ps.z]; float w2 = body.w_s[idx_ps.z];
+    vec3& p3 = body.np_s[idx_ps.w]; float w3 = body.w_s[idx_ps.w];
     /* PBD, Appendix A: Bending constraint proejection
        p2
     e2/  \e1
@@ -241,29 +248,28 @@ void pbd::ConstraintBending::project(SoftBody& body, float alpha) {
     e3\  /e4
        p3
     */
+    vec3 e0 = p0 - p1;
+    float e0Len = length(e0);
     vec3 e1 = p2 - p1;
     vec3 e4 = p3 - p1;
-    vec3 e5 = p4 - p1;
-    vec3 n1 = normalize(cross(e4, e1)); 
-    vec3 n2 = normalize(cross(e1, e5));
-    float d = dot(n1,n2);
-    float acosD = acos(d);
+    vec3 n1 = normalize(cross(e1, e0));
+    vec3 n2 = normalize(cross(e0, e4));
+    float d = dot(n1, n2);
+    float C = acos(d) - ori_angle;
 
-    // PBD
-    vec3 q3 = ( cross(n2,p2) + cross(p2,n1)*d ) / length(cross(p3, p2));
-    vec3 q4 = ( cross(n1,p2) + cross(p2,n2)*d ) / length(cross(p4, p2));
-    vec3 q2 = ( cross(n2,p3) + cross(p3,n1)*d ) / length(cross(p3, p2))
-            - ( cross(n1,p4) + cross(p4,n2)*d ) / length(cross(p4, p2));
-    vec3 q1 = -q2-q3-q4;
-    float denom = w1*length2(q1) + w2*length2(q2) + w3*length2(q3) + w4*length2(q4) + alpha;
-    vec3 dP1 = w1*sqrt(1-d*d)*(acosD-ori_angle)/denom * q1;
-    vec3 dP2 = w2*sqrt(1-d*d)*(acosD-ori_angle)/denom * q2;
-    vec3 dP3 = w3*sqrt(1-d*d)*(acosD-ori_angle)/denom * q3;
-    vec3 dP4 = w4*sqrt(1-d*d)*(acosD-ori_angle)/denom * q4;
-    p1 = p1+dP1;
-    p2 = p2+dP2;
-    p3 = p3+dP3;
-    p4 = p4+dP4;
+    dCi[0] = -(dot(e1, e0)*n1 + dot(e4, e0)*n2) / e0Len;
+    dCi[2] = n1 * e0Len;
+    dCi[3] = n2 * e0Len;
+    dCi[1] = -dCi[0] - dCi[2] - dCi[3];
+
+    float denom = alpha;
+    for( int i=0; i<4; i++ ) {
+        denom += body.w_s[idx_ps[i]] * length2(dCi[i]);
+    }
+    float lambda = C / denom;
+    for( int i=0; i<4; i++ ) {
+        body.applyDeltaP(idx_ps[i], lambda, dCi[i]);
+    }
 }
 
 
@@ -276,7 +282,27 @@ pbd::ConstraintIsometricBending::ConstraintIsometricBending(uvec4& idxPs, mat4& 
 }
 void pbd::ConstraintIsometricBending::project(SoftBody& body, float alpha)
 {
+    float qs = 0.f;
+    for(int i=0; i<4; i++) for(int j=0; j<4; j++) {
+        qs+= Q[i][j]*dot(body.np_s[i], body.np_s[j]);
+    }
+    float C = 0.5f*qs;
+    if( C == 0.f ) return;
+    float denom = alpha;
+    for( int i=0; i<4; i++ ) {
+        dCi[i] = vec3(0);
+        for( int j=0; j<4; j++ ) {
+            dCi[i] += Q[j][i] * body.np_s[idx_ps[j]];
+        }
+        denom += length2(dCi[i]) * body.w_s[idx_ps[i]];
+    }
+    if( denom == 0.f ) return;
 
+
+    float lambda = -C / denom;
+    for( int i=0; i<4; i++ ) {
+        body.applyDeltaP(idx_ps[i], lambda, dCi[i]);
+    }
 }
 
 
@@ -289,7 +315,7 @@ void pbd::ConstraintIsometricBending::project(SoftBody& body, float alpha)
     Volume constraint
 */
 pbd::ConstraintVolume::ConstraintVolume(float volume, int nrPtcls)
-    : ori_volume(volume), Jj(nrPtcls)
+    : ori_volume(volume), dCi(nrPtcls)
 {
 }
 void pbd::ConstraintVolume::project(SoftBody& body, float alpha)
@@ -297,25 +323,25 @@ void pbd::ConstraintVolume::project(SoftBody& body, float alpha)
     float C = body.getVolume() - ori_volume;
     if( C == 0.f ) return;
 
-    std::fill(Jj.begin(), Jj.end(), vec3(0));
+    std::fill(dCi.begin(), dCi.end(), vec3(0));
     
     for( const uvec3& tri : body.tris ) {
-        vec3& p1 = body.np_s[tri.x]; float w1 = body.w_s[tri.x];
-        vec3& p2 = body.np_s[tri.y]; float w2 = body.w_s[tri.y];
-        vec3& p3 = body.np_s[tri.z]; float w3 = body.w_s[tri.z];
-        Jj[tri.x] = Jj[tri.x] + cross(p2, p3)/6.f;
-        Jj[tri.y] = Jj[tri.y] + cross(p3, p1)/6.f;
-        Jj[tri.z] = Jj[tri.z] + cross(p1, p2)/6.f;
+        vec3& p1 = body.np_s[tri.x];
+        vec3& p2 = body.np_s[tri.y];
+        vec3& p3 = body.np_s[tri.z];
+        dCi[tri.x] += cross(p2, p3)/6.f;
+        dCi[tri.y] += cross(p3, p1)/6.f;
+        dCi[tri.z] += cross(p1, p2)/6.f;
     }
 
     float denom = alpha;
     for( uint i=0; i<body.nr_ptcls; i++ ) {
-        denom += body.w_s[i]*dot(Jj[i], Jj[i]);
+        denom += body.w_s[i]*length2(dCi[i]);
     }
     if( denom == 0.f ) return;
-
+    float lambda = C / denom;
     for( uint i=0; i<body.nr_ptcls; i++ ) {
-        body.np_s[i] = body.np_s[i] + body.w_s[i]*C*Jj[i] / denom;
+        body.applyDeltaP(i, lambda, dCi[i]);
     }
 }
 
@@ -336,6 +362,11 @@ void pbd::SoftBody::updateX(float dt)
     for( auto& c : c_bendings ) {
         c.project( *this, alpha );
     }
+
+    alpha = settings.a_bending/sqdt;
+    for( auto& c : c_i_bendings ) {
+        c.project( *this, alpha );
+    }
     
     alpha = settings.a_distance/(200.f*sqdt);
     for( auto& c : c_distances ) {
@@ -348,6 +379,10 @@ void pbd::SoftBody::updateX(float dt)
         poss[i] = np_s[i];
     }
    
+}
+
+void pbd::SoftBody::applyDeltaP(int idx, float lambda, const vec3& dC) {
+    np_s[idx] = np_s[idx] + lambda*w_s[idx]*dC;
 }
 
 
