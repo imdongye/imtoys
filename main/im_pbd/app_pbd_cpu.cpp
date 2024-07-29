@@ -15,36 +15,51 @@ namespace {
 
 	pbd::SoftBody* cur_body;
 	bool is_paused = true;
+	bool draw_mesh = false;
 }
 
 static void resetApp() {
-	pbd::SoftBody::Settings settings;
+	pbd::SoftBody::Compliance tempComp;
 	if(cur_body)
-		settings = cur_body->settings;
+		tempComp = cur_body->compliance;
 	simulator.clear();
-	// mat4 tf = translate(vec3(0,2,0)) * glim::rotateX(PI90*0.1f)* glim::rotateY(PI90*0.2f);
-	mat4 tf = translate(vec3(0,2,0));
+	is_paused = true;
+	draw_mesh = false;
 
-	// Model md;
-	// md.importFromFile("exports/simp_rst/bunny.obj");
-	// md.setUnitScaleAndPivot({0,0,0}, 1.f);
-	// Mesh& ms = *md.own_meshes[0];
-	// tf = tf * md.tf_norm->mtx;
-	// settings.update_buf = true;
 
-	// MeshCubeShared ms(0.5);
-	constexpr int nrWidth = 11;
-	MeshPlane ms(0.7f, nrWidth, nrWidth, false, false);
+	// bunny
+	// {
+	// 	Model md;
+	// 	md.importFromFile("exports/simp_rst/bunny.obj");
+	// 	md.setUnitScaleAndPivot({0,0,0}, 1.f);
+	// 	Mesh& ms = *md.own_meshes[0];
+	// 	tf = tf * md.tf_norm->mtx;
+	// 	settings.update_buf = true;
+	// }
 
-	for( vec3& p : ms.poss ) {
-		p = vec3(tf*vec4(p,1));
+
+	// cube
+	// {
+	// 	MeshCubeShared ms(0.5);
+	// }
+
+
+	// cloth
+	{
+		constexpr int nrWidth = 11;
+		MeshPlane ms(0.7f, nrWidth, nrWidth, false, false);
+		// mat4 tf = translate(vec3(0,2,0)) * glim::rotateX(glim::PI90*0.1f)* glim::rotateY(glim::PI90*0.2f);
+		mat4 tf = translate(vec3(0,2,0));
+		for( vec3& p : ms.poss ) {
+			p = vec3(tf*vec4(p,1));
+		}
+		cur_body = new pbd::SoftBody(ms, true, pbd::SoftBody::BendType::None);
 	}
-	settings.bendType = pbd::SoftBody::Settings::BendType::None;
 
-	simulator.bodies.push_back( new pbd::SoftBody(ms, settings) );
-	cur_body = simulator.bodies.back();
-	simulator.bodies.back()->w_s[0] = 0.f;
-	simulator.bodies.back()->w_s[nrWidth] = 0.f;
+
+	cur_body->compliance = tempComp;
+	cur_body->w_s[0] = 0.f;
+	simulator.bodies.push_back( cur_body );
 }
 static void deleteApp() {
 	simulator.bodies.clear();
@@ -70,32 +85,36 @@ void AppPbdCPU::canvasUpdate()
 
 void AppPbdCPU::customDrawShadow(const mat4& mtx_View, const mat4& mtx_Proj) const
 {
-	// Program& prog = AssetLib::get().prog_shadow_static;
-	// prog.use();
-	// prog.setUniform("mtx_View", mtx_View);
-	// prog.setUniform("mtx_Proj", mtx_Proj);
-	// prog.setUniform("mtx_Model", glm::mat4(1));
+	if( !draw_mesh )
+		return;
+	Program& prog = AssetLib::get().prog_shadow_static;
+	prog.use();
+	prog.setUniform("mtx_View", mtx_View);
+	prog.setUniform("mtx_Proj", mtx_Proj);
+	prog.setUniform("mtx_Model", glm::mat4(1));
 
-	// for( auto body : simulator.bodies ) {
-	// 	body->bindAndDrawGL();
-	// }
+	for( auto body : simulator.bodies ) {
+		body->bindAndDrawGL();
+	}
 }
 void AppPbdCPU::customDraw(const Camera& cam, const LightDirectional& lit) const 
 {
-	// prog_ms.use();
-	// cam.setUniformTo(prog_ms);
-	// lit.setUniformTo(prog_ms);
-	// prog_ms.setUniform("mtx_Model", glm::mat4(1));
+	if( !draw_mesh )
+		return;
+	prog_ms.use();
+	cam.setUniformTo(prog_ms);
+	lit.setUniformTo(prog_ms);
+	prog_ms.setUniform("mtx_Model", glm::mat4(1));
 
-	// for( auto body : simulator.bodies ) {
-	// 	body->bindAndDrawGL();
-	// }
+	for( auto body : simulator.bodies ) {
+		body->bindAndDrawGL();
+	}
 }
 static void drawBody(const pbd::SoftBody& body) {
 	for( int i=0; i<body.nr_ptcls; i++ ) {
 		g_app->drawSphere(body.poss[i], (body.w_s[i]>0)?vec3{1,1,0}:vec3{1,0,0});
 	}
-	for( const auto& c : body.c_distances ) {
+	for( const auto& c : body.c_stretchs ) {
 		g_app->drawCylinder( body.poss[c.idx_ps.x], body.poss[c.idx_ps.y], {1,1,0} );
 	}
 }
@@ -147,9 +166,11 @@ void AppPbdCPU::canvasImGui()
 			elapsed += delta_time;
 		}
 	}
-	// ImGui::SliderFloat("a_distance", &settings.a_distance, 0.f, 0.0001f, "%.6f");
-	ImGui::SliderFloat("a_distance", &cur_body->settings.a_distance, 0.f, 1.f, "%.6f");
-	ImGui::SliderFloat("a_bending", &cur_body->settings.a_bending, 0.f, 1.f, "%.6f");
+	if( ImGui::Checkbox("draw mesh", &draw_mesh) ) {
+		cur_body->update_buf = draw_mesh;
+	}
+
+	ImGui::SliderFloat("a_distance", &cur_body->compliance.stretch, 0.f, 1.f, "%.6f");
 	if( ImGui::Button("reset") ) {
 		resetApp();
 	}

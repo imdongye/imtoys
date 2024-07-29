@@ -15,70 +15,95 @@ namespace pbd
 {
     struct SoftBody;
 
-    struct ConstraintDistance {
+    struct ConstraintFix
+    {
+        glm::vec3 p;
+        int idx;
+        ConstraintFix(int _idx, const glm::vec3& _p);
+        void project(SoftBody& body);
+    };
+
+    struct ConstraintDistance 
+    {
         glm::uvec2 idx_ps;
         float ori_dist, lambda;
-        ConstraintDistance(glm::uvec2 idxPs, float distance);
+        ConstraintDistance(const SoftBody& body, const glm::uvec2& idxPs);
         void project(SoftBody& body, float alpha);
     };
-    struct ConstraintBending {
+
+    struct ConstraintDihedralBend 
+    {
         glm::uvec4 idx_ps; // edge, opp1, opp2
         float ori_angle;
-        ConstraintBending(glm::uvec4 idxPs, float angle);
+        glm::vec3 dCi[4];
+        ConstraintDihedralBend(const SoftBody& body, const glm::uvec4& idxPs);
         void project(SoftBody& body, float alpha);
     };
-    struct ConstraintIsometricBending {
+
+    struct ConstraintIsometricBend 
+    {
         glm::uvec4 idx_ps; // edge, opp1, opp2
         glm::mat4 Q;
-        ConstraintIsometricBending(glm::uvec4& idxPs, glm::mat4& _Q);
+        glm::vec3 dCi[4];
+        ConstraintIsometricBend(const SoftBody& body, const glm::uvec4& idxPs);
         void project(SoftBody& body, float alpha);
     };
-    struct ConstraintVolume {
+
+    struct ConstraintGlobalVolume 
+    {
         float ori_volume;
-        std::vector<glm::vec3> Jj;
-        ConstraintVolume(float volume, int nrPtcls);
+        std::vector<glm::vec3> dCi;
+        ConstraintGlobalVolume(const SoftBody& body);
         void project(SoftBody& body, float alpha);
     };
 
+    struct ConstraintCollision
+    {
+    };
 
-    
 
-    struct SoftBody: public lim::Mesh {
-        struct Settings {
-            enum class BendType {
-                None,
-                Distance,
-                CosAngle,
-                Isometric,
-            };
-            bool update_buf = false;
-            BendType bendType = BendType::CosAngle;
-            // compliance to be alpha : inv stiffness in XPBD
-            float a_distance = 0.001f;
-            float a_bending  = 0.001f;
-            float a_volume   = 0.001f;
+    struct SoftBody: public lim::Mesh 
+    {
+        enum class BendType {
+            None,
+            Distance,
+            Dihedral,
+            Isometric,
         };
-        
-        Settings settings;
-
         // lim::Mesh poss => current poss (X)
         std::vector<glm::vec3> np_s; // new, predicted poss (P)
         std::vector<glm::vec3>  v_s;
         std::vector<float>      w_s; // inv mass
-        glm::uint nr_ptcls, nr_tris;
-        std::vector<ConstraintDistance> c_distances;
-        std::vector<ConstraintBending>  c_bendings;
-        std::vector<ConstraintIsometricBending>  c_i_bendings;
-        std::vector<ConstraintVolume>   c_volumes;
+        int nr_ptcls, nr_tris;
 
-        SoftBody(const lim::Mesh& src, Settings s = {});
+        std::vector<ConstraintDistance>      c_stretchs;
+        std::vector<ConstraintDistance>      c_shears;
+        std::vector<ConstraintDistance>      c_dist_bends;
+        std::vector<ConstraintDihedralBend>  c_dih_bends;
+        std::vector<ConstraintIsometricBend> c_iso_bends;
+        std::vector<ConstraintGlobalVolume>  c_g_volumes;
+        std::vector<ConstraintFix>  c_fixes;
+        struct Compliance {
+            float stretch, shear, bend;
+            float dist_bend, dih_bend, iso_bend;
+            float glo_volume;
+            Compliance();
+        };
+        Compliance compliance;
+
+        bool update_buf = false;
+
+        SoftBody(const lim::Mesh& src, bool makeShear = false, BendType bendType = BendType::Dihedral);
         void updateP(float dt);
         void updateX(float dt);
-        float getVolume();
+        float getVolume() const;
+        void applyDeltaP(int idx, float lambda, const glm::vec3& dC);
     };
 
 
-    struct Simulator {
+    struct Simulator 
+    {
+        int nr_steps = 20;
         std::vector<SoftBody*> bodies;
         ~Simulator();
         void clear();
