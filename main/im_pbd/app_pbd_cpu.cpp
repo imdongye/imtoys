@@ -117,11 +117,19 @@ static void drawBody(const pbd::SoftBody& body) {
 	for( const auto& c : body.c_stretchs ) {
 		g_app->drawCylinder( body.poss[c.idx_ps.x], body.poss[c.idx_ps.y], {1,1,0} );
 	}
+	for( const auto& c : body.c_bendings ) {
+		g_app->drawCylinder( body.poss[c.idx_ps.z], body.poss[c.idx_ps.w], {0,0,1} );
+		for( int i=0; i<4; i++ ) {
+			g_app->drawCylinder( body.poss[c.idx_ps[i]], body.poss[c.idx_ps[i]]+c.dCi[i], {0,0,1} );
+		}
+	}
 }
 void AppPbdCPU::canvasDraw() const
 {
-	for( auto b : simulator.bodies ) {
-		drawBody( *b );
+	if( canvas_view_mode ) {
+		for( auto b : simulator.bodies ) {
+			drawBody( *b );
+		}
 	}
 
 	// basis object 10cm
