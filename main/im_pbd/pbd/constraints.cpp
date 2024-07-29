@@ -101,24 +101,26 @@ void ConstraintDihedralBend::project(SoftBody& body, float alpha)
     vec3 e4 = p3 - p1;
     vec3 n1 = normalize(cross(e1, e0)); 
     vec3 n2 = normalize(cross(e0, e4));
-    float d = dot(n1,n2);
-    float acosD = acos(d);
+    float cosAngle = dot(n1,n2);
+    float angle = acos(cosAngle);
+    float C = angle - ori_angle;
+    float dAngle =  -1.f/ sqrt(1.f-cosAngle*cosAngle);
 
     // PBD
-    vec3 q3 = ( cross(n2,p1) + cross(p1,n1)*d ) / length(cross(p2, p1));
-    vec3 q4 = ( cross(n1,p1) + cross(p1,n2)*d ) / length(cross(p3, p1));
-    vec3 q2 = ( cross(n2,p2) + cross(p2,n1)*d ) / length(cross(p2, p1))
-            - ( cross(n1,p3) + cross(p3,n2)*d ) / length(cross(p3, p1));
-    vec3 q1 = -q2-q3-q4;
-    float denom = w1*length2(q1) + w2*length2(q2) + w3*length2(q3) + w4*length2(q4) + alpha;
-    vec3 dP1 = w1*sqrt(1-d*d)*(acosD-ori_angle)/denom * q1;
-    vec3 dP2 = w2*sqrt(1-d*d)*(acosD-ori_angle)/denom * q2;
-    vec3 dP3 = w3*sqrt(1-d*d)*(acosD-ori_angle)/denom * q3;
-    vec3 dP4 = w4*sqrt(1-d*d)*(acosD-ori_angle)/denom * q4;
-    p0 = p0+dP1;
-    p1 = p1+dP2;
-    p2 = p2+dP3;
-    p3 = p3+dP4;
+    // vec3 q3 = ( cross(n2,p1) + cross(p1,n1)*d ) / length(cross(p2, p1));
+    // vec3 q4 = ( cross(n1,p1) + cross(p1,n2)*d ) / length(cross(p3, p1));
+    // vec3 q2 = ( cross(n2,p2) + cross(p2,n1)*d ) / length(cross(p2, p1))
+    //         - ( cross(n1,p3) + cross(p3,n2)*d ) / length(cross(p3, p1));
+    // vec3 q1 = -q2-q3-q4;
+    // float denom = w1*length2(q1) + w2*length2(q2) + w3*length2(q3) + w4*length2(q4) + alpha;
+    // vec3 dP1 = w1*sqrt(1-d*d)*(acosD-ori_angle)/denom * q1;
+    // vec3 dP2 = w2*sqrt(1-d*d)*(acosD-ori_angle)/denom * q2;
+    // vec3 dP3 = w3*sqrt(1-d*d)*(acosD-ori_angle)/denom * q3;
+    // vec3 dP4 = w4*sqrt(1-d*d)*(acosD-ori_angle)/denom * q4;
+    // p0 = p0+dP1;
+    // p1 = p1+dP2;
+    // p2 = p2+dP3;
+    // p3 = p3+dP4;
 }
 
 
@@ -193,27 +195,26 @@ ConstraintGlobalVolume::ConstraintGlobalVolume(const SoftBody& body)
 }
 void ConstraintGlobalVolume::project(SoftBody& body, float alpha)
 {
-    float C = body.getVolume() - ori_volume;
-    if( C == 0.f ) return;
 
     std::fill(dCi.begin(), dCi.end(), vec3(0));
     
     for( const uvec3& tri : body.tris ) {
-        vec3& p1 = body.np_s[tri.x]; float w1 = body.w_s[tri.x];
-        vec3& p2 = body.np_s[tri.y]; float w2 = body.w_s[tri.y];
-        vec3& p3 = body.np_s[tri.z]; float w3 = body.w_s[tri.z];
-        dCi[tri.x] = dCi[tri.x] + cross(p2, p3)/6.f;
-        dCi[tri.y] = dCi[tri.y] + cross(p3, p1)/6.f;
-        dCi[tri.z] = dCi[tri.z] + cross(p1, p2)/6.f;
+        vec3& p0 = body.np_s[tri.x];
+        vec3& p1 = body.np_s[tri.y];
+        vec3& p2 = body.np_s[tri.z];
+        dCi[tri.x] += cross(p1, p2)/6.f;
+        dCi[tri.y] += cross(p2, p0)/6.f;
+        dCi[tri.z] += cross(p0, p1)/6.f;
     }
 
+    float C = body.getVolume() - ori_volume;
     float denom = alpha;
-    for( uint i=0; i<body.nr_ptcls; i++ ) {
+    for( int i=0; i<body.nr_ptcls; i++ ) {
         denom += body.w_s[i]*dot(dCi[i], dCi[i]);
     }
-    if( denom == 0.f ) return;
+    float lambda = C / denom;
 
-    for( uint i=0; i<body.nr_ptcls; i++ ) {
-        body.np_s[i] = body.np_s[i] + body.w_s[i]*C*dCi[i] / denom;
+    for( int i=0; i<body.nr_ptcls; i++ ) {
+        body.applyDeltaP(i, lambda, dCi[i]);
     }
 }

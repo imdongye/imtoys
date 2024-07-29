@@ -26,7 +26,7 @@ namespace pbd
     struct ConstraintDistance 
     {
         glm::uvec2 idx_ps;
-        float ori_dist, lambda;
+        float ori_dist;
         ConstraintDistance(const SoftBody& body, const glm::uvec2& idxPs);
         void project(SoftBody& body, float alpha);
     };
