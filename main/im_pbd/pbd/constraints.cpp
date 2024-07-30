@@ -40,7 +40,7 @@ void ConstraintDistance::project(SoftBody& body, float alpha)
     vec3 diff = p1 - p2;
     float dist = length(diff);
     float C = dist - ori_dist;
-    if( C < glim::eps ) return;
+    if( C < glim::feps ) return;
     vec3 dC = diff / dist;
     // simplified XPBD
     float lambda = C / (w1+w2+alpha);
@@ -110,7 +110,7 @@ void ConstraintDihedralBend::project(SoftBody& body, float alpha)
     float cosAngle = dot(n1scaled,n2scaled)/sqrt(sqLenN1*sqLenN2);
     float angle = acos(cosAngle);
     float C = angle - ori_angle;
-    if( C < glim::eps ) return;
+    if( C < glim::feps ) return;
     float dAngle =  -1.f/ sqrt(1.f-cosAngle*cosAngle);
     float e0Len = length(e0);
     n1scaled /= sqLenN1;
@@ -190,8 +190,6 @@ void ConstraintIsometricBend::project(SoftBody& body, float alpha)
 }
 
 
-
-#pragma endregion Bending-constraint
 
 
 

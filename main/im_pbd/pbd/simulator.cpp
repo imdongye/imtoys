@@ -73,19 +73,22 @@ void SoftBody::updateP(float dt)
 }
 
 
-void Simulator::updateColSurf()
+void Simulator::updateCollision()
 {
-    // generate collision constraints
-    for( auto body : bodies ) {
-        for( int i=0; i<body->nr_ptcls; i++ ) {
-            if( body->w_s[i] == 0.f ) {
-                continue;
+    for( const auto pBody : bodies ) {
+        for( int i=0; i<pBody->nr_ptcls; i++ ) {
+            vec3 p = pBody->np_s[i];
+            ICollider* minColl;
+            float minDist = glim::fmin;
+            for( const auto pColl : static_colliders ) {
+                float dist = pColl->getSD( p );
+                if( dist < minDist ) {
+                    minDist = dist;
+                    minColl = pColl;
+                }
             }
-            if( body->np_s[i].y<ptcl_radius ) {
-                body->cs_s[i].norh = {0, 1, 0, 0};
-            }
-            else {
-                body->cs_s[i].norh.w = -1;
+            if( minDist < ptcl_radius) {
+
             }
         }
     }
@@ -120,7 +123,7 @@ void Simulator::update(float dt)
             body->updateP( dt );
         }
 
-        updateColSurf();
+        updateCollision();
 
         for( auto body : bodies )
         {

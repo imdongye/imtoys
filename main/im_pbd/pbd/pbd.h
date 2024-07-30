@@ -57,16 +57,36 @@ namespace pbd
         void project(SoftBody& body, float alpha);
     };
 
-    struct ColSurf
+    struct ICollider
     {
-        glm::vec4 norh;
-        ColSurf(const glm::vec4& nh) : norh(nh) {}
-        inline void set(const glm::vec3& n, float h) { norh = glm::vec4(n, h); }
-        glm::vec3 getN() { return glm::vec3(norh); }
-        float getH() { return norh.w; }
-        float getSD(const glm::vec3& p) {
-            return glm::dot(norh, p) - norh.h;
-        }
+        float friction;
+        float restitution;
+        glm::vec3 vel;
+        virtual float getSD(const glm::vec3& target) const;
+        virtual glm::vec4 getNorh(const glm::vec3& target) const;
+    };
+    struct ColliderPlane: public ICollider
+    {
+        glm::vec3 p;
+        glm::vec3 n;
+        ColliderPlane(const glm::vec3& _p, const glm::vec3& _n);
+        virtual float getSD(const glm::vec3& target) const override;
+        virtual glm::vec4 getNorh(const glm::vec3& target) const override;
+    };
+    struct ColliderSphere: public ICollider
+    {
+        glm::vec3 p;
+        glm::vec3 n;
+        ColliderPlane(const glm::vec3& _p, const glm::vec3& _n);
+        float getSD(const glm::vec3& target) const;
+    };
+
+    struct Ptcl
+    {
+        glm::vec3 x, p, v, f;
+        float w, min_col_dist;
+        glm::vec4 cs;
+        int idx_col;
     };
 
     struct SoftBody: public lim::Mesh 
@@ -82,7 +102,6 @@ namespace pbd
         std::vector<glm::vec3>  v_s;
         std::vector<glm::vec3>  f_s;
         std::vector<float>      w_s; // inv mass
-        std::vector<ColSurf>   cs_s;
         int nr_ptcls, nr_tris;
 
         std::vector<ConstraintDistance>      c_stretchs;
@@ -91,7 +110,8 @@ namespace pbd
         std::vector<ConstraintDihedralBend>  c_dih_bends;
         std::vector<ConstraintIsometricBend> c_iso_bends;
         std::vector<ConstraintGlobalVolume>  c_g_volumes;
-        std::vector<ConstraintFix>  c_fixes;
+        std::vector<ConstraintFix>           c_fixes;
+
         struct Compliance {
             float stretch, shear, dist_bend;
             float dih_bend, iso_bend;
@@ -115,10 +135,11 @@ namespace pbd
     {
         int nr_steps = 20;
         float ptcl_radius = 0.02f;
+        std::vector<ICollider*> static_colliders;
         std::vector<SoftBody*> bodies;
         ~Simulator();
         void clear();
-        void updateColSurf();
+        void updateCollision();
         void update( float dt );
     };
 }
