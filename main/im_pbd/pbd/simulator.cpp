@@ -20,7 +20,11 @@ void SoftBody::updateP(float dt)
 {
     // (5) update v with external force (ex. G)
     for( int i=0; i<nr_ptcls; i++ ) {
-        v_s[i] += G*dt;
+        if( w_s[i] == 0 )
+            continue;
+        f_s[i] = G/w_s[i];
+        // ...
+        v_s[i] += f_s[i]*w_s[i]*dt;
     }
 
     // (6) dampVel
@@ -30,10 +34,8 @@ void SoftBody::updateP(float dt)
     for( int i=0; i<nr_ptcls; i++ ) {
         np_s[i] = poss[i] + v_s[i]*dt;
     }
-}
 
-void SoftBody::updateX(float dt)
-{
+
     float sqdt = dt*dt;
     float alpha;
 
@@ -68,22 +70,42 @@ void SoftBody::updateX(float dt)
     for( auto& c : c_g_volumes ) {
         c.project( *this, alpha );
     }
+}
 
-    // collision
-    // for( auto& c : c_colls )
 
+void Simulator::updateColSurf()
+{
+    // generate collision constraints
+    for( auto body : bodies ) {
+        for( int i=0; i<body->nr_ptcls; i++ ) {
+            if( body->w_s[i] == 0.f ) {
+                continue;
+            }
+            if( body->np_s[i].y<ptcl_radius ) {
+                body->cs_s[i].norh = {0, 1, 0, 0};
+            }
+            else {
+                body->cs_s[i].norh.w = -1;
+            }
+        }
+    }
+}
+
+void SoftBody::updateX(float dt)
+{
     for( auto& c : c_fixes ) {
         c.project( *this );
     }
-    
-    
 
     // (12) update x, v
     for( int i=0; i<nr_ptcls; i++ ) {
+        if( w_s[i] == 0 )
+            continue;
+        if( cs_s[i].norh.w < 0 ) {
+
         v_s[i] = (np_s[i] - poss[i])/dt;
         poss[i] = np_s[i];
     }
-   
 }
 
 
@@ -93,24 +115,18 @@ void Simulator::update(float dt)
 
     for( int step=0; step<nr_steps; step++ )
     {
-        for( auto body : bodies ) {
+        for( auto body : bodies )
+        {
             body->updateP( dt );
         }
 
-        // generate collision constraints
-        for( auto body : bodies ) {
-            for( int i=0; i<body->nr_ptcls; i++ ) {
-                if( body->np_s[i].y<0 ) {
-                    body->np_s[i].y = 0;
-                }
-            }
-        }
+        updateColSurf();
 
-        for( auto body : bodies ) {
+        for( auto body : bodies )
+        {
             body->updateX( dt );
         }
     }
-
 
     for( auto body : bodies ) {
         if( body->update_buf ) {

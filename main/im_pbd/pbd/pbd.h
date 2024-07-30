@@ -57,10 +57,17 @@ namespace pbd
         void project(SoftBody& body, float alpha);
     };
 
-    struct ConstraintCollision
+    struct ColSurf
     {
+        glm::vec4 norh;
+        ColSurf(const glm::vec4& nh) : norh(nh) {}
+        inline void set(const glm::vec3& n, float h) { norh = glm::vec4(n, h); }
+        glm::vec3 getN() { return glm::vec3(norh); }
+        float getH() { return norh.w; }
+        float getSD(const glm::vec3& p) {
+            return glm::dot(norh, p) - norh.h;
+        }
     };
-
 
     struct SoftBody: public lim::Mesh 
     {
@@ -73,7 +80,9 @@ namespace pbd
         // lim::Mesh poss => current poss (X)
         std::vector<glm::vec3> np_s; // new, predicted poss (P)
         std::vector<glm::vec3>  v_s;
+        std::vector<glm::vec3>  f_s;
         std::vector<float>      w_s; // inv mass
+        std::vector<ColSurf>   cs_s;
         int nr_ptcls, nr_tris;
 
         std::vector<ConstraintDistance>      c_stretchs;
@@ -84,8 +93,8 @@ namespace pbd
         std::vector<ConstraintGlobalVolume>  c_g_volumes;
         std::vector<ConstraintFix>  c_fixes;
         struct Compliance {
-            float stretch, shear, bend;
-            float dist_bend, dih_bend, iso_bend;
+            float stretch, shear, dist_bend;
+            float dih_bend, iso_bend;
             float glo_volume;
             Compliance();
         };
@@ -93,7 +102,8 @@ namespace pbd
 
         bool update_buf = false;
 
-        SoftBody(const lim::Mesh& src, bool makeShear = false, BendType bendType = BendType::Dihedral);
+        // nrShear => [0,2]
+        SoftBody(const lim::Mesh& src, int nrShear = 1, BendType bendType = BendType::Dihedral);
         void updateP(float dt);
         void updateX(float dt);
         float getVolume() const;
@@ -104,9 +114,11 @@ namespace pbd
     struct Simulator 
     {
         int nr_steps = 20;
+        float ptcl_radius = 0.02f;
         std::vector<SoftBody*> bodies;
         ~Simulator();
         void clear();
+        void updateColSurf();
         void update( float dt );
     };
 }

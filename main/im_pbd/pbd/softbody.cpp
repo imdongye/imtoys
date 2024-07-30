@@ -13,26 +13,41 @@ static inline uvec2 makeEdgeIdx(uint a1, uint a2) {
 }
 
 SoftBody::Compliance::Compliance()
-    : stretch(0.001f), shear(0.001f), bend(0.001f)
-    , dist_bend(0.001f), dih_bend(0.001f), iso_bend(0.001f)
+    : stretch(0.001f), shear(0.001f), dist_bend(0.001f)
+    , dih_bend(0.001f), iso_bend(0.001f)
     , glo_volume(0.001f)
 {
 }
 
+/*
+   n1
+   p2
+e2/  \e1    e0 = p0-p1
+ /    \     e1 = p2-p1
+p0----p1    e2 = p2-p0
+ \ e0 /     e3 = p3-p0
+e3\  /e4    e4 = p3-p1
+   p3
+   n2
+*/
 // ref From: CreateConstraints() in SoftBodySharedcpp of JoltPhysics
-SoftBody::SoftBody(const lim::Mesh& src, bool makeShear, BendType bendType)
+SoftBody::SoftBody(const lim::Mesh& src, int nrShear, BendType bendType)
     : lim::Mesh(src), compliance()
 {
     nr_tris = tris.size();
     nr_ptcls = poss.size();
     np_s.reserve(nr_ptcls);
     v_s.reserve(nr_ptcls);
+    f_s.reserve(nr_ptcls);
     w_s.reserve(nr_ptcls);
+    cs_s.reserve(nr_ptcls);
 
     for( const vec3& p : poss ) {
         np_s.push_back( p );
         v_s.push_back( vec3{0} );
+        f_s.push_back( vec3{0} );
         w_s.push_back( 1.f );
+        cs_s.push_back( vec4{-1} );
     }
 
     struct Edge {
@@ -67,24 +82,41 @@ SoftBody::SoftBody(const lim::Mesh& src, bool makeShear, BendType bendType)
             uvec4 idxPs = {edge1.idx_ps, edge1.idx_opp, edge2.idx_opp};
             vec3 e0 = poss[idxPs.x] - poss[idxPs.y];
             vec3 e1 = poss[idxPs.z] - poss[idxPs.y];
+            vec3 e2 = poss[idxPs.z] - poss[idxPs.x];
+            vec3 e3 = poss[idxPs.w] - poss[idxPs.x];
             vec3 e4 = poss[idxPs.w] - poss[idxPs.y];
             vec3 n1 = normalize(cross(e1, e0));
             vec3 n2 = normalize(cross(e0, e4));
 
             // check shear
-            if( makeShear && abs(dot(e1, e4)) < 0.0001f && abs(dot(n1, n2)) > 0.9999f ) {
+            if( abs(dot(e1, e4)) < 0.0001f && abs(dot(e2, e3)) < 0.0001f && abs(dot(n1, n2)) > 0.9999f ) {
                 isShear = true;
-                c_shears.push_back( {*this, makeEdgeIdx(edge1.idx_opp, edge2.idx_opp)} );
-                continue;
+                if( nrShear>1 ) {
+                    c_shears.push_back( {*this, makeEdgeIdx(edge1.idx_opp, edge2.idx_opp)} );
+                }
             }
 
             // else is bend
             switch( bendType ) {
             case BendType::None:
                 break;
-            case BendType::Distance:
-                c_dist_bends.push_back( {*this, makeEdgeIdx(edge1.idx_opp, edge2.idx_opp)} );
+            case BendType::Distance: {
+                if( isShear && nrShear>1 ) {
+                    break;
+                }
+                bool isInside = false;
+                uvec2 idxEdge = makeEdgeIdx(edge1.idx_opp, edge2.idx_opp);
+                for( const auto& c : c_dist_bends ) {
+                    if( c.idx_ps == idxEdge ) {
+                        isInside = true;
+                        break;
+                    }
+                }
+                if( !isInside ) {
+                    c_dist_bends.push_back( {*this, makeEdgeIdx(edge1.idx_opp, edge2.idx_opp)} );
+                }
                 break;
+            }
             case BendType::Dihedral:
                 c_dih_bends.push_back( {*this, idxPs} );
                 break;
@@ -93,10 +125,11 @@ SoftBody::SoftBody(const lim::Mesh& src, bool makeShear, BendType bendType)
                 break;
             }
         }
-        if( isShear ) {
-            c_shears.push_back( {*this, edge1.idx_ps} );
-        } else {
+        if( !isShear ) {
             c_stretchs.push_back( {*this, edge1.idx_ps} );
+        }
+        else if( nrShear>0 ) {
+            c_shears.push_back( {*this, edge1.idx_ps} );
         }
     }
 }

@@ -1,0 +1,117 @@
+#version 460 core
+layout(local_size_x = 16, local_size_y = 16) in;
+
+layout(std430, binding=0) readonly buffer pos_buf {
+    vec4 poss[];
+};
+layout(std430, binding=1) readonly buffer vel_buf {
+    vec4 vels[];
+};
+layout(std430, binding=2) writeonly buffer out_pos_buf {
+    vec4 out_poss[];
+};
+layout(std430, binding=3) writeonly buffer out_vel_buf {
+    vec4 out_vels[];
+};
+
+uniform float cloth_mass;
+uniform float ptcl_mass;
+uniform vec2 inter_p_size;
+uniform ivec2 nr_p;
+uniform float dt, ka, kr;
+uniform float stretchKs, shearKs, bendingKs;
+uniform float stretchKd, shearKd, bendingKd;
+uniform vec3 gravity;
+
+
+
+const ivec2 stretchDxy[] = {
+    ivec2(1,0), ivec2(0,-1), ivec2(-1,0), ivec2(0,1),
+};
+const ivec2 shearDxy[] = {
+    ivec2(1,-1), ivec2(-1,-1), ivec2(-1,1), ivec2(1,1)
+};
+const ivec2 bendingDxy[] = {
+    ivec2(2,0), ivec2(0,-2), ivec2(-2,0), ivec2(0,2),
+};
+
+ivec2 cur_ixy;
+vec3 cur_pos;
+float cur_m;
+vec3 cur_vel;
+
+
+bool isOutSide(ivec2 p) {
+    return p.x<0 || p.x>=nr_p.x || p.y<0 || p.y>=nr_p.y;
+}
+vec3 getSpringForce(ivec2 dxy, float ks, float kd) {
+    ivec2 p2_ixy = cur_ixy+dxy;
+    if(isOutSide(p2_ixy)) {
+        return vec3(0);
+    }
+    int p2_idx = p2_ixy.x + p2_ixy.y*nr_p.x;
+    vec3 p2_pos = poss[p2_idx].xyz;
+    vec3 p2_vel = vels[p2_idx].xyz;
+
+    vec3 diffP = p2_pos - cur_pos;
+    vec3 diffV = p2_vel - cur_vel;
+
+    float oriLength = length(inter_p_size*dxy);
+    float curLength = length(diffP);
+    vec3 dir = diffP/curLength;
+    float diffL = curLength - oriLength;
+
+    float force = ks * diffL;
+    // float force = ks * diffL/oriLength;
+    force += kd * dot(diffV, dir); // todo
+
+    return force*dir;
+}
+
+void main()
+{
+    cur_ixy = ivec2(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y);
+    if( isOutSide(cur_ixy) ) {
+        return;
+    }
+    int idx = cur_ixy.x + cur_ixy.y*nr_p.x;
+    if(dt == 0 ) {
+        out_poss[idx] = poss[idx];
+        return;
+    }
+
+    cur_vel = vels[idx].xyz;
+    cur_m = poss[idx].w;
+    cur_pos = poss[idx].xyz;
+    vec3 F = vec3(0);
+    // F -= ka*cur_vel;
+    F -= (ka*cur_vel*ptcl_mass)/cloth_mass;
+    F += gravity*ptcl_mass;
+
+    for( int i=0; i<4; i++ ) {
+        F += getSpringForce(stretchDxy[i], stretchKs, stretchKd);
+    }
+    for( int i=0; i<4; i++ ) {
+        F += getSpringForce(shearDxy[i], shearKs, shearKd);
+    }
+    for( int i=0; i<4; i++ ) {
+        F += getSpringForce(bendingDxy[i], bendingKs, bendingKd);
+    }
+    vec3 acc = vec3(0);
+    if(ptcl_mass!=0) {
+        acc = F/ptcl_mass;
+    }
+    vec3 newVel = cur_vel + acc*dt;
+    
+    if(cur_pos.y<0 && newVel.y<0) {
+        newVel.y = -kr*newVel.y;
+        // todo kmu
+    }
+    vec3 newPos = cur_pos + newVel*dt*cur_m;
+    // vec3 newPos = 2.0*cur_pos-cur_prev_pos + acc*dt*dt;
+
+    out_poss[idx] = vec4(newPos, cur_m);
+    out_vels[idx] = vec4(newVel*cur_m, 0);
+}
+
+

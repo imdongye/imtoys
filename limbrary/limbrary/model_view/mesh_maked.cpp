@@ -161,12 +161,12 @@ MeshSphere::MeshSphere(float width, int nrSlices, int nrStacks, bool genNors, bo
 	// theta : y-axis angle [0, 2pi]
 	for (int stack = 0; stack <= nrStacks; stack++)
 	{
-		float phi = glim::PI90 - glim::PI * stack / (float)nrStacks;
+		float phi = glim::pi90 - glim::pi * stack / (float)nrStacks;
 		float y = sin(phi);
 		float cosPhi = cos(phi);
 		for (int slice = 0; slice <= nrSlices; slice++)
 		{
-			float theta = glim::PI2 * slice / (float)nrSlices;
+			float theta = glim::pi2 * slice / (float)nrSlices;
 			float x = cosPhi * cos(theta);
 			float z = -cosPhi * sin(theta);
 			vec3 nor = {x, y, z};
@@ -210,12 +210,12 @@ MeshEnvSphere::MeshEnvSphere(float width, int nrSlices, int nrStacks)
 	// theta : y-axis angle [0, 2pi]
 	for (int stack = 0; stack <= nrStacks; stack++)
 	{
-		float phi = glim::PI90 - glim::PI * stack / (float)nrStacks;
+		float phi = glim::pi90 - glim::pi * stack / (float)nrStacks;
 		float y = sin(phi);
 		float cosPhi = cos(phi);
 		for (int slice = 0; slice <= nrSlices; slice++)
 		{
-			float theta = glim::PI2 * slice / (float)nrSlices;
+			float theta = glim::pi2 * slice / (float)nrSlices;
 			float x = cosPhi * cos(theta);
 			float z = cosPhi * sin(theta);
 			vec3 nor = {x, y, z};
@@ -273,7 +273,7 @@ MeshIcoSphere::MeshIcoSphere(float width, int subdivision, bool genNors, bool ge
 		}
 	}
 
-	const float aStep = glim::PI2 / 5.f;		 // angle step
+	const float aStep = glim::pi2 / 5.f;		 // angle step
 	const float halfH = radius * 0.5f;	 // half height
 	const float base = halfH * sqrtf(3); // bottom length 밑변
 
@@ -428,10 +428,10 @@ MeshCubeSphere2::MeshCubeSphere2(float width, int nrSlices, bool genNors, bool g
 	std::vector<vec3> facePoints;
 
 	for( int y=0; y<=nrSlices; y++ ) { // z-axis angle
-		float phi = glim::PI90 * y/(float)nrSlices - glim::PI45;
+		float phi = glim::pi90 * y/(float)nrSlices - glim::pi45;
 		vec3 n1 = { -sin(phi), cos(phi), 0 };
 		for( int x=0; x<=nrSlices; x++ ) { // y-axis angle
-			float theta = glim::PI90 * (float)x / nrSlices - glim::PI45;
+			float theta = glim::pi90 * (float)x / nrSlices - glim::pi45;
 			vec3 n2 = { sin(theta), 0, cos(theta) };
 			facePoints.push_back(normalize(cross(n1, n2)));
 		}
@@ -482,7 +482,7 @@ MeshCylinder::MeshCylinder(float width, float height, int nrSlices, bool genNors
 
 	for( GLuint i=0; i<=nrSlices; i++ )
 	{
-		float theta = glim::PI2*i/(float)nrSlices;
+		float theta = glim::pi2*i/(float)nrSlices;
 		float x =  radius*cos(theta);
 		float z = -radius*sin(theta);
 		vec3 pos;
@@ -537,12 +537,12 @@ MeshCapsule::MeshCapsule(float width, float height, int nrSlices, int nrStacks, 
 	// theta : y-axis angle [0, 2pi]
 	for( int stack=0; stack<nrStacks; stack++ )
 	{
-		float phi = glim::PI90 - glim::PI * stack/(float)(nrStacks-1);
+		float phi = glim::pi90 - glim::pi * stack/(float)(nrStacks-1);
 		float y = sin(phi);
 		float cosPhi = cos(phi);
 		for( int slice=0; slice<=nrSlices; slice++ )
 		{
-			float theta = glim::PI2 * slice / (float)nrSlices;
+			float theta = glim::pi2 * slice / (float)nrSlices;
 			float x = cosPhi * cos(theta);
 			float z = -cosPhi * sin(theta);
 			vec3 nor = {x, y, z};
@@ -591,10 +591,10 @@ MeshDonut::MeshDonut(float radius, float height, int nrSlices, int nrRingVerts, 
 	// calculus : shell method
 	for( int slice=0; slice<=nrSlices; slice++ )
 	{
-		float donutTheta = -glim::PI2*slice/(float)nrSlices;
+		float donutTheta = -glim::pi2*slice/(float)nrSlices;
 		for( int rv=0; rv<=nrRingVerts; rv++ )
 		{
-			float ringTheta = glim::PI + glim::PI2*rv/(float)nrRingVerts;
+			float ringTheta = glim::pi + glim::pi2*rv/(float)nrRingVerts;
 			float y = ringRad * sin(ringTheta);
 			float relativeX = donutRad + ringRad * cos(ringTheta);
 			float x = relativeX * cos(donutTheta);
@@ -659,5 +659,55 @@ MeshCubeShared::MeshCubeShared(float width, bool withInitGL)
 
 
 MeshCloth::MeshCloth(vec2 size, float innerWidth) {
-	
+	ivec2 nrSlice = { int(size.x/innerWidth), int(size.y/innerWidth) };
+	vec2 innerSize = size/vec2(nrSlice);
+	int nrPoss = (nrSlice.x+1) * (nrSlice.y+1);
+	vec2 sPos = -size/2.f;
+
+	name = fmtStrToBuf("cloth_%d_%d", nrSlice.x, nrSlice.y);
+	const vec3 up = {0, 1, 0};
+
+	poss.reserve(nrPoss);
+	nors.reserve(nrPoss);
+	uvs.reserve(nrPoss);
+	tris.reserve(2*nrSlice.x*nrSlice.y);
+	for( int i=0; i<=nrSlice.y; i++ ) for( int j=0; j<=nrSlice.x; j++ )
+	{
+		poss.push_back({sPos.x + innerSize.x*j, 0, sPos.y + innerSize.y*i});
+		nors.push_back( up );
+		uvs.push_back({ j/float(nrSlice.x), (nrSlice.y-i)/float(nrSlice.x) });
+	}
+
+	const int szRow = nrSlice.x+1;
+	for( int i=0; i<nrSlice.y; i++ ) for( int j=0; j<nrSlice.x; j++ )
+	{
+		const int ori = j + szRow*i;
+		// 0-1
+		// |\|
+		// 2-3
+		if( (i+j)%2==0 ) {
+			// upper
+			tris.push_back({ori + 0,
+							ori + 1 + szRow,
+							ori + 1});
+			// lower
+			tris.push_back({ori + 0,
+							ori + 0 + szRow,
+							ori + 1 + szRow});
+		}
+		// 0-1
+		// |/|
+		// 2-3
+		else {
+			// upper
+			tris.push_back({ori + 0,
+							ori + 0 + szRow,
+							ori + 1});
+			// lower
+			tris.push_back({ori + 1,
+							ori + 0 + szRow,
+							ori + 1 + szRow});
+		}
+	}
+	initGL();
 }

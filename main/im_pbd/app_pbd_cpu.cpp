@@ -18,6 +18,8 @@ namespace {
 	bool draw_mesh = false;
 }
 
+
+
 static void resetApp() {
 	pbd::SoftBody::Compliance tempComp;
 	if(cur_body)
@@ -46,19 +48,35 @@ static void resetApp() {
 
 	// cloth
 	{
-		constexpr int nrWidth = 11;
-		MeshPlane ms(0.7f, nrWidth, nrWidth, false, false);
-		// mat4 tf = translate(vec3(0,2,0)) * glim::rotateX(glim::PI90*0.1f)* glim::rotateY(glim::PI90*0.2f);
-		mat4 tf = translate(vec3(0,2,0));
+		int nrShear = 2;
+		auto bendType = pbd::SoftBody::BendType::Distance;
+		MeshCloth ms(vec2(1.f, 1.f), 0.05f);
+		mat4 tf = translate(vec3(0,2,0)) * glim::rotateX(glim::pi90*0.1f)* glim::rotateY(glim::pi90*0.2f);
+		// mat4 tf = translate(vec3(0,2,0));
 		for( vec3& p : ms.poss ) {
 			p = vec3(tf*vec4(p,1));
 		}
-		cur_body = new pbd::SoftBody(ms, true, pbd::SoftBody::BendType::None);
+		cur_body = new pbd::SoftBody(ms, nrShear, bendType);
+		cur_body->w_s[0] = 0.f;
 	}
 
+	// cloth cell
+	// {
+	// 	int nrShear = 1;
+	// 	float width = 1.f;
+	// 	int nrWidth = 1;
+	// 	auto bendType = pbd::SoftBody::BendType::Dihedral;
+	// 	MeshCloth ms(vec2(1.f), width/nrWidth);
+	// 	mat4 tf = translate(vec3(0,2,0));
+	// 	for( vec3& p : ms.poss ) {
+	// 		p = vec3(tf*vec4(p,1));
+	// 	}
+	// 	cur_body = new pbd::SoftBody(ms, nrShear, bendType);
+	// 	cur_body->w_s[0] = 0.f;
+	// 	cur_body->w_s[nrWidth] = 0.f;
+	// }
 
 	cur_body->compliance = tempComp;
-	cur_body->w_s[0] = 0.f;
 	simulator.bodies.push_back( cur_body );
 }
 static void deleteApp() {
@@ -87,15 +105,17 @@ void AppPbdCPU::customDrawShadow(const mat4& mtx_View, const mat4& mtx_Proj) con
 {
 	if( !draw_mesh )
 		return;
-	Program& prog = AssetLib::get().prog_shadow_static;
-	prog.use();
-	prog.setUniform("mtx_View", mtx_View);
-	prog.setUniform("mtx_Proj", mtx_Proj);
-	prog.setUniform("mtx_Model", glm::mat4(1));
+	Program& sProg = AssetLib::get().prog_shadow_static;
+	sProg.use();
+	sProg.setUniform("mtx_View", mtx_View);
+	sProg.setUniform("mtx_Proj", mtx_Proj);
+	sProg.setUniform("mtx_Model", glm::mat4(1));
 
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	for( auto body : simulator.bodies ) {
 		body->bindAndDrawGL();
 	}
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 void AppPbdCPU::customDraw(const Camera& cam, const LightDirectional& lit) const 
 {
@@ -106,9 +126,11 @@ void AppPbdCPU::customDraw(const Camera& cam, const LightDirectional& lit) const
 	lit.setUniformTo(prog_ms);
 	prog_ms.setUniform("mtx_Model", glm::mat4(1));
 
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	for( auto body : simulator.bodies ) {
 		body->bindAndDrawGL();
 	}
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 static void drawBody(const pbd::SoftBody& body) {
 	for( int i=0; i<body.nr_ptcls; i++ ) {
@@ -117,12 +139,18 @@ static void drawBody(const pbd::SoftBody& body) {
 	for( const auto& c : body.c_stretchs ) {
 		g_app->drawCylinder( body.poss[c.idx_ps.x], body.poss[c.idx_ps.y], {1,1,0} );
 	}
-	// for( const auto& c : body.c_bendings ) {
-	// 	g_app->drawCylinder( body.poss[c.idx_ps.z], body.poss[c.idx_ps.w], {0,0,1} );
-	// 	for( int i=0; i<4; i++ ) {
-	// 		g_app->drawCylinder( body.poss[c.idx_ps[i]], body.poss[c.idx_ps[i]]+c.dCi[i], {0,0,1} );
-	// 	}
-	// }
+	for( const auto& c : body.c_shears ) {
+		g_app->drawCylinder( body.poss[c.idx_ps.x], body.poss[c.idx_ps.y], {0,1,1} );
+	}
+	for( const auto& c : body.c_dist_bends ) {
+		g_app->drawCylinder( body.poss[c.idx_ps.x], body.poss[c.idx_ps.y], {0.7,0.1,0} );
+	}
+	for( const auto& c : body.c_dih_bends ) {
+		g_app->drawCylinder( body.poss[c.idx_ps.z], body.poss[c.idx_ps.w], {0,0,1} );
+		for( int i=0; i<4; i++ ) {
+			g_app->drawCylinder( body.poss[c.idx_ps[i]], body.poss[c.idx_ps[i]]+c.dCi[i], {0,0,1} );
+		}
+	}
 }
 void AppPbdCPU::canvasDraw() const
 {
@@ -167,23 +195,38 @@ void AppPbdCPU::canvasImGui()
 {
 	ImGui::Begin("pbd ctrl");
 	ImGui::Checkbox("pause", &is_paused);
-	if( is_paused && ImGui::Button("one step 0.5sec") ) {
-		float elapsed = 0.f;
-		while( elapsed<0.1f ) {
+	if( is_paused ) {
+		if( ImGui::Button("next 0.05sec") ) {
+			float elapsed = 0.f;
+			while( elapsed<0.05f ) {
+				simulator.update(delta_time);
+				elapsed += delta_time;
+			}
+		}
+		if( ImGui::Button("one step") ) {
 			simulator.update(delta_time);
-			elapsed += delta_time;
 		}
 	}
+
 	if( ImGui::Checkbox("draw mesh", &draw_mesh) ) {
 		cur_body->update_buf = draw_mesh;
 	}
-
-	ImGui::SliderFloat("a_distance", &cur_body->compliance.stretch, 0.f, 1.f, "%.6f");
+	if( ImGui::CollapsingHeader("compliance") ) {
+		ImGui::Text("#stretch %d", cur_body->c_stretchs.size());
+		ImGui::Text("#shear %d", cur_body->c_shears.size());
+		ImGui::Text("#dist_bend %d", cur_body->c_dist_bends.size());
+		ImGui::SliderFloat("stretch", &cur_body->compliance.stretch, 0.f, 1.f, "%.6f");
+		ImGui::SliderFloat("shear", &cur_body->compliance.shear, 0.f, 1.f, "%.6f");
+		ImGui::SliderFloat("dist_bend", &cur_body->compliance.dist_bend, 0.f, 1.f, "%.6f");
+		ImGui::SliderFloat("dih_bend", &cur_body->compliance.dih_bend, 0.f, 1.f, "%.6f");
+	}
+	
 	if( ImGui::Button("reset") ) {
 		resetApp();
 	}
 	LimGui::PlotVal("dt", "ms", delta_time*1000.f);
 	LimGui::PlotVal("fps", "", ImGui::GetIO().Framerate);
+	ImGui::SliderInt("# steps", &simulator.nr_steps, 1, 50);
 	ImGui::SliderInt("max fps", &max_fps, -1, 300);
 	ImGui::End();
 

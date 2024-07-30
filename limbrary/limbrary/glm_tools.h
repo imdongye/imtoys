@@ -7,13 +7,15 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <limits>
 
 
 namespace glim {
-	constexpr float PI45 = 0.78539816339f; // quarter
-	constexpr float PI90 = 1.57079632679f; // half
-	constexpr float PI 	 = 3.14159265359f; // float
-	constexpr float PI2  = 6.28318530718f; // double
+	constexpr float pi45 = 0.78539816339f; // quarter
+	constexpr float pi90 = 1.57079632679f; // half
+	constexpr float pi 	 = 3.14159265359f; // float
+	constexpr float pi2  = 6.28318530718f; // double
+	constexpr float eps = std::numeric_limits<float>::epsilon();
 
 
 

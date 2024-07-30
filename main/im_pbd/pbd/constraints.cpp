@@ -40,7 +40,12 @@ void ConstraintDistance::project(SoftBody& body, float alpha)
     vec3 diff = p1 - p2;
     float dist = length(diff);
     float C = dist - ori_dist;
+    if( C < glim::eps ) return;
     vec3 dC = diff / dist;
+    // simplified XPBD
+    float lambda = C / (w1+w2+alpha);
+    p1 -= lambda*w1*dC;
+    p2 += lambda*w2*dC;
 
     // PBD
     // float stiffness = 0.9f;
@@ -57,17 +62,11 @@ void ConstraintDistance::project(SoftBody& body, float alpha)
     // lambda += dLam; // need store lambda in constraints
     // p1 = p1+dP1;
     // p2 = p2+dP2;
-
-    // simplified XPBD
-    float lambda = C / (w1+w2+alpha);
-    vec3 dP1 = -lambda*w1*dC;
-    vec3 dP2 = lambda*w2*dC;
-    p1 = p1+dP1;
-    p2 = p2+dP2;
 }
 
 
-/* PBD, Appendix A: Bending constraint proejection
+/*
+   n1
    p2
 e2/  \e1    e0 = p0-p1
  /    \     e1 = p2-p1
@@ -75,14 +74,16 @@ p0----p1    e2 = p2-p0
  \ e0 /     e3 = p3-p0
 e3\  /e4    e4 = p3-p1
    p3
+   n2
 */
+// PBD, Appendix A: Bending constraint proejection
 ConstraintDihedralBend::ConstraintDihedralBend(const SoftBody& body, const uvec4& idxPs)
     : idx_ps(idxPs)
 {
-    const vec3& p0 = body.np_s[idx_ps.x];
-    const vec3& p1 = body.np_s[idx_ps.y];
-    const vec3& p2 = body.np_s[idx_ps.z];
-    const vec3& p3 = body.np_s[idx_ps.w];
+    vec3 p0 = body.np_s[idx_ps.x];
+    vec3 p1 = body.np_s[idx_ps.y];
+    vec3 p2 = body.np_s[idx_ps.z];
+    vec3 p3 = body.np_s[idx_ps.w];
     vec3 e0 = p0 - p1;
     vec3 e1 = p2 - p1;
     vec3 e4 = p3 - p1;
@@ -92,35 +93,43 @@ ConstraintDihedralBend::ConstraintDihedralBend(const SoftBody& body, const uvec4
 }
 void ConstraintDihedralBend::project(SoftBody& body, float alpha) 
 {
-    vec3& p0 = body.np_s[idx_ps.x]; float w1 = body.w_s[idx_ps.x];
-    vec3& p1 = body.np_s[idx_ps.y]; float w2 = body.w_s[idx_ps.y];
-    vec3& p2 = body.np_s[idx_ps.z]; float w3 = body.w_s[idx_ps.z];
-    vec3& p3 = body.np_s[idx_ps.w]; float w4 = body.w_s[idx_ps.w];
+    vec3 p0 = body.np_s[idx_ps.x];
+    vec3 p1 = body.np_s[idx_ps.y];
+    vec3 p2 = body.np_s[idx_ps.z];
+    vec3 p3 = body.np_s[idx_ps.w];
     vec3 e0 = p0 - p1;
     vec3 e1 = p2 - p1;
     vec3 e4 = p3 - p1;
-    vec3 n1 = normalize(cross(e1, e0)); 
-    vec3 n2 = normalize(cross(e0, e4));
-    float cosAngle = dot(n1,n2);
+
+    // From: https://www.cs.ubc.ca/~rbridson/docs/cloth2003.pdf
+    // based on "Simulation of Clothing with Folds and Wrinkles" - R. Bridson et al. (Section 4)
+    vec3 n1scaled = cross(e1, e0);
+    vec3 n2scaled = cross(e0, e4);
+    float sqLenN1 = dot(n1scaled, n1scaled);
+    float sqLenN2 = dot(n2scaled, n2scaled);
+    float cosAngle = dot(n1scaled,n2scaled)/sqrt(sqLenN1*sqLenN2);
     float angle = acos(cosAngle);
     float C = angle - ori_angle;
+    if( C < glim::eps ) return;
     float dAngle =  -1.f/ sqrt(1.f-cosAngle*cosAngle);
+    float e0Len = length(e0);
+    n1scaled /= sqLenN1;
+    n2scaled /= sqLenN2;
+    dCi[2] = e0Len*n1scaled;
+    dCi[3] = e0Len*n2scaled;
+    dCi[0] = ( dot(e1,e0)*n1scaled + dot(e4,e0)*n2scaled ) / e0Len;
+    dCi[1] = - dCi[2] - dCi[3] - dCi[0];
 
-    // PBD
-    // vec3 q3 = ( cross(n2,p1) + cross(p1,n1)*d ) / length(cross(p2, p1));
-    // vec3 q4 = ( cross(n1,p1) + cross(p1,n2)*d ) / length(cross(p3, p1));
-    // vec3 q2 = ( cross(n2,p2) + cross(p2,n1)*d ) / length(cross(p2, p1))
-    //         - ( cross(n1,p3) + cross(p3,n2)*d ) / length(cross(p3, p1));
-    // vec3 q1 = -q2-q3-q4;
-    // float denom = w1*length2(q1) + w2*length2(q2) + w3*length2(q3) + w4*length2(q4) + alpha;
-    // vec3 dP1 = w1*sqrt(1-d*d)*(acosD-ori_angle)/denom * q1;
-    // vec3 dP2 = w2*sqrt(1-d*d)*(acosD-ori_angle)/denom * q2;
-    // vec3 dP3 = w3*sqrt(1-d*d)*(acosD-ori_angle)/denom * q3;
-    // vec3 dP4 = w4*sqrt(1-d*d)*(acosD-ori_angle)/denom * q4;
-    // p0 = p0+dP1;
-    // p1 = p1+dP2;
-    // p2 = p2+dP3;
-    // p3 = p3+dP4;
+    float denom = 0;
+    for( int i=0; i<4; i++ ) {
+        denom += body.w_s[idx_ps[i]]*length2(dCi[i]);
+    }
+    float lambda = -C / denom;
+
+    for( int i=0; i<4; i++ ) {
+        body.applyDeltaP(idx_ps[i], lambda, dCi[i]);
+        dCi[i] *= lambda*10000000.f;
+    }
 }
 
 
