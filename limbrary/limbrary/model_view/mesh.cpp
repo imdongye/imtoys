@@ -49,6 +49,7 @@ void Mesh::initGL(bool withClearMem)
 	glBindVertexArray(vao);
 
 	if( poss.size()>0 ){
+		nr_verts = poss.size();
 		glGenBuffers(1, &buf_pos);
 		glBindBuffer(GL_ARRAY_BUFFER, buf_pos);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(vec3)*poss.size(), poss.data(), GL_STATIC_DRAW);
@@ -114,9 +115,11 @@ void Mesh::initGL(bool withClearMem)
 }
 void Mesh::restorePosBuf()
 {
+	if( buf_pos == 0 )
+		return;
 	glBindBuffer(GL_ARRAY_BUFFER, buf_pos);
 	// glMap보다 조금 더 빠름, buffer usage dynamic_draw에 따른 차이 없음
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vec3)*poss.size(), poss.data());
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vec3)*nr_verts, poss.data());
 }
 void Mesh::deinitGL()
 {

@@ -28,20 +28,20 @@ void SoftBody::update(float dt)
     float alpha;
 
 
-    alpha = compliance.stretch/(200.f*sqdt);
+
+    alpha = compliance.dist_bend/sqdt;
+    for( auto& c : c_dist_bends ) {
+        c.project( *this, alpha );
+    }
+    alpha = compliance.shear/sqdt;
+    for( auto& c : c_shears ) {
+        c.project( *this, alpha );
+    }
+    alpha = compliance.stretch/sqdt;
     for( auto& c : c_stretchs ) {
         c.project( *this, alpha );
     }
 
-    alpha = compliance.shear/(200.f*sqdt);
-    for( auto& c : c_shears ) {
-        c.project( *this, alpha );
-    }
-
-    alpha = compliance.dist_bend/(200.f*sqdt);
-    for( auto& c : c_dist_bends ) {
-        c.project( *this, alpha );
-    }
 
 
     alpha = compliance.dih_bend/sqdt;
@@ -82,10 +82,12 @@ void Simulator::update(float dt)
             for( int i=0; i<body->nr_ptcls; i++ )
             {
                 float pw = body->w_s[i];
-                if( pw == 0.f )
+                if( pw == 0.f ) {
+                    body->f_s[i] = vec3(0);
                     continue;
+                }
                 body->f_s[i] = G/pw;
-                body->f_s[i] -= air_drag*body->v_s[i]/body->w_s[i] / body->total_mass;
+                // body->f_s[i] -= air_drag*body->v_s[i]/body->w_s[i] / body->total_mass;
             }
             body->update( dt );
         }

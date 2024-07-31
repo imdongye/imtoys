@@ -40,13 +40,14 @@ void ConstraintDistance::project(SoftBody& body, float alpha)
     vec3 diff = p1 - p2;
     float dist = length(diff);
     float C = dist - ori_dist;
-    if( C < glim::feps ) return;
+    if( C < 0.000001f ) return;
     vec3 dC = diff / dist;
     // simplified XPBD
     float lambda = C / (w1+w2+alpha);
-    p1 -= lambda*w1*dC;
-    p2 += lambda*w2*dC;
-
+    dPi[0] = -lambda*w1*dC;
+    dPi[1] = lambda*w2*dC;
+    p1 += dPi[0];
+    p2 += dPi[1];
     // PBD
     // float stiffness = 0.9f;
     // float lambda = stiffness * C / (w1+w2);

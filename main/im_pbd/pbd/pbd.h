@@ -27,6 +27,7 @@ namespace pbd
     {
         glm::uvec2 idx_ps;
         float ori_dist;
+        glm::vec3 dPi[2];
         ConstraintDistance(const SoftBody& body, const glm::uvec2& idxPs);
         void project(SoftBody& body, float alpha);
     };
@@ -57,6 +58,8 @@ namespace pbd
         void project(SoftBody& body, float alpha);
     };
 
+
+
     struct ICollider
     {
         float friction = 1.f;
@@ -79,6 +82,8 @@ namespace pbd
         virtual float getSdNor( const glm::vec3& p, glm::vec3& outNor ) const override;
     };
 
+
+
     struct SoftBody: public lim::Mesh 
     {
         enum class BendType {
@@ -88,12 +93,15 @@ namespace pbd
             Isometric,
         };
         // lim::Mesh poss => current poss (X)
+        std::vector<glm::vec3> tp_s; // temp for jocobi
         std::vector<glm::vec3> np_s; // new, predicted poss (P)
         std::vector<glm::vec3>  v_s;
         std::vector<glm::vec3>  f_s;
         std::vector<float>      w_s; // inv mass
-        float total_mass;
+        float total_mass, inv_ptcl_mass;
         int nr_ptcls, nr_tris;
+        float friction = 1.f;
+        float restitution = 1.f;
 
         std::vector<ConstraintDistance>      c_stretchs;
         std::vector<ConstraintDistance>      c_shears;
@@ -114,7 +122,9 @@ namespace pbd
         bool update_buf = false;
 
         // nrShear => [0,2]
+        SoftBody();
         SoftBody(const lim::Mesh& src, int nrShear = 1, BendType bendType = BendType::Dihedral, float totalMass = 1.f);
+        void addPtcl(const glm::vec3& p, float w, const glm::vec3& v);
         void update(float dt);
         float getVolume() const;
         void applyDeltaP(int idx, float lambda, const glm::vec3& dC);

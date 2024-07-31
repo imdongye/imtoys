@@ -18,7 +18,24 @@ SoftBody::Compliance::Compliance()
     , glo_volume(0.001f)
 {
 }
-
+SoftBody::SoftBody()
+    : total_mass(1.f), inv_ptcl_mass(1.f), nr_ptcls(0), nr_tris(0)
+{
+    constexpr int defalutSize = 50;
+    poss.reserve(defalutSize);
+    np_s.reserve(defalutSize);
+    v_s.reserve(defalutSize);
+    f_s.reserve(defalutSize);
+    w_s.reserve(defalutSize);
+}
+void SoftBody::addPtcl(const vec3& p, float w, const vec3& v) {
+    nr_ptcls++;
+    poss.push_back( p );
+    np_s.push_back( p );
+    v_s.push_back( v );
+    f_s.push_back( vec3{0} );
+    w_s.push_back( w );
+}
 /*
    n1
    p2
@@ -42,13 +59,13 @@ SoftBody::SoftBody(const lim::Mesh& src, int nrShear, BendType bendType, float t
     w_s.reserve(nr_ptcls);
 
     float ptclMass = total_mass / float(nr_ptcls); // ex) 0.01
-    float invPtclMass = 1.f / ptclMass;            // ex) 100.0
+    inv_ptcl_mass = 1.f / ptclMass;            // ex) 100.0
 
     for( const vec3& p : poss ) {
         np_s.push_back( p );
         v_s.push_back( vec3{0} );
         f_s.push_back( vec3{0} );
-        w_s.push_back( invPtclMass );
+        w_s.push_back( inv_ptcl_mass );
     }
 
     struct Edge {

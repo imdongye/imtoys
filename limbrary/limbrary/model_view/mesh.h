@@ -42,7 +42,8 @@ namespace lim
 		std::vector<glm::vec3> cols;
 		std::vector<VertBoneInfo> bone_infos;
 		std::vector<glm::uvec3> tris;
-		
+
+		int nr_verts;
 		GLuint buf_pos = 0; 			// 0
 		GLuint buf_nor = 0; 			// 1
 		GLuint buf_uv  = 0;				// 2

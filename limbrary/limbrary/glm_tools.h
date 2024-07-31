@@ -16,8 +16,6 @@ namespace glim {
 	constexpr float pi 	 = 3.14159265359f; // float
 	constexpr float pi2  = 6.28318530718f; // double
 	constexpr float feps = std::numeric_limits<float>::epsilon();
-	constexpr float fmax = std::numeric_limits<float>::max();
-	constexpr float fmin = std::numeric_limits<float>::min();
 
 
 

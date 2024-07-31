@@ -12,10 +12,10 @@ using namespace glm;
 namespace {
 	AppPbdCPU* g_app = nullptr;
 	pbd::Simulator simulator;
-
+	pbd::SoftBody ptcl_test;
 	pbd::SoftBody* cur_body = nullptr;
 	pbd::ColliderPlane c_ground;
-	pbd::ColliderSphere c_sphere({1,0.5f,0}, 0.5f);
+	pbd::ColliderSphere c_sphere({0,0.5f,0}, 0.3f);
 	bool is_paused = true;
 	bool draw_mesh = false;
 }
@@ -53,21 +53,21 @@ static void resetApp() {
 
 
 	// cloth0
-	{
-		int nrWidth = 3;
-		int nrShear = 2;
-		float mass = nrWidth*nrWidth;
-		auto bendType = pbd::SoftBody::BendType::Distance;
-		MeshPlane ms(1.f, nrWidth, nrWidth, false, false);
-		mat4 tf = translate(vec3(0,2,0)) * glim::rotateX(glim::pi90*0.1f)* glim::rotateY(glim::pi90*0.2f);
-		// mat4 tf = translate(vec3(0,2,0));
-		for( vec3& p : ms.poss ) {
-			p = vec3(tf*vec4(p,1));
-		}
-		cur_body = new pbd::SoftBody(ms, nrShear, bendType, mass);
-		cur_body->w_s[0] = 0.f;
-		cur_body->w_s[nrWidth] = 0.f;
-	}
+	// {
+	// 	int nrWidth = 5;
+	// 	int nrShear = 2;
+	// 	float mass = 1.f;
+	// 	auto bendType = pbd::SoftBody::BendType::None;
+	// 	MeshPlane ms(1.f, nrWidth, nrWidth, false, false);
+	// 	mat4 tf = translate(vec3(0,2,0)) * glim::rotateX(glim::pi90*0.1f)* glim::rotateY(glim::pi90*0.2f);
+	// 	// mat4 tf = translate(vec3(0,2,0));
+	// 	for( vec3& p : ms.poss ) {
+	// 		p = vec3(tf*vec4(p,1));
+	// 	}
+	// 	cur_body = new pbd::SoftBody(ms, nrShear, bendType, mass);
+	// 	cur_body->w_s[0] = 0.f;
+	// 	cur_body->w_s[nrWidth] = 0.f;
+	// }
 
 	// cloth
 	// {
@@ -84,23 +84,24 @@ static void resetApp() {
 	// }
 
 	// cloth cell
-	// {
-	// 	int nrShear = 1;
-	// 	float width = 1.f;
-	// 	int nrWidth = 1;
-	// 	auto bendType = pbd::SoftBody::BendType::Dihedral;
-	// 	MeshCloth ms(vec2(1.f), width/nrWidth);
-	// 	mat4 tf = translate(vec3(0,2,0));
-	// 	for( vec3& p : ms.poss ) {
-	// 		p = vec3(tf*vec4(p,1));
-	// 	}
-	// 	cur_body = new pbd::SoftBody(ms, nrShear, bendType);
-	// 	cur_body->w_s[0] = 0.f;
-	// 	cur_body->w_s[nrWidth] = 0.f;
-	// }
+	{
+		int nrShear = 0;
+		float width = 1.f;
+		int nrWidth = 1;
+		auto bendType = pbd::SoftBody::BendType::None;
+		MeshCloth ms(vec2(1.f), width/nrWidth);
+		mat4 tf = translate(vec3(0,2,0));
+		for( vec3& p : ms.poss ) {
+			p = vec3(tf*vec4(p,1));
+		}
+		cur_body = new pbd::SoftBody(ms, nrShear, bendType);
+		cur_body->w_s[0] = 0.f;
+		cur_body->w_s[nrWidth] = 0.f;
+	}
 
 	cur_body->compliance = tempComp;
 	simulator.bodies.push_back( cur_body );
+	simulator.bodies.push_back( &ptcl_test );
 }
 static void deleteApp() {
 	simulator.bodies.clear();
@@ -164,12 +165,21 @@ static void drawBody(const pbd::SoftBody& body) {
 	}
 	for( const auto& c : body.c_stretchs ) {
 		g_app->drawCylinder( body.poss[c.idx_ps.x], body.poss[c.idx_ps.y], {1,1,0} );
+		for( int i=0; i<2; i++ ) {
+			g_app->drawCylinder( body.poss[c.idx_ps[i]], body.poss[c.idx_ps[i]]+100000.f*c.dPi[i], {0,0,1} );
+		}
 	}
 	for( const auto& c : body.c_shears ) {
 		g_app->drawCylinder( body.poss[c.idx_ps.x], body.poss[c.idx_ps.y], {0,1,1} );
+		for( int i=0; i<2; i++ ) {
+			g_app->drawCylinder( body.poss[c.idx_ps[i]], body.poss[c.idx_ps[i]]+100000.f*c.dPi[i], {0,0,1} );
+		}
 	}
 	for( const auto& c : body.c_dist_bends ) {
 		g_app->drawCylinder( body.poss[c.idx_ps.x], body.poss[c.idx_ps.y], {0.7,0.1,0} );
+		for( int i=0; i<2; i++ ) {
+			g_app->drawCylinder( body.poss[c.idx_ps[i]], body.poss[c.idx_ps[i]]+100000.f*c.dPi[i], {0,0,1} );
+		}
 	}
 	for( const auto& c : body.c_dih_bends ) {
 		g_app->drawCylinder( body.poss[c.idx_ps.z], body.poss[c.idx_ps.w], {0,0,1} );
@@ -199,24 +209,39 @@ void AppPbdCPU::canvasDraw() const
 
 
 namespace {
-	pbd::SoftBody* picked_body;
-	int picked_ptcl_idx;
+	struct PickingInfo {
+		bool picked = false;
+		bool beforeFixed = false;
+		pbd::SoftBody* body;
+		int ptcl_idx;
+		vec3& pos(){
+			return body->poss[ptcl_idx];
+		}
+		vec3& vel() {
+			return body->v_s[ptcl_idx];
+		}
+		float& w() {
+			return body->w_s[ptcl_idx];
+		}
+	};
+	PickingInfo picked_info;
 }
 
-static void pickClosestPtclInRay( const vec3& rayDir, const vec3& rayOri ) {
+static void updatePicking( const vec3& rayDir, const vec3& rayOri ) {
 	float minDepth = FLT_MAX;
-	picked_body = nullptr;
 
 	for(pbd::SoftBody* body : simulator.bodies) {
 		for(int i=0; i<body->nr_ptcls; i++) {
 			vec3 toObj = body->poss[i] - rayOri;
 			float distFromLine = glm::length( glm::cross(rayDir, toObj) );
-			if( distFromLine < 0.02f ) {
+			if( distFromLine < 0.04f ) {
 				float distProjLine = glm::dot(rayDir, toObj);
 				if( distProjLine>0 && minDepth>distProjLine ) {
 					minDepth = distProjLine;
-					picked_body = body;
-					picked_ptcl_idx = i;
+					picked_info.picked = true;
+					picked_info.body = body;
+					picked_info.ptcl_idx = i;
+					picked_info.beforeFixed = (body->w_s[i] == 0.f);
 				}
 			}
 		}
@@ -273,22 +298,30 @@ void AppPbdCPU::canvasImGui()
 
 	if(ImGui::IsMouseClicked(ImGuiMouseButton_Right, false)) {
 		const vec3 mouseRay = vp.getMousePosRayDir();
-		pickClosestPtclInRay(mouseRay, vp.camera.pos);
-		if( picked_body ) {
-			if ( picked_body->w_s[picked_ptcl_idx] > 0.f ) {
-				picked_body->w_s[picked_ptcl_idx] = 0.f;
-				picked_body->v_s[picked_ptcl_idx] = vec3(0.f);
-			} else {
-				picked_body->w_s[picked_ptcl_idx] = 1.f;
-			}
+		updatePicking(mouseRay, vp.camera.pos);
+		if( picked_info.picked ) {
+			picked_info.w() = 0.f;
+			picked_info.vel() = vec3(0.f);
 		}
-	} else if(picked_body && ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
-		vec3& dstP = picked_body->poss[picked_ptcl_idx];
-		const vec3 toObj = dstP-vp.camera.pos;
+	}
+	if(picked_info.picked && ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
+		const vec3 toObj = picked_info.pos() - vp.camera.pos;
 		const vec3 mouseRay = vp.getMousePosRayDir();
 		const float depth = dot(vp.camera.front, toObj)/dot(vp.camera.front, mouseRay);
-		dstP = depth*mouseRay+vp.camera.pos;
-	} else if(ImGui::IsMouseReleased(ImGuiMouseButton_Right)) {
-		picked_body = nullptr;
+		picked_info.pos() = depth*mouseRay+vp.camera.pos;
+	}
+	if(ImGui::IsMouseReleased(ImGuiMouseButton_Right)) {
+		picked_info.picked = false;
+	}
+	if(ImGui::IsMouseClicked(ImGuiMouseButton_Middle, false)) {
+		const vec3 mouseRay = vp.getMousePosRayDir();
+		updatePicking(mouseRay, vp.camera.pos);
+		if( picked_info.picked ) {
+			picked_info.w() = picked_info.body->inv_ptcl_mass;
+		}
+	}
+	if(ImGui::IsKeyPressed(ImGuiKey_Space, false)) {
+		const vec3 mouseRay = vp.getMousePosRayDir();
+		ptcl_test.addPtcl(vp.camera.pos, 1/0.1f, 10.f*mouseRay);
 	}
 }
