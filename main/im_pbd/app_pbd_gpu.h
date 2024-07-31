@@ -6,27 +6,27 @@
 #ifndef __app_pbd_gpu_h_
 #define __app_pbd_gpu_h_
 
-#include <limbrary/application.h>
-#include <limbrary/model_view/camera_man.h>
+#include <limbrary/extension/appbase_canvas3d.h>
+#include "pbd/pbd.h"
 
 namespace lim
 {
-	class AppPbdGPU : public AppBase
+	class AppPbdGpu : public AppBaseCanvas3d
 	{
 	public:
 		inline static constexpr CStr APP_NAME = "PBD_GPU";
 		inline static constexpr CStr APP_DIR  = "im_pbd";
 		inline static constexpr CStr APP_DESCRIPTION = "pearlabyss summer internship";
-
-		Program program;
-		ViewportWithCamera viewport;
+		Program prog_ms;
 
 	public:
-		AppPbdGPU();
-		~AppPbdGPU();
-		virtual void update() override;
-		virtual void updateImGui() override;
-		virtual void dndCallback(int count, const char **paths) override;
+		AppPbdGpu();
+		~AppPbdGpu();
+		virtual void customDrawShadow( const glm::mat4& mtx_View, const glm::mat4& mtx_Proj ) const final;
+		virtual void customDraw( const Camera& cam, const LightDirectional& lit ) const final;
+		virtual void canvasUpdate() final;
+        virtual void canvasDraw() const final;
+        virtual void canvasImGui() final;
 	};
 }
 

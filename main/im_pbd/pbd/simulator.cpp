@@ -79,6 +79,7 @@ void Simulator::update(float dt)
     {
         for( auto body : bodies )
         {
+            // add external force
             for( int i=0; i<body->nr_ptcls; i++ )
             {
                 float pw = body->w_s[i];
@@ -87,8 +88,10 @@ void Simulator::update(float dt)
                     continue;
                 }
                 body->f_s[i] = G/pw;
-                // body->f_s[i] -= air_drag*body->v_s[i]/body->w_s[i] / body->total_mass;
+                body->f_s[i] -= (air_drag / pw / body->total_mass) * body->v_s[i];
             }
+            
+            // pbd update and solve
             body->update( dt );
         }
         for( auto body : bodies )
@@ -108,14 +111,14 @@ void Simulator::update(float dt)
                     p = p + sNor*inter_dist;
                     vNor = dot( v, sNor ) * sNor;
                     vTan = v - vNor;
-                    v = vTan*pC->friction - vNor*pC->restitution;
+                    v = (pC->friction * body->friction * vTan) - (pC->restitution * body->restitution * vNor);
                 }
             }
         }
     }
 
     for( auto body : bodies ) {
-        if( body->update_buf ) {
+        if( body->upload_to_buf ) {
             body->restorePosBuf();
         }
     }

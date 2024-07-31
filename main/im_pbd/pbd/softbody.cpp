@@ -18,6 +18,8 @@ SoftBody::Compliance::Compliance()
     , glo_volume(0.001f)
 {
 }
+
+
 SoftBody::SoftBody()
     : total_mass(1.f), inv_ptcl_mass(1.f), nr_ptcls(0), nr_tris(0)
 {

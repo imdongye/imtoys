@@ -118,16 +118,29 @@ namespace pbd
             Compliance();
         };
         Compliance compliance;
+        bool upload_to_buf = false;
 
-        bool update_buf = false;
+        SoftBody();
+        void addPtcl(const glm::vec3& p, float w, const glm::vec3& v);
 
         // nrShear => [0,2]
-        SoftBody();
         SoftBody(const lim::Mesh& src, int nrShear = 1, BendType bendType = BendType::Dihedral, float totalMass = 1.f);
-        void addPtcl(const glm::vec3& p, float w, const glm::vec3& v);
         void update(float dt);
         float getVolume() const;
         void applyDeltaP(int idx, float lambda, const glm::vec3& dC);
+    };
+
+    struct SoftBodyGpu : public SoftBody
+    {
+        bool upload_to_buf = false;
+        GLuint buf_xw_s=0, buf_pw_s=0, buf_v_s=0, buf_f_s=0; // vec4
+        GLuint buf_c_stretchs=0, buf_c_shears=0, buf_c_dist_bends=0;
+        GLuint buf_c_dih_bends=0, buf_c_iso_bends=0, buf_c_g_volumes=0, buf_c_fixes=0;
+        GLuint vao_soft_body=0;
+
+
+        SoftBodyGpu(const lim::Mesh& src, int nrShear = 1, BendType bendType = BendType::Dihedral, float totalMass = 1.f);
+        ~SoftBodyGpu();
     };
 
 
@@ -140,6 +153,15 @@ namespace pbd
         std::vector<SoftBody*> bodies;
         ~Simulator();
         void clearRefs();
+        void update( float dt );
+    };
+    struct SimulatorGpu
+    {
+        int nr_steps = 20;
+        float ptcl_radius = 0.02f;
+        float air_drag = 0.0001f;
+        SoftBody* body = nullptr;
+
         void update( float dt );
     };
 }

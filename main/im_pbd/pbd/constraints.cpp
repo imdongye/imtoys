@@ -32,22 +32,28 @@ ConstraintDistance::ConstraintDistance(const SoftBody& body, const uvec2& idxPs)
 }
 void ConstraintDistance::project(SoftBody& body, float alpha) 
 {
-    vec3& p1 = body.np_s[idx_ps.x];
+    vec3 p1 = body.np_s[idx_ps.x]; // gause-seidel iteration
+    vec3 p2 = body.np_s[idx_ps.y];
+    // vec3 p1 = body.poss[idx_ps.x]; // jacobi iteration
+    // vec3 p2 = body.poss[idx_ps.y];
     float w1 = body.w_s[idx_ps.x];
-    vec3& p2 = body.np_s[idx_ps.y];
     float w2 = body.w_s[idx_ps.y];
 
     vec3 diff = p1 - p2;
     float dist = length(diff);
     float C = dist - ori_dist;
-    if( C < 0.000001f ) return;
     vec3 dC = diff / dist;
+
     // simplified XPBD
-    float lambda = C / (w1+w2+alpha);
+    float denom = w1+w2+alpha;
+    if( denom < glim::feps )
+        return;
+    float lambda = C / denom;
     dPi[0] = -lambda*w1*dC;
     dPi[1] = lambda*w2*dC;
-    p1 += dPi[0];
-    p2 += dPi[1];
+    body.np_s[idx_ps.x] += dPi[0];
+    body.np_s[idx_ps.y] += dPi[1];
+    
     // PBD
     // float stiffness = 0.9f;
     // float lambda = stiffness * C / (w1+w2);

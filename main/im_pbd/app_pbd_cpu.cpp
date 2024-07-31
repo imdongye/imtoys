@@ -10,7 +10,7 @@ using namespace glm;
 
 
 namespace {
-	AppPbdCPU* g_app = nullptr;
+	AppPbdCpu* g_app = nullptr;
 	pbd::Simulator simulator;
 	pbd::SoftBody ptcl_test;
 	pbd::SoftBody* cur_body = nullptr;
@@ -18,6 +18,7 @@ namespace {
 	pbd::ColliderSphere c_sphere({0,0.5f,0}, 0.3f);
 	bool is_paused = true;
 	bool draw_mesh = false;
+	int nr_cloth_width = 4;
 }
 
 
@@ -53,21 +54,20 @@ static void resetApp() {
 
 
 	// cloth0
-	// {
-	// 	int nrWidth = 5;
-	// 	int nrShear = 2;
-	// 	float mass = 1.f;
-	// 	auto bendType = pbd::SoftBody::BendType::None;
-	// 	MeshPlane ms(1.f, nrWidth, nrWidth, false, false);
-	// 	mat4 tf = translate(vec3(0,2,0)) * glim::rotateX(glim::pi90*0.1f)* glim::rotateY(glim::pi90*0.2f);
-	// 	// mat4 tf = translate(vec3(0,2,0));
-	// 	for( vec3& p : ms.poss ) {
-	// 		p = vec3(tf*vec4(p,1));
-	// 	}
-	// 	cur_body = new pbd::SoftBody(ms, nrShear, bendType, mass);
-	// 	cur_body->w_s[0] = 0.f;
-	// 	cur_body->w_s[nrWidth] = 0.f;
-	// }
+	{
+		int nrShear = 2;
+		float mass = 1.f;
+		auto bendType = pbd::SoftBody::BendType::None;
+		MeshPlane ms(1.f, nr_cloth_width, nr_cloth_width, false, false);
+		mat4 tf = translate(vec3(0,2,0)) * glim::rotateX(glim::pi90*0.1f)* glim::rotateY(glim::pi90*0.2f);
+		// mat4 tf = translate(vec3(0,2,0));
+		for( vec3& p : ms.poss ) {
+			p = vec3(tf*vec4(p,1));
+		}
+		cur_body = new pbd::SoftBody(ms, nrShear, bendType, mass);
+		cur_body->w_s[0] = 0.f;
+		cur_body->w_s[nr_cloth_width] = 0.f;
+	}
 
 	// cloth
 	// {
@@ -84,20 +84,20 @@ static void resetApp() {
 	// }
 
 	// cloth cell
-	{
-		int nrShear = 0;
-		float width = 1.f;
-		int nrWidth = 1;
-		auto bendType = pbd::SoftBody::BendType::None;
-		MeshCloth ms(vec2(1.f), width/nrWidth);
-		mat4 tf = translate(vec3(0,2,0));
-		for( vec3& p : ms.poss ) {
-			p = vec3(tf*vec4(p,1));
-		}
-		cur_body = new pbd::SoftBody(ms, nrShear, bendType);
-		cur_body->w_s[0] = 0.f;
-		cur_body->w_s[nrWidth] = 0.f;
-	}
+	// {
+	// 	int nrShear = 0;
+	// 	float width = 1.f;
+	// 	int nrWidth = 1;
+	// 	auto bendType = pbd::SoftBody::BendType::None;
+	// 	MeshCloth ms(vec2(1.f), width/nrWidth);
+	// 	mat4 tf = translate(vec3(0,2,0));
+	// 	for( vec3& p : ms.poss ) {
+	// 		p = vec3(tf*vec4(p,1));
+	// 	}
+	// 	cur_body = new pbd::SoftBody(ms, nrShear, bendType);
+	// 	cur_body->w_s[0] = 0.f;
+	// 	cur_body->w_s[nrWidth] = 0.f;
+	// }
 
 	cur_body->compliance = tempComp;
 	simulator.bodies.push_back( cur_body );
@@ -107,17 +107,17 @@ static void deleteApp() {
 	simulator.bodies.clear();
 }
 
-AppPbdCPU::AppPbdCPU() : AppBaseCanvas3d(1200, 780, APP_NAME, false, 10, 1000000, 10000000)
+AppPbdCpu::AppPbdCpu() : AppBaseCanvas3d(1200, 780, APP_NAME, false, 10, 1000000, 10000000)
 {
 	prog_ms.attatch("mvp.vs").attatch("ndl.fs").link();
 	g_app = this;
 	resetApp();
 }
-AppPbdCPU::~AppPbdCPU()
+AppPbdCpu::~AppPbdCpu()
 {
 	deleteApp();
 }
-void AppPbdCPU::canvasUpdate()
+void AppPbdCpu::canvasUpdate()
 {
 	if( is_paused )
 		return;
@@ -125,7 +125,7 @@ void AppPbdCPU::canvasUpdate()
 }
 
 
-void AppPbdCPU::customDrawShadow(const mat4& mtx_View, const mat4& mtx_Proj) const
+void AppPbdCpu::customDrawShadow(const mat4& mtx_View, const mat4& mtx_Proj) const
 {
 	if( !draw_mesh )
 		return;
@@ -136,12 +136,10 @@ void AppPbdCPU::customDrawShadow(const mat4& mtx_View, const mat4& mtx_Proj) con
 	sProg.setUniform("mtx_Model", glm::mat4(1));
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	for( auto body : simulator.bodies ) {
-		body->bindAndDrawGL();
-	}
+	cur_body->bindAndDrawGL();
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
-void AppPbdCPU::customDraw(const Camera& cam, const LightDirectional& lit) const 
+void AppPbdCpu::customDraw(const Camera& cam, const LightDirectional& lit) const 
 {
 	if( !draw_mesh )
 		return;
@@ -151,9 +149,7 @@ void AppPbdCPU::customDraw(const Camera& cam, const LightDirectional& lit) const
 	prog_ms.setUniform("mtx_Model", glm::mat4(1));
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	for( auto body : simulator.bodies ) {
-		body->bindAndDrawGL();
-	}
+	cur_body->bindAndDrawGL();
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
@@ -165,21 +161,12 @@ static void drawBody(const pbd::SoftBody& body) {
 	}
 	for( const auto& c : body.c_stretchs ) {
 		g_app->drawCylinder( body.poss[c.idx_ps.x], body.poss[c.idx_ps.y], {1,1,0} );
-		for( int i=0; i<2; i++ ) {
-			g_app->drawCylinder( body.poss[c.idx_ps[i]], body.poss[c.idx_ps[i]]+100000.f*c.dPi[i], {0,0,1} );
-		}
 	}
 	for( const auto& c : body.c_shears ) {
 		g_app->drawCylinder( body.poss[c.idx_ps.x], body.poss[c.idx_ps.y], {0,1,1} );
-		for( int i=0; i<2; i++ ) {
-			g_app->drawCylinder( body.poss[c.idx_ps[i]], body.poss[c.idx_ps[i]]+100000.f*c.dPi[i], {0,0,1} );
-		}
 	}
 	for( const auto& c : body.c_dist_bends ) {
 		g_app->drawCylinder( body.poss[c.idx_ps.x], body.poss[c.idx_ps.y], {0.7,0.1,0} );
-		for( int i=0; i<2; i++ ) {
-			g_app->drawCylinder( body.poss[c.idx_ps[i]], body.poss[c.idx_ps[i]]+100000.f*c.dPi[i], {0,0,1} );
-		}
 	}
 	for( const auto& c : body.c_dih_bends ) {
 		g_app->drawCylinder( body.poss[c.idx_ps.z], body.poss[c.idx_ps.w], {0,0,1} );
@@ -188,7 +175,7 @@ static void drawBody(const pbd::SoftBody& body) {
 		}
 	}
 }
-void AppPbdCPU::canvasDraw() const
+void AppPbdCpu::canvasDraw() const
 {
 	if( !draw_mesh ) {
 		for( auto b : simulator.bodies ) {
@@ -247,7 +234,7 @@ static void updatePicking( const vec3& rayDir, const vec3& rayOri ) {
 		}
 	}
 }
-void AppPbdCPU::canvasImGui()
+void AppPbdCpu::canvasImGui()
 {
 	ImGui::Begin("pbd ctrl");
 	ImGui::Checkbox("pause", &is_paused);
@@ -265,13 +252,16 @@ void AppPbdCPU::canvasImGui()
 			simulator.update(delta_time);
 			simulator.nr_steps = tempIter;
 		}
+		if( ImGui::SliderInt("cloth width", &nr_cloth_width, 1, 20) ) {
+			resetApp();
+		}
 	}
 	if( ImGui::Button("reset") ) {
 		resetApp();
 	}
 
 	if( ImGui::Checkbox("draw mesh", &draw_mesh) ) {
-		cur_body->update_buf = draw_mesh;
+		cur_body->upload_to_buf = draw_mesh;
 	}
 	if( ImGui::CollapsingHeader("compliance") ) {
 		ImGui::Text("#stretch %d", cur_body->c_stretchs.size());

@@ -11,7 +11,7 @@
 
 namespace lim
 {
-	class AppPbdCPU : public AppBaseCanvas3d
+	class AppPbdCpu : public AppBaseCanvas3d
 	{
 	public:
 		inline static constexpr CStr APP_NAME = "PBD_CPU";
@@ -20,8 +20,8 @@ namespace lim
 		Program prog_ms;
 		
 	public:
-		AppPbdCPU();
-		~AppPbdCPU();
+		AppPbdCpu();
+		~AppPbdCpu();
 		
         virtual void customDrawShadow( const glm::mat4& mtx_View, const glm::mat4& mtx_Proj ) const final;
 		virtual void customDraw( const Camera& cam, const LightDirectional& lit ) const final;
