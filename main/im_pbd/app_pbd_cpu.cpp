@@ -13,7 +13,9 @@ namespace {
 	AppPbdCPU* g_app = nullptr;
 	pbd::Simulator simulator;
 
-	pbd::SoftBody* cur_body;
+	pbd::SoftBody* cur_body = nullptr;
+	pbd::ColliderPlane c_ground;
+	pbd::ColliderSphere c_sphere({1,0.5f,0}, 0.5f);
 	bool is_paused = true;
 	bool draw_mesh = false;
 }
@@ -22,9 +24,13 @@ namespace {
 
 static void resetApp() {
 	pbd::SoftBody::Compliance tempComp;
-	if(cur_body)
+	if(cur_body) {
 		tempComp = cur_body->compliance;
-	simulator.clear();
+		delete cur_body;
+	}
+	simulator.clearRefs();
+	simulator.static_colliders.push_back(&c_ground);
+	simulator.static_colliders.push_back(&c_sphere);
 	is_paused = true;
 	draw_mesh = false;
 
@@ -46,19 +52,36 @@ static void resetApp() {
 	// }
 
 
-	// cloth
+	// cloth0
 	{
+		int nrWidth = 3;
 		int nrShear = 2;
+		float mass = nrWidth*nrWidth;
 		auto bendType = pbd::SoftBody::BendType::Distance;
-		MeshCloth ms(vec2(1.f, 1.f), 0.05f);
+		MeshPlane ms(1.f, nrWidth, nrWidth, false, false);
 		mat4 tf = translate(vec3(0,2,0)) * glim::rotateX(glim::pi90*0.1f)* glim::rotateY(glim::pi90*0.2f);
 		// mat4 tf = translate(vec3(0,2,0));
 		for( vec3& p : ms.poss ) {
 			p = vec3(tf*vec4(p,1));
 		}
-		cur_body = new pbd::SoftBody(ms, nrShear, bendType);
+		cur_body = new pbd::SoftBody(ms, nrShear, bendType, mass);
 		cur_body->w_s[0] = 0.f;
+		cur_body->w_s[nrWidth] = 0.f;
 	}
+
+	// cloth
+	// {
+	// 	int nrShear = 2;
+	// 	auto bendType = pbd::SoftBody::BendType::Distance;
+	// 	MeshCloth ms(vec2(1.f, 1.f), 0.3f);
+	// 	mat4 tf = translate(vec3(0,2,0)) * glim::rotateX(glim::pi90*0.1f)* glim::rotateY(glim::pi90*0.2f);
+	// 	// mat4 tf = translate(vec3(0,2,0));
+	// 	for( vec3& p : ms.poss ) {
+	// 		p = vec3(tf*vec4(p,1));
+	// 	}
+	// 	cur_body = new pbd::SoftBody(ms, nrShear, bendType);
+	// 	cur_body->w_s[0] = 0.f;
+	// }
 
 	// cloth cell
 	// {
@@ -132,6 +155,9 @@ void AppPbdCPU::customDraw(const Camera& cam, const LightDirectional& lit) const
 	}
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
+
+
+
 static void drawBody(const pbd::SoftBody& body) {
 	for( int i=0; i<body.nr_ptcls; i++ ) {
 		g_app->drawSphere(body.poss[i], (body.w_s[i]>0)?vec3{1,1,0}:vec3{1,0,0});
@@ -160,13 +186,18 @@ void AppPbdCPU::canvasDraw() const
 		}
 	}
 
+	drawSphere(c_sphere.c, {1,0,0}, c_sphere.r*2.f);
+
 	// basis object 10cm
 	drawCylinder({0,0,0}, {0.1f,0,0}, {1,0,0});
 	drawCylinder({0,0,0}, {0,0.1f,0}, {0,1,0});
 	drawCylinder({0,0,0}, {0,0,0.1f}, {0,0,1});
 
-	drawQuad(vec3{0}, {0,1,0}, {0,0.3f,0});
+	drawQuad(vec3{0}, c_ground.n, {0,0.3f,0});
 }
+
+
+
 namespace {
 	pbd::SoftBody* picked_body;
 	int picked_ptcl_idx;
@@ -204,8 +235,14 @@ void AppPbdCPU::canvasImGui()
 			}
 		}
 		if( ImGui::Button("one step") ) {
+			int tempIter = simulator.nr_steps;
+			simulator.nr_steps = 1;
 			simulator.update(delta_time);
+			simulator.nr_steps = tempIter;
 		}
+	}
+	if( ImGui::Button("reset") ) {
+		resetApp();
 	}
 
 	if( ImGui::Checkbox("draw mesh", &draw_mesh) ) {
@@ -219,11 +256,15 @@ void AppPbdCPU::canvasImGui()
 		ImGui::SliderFloat("shear", &cur_body->compliance.shear, 0.f, 1.f, "%.6f");
 		ImGui::SliderFloat("dist_bend", &cur_body->compliance.dist_bend, 0.f, 1.f, "%.6f");
 		ImGui::SliderFloat("dih_bend", &cur_body->compliance.dih_bend, 0.f, 1.f, "%.6f");
+
+		ImGui::SliderFloat("air_drag", &simulator.air_drag, 0.f, 1.f, "%.6f");
+		ImGui::SliderFloat("ground friction", &c_ground.friction, 0.f, 1.f, "%.6f");
+		ImGui::SliderFloat("ground restitution", &c_ground.restitution, 0.f, 1.f, "%.6f");
+		ImGui::SliderFloat("sphere friction", &c_sphere.friction, 0.f, 1.f, "%.6f");
+		ImGui::SliderFloat("sphere restitution", &c_sphere.restitution, 0.f, 1.f, "%.6f");
+
 	}
 	
-	if( ImGui::Button("reset") ) {
-		resetApp();
-	}
 	LimGui::PlotVal("dt", "ms", delta_time*1000.f);
 	LimGui::PlotVal("fps", "", ImGui::GetIO().Framerate);
 	ImGui::SliderInt("# steps", &simulator.nr_steps, 1, 50);
@@ -236,6 +277,7 @@ void AppPbdCPU::canvasImGui()
 		if( picked_body ) {
 			if ( picked_body->w_s[picked_ptcl_idx] > 0.f ) {
 				picked_body->w_s[picked_ptcl_idx] = 0.f;
+				picked_body->v_s[picked_ptcl_idx] = vec3(0.f);
 			} else {
 				picked_body->w_s[picked_ptcl_idx] = 1.f;
 			}

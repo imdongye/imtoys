@@ -59,34 +59,24 @@ namespace pbd
 
     struct ICollider
     {
-        float friction;
-        float restitution;
-        glm::vec3 vel;
-        virtual float getSD(const glm::vec3& target) const;
-        virtual glm::vec4 getNorh(const glm::vec3& target) const;
+        float friction = 1.f;
+        float restitution = 1.f;
+        virtual float getSdNor( const glm::vec3& p, glm::vec3& outNor ) const = 0;
     };
     struct ColliderPlane: public ICollider
     {
-        glm::vec3 p;
         glm::vec3 n;
-        ColliderPlane(const glm::vec3& _p, const glm::vec3& _n);
-        virtual float getSD(const glm::vec3& target) const override;
-        virtual glm::vec4 getNorh(const glm::vec3& target) const override;
+        float r;
+        ColliderPlane(const glm::vec3& _n = {0,1,0}, float _r = 0.f);
+        virtual float getSdNor( const glm::vec3& p, glm::vec3& outNor ) const override;
+
     };
     struct ColliderSphere: public ICollider
     {
-        glm::vec3 p;
-        glm::vec3 n;
-        ColliderPlane(const glm::vec3& _p, const glm::vec3& _n);
-        float getSD(const glm::vec3& target) const;
-    };
-
-    struct Ptcl
-    {
-        glm::vec3 x, p, v, f;
-        float w, min_col_dist;
-        glm::vec4 cs;
-        int idx_col;
+        glm::vec3 c;
+        float r;
+        ColliderSphere(const glm::vec3& _c, float _r = 0.5f);
+        virtual float getSdNor( const glm::vec3& p, glm::vec3& outNor ) const override;
     };
 
     struct SoftBody: public lim::Mesh 
@@ -102,6 +92,7 @@ namespace pbd
         std::vector<glm::vec3>  v_s;
         std::vector<glm::vec3>  f_s;
         std::vector<float>      w_s; // inv mass
+        float total_mass;
         int nr_ptcls, nr_tris;
 
         std::vector<ConstraintDistance>      c_stretchs;
@@ -123,9 +114,8 @@ namespace pbd
         bool update_buf = false;
 
         // nrShear => [0,2]
-        SoftBody(const lim::Mesh& src, int nrShear = 1, BendType bendType = BendType::Dihedral);
-        void updateP(float dt);
-        void updateX(float dt);
+        SoftBody(const lim::Mesh& src, int nrShear = 1, BendType bendType = BendType::Dihedral, float totalMass = 1.f);
+        void update(float dt);
         float getVolume() const;
         void applyDeltaP(int idx, float lambda, const glm::vec3& dC);
     };
@@ -135,11 +125,11 @@ namespace pbd
     {
         int nr_steps = 20;
         float ptcl_radius = 0.02f;
+        float air_drag = 0.0001f;
         std::vector<ICollider*> static_colliders;
         std::vector<SoftBody*> bodies;
         ~Simulator();
-        void clear();
-        void updateCollision();
+        void clearRefs();
         void update( float dt );
     };
 }

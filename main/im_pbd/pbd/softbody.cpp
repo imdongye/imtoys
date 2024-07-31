@@ -31,8 +31,8 @@ e3\  /e4    e4 = p3-p1
    n2
 */
 // ref From: CreateConstraints() in SoftBodySharedcpp of JoltPhysics
-SoftBody::SoftBody(const lim::Mesh& src, int nrShear, BendType bendType)
-    : lim::Mesh(src), compliance()
+SoftBody::SoftBody(const lim::Mesh& src, int nrShear, BendType bendType, float totalMass)
+    : lim::Mesh(src), total_mass(totalMass), compliance()
 {
     nr_tris = tris.size();
     nr_ptcls = poss.size();
@@ -40,14 +40,15 @@ SoftBody::SoftBody(const lim::Mesh& src, int nrShear, BendType bendType)
     v_s.reserve(nr_ptcls);
     f_s.reserve(nr_ptcls);
     w_s.reserve(nr_ptcls);
-    cs_s.reserve(nr_ptcls);
+
+    float ptclMass = total_mass / float(nr_ptcls); // ex) 0.01
+    float invPtclMass = 1.f / ptclMass;            // ex) 100.0
 
     for( const vec3& p : poss ) {
         np_s.push_back( p );
         v_s.push_back( vec3{0} );
         f_s.push_back( vec3{0} );
-        w_s.push_back( 1.f );
-        cs_s.push_back( vec4{-1} );
+        w_s.push_back( invPtclMass );
     }
 
     struct Edge {

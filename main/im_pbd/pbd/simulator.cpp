@@ -16,25 +16,13 @@ namespace {
 }
 
 
-void SoftBody::updateP(float dt)
+void SoftBody::update(float dt)
 {
     // (5) update v with external force (ex. G)
     for( int i=0; i<nr_ptcls; i++ ) {
-        if( w_s[i] == 0 )
-            continue;
-        f_s[i] = G/w_s[i];
-        // ...
         v_s[i] += f_s[i]*w_s[i]*dt;
-    }
-
-    // (6) dampVel
-    // ...
-
-    // (7) update p
-    for( int i=0; i<nr_ptcls; i++ ) {
         np_s[i] = poss[i] + v_s[i]*dt;
     }
-
 
     float sqdt = dt*dt;
     float alpha;
@@ -70,42 +58,13 @@ void SoftBody::updateP(float dt)
     for( auto& c : c_g_volumes ) {
         c.project( *this, alpha );
     }
-}
 
-
-void Simulator::updateCollision()
-{
-    for( const auto pBody : bodies ) {
-        for( int i=0; i<pBody->nr_ptcls; i++ ) {
-            vec3 p = pBody->np_s[i];
-            ICollider* minColl;
-            float minDist = glim::fmin;
-            for( const auto pColl : static_colliders ) {
-                float dist = pColl->getSD( p );
-                if( dist < minDist ) {
-                    minDist = dist;
-                    minColl = pColl;
-                }
-            }
-            if( minDist < ptcl_radius) {
-
-            }
-        }
-    }
-}
-
-void SoftBody::updateX(float dt)
-{
     for( auto& c : c_fixes ) {
         c.project( *this );
     }
 
     // (12) update x, v
     for( int i=0; i<nr_ptcls; i++ ) {
-        if( w_s[i] == 0 )
-            continue;
-        if( cs_s[i].norh.w < 0 ) {
-
         v_s[i] = (np_s[i] - poss[i])/dt;
         poss[i] = np_s[i];
     }
@@ -120,14 +79,36 @@ void Simulator::update(float dt)
     {
         for( auto body : bodies )
         {
-            body->updateP( dt );
+            for( int i=0; i<body->nr_ptcls; i++ )
+            {
+                float pw = body->w_s[i];
+                if( pw == 0.f )
+                    continue;
+                body->f_s[i] = G/pw;
+                body->f_s[i] -= air_drag*body->v_s[i]/body->w_s[i] / body->total_mass;
+            }
+            body->update( dt );
         }
-
-        updateCollision();
-
         for( auto body : bodies )
         {
-            body->updateX( dt );
+            for( int i=0; i<body->nr_ptcls; i++ )
+            {
+                float w = body->w_s[i];
+                if( w == 0.f )
+                    continue;
+                vec3& p = body->poss[i];
+                vec3& v = body->v_s[i];
+                vec3 sNor, vNor, vTan;
+                for( auto pC : static_colliders ) {
+                    float inter_dist = -pC->getSdNor( p, sNor )+ptcl_radius;
+                    if( inter_dist < 0 )
+                        continue;
+                    p = p + sNor*inter_dist;
+                    vNor = dot( v, sNor ) * sNor;
+                    vTan = v - vNor;
+                    v = vTan*pC->friction - vNor*pC->restitution;
+                }
+            }
         }
     }
 
@@ -142,11 +123,9 @@ void Simulator::update(float dt)
 
 Simulator::~Simulator()
 {
-    clear();
+    clearRefs();
 }
-void Simulator::clear() {
-    for( auto body : bodies ) {
-        delete body;
-    }
+void Simulator::clearRefs() {
+    static_colliders.clear();
     bodies.clear();
 }
