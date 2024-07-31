@@ -36,7 +36,7 @@ namespace pbd
     {
         glm::uvec4 idx_ps; // edge, opp1, opp2
         float ori_angle;
-        glm::vec3 dCi[4];
+        glm::vec3 dPi[4];
         ConstraintDihedralBend(const SoftBody& body, const glm::uvec4& idxPs);
         void project(SoftBody& body, float alpha);
     };
@@ -45,7 +45,7 @@ namespace pbd
     {
         glm::uvec4 idx_ps; // edge, opp1, opp2
         glm::mat4 Q;
-        glm::vec3 dCi[4];
+        glm::vec3 dPi[4];
         ConstraintIsometricBend(const SoftBody& body, const glm::uvec4& idxPs);
         void project(SoftBody& body, float alpha);
     };
@@ -72,7 +72,6 @@ namespace pbd
         float r;
         ColliderPlane(const glm::vec3& _n = {0,1,0}, float _r = 0.f);
         virtual float getSdNor( const glm::vec3& p, glm::vec3& outNor ) const override;
-
     };
     struct ColliderSphere: public ICollider
     {

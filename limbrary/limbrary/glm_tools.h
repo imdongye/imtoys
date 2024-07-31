@@ -37,6 +37,13 @@ namespace glim {
 	inline float cotInterVec(const glm::vec3& a, const glm::vec3& b) {
 		return glm::dot(a, b) / glm::length(glm::cross(a, b));
 	}
+	
+	inline float acosApprox(float x) {
+		// See: https://www.johndcook.com/blog/2022/09/06/inverse-cosine-near-1/
+		float abs_x = glm::min(glm::abs(x), 1.0f); // Ensure that we don't get a value larger than 1
+		float val = glm::sqrt(1.0f - abs_x) * (pi / 2 - 0.175394f * abs_x);
+		return x<0 ? pi-val : val;
+	}
 
 
 	// From: https://stackoverflow.com/questions/1406029/how-to-calculate-the-volume-of-a-3d-mesh-object-the-surface-of-which-is-made-up

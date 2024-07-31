@@ -53,6 +53,8 @@ void ConstraintDistance::project(SoftBody& body, float alpha)
     dPi[1] = lambda*w2*dC;
     body.np_s[idx_ps.x] += dPi[0];
     body.np_s[idx_ps.y] += dPi[1];
+    dPi[0] = normalize(dPi[0]);
+    dPi[1] = normalize(dPi[1]);
     
     // PBD
     // float stiffness = 0.9f;
@@ -96,47 +98,66 @@ ConstraintDihedralBend::ConstraintDihedralBend(const SoftBody& body, const uvec4
     vec3 e4 = p3 - p1;
     vec3 n1 = normalize(cross(e1, e0)); 
     vec3 n2 = normalize(cross(e0, e4));
-    ori_angle = acos(dot(n1,n2));
+    // not ensure cosAngle is in [-1, 1] but acosApprox ensured
+    float cosAngle = dot(n1,n2);
+    float sign = glm::sign(dot(cross(n1, n2), e0));
+    ori_angle = sign * glim::acosApprox(cosAngle);
 }
 void ConstraintDihedralBend::project(SoftBody& body, float alpha) 
 {
-    vec3 p0 = body.np_s[idx_ps.x];
-    vec3 p1 = body.np_s[idx_ps.y];
-    vec3 p2 = body.np_s[idx_ps.z];
-    vec3 p3 = body.np_s[idx_ps.w];
+    vec3 p0 = body.np_s[idx_ps.x]; float w0 = body.w_s[idx_ps.x];
+    vec3 p1 = body.np_s[idx_ps.y]; float w1 = body.w_s[idx_ps.y];
+    vec3 p2 = body.np_s[idx_ps.z]; float w2 = body.w_s[idx_ps.z];
+    vec3 p3 = body.np_s[idx_ps.w]; float w3 = body.w_s[idx_ps.w];
     vec3 e0 = p0 - p1;
     vec3 e1 = p2 - p1;
     vec3 e4 = p3 - p1;
+    float e0Len = length(e0);
+    if( e0Len<glim::feps )
+        return;
 
     // From: https://www.cs.ubc.ca/~rbridson/docs/cloth2003.pdf
     // based on "Simulation of Clothing with Folds and Wrinkles" - R. Bridson et al. (Section 4)
-    vec3 n1scaled = cross(e1, e0);
-    vec3 n2scaled = cross(e0, e4);
-    float sqLenN1 = dot(n1scaled, n1scaled);
-    float sqLenN2 = dot(n2scaled, n2scaled);
-    float cosAngle = dot(n1scaled,n2scaled)/sqrt(sqLenN1*sqLenN2);
-    float angle = acos(cosAngle);
+    vec3 n1 = cross(e1, e0); float n1Len = length2(n1);
+    vec3 n2 = cross(e0, e4); float n2Len = length2(n2);
+    if( n1Len*n2Len < glim::feps )
+        return;
+    n1 /= n1Len;
+    n2 /= n2Len;
+    float cosAngle = dot(n1,n2);
+    float sign = glm::sign(dot(cross(n1, n2), e0));
+    float angle = sign * glim::acosApprox(cosAngle);
     float C = angle - ori_angle;
-    if( C < glim::feps ) return;
-    float dAngle =  -1.f/ sqrt(1.f-cosAngle*cosAngle);
-    float e0Len = length(e0);
-    n1scaled /= sqLenN1;
-    n2scaled /= sqLenN2;
-    dCi[2] = e0Len*n1scaled;
-    dCi[3] = e0Len*n2scaled;
-    dCi[0] = ( dot(e1,e0)*n1scaled + dot(e4,e0)*n2scaled ) / e0Len;
-    dCi[1] = - dCi[2] - dCi[3] - dCi[0];
+    if (C > glim::pi)
+        C -= 2.0f * glim::pi;
+    else if (C < -glim::pi)
+        C += 2.0f * glim::pi;
+    vec3 dC0 = ( dot(e1,e0)*n1 + dot(e4,e0)*n2 ) / e0Len;
+    vec3 dC2 = e0Len*n1;
+    vec3 dC3 = e0Len*n2;
+    vec3 dC1 = - dC0 - dC2 - dC3;
 
-    float denom = 0;
-    for( int i=0; i<4; i++ ) {
-        denom += body.w_s[idx_ps[i]]*length2(dCi[i]);
-    }
+    float denom = w0*length2(dC0) + w1*length2(dC1) + w2*length2(dC2) + w3*length2(dC3) + alpha;
+    if( denom < glim::feps ) return;
     float lambda = -C / denom;
 
+    dPi[0] = lambda * w0 * dC0;
+    dPi[1] = lambda * w1 * dC1;
+    dPi[2] = lambda * w2 * dC2;
+    dPi[3] = lambda * w3 * dC3;
+
+    body.np_s[idx_ps.x] += dPi[0];
+    body.np_s[idx_ps.y] += dPi[1];
+    body.np_s[idx_ps.z] += dPi[2];
+    body.np_s[idx_ps.w] += dPi[3];
+
     for( int i=0; i<4; i++ ) {
-        body.applyDeltaP(idx_ps[i], lambda, dCi[i]);
-        dCi[i] *= lambda*10000000.f;
+        if( body.w_s[idx_ps[i]] == 0.f )
+            dPi[i] = vec3(0.f);
+        else 
+            dPi[i]  = normalize(dPi[i]);
     }
+
 }
 
 
@@ -181,18 +202,18 @@ void ConstraintIsometricBend::project(SoftBody& body, float alpha)
     if( C == 0.f ) return;
     float denom = alpha;
     for( int i=0; i<4; i++ ) {
-        dCi[i] = vec3(0);
+        dPi[i] = vec3(0);
         for( int j=0; j<4; j++ ) {
-            dCi[i] += Q[j][i] * body.np_s[idx_ps[j]];
+            dPi[i] += Q[j][i] * body.np_s[idx_ps[j]];
         }
-        denom += length2(dCi[i]) * body.w_s[idx_ps[i]];
+        denom += length2(dPi[i]) * body.w_s[idx_ps[i]];
     }
     if( denom == 0.f ) return;
 
 
     float lambda = -C / denom;
     for( int i=0; i<4; i++ ) {
-        body.applyDeltaP(idx_ps[i], lambda, dCi[i]);
+        body.applyDeltaP(idx_ps[i], lambda, dPi[i]);
     }
 }
 

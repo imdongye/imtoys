@@ -29,11 +29,11 @@ void SoftBody::update(float dt)
 
 
 
-    alpha = compliance.dist_bend/sqdt;
+    alpha = compliance.stretch/sqdt;
     for( auto& c : c_dist_bends ) {
         c.project( *this, alpha );
     }
-    alpha = compliance.shear/sqdt;
+    alpha = compliance.stretch/sqdt;
     for( auto& c : c_shears ) {
         c.project( *this, alpha );
     }
@@ -88,7 +88,7 @@ void Simulator::update(float dt)
                     continue;
                 }
                 body->f_s[i] = G/pw;
-                body->f_s[i] -= (air_drag / pw / body->total_mass) * body->v_s[i];
+                // body->f_s[i] -= (air_drag / pw / body->total_mass) * body->v_s[i];
             }
             
             // pbd update and solve

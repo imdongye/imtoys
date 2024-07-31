@@ -18,7 +18,7 @@ namespace {
 	pbd::ColliderSphere c_sphere({0,0.5f,0}, 0.3f);
 	bool is_paused = true;
 	bool draw_mesh = false;
-	int nr_cloth_width = 4;
+	int nr_cloth_width = 1;
 }
 
 
@@ -55,9 +55,9 @@ static void resetApp() {
 
 	// cloth0
 	{
-		int nrShear = 2;
+		int nrShear = 1;
 		float mass = 1.f;
-		auto bendType = pbd::SoftBody::BendType::None;
+		auto bendType = pbd::SoftBody::BendType::Dihedral;
 		MeshPlane ms(1.f, nr_cloth_width, nr_cloth_width, false, false);
 		mat4 tf = translate(vec3(0,2,0)) * glim::rotateX(glim::pi90*0.1f)* glim::rotateY(glim::pi90*0.2f);
 		// mat4 tf = translate(vec3(0,2,0));
@@ -109,6 +109,7 @@ static void deleteApp() {
 
 AppPbdCpu::AppPbdCpu() : AppBaseCanvas3d(1200, 780, APP_NAME, false, 10, 1000000, 10000000)
 {
+	max_fps = 60;
 	prog_ms.attatch("mvp.vs").attatch("ndl.fs").link();
 	g_app = this;
 	resetApp();
@@ -161,17 +162,26 @@ static void drawBody(const pbd::SoftBody& body) {
 	}
 	for( const auto& c : body.c_stretchs ) {
 		g_app->drawCylinder( body.poss[c.idx_ps.x], body.poss[c.idx_ps.y], {1,1,0} );
+		// for( int i=0; i<2; i++ ) {
+		// 	g_app->drawCylinder( body.poss[c.idx_ps[i]], body.poss[c.idx_ps[i]]+c.dPi[i]*0.1f, {0,0,1} );
+		// }
 	}
 	for( const auto& c : body.c_shears ) {
 		g_app->drawCylinder( body.poss[c.idx_ps.x], body.poss[c.idx_ps.y], {0,1,1} );
+		// for( int i=0; i<2; i++ ) {
+		// 	g_app->drawCylinder( body.poss[c.idx_ps[i]], body.poss[c.idx_ps[i]]+c.dPi[i]*0.1f, {0,0,1} );
+		// }
 	}
 	for( const auto& c : body.c_dist_bends ) {
 		g_app->drawCylinder( body.poss[c.idx_ps.x], body.poss[c.idx_ps.y], {0.7,0.1,0} );
+		// for( int i=0; i<2; i++ ) {
+		// 	g_app->drawCylinder( body.poss[c.idx_ps[i]], body.poss[c.idx_ps[i]]+c.dPi[i]*0.1f, {0,0,1} );
+		// }
 	}
 	for( const auto& c : body.c_dih_bends ) {
 		g_app->drawCylinder( body.poss[c.idx_ps.z], body.poss[c.idx_ps.w], {0,0,1} );
 		for( int i=0; i<4; i++ ) {
-			g_app->drawCylinder( body.poss[c.idx_ps[i]], body.poss[c.idx_ps[i]]+c.dCi[i], {0,0,1} );
+			g_app->drawCylinder( body.poss[c.idx_ps[i]], body.poss[c.idx_ps[i]]+c.dPi[i], {0,0,1} );
 		}
 	}
 }
@@ -267,6 +277,8 @@ void AppPbdCpu::canvasImGui()
 		ImGui::Text("#stretch %d", cur_body->c_stretchs.size());
 		ImGui::Text("#shear %d", cur_body->c_shears.size());
 		ImGui::Text("#dist_bend %d", cur_body->c_dist_bends.size());
+		ImGui::Text("#dih_bend %d", cur_body->c_dih_bends.size());
+		ImGui::Text("#iso_bend %d", cur_body->c_iso_bends.size());
 		ImGui::SliderFloat("stretch", &cur_body->compliance.stretch, 0.f, 1.f, "%.6f");
 		ImGui::SliderFloat("shear", &cur_body->compliance.shear, 0.f, 1.f, "%.6f");
 		ImGui::SliderFloat("dist_bend", &cur_body->compliance.dist_bend, 0.f, 1.f, "%.6f");
@@ -310,8 +322,11 @@ void AppPbdCpu::canvasImGui()
 			picked_info.w() = picked_info.body->inv_ptcl_mass;
 		}
 	}
-	if(ImGui::IsKeyPressed(ImGuiKey_Space, false)) {
+	if(ImGui::IsKeyPressed(ImGuiKey_B, false)) {
 		const vec3 mouseRay = vp.getMousePosRayDir();
 		ptcl_test.addPtcl(vp.camera.pos, 1/0.1f, 10.f*mouseRay);
+	}
+	if(ImGui::IsKeyPressed(ImGuiKey_Space, false)) {
+		is_paused = !is_paused;
 	}
 }
