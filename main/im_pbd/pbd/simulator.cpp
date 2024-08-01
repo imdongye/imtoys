@@ -30,7 +30,18 @@ void SoftBody::update(float dt)
 
 
     
-
+    alpha = compliance.stretch/sqdt;
+    for( auto& c : c_dist_bends ) {
+        c.project( *this, alpha );
+    }
+    alpha = compliance.stretch/sqdt;
+    for( auto& c : c_shears ) {
+        c.project( *this, alpha );
+    }
+    alpha = compliance.stretch/sqdt;
+    for( auto& c : c_stretchs ) {
+        c.project( *this, alpha );
+    }
 
 
     alpha = compliance.dih_bend/sqdt;
@@ -48,26 +59,16 @@ void SoftBody::update(float dt)
         c.project( *this, alpha );
     }
 
-    for( auto& c : c_fixes ) {
-        c.project( *this );
-    }
+    // alpha = compliance.point/sqdt;
+    // for( auto& c : c_points ) {
+    //     c.project( *this, alpha );
+    // }
 
 
 
 
 
-    alpha = compliance.stretch/sqdt;
-    for( auto& c : c_dist_bends ) {
-        c.project( *this, alpha );
-    }
-    alpha = compliance.stretch/sqdt;
-    for( auto& c : c_shears ) {
-        c.project( *this, alpha );
-    }
-    alpha = compliance.stretch/sqdt;
-    for( auto& c : c_stretchs ) {
-        c.project( *this, alpha );
-    }
+    
 
 
 
@@ -106,6 +107,8 @@ void Simulator::update(float dt)
             // pbd update and solve
             body->update( dt );
         }
+
+        // collision
         for( auto body : bodies )
         {
             for( int i=0; i<body->nr_ptcls; i++ )

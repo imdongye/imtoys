@@ -13,13 +13,22 @@ using namespace glm;
 using std::vector;
 using namespace pbd;
 
-ConstraintFix::ConstraintFix(int _idx, const vec3& _p) 
-    : idx(_idx), p(_p)
+ConstraintPoint::ConstraintPoint(int _idx, const vec3& _target) 
+    : idx(_idx), target(_target)
 {
 }
-void ConstraintFix::project(SoftBody& body) 
+void ConstraintPoint::project(SoftBody& body, float alpha) 
 {
-    body.np_s[idx] = p;
+    // vec3 p = body.np_s[idx];
+    // float w = body.w_s[idx];
+    // vec3 diff = target - p;
+    // float C = length(diff);
+    // vec3 dC = diff / C;
+    // float lambda = C/w*alpha;
+    // body.np_s[idx] += lambda * w * dC;
+    vec3& p = body.np_s[idx];
+    vec3 diff = target - p;
+    p += diff/(1.f+alpha);
 }
 
 

@@ -1,6 +1,8 @@
 /*
     2024-07-17 / imdongye
 
+    From: https://matthias-research.github.io/pages/publications/posBasedDyn.pdf
+
 */
 
 #ifndef __app_pbd_h_
@@ -15,12 +17,12 @@ namespace pbd
 {
     struct SoftBody;
 
-    struct ConstraintFix
+    struct ConstraintPoint
     {
-        glm::vec3 p;
+        glm::vec3 target;
         int idx;
-        ConstraintFix(int _idx, const glm::vec3& _p);
-        void project(SoftBody& body);
+        ConstraintPoint(int _idx, const glm::vec3& _target);
+        void project(SoftBody& body, float alpha);
     };
 
     struct ConstraintDistance 
@@ -60,6 +62,9 @@ namespace pbd
 
 
 
+
+
+
     struct ICollider
     {
         float friction = 1.f;
@@ -80,6 +85,10 @@ namespace pbd
         ColliderSphere(const glm::vec3& _c, float _r = 0.5f);
         virtual float getSdNor( const glm::vec3& p, glm::vec3& outNor ) const override;
     };
+
+
+
+
 
 
 
@@ -108,7 +117,6 @@ namespace pbd
         std::vector<ConstraintDihedralBend>  c_dih_bends;
         std::vector<ConstraintIsometricBend> c_iso_bends;
         std::vector<ConstraintGlobalVolume>  c_g_volumes;
-        std::vector<ConstraintFix>           c_fixes;
 
         struct Compliance {
             float stretch, shear, dist_bend;
@@ -134,7 +142,7 @@ namespace pbd
         bool upload_to_buf = false;
         GLuint buf_xw_s=0, buf_pw_s=0, buf_v_s=0, buf_f_s=0; // vec4
         GLuint buf_c_stretchs=0, buf_c_shears=0, buf_c_dist_bends=0;
-        GLuint buf_c_dih_bends=0, buf_c_iso_bends=0, buf_c_g_volumes=0, buf_c_fixes=0;
+        GLuint buf_c_dih_bends=0, buf_c_iso_bends=0, buf_c_g_volumes=0;
         GLuint vao_soft_body=0;
 
 

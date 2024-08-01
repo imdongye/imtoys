@@ -67,7 +67,6 @@ SoftBodyGpu::~SoftBodyGpu()
     lim::gl::safeDelBufs(&buf_c_dih_bends);
     lim::gl::safeDelBufs(&buf_c_iso_bends);
     lim::gl::safeDelBufs(&buf_c_g_volumes);
-    lim::gl::safeDelBufs(&buf_c_fixes);
 
     lim::gl::safeDelVertArrs(&vao_soft_body);
 }
