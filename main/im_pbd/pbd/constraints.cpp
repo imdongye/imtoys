@@ -6,6 +6,9 @@
 #include <limbrary/glm_tools.h>
 #include <glm/gtx/norm.hpp>
 
+// temp
+#include <limbrary/limgui.h>
+
 using namespace glm;
 using std::vector;
 using namespace pbd;
@@ -96,15 +99,19 @@ ConstraintDihedralBend::ConstraintDihedralBend(const SoftBody& body, const uvec4
     vec3 e0 = p0 - p1;
     vec3 e1 = p2 - p1;
     vec3 e4 = p3 - p1;
-    vec3 n1 = normalize(cross(e1, e0)); 
-    vec3 n2 = normalize(cross(e0, e4));
-    // not ensure cosAngle is in [-1, 1] but acosApprox ensured
-    float cosAngle = dot(n1,n2);
+    vec3 n1 = cross(e1, e0); float n1sqLen = glm::length2(n1); 
+    vec3 n2 = cross(e0, e4); float n2sqLen = glm::length2(n2);
+    float mulSqLen = n1sqLen*n2sqLen;
+    // now not ensure cosAngle is in [-1, 1] but acosApprox ensured
+    float cosAngle = dot(n1,n2)/sqrt(mulSqLen);
     float sign = glm::sign(dot(cross(n1, n2), e0));
     ori_angle = sign * glim::acosApprox(cosAngle);
 }
 void ConstraintDihedralBend::project(SoftBody& body, float alpha) 
 {
+    for( int i=0; i<4; i++ ) {
+        dPi[i] = vec3(0.f);
+    }
     vec3 p0 = body.np_s[idx_ps.x]; float w0 = body.w_s[idx_ps.x];
     vec3 p1 = body.np_s[idx_ps.y]; float w1 = body.w_s[idx_ps.y];
     vec3 p2 = body.np_s[idx_ps.z]; float w2 = body.w_s[idx_ps.z];
@@ -112,52 +119,76 @@ void ConstraintDihedralBend::project(SoftBody& body, float alpha)
     vec3 e0 = p0 - p1;
     vec3 e1 = p2 - p1;
     vec3 e4 = p3 - p1;
+    vec3 e2 = p2 - p0;
+    vec3 e3 = p3 - p0;
     float e0Len = length(e0);
-    if( e0Len<glim::feps )
+	LimGui::PlotValAddValue("dih_e0Len", e0Len);
+    if( e0Len<1.0e-6f )
         return;
 
     // From: https://www.cs.ubc.ca/~rbridson/docs/cloth2003.pdf
     // based on "Simulation of Clothing with Folds and Wrinkles" - R. Bridson et al. (Section 4)
-    vec3 n1 = cross(e1, e0); float n1Len = length2(n1);
-    vec3 n2 = cross(e0, e4); float n2Len = length2(n2);
-    if( n1Len*n2Len < glim::feps )
+    vec3 n1 = cross(e1, e0); float n1sqLen = length2(n1);
+    vec3 n2 = cross(e0, e4); float n2sqLen = length2(n2);
+    float mulSqLen = n1sqLen*n2sqLen;
+    if( mulSqLen<1.0e-24f )
         return;
-    n1 /= n1Len;
-    n2 /= n2Len;
-    float cosAngle = dot(n1,n2);
+    // if( abs(0.5-n1sqLen/(n1sqLen+n2sqLen)) > 0.4f )
+    //     return;
+    float cosAngle = dot(n1,n2)/sqrt(mulSqLen);
+    n1 /= n1sqLen;
+    n2 /= n2sqLen;
+    
     float sign = glm::sign(dot(cross(n1, n2), e0));
     float angle = sign * glim::acosApprox(cosAngle);
     float C = angle - ori_angle;
+    
+    // Ensure the range to [-PI , PI]
     if (C > glim::pi)
         C -= 2.0f * glim::pi;
     else if (C < -glim::pi)
         C += 2.0f * glim::pi;
-    vec3 dC0 = ( dot(e1,e0)*n1 + dot(e4,e0)*n2 ) / e0Len;
-    vec3 dC2 = e0Len*n1;
-    vec3 dC3 = e0Len*n2;
-    vec3 dC1 = - dC0 - dC2 - dC3;
+    LimGui::PlotValAddValue("dih_c", C);
+    // float maxPctC = 0.2f;
+    float maxPctC = glim::pi*max(body.compliance.dih_bend, 0.1f);
+    // if( C < -glim::pi*maxPctC )
+    //     C = -glim::pi*maxPctC;
+    // if( C >  glim::pi*maxPctC )
+    //     C =  glim::pi*maxPctC;
+    if( abs(C) > maxPctC ) {
+        return;
+        C *=0.01f;
+    }
+    vec3 u2 = e0Len*n1;
+    vec3 u3 = e0Len*n2;
+    // vec3 u0 = ( dot(e1,e0)*n1 + dot(e4,e0)*n2 ) / e0Len;
+    // vec3 u1 = - u0 - u2 - u3;
+    vec3 u1 = -( dot(e1,e0)*n1 + dot(e4,e0)*n2 ) / e0Len;
+    vec3 u0 = - u1 - u2 - u3;
 
-    float denom = w0*length2(dC0) + w1*length2(dC1) + w2*length2(dC2) + w3*length2(dC3) + alpha;
-    if( denom < glim::feps ) return;
-    float lambda = -C / denom;
+    float denom = w0*length2(u0) + w1*length2(u1) + w2*length2(u2) + w3*length2(u3) + alpha;
+	LimGui::PlotValAddValue("dih_denom", denom );
+    if( denom < 1.0e-12f )
+        return;
+    float lambda = -C / denom; 
 
-    dPi[0] = lambda * w0 * dC0;
-    dPi[1] = lambda * w1 * dC1;
-    dPi[2] = lambda * w2 * dC2;
-    dPi[3] = lambda * w3 * dC3;
+    dPi[0] = lambda * w0 * u0;
+    dPi[1] = lambda * w1 * u1;
+    dPi[2] = lambda * w2 * u2;
+    dPi[3] = lambda * w3 * u3;
 
     body.np_s[idx_ps.x] += dPi[0];
     body.np_s[idx_ps.y] += dPi[1];
     body.np_s[idx_ps.z] += dPi[2];
     body.np_s[idx_ps.w] += dPi[3];
 
+    // debuging
     for( int i=0; i<4; i++ ) {
         if( body.w_s[idx_ps[i]] == 0.f )
             dPi[i] = vec3(0.f);
         else 
-            dPi[i]  = normalize(dPi[i]);
+            dPi[i]  = normalize(dPi[i])*0.5f;
     }
-
 }
 
 

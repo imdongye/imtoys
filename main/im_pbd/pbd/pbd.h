@@ -99,8 +99,8 @@ namespace pbd
         std::vector<float>      w_s; // inv mass
         float total_mass, inv_ptcl_mass;
         int nr_ptcls, nr_tris;
-        float friction = 1.f;
-        float restitution = 1.f;
+        float friction = 0.95f;
+        float restitution = 0.85f;
 
         std::vector<ConstraintDistance>      c_stretchs;
         std::vector<ConstraintDistance>      c_shears;

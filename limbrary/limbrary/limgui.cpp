@@ -4,7 +4,18 @@
 #include <limbrary/asset_lib.h>
 #include <map>
 
+
 using namespace lim;
+
+static glm::uint genHash(const char *string)
+{
+    glm::uint hash = 0;
+    while( char c = *string++)
+    {
+       hash = 65599 * hash + c;
+    }
+    return hash ^ (hash >> 16);
+}
 
 bool LimGui::CheckBox3(const char* label, bool v[3])
 {
@@ -296,13 +307,15 @@ struct PlotVarData {
 	int insert_idx = -1;
 	std::vector<float> data;
 };
-static std::map<ImGuiID, PlotVarData> g_plot_var_map;
+static std::map<glm::uint, PlotVarData> g_plot_var_map;
 
 void LimGui::PlotVal(const char* name, const char* postFix, float value, int bufSize) {
 	ImGui::PushID(name);
 	ImGuiID id = ImGui::GetID("");
+
+	auto myId = genHash(name);
 	
-	PlotVarData& pvd = g_plot_var_map[id];
+	PlotVarData& pvd = g_plot_var_map[myId];
 	if( pvd.insert_idx<0 ) {
 		pvd.insert_idx = 0;
 		pvd.data.resize(bufSize, 0);
@@ -315,4 +328,41 @@ void LimGui::PlotVal(const char* name, const char* postFix, float value, int buf
 	ImGui::Text("%s\t%-3.4f %s", name, value, postFix);
 	ImGui::PlotLines("##plotvar", pvd.data.data(), bufSize, pvd.insert_idx, nullptr, FLT_MAX, FLT_MAX, {0, 50});
 	ImGui::PopID();
+}
+
+
+
+void LimGui::PlotVal(const char* name, const char* postFix, int bufSize) {
+	ImGui::PushID(name);
+	ImGuiID id = ImGui::GetID("");
+
+	auto myId = genHash(name);
+
+	
+	PlotVarData& pvd = g_plot_var_map[myId];
+	if( pvd.insert_idx<0 ) {
+		pvd.insert_idx = 1;
+		pvd.data.resize(bufSize, 0);
+	}
+	assert(pvd.data.size() == bufSize);
+	ImGui::Text("%s\t%-3.4f %s", name, pvd.data[pvd.insert_idx-1], postFix);
+	ImGui::PlotLines("##plotvar", pvd.data.data(), bufSize, pvd.insert_idx, nullptr, FLT_MAX, FLT_MAX, {0, 50});
+	ImGui::PopID();
+}
+
+void LimGui::PlotValAddValue(const char* name, float value, int bufSize) {
+
+
+	auto myId = genHash(name);
+
+	PlotVarData& pvd = g_plot_var_map[myId];
+	if( pvd.insert_idx<0 ) {
+		pvd.insert_idx = 0;
+		pvd.data.resize(bufSize, 0);
+	}
+	assert(pvd.data.size() == bufSize);
+	if( pvd.insert_idx == bufSize ) {
+		pvd.insert_idx = 0;
+	}
+	pvd.data[pvd.insert_idx++] = value;
 }

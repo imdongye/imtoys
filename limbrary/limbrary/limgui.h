@@ -32,6 +32,8 @@ namespace LimGui
     void LightDirectionalEditorReset(const char* name="d_light editor", const char* smName="d_light shadow map");
 
     void PlotVal(const char* name, const char* postFix, float value, int bufSize=90);
+    void PlotVal(const char* name, const char* postFix, int bufSize=90);
+    void PlotValAddValue(const char* name, float value, int bufSize=90);
 }
 namespace lim
 {

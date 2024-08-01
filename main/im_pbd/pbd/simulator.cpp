@@ -29,18 +29,7 @@ void SoftBody::update(float dt)
 
 
 
-    alpha = compliance.stretch/sqdt;
-    for( auto& c : c_dist_bends ) {
-        c.project( *this, alpha );
-    }
-    alpha = compliance.stretch/sqdt;
-    for( auto& c : c_shears ) {
-        c.project( *this, alpha );
-    }
-    alpha = compliance.stretch/sqdt;
-    for( auto& c : c_stretchs ) {
-        c.project( *this, alpha );
-    }
+    
 
 
 
@@ -62,6 +51,29 @@ void SoftBody::update(float dt)
     for( auto& c : c_fixes ) {
         c.project( *this );
     }
+
+
+
+
+
+    alpha = compliance.stretch/sqdt;
+    for( auto& c : c_dist_bends ) {
+        c.project( *this, alpha );
+    }
+    alpha = compliance.stretch/sqdt;
+    for( auto& c : c_shears ) {
+        c.project( *this, alpha );
+    }
+    alpha = compliance.stretch/sqdt;
+    for( auto& c : c_stretchs ) {
+        c.project( *this, alpha );
+    }
+
+
+
+
+
+
 
     // (12) update x, v
     for( int i=0; i<nr_ptcls; i++ ) {
@@ -88,7 +100,7 @@ void Simulator::update(float dt)
                     continue;
                 }
                 body->f_s[i] = G/pw;
-                // body->f_s[i] -= (air_drag / pw / body->total_mass) * body->v_s[i];
+                body->f_s[i] -= (air_drag / pw / body->total_mass) * body->v_s[i];
             }
             
             // pbd update and solve
@@ -109,7 +121,7 @@ void Simulator::update(float dt)
                     if( inter_dist < 0 )
                         continue;
                     p = p + sNor*inter_dist;
-                    vNor = dot( v, sNor ) * sNor;
+                    vNor = dot( sNor, v ) * sNor;
                     vTan = v - vNor;
                     v = (pC->friction * body->friction * vTan) - (pC->restitution * body->restitution * vNor);
                 }
