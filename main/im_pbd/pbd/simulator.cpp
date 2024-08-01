@@ -30,18 +30,7 @@ void SoftBody::update(float dt)
 
 
     
-    alpha = compliance.stretch/sqdt;
-    for( auto& c : c_dist_bends ) {
-        c.project( *this, alpha );
-    }
-    alpha = compliance.stretch/sqdt;
-    for( auto& c : c_shears ) {
-        c.project( *this, alpha );
-    }
-    alpha = compliance.stretch/sqdt;
-    for( auto& c : c_stretchs ) {
-        c.project( *this, alpha );
-    }
+    
 
 
     alpha = compliance.dih_bend/sqdt;
@@ -66,7 +55,18 @@ void SoftBody::update(float dt)
 
 
 
-
+    alpha = compliance.stretch/sqdt;
+    for( auto& c : c_dist_bends ) {
+        c.project( *this, alpha );
+    }
+    alpha = compliance.stretch/sqdt;
+    for( auto& c : c_shears ) {
+        c.project( *this, alpha );
+    }
+    alpha = compliance.stretch/sqdt;
+    for( auto& c : c_stretchs ) {
+        c.project( *this, alpha );
+    }
 
     
 

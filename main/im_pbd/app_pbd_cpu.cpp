@@ -58,35 +58,36 @@ static void resetApp() {
 
 
 	// cube
-	{
-		int nrShear = 1;
-		float mass = 1.f;
-		auto bendType = pbd::SoftBody::BendType::Dihedral;
-		MeshCubeShared ms(0.5);
-		mat4 tf = translate(vec3(0,2,0)) * glim::rotateX(glim::pi90*0.1f)* glim::rotateY(glim::pi90*0.2f);
-		for( vec3& p : ms.poss ) {
-			p = vec3(tf*vec4(p,1));
-		}
-		cur_body = new pbd::SoftBody(ms, nrShear, bendType, mass);
-		cur_body->w_s[0] = 0.f;
-	}
-
-
-	// cloth0
 	// {
 	// 	int nrShear = 1;
 	// 	float mass = 1.f;
 	// 	auto bendType = pbd::SoftBody::BendType::Dihedral;
-	// 	MeshPlane ms(1.f, nr_cloth_width, nr_cloth_width, false, false);
+	// 	MeshCubeShared ms(0.5);
 	// 	mat4 tf = translate(vec3(0,2,0)) * glim::rotateX(glim::pi90*0.1f)* glim::rotateY(glim::pi90*0.2f);
-	// 	// mat4 tf = translate(vec3(0,2,0));
 	// 	for( vec3& p : ms.poss ) {
 	// 		p = vec3(tf*vec4(p,1));
 	// 	}
 	// 	cur_body = new pbd::SoftBody(ms, nrShear, bendType, mass);
 	// 	cur_body->w_s[0] = 0.f;
-	// 	cur_body->w_s[nr_cloth_width] = 0.f;
 	// }
+
+
+	// cloth plane
+	{
+		int nrShear = 1;
+		float mass = 1.f;
+		auto bendType = pbd::SoftBody::BendType::Isometric;
+		// auto bendType = pbd::SoftBody::BendType::Dihedral;
+		MeshPlane ms(1.f, nr_cloth_width, nr_cloth_width, false, false);
+		mat4 tf = translate(vec3(0,2,0)) * glim::rotateX(glim::pi90*0.1f)* glim::rotateY(glim::pi90*0.2f);
+		// mat4 tf = translate(vec3(0,2,0));
+		for( vec3& p : ms.poss ) {
+			p = vec3(tf*vec4(p,1));
+		}
+		cur_body = new pbd::SoftBody(ms, nrShear, bendType, mass);
+		cur_body->w_s[0] = 0.f;
+		cur_body->w_s[nr_cloth_width] = 0.f;
+	}
 
 	// cloth
 	// {
@@ -203,6 +204,12 @@ static void drawBody(const pbd::SoftBody& body) {
 		// 	g_app->drawCylinder( body.poss[c.idx_ps[i]], body.poss[c.idx_ps[i]]+c.dPi[i], {0,0,1} );
 		// }
 	}
+	for( const auto& c : body.c_iso_bends ) {
+		g_app->drawCylinder( body.poss[c.idx_ps.x], body.poss[c.idx_ps.y], {0,0,1} );
+		for( int i=0; i<4; i++ ) {
+			g_app->drawCylinder( body.poss[c.idx_ps[i]], body.poss[c.idx_ps[i]]+c.dPi[i], {0,0,1} );
+		}
+	}
 }
 void AppPbdCpu::canvasDraw() const
 {
@@ -300,6 +307,8 @@ void AppPbdCpu::canvasImGui()
 		ImGui::Text("#iso_bend %d", cur_body->c_iso_bends.size());
 		ImGui::SliderFloat("stretch", &cur_body->compliance.stretch, 0.f, 0.1f, "%.6f");
 		ImGui::SliderFloat("dih_bend", &cur_body->compliance.dih_bend, 0.f, 100.f, "%.6f");
+		ImGui::SliderFloat("iso_bend", &cur_body->compliance.iso_bend, 0.f, 100.f, "%.6f");
+
 		ImGui::SliderFloat("shear", &cur_body->compliance.shear, 0.f, 1.f, "%.6f");
 		ImGui::SliderFloat("dist_bend", &cur_body->compliance.dist_bend, 0.f, 1.f, "%.6f");
 

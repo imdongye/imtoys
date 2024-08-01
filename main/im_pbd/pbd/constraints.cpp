@@ -203,7 +203,20 @@ void ConstraintDihedralBend::project(SoftBody& body, float alpha)
 
 
 
+/*
+   n1
+   p2
+e2/  \e1    e0 = p0-p1
+ /    \     e1 = p2-p1
+p0----p1    e2 = p2-p0
+ \ e0 /     e3 = p3-p0
+e3\  /e4    e4 = p3-p1
+   p3
+   n2
+From: https://carmencincotti.com/2022-08-29/the-isometric-bending-constraint-of-xpbd/
+https://carmencincotti.com/2022-08-29/the-isometric-bending-constraint-of-xpbd/
 
+*/
 ConstraintIsometricBend::ConstraintIsometricBend(const SoftBody& body, const uvec4& idxPs)
     : idx_ps(idxPs)
 {
@@ -213,9 +226,10 @@ ConstraintIsometricBend::ConstraintIsometricBend(const SoftBody& body, const uve
     const vec3& p3 = body.np_s[idx_ps.w];
     vec3 e0 = p0 - p1;
     vec3 e1 = p2 - p1;
+    vec3 e4 = p3 - p1;
     vec3 e2 = p2 - p0;
     vec3 e3 = p3 - p0;
-    vec3 e4 = p3 - p1;
+    
     // Q = 3/area * Kt*K
     // K = { c01+c04, c02+c03, -c01-c02, -c03-c04 }
     // cjk = cot(ej,ek)
@@ -234,26 +248,46 @@ ConstraintIsometricBend::ConstraintIsometricBend(const SoftBody& body, const uve
 }
 void ConstraintIsometricBend::project(SoftBody& body, float alpha)
 {
+    const vec3 p_s[4] = {
+        body.np_s[idx_ps.x],
+        body.np_s[idx_ps.y],
+        body.np_s[idx_ps.z],
+        body.np_s[idx_ps.w]
+    };
+    const float w_s[4] = {
+        body.w_s[idx_ps.x],
+        body.w_s[idx_ps.y],
+        body.w_s[idx_ps.z],
+        body.w_s[idx_ps.w]
+    };
+
     float qs = 0.f;
     for(int i=0; i<4; i++) for(int j=0; j<4; j++) {
-        qs+= Q[i][j]*dot(body.np_s[i], body.np_s[j]);
+        qs+= Q[i][j]*dot(p_s[i], p_s[j]);
     }
     float C = 0.5f*qs;
-    if( C == 0.f ) return;
+    if( C < glim::feps )
+        return;
+
+    
     float denom = alpha;
     for( int i=0; i<4; i++ ) {
         dPi[i] = vec3(0);
         for( int j=0; j<4; j++ ) {
-            dPi[i] += Q[j][i] * body.np_s[idx_ps[j]];
+            dPi[i] += Q[i][j] * p_s[j];
         }
-        denom += length2(dPi[i]) * body.w_s[idx_ps[i]];
+        denom += length2(dPi[i]) * w_s[i];
     }
-    if( denom == 0.f ) return;
+    if( denom < glim::feps )
+        return;
 
 
     float lambda = -C / denom;
     for( int i=0; i<4; i++ ) {
-        body.applyDeltaP(idx_ps[i], lambda, dPi[i]);
+        dPi[i] = lambda * w_s[i] * dPi[i];
+        body.np_s[idx_ps[i]] += dPi[i];
+        if( w_s[i] > 0.f )
+            dPi[i] = normalize(dPi[i])*0.3f;
     }
 }
 
