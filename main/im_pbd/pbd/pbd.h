@@ -54,9 +54,11 @@ namespace pbd
 
     struct ConstraintGlobalVolume 
     {
+        bool enabled = false;
         float ori_volume;
-        std::vector<glm::vec3> dCi;
-        ConstraintGlobalVolume(const SoftBody& body);
+        float pressure = 1.f;
+        std::vector<glm::vec3> dPi;
+        ConstraintGlobalVolume(const SoftBody& body, bool _enabled);
         void project(SoftBody& body, float alpha);
     };
 
@@ -94,15 +96,15 @@ namespace pbd
 
     struct SoftBody: public lim::Mesh 
     {
-        enum class BendType {
-            None,
-            Distance,
-            Dihedral,
-            Isometric,
+        enum BendType {
+            BT_NONE,
+            BT_DISTANCE,
+            BT_DIHEDRAL,
+            BT_ISOMETRIC,
         };
-        // lim::Mesh poss => current poss (X)
-        std::vector<glm::vec3> tp_s; // temp for jocobi
-        std::vector<glm::vec3> np_s; // new, predicted poss (P)
+        // lim::Mesh poss => before sub step solver poss (X)
+        std::vector<glm::vec3> x_s; // current poss (X)
+        std::vector<glm::vec3> p_s; // new, predicted poss (P)
         std::vector<glm::vec3>  v_s;
         std::vector<glm::vec3>  f_s;
         std::vector<float>      w_s; // inv mass
@@ -116,7 +118,7 @@ namespace pbd
         std::vector<ConstraintDistance>      c_dist_bends;
         std::vector<ConstraintDihedralBend>  c_dih_bends;
         std::vector<ConstraintIsometricBend> c_iso_bends;
-        std::vector<ConstraintGlobalVolume>  c_g_volumes;
+        ConstraintGlobalVolume  c_g_volume;
 
         struct Compliance {
             float stretch, shear, dist_bend;
@@ -131,7 +133,7 @@ namespace pbd
         void addPtcl(const glm::vec3& p, float w, const glm::vec3& v);
 
         // nrShear => [0,2]
-        SoftBody(const lim::Mesh& src, int nrShear = 1, BendType bendType = BendType::Dihedral, float totalMass = 1.f);
+        SoftBody(const lim::Mesh& src, int nrShear = 1, BendType bendType = BT_NONE, float totalMass = 1.f, bool enableG_volume = false );
         void update(float dt);
         float getVolume() const;
         void applyDeltaP(int idx, float lambda, const glm::vec3& dC);
@@ -146,7 +148,7 @@ namespace pbd
         GLuint vao_soft_body=0;
 
 
-        SoftBodyGpu(const lim::Mesh& src, int nrShear = 1, BendType bendType = BendType::Dihedral, float totalMass = 1.f);
+        SoftBodyGpu(const lim::Mesh& src, int nrShear = 1, BendType bendType = BT_NONE, float totalMass = 1.f);
         ~SoftBodyGpu();
     };
 

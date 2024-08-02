@@ -22,10 +22,11 @@ SoftBody::Compliance::Compliance()
 
 SoftBody::SoftBody()
     : total_mass(1.f), inv_ptcl_mass(1.f), nr_ptcls(0), nr_tris(0)
+    , c_g_volume(*this, false)
 {
     constexpr int defalutSize = 50;
     poss.reserve(defalutSize);
-    np_s.reserve(defalutSize);
+    p_s.reserve(defalutSize);
     v_s.reserve(defalutSize);
     f_s.reserve(defalutSize);
     w_s.reserve(defalutSize);
@@ -33,7 +34,7 @@ SoftBody::SoftBody()
 void SoftBody::addPtcl(const vec3& p, float w, const vec3& v) {
     nr_ptcls++;
     poss.push_back( p );
-    np_s.push_back( p );
+    p_s.push_back( p );
     v_s.push_back( v );
     f_s.push_back( vec3{0} );
     w_s.push_back( w );
@@ -50,12 +51,13 @@ e3\  /e4    e4 = p3-p1
    n2
 */
 // ref From: CreateConstraints() in SoftBodySharedcpp of JoltPhysics
-SoftBody::SoftBody(const lim::Mesh& src, int nrShear, BendType bendType, float totalMass)
+SoftBody::SoftBody(const lim::Mesh& src, int nrShear, BendType bendType, float totalMass, bool enableG_volume)
     : lim::Mesh(src), total_mass(totalMass), compliance()
+    , nr_ptcls(poss.size()), nr_tris(tris.size())
+    , c_g_volume(*this, enableG_volume)
 {
-    nr_tris = tris.size();
-    nr_ptcls = poss.size();
-    np_s.reserve(nr_ptcls);
+    p_s.reserve(nr_ptcls);
+    x_s.reserve(nr_ptcls);
     v_s.reserve(nr_ptcls);
     f_s.reserve(nr_ptcls);
     w_s.reserve(nr_ptcls);
@@ -64,7 +66,8 @@ SoftBody::SoftBody(const lim::Mesh& src, int nrShear, BendType bendType, float t
     inv_ptcl_mass = 1.f / ptclMass;            // ex) 100.0
 
     for( const vec3& p : poss ) {
-        np_s.push_back( p );
+        x_s.push_back( p );
+        p_s.push_back( p );
         v_s.push_back( vec3{0} );
         f_s.push_back( vec3{0} );
         w_s.push_back( inv_ptcl_mass );
@@ -118,9 +121,9 @@ SoftBody::SoftBody(const lim::Mesh& src, int nrShear, BendType bendType, float t
 
             // else is bend
             switch( bendType ) {
-            case BendType::None:
+            case BT_NONE:
                 break;
-            case BendType::Distance: {
+            case BT_DISTANCE: {
                 if( isShear && nrShear>1 ) {
                     break;
                 }
@@ -137,10 +140,10 @@ SoftBody::SoftBody(const lim::Mesh& src, int nrShear, BendType bendType, float t
                 }
                 break;
             }
-            case BendType::Dihedral:
+            case BT_DIHEDRAL:
                 c_dih_bends.push_back( {*this, idxPs} );
                 break;
-            case BendType::Isometric:
+            case BT_ISOMETRIC:
                 c_iso_bends.push_back( {*this, idxPs} );                
                 break;
             }
@@ -163,5 +166,5 @@ float SoftBody::getVolume() const {
 }
 
 void SoftBody::applyDeltaP(int idx, float lambda, const vec3& dC) {
-    np_s[idx] = np_s[idx] + lambda*w_s[idx]*dC;
+    p_s[idx] = p_s[idx] + lambda*w_s[idx]*dC;
 }

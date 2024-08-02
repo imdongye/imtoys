@@ -27,7 +27,7 @@ SoftBodyGpu::SoftBodyGpu(const lim::Mesh& src, int nrShear, BendType bendType, f
 
     glGenBuffers(1, &buf_pw_s);
     for(int i=0; i<nr_ptcls; i++) {
-        tempBuf.push_back(vec4{np_s[i], w_s[i]});
+        tempBuf.push_back(vec4{p_s[i], w_s[i]});
     }
     glBindBuffer(GL_ARRAY_BUFFER, buf_pw_s);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vec4)*tempBuf.size(), tempBuf.data(), GL_DYNAMIC_COPY);

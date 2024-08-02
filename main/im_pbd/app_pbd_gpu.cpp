@@ -23,14 +23,13 @@ static void resetApp() {
 	{
 		int nrShear = 2;
 		float mass = 1.f;
-		auto bendType = pbd::SoftBody::BendType::None;
 		MeshPlane ms(1.f, nr_cloth_width, nr_cloth_width, false, false);
 		mat4 tf = translate(vec3(0,2,0)) * glim::rotateX(glim::pi90*0.1f)* glim::rotateY(glim::pi90*0.2f);
 		// mat4 tf = translate(vec3(0,2,0));
 		for( vec3& p : ms.poss ) {
 			p = vec3(tf*vec4(p,1));
 		}
-		body = new pbd::SoftBodyGpu(ms, nrShear, bendType, mass);
+		body = new pbd::SoftBodyGpu(ms, nrShear, pbd::SoftBody::BT_NONE, mass);
 		body->w_s[0] = 0.f;
 		body->w_s[nr_cloth_width] = 0.f;
 		body->compliance = tempComp;

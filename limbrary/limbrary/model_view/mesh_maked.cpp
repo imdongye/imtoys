@@ -152,14 +152,31 @@ MeshCube::MeshCube(float width, bool genNors, bool genUvs)
 
 
 // From: http://www.songho.ca/opengl/gl_sphere.html
-// texture coord가 다른 같은 위치의 vertex가 많음
+// texture coord가 다른, 같은 위치의 vertex가 많음
+// Todo: 양끝 버텍스 두개 남는거 고치기
 MeshSphere::MeshSphere(float width, int nrSlices, int nrStacks, bool genNors, bool genUvs)
 {
 	const float radius = width/2.f;
 	name = fmtStrToBuf("sphere_sl%d_st%d", nrSlices, nrStacks);
+
 	// phi : angle form xy-plane [-pi/2, pi/2]
 	// theta : y-axis angle [0, 2pi]
-	for (int stack = 0; stack <= nrStacks; stack++)
+
+	vec3 nor = {0, -1, 0};
+	for( int slice = 0; slice < nrSlices; slice++ ) {
+		poss.push_back(nor*radius);
+		if( genNors ) nors.push_back(nor);
+		if( genUvs )  uvs.push_back({ 2.f*slice/(float)nrSlices, 0.f });
+	}
+
+	nor = {0, 1, 0};
+	for( int slice = 0; slice < nrSlices; slice++ ) {
+		poss.push_back(nor*radius);
+		if( genNors ) nors.push_back(nor);
+		if( genUvs )  uvs.push_back({ 2.f*slice/(float)nrSlices, 1.f });
+	}
+
+	for( int stack = 1; stack < nrStacks; stack++ )
 	{
 		float phi = glim::pi90 - glim::pi * stack / (float)nrStacks;
 		float y = sin(phi);
@@ -179,18 +196,19 @@ MeshSphere::MeshSphere(float width, int nrSlices, int nrStacks, bool genNors, bo
 			}
 		}
 	}
+	
 
 	const int nrCols = nrSlices + 1;
 
 	for (int stack = 0; stack < nrStacks; stack++)
 	{
-		int curRow = nrCols * stack;
+		int curRow = (stack)? nrSlices+nrCols*(stack-1) : 0;
 		int nextRow = nrCols * (stack + 1);
 		for (int slice = 0; slice < nrSlices; slice++)
 		{
 			int cur_col = slice;
 			int next_col = slice + 1;
-			if( stack < nrStacks ){ // upper
+			if( stack < nrStacks ) { // upper
 				tris.push_back({ curRow+cur_col, nextRow+cur_col, nextRow+next_col });
 			}
 			if( stack > 0 ) { // lower
@@ -624,21 +642,24 @@ MeshDonut::MeshDonut(float radius, float height, int nrSlices, int nrRingVerts, 
 	initGL();
 }
 
-
+/*
+	w z
+	x y 
+*/
 static void addTriFace(uvec4 quad, std::vector<uvec3>& tris) {
-	tris.emplace_back(quad.x, quad.z, quad.w);
 	tris.emplace_back(quad.x, quad.y, quad.z);
+	tris.emplace_back(quad.x, quad.z, quad.w);
 }
 
 MeshCubeShared::MeshCubeShared(float width, bool withInitGL)
 {
 	name = "shared cube";
 /*
-	6 7
 	4 5
+	6 7
 
-	2 3
 	0 1
+	2 3
 */
 	poss.reserve(8);
 	for( int y=0; y<2; y++) for( int z=0; z<2; z++) for( int x=0; x<2; x++) {
@@ -646,11 +667,11 @@ MeshCubeShared::MeshCubeShared(float width, bool withInitGL)
 	}
 	tris.reserve(6*2);
 	addTriFace({0,1,3,2}, tris);
-	addTriFace({4,5,7,6}, tris);
-	addTriFace({0,1,5,4}, tris);
-	addTriFace({1,3,7,5}, tris);
-	addTriFace({3,2,6,7}, tris);
-	addTriFace({2,0,4,6}, tris);
+	addTriFace({6,7,5,4}, tris);
+	addTriFace({2,3,7,6}, tris);
+	addTriFace({3,1,5,7}, tris);
+	addTriFace({1,0,4,5}, tris);
+	addTriFace({0,2,6,4}, tris);
 	
 	if( withInitGL ) {
 		initGL();
@@ -710,4 +731,60 @@ MeshCloth::MeshCloth(vec2 size, float innerWidth) {
 		}
 	}
 	initGL();
+}
+
+
+
+MeshSphereShared::MeshSphereShared(float width, int nrSlices, int nrStacks, bool withInitGL)
+{
+	name = "shared sphere";
+
+	const float radius = width*0.5f;
+	const int nrRows = nrStacks+1;
+	const int nrVerts = 2+(nrRows-2)*nrSlices;
+	const int nrTris = 2*nrSlices + (nrRows-2)*nrSlices*2;
+
+	tris.reserve(nrTris);
+	poss.reserve(nrVerts);
+	poss.push_back({0,-radius,0});
+	poss.push_back({0, radius,0});
+	int i, j;
+	for( i=1; i<nrStacks; i++ )
+	{
+		float phi = -glim::pi90 + glim::pi*i/(float)nrStacks;
+		float y = sin(phi);
+		float cosPhi = cos(phi);
+		for( j=0; j<nrSlices; j++ )
+		{
+			float theta = glim::pi2 * j / (float)nrSlices;
+			float x = cosPhi * cos(theta);
+			float z = cosPhi * sin(theta);
+			vec3 nor = {x, y, z};
+			poss.push_back(nor*radius);
+		}
+	}
+
+	int offsetTop = 2 + nrSlices*(nrStacks-2);
+	for( i=0; i<nrSlices-1; i++ )
+	{
+		tris.push_back({0, 3+i, 2+i});
+		tris.push_back({1, offsetTop+i, 1+offsetTop+i});
+	}
+	tris.push_back({0, 2, 2+i});
+	tris.push_back({1, offsetTop+i, offsetTop});
+
+
+	for( i=0; i<nrRows-3; i++ ) {
+		int offL = 2+nrSlices*i;
+		int offH = 2+nrSlices*(i+1);
+		for( j=0; j<nrSlices-1; j++ ) {
+			tris.push_back({offL+j, offH+j+1, offH+j});
+			tris.push_back({offL+j, offL+j+1, offH+j+1});
+		}
+		tris.push_back({offL+j, offH, offH+j});
+		tris.push_back({offL+j, offL, offH});
+	}
+
+	if( withInitGL )
+		initGL();
 }

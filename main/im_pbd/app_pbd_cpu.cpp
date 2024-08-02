@@ -18,8 +18,13 @@ namespace {
 	pbd::ColliderSphere c_sphere({0,0.5f,0}, 0.3f);
 	bool is_paused = true;
 	bool draw_mesh = false;
-	int nr_cloth_width = 1;
+	bool draw_dpi_dir = false;
+	int nr_cloth_width = 13;
+	float cloth_width = 1.3f;
+	int nr_shear = 1;
 	float time_speed = 1.f;
+	bool fix_start = true;
+	pbd::SoftBody::BendType bend_type = pbd::SoftBody::BT_NONE;
 }
 
 
@@ -41,7 +46,6 @@ static void resetApp() {
 	// {
 	// 	int nrShear = 1;
 	// 	float mass = 1.f;
-	// 	auto bendType = pbd::SoftBody::BendType::Dihedral;
 	// 	Model md;
 	// 	md.importFromFile("exports/simp_rst/bunny.obj");
 	// 	md.setUnitScaleAndPivot({0,-1,0}, 0.5f);
@@ -57,66 +61,88 @@ static void resetApp() {
 	// }
 
 
-	// cube
+	// duck
 	// {
 	// 	int nrShear = 1;
 	// 	float mass = 1.f;
-	// 	auto bendType = pbd::SoftBody::BendType::Dihedral;
-	// 	MeshCubeShared ms(0.5);
+	// 	Model md;
+	// 	md.importFromFile("exports/simp_rst/Duck/Duck.obj");
+	// 	md.setUnitScaleAndPivot({0,-1,0}, 0.5f);
+	// 	Mesh& ms = *md.own_meshes[0];
 	// 	mat4 tf = translate(vec3(0,2,0)) * glim::rotateX(glim::pi90*0.1f)* glim::rotateY(glim::pi90*0.2f);
 	// 	for( vec3& p : ms.poss ) {
 	// 		p = vec3(tf*vec4(p,1));
 	// 	}
 	// 	cur_body = new pbd::SoftBody(ms, nrShear, bendType, mass);
 	// 	cur_body->w_s[0] = 0.f;
+	// 	// cur_body->w_s[nr_cloth_width] = 0.f;
+	// 	// cur_body->upload_to_buf = true;
 	// }
 
-
-	// cloth plane
-	{
-		int nrShear = 1;
-		float mass = 1.f;
-		auto bendType = pbd::SoftBody::BendType::Isometric;
-		// auto bendType = pbd::SoftBody::BendType::Dihedral;
-		MeshPlane ms(1.f, nr_cloth_width, nr_cloth_width, false, false);
-		mat4 tf = translate(vec3(0,2,0)) * glim::rotateX(glim::pi90*0.1f)* glim::rotateY(glim::pi90*0.2f);
-		// mat4 tf = translate(vec3(0,2,0));
-		for( vec3& p : ms.poss ) {
-			p = vec3(tf*vec4(p,1));
-		}
-		cur_body = new pbd::SoftBody(ms, nrShear, bendType, mass);
-		cur_body->w_s[0] = 0.f;
-		cur_body->w_s[nr_cloth_width] = 0.f;
-	}
-
-	// cloth
+	// cube
 	// {
-	// 	int nrShear = 2;
-	// 	auto bendType = pbd::SoftBody::BendType::Distance;
-	// 	MeshCloth ms(vec2(1.f, 1.f), 0.3f);
-	// 	mat4 tf = translate(vec3(0,2,0)) * glim::rotateX(glim::pi90*0.1f)* glim::rotateY(glim::pi90*0.2f);
-	// 	// mat4 tf = translate(vec3(0,2,0));
-	// 	for( vec3& p : ms.poss ) {
-	// 		p = vec3(tf*vec4(p,1));
-	// 	}
-	// 	cur_body = new pbd::SoftBody(ms, nrShear, bendType);
-	// 	cur_body->w_s[0] = 0.f;
-	// }
-
-	// cloth cell
-	// {
-	// 	int nrShear = 0;
-	// 	float width = 1.f;
-	// 	int nrWidth = 1;
-	// 	auto bendType = pbd::SoftBody::BendType::None;
-	// 	MeshCloth ms(vec2(1.f), width/nrWidth);
+	// 	float mass = 1.f;
+	// 	bool enableVolume = true;
+	// 	MeshCubeShared ms(0.5f);
+	// 	// mat4 tf = translate(vec3(0,2,0)) * glim::rotateX(glim::pi90*0.1f)* glim::rotateY(glim::pi90*0.2f);
+	// 	// mat4 tf = translate(vec3(0,0,0));
 	// 	mat4 tf = translate(vec3(0,2,0));
 	// 	for( vec3& p : ms.poss ) {
 	// 		p = vec3(tf*vec4(p,1));
 	// 	}
-	// 	cur_body = new pbd::SoftBody(ms, nrShear, bendType);
+	// 	cur_body = new pbd::SoftBody(ms, nr_shear, bend_type, mass, enableVolume);
 	// 	cur_body->w_s[0] = 0.f;
-	// 	cur_body->w_s[nrWidth] = 0.f;
+	// }
+
+
+	// sphere
+	{
+		float mass = 1.f;
+		bool enableVolume = true;
+		MeshSphereShared ms(0.5f, 4, 4, false);
+		// mat4 tf = translate(vec3(0,2,0)) * glim::rotateX(glim::pi90*0.1f)* glim::rotateY(glim::pi90*0.2f);
+		// mat4 tf = translate(vec3(0,0,0));
+		mat4 tf = translate(vec3(0,2,0));
+		for( vec3& p : ms.poss ) {
+			p = vec3(tf*vec4(p,1));
+		}
+		cur_body = new pbd::SoftBody(ms, nr_shear, bend_type, mass, enableVolume);
+		cur_body->w_s[0] = 0.f;
+	}
+
+
+	// cloth plane
+	// {
+	// 	float mass = 1.f;
+	// 	// auto bendType = pbd::SoftBody::BendType::Dihedral;
+	// 	MeshPlane ms(cloth_width, nr_cloth_width, nr_cloth_width, false, false);
+	// 	// mat4 tf = translate(vec3(0,2,0));
+	// 	// mat4 tf = translate(vec3(0,2,0)) * glim::rotateX(glim::pi90*0.1f)* glim::rotateY(glim::pi90*0.2f);
+	// 	mat4 tf = translate(vec3(0,2,0)) * glim::rotateZ(-glim::pi45*0.05f);
+	// 	for( vec3& p : ms.poss ) {
+	// 		p = vec3(tf*vec4(p,1));
+	// 	}
+	// 	cur_body = new pbd::SoftBody(ms, nr_shear, bend_type, mass);
+	// 	if( fix_start ) {
+	// 		cur_body->w_s[0] = 0.f;
+	// 		cur_body->w_s[nr_cloth_width] = 0.f;
+	// 	}
+	// }
+
+	// cloth
+	// {
+	// 	MeshCloth ms(vec2(cloth_width), cloth_width/nr_cloth_width);
+	// 	// mat4 tf = translate(vec3(0,2,0)) * glim::rotateX(glim::pi90*0.1f)* glim::rotateY(glim::pi90*0.2f);
+	// 	// mat4 tf = translate(vec3(0,2,0));
+	// 	mat4 tf = translate(vec3(0,2,0)) * glim::rotateZ(-glim::pi45*0.05f);
+	// 	for( vec3& p : ms.poss ) {
+	// 		p = vec3(tf*vec4(p,1));
+	// 	}
+	// 	cur_body = new pbd::SoftBody(ms, nr_shear, bend_type);
+	// 	if( fix_start ) {
+	// 		cur_body->w_s[0] = 0.f;
+	// 		cur_body->w_s[nr_cloth_width] = 0.f;
+	// 	}
 	// }
 
 	cur_body->compliance = tempComp;
@@ -164,6 +190,8 @@ void AppPbdCpu::customDraw(const Camera& cam, const LightDirectional& lit) const
 {
 	if( !draw_mesh )
 		return;
+	glEnable(GL_CULL_FACE);
+
 	prog_ms.use();
 	cam.setUniformTo(prog_ms);
 	lit.setUniformTo(prog_ms);
@@ -172,6 +200,8 @@ void AppPbdCpu::customDraw(const Camera& cam, const LightDirectional& lit) const
 	// glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	cur_body->bindAndDrawGL();
 	// glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glDisable(GL_CULL_FACE);
+
 }
 
 
@@ -182,7 +212,7 @@ static void drawBody(const pbd::SoftBody& body) {
 	}
 	for( const auto& c : body.c_stretchs ) {
 		g_app->drawCylinder( body.poss[c.idx_ps.x], body.poss[c.idx_ps.y], {1,1,0} );
-		// for( int i=0; i<2; i++ ) {
+		// if( draw_dpi_dir ) for( int i=0; i<2; i++ ) {
 		// 	g_app->drawCylinder( body.poss[c.idx_ps[i]], body.poss[c.idx_ps[i]]+c.dPi[i]*0.1f, {0,0,1} );
 		// }
 	}
@@ -193,22 +223,26 @@ static void drawBody(const pbd::SoftBody& body) {
 		// }
 	}
 	for( const auto& c : body.c_dist_bends ) {
-		g_app->drawCylinder( body.poss[c.idx_ps.x], body.poss[c.idx_ps.y], {0.7,0.1,0} );
-		// for( int i=0; i<2; i++ ) {
-		// 	g_app->drawCylinder( body.poss[c.idx_ps[i]], body.poss[c.idx_ps[i]]+c.dPi[i]*0.1f, {0,0,1} );
-		// }
+		g_app->drawCylinder( body.poss[c.idx_ps.x], body.poss[c.idx_ps.y], {0.7,0.1,0}, 0.03f );
+		if( draw_dpi_dir ) for( int i=0; i<2; i++ ) {
+			g_app->drawCylinder( body.poss[c.idx_ps[i]], body.poss[c.idx_ps[i]]+c.dPi[i], {0,0,1} );
+		}
 	}
 	for( const auto& c : body.c_dih_bends ) {
 		g_app->drawCylinder( body.poss[c.idx_ps.x], body.poss[c.idx_ps.y], {0,0,1} );
-		// for( int i=0; i<4; i++ ) {
-		// 	g_app->drawCylinder( body.poss[c.idx_ps[i]], body.poss[c.idx_ps[i]]+c.dPi[i], {0,0,1} );
-		// }
+		if( draw_dpi_dir ) for( int i=0; i<4; i++ ) {
+			g_app->drawCylinder( body.poss[c.idx_ps[i]], body.poss[c.idx_ps[i]]+c.dPi[i], {0,0,1} );
+		}
 	}
 	for( const auto& c : body.c_iso_bends ) {
 		g_app->drawCylinder( body.poss[c.idx_ps.x], body.poss[c.idx_ps.y], {0,0,1} );
-		for( int i=0; i<4; i++ ) {
+		if( draw_dpi_dir ) for( int i=0; i<4; i++ ) {
 			g_app->drawCylinder( body.poss[c.idx_ps[i]], body.poss[c.idx_ps[i]]+c.dPi[i], {0,0,1} );
 		}
+	}
+	for( int i=0; i<body.nr_ptcls; i++ ) {
+		g_app->drawCylinder( body.poss[i], body.poss[i]+body.c_g_volume.dPi[i], {0,0,1} );
+
 	}
 }
 void AppPbdCpu::canvasDraw() const
@@ -288,13 +322,27 @@ void AppPbdCpu::canvasImGui()
 			simulator.update(delta_time);
 			simulator.nr_steps = tempIter;
 		}
-		if( ImGui::SliderInt("cloth width", &nr_cloth_width, 1, 20) ) {
+		if( ImGui::SliderFloat("cloth width", &cloth_width, 0.5f, 3.f) ) {
+			resetApp();
+		}
+		if( ImGui::SliderInt("nr cloth slices", &nr_cloth_width, 1, 20) ) {
+			resetApp();
+		}
+		if( ImGui::SliderInt("nr shears", &nr_shear, 0, 2) ) {
+			resetApp();
+		}
+		if( ImGui::Combo("bendType", (int*)&bend_type, "none\0distance\0dihedral\0isometric\0", 4) ) {
+			resetApp();
+		}
+		if( ImGui::Checkbox("fix", &fix_start) ) {
 			resetApp();
 		}
 	}
 	if( ImGui::Button("reset") ) {
 		resetApp();
 	}
+
+	ImGui::Checkbox("draw dpi dir draw", &draw_dpi_dir);
 
 	if( ImGui::Checkbox("draw mesh", &draw_mesh) ) {
 		cur_body->upload_to_buf = draw_mesh;
@@ -305,12 +353,15 @@ void AppPbdCpu::canvasImGui()
 		ImGui::Text("#dist_bend %d", cur_body->c_dist_bends.size());
 		ImGui::Text("#dih_bend %d", cur_body->c_dih_bends.size());
 		ImGui::Text("#iso_bend %d", cur_body->c_iso_bends.size());
-		ImGui::SliderFloat("stretch", &cur_body->compliance.stretch, 0.f, 0.1f, "%.6f");
+		ImGui::SliderFloat("stretch", &cur_body->compliance.stretch, 0.f, 1.0f, "%.6f");
+		ImGui::SliderFloat("dist_bend", &cur_body->compliance.dist_bend, 0.f, 1.f, "%.6f");
 		ImGui::SliderFloat("dih_bend", &cur_body->compliance.dih_bend, 0.f, 100.f, "%.6f");
 		ImGui::SliderFloat("iso_bend", &cur_body->compliance.iso_bend, 0.f, 100.f, "%.6f");
-
+		ImGui::Separator();
+		ImGui::SliderFloat("g_volume", &cur_body->compliance.glo_volume, 0.f, 1.f, "%.6f");
+		ImGui::SliderFloat("presure", &cur_body->c_g_volume.pressure, -10.f, 100.f, "%.6f");
+		ImGui::Separator();
 		ImGui::SliderFloat("shear", &cur_body->compliance.shear, 0.f, 1.f, "%.6f");
-		ImGui::SliderFloat("dist_bend", &cur_body->compliance.dist_bend, 0.f, 1.f, "%.6f");
 
 		ImGui::SliderFloat("air_drag", &simulator.air_drag, 0.f, 1.f, "%.6f");
 		ImGui::SliderFloat("ground friction", &c_ground.friction, 0.f, 1.f, "%.6f");
@@ -353,6 +404,7 @@ void AppPbdCpu::canvasImGui()
 		updatePicking(mouseRay, vp.camera.pos);
 		if( picked_info.picked ) {
 			picked_info.w() = picked_info.body->inv_ptcl_mass;
+			picked_info.picked = false;
 		}
 	}
 	if(ImGui::IsKeyPressed(ImGuiKey_B, false)) {

@@ -26,7 +26,7 @@ void ConstraintPoint::project(SoftBody& body, float alpha)
     // vec3 dC = diff / C;
     // float lambda = C/w*alpha;
     // body.np_s[idx] += lambda * w * dC;
-    vec3& p = body.np_s[idx];
+    vec3& p = body.p_s[idx];
     vec3 diff = target - p;
     p += diff/(1.f+alpha);
 }
@@ -40,12 +40,12 @@ void ConstraintPoint::project(SoftBody& body, float alpha)
 ConstraintDistance::ConstraintDistance(const SoftBody& body, const uvec2& idxPs)
     : idx_ps(idxPs)
 {
-    ori_dist = length(body.np_s[idx_ps.x] - body.np_s[idx_ps.y]);
+    ori_dist = length(body.p_s[idx_ps.x] - body.p_s[idx_ps.y]);
 }
 void ConstraintDistance::project(SoftBody& body, float alpha) 
 {
-    vec3 p1 = body.np_s[idx_ps.x]; // gause-seidel iteration
-    vec3 p2 = body.np_s[idx_ps.y];
+    vec3 p1 = body.p_s[idx_ps.x]; // gause-seidel iteration
+    vec3 p2 = body.p_s[idx_ps.y];
     // vec3 p1 = body.poss[idx_ps.x]; // jacobi iteration
     // vec3 p2 = body.poss[idx_ps.y];
     float w1 = body.w_s[idx_ps.x];
@@ -63,10 +63,10 @@ void ConstraintDistance::project(SoftBody& body, float alpha)
     float lambda = C / denom;
     dPi[0] = -lambda*w1*dC;
     dPi[1] = lambda*w2*dC;
-    body.np_s[idx_ps.x] += dPi[0];
-    body.np_s[idx_ps.y] += dPi[1];
-    dPi[0] = normalize(dPi[0]);
-    dPi[1] = normalize(dPi[1]);
+    body.p_s[idx_ps.x] += dPi[0];
+    body.p_s[idx_ps.y] += dPi[1];
+    dPi[0] = normalize(dPi[0])*0.1f;
+    dPi[1] = normalize(dPi[1])*0.1f;
     
     // PBD
     // float stiffness = 0.9f;
@@ -101,10 +101,10 @@ e3\  /e4    e4 = p3-p1
 ConstraintDihedralBend::ConstraintDihedralBend(const SoftBody& body, const uvec4& idxPs)
     : idx_ps(idxPs)
 {
-    vec3 p0 = body.np_s[idx_ps.x];
-    vec3 p1 = body.np_s[idx_ps.y];
-    vec3 p2 = body.np_s[idx_ps.z];
-    vec3 p3 = body.np_s[idx_ps.w];
+    vec3 p0 = body.p_s[idx_ps.x];
+    vec3 p1 = body.p_s[idx_ps.y];
+    vec3 p2 = body.p_s[idx_ps.z];
+    vec3 p3 = body.p_s[idx_ps.w];
     vec3 e0 = p0 - p1;
     vec3 e1 = p2 - p1;
     vec3 e4 = p3 - p1;
@@ -121,10 +121,10 @@ void ConstraintDihedralBend::project(SoftBody& body, float alpha)
     for( int i=0; i<4; i++ ) {
         dPi[i] = vec3(0.f);
     }
-    vec3 p0 = body.np_s[idx_ps.x]; float w0 = body.w_s[idx_ps.x];
-    vec3 p1 = body.np_s[idx_ps.y]; float w1 = body.w_s[idx_ps.y];
-    vec3 p2 = body.np_s[idx_ps.z]; float w2 = body.w_s[idx_ps.z];
-    vec3 p3 = body.np_s[idx_ps.w]; float w3 = body.w_s[idx_ps.w];
+    vec3 p0 = body.p_s[idx_ps.x]; float w0 = body.w_s[idx_ps.x];
+    vec3 p1 = body.p_s[idx_ps.y]; float w1 = body.w_s[idx_ps.y];
+    vec3 p2 = body.p_s[idx_ps.z]; float w2 = body.w_s[idx_ps.z];
+    vec3 p3 = body.p_s[idx_ps.w]; float w3 = body.w_s[idx_ps.w];
     vec3 e0 = p0 - p1;
     vec3 e1 = p2 - p1;
     vec3 e4 = p3 - p1;
@@ -160,14 +160,14 @@ void ConstraintDihedralBend::project(SoftBody& body, float alpha)
     LimGui::PlotValAddValue("dih_c", C);
     // float maxPctC = 0.2f;
     float maxPctC = glim::pi*max(body.compliance.dih_bend, 0.1f);
+    if( abs(C) > maxPctC ) {
+        return;
+        // C *=0.01f;
+    }
     // if( C < -glim::pi*maxPctC )
     //     C = -glim::pi*maxPctC;
     // if( C >  glim::pi*maxPctC )
     //     C =  glim::pi*maxPctC;
-    if( abs(C) > maxPctC ) {
-        return;
-        C *=0.01f;
-    }
     vec3 u2 = e0Len*n1;
     vec3 u3 = e0Len*n2;
     // vec3 u0 = ( dot(e1,e0)*n1 + dot(e4,e0)*n2 ) / e0Len;
@@ -186,17 +186,17 @@ void ConstraintDihedralBend::project(SoftBody& body, float alpha)
     dPi[2] = lambda * w2 * u2;
     dPi[3] = lambda * w3 * u3;
 
-    body.np_s[idx_ps.x] += dPi[0];
-    body.np_s[idx_ps.y] += dPi[1];
-    body.np_s[idx_ps.z] += dPi[2];
-    body.np_s[idx_ps.w] += dPi[3];
+    body.p_s[idx_ps.x] += dPi[0];
+    body.p_s[idx_ps.y] += dPi[1];
+    body.p_s[idx_ps.z] += dPi[2];
+    body.p_s[idx_ps.w] += dPi[3];
 
     // debuging
     for( int i=0; i<4; i++ ) {
         if( body.w_s[idx_ps[i]] == 0.f )
             dPi[i] = vec3(0.f);
         else 
-            dPi[i]  = normalize(dPi[i])*0.5f;
+            dPi[i]  = normalize(dPi[i])*0.1f;
     }
 }
 
@@ -220,10 +220,10 @@ https://carmencincotti.com/2022-08-29/the-isometric-bending-constraint-of-xpbd/
 ConstraintIsometricBend::ConstraintIsometricBend(const SoftBody& body, const uvec4& idxPs)
     : idx_ps(idxPs)
 {
-    const vec3& p0 = body.np_s[idx_ps.x];
-    const vec3& p1 = body.np_s[idx_ps.y];
-    const vec3& p2 = body.np_s[idx_ps.z];
-    const vec3& p3 = body.np_s[idx_ps.w];
+    const vec3& p0 = body.p_s[idx_ps.x];
+    const vec3& p1 = body.p_s[idx_ps.y];
+    const vec3& p2 = body.p_s[idx_ps.z];
+    const vec3& p3 = body.p_s[idx_ps.w];
     vec3 e0 = p0 - p1;
     vec3 e1 = p2 - p1;
     vec3 e4 = p3 - p1;
@@ -249,10 +249,10 @@ ConstraintIsometricBend::ConstraintIsometricBend(const SoftBody& body, const uve
 void ConstraintIsometricBend::project(SoftBody& body, float alpha)
 {
     const vec3 p_s[4] = {
-        body.np_s[idx_ps.x],
-        body.np_s[idx_ps.y],
-        body.np_s[idx_ps.z],
-        body.np_s[idx_ps.w]
+        body.p_s[idx_ps.x],
+        body.p_s[idx_ps.y],
+        body.p_s[idx_ps.z],
+        body.p_s[idx_ps.w]
     };
     const float w_s[4] = {
         body.w_s[idx_ps.x],
@@ -285,9 +285,9 @@ void ConstraintIsometricBend::project(SoftBody& body, float alpha)
     float lambda = -C / denom;
     for( int i=0; i<4; i++ ) {
         dPi[i] = lambda * w_s[i] * dPi[i];
-        body.np_s[idx_ps[i]] += dPi[i];
+        body.p_s[idx_ps[i]] += dPi[i];
         if( w_s[i] > 0.f )
-            dPi[i] = normalize(dPi[i])*0.3f;
+            dPi[i] = normalize(dPi[i])*0.1f;
     }
 }
 
@@ -298,32 +298,42 @@ void ConstraintIsometricBend::project(SoftBody& body, float alpha)
 /*
     Volume constraint
 */
-ConstraintGlobalVolume::ConstraintGlobalVolume(const SoftBody& body)
-    : ori_volume(body.getVolume()), dCi(body.nr_ptcls)
+ConstraintGlobalVolume::ConstraintGlobalVolume(const SoftBody& body, bool _enabled)
+    : enabled(_enabled)
+    , ori_volume( (enabled)?body.getVolume():0.f )
+    , dPi(body.nr_ptcls)
+    , pressure(1.0f)
 {
 }
 void ConstraintGlobalVolume::project(SoftBody& body, float alpha)
 {
-
-    std::fill(dCi.begin(), dCi.end(), vec3(0));
+    std::fill(dPi.begin(), dPi.end(), vec3(0));
     
     for( const uvec3& tri : body.tris ) {
-        vec3& p0 = body.np_s[tri.x];
-        vec3& p1 = body.np_s[tri.y];
-        vec3& p2 = body.np_s[tri.z];
-        dCi[tri.x] += cross(p1, p2)/6.f;
-        dCi[tri.y] += cross(p2, p0)/6.f;
-        dCi[tri.z] += cross(p0, p1)/6.f;
+        const vec3& p1 = body.p_s[tri.x];
+        const vec3& p2 = body.p_s[tri.y];
+        const vec3& p3 = body.p_s[tri.z];
+        dPi[tri.x] += cross(p3, p2)/6.f;
+        dPi[tri.y] += cross(p1, p3)/6.f;
+        dPi[tri.z] += cross(p2, p1)/6.f;
     }
 
-    float C = body.getVolume() - ori_volume;
+    float C = body.getVolume() - pressure*ori_volume;
+    if( abs(C) < glim::feps )
+        return;
     float denom = alpha;
     for( int i=0; i<body.nr_ptcls; i++ ) {
-        denom += body.w_s[i]*dot(dCi[i], dCi[i]);
+        denom += body.w_s[i]*length2(dPi[i]);
     }
+    if( denom < glim::feps )
+        return;
     float lambda = C / denom;
 
     for( int i=0; i<body.nr_ptcls; i++ ) {
-        body.applyDeltaP(i, lambda, dCi[i]);
+        dPi[i] = lambda * body.w_s[i] * dPi[i];
+        body.p_s[i] += dPi[i];
+        if( body.w_s[i] > 0.f ) {
+            dPi[i] = normalize(dPi[i])*0.1f;
+        }
     }
 }
