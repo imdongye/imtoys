@@ -102,19 +102,6 @@ list(APPEND dep_libs ${lib_name})
 
 
 
-### nanovg ### C
-set(lib_name "nanovg")
-set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/nanovg")
-file(GLOB_RECURSE lib_files "${lib_dir}/*.*")
-add_library(${lib_name} STATIC ${lib_files})
-source_group(TREE ${lib_dir} FILES ${lib_files})
-target_include_directories(${lib_name} PUBLIC ${lib_dir})
-set_target_properties(${lib_name} PROPERTIES FOLDER "vendor")
-list(APPEND dep_libs ${lib_name})
-
-
-
-
 ### stb ### C
 set(lib_name "stb")
 set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/stb")
@@ -179,6 +166,7 @@ target_link_libraries(${lib_name} PUBLIC imgui)
 add_dependencies(${lib_name} imgui)
 set_target_properties(${lib_name} PROPERTIES FOLDER "vendor")
 list(APPEND dep_libs ${lib_name})
+
 
 
 

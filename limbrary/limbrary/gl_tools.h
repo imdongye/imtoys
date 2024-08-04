@@ -1,5 +1,10 @@
 /*
     imdongye / 2024.07.09
+
+    glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+	glFrontFace(GL_CCW);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 */
 
 #ifndef __gl_tools_h_

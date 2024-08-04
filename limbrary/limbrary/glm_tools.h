@@ -30,6 +30,14 @@ namespace glim {
 		return {glm::cos(Angle), glm::sin(Angle)*v};
 	}
 
+
+	inline glm::quat rotateV(const glm::vec3& axis, const float deg) {
+		float rad = glm::radians(deg); // 2*PI*deg/360.f;
+		glm::quat log_q = glm::quat(0, axis * rad * 0.5f);
+		return exp(log_q);
+	}
+
+
     inline glm::vec3 triNormal(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3) {
         return glm::normalize( glm::cross(p2-p1, p3-p1) );
     }

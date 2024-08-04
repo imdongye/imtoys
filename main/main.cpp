@@ -15,14 +15,12 @@
 #include "im_tests/app_imgui_test.h"
 #include "im_tests/app_icp.h"
 #include "im_tests/app_gen_mesh.h"
-#include "im_tests/app_font.h"
 #include "im_tests/app_astar.h"
 #include "im_tests/app_moving_window.h"
 #include "im_simplification/app_simplification.h"
-#include "im_pbr/app_pbr.h"
+#include "im_ray/app_ray.h"
 #include "im_npr/app_hatching.h"
 #include "im_hdr/app_hdr.h"
-#include "im_anims/app_nano.h"
 #include "im_anims/app_cloth_cpu.h"
 #include "im_anims/app_fluid.h"
 #include "im_shadertoy/app_shadertoy.h"
@@ -30,6 +28,7 @@
 #include "im_mine_sweeper/app_mine_sweeper.h"
 #include "im_model_viewer/app_model_viewer.h"
 #include "im_anims/app_skeletal.h"
+#include "im_anims/app_bvh_parsor.h"
 #include "im_anims/app_cloth_gpu.h"
 #include "im_anims/app_ik.h"
 #include "im_anims/app_particle.h"
@@ -86,6 +85,8 @@ static void pushAppData()
 
 int main()
 {
+	pushAppData<lim::AppBvhParsor>();
+	pushAppData<lim::AppRay>();
 	pushAppData<lim::AppPbdCpu>();
 	pushAppData<lim::AppClothCPU>();
 	pushAppData<lim::AppPbdGpu>();
@@ -101,14 +102,11 @@ int main()
 	pushAppData<lim::AppImGuiTest>();
 	pushAppData<lim::AppICP>();
 	pushAppData<lim::AppGenMesh>();
-	pushAppData<lim::AppFont>();
 	pushAppData<lim::AppAstar>();
 	pushAppData<lim::AppMovingWindow>();
 	pushAppData<lim::AppSimplification>();
-	pushAppData<lim::AppPbr>();
 	pushAppData<lim::AppHatching>();
 	pushAppData<lim::AppHdr>();
-	pushAppData<lim::AppNano>();
 	pushAppData<lim::AppFluid>();
 	pushAppData<lim::AppShaderToy>();
 
