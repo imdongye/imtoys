@@ -16,6 +16,32 @@
 namespace pbd
 {
     struct SoftBody;
+    struct PhyScene;
+
+
+    struct ICollider
+    {
+        float friction = 0.8f;
+        float restitution = 0.8f;
+        virtual float getSdNor( const glm::vec3& p, glm::vec3& outNor ) const = 0;
+    };
+    struct ColliderPlane: public ICollider
+    {
+        glm::vec3 n;
+        float r;
+        ColliderPlane(const glm::vec3& _n = {0,1,0}, float _r = 0.f);
+        virtual float getSdNor( const glm::vec3& p, glm::vec3& outNor ) const override;
+    };
+    struct ColliderSphere: public ICollider
+    {
+        glm::vec3 c;
+        float r;
+        ColliderSphere(const glm::vec3& _c, float _r = 0.5f);
+        virtual float getSdNor( const glm::vec3& p, glm::vec3& outNor ) const override;
+    };
+
+
+
 
     struct ConstraintPoint
     {
@@ -52,49 +78,10 @@ namespace pbd
         void project(SoftBody& body, float alpha);
     };
 
-    struct ConstraintGlobalVolume 
-    {
-        bool enabled = false;
-        float ori_volume;
-        float pressure = 1.f;
-        std::vector<glm::vec3> dPi;
-        ConstraintGlobalVolume(const SoftBody& body, bool _enabled);
-        void project(SoftBody& body, float alpha);
-    };
 
 
 
-
-
-
-    struct ICollider
-    {
-        float friction = 1.f;
-        float restitution = 1.f;
-        virtual float getSdNor( const glm::vec3& p, glm::vec3& outNor ) const = 0;
-    };
-    struct ColliderPlane: public ICollider
-    {
-        glm::vec3 n;
-        float r;
-        ColliderPlane(const glm::vec3& _n = {0,1,0}, float _r = 0.f);
-        virtual float getSdNor( const glm::vec3& p, glm::vec3& outNor ) const override;
-    };
-    struct ColliderSphere: public ICollider
-    {
-        glm::vec3 c;
-        float r;
-        ColliderSphere(const glm::vec3& _c, float _r = 0.5f);
-        virtual float getSdNor( const glm::vec3& p, glm::vec3& outNor ) const override;
-    };
-
-
-
-
-
-
-
-    struct SoftBody: public lim::Mesh 
+    struct SoftBody: public lim::Mesh, public ICollider 
     {
         enum BendType {
             BT_NONE,
@@ -102,28 +89,35 @@ namespace pbd
             BT_DIHEDRAL,
             BT_ISOMETRIC,
         };
-        // lim::Mesh poss => before sub step solver poss (X)
+        std::vector<glm::vec3> prev_x_s;
         std::vector<glm::vec3> x_s; // current poss (X)
         std::vector<glm::vec3> p_s; // new, predicted poss (P)
-        std::vector<glm::vec3>  v_s;
-        std::vector<glm::vec3>  f_s;
-        std::vector<float>      w_s; // inv mass
-        float total_mass, inv_ptcl_mass;
+        std::vector<glm::vec3> v_s;
+        std::vector<float>     w_s; // inv mass
+        std::vector<glm::uvec3>     ptcl_tris;
+        // mached mesh poss idx
+        // maximum 8 vertexs
+        std::vector<glm::ivec4> idx_verts; 
+        std::vector<glm::ivec4> idx_verts2;
+
+        float inv_body_mass, inv_ptcl_mass;
         int nr_ptcls, nr_tris;
-        float friction = 0.95f;
-        float restitution = 0.85f;
+
+        float pressure = 0.f;
+        std::vector<glm::vec3> pressureDVs;
+
+        int nr_steps = 20;
+        float ptcl_radius = 0.02f;
 
         std::vector<ConstraintDistance>      c_stretchs;
         std::vector<ConstraintDistance>      c_shears;
         std::vector<ConstraintDistance>      c_dist_bends;
         std::vector<ConstraintDihedralBend>  c_dih_bends;
         std::vector<ConstraintIsometricBend> c_iso_bends;
-        ConstraintGlobalVolume  c_g_volume;
 
         struct Compliance {
             float stretch, shear, dist_bend;
             float dih_bend, iso_bend;
-            float glo_volume;
             Compliance();
         };
         Compliance compliance;
@@ -133,46 +127,52 @@ namespace pbd
         void addPtcl(const glm::vec3& p, float w, const glm::vec3& v);
 
         // nrShear => [0,2]
-        SoftBody(const lim::Mesh& src, int nrShear = 1, BendType bendType = BT_NONE, float totalMass = 1.f, bool enableG_volume = false );
-        void update(float dt);
+        SoftBody(const lim::Mesh& src, int nrShear = 1, BendType bendType = BT_NONE, float bodyMass = 1.f );
+        void update(float dt, const PhyScene& scene);
+        float getSdNor(const glm::vec3& p, glm::vec3& outNor) const;
+    private:
+        void uploadToBuf();
+        void subStepConstraintProject(float dt);
         float getVolume() const;
-        void applyDeltaP(int idx, float lambda, const glm::vec3& dC);
-    };
-
-    struct SoftBodyGpu : public SoftBody
-    {
-        bool upload_to_buf = false;
-        GLuint buf_xw_s=0, buf_pw_s=0, buf_v_s=0, buf_f_s=0; // vec4
-        GLuint buf_c_stretchs=0, buf_c_shears=0, buf_c_dist_bends=0;
-        GLuint buf_c_dih_bends=0, buf_c_iso_bends=0, buf_c_g_volumes=0;
-        GLuint vao_soft_body=0;
-
-
-        SoftBodyGpu(const lim::Mesh& src, int nrShear = 1, BendType bendType = BT_NONE, float totalMass = 1.f);
-        ~SoftBodyGpu();
+        float getVolumeTimesSix() const;
+        void applyCollision(float dt, const std::vector<ICollider*>& colliders);
+        void applyPressureImpulse(float dt);
     };
 
 
-    struct Simulator 
+    struct PhyScene 
     {
-        int nr_steps = 20;
-        float ptcl_radius = 0.02f;
+        glm::vec3 G = {0.f, -9.8f, 0.f};
         float air_drag = 0.0001f;
-        std::vector<ICollider*> static_colliders;
+        // this is refs
+        std::vector<ICollider*> colliders;
         std::vector<SoftBody*> bodies;
-        ~Simulator();
-        void clearRefs();
         void update( float dt );
     };
-    struct SimulatorGpu
-    {
-        int nr_steps = 20;
-        float ptcl_radius = 0.02f;
-        float air_drag = 0.0001f;
-        SoftBody* body = nullptr;
 
-        void update( float dt );
-    };
+
+    // struct SoftBodyGpu : public SoftBody
+    // {
+    //     bool upload_to_buf = false;
+    //     GLuint buf_xw_s=0, buf_pw_s=0, buf_v_s=0, buf_f_s=0; // vec4
+    //     GLuint buf_c_stretchs=0, buf_c_shears=0, buf_c_dist_bends=0;
+    //     GLuint buf_c_dih_bends=0, buf_c_iso_bends=0, buf_c_g_volumes=0;
+    //     GLuint vao_soft_body=0;
+
+
+    //     SoftBodyGpu(const lim::Mesh& src, int nrShear = 1, BendType bendType = BT_NONE, float totalMass = 1.f);
+    //     ~SoftBodyGpu();
+    // };
+
+    // struct SimulatorGpu
+    // {
+    //     int nr_steps = 20;
+    //     float ptcl_radius = 0.02f;
+    //     float air_drag = 0.0001f;
+    //     SoftBody* body = nullptr;
+
+    //     void update( float dt );
+    // };
 }
 
 #endif

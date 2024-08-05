@@ -13,6 +13,8 @@
 	2. https://modoocode.com/129
 	3. 최소 최대 slice 예외처리
 	4. reserve vector
+	5. subdivision with shared vertex
+	6. make separate vertex, normal with triangles
 */
 
 #include <limbrary/model_view/mesh_maked.h>
@@ -141,7 +143,6 @@ MeshCube::MeshCube(float width, bool genNors, bool genUvs)
 	for (unsigned int i = 0; i < 6; i++)
 	{
 		tris.push_back({ 0+i*4, 1+i*4, 2+i*4 });
-		tris.push_back({ 0+i*4, 1+i*4, 2+i*4 });
 		tris.push_back({ 0+i*4, 2+i*4, 3+i*4 });
 	}
 
@@ -186,7 +187,7 @@ MeshSphere::MeshSphere(float width, int nrSlices, int nrStacks, bool genNors, bo
 			float theta = glim::pi2 * slice / (float)nrSlices;
 			float x = cosPhi * cos(theta);
 			float z = -cosPhi * sin(theta);
-			vec3 nor = {x, y, z};
+			nor = {x, y, z};
 			poss.push_back(nor*radius);
 			if( genNors ) {
 				nors.push_back(nor);

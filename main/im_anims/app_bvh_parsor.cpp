@@ -279,7 +279,7 @@ void AppBvhParsor::canvasUpdate()
 {
 	static int prev_frame = -1;
 	// elapsed_time += delta_time;
-	int frameIdx = elapsed_time / g_motion->frame_dt;
+	int frameIdx = int(elapsed_time / g_motion->frame_dt);
 	frameIdx = frameIdx % g_motion->nr_frames;
 
 	if( frameIdx == prev_frame )
@@ -311,7 +311,10 @@ void AppBvhParsor::canvasImGui()
 	ImGui::End();
 }
 
-void AppBvhParsor::dndCallback(int count, const char **paths)
+void AppBvhParsor::dndCallback(int count, const char** paths)
 {
-
+	delete g_body;
+	delete g_motion;
+	parceBvh(&g_body, &g_motion, paths[count-1]);
+	g_body->scale = 0.5f;
 }

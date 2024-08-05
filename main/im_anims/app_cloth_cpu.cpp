@@ -152,15 +152,15 @@ struct ColAnimator {
 		time_length = keys.back().t;
 	}
 	void animate(const float dt) {
-		const int nrKeys = keys.size();
+		const int nrKeys = (int)keys.size();
 		vec3 newPos{0,0,0};
 		for(int i=0; i<nrKeys; i++) {
 			if( time < keys[i].t ) {
 				KeyPos& k2 = keys[i];
 				KeyPos& k1 = keys[i-1];
-				float dt = k2.t - k1.t;
+				float inter = k2.t - k1.t;
 				float diff = time-k1.t;
-				float factor = diff/dt;
+				float factor = diff/inter;
 				newPos = factor*(k2.pos-k1.pos) + k1.pos;
 				break;
 			}

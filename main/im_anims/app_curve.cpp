@@ -371,7 +371,6 @@ static vec2 evalCubicNaturalQr(int k, float t) {
 	vec2 c = 3.f*(src_pts[k+1] - src_pts[k]) - 2.f*D[k] - D[k+1];
 	vec2 d = 2.f*(src_pts[k] - src_pts[k+1]) +     D[k] + D[k+1];
 	return a + b*t + c*t*t + d*t*t*t;
-	return src_pts[k];
 }
 
 static vec2 evalLinear(int k, float t) {

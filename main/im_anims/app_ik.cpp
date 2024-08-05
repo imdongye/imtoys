@@ -61,7 +61,7 @@ struct Joint {
 		// 힌지가 볼엔소캣이기 때문에 xyz축으로 각각 돌린다.
 		const vector<vec3> axes = {{1,0,0},{0,1,0},{0,0,1}};
 		// const vector<vec3> axes = {{1,0,0},{0,1,0}};
-		const int nr_axes = axes.size();
+		const int nr_axes = (int)axes.size();
 		const int connectionSize = int(connection.size());
 
 		// constraints 	: x(x,y,z)
@@ -183,7 +183,7 @@ void AppIK::canvasImGui() {
 	LimGui::PlotVal("fps", "", ImGui::GetIO().Framerate);
 	ImGui::SliderInt("step size", &step_size, 1, 200);
 	ImGui::SliderFloat("ik speed", &ik_speed, 1.f, 10.f);
-	if(ImGui::SliderInt("nr joints", &nr_joints, 1.f, 10)) {
+	if(ImGui::SliderInt("nr joints", &nr_joints, 1, 10)) {
 		body.setJoints();
 	}
 	if(ImGui::SliderFloat("body length", &body_length, 0.2f, 2.5f)) {

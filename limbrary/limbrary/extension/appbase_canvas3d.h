@@ -59,9 +59,10 @@ namespace lim
         virtual void canvasUpdate() = 0;
         virtual void canvasDraw() const = 0;
         virtual void canvasImGui() = 0;
-
+		#pragma warning( disable : 4100 ) 
         virtual void customDrawShadow( const glm::mat4& mtx_View, const glm::mat4& mtx_Proj ) const {};
         virtual void customDraw( const Camera& cam, const LightDirectional& lit ) const {};
+		#pragma warning( default : 4100 ) 
 
 
         void drawQuad( const glm::vec3& p, const glm::vec3& n, const glm::vec3& color, const glm::vec2& sz={100, 100} ) const;

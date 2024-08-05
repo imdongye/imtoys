@@ -85,9 +85,9 @@ static void pushAppData()
 
 int main()
 {
+	pushAppData<lim::AppPbdCpu>();
 	pushAppData<lim::AppBvhParsor>();
 	pushAppData<lim::AppRay>();
-	pushAppData<lim::AppPbdCpu>();
 	pushAppData<lim::AppClothCPU>();
 	pushAppData<lim::AppPbdGpu>();
 	pushAppData<lim::AppCurve>();

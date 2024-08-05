@@ -69,12 +69,14 @@ namespace lim
 	protected:
 		virtual void update()=0;
 		virtual void updateImGui()=0;
+		#pragma warning( disable : 4100 )
 		virtual void framebufferSizeCallback(int w, int h) {};
 		virtual void keyCallback(int key, int scancode, int action, int mods) {};
 		virtual void cursorPosCallback(double xPos, double yPos) {};
 		virtual void mouseBtnCallback(int button, int action, int mods) {};
 		virtual void scrollCallback(double xOff, double yOff) {};
 		virtual void dndCallback(int count, const char **paths) {};
+		#pragma warning( default : 4100 )
 	};
 }
 

@@ -111,15 +111,15 @@ namespace lim
 	{
 		own_framebuffer->clear_color = color;
 	}
-	const GLuint& Viewport::getWidth() const
+	int Viewport::getWidth() const
 	{
 		return own_framebuffer->width;
 	}
-	const GLuint& Viewport::getHeight() const
+	int Viewport::getHeight() const
 	{
 		return own_framebuffer->height;
 	}
-	const float& Viewport::getAspect() const
+	float Viewport::getAspect() const
 	{
 		return own_framebuffer->aspect;
 	}

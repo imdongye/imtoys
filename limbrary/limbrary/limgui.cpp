@@ -290,7 +290,7 @@ void LimGui::LightDirectionalEditor(lim::LightDirectional& lit) {
 	if(is_draw_shadow_map_view && lit.shadow->Enabled) {
 		Viewport& vp = AssetLib::get().texture_viewer; // todo 
 		vp.getFb().bind();
-		drawTexToQuad(lit.shadow->map.getRenderedTexId(), 2.2, 0.f, 1.f);
+		drawTexToQuad(lit.shadow->map.getRenderedTexId(), 2.2f, 0.f, 1.f);
 		vp.getFb().unbind();
 		vp.drawImGui();
 	}

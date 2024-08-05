@@ -32,3 +32,9 @@ float ColliderSphere::getSdNor( const vec3& p, vec3& outNor ) const
     outNor = diff/dist;
     return dist - r;
 }
+
+float SoftBody::getSdNor( const vec3& p, vec3& outNor ) const
+{
+    // not implimented
+    return 100;
+}

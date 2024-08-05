@@ -55,8 +55,9 @@ namespace glim {
 
 
 	// From: https://stackoverflow.com/questions/1406029/how-to-calculate-the-volume-of-a-3d-mesh-object-the-surface-of-which-is-made-up
-	inline float signedTetrahedronVolume(const glm::vec3& v1, const glm::vec3& v2, const glm::vec3& v3) {
-        return glm::dot(v1, glm::cross(v2, v3))/6.f;
+	inline float signedTetrahedronVolumeTimesSix(const glm::vec3& v1, const glm::vec3& v2, const glm::vec3& v3) {
+        // return glm::dot(v1, glm::cross(v2, v3))/6.f;
+        return glm::dot(v1, glm::cross(v2, v3));
     }
 
 

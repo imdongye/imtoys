@@ -385,12 +385,12 @@ static void convertAnim(Animation& dst, const aiAnimation& src) {
 		}
 	}
 }
-static bool isEndPostfix(std::string name) {
-	if( name.length() < 4 )
-		return false;
-	name = name.substr(name.size()-4, 4);
-	return name=="_end";
-}
+// static bool isEndPostfix(std::string name) {
+// 	if( name.length() < 4 )
+// 		return false;
+// 	name = name.substr(name.size()-4, 4);
+// 	return name=="_end";
+// }
 static void addBoneNode(int idxParent, const mat4 mtxParent, const aiNode* src) {
 	g_animator->nr_bone_nodes++;
 	g_animator->skeleton.emplace_back();

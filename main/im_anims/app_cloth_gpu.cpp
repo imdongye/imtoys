@@ -101,7 +101,7 @@ static void makeClothDataAndInitGL() {
 	ctf.update();
 
 	MeshPlane plane(2, nr_p.x-1, nr_p.y-1, false, false);
-	nr_ptcls = plane.poss.size();
+	nr_ptcls = (int)plane.poss.size();
 	cloth_pm_data.resize(nr_ptcls);
 	for(int i=0; i<nr_ptcls; i++) {
 		vec3 wPos = vec3(ctf.mtx*vec4(plane.poss[i],1));
@@ -162,7 +162,7 @@ static void makeClothDataAndInitGL() {
 	}
 
 	// init element buf
-	nr_tris = plane.tris.size();
+	nr_tris = (int)plane.tris.size();
 	glGenBuffers(1, &buf_indices);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buf_indices);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uvec3)*nr_tris, plane.tris.data(), GL_STATIC_DRAW);
@@ -298,7 +298,7 @@ void AppClothGPU::update()
 	prog_skin.use();
 	viewport.camera.setUniformTo(prog_skin);
 	model.animator.setUniformTo(prog_skin);
-	model.root.treversalEnabled([&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
+	model.root.treversalEnabled([&](const Mesh* ms, const Material*, const glm::mat4& transform) {
 		prog_skin.setUniform("mtx_Model", transform);
 		ms->bindAndDrawGL();
 	});
@@ -370,7 +370,7 @@ void AppClothGPU::updateImGui()
 	
 	if(ImGui::IsMouseClicked(ImGuiMouseButton_Right, false))
 	{
-		const int nrPms = cloth_pm_data.size();
+		const int nrPms = (int)cloth_pm_data.size();
 		const vec3 mouseRay = viewport.getMousePosRayDir();
 		const vec3 cameraPos = viewport.camera.pos;
 		float minDepth = FLT_MAX;

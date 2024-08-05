@@ -45,8 +45,8 @@ namespace lim
 	{
 	public:
 		GLuint fbo = 0;
-		GLuint width = 0;
-		GLuint height = 0;
+		int width = 0;
+		int height = 0;
 		float aspect = 1.f;
 		glm::vec4 clear_color = {0.05f, 0.09f, 0.11f, 1.0f};
 		bool blendable = false;

@@ -77,9 +77,9 @@ namespace lim
 		void resize(GLuint _width, GLuint _height);
 		const IFramebuffer& getFb();
 		void setClearColor(glm::vec4 color);
-		const GLuint& getWidth() const;
-		const GLuint& getHeight() const;
-		const float& getAspect() const;
+		int getWidth() const;
+		int getHeight() const;
+		float getAspect() const;
 	};
 }
 

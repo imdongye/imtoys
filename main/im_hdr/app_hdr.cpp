@@ -85,7 +85,7 @@ namespace lim
 	{
 		//ImGui::DockSpaceOverViewport();
 
-		for( int i = viewports.size()-1; i>=0; i-- ) {
+		for( int i = (int)viewports.size()-1; i>=0; i-- ) {
 			viewports[i]->drawImGui();
 		}
 

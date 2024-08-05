@@ -69,7 +69,7 @@ namespace lim
 	inline int findIdx(const std::vector<T>& v, const T& value) {
 		auto it = find(v.begin(), v.end(), value);
 		if (it != v.end()) {
-			return std::distance(v.begin(), it);
+			return (int)std::distance(v.begin(), it);
 		}
 		return -1;
 	}
