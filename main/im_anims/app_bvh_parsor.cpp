@@ -115,76 +115,6 @@ struct Body {
 
 
 
-static void parceJoint(int parentId, bool isEnd, Body& body, ifstream& input)
-{
-	string token;
-	body.joints.push_back({});
-	int curId = body.nr_joints++;
-	Joint& joint = body.joints.back();
-	joint.parent_id = parentId;
-
-	if( isEnd == false ) {
-		input >> joint.name; // name
-		input >> token; // {
-	}
-	else {
-		input >> token; // Site
-		input >> token; // name or empty
-		if (token == "{") {
-			joint.name = body.joints[parentId].name + "_end";
-		}
-		else {
-			joint.name = token;
-			input >> token; // {
-		}
-	}
-
-	int jntLev = body.getJointLevel(parentId);
-	for( int i = 0; i < jntLev; i++ )
-		log::pure("\t");
-	log::pure("%s\n", joint.name.c_str());
-
-
-	input >> token; // offset  
-	if( token == "OFFSET" ) {
-		input >> joint.link.x;
-		input >> joint.link.y;
-		input >> joint.link.z;
-	}
-
-	if( isEnd ) {
-		input >> token; // }
-		return;
-	}
-
-	input >> token; // channels  
-	if( token == "CHANNELS" ) {
-		input >> joint.nr_channels;
-		for(int i = 0; i < joint.nr_channels; i++) {
-			input >> token; // rotation // Z X Y
-			if     (token == "Zrotation") joint.channers.push_back(Joint::CHANNEL::Z_ROT);
-			else if(token == "Xrotation") joint.channers.push_back(Joint::CHANNEL::X_ROT);
-			else if(token == "Yrotation") joint.channers.push_back(Joint::CHANNEL::Y_ROT);
-			else if(token == "Xposition") joint.channers.push_back(Joint::CHANNEL::X_POS);
-			else if(token == "Yposition") joint.channers.push_back(Joint::CHANNEL::Y_POS);
-			else if(token == "Zposition") joint.channers.push_back(Joint::CHANNEL::Z_POS);
-		}
-	}
-
-
-	// not ensure joint is available
-	// because vector data maybe moved
-	do {
-		input >> token;
-		if( token == "JOINT" ) {
-			parceJoint(curId, false, body, input);
-		}
-		else if( token == "End" ) {
-			parceJoint(curId, true, body, input);
-		}
-	} while (token != "}");
-}
-
 
 static void parceBvh(Body** ppBody, Motion** ppMotion, const char* path) {
 	string token;
@@ -204,7 +134,77 @@ static void parceBvh(Body** ppBody, Motion** ppMotion, const char* path) {
 	// parsing bone hierarchy ==============
 	input >> token; // HIERARCHY
 	input >> token; // ROOT
-	parceJoint(-1, false, body, input);
+	function<void(int, bool)> parceJoint;
+	parceJoint = [&parceJoint, &body, &input](int parentId, bool isEnd)
+	{
+		string token;
+		body.joints.push_back({});
+		int curId = body.nr_joints++;
+		Joint& joint = body.joints.back();
+		joint.parent_id = parentId;
+
+		if( isEnd == false ) {
+			input >> joint.name; // name
+			input >> token; // {
+		}
+		else {
+			input >> token; // Site
+			input >> token; // name or empty
+			if (token == "{") {
+				joint.name = body.joints[parentId].name + "_end";
+			}
+			else {
+				joint.name = token;
+				input >> token; // {
+			}
+		}
+
+		int jntLev = body.getJointLevel(parentId);
+		for( int i = 0; i < jntLev; i++ )
+			log::pure("\t");
+		log::pure("%s\n", joint.name.c_str());
+
+
+		input >> token; // offset  
+		if( token == "OFFSET" ) {
+			input >> joint.link.x;
+			input >> joint.link.y;
+			input >> joint.link.z;
+		}
+
+		if( isEnd ) {
+			input >> token; // }
+			return;
+		}
+
+		input >> token; // channels  
+		if( token == "CHANNELS" ) {
+			input >> joint.nr_channels;
+			for(int i = 0; i < joint.nr_channels; i++) {
+				input >> token; // rotation // Z X Y
+				if     (token == "Zrotation") joint.channers.push_back(Joint::CHANNEL::Z_ROT);
+				else if(token == "Xrotation") joint.channers.push_back(Joint::CHANNEL::X_ROT);
+				else if(token == "Yrotation") joint.channers.push_back(Joint::CHANNEL::Y_ROT);
+				else if(token == "Xposition") joint.channers.push_back(Joint::CHANNEL::X_POS);
+				else if(token == "Yposition") joint.channers.push_back(Joint::CHANNEL::Y_POS);
+				else if(token == "Zposition") joint.channers.push_back(Joint::CHANNEL::Z_POS);
+			}
+		}
+
+
+		// not ensure joint is available
+		// because vector data maybe moved
+		do {
+			input >> token;
+			if( token == "JOINT" ) {
+				parceJoint(curId, false);
+			}
+			else if( token == "End" ) {
+				parceJoint(curId, true);
+			}
+		} while (token != "}");
+	};
+	parceJoint(-1, false);
 	// end parsing bone hierarchy ==============
 
 
