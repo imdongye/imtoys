@@ -127,7 +127,9 @@ SoftBody::SoftBody(const lim::Mesh& src, int nrShear, BendType bendType, float b
         return a.idx_ps.x < b.idx_ps.x || (a.idx_ps.x==b.idx_ps.x && a.idx_ps.y < b.idx_ps.y);
     });
 
-    for( int i=0; i<nr_tris*3; i++ ) {
+    // cube일땐 -1 안하면 중복 stretch생김
+    // cube일때 짧아지는 문제
+    for( int i=0; i<nr_tris*3-1; i++ ) {
         const Edge& edge1 = aEdges[i];
         bool isShear = false;
         for( uint j=i+1; j<nr_tris*3; j++ )

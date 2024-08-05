@@ -78,18 +78,18 @@ static void resetApp() {
 	// }
 
 	// cube
-	{
-		float mass = 1.f;
-		MeshCubeShared ms(0.5f);
-		// mat4 tf = translate(vec3(0,2,0)) * glim::rotateX(glim::pi90*0.1f)* glim::rotateY(glim::pi90*0.2f);
-		// mat4 tf = translate(vec3(0,0,0));
-		mat4 tf = translate(vec3(0,2,0));
-		for( vec3& p : ms.poss ) {
-			p = vec3(tf*vec4(p,1));
-		}
-		cur_body = new pbd::SoftBody(ms, nr_shear, bend_type, mass);
-		cur_body->w_s[0] = 0.f;
-	}
+	// {
+	// 	float mass = 1.f;
+	// 	MeshCubeShared ms(0.5f);
+	// 	// mat4 tf = translate(vec3(0,2,0)) * glim::rotateX(glim::pi90*0.1f)* glim::rotateY(glim::pi90*0.2f);
+	// 	mat4 tf = translate(vec3(0,0,0));
+	// 	// mat4 tf = translate(vec3(0,2,0));
+	// 	for( vec3& p : ms.poss ) {
+	// 		p = vec3(tf*vec4(p,1));
+	// 	}
+	// 	cur_body = new pbd::SoftBody(ms, nr_shear, bend_type, mass);
+	// 	cur_body->w_s[0] = 0.f;
+	// }
 	// {
 	// 	float mass = 1.f;
 	// 	MeshCube ms(0.5f);
@@ -121,21 +121,21 @@ static void resetApp() {
 
 
 	// cloth plane
-	// {
-	// 	// auto bendType = pbd::SoftBody::BendType::Dihedral;
-	// 	MeshPlane ms(cloth_width, nr_cloth_width, nr_cloth_width, false, false);
-	// 	// mat4 tf = translate(vec3(0,2,0));
-	// 	// mat4 tf = translate(vec3(0,2,0)) * glim::rotateX(glim::pi90*0.1f)* glim::rotateY(glim::pi90*0.2f);
-	// 	mat4 tf = translate(vec3(0,2,0)) * glim::rotateZ(-glim::pi45*0.05f);
-	// 	for( vec3& p : ms.poss ) {
-	// 		p = vec3(tf*vec4(p,1));
-	// 	}
-	// 	cur_body = new pbd::SoftBody(ms, nr_shear, bend_type, body_mass, false);
-	// 	if( fix_start ) {
-	// 		cur_body->w_s[0] = 0.f;
-	// 		cur_body->w_s[nr_cloth_width] = 0.f;
-	// 	}
-	// }
+	{
+		// auto bendType = pbd::SoftBody::BendType::Dihedral;
+		MeshPlane ms(cloth_width, nr_cloth_width, nr_cloth_width, false, false);
+		// mat4 tf = translate(vec3(0,2,0));
+		// mat4 tf = translate(vec3(0,2,0)) * glim::rotateX(glim::pi90*0.1f)* glim::rotateY(glim::pi90*0.2f);
+		mat4 tf = translate(vec3(0,2,0)) * glim::rotateZ(-glim::pi45*0.05f);
+		for( vec3& p : ms.poss ) {
+			p = vec3(tf*vec4(p,1));
+		}
+		cur_body = new pbd::SoftBody(ms, nr_shear, bend_type, body_mass);
+		if( fix_start ) {
+			cur_body->w_s[0] = 0.f;
+			cur_body->w_s[nr_cloth_width] = 0.f;
+		}
+	}
 
 	// cloth
 	// {

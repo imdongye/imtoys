@@ -13,35 +13,38 @@ using std::vector;
 
 
 
-void SoftBody::applyCollision(float dt, const vector<ICollider*>& colliders)
+void SoftBody::subStepConstraintProject(float dt)
 {
-    for( int i=0; i<nr_ptcls; i++ )
-    {
-        float w = w_s[i];
-        if( w == 0.f )
-            continue;
-        vec3 x = prev_x_s[i];
-        vec3 p = p_s[i];
-        vec3 v = v_s[i];
-        v = (p - x) / dt;
+    float sqdt = dt*dt;
+    float alpha;
 
-        vec3 sNor, vNor, vTan;
-        for( auto pC : colliders ) {
-            float inter_dist = -pC->getSdNor( p, sNor )+ptcl_radius;
-            if( inter_dist < 0 )
-                continue;
-            p += inter_dist*sNor;
-            vNor = dot( sNor, v ) * sNor;
-            vTan = v - vNor;
-            v = (pC->friction * friction * vTan) - (pC->restitution * restitution * vNor);
-        }
+    // Todo: tet volume
 
-        p_s[i] = p;
-        x_s[i] = x;
-        prev_x_s[i] = x;
-        v_s[i] = v;
+    alpha = compliance.dih_bend/sqdt;
+    for( auto& c : c_dih_bends ) {
+        c.project( *this, alpha );
+    }
+    alpha = compliance.iso_bend/sqdt;
+    for( auto& c : c_iso_bends ) {
+        c.project( *this, alpha );
+    }
+    
+    // Todo: skinning
+
+    alpha = compliance.dist_bend/sqdt;
+    for( auto& c : c_dist_bends ) {
+        c.project( *this, alpha );
+    }
+    alpha = compliance.stretch/sqdt;
+    for( auto& c : c_shears ) {
+        c.project( *this, alpha );
+    }
+    alpha = compliance.stretch/sqdt;
+    for( auto& c : c_stretchs ) {
+        c.project( *this, alpha );
     }
 }
+
 
 // From: https://namu.wiki/w/%EC%95%95%EB%A0%A5
 void SoftBody::applyPressureImpulse(float dt)
@@ -79,37 +82,32 @@ void SoftBody::applyPressureImpulse(float dt)
 }
 
 
-void SoftBody::subStepConstraintProject(float dt)
+void SoftBody::applyCollision(float dt, const vector<ICollider*>& colliders)
 {
-    float sqdt = dt*dt;
-    float alpha;
+    for( int i=0; i<nr_ptcls; i++ )
+    {
+        if( w_s[i] == 0.f )
+            continue;
+        vec3 p = p_s[i];
+        vec3 v = (p - prev_x_s[i]) / dt;
 
-    // Todo: tet volume
+        vec3 sNor, vNor, vTan;
+        for( auto pC : colliders ) {
+            float inter_dist = -pC->getSdNor( p, sNor )+ptcl_radius;
+            if( inter_dist < 0 )
+                continue;
+            p += inter_dist*sNor;
+            vNor = dot( sNor, v ) * sNor;
+            vTan = v - vNor;
+            v = (pC->friction * friction * vTan) - (pC->restitution * restitution * vNor);
+        }
 
-    alpha = compliance.dih_bend/sqdt;
-    for( auto& c : c_dih_bends ) {
-        c.project( *this, alpha );
-    }
-    alpha = compliance.iso_bend/sqdt;
-    for( auto& c : c_iso_bends ) {
-        c.project( *this, alpha );
-    }
-    
-    // Todo: skinning
-
-    alpha = compliance.dist_bend/sqdt;
-    for( auto& c : c_dist_bends ) {
-        c.project( *this, alpha );
-    }
-    alpha = compliance.stretch/sqdt;
-    for( auto& c : c_shears ) {
-        c.project( *this, alpha );
-    }
-    alpha = compliance.stretch/sqdt;
-    for( auto& c : c_stretchs ) {
-        c.project( *this, alpha );
+        prev_x_s[i] = p;
+        p_s[i] = p;
+        v_s[i] = v;
     }
 }
+
 
 void SoftBody::update(float dt, const PhyScene& scene)
 {
@@ -141,12 +139,12 @@ void SoftBody::update(float dt, const PhyScene& scene)
     }
 
 
-    // applyCollision(dt, scene.colliders);
+    applyCollision(dt, scene.colliders);
 
 
-    if( pressure>0.f ) {
-        applyPressureImpulse(dt);
-    }
+    // if( pressure>0.f ) {
+    //     applyPressureImpulse(dt);
+    // }
 
 
     if( upload_to_buf ) {
