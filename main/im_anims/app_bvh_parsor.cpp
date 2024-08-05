@@ -1,5 +1,8 @@
 /*
+	2024-08-05 / im dongye
 	Todo: 
+	1. joint hierarchy view
+	2. interplate keys;
 */
 
 #include "app_bvh_parsor.h"
@@ -30,6 +33,7 @@ struct Joint {
 		X_ROT, Y_ROT, Z_ROT,
 	};
 	int parent_id = -1;
+	int id = -1;
 	string name = "";
 	vec3 link, position;
 	quat q, orientation;
@@ -52,7 +56,7 @@ struct Joint {
 		}
 	}
 
-	void update(const vec3& parentP, const quat& parentQ, float scale = 1) {
+	void update(const vec3& parentP, const quat& parentQ, float scale) {
 		quat l = quat(0, scale*link);
 		quat p = parentQ * l * inverse(parentQ);
 		position = parentP + vec3(p.x, p.y, p.z);
@@ -64,9 +68,9 @@ struct Joint {
 
 
 struct Body {
-	int nr_joints;
+	int nr_joints = 0;
 	vector<Joint> joints;
-	vec3 position;
+	vec3 position = {0,0,0};
 	float scale = 1.f;
 
 	void draw(const AppBvhParsor& app) {
@@ -82,7 +86,7 @@ struct Body {
 
 
 	void updateJointsGlobal() {
-		joints[0].update(position, quat(1, 0, 0, 0));
+		joints[0].update(position, quat(1, 0, 0, 0), scale);
 		for (int i = 1; i < joints.size(); i++) {
 			Joint& j = joints[i];
 			const Joint& p = joints[j.parent_id];
@@ -108,10 +112,14 @@ struct Body {
 
 
 
+
+
+
 static void parceJoint(int parentId, bool isEnd, Body& body, ifstream& input)
 {
 	string token;
 	body.joints.push_back({});
+	int curId = body.nr_joints++;
 	Joint& joint = body.joints.back();
 	joint.parent_id = parentId;
 
@@ -163,15 +171,20 @@ static void parceJoint(int parentId, bool isEnd, Body& body, ifstream& input)
 		}
 	}
 
-	int curId = body.nr_joints++;
+
+	// not ensure joint is available
+	// because vector data maybe moved
 	do {
 		input >> token;
-		if( token == "JOINT" )
+		if( token == "JOINT" ) {
 			parceJoint(curId, false, body, input);
-		else if( token == "End" )
+		}
+		else if( token == "End" ) {
 			parceJoint(curId, true, body, input);
+		}
 	} while (token != "}");
 }
+
 
 static void parceBvh(Body** ppBody, Motion** ppMotion, const char* path) {
 	string token;
@@ -192,6 +205,8 @@ static void parceBvh(Body** ppBody, Motion** ppMotion, const char* path) {
 	input >> token; // HIERARCHY
 	input >> token; // ROOT
 	parceJoint(-1, false, body, input);
+	// end parsing bone hierarchy ==============
+
 
 
 
@@ -218,14 +233,16 @@ static void parceBvh(Body** ppBody, Motion** ppMotion, const char* path) {
 		for(int j = 0; j < body.nr_joints; j++)
 		{
 			Joint& joint = body.joints[j];
-			vector<float>& key = frame[j];
-			key.resize(joint.nr_channels);
+			vector<float>& keys = frame[j];
+			keys.resize(joint.nr_channels);
 			for(int k = 0; k < joint.nr_channels; k++)
 			{
-				input >> key[k];
+				input >> keys[k];
 			}
 		}
 	}
+	// end parsing motion ========================
+
 
 
 	int nrConstraints = 0;
@@ -250,6 +267,39 @@ static void parceBvh(Body** ppBody, Motion** ppMotion, const char* path) {
 	}
 
 	input.close();
+
+
+
+	// auto scale and position =====================
+	assert( motion.nr_frames>0 );
+	body.setPose(motion.frames[0]);
+	vec3 minPos, maxPos, boundary;
+	minPos = glim::maximum_vec3;
+	maxPos = glim::minimum_vec3;
+	for( const Joint& j : body.joints ) {
+		minPos = glm::min(j.position, minPos);
+		maxPos = glm::max(j.position, maxPos);
+	}
+	boundary = maxPos - minPos;
+	float height = 1.f;
+	float curHeight = boundary.y;
+	body.scale = height/curHeight;
+
+
+	minPos = glim::maximum_vec3;
+	maxPos = glim::minimum_vec3;
+	for( const auto& frame: motion.frames ) {
+		const auto& rootKeys = frame[0];
+		body.joints[0].poseByKeys(rootKeys);
+		minPos = glm::min(body.joints[0].link, minPos);
+		maxPos = glm::max(body.joints[0].link, maxPos);
+	}
+	boundary = maxPos - minPos;
+	body.position = -(minPos + boundary * 0.5f)*body.scale;
+	body.position.y = 0;
+
+	body.setPose(motion.frames[0]);
+	// auto scale and position =====================
 }
 
 
@@ -262,13 +312,17 @@ namespace {
 	Body* g_body;
 	Motion* g_motion;
 	float elapsed_time = 0.f;
+	bool is_paused = false;
 }
 
 AppBvhParsor::AppBvhParsor()
 	: AppBaseCanvas3d(1200, 780, APP_NAME, true) 
 {
+	vp.camera.pos.z += 1.f;
+	vp.camera.pos.y = 2.f;
+	vp.camera.pivot.y -= 0.5f;
+	vp.camera.updateViewMat();
 	parceBvh(&g_body, &g_motion, "assets/bvhs/smoothWalk.bvh");
-	g_body->scale = 0.5f;
 }
 AppBvhParsor::~AppBvhParsor()
 {
@@ -277,6 +331,9 @@ AppBvhParsor::~AppBvhParsor()
 }
 void AppBvhParsor::canvasUpdate()
 {
+	if( !is_paused ) {
+		elapsed_time += delta_time;
+	}
 	static int prev_frame = -1;
 	// elapsed_time += delta_time;
 	int frameIdx = int(elapsed_time / g_motion->frame_dt);
@@ -292,7 +349,7 @@ void AppBvhParsor::canvasDraw() const
 	g_body->draw(*this);
 
 	// axis object 10cm
-	constexpr vec3 ori{1,0,0};
+	constexpr vec3 ori{0,0,0};
 	drawCylinder(ori, ori+vec3{0.1f,0,0}, {1,0,0});
 	drawCylinder(ori, ori+vec3{0,0.1f,0}, {0,1,0});
 	drawCylinder(ori, ori+vec3{0,0,0.1f}, {0,0,1});
@@ -305,9 +362,14 @@ void AppBvhParsor::canvasImGui()
 	log::drawViewer("logger##ik");
 
 	ImGui::Begin("test window##ik");
-	if( ImGui::Button("next") ) {
-		elapsed_time += g_motion->frame_dt;
+	ImGui::Checkbox("pause", &is_paused);
+	if( is_paused ) {
+		if( ImGui::Button("next") ) {
+			elapsed_time += g_motion->frame_dt;
+		}
 	}
+
+	
 	ImGui::End();
 }
 
@@ -316,5 +378,5 @@ void AppBvhParsor::dndCallback(int count, const char** paths)
 	delete g_body;
 	delete g_motion;
 	parceBvh(&g_body, &g_motion, paths[count-1]);
-	g_body->scale = 0.5f;
+	elapsed_time = 0.f;
 }

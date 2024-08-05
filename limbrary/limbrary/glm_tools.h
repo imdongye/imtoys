@@ -16,6 +16,9 @@ namespace glim {
 	constexpr float pi 	 = 3.14159265359f; // float
 	constexpr float pi2  = 6.28318530718f; // double
 	constexpr float feps = std::numeric_limits<float>::epsilon();
+	constexpr glm::vec3 maximum_vec3 = glm::vec3(std::numeric_limits<float>::max());
+	constexpr glm::vec3 minimum_vec3 = glm::vec3(std::numeric_limits<float>::min());
+
 
 
 

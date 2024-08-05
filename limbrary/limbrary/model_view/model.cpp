@@ -18,7 +18,7 @@
 
 #include <limbrary/model_view/model.h>
 #include <limbrary/log.h>
-#include <glm/gtx/transform.hpp>
+#include <limbrary/glm_tools.h>
 #include <assimp/material.h>
 #include <limbrary/asset_lib.h>
 #include <limbrary/utils.h>
@@ -185,8 +185,8 @@ void Model::updateNrAndBoundary()
 {
 	total_verts = 0;
 	total_tris = 0;
-	boundary_max = glm::vec3(std::numeric_limits<float>::min());
-	boundary_min = glm::vec3(std::numeric_limits<float>::max());
+	boundary_max = glim::minimum_vec3;
+	boundary_min = glim::maximum_vec3;
 	boundary_size = glm::vec3(0);
 
 	root.treversal([&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
