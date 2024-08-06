@@ -103,10 +103,38 @@ void SoftBody::applyCollision(float dt, const vector<ICollider*>& colliders)
         }
 
         prev_x_s[i] = p;
+        x_s[i] = p;
         p_s[i] = p;
         v_s[i] = v;
     }
 }
+
+void SoftBody::applyCollisionInterSubstep(const vector<ICollider*>& colliders)
+{
+    for( int i=0; i<nr_ptcls; i++ )
+    {
+        if( w_s[i] == 0.f )
+            continue;
+        vec3 p = p_s[i];
+        vec3 v = v_s[i];
+
+        vec3 sNor, vNor, vTan;
+        for( auto pC : colliders ) {
+            float inter_dist = -pC->getSdNor( p, sNor )+ptcl_radius;
+            if( inter_dist < 0 )
+                continue;
+            p += inter_dist*sNor;
+            vNor = dot( sNor, v ) * sNor;
+            vTan = v - vNor;
+            v = (pC->friction * friction * vTan) - (pC->restitution * restitution * vNor);
+        }
+
+        x_s[i] = p;
+        p_s[i] = p;
+        v_s[i] = v;
+    }
+}
+
 
 
 void SoftBody::update(float dt, const PhyScene& scene)
@@ -118,7 +146,9 @@ void SoftBody::update(float dt, const PhyScene& scene)
         // add external force
         for( int i=0; i<nr_ptcls; i++ )
         {
-            if( w_s[i] == 0.f ) {
+            float pw = w_s[i];
+            if( pw == 0.f ) {
+                v_s[i] = vec3(0);
                 continue;
             }
             vec3 acc = scene.G;
@@ -134,10 +164,12 @@ void SoftBody::update(float dt, const PhyScene& scene)
             v_s[i] = (p_s[i] - x_s[i])/subDt;
             x_s[i] = p_s[i];
         }
+
+        applyCollisionInterSubstep( scene.colliders );
     }
 
 
-    applyCollision(dt, scene.colliders);
+    // applyCollision(dt, scene.colliders);
 
 
     // if( pressure>0.f ) {

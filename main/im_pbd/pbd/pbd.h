@@ -2,7 +2,7 @@
     2024-07-17 / imdongye
 
     From: https://matthias-research.github.io/pages/publications/posBasedDyn.pdf
-
+    Ref : JoltPhysics
 */
 
 #ifndef __app_pbd_h_
@@ -136,6 +136,7 @@ namespace pbd
         float getVolume() const;
         float getVolumeTimesSix() const;
         void applyCollision(float dt, const std::vector<ICollider*>& colliders);
+        void applyCollisionInterSubstep(const std::vector<ICollider*>& colliders);
         void applyPressureImpulse(float dt);
     };
 

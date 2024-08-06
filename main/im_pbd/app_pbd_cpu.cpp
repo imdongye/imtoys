@@ -281,13 +281,10 @@ namespace {
 		bool beforeFixed = false;
 		pbd::SoftBody* body;
 		int ptcl_idx;
-		vec3& x(){
+		vec3& pos(){
 			return body->x_s[ptcl_idx];
 		}
-		vec3& p(){
-			return body->p_s[ptcl_idx];
-		}
-		vec3& v() {
+		vec3& vel() {
 			return body->v_s[ptcl_idx];
 		}
 		float& w() {
@@ -416,16 +413,14 @@ void AppPbdCpu::canvasImGui()
 		updatePicking(mouseRay, vp.camera.pos);
 		if( picked_info.picked ) {
 			picked_info.w() = 0.f;
-			picked_info.v() = vec3(0.f);
+			picked_info.vel() = vec3(0.f);
 		}
 	}
 	if(picked_info.picked && ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
-		const vec3 toObj = picked_info.p() - vp.camera.pos;
+		const vec3 toObj = picked_info.pos() - vp.camera.pos;
 		const vec3 mouseRay = vp.getMousePosRayDir();
 		const float depth = dot(vp.camera.front, toObj)/dot(vp.camera.front, mouseRay);
-		const vec3 targetP = depth*mouseRay+vp.camera.pos;
-		picked_info.p() = targetP;
-		picked_info.x() = targetP;
+		picked_info.pos() = depth*mouseRay+vp.camera.pos;
 	}
 	if(ImGui::IsMouseReleased(ImGuiMouseButton_Right)) {
 		picked_info.picked = false;
