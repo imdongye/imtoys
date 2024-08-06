@@ -116,7 +116,8 @@ SoftBody::SoftBody(const lim::Mesh& src, int nrShear, BendType bendType, float b
     };
     vector<Edge> aEdges; // aside edges
 
-    aEdges.reserve( nr_tris * 3 );
+    int nrDupEdges = nr_tris*3;
+    aEdges.reserve( nrDupEdges );
     for( int i=0; i<nr_tris; i++ ) {
         const uvec3& tri = ptcl_tris[i];
         aEdges.push_back( {makeEdgeIdx(tri.x, tri.y), tri.z, i} );
@@ -127,18 +128,20 @@ SoftBody::SoftBody(const lim::Mesh& src, int nrShear, BendType bendType, float b
         return a.idx_ps.x < b.idx_ps.x || (a.idx_ps.x==b.idx_ps.x && a.idx_ps.y < b.idx_ps.y);
     });
 
-    // cube일땐 -1 안하면 중복 stretch생김
-    // cube일때 짧아지는 문제
-    for( int i=0; i<nr_tris*3-1; i++ ) {
+
+    for( int i=0; i<nrDupEdges; i++ ) {
         const Edge& edge1 = aEdges[i];
         bool isShear = false;
-        for( uint j=i+1; j<nr_tris*3; j++ )
+        
+        for( int j=i+1; j<nrDupEdges; j++ )
         {
             const Edge& edge2 = aEdges[j];
 
             if( edge1.idx_ps!=edge2.idx_ps ) {
                 i = j-1;
                 break;
+            } else if( j==nrDupEdges-1 ) {
+                i = nrDupEdges;
             }
             uvec4 idxPs = {edge1.idx_ps, edge1.idx_opp, edge2.idx_opp};
             vec3 e0 = p_s[idxPs.x] - p_s[idxPs.y];
@@ -186,6 +189,8 @@ SoftBody::SoftBody(const lim::Mesh& src, int nrShear, BendType bendType, float b
                 break;
             }
         }
+
+
         if( !isShear ) {
             c_stretchs.push_back( {*this, edge1.idx_ps} );
         }

@@ -118,9 +118,7 @@ void SoftBody::update(float dt, const PhyScene& scene)
         // add external force
         for( int i=0; i<nr_ptcls; i++ )
         {
-            float pw = w_s[i];
-            if( pw == 0.f ) {
-                v_s[i] = vec3(0);
+            if( w_s[i] == 0.f ) {
                 continue;
             }
             vec3 acc = scene.G;
