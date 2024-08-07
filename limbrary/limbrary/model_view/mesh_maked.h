@@ -5,8 +5,19 @@ for generate mesh of general shape
 
 uv : upper left
 st : down left
-todo :
-2. https://modoocode.com/129
+
+Note:
+	texture wrap repeat가정
+
+	todo :
+	2. 코드 최적화관련 https://modoocode.com/129
+	3. 최소 최대 slice 예외처리
+	4. 스피어 덮을 텍스쳐 개수 1개, 2개 선택
+	5. 생성자오버로딩으로 radius, inner radius 등으로 생성가능하게
+	6
+	finished "reserve memory" and "dirrent topology by genUv" list :
+	* Quad, Plane, Cloth Cube, Sphere, EnvSphere
+	* other is todo
 
 */
 
@@ -17,24 +28,19 @@ todo :
 
 namespace lim
 {
-	struct MeshQuad : public Mesh { MeshQuad(float width = 1.f, bool genNors = true, bool genUvs = true); };
-	struct MeshPlane : public Mesh { MeshPlane(float width = 1.f, int nrCols = 5, int nrRows = 5, bool genNors = true, bool genUvs = true); };
+	struct MeshQuad : public Mesh { MeshQuad(float width = 1.f, float height = 1.f, bool genNors = true, bool genUvs = true); };
+	struct MeshPlane : public Mesh { MeshPlane(float width = 1.f, float height = 1.f, int nrCols = 5, int nrRows = 5, bool genNors = true, bool genUvs = true); };
+	struct MeshCloth : public Mesh { MeshCloth(float width = 1.f, float height = 1.f, int nrCols = 5, int nrRows = 5, bool genNors = true, bool genUvs = true); };
 	struct MeshCube : public Mesh { MeshCube(float width = 1.f, bool genNors = true, bool genUvs = true); };
 	struct MeshSphere : public Mesh { MeshSphere(float width = 1.f, int nrSlices = 50, int nrStacks = 25, bool genNors = true, bool genUvs = true); };
-	// inv triangles
-	struct MeshEnvSphere : public Mesh { MeshEnvSphere(float width = 20.f, int nrSlices = 50, int nrStacks = 25); };
+	struct MeshEnvSphere : public Mesh { MeshEnvSphere(float width = 20.f, int nrSlices = 50, int nrStacks = 25); }; // inv triangles
 	struct MeshIcoSphere : public Mesh { MeshIcoSphere(float width = 1.f, int subdivision = 0, bool genNors = true, bool genUvs = true); };
+	
 	struct MeshCubeSphere : public Mesh { MeshCubeSphere(float width = 1.f, int nrSlices = 1, bool genNors = true, bool genUvs = true); };
 	struct MeshCubeSphere2 : public Mesh { MeshCubeSphere2(float width = 1.f, int nrSlices = 1, bool genNors = true, bool genUvs = true); };
-	struct MeshCylinder : public Mesh { MeshCylinder(float width = 1.f, float height = 1.f, int nrSlices = 50, bool genNors = true, bool genUvs = true); };
-	struct MeshCapsule : public Mesh { MeshCapsule(float width = 1.f, float height = 2.f,  int nrSlices = 50, int nrStacks = 25, bool genNors = true, bool genUvs = true); };
+	struct MeshCylinder : public Mesh { MeshCylinder(float width = 1.f, float height = 1.f, int nrSlices = 50, bool genNors = true, bool genUvs = true); }; // vertical
+	struct MeshCapsule : public Mesh { MeshCapsule(float width = 1.f, float height = 2.f,  int nrSlices = 50, int nrStacks = 25, bool genNors = true, bool genUvs = true); }; // vertical
 	struct MeshDonut : public Mesh { MeshDonut(float width = 1.f, float height = 0.2f, int nrSlices = 50, int nrRingVerts = 10, bool genNors = true, bool genUvs = true); };
-	
-	// no seam, shared all verts for set PBD
-	struct MeshCubeShared : public Mesh { MeshCubeShared(float width = 1.f, bool withInitGL=true); };
-	struct MeshCloth : public Mesh { MeshCloth(glm::vec2 size = {1.f, 1.f}, float innerWidth = 0.1f); };
-	struct MeshSphereShared : public Mesh { MeshSphereShared(float width = 1.f, int nrSlices = 50, int nrStacks = 25, bool withInitGL=true); };
-
 }
 
 #endif

@@ -100,7 +100,7 @@ static void makeClothDataAndInitGL() {
 	ctf.scale *= 0.5f;
 	ctf.update();
 
-	MeshPlane plane(2, nr_p.x-1, nr_p.y-1, false, false);
+	MeshPlane plane(2.f, 2.f, nr_p.x-1, nr_p.y-1, false, false);
 	nr_ptcls = (int)plane.poss.size();
 	cloth_pm_data.resize(nr_ptcls);
 	for(int i=0; i<nr_ptcls; i++) {
@@ -182,7 +182,7 @@ static void makeClothDataAndInitGL() {
 AppClothGPU::AppClothGPU()
 	: AppBase(900, 600, APP_NAME, false)
 	, viewport("viewport##gpgpu", new FramebufferMs())
-	, ground(1.f)
+	, ground(1.f, 2.f)
 {
 	g_app = this;
 	viewport.camera.pivot = vec3(0, 1.0, 0);

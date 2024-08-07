@@ -18,9 +18,9 @@ AppBaseCanvas3d::AppBaseCanvas3d(int winWidth, int winHeight, const char* title,
     , max_nr_quads(nrMaxQuads)
     , max_nr_spheres(nrMaxSpheres)
     , max_nr_cylinders(nrMaxCylinders)
-    , ms_quad(1.f, true, false)
+    , ms_quad(1.f, 1.f, true, false)
     , ms_sphere(1.f, 1, true, false)
-    , ms_cylinder(1.f, 1.f, 10, true, false)
+    , ms_cylinder(1.f, 1.f, 8, true, false)
 {
     quads.resize(max_nr_quads);
     spheres.resize(max_nr_spheres);

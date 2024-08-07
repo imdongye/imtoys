@@ -57,7 +57,7 @@ lim::AppSkeletal::AppSkeletal() : AppBase(1200, 780, APP_NAME, false)
 
 
 	Model* floor = new Model();
-	Mesh* ms = floor->addOwn(new MeshPlane(30.f));
+	Mesh* ms = floor->addOwn(new MeshPlane(30.f, 30.f));
 	Material* mat = floor->addOwn(new Material());
 	floor->root.addMsMat(ms, mat);
 	floor->setProgToAllMat(&prog_static);

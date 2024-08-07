@@ -5,8 +5,7 @@ shared vertex triangle mesh
 
 Note:
 Material은 Mesh에 종속적이지 않음.
-poss, nors buffer element size = vec4 for ssbo
-
+vertex is SOA not AOS
 
 */
 
@@ -43,7 +42,8 @@ namespace lim
 		std::vector<VertBoneInfo> bone_infos;
 		std::vector<glm::uvec3> tris;
 
-		int nr_verts;
+		// update in initGL()
+		int nr_verts, nr_tris; 
 		GLuint buf_pos = 0; 			// 0
 		GLuint buf_nor = 0; 			// 1
 		GLuint buf_uv  = 0;				// 2
@@ -71,6 +71,9 @@ namespace lim
 		void bindGL() const;
 		void drawGL() const;
 		void bindAndDrawGL() const;
+		// becareful memory fragmentation
+		// and need initGL
+		void subdivide(int level = 1);
 	};
 }
 

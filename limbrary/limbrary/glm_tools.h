@@ -18,7 +18,10 @@ namespace glim {
 	constexpr float feps = std::numeric_limits<float>::epsilon();
 	constexpr glm::vec3 maximum_vec3 = glm::vec3(std::numeric_limits<float>::max());
 	constexpr glm::vec3 minimum_vec3 = glm::vec3(std::numeric_limits<float>::min());
-
+	constexpr glm::uint maximum_uint = (glm::uint)-1;
+	constexpr glm::vec3 up = {0,1,0};
+	constexpr glm::vec3 right = {1,0,0};
+	constexpr glm::vec3 front = {0,0,1};
 
 
 

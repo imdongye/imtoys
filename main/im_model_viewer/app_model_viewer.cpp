@@ -92,7 +92,7 @@ lim::AppModelViewer::AppModelViewer() : AppBase(1373, 780, APP_NAME, false)
 	d_light.setShadowEnabled(true);
 
 	floor_md.name = "floor";
-	floor_md.addOwn(new MeshPlane(1));
+	floor_md.addOwn(new MeshPlane(2.f, 2.f));
 	Material* flMat = floor_md.addOwn(new Material());
 	flMat->prog = &program;
 	floor_md.root.addMsMat(floor_md.own_meshes.back(), flMat);
@@ -329,28 +329,6 @@ void lim::AppModelViewer::updateImGui()
 			}
 		}
 
-
-		for(Material* mat : md.md_data->own_materials) {
-			// phong, blinn phong
-			if( tInfo.idx_Brdf<2 ) { 
-				if( ImGui::SliderFloat("shininess", &tInfo.shininess, 0.5f, 300) ) {
-					mat->Shininess = tInfo.shininess;
-				}
-			}
-			// cook-torrance
-			else { 
-				if( ImGui::SliderFloat("roughness", &tInfo.roughness, 0.015f, 1) ) {
-					mat->Roughness = tInfo.roughness;
-				}
-				if( ImGui::SliderFloat("metalness", &tInfo.metalness, 0.000f, 1) ) {
-					mat->Metalness = tInfo.metalness;
-				}
-			}
-
-			if( ImGui::SliderFloat("ambient light", &tInfo.ambient_int, 0.000, 0.05f) ) {
-				mat->AmbientColor = glm::vec3(1)*tInfo.ambient_int;
-			}
-		}
 		ImGui::End();
 	}
 }

@@ -94,17 +94,18 @@ namespace pbd
         std::vector<glm::vec3> p_s; // new, predicted poss (P)
         std::vector<glm::vec3> v_s;
         std::vector<float>     w_s; // inv mass
+        std::vector<glm::vec3> debug_dirs;
         std::vector<glm::uvec3>     ptcl_tris;
         // mached mesh poss idx
         // maximum 8 vertexs
         std::vector<glm::ivec4> idx_verts; 
         std::vector<glm::ivec4> idx_verts2;
+        std::vector<glm::ivec4> idx_verts3;
 
         float inv_body_mass, inv_ptcl_mass;
-        int nr_ptcls, nr_tris;
+        int nr_ptcls, nr_ptcl_tris;
 
         float pressure = 0.f;
-        std::vector<glm::vec3> pressureDVs;
 
         int nr_steps = 20;
         float ptcl_radius = 0.02f;
@@ -116,7 +117,7 @@ namespace pbd
         std::vector<ConstraintIsometricBend> c_iso_bends;
 
         struct Compliance {
-            float stretch, shear, dist_bend;
+            float dist, stretch_pct, shear_pct, bend_pct;
             float dih_bend, iso_bend;
             Compliance();
         };

@@ -20,9 +20,9 @@ namespace lim
 {
 	AppGenMesh::AppGenMesh() : AppBase(1200, 780, APP_NAME), viewport("viewport##gen_mesh", new FramebufferMs())
 	{
-		//glEnable(GL_CULL_FACE);
-		//glCullFace(GL_FRONT);
-		// glPolygonMode(GL_FRONT, GL_LINE);
+		// glEnable(GL_CULL_FACE);
+		// glCullFace(GL_BACK);
+		// glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		viewport.camera.spd_free_move = 4.f;
 
 
@@ -37,14 +37,14 @@ namespace lim
 
 
 		/* gen models */
-		addMeshToScene(new MeshSphere(1.f, 10, 25));
+		addMeshToScene(new MeshSphere(1.f, 10, 4, 5));
 		addMeshToScene(new MeshEnvSphere(1.f, 10));
-		addMeshToScene(new MeshDonut(0.5f, 0.2f, 50, 25));
-		addMeshToScene(new MeshCapsule(1.f, 2.f, 50, 25));
 		addMeshToScene(new MeshIcoSphere(1.f, 0));
 		addMeshToScene(new MeshIcoSphere(1.f, 1));
 		addMeshToScene(new MeshIcoSphere(1.f, 2));
 		addMeshToScene(new MeshIcoSphere(1.f, 3));
+		addMeshToScene(new MeshDonut(0.5f, 0.2f, 50, 25));
+		addMeshToScene(new MeshCapsule(1.f, 2.f, 50, 25));
 		addMeshToScene(new MeshCubeSphere(1.f, 2));
 		addMeshToScene(new MeshCubeSphere2(1.f, 5));
 		addMeshToScene(new MeshQuad());

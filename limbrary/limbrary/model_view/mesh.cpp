@@ -48,8 +48,10 @@ void Mesh::initGL(bool withClearMem)
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
 
+	nr_verts = poss.size();
+	nr_tris = tris.size();
+
 	if( poss.size()>0 ){
-		nr_verts = poss.size();
 		glGenBuffers(1, &buf_pos);
 		glBindBuffer(GL_ARRAY_BUFFER, buf_pos);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(vec3)*poss.size(), poss.data(), GL_STATIC_DRAW);

@@ -13,7 +13,8 @@ static inline uvec2 makeEdgeIdx(uint a1, uint a2) {
 }
 
 SoftBody::Compliance::Compliance()
-    : stretch(0.001f), shear(0.001f), dist_bend(0.001f)
+    : dist(0.001f)
+    , stretch_pct(1.f), shear_pct(0.8f), bend_pct(0.6f)
     , dih_bend(0.001f), iso_bend(0.001f)
 {
 }
@@ -62,13 +63,13 @@ SoftBody::SoftBody(const lim::Mesh& src, int nrShear, BendType bendType, float b
 
 
     nr_ptcls = (int)tempPtcls.size();
-    nr_tris = (int)tris.size();
-    ptcl_tris.reserve(nr_tris);
+    nr_ptcl_tris = (int)tris.size();
+    ptcl_tris.reserve(nr_ptcl_tris);
     inv_body_mass = 1.f/bodyMass;
     inv_ptcl_mass = inv_body_mass*nr_ptcls;
 
 
-    for( int i=0; i<nr_tris; i++ ) {
+    for( int i=0; i<nr_ptcl_tris; i++ ) {
         uvec3 pTri;
         for( int j=0; j<3; j++ ) {
             pTri[j] = vertIdxToPtclIdx[tris[i][j]];
@@ -78,16 +79,20 @@ SoftBody::SoftBody(const lim::Mesh& src, int nrShear, BendType bendType, float b
 
     idx_verts.resize(nr_ptcls, ivec4(-1));
     idx_verts2.resize(nr_ptcls, ivec4(-1));
+    idx_verts3.resize(nr_ptcls, ivec4(-1));
     for( int i=0; i<nr_ptcls; i++ ) {
         auto pToV = ptclIdxToVertIdxs[i];
         int nrIdxVs = (int)pToV.size();
-        assert(nrIdxVs<=8);
+        assert(nrIdxVs<=12); // maximum is 12 verts per ptcl
         for( int j=0; j<nrIdxVs; j++ ) {
             if( j<4 ) {
                 idx_verts[i][j] = pToV[j];
             }
-            else {
+            else if( j<8) {
                 idx_verts2[i][j-4] = pToV[j];
+            }
+            else {
+                idx_verts3[i][j-8] = pToV[j];
             }
         }
     }
@@ -95,19 +100,12 @@ SoftBody::SoftBody(const lim::Mesh& src, int nrShear, BendType bendType, float b
 
 
 
-    prev_x_s.reserve(nr_ptcls);
-    p_s.reserve(nr_ptcls);
-    x_s.reserve(nr_ptcls);
-    v_s.reserve(nr_ptcls);
-    w_s.reserve(nr_ptcls);
-
-    for( const vec3& p : tempPtcls ) {
-        prev_x_s.push_back( p );
-        x_s.push_back( p );
-        p_s.push_back( p );
-        v_s.push_back( vec3{0} );
-        w_s.push_back( inv_ptcl_mass );
-    }
+    prev_x_s = tempPtcls;
+    p_s = tempPtcls;
+    x_s = tempPtcls;
+    v_s.resize(nr_ptcls, vec3(0));
+    debug_dirs.resize(nr_ptcls, vec3(0));
+    w_s.resize(nr_ptcls, inv_ptcl_mass);
 
     struct Edge {
         uvec2 idx_ps;
@@ -116,8 +114,9 @@ SoftBody::SoftBody(const lim::Mesh& src, int nrShear, BendType bendType, float b
     };
     vector<Edge> aEdges; // aside edges
 
-    aEdges.reserve( nr_tris * 3 );
-    for( int i=0; i<nr_tris; i++ ) {
+    int nrDupEdges = nr_ptcl_tris*3;
+    aEdges.reserve( nrDupEdges );
+    for( int i=0; i<nr_ptcl_tris; i++ ) {
         const uvec3& tri = ptcl_tris[i];
         aEdges.push_back( {makeEdgeIdx(tri.x, tri.y), tri.z, i} );
         aEdges.push_back( {makeEdgeIdx(tri.x, tri.z), tri.y, i} );
@@ -129,16 +128,19 @@ SoftBody::SoftBody(const lim::Mesh& src, int nrShear, BendType bendType, float b
 
     // cube일땐 -1 안하면 중복 stretch생김
     // cube일때 짧아지는 문제
-    for( int i=0; i<nr_tris*3-1; i++ ) {
+    for( int i=0; i<nrDupEdges; i++ ) {
         const Edge& edge1 = aEdges[i];
         bool isShear = false;
-        for( uint j=i+1; j<nr_tris*3; j++ )
+        for( int j=i+1; j<nrDupEdges; j++ )
         {
             const Edge& edge2 = aEdges[j];
 
             if( edge1.idx_ps!=edge2.idx_ps ) {
                 i = j-1;
                 break;
+            }
+            else if( j==nrDupEdges-1 ) {
+                i = nrDupEdges;
             }
             uvec4 idxPs = {edge1.idx_ps, edge1.idx_opp, edge2.idx_opp};
             vec3 e0 = p_s[idxPs.x] - p_s[idxPs.y];
@@ -215,7 +217,7 @@ float SoftBody::getVolumeTimesSix() const {
 
 // for test individual particle
 SoftBody::SoftBody()
-    : inv_body_mass(1.f), inv_ptcl_mass(1.f), nr_ptcls(0), nr_tris(0)
+    : inv_body_mass(1.f), inv_ptcl_mass(1.f), nr_ptcls(0), nr_ptcl_tris(0)
 {
     constexpr int defalutSize = 50;
     poss.reserve(defalutSize);
@@ -224,6 +226,7 @@ SoftBody::SoftBody()
     p_s.reserve(defalutSize);
     v_s.reserve(defalutSize);
     w_s.reserve(defalutSize);
+    debug_dirs.reserve(defalutSize);
 }
 void SoftBody::addPtcl(const vec3& p, float w, const vec3& v) {
     nr_ptcls++;
@@ -233,6 +236,7 @@ void SoftBody::addPtcl(const vec3& p, float w, const vec3& v) {
     p_s.push_back( p );
     v_s.push_back( v );
     w_s.push_back( w );
+    debug_dirs.push_back( vec3(0) );
 }
 
 void SoftBody::uploadToBuf() {

@@ -30,27 +30,108 @@ void SoftBody::subStepConstraintProject(float dt)
     }
     
     // Todo: skinning
-
-    alpha = compliance.dist_bend/sqdt;
+    float distAlpha = compliance.dist/sqdt;
+    alpha = distAlpha/compliance.stretch_pct;
     for( auto& c : c_dist_bends ) {
         c.project( *this, alpha );
     }
-    alpha = compliance.stretch/sqdt;
+    alpha = distAlpha/compliance.shear_pct;
     for( auto& c : c_shears ) {
         c.project( *this, alpha );
     }
-    alpha = compliance.stretch/sqdt;
+    alpha = distAlpha/compliance.bend_pct;
     for( auto& c : c_stretchs ) {
         c.project( *this, alpha );
     }
 }
 
 
+
+void SoftBody::applyCollision(float dt, const vector<ICollider*>& colliders)
+{
+    for( int i=0; i<nr_ptcls; i++ )
+    {
+        if( w_s[i] == 0.f )
+            continue;
+        vec3 p = x_s[i];
+        vec3 v = (p - prev_x_s[i]) / dt;
+
+        vec3 sNor, vNor, vTan;
+        for( auto pC : colliders ) {
+            float inter_dist = -pC->getSdNor( p, sNor )+ptcl_radius;
+            if( inter_dist < 0 )
+                continue;
+            p += inter_dist*sNor;
+            vNor = dot( sNor, v ) * sNor;
+            vTan = v - vNor;
+            v = (pC->friction * friction * vTan) - (pC->restitution * restitution * vNor);
+        }
+
+        prev_x_s[i] = p;
+        x_s[i] = p;
+        v_s[i] = v;
+    }
+}
+
+void SoftBody::applyCollisionInterSubstep(const vector<ICollider*>& colliders)
+{
+    for( int i=0; i<nr_ptcls; i++ )
+    {
+        if( w_s[i] == 0.f )
+            continue;
+        vec3 p = x_s[i];
+        vec3 v = v_s[i];
+
+        vec3 sNor, vNor, vTan;
+        for( auto pC : colliders ) {
+            float inter_dist = -pC->getSdNor( p, sNor )+ptcl_radius;
+            if( inter_dist < 0 )
+                continue;
+            p += inter_dist*sNor;
+            vNor = dot( sNor, v ) * sNor;
+            vTan = v - vNor;
+            v = (pC->friction * friction * vTan) - (pC->restitution * restitution * vNor);
+        }
+
+        x_s[i] = p;
+        v_s[i] = v;
+    }
+}
+
 // From: https://namu.wiki/w/%EC%95%95%EB%A0%A5
 void SoftBody::applyPressureImpulse(float dt)
 {
-    std::fill(pressureDVs.begin(), pressureDVs.end(), vec3(0));
+    if( pressure<glim::feps ) {
+        return;
+    }
     
+    float sixVolume = getVolumeTimesSix();
+    if( sixVolume < glim::feps ) {
+        return;
+    }
+
+    // std::fill(pressureDVs.begin(), pressureDVs.end(), vec3(0));
+
+    // vec3 F = pressure*twoAreaAndNor/sixVolume;
+    float coeff = pressure*dt/sixVolume;
+
+    for( uvec3 tri : ptcl_tris ) {
+        vec3 e1 = p_s[tri.y] - p_s[tri.x];
+        vec3 e2 = p_s[tri.z] - p_s[tri.x];
+        vec3 twoAreaAndNor = cross(e1, e2);
+
+        vec3 impulse = coeff*twoAreaAndNor;
+        v_s[tri.x] += w_s[tri.x]*impulse;
+        v_s[tri.y] += w_s[tri.y]*impulse;
+        v_s[tri.z] += w_s[tri.z]*impulse;
+
+        debug_dirs[tri.x] += w_s[tri.x]*impulse;
+        debug_dirs[tri.y] += w_s[tri.y]*impulse;
+        debug_dirs[tri.z] += w_s[tri.z]*impulse;
+    }
+    for( int i=0; i<nr_ptcls; i++ ) {
+        debug_dirs[i] = normalize(debug_dirs[i])*0.2f;
+    }
     // PBD
     // for( const uvec3& tri : ptcl_tris ) {
     //     const vec3& p1 = p_s[tri.x];
@@ -81,62 +162,6 @@ void SoftBody::applyPressureImpulse(float dt)
     // }
 }
 
-
-void SoftBody::applyCollision(float dt, const vector<ICollider*>& colliders)
-{
-    for( int i=0; i<nr_ptcls; i++ )
-    {
-        if( w_s[i] == 0.f )
-            continue;
-        vec3 p = p_s[i];
-        vec3 v = (p - prev_x_s[i]) / dt;
-
-        vec3 sNor, vNor, vTan;
-        for( auto pC : colliders ) {
-            float inter_dist = -pC->getSdNor( p, sNor )+ptcl_radius;
-            if( inter_dist < 0 )
-                continue;
-            p += inter_dist*sNor;
-            vNor = dot( sNor, v ) * sNor;
-            vTan = v - vNor;
-            v = (pC->friction * friction * vTan) - (pC->restitution * restitution * vNor);
-        }
-
-        prev_x_s[i] = p;
-        x_s[i] = p;
-        p_s[i] = p;
-        v_s[i] = v;
-    }
-}
-
-void SoftBody::applyCollisionInterSubstep(const vector<ICollider*>& colliders)
-{
-    for( int i=0; i<nr_ptcls; i++ )
-    {
-        if( w_s[i] == 0.f )
-            continue;
-        vec3 p = p_s[i];
-        vec3 v = v_s[i];
-
-        vec3 sNor, vNor, vTan;
-        for( auto pC : colliders ) {
-            float inter_dist = -pC->getSdNor( p, sNor )+ptcl_radius;
-            if( inter_dist < 0 )
-                continue;
-            p += inter_dist*sNor;
-            vNor = dot( sNor, v ) * sNor;
-            vTan = v - vNor;
-            v = (pC->friction * friction * vTan) - (pC->restitution * restitution * vNor);
-        }
-
-        x_s[i] = p;
-        p_s[i] = p;
-        v_s[i] = v;
-    }
-}
-
-
-
 void SoftBody::update(float dt, const PhyScene& scene)
 {
     float subDt = dt/nr_steps;
@@ -146,9 +171,7 @@ void SoftBody::update(float dt, const PhyScene& scene)
         // add external force
         for( int i=0; i<nr_ptcls; i++ )
         {
-            float pw = w_s[i];
-            if( pw == 0.f ) {
-                v_s[i] = vec3(0);
+            if( w_s[i] == 0.f ) {
                 continue;
             }
             vec3 acc = scene.G;
@@ -171,9 +194,9 @@ void SoftBody::update(float dt, const PhyScene& scene)
 
     // applyCollision(dt, scene.colliders);
 
+    applyPressureImpulse(dt);
 
     // if( pressure>0.f ) {
-    //     applyPressureImpulse(dt);
     // }
 
 
