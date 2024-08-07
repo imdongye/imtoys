@@ -321,6 +321,15 @@ void AppBase::run()
 		mouse_off = mouse_pos - prevPos;
 		prevPos = mouse_pos;
 
+		update();
+		for( auto& cb : update_hooks ) 
+			cb(delta_time);
+		
+		// for custom viewports
+		glFinish();
+
+
+
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
@@ -333,9 +342,7 @@ void AppBase::run()
 		
 		ImGui::Render();
 
-		update();
-		for( auto& cb : update_hooks ) 
-			cb(delta_time);
+		
 		
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
@@ -345,9 +352,6 @@ void AppBase::run()
 			ImGui::RenderPlatformWindowsDefault();
 			glfwMakeContextCurrent(backup_current_context);
 		}
-
-		glFlush();
-		glFinish();
 
 		glfwSwapBuffers(window);
 

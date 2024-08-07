@@ -12,7 +12,7 @@ edit from : https://github.com/assimp/assimp/issues/203
 #include <limbrary/model_view/model.h>
 #include <limbrary/asset_lib.h>
 #include <limbrary/log.h>
-#include <limbrary/utils.h>
+#include <limbrary/g_tools.h>
 #include <assimp/cexport.h>
 #include <assimp/Exporter.hpp>
 #include <assimp/scene.h>

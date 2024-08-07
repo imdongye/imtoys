@@ -8,8 +8,9 @@ st : down left
 
 Note:
 	texture wrap repeat가정
+	after construction, you should call inigGL();
 
-	todo :
+Todo:
 	2. 코드 최적화관련 https://modoocode.com/129
 	3. 최소 최대 slice 예외처리
 	4. 스피어 덮을 텍스쳐 개수 1개, 2개 선택

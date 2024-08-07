@@ -84,7 +84,7 @@ namespace lim
         Texture* map_Opacity = nullptr;       
 
 
-        const Program* prog; // AssetLib::get().prog_dnv
+        const Program* prog; // AssetLib::get().prog_ndv
 		std::function<void(const Program&)> set_prog = nullptr;
 
 

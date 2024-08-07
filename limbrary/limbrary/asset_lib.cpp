@@ -5,16 +5,22 @@
 #include <limbrary/model_view/mesh_maked.h>
 #include <limbrary/model_view/model.h>
 
-static lim::Program* env_prog;
-static lim::MeshEnvSphere* env_sphere;
-static int ms_max_samples = 2;
 
 lim::AssetLib::AssetLib()
 	: screen_quad(2.f, 2.f, false, false)
+	, sphere(1.f, 50, 25, true, true)
 	, small_sphere(0.2f, 8, 4,true, false)
 	, thin_cylinder(0.1f)
 	, texture_viewer("replace before drawImGui", new FramebufferNoDepth(3,32))
+	, env_sphere(20.f)
 {
+	screen_quad.initGL(true);
+	sphere.initGL(true);
+	small_sphere.initGL(true);
+	thin_cylinder.initGL(true);
+	env_sphere.initGL(true);
+
+
 	log::pure("init AssetLib\n");
 
 	prog_tex_to_quad.name = "texToQuad";
@@ -29,22 +35,18 @@ lim::AssetLib::AssetLib()
 	prog_shadow_skinned.name = "shadow_skinned";
 	prog_shadow_skinned.attatch("mvp_skinned.vs").attatch("depth.fs").link();
 
-	prog_dnv.name = "ndv";
-	prog_dnv.attatch("mvp.vs").attatch("ndv.fs").link();
+	prog_ndv.name = "ndv";
+	prog_ndv.attatch("mvp.vs").attatch("ndv.fs").link();
 
 	prog_color.name = "red";
 	prog_color.attatch("mvp.vs").attatch("color.fs").link();
 
-	env_prog = new Program("env");
-	env_prog->attatch("mvp.vs").attatch("env.fs").link();
-
-	env_sphere = new MeshEnvSphere(20.f);
+	prog_env.name = "env";
+	prog_env.attatch("mvp.vs").attatch("env.fs").link();
 }
+
 lim::AssetLib::~AssetLib()
 {
-	delete env_prog;
-	delete env_sphere;
-	
 	log::pure("delete AssetLib\n");
 }
 void lim::AssetLib::create(AppBase* _app)
@@ -65,14 +67,20 @@ void lim::AssetLib::destroy()
 }
 
 
+
+
+
+
 void lim::utils::drawEnvSphere(const Texture& map, const glm::mat4& mtx_View, const glm::mat4& mtx_Proj) {
-	env_prog->use();
-	env_prog->setUniform("mtx_Model", glm::mat4(1));
-	env_prog->setUniform("mtx_View", mtx_View);
-	env_prog->setUniform("mtx_Proj", mtx_Proj);
-	env_prog->setTexture("map_Light", map.getTexId());
-	env_sphere->bindAndDrawGL();
+	const Program& prog = AssetLib::get().prog_env.use();
+	prog.setUniform("mtx_Model", glm::mat4(1));
+	prog.setUniform("mtx_View", mtx_View);
+	prog.setUniform("mtx_Proj", mtx_Proj);
+	prog.setTexture("map_Light", map.getTexId());
+	AssetLib::get().env_sphere.bindAndDrawGL();
 }
+
+static int ms_max_samples = 2;
 
 int lim::utils::getMsMaxSamples() {
 	return ms_max_samples;

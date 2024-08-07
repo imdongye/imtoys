@@ -1,13 +1,18 @@
 /*
-객체의 포인터를 키로한 callbacks를 map대신 unordered_map을 사용하는 이유:
-callbacks은 매 프레임 호출될수도 있기 때문에 메모리를 많이 써도 순회 하는 속도는 빨라야한다.
-unordered_map은 헤쉬테이블로 메모리를 많이 차지 하지만 순회는 상수시간복잡도이다.
-반면에 map은 tree구조로 탐색과 동시에 생성하는 작업이 성능에 영향이 없어서 지원해준다. 
-그리고 메모리도 추가로 필요하지 않아서 효율적이다. 하지만 트리구조라 순회할때 logn의 시간복잡도라 여기에서 사용할수없다.
-최종적으로 unordered_map은 상수시간복잡도이지만 상수시간이 커서 실시간에서 순회접근은 어렵다. 그래서 키와 콜백을 vector로 관리하는 템플릿 클래스를 생성함.
+	global tools
+	2024-08-07 / im dongye
+
+
+Note: callbacks
+	객체의 포인터를 키로한 callbacks를 map대신 unordered_map을 사용하는 이유:
+	callbacks은 매 프레임 호출될수도 있기 때문에 메모리를 많이 써도 순회 하는 속도는 빨라야한다.
+	unordered_map은 헤쉬테이블로 메모리를 많이 차지 하지만 순회는 상수시간복잡도이다.
+	반면에 map은 tree구조로 탐색과 동시에 생성하는 작업이 성능에 영향이 없어서 지원해준다. 
+	그리고 메모리도 추가로 필요하지 않아서 효율적이다. 하지만 트리구조라 순회할때 logn의 시간복잡도라 여기에서 사용할수없다.
+	최종적으로 unordered_map은 상수시간복잡도이지만 상수시간이 커서 실시간에서 순회접근은 어렵다. 그래서 키와 콜백을 vector로 관리하는 템플릿 클래스를 생성함.
 */
-#ifndef __utils_h_
-#define __utils_h_
+#ifndef __g_tools_h_
+#define __g_tools_h_
 
 #include <string>
 #include <functional>
@@ -27,6 +32,12 @@ namespace lim
 	constexpr int SPRINTF_BUF_SIZE = 128;
 
 	using CStr = const char* const;
+
+	template<typename T>
+	inline void safeDel(T*& p) {
+		delete p; // delete nullptr is ok
+		p = nullptr;
+	}
 
 
 	namespace log {

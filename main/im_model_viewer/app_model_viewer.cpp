@@ -93,6 +93,7 @@ lim::AppModelViewer::AppModelViewer() : AppBase(1373, 780, APP_NAME, false)
 
 	floor_md.name = "floor";
 	floor_md.addOwn(new MeshPlane(2.f, 2.f));
+	floor_md.own_meshes.back()->initGL(true);
 	Material* flMat = floor_md.addOwn(new Material());
 	flMat->prog = &program;
 	floor_md.root.addMsMat(floor_md.own_meshes.back(), flMat);

@@ -137,6 +137,7 @@ lim::AppHatching::AppHatching(): AppBase(1200, 780, APP_NAME)
 	/* ground */
 	md = new Model("ground");
 	md->addOwn(new MeshPlane());
+	md->own_meshes.back()->initGL();
 	md->root.addMsMat(md->own_meshes.back(), &h_mat);
 	md->tf->scale = glm::vec3(20);
 	md->tf->update();

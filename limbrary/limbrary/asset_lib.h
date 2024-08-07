@@ -23,7 +23,6 @@ namespace lim
 	{
 	private:
 		inline static AssetLib* instance = nullptr;
-		Program default_prog;
 
 	public:
 		//****** property ******//
@@ -33,17 +32,19 @@ namespace lim
 		Program prog_tex3d_to_quad;
 		Program prog_shadow_static;
 		Program prog_shadow_skinned;
-		Program prog_dnv;
+		Program prog_ndv;
 		Program prog_color;
 
 		
 		MeshQuad screen_quad; // only poss
 		MeshSphere sphere;
-		MeshSphere small_sphere;
-		MeshCube cube;
+		MeshSphere small_sphere; // no uv
 		MeshCylinder thin_cylinder;
 
 		Viewport texture_viewer;
+
+		Program prog_env;
+		MeshEnvSphere env_sphere;
 
 	private:
 		AssetLib(const AssetLib&)=delete;
@@ -60,7 +61,9 @@ namespace lim
 		static AssetLib& get();
 	};
 
-	// Todo 
+
+
+	// Todo ...
 	namespace utils
 	{
 		void glErr( std::string_view msg );

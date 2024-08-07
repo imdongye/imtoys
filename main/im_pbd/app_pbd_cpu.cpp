@@ -103,6 +103,7 @@ static void resetSoftBody()
 		}
 	}
 
+	ms->initGL();
 	tf = translate(vec3(0,2,0)) * glim::rotateX(glim::pi90*0.1f)* glim::rotateY(glim::pi90*0.2f) * scale(vec3(size_scale))* tf;
 	for( vec3& p : ms->poss ) {
 		p = vec3(tf*vec4(p,1));

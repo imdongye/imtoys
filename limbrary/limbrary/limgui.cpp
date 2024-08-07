@@ -311,7 +311,7 @@ static std::map<glm::uint, PlotVarData> g_plot_var_map;
 
 void LimGui::PlotVal(const char* name, const char* postFix, float value, int bufSize) {
 	ImGui::PushID(name);
-	ImGuiID id = ImGui::GetID("");
+	// ImGuiID id = ImGui::GetID("");
 
 	auto myId = genHash(name);
 	

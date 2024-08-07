@@ -2,7 +2,7 @@
 #include <limbrary/asset_lib.h>
 #include <limbrary/log.h>
 #include <stack>
-#include <limbrary/utils.h>
+#include <limbrary/g_tools.h>
 
 using namespace std;
 using namespace lim;
@@ -284,7 +284,7 @@ void lim::render( const IFramebuffer& fb,
     }
 
     if( isDrawLight ) {
-        const Program& prog = AssetLib::get().prog_dnv;
+        const Program& prog = AssetLib::get().prog_ndv;
         prog.use();
         cam.setUniformTo(prog);
 

@@ -22,6 +22,10 @@ AppBaseCanvas3d::AppBaseCanvas3d(int winWidth, int winHeight, const char* title,
     , ms_sphere(1.f, 1, true, false)
     , ms_cylinder(1.f, 1.f, 8, true, false)
 {
+    ms_quad.initGL(false);
+    ms_sphere.initGL(false);
+    ms_cylinder.initGL(false);
+
     quads.resize(max_nr_quads);
     spheres.resize(max_nr_spheres);
     cylinders.resize(max_nr_cylinders);

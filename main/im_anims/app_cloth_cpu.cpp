@@ -14,8 +14,10 @@ using namespace lim;
 	1unit : m, kg, sec
 */
 namespace {
-	AppClothCPU* g_app = nullptr;
-}
+	
+AppClothCPU* g_app = nullptr;
+
+
 
 
 struct Particle {
@@ -44,6 +46,9 @@ struct Particle {
 		g_app->drawSphere(p, (fixed)?vec3{1,0,0}:color);
 	}
 };
+
+
+
 
 struct Spring {
 	Particle& p1;
@@ -274,13 +279,19 @@ struct Cloth {
 };
 
 
-namespace {
-	vector<Particle> particles;
-	Cloth cloth;
-	vector<ICollider*> colliders;
-	vector<ColAnimator> animators;
-	Particle* picked_ptcl = nullptr;
-}
+
+
+vector<Particle> particles;
+Cloth cloth;
+vector<ICollider*> colliders;
+vector<ColAnimator> animators;
+Particle* picked_ptcl = nullptr;
+
+
+
+} // end anonymous namespace
+
+
 
 static void initScene() {
 	colliders.reserve(5);

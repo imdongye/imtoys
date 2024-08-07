@@ -12,7 +12,7 @@
 #include <limbrary/model_view/model_io_helper.h>
 #include <limbrary/texture.h>
 #include <limbrary/log.h>
-#include <limbrary/utils.h>
+#include <limbrary/g_tools.h>
 #include <assimp/cimport.h>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>

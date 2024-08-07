@@ -58,6 +58,7 @@ lim::AppSimplification::AppSimplification() : AppBase(1200, 780, APP_NAME, false
 	ground.own_materials.back()->map_ColorBase = ground.own_textures.back();
 	ground.own_materials.back()->map_Flags |= Material::MF_COLOR_BASE;
 	ground.own_meshes.push_back(new MeshPlane());
+	ground.own_meshes.back()->initGL();
 	ground.root.addMsMat(ground.own_meshes.back(), ground.own_materials.back());
 	ground.tf->pos = {0, 0, 0};
 	ground.tf->scale = {10, 1, 10};

@@ -16,7 +16,6 @@ bool IFramebuffer::resize(int _width, int _height)
 	width = _width; height = _height;
 	aspect = width/(float)height;
 	initGL();
-	glFlush();
 	glFinish();
 	return true;
 }

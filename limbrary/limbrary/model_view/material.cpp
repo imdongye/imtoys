@@ -2,7 +2,7 @@
 #include <limbrary/asset_lib.h>
 
 lim::Material::Material() {
-    prog = &AssetLib::get().prog_dnv;
+    prog = &AssetLib::get().prog_ndv;
 }
 
 void lim::Material::setUniformTo(const Program& prg) const

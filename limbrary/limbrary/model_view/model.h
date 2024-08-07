@@ -17,6 +17,7 @@ TODO list:
 5. load model 이 모델안에 있는데 따로 빼야될까
 6. 언제 어디서 업데이트해줘야하는지 규칙정하기
 7. reload normal map 외부로 빼기
+8. export animations
 
 Model에 의존하지 않고 RdNode에 의존하는 Scene
 

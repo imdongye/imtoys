@@ -4,7 +4,7 @@
 
 #include <limbrary/model_view/mesh_maked.h>
 #include <limbrary/texture.h>
-#include <limbrary/utils.h>
+#include <limbrary/g_tools.h>
 #include <vector>
 #include <memory>
 #include <glad/glad.h>
@@ -12,6 +12,8 @@
 
 using namespace lim;
 using namespace glm;
+
+
 
 
 namespace {
@@ -88,6 +90,7 @@ namespace {
 		return rst;
 	}
 }
+
 /*
    tz
 pz/  \py
@@ -202,9 +205,11 @@ MeshQuad::MeshQuad(float width, float height, bool genNors, bool genUvs)
 	tris.reserve(nr_tris);
 	tris.push_back({0,3,1});
 	tris.push_back({0,2,3});
-
-	initGL();
 }
+
+
+
+
 
 MeshPlane::MeshPlane(float width, float height, int nrCols, int nrRows, bool genNors, bool genUvs)
 {
@@ -256,9 +261,11 @@ MeshPlane::MeshPlane(float width, float height, int nrCols, int nrRows, bool gen
 						ori + 1 + nrColVerts,
 						ori + 1});
 	}
-	
-	initGL();
 }
+
+
+
+
 
 MeshCloth::MeshCloth(float width, float height, int nrCols, int nrRows, bool genNors, bool genUvs) {
 	name = fmtStrToBuf("plane_%d_%d", nrCols, nrRows);
@@ -323,8 +330,12 @@ MeshCloth::MeshCloth(float width, float height, int nrCols, int nrRows, bool gen
 							ori + 1 + nrColVerts});
 		}
 	}
-	initGL();
 }
+
+
+
+
+
 
 // input : counterclockwise
 static void addTriFaceFromQuad(uvec4 quad, std::vector<uvec3>& tris) {
@@ -410,17 +421,16 @@ MeshCube::MeshCube(float width, bool genNors, bool genUvs)
 		addTriFaceFromQuad({1,0,4,5}, tris);
 		addTriFaceFromQuad({0,2,6,4}, tris);
 	}
-	
-
-	initGL();
 }
 
 
 
 
+
+
+
 // From: http://www.songho.ca/opengl/gl_sphere.html
-// texture coord가 다른, 같은 위치의 vertex가 많음
-// Todo: 양끝 버텍스 두개 남는거 고치기
+// texture coord가 다른, 같은 위치의 버텍스가 많음 특히 위아래 버텍스
 // phi : angle form xy-plane [pi/2, -pi/2] <= top down
 // theta : y-axis angle [0, 2pi]
 MeshSphere::MeshSphere(float width, int nrSlices, int nrStacks, bool genNors, bool genUvs)
@@ -567,8 +577,12 @@ MeshSphere::MeshSphere(float width, int nrSlices, int nrStacks, bool genNors, bo
 			tris.push_back({ nextCol+botRow, curCol+botRow, botIdx });
 		}
 	}
-	initGL();
 }
+
+
+
+
+
 // Sphere reserce triangle version
 MeshEnvSphere::MeshEnvSphere(float width, int nrSlices, int nrStacks)
 {
@@ -638,15 +652,23 @@ MeshEnvSphere::MeshEnvSphere(float width, int nrSlices, int nrStacks)
 		tris.push_back({ nextCol+topRow, curCol+topRow, topIdx+slice });
 		tris.push_back({ curCol+botRow, nextCol+botRow, botIdx+slice });
 	}
-
-	initGL();
 }
+
+
+
+
+
 
 // icosahedron, 20면체 => icosphere/geosphere
 // From: https://www.songho.ca/opengl/gl_sphere.html
 // todo: now reserve is not consider subdivision
 MeshIcoSphere::MeshIcoSphere(float width, int subdivision, bool genNors, bool genUvs)
 {
+	if( subdivision > 4 ) {
+		log::warn("subdivision is too big in ico sphere");
+		subdivision = 4;
+	}
+
 	name = fmtStrToBuf("icosphere_s%d", subdivision);
 	const float radius = width*0.5f;
 	const float halfH = radius * 0.5f;	 // half height
@@ -767,8 +789,12 @@ MeshIcoSphere::MeshIcoSphere(float width, int subdivision, bool genNors, bool ge
 			poss[newPosIdx] = radius * normalize(poss[newPosIdx]);
 		}
 	}
-	initGL();
 }
+
+
+
+
+
 
 MeshCubeSphere::MeshCubeSphere(float width, int nrSlices, bool genNors, bool genUvs)
 {
@@ -811,11 +837,14 @@ MeshCubeSphere::MeshCubeSphere(float width, int nrSlices, bool genNors, bool gen
 			}
 		}
 	}
-
-	initGL();
 }
 
-// smooth
+
+
+
+
+
+// smooth version
 MeshCubeSphere2::MeshCubeSphere2(float width, int nrSlices, bool genNors, bool genUvs)
 {
 	name = fmtStrToBuf("smoothcubesphere_s%d", nrSlices);
@@ -861,9 +890,12 @@ MeshCubeSphere2::MeshCubeSphere2(float width, int nrSlices, bool genNors, bool g
 			}
 		}
 	}
-	
-	initGL();
 }
+
+
+
+
+
 
 MeshCylinder::MeshCylinder(float width, float height, int nrSlices, bool genNors, bool genUvs)
 {
@@ -923,9 +955,12 @@ MeshCylinder::MeshCylinder(float width, float height, int nrSlices, bool genNors
 		tris.push_back({ 3+nrCols*i, 4+nrCols*(i+1), 3+nrCols*(i+1) }); // lower
 		tris.push_back({ 1,          5+nrCols*(i+1), 5+nrCols*i 	});
 	}
-
-	initGL();
 }
+
+
+
+
+
 
 MeshCapsule::MeshCapsule(float width, float height, int nrSlices, int nrStacks, bool genNors, bool genUvs)
 {
@@ -979,9 +1014,12 @@ MeshCapsule::MeshCapsule(float width, float height, int nrSlices, int nrStacks, 
 			}
 		}
 	}
-
-	initGL();
 }
+
+
+
+
+
 
 MeshDonut::MeshDonut(float radius, float height, int nrSlices, int nrRingVerts, bool genNors, bool genUvs)
 {
@@ -1023,6 +1061,4 @@ MeshDonut::MeshDonut(float radius, float height, int nrSlices, int nrRingVerts, 
 			tris.push_back({ curRing+curVert, nextRing+nextVert, curRing+nextVert }); // lower
 		}
 	}
-
-	initGL();
 }

@@ -13,7 +13,7 @@ namespace lim
 	class AppIK: public AppBaseCanvas3d
 	{
 	public:
-		inline static constexpr CStr APP_NAME = "imkenematics";
+		inline static constexpr CStr APP_NAME = "inverse kinematics";
 		inline static constexpr CStr APP_DIR  = "im_anims";
 		inline static constexpr CStr APP_DESCRIPTION = "hello, world";
 

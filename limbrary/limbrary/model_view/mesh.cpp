@@ -38,12 +38,12 @@ Mesh::~Mesh()
 // upload VRAM
 void Mesh::initGL(bool withClearMem)
 {
-	if( poss.empty() ){
-		log::err("no verts in mesh\n\n");
-		std::exit(-1);
-		return;
+	assert( poss.empty() == false ); // no verts in mesh
+
+	if( vao!=0 ) {
+		log::warn("recreate mesh buffer");
+		deinitGL();
 	}
-	deinitGL();
 
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
@@ -112,23 +112,22 @@ void Mesh::initGL(bool withClearMem)
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uvec3)*tris.size(), tris.data(), GL_STATIC_DRAW);
 	}
 
-	if( withClearMem )
+	if( withClearMem ) {
+		glFinish();
 		clearMem();
+	}
 }
 void Mesh::restorePosBuf()
 {
-	if( buf_pos == 0 )
-		return;
+	assert( buf_pos != 0 );
 	glBindBuffer(GL_ARRAY_BUFFER, buf_pos);
 	// glMap보다 조금 더 빠름, buffer usage dynamic_draw에 따른 차이 없음
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vec3)*nr_verts, poss.data());
 }
 void Mesh::restoreNorBuf()
 {
-	if( buf_nor == 0 )
-		return;
+	assert( buf_nor != 0 );
 	glBindBuffer(GL_ARRAY_BUFFER, buf_nor);
-	// glMap보다 조금 더 빠름, buffer usage dynamic_draw에 따른 차이 없음
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vec3)*nr_verts, nors.data());
 }
 void Mesh::deinitGL()
@@ -144,26 +143,28 @@ void Mesh::deinitGL()
 	gl::safeDelVertArrs(&vao);
 }
 void Mesh::clearMem() {
-	poss.clear(); poss.shrink_to_fit();
-	nors.clear(); nors.shrink_to_fit();
-	uvs.clear(); uvs.shrink_to_fit();
-	cols.clear(); cols.shrink_to_fit();
-	tangents.clear(); tangents.shrink_to_fit();
+	poss.clear(); 		poss.shrink_to_fit();
+	nors.clear(); 		nors.shrink_to_fit();
+	uvs.clear(); 		uvs.shrink_to_fit();
+	cols.clear(); 		cols.shrink_to_fit();
+	tangents.clear(); 	tangents.shrink_to_fit();
 	bitangents.clear(); bitangents.shrink_to_fit();
 	bone_infos.clear(); bone_infos.shrink_to_fit();
-	tris.clear(); tris.shrink_to_fit();
+	tris.clear(); 		tris.shrink_to_fit();
 }
 void Mesh::bindGL() const {
+	assert( vao != 0 && buf_tris != 0 );
 	glBindVertexArray(vao);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buf_tris);
 }
 void Mesh::drawGL() const {
-	glDrawElements(GL_TRIANGLES, tris.size()*3, GL_UNSIGNED_INT, nullptr);
+	glDrawElements(GL_TRIANGLES, nr_tris*3, GL_UNSIGNED_INT, nullptr);
 }
 void Mesh::bindAndDrawGL() const {
+	assert( vao != 0 && buf_tris != 0 );
 	glBindVertexArray(vao);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buf_tris);
-	glDrawElements(GL_TRIANGLES, tris.size()*3, GL_UNSIGNED_INT, nullptr);
+	glDrawElements(GL_TRIANGLES, nr_tris*3, GL_UNSIGNED_INT, nullptr);
 }
 void Mesh::print() const
 {

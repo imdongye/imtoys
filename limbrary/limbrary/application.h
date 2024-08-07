@@ -17,7 +17,7 @@ Todo:
 #ifndef __application_h_
 #define __application_h_
 
-#include "utils.h"
+#include "g_tools.h"
 #include <glm/glm.hpp>
 #include <GLFW/glfw3.h>
 

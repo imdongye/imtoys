@@ -16,6 +16,7 @@ using namespace glm;
 using namespace std;
 using namespace lim;
 
+namespace {
 
 struct Motion {
 	int nr_frames, nr_joints;
@@ -116,7 +117,7 @@ struct Body {
 
 
 
-static void parceBvh(Body** ppBody, Motion** ppMotion, const char* path) {
+void parceBvh(Body** ppBody, Motion** ppMotion, const char* path) {
 	string token;
 
 	*ppBody = new Body();
@@ -128,7 +129,7 @@ static void parceBvh(Body** ppBody, Motion** ppMotion, const char* path) {
 	ifstream input(path);
 	if (!input.is_open()) {
 		fprintf(stderr, "Noinput file %s", path);
-		return;
+		assert(0);
 	}
 
 	// parsing bone hierarchy ==============
@@ -304,16 +305,14 @@ static void parceBvh(Body** ppBody, Motion** ppMotion, const char* path) {
 
 
 
+Body* g_body;
+Motion* g_motion;
+float elapsed_time = 0.f;
+bool is_paused = false;
 
 
 
-
-namespace {
-	Body* g_body;
-	Motion* g_motion;
-	float elapsed_time = 0.f;
-	bool is_paused = false;
-}
+} // end anonymouse namespace
 
 AppBvhParsor::AppBvhParsor()
 	: AppBaseCanvas3d(1200, 780, APP_NAME, true) 

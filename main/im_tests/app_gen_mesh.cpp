@@ -9,6 +9,7 @@
 namespace lim
 {
 	void AppGenMesh::addMeshToScene(Mesh* ms) {
+		ms->initGL(false);
 		Model* md = new Model("sphere");
 		md->addOwn(ms);
 		md->root.addMsMat(ms, &default_mat);
