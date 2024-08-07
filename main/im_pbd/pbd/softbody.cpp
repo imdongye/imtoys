@@ -239,6 +239,7 @@ void SoftBody::addPtcl(const vec3& p, float w, const vec3& v) {
     debug_dirs.push_back( vec3(0) );
 }
 
+// it can be process in gpu
 void SoftBody::uploadToBuf() {
     int i,j;
     for( i=0; i<nr_ptcls; i++ ) {
@@ -249,7 +250,7 @@ void SoftBody::uploadToBuf() {
                 break;
             poss[pToV[j]] = p;
         }
-        if( j==4 ) {
+        if( j!=4 ) {
             continue;
         }
         pToV = idx_verts2[i];
@@ -258,6 +259,37 @@ void SoftBody::uploadToBuf() {
                 break;
             poss[pToV[j]] = p;
         }
+        if( j!=4 ) {
+            continue;
+        }
+        pToV = idx_verts3[i];
+        for( j=0; j<4; j++ ) {
+            if( pToV[j] == -1 )
+                break;
+            poss[pToV[j]] = p;
+        }
     }
     restorePosBuf();
+    
+    
+    // gen normal
+    if( nors.empty() ) {
+        return;
+    }
+    for( vec3& n : nors ) {
+        n = vec3(0);
+    }
+    for( uvec3& tri: tris ) {
+        vec3 e1 = poss[tri.y] - poss[tri.x];
+        vec3 e2 = poss[tri.z] - poss[tri.x];
+        vec3 n = cross(e1, e2);
+        n = normalize(n);
+        for( j=0; j<3; j++ ) {
+            nors[tri[j]] += n;
+        }
+    }
+    for( vec3& n : nors ) {
+        n = normalize(n);
+    }
+    restoreNorBuf();
 }

@@ -41,7 +41,7 @@ namespace lim
         src.root.treversal([&](const Mesh* srcMs, const Material* srcMat, const glm::mat4& tf) {
             if( srcMat->map_Bump==nullptr ) 
                 return;
-            if( srcMs->uvs.size()==0 ) {
+            if( srcMs->uvs.empty() ) {
                 log::err("no uvs in mesh when bakeNorMap\n\n");
                 return;
             }
@@ -118,7 +118,7 @@ namespace lim
         md.root.treversal([&](const Mesh* ms, const Material* mat, const glm::mat4& tf) {
             if( mat==nullptr || (mat->map_Flags|Material::MF_HEIGHT)==0 ) 
                 return;
-            if( ms->uvs.size()==0 ) {
+            if( ms->uvs.empty() ) {
                 log::err("no uvs in mesh when bakeNorMap\n\n");
                 return;
             }
@@ -129,7 +129,7 @@ namespace lim
         });
 
 
-        if( mergeByNormalMap.size()==0 ) {
+        if( mergeByNormalMap.empty() ) {
             log::err("there are no bumpmap in %s\n\n", md.name.c_str());
             return;
         }

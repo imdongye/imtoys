@@ -38,7 +38,7 @@ Mesh::~Mesh()
 // upload VRAM
 void Mesh::initGL(bool withClearMem)
 {
-	if( poss.size()==0 ){
+	if( poss.empty() ){
 		log::err("no verts in mesh\n\n");
 		std::exit(-1);
 		return;
@@ -122,6 +122,14 @@ void Mesh::restorePosBuf()
 	glBindBuffer(GL_ARRAY_BUFFER, buf_pos);
 	// glMap보다 조금 더 빠름, buffer usage dynamic_draw에 따른 차이 없음
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vec3)*nr_verts, poss.data());
+}
+void Mesh::restoreNorBuf()
+{
+	if( buf_nor == 0 )
+		return;
+	glBindBuffer(GL_ARRAY_BUFFER, buf_nor);
+	// glMap보다 조금 더 빠름, buffer usage dynamic_draw에 따른 차이 없음
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vec3)*nr_verts, nors.data());
 }
 void Mesh::deinitGL()
 {

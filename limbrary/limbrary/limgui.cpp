@@ -85,7 +85,7 @@ static void drawHierarchy(RdNode& nd) {
 	if( picked_nd == &nd ) {
 		flags |= ImGuiTreeNodeFlags_Selected;
 	}
-	if( nd.childs.size() == 0 ) {
+	if( nd.childs.empty() ) {
 		flags |= ImGuiTreeNodeFlags_Leaf;
 	}
 	else {

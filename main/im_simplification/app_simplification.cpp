@@ -282,7 +282,7 @@ void lim::AppSimplification::updateImGui()
 				for( int i = 0; i < nr_viewports; i++ )
 				{
 					const Model& md = *models[i];
-					if( md.own_meshes.size()==0 )
+					if( md.own_meshes.empty() )
 						continue;
 
 					if( ImGui::BeginMenu(("Viewport" + std::to_string(i)).c_str()) )
@@ -481,7 +481,7 @@ void lim::AppSimplification::updateImGui()
 			{
 				if( ImGui::TableSetColumnIndex(column++) )
 				{
-					if( md->own_meshes.size()==0 )
+					if( md->own_meshes.empty() )
 						ImGui::Text("");
 					else
 						ImGui::Text("%s", md->name.c_str());
@@ -495,7 +495,7 @@ void lim::AppSimplification::updateImGui()
 			{
 				if( ImGui::TableSetColumnIndex(column++) )
 				{
-					if( md->own_meshes.size()==0 )
+					if( md->own_meshes.empty() )
 						ImGui::Text("");
 					else
 						ImGui::Text("%d", md->total_verts);
@@ -509,7 +509,7 @@ void lim::AppSimplification::updateImGui()
 			{
 				if( ImGui::TableSetColumnIndex(column++) )
 				{
-					if( md->own_meshes.size()==0 )
+					if( md->own_meshes.empty() )
 						ImGui::Text("");
 					else
 						ImGui::Text("%d", md->total_tris);
@@ -523,7 +523,7 @@ void lim::AppSimplification::updateImGui()
 			{
 				if( ImGui::TableSetColumnIndex(column++) )
 				{
-					if( md->own_meshes.size()==0 )
+					if( md->own_meshes.empty() )
 						ImGui::Text("");
 					else
 						ImGui::Text("%f", md->boundary_size.x);
@@ -537,7 +537,7 @@ void lim::AppSimplification::updateImGui()
 			{
 				if( ImGui::TableSetColumnIndex(column++) )
 				{
-					if( md->own_meshes.size()==0 )
+					if( md->own_meshes.empty() )
 						ImGui::Text("");
 					else
 						ImGui::Text("%f", md->boundary_size.y);
@@ -552,7 +552,7 @@ void lim::AppSimplification::updateImGui()
 			{
 				if( ImGui::TableSetColumnIndex(column++) )
 				{
-					if( md->own_meshes.size()==0 )
+					if( md->own_meshes.empty() )
 						ImGui::Text("");
 					else
 						ImGui::Text("%d", (int)md->own_meshes.size());
@@ -566,7 +566,7 @@ void lim::AppSimplification::updateImGui()
 			{
 				if( ImGui::TableSetColumnIndex(column++) )
 				{
-					if( md->own_meshes.size()==0 )
+					if( md->own_meshes.empty() )
 						ImGui::Text("");
 					else
 						ImGui::Text("%d", (int)md->own_textures.size());

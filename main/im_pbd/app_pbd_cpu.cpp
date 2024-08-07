@@ -38,9 +38,9 @@ namespace {
 		MT_BUNNY, MT_DUCK,
 		MT_CUBE, MT_SHARED_CUBE,
 		MT_SPHERE, MT_ICO_SPHERE,
-		MT_PLANE, MT_SPHERE, 
+		MT_PLANE, MT_CLOTH, 
 	};
-	MeshType cur_mesh_type = MT_PLANE;
+	MeshType cur_mesh_type = MT_SPHERE;
 }
 
 

@@ -65,6 +65,7 @@ namespace lim
 		
 		void initGL(bool withClearMem = false);
 		void restorePosBuf();
+		void restoreNorBuf();
 		void deinitGL();
 		void clearMem();
 		void print() const;
