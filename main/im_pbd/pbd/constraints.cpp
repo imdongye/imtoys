@@ -13,22 +13,26 @@ using namespace glm;
 using std::vector;
 using namespace pbd;
 
-ConstraintPoint::ConstraintPoint(int _idx, const vec3& _target) 
-    : idx(_idx), target(_target)
+ConstraintPoint::ConstraintPoint(const SoftBody& body, int idxP, const vec3& _target) 
+    : idx_p(idxP), target(_target)
 {
+    ori_dist = length(target - body.p_s[idx_p]);
 }
 void ConstraintPoint::project(SoftBody& body, float alpha) 
 {
-    // vec3 p = body.np_s[idx];
-    // float w = body.w_s[idx];
-    // vec3 diff = target - p;
-    // float C = length(diff);
-    // vec3 dC = diff / C;
-    // float lambda = C/w*alpha;
-    // body.np_s[idx] += lambda * w * dC;
-    vec3& p = body.p_s[idx];
+    vec3 p = body.p_s[idx_p];
+    float w = body.w_s[idx_p];
+
     vec3 diff = target - p;
-    p += diff/(1.f+alpha);
+    float dist = length(diff);
+    float C = dist - ori_dist;
+    vec3 dC = diff / dist;
+
+    float denom = w+alpha;
+    if( denom < glim::feps )
+        return;
+    float lambda = C / denom;
+    body.p_s[idx_p] += lambda*w*dC;
 }
 
 

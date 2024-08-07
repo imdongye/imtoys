@@ -9,6 +9,7 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/intersect.hpp>
 #include <limits>
 
 
@@ -105,7 +106,17 @@ namespace glim {
 		};
 	}
 
-	// From: https://members.loria.fr/SLazard/ARC-Visi3D/Pant-project/files/Line_Segment_Triangle.html
+	// From: 
+/*
+	Ref:
+	https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm
+	https://en.wikipedia.org/wiki/Pl%C3%BCcker_coordinates
+	https://members.loria.fr/SLazard/ARC-Visi3D/Pant-project/files/Line_Segment_Triangle.html
+	https://fileadmin.cs.lth.se/cs/Personal/Tomas_Akenine-Moller/raytri/
+	https://github.com/g-truc/glm/blob/ea678faff9340ae4a79f50f2edd947141405e128/glm/gtx/intersect.inl
+	https://wjdgh283.tistory.com/entry/%EC%82%BC%EA%B0%81%ED%98%95-%EC%95%88%EC%97%90-%EC%9E%88%EB%8A%94-%EC%A0%90%EC%9D%98-%EB%AC%B4%EA%B2%8C%EC%A4%91%EC%8B%AC-%EC%A2%8C%ED%91%9Cbarycentric-coordinate-%EA%B5%AC%ED%95%98%EA%B8%B0
+*/
+	// barycentric coordinate 
 	inline bool intersectTriAndSegLine(const glm::vec3& p1, const glm::vec3& p2
 		, const glm::vec3& t1, const glm::vec3& t2, const glm::vec3& t3
 		, glm::vec3& point)
@@ -161,6 +172,8 @@ namespace glim {
 		v = t3-t1;
 		n = glm::cross(u, v);
 
+		// dot(w0, n) == 0
+		// 
 		w0 = t1-origin;
 		a = glm::dot(w0, n);
 		b = glm::dot(scaledDir, n);

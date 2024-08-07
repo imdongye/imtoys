@@ -30,6 +30,7 @@ void SoftBody::subStepConstraintProject(float dt)
     }
     
     // Todo: skinning
+
     float distAlpha = compliance.dist/sqdt;
     alpha = distAlpha/compliance.stretch_pct;
     for( auto& c : c_dist_bends ) {
@@ -41,6 +42,12 @@ void SoftBody::subStepConstraintProject(float dt)
     }
     alpha = distAlpha/compliance.bend_pct;
     for( auto& c : c_stretchs ) {
+        c.project( *this, alpha );
+    }
+
+
+    alpha = compliance.point/sqdt;
+    for( auto& c : c_points ) {
         c.project( *this, alpha );
     }
 }
@@ -195,14 +202,6 @@ void SoftBody::update(float dt, const PhyScene& scene)
     // applyCollision(dt, scene.colliders);
 
     applyPressureImpulse(dt);
-
-    // if( pressure>0.f ) {
-    // }
-
-
-    if( upload_to_buf ) {
-        uploadToBuf();
-    }
 }
 
 

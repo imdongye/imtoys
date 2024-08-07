@@ -46,8 +46,9 @@ namespace pbd
     struct ConstraintPoint
     {
         glm::vec3 target;
-        int idx;
-        ConstraintPoint(int _idx, const glm::vec3& _target);
+        float ori_dist;
+        int idx_p;
+        ConstraintPoint(const SoftBody& body, int idxP, const glm::vec3& _target);
         void project(SoftBody& body, float alpha);
     };
 
@@ -83,24 +84,12 @@ namespace pbd
 
     struct SoftBody: public lim::Mesh, public ICollider 
     {
-        enum BendType {
-            BT_NONE,
-            BT_DISTANCE,
-            BT_DIHEDRAL,
-            BT_ISOMETRIC,
+        struct Compliance {
+            float dist, stretch_pct, shear_pct, bend_pct;
+            float dih_bend, iso_bend, point;
+            Compliance();
         };
-        std::vector<glm::vec3> prev_x_s;
-        std::vector<glm::vec3> x_s; // current poss (X)
-        std::vector<glm::vec3> p_s; // new, predicted poss (P)
-        std::vector<glm::vec3> v_s;
-        std::vector<float>     w_s; // inv mass
-        std::vector<glm::vec3> debug_dirs;
-        std::vector<glm::uvec3>     ptcl_tris;
-        // mached mesh poss idx
-        // maximum 8 vertexs
-        std::vector<glm::ivec4> idx_verts; 
-        std::vector<glm::ivec4> idx_verts2;
-        std::vector<glm::ivec4> idx_verts3;
+        Compliance compliance;
 
         float inv_body_mass, inv_ptcl_mass;
         int nr_ptcls, nr_ptcl_tris;
@@ -110,29 +99,41 @@ namespace pbd
         int nr_steps = 20;
         float ptcl_radius = 0.02f;
 
+
+        std::vector<glm::vec3> prev_x_s;
+        std::vector<glm::vec3> x_s; // current poss (X)
+        std::vector<glm::vec3> p_s; // new, predicted poss (P)
+        std::vector<glm::vec3> v_s;
+        std::vector<float>     w_s; // inv ptcl mass or inv infinity mass (0)
+        std::vector<glm::vec3> debug_dirs;
+        std::vector<glm::uvec3> ptcl_tris;
+        // mached mesh poss idx (maximum 12 vertexs)
+        std::vector<glm::ivec4> idx_verts; 
+        std::vector<glm::ivec4> idx_verts2;
+        std::vector<glm::ivec4> idx_verts3;
+
+        std::vector<ConstraintPoint>         c_points;
         std::vector<ConstraintDistance>      c_stretchs;
         std::vector<ConstraintDistance>      c_shears;
         std::vector<ConstraintDistance>      c_dist_bends;
         std::vector<ConstraintDihedralBend>  c_dih_bends;
         std::vector<ConstraintIsometricBend> c_iso_bends;
 
-        struct Compliance {
-            float dist, stretch_pct, shear_pct, bend_pct;
-            float dih_bend, iso_bend;
-            Compliance();
+        enum BendType {
+            BT_NONE,
+            BT_DISTANCE,
+            BT_DIHEDRAL,
+            BT_ISOMETRIC,
         };
-        Compliance compliance;
-        bool upload_to_buf = false;
-
-        SoftBody();
-        void addPtcl(const glm::vec3& p, float w, const glm::vec3& v);
-
         // nrShear => [0,2]
         SoftBody(const lim::Mesh& src, int nrShear = 1, BendType bendType = BT_NONE, float bodyMass = 1.f );
         void update(float dt, const PhyScene& scene);
         float getSdNor(const glm::vec3& p, glm::vec3& outNor) const;
-    private:
         void uploadToBuf();
+
+        SoftBody();
+        void addPtcl(const glm::vec3& p, float w, const glm::vec3& v);
+    private:
         void subStepConstraintProject(float dt);
         float getVolume() const;
         float getVolumeTimesSix() const;

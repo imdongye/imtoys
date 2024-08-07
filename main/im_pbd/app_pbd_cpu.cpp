@@ -119,12 +119,9 @@ static void resetSoftBody()
 	delete ms;
 }
 
-
 static void resetApp() {
 	
 	is_paused = true;
-	draw_mesh = false;
-
 
 	resetSoftBody();
 
@@ -136,6 +133,12 @@ static void resetApp() {
 	phy_scene.colliders.push_back( &c_ground );
 	phy_scene.colliders.push_back( &c_sphere );
 }
+
+
+
+
+
+
 
 AppPbdCpu::AppPbdCpu() : AppBaseCanvas3d(1200, 780, APP_NAME, false, 10, 1000000, 10000000)
 {
@@ -154,6 +157,12 @@ void AppPbdCpu::canvasUpdate()
 	if( is_paused )
 		return;
 	phy_scene.update(delta_time*time_speed);
+	if( draw_mesh ) {
+		for( auto& sb : phy_scene.bodies ) {
+			sb->uploadToBuf();
+		}
+	}
+
 }
 
 
@@ -253,7 +262,6 @@ namespace
 {
 	struct PickedPtclInfo {
 		bool picked = false;
-		bool beforeFixed = false;
 		pbd::SoftBody* body;
 		int ptcl_idx;
 		vec3& x() {
@@ -270,10 +278,20 @@ namespace
 		}
 	};
 	PickedPtclInfo picked_ptcl_info;
+
+
+	struct PickedTriInfo {
+		bool picked = false;
+		pbd::SoftBody* body;
+		uvec3 tri;
+		vec3 point;
+	};
+	PickedTriInfo picked_tri_info;
 }
 
 static void pickPtcl( const vec3& rayDir, const vec3& rayOri ) {
 	float minDepth = FLT_MAX;
+	picked_ptcl_info.picked = false;
 
 	for(pbd::SoftBody* body : phy_scene.bodies) {
 		for(int i=0; i<body->nr_ptcls; i++) {
@@ -281,20 +299,21 @@ static void pickPtcl( const vec3& rayDir, const vec3& rayOri ) {
 			float distFromLine = glm::length( glm::cross(rayDir, toObj) );
 			if( distFromLine < 0.04f ) {
 				float distProjLine = glm::dot(rayDir, toObj);
-				if( distProjLine>0 && minDepth>distProjLine ) {
+				if( distProjLine>0 && distProjLine<minDepth ) {
 					minDepth = distProjLine;
 					picked_ptcl_info.picked = true;
 					picked_ptcl_info.body = body;
 					picked_ptcl_info.ptcl_idx = i;
-					picked_ptcl_info.beforeFixed = (body->w_s[i] == 0.f);
 				}
 			}
 		}
 	}
 }
 static void pickTriangle( const vec3& rayDir, const vec3& rayOri ) {
+	float minDepth = FLT_MAX;
 	const float searhDepth = 50.f;
 	const vec3 scaledDir = rayDir * searhDepth;
+	picked_tri_info.picked = false;
 
 	for(pbd::SoftBody* body : phy_scene.bodies) {
 		for(int i=0; i<body->nr_ptcl_tris; i++) {
@@ -304,10 +323,13 @@ static void pickTriangle( const vec3& rayDir, const vec3& rayOri ) {
 			vec3& t3 = body->x_s[tri.z];
 			
 			vec3 point;
-			if( glim::intersectTriAndRay(rayOri, scaledDir, t1, t2, t3, point) ) {
-				
+			float depth = glim::intersectTriAndRay(rayOri, scaledDir, t1, t2, t3, point);
+			if( depth>0 && depth<minDepth ) {
+				minDepth = depth;
+				picked_tri_info.picked = true;
+				picked_tri_info.body = body;
+				picked_tri_info.tri = tri;
 			}
-
 		}
 	}
 }
@@ -359,10 +381,7 @@ void AppPbdCpu::canvasImGui()
 	
 	if( ImGui::CollapsingHeader("draw&run") ) {
 		ImGui::Checkbox("draw dPi dir draw", &draw_dpi_dir);
-
-		if( ImGui::Checkbox("draw mesh", &draw_mesh) ) {
-			cur_body->upload_to_buf = draw_mesh;
-		}
+		ImGui::Checkbox("draw mesh", &draw_mesh);
 		ImGui::SliderInt("# steps", &cur_body->nr_steps, 1, 50);
 		ImGui::SliderInt("max fps", &max_fps, -1, 300);
 		ImGui::SliderFloat("time speed", &time_speed, 0.1f, 2.f);
