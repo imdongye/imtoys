@@ -72,6 +72,7 @@ namespace lim
 			VM_SCROLL
 		};
 		int viewing_mode = VM_FREE;
+		bool enabled = true;
 	protected:
 
 		enum INPUT_STATUS {

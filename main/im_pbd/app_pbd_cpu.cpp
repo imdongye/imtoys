@@ -249,8 +249,9 @@ void AppPbdCpu::canvasDraw() const
 
 
 
-namespace {
-	struct PickingInfo {
+namespace
+{
+	struct PickedPtclInfo {
 		bool picked = false;
 		bool beforeFixed = false;
 		pbd::SoftBody* body;
@@ -268,10 +269,10 @@ namespace {
 			return body->w_s[ptcl_idx];
 		}
 	};
-	PickingInfo picked_info;
+	PickedPtclInfo picked_ptcl_info;
 }
 
-static void updatePicking( const vec3& rayDir, const vec3& rayOri ) {
+static void pickPtcl( const vec3& rayDir, const vec3& rayOri ) {
 	float minDepth = FLT_MAX;
 
 	for(pbd::SoftBody* body : phy_scene.bodies) {
@@ -282,12 +283,31 @@ static void updatePicking( const vec3& rayDir, const vec3& rayOri ) {
 				float distProjLine = glm::dot(rayDir, toObj);
 				if( distProjLine>0 && minDepth>distProjLine ) {
 					minDepth = distProjLine;
-					picked_info.picked = true;
-					picked_info.body = body;
-					picked_info.ptcl_idx = i;
-					picked_info.beforeFixed = (body->w_s[i] == 0.f);
+					picked_ptcl_info.picked = true;
+					picked_ptcl_info.body = body;
+					picked_ptcl_info.ptcl_idx = i;
+					picked_ptcl_info.beforeFixed = (body->w_s[i] == 0.f);
 				}
 			}
+		}
+	}
+}
+static void pickTriangle( const vec3& rayDir, const vec3& rayOri ) {
+	const float searhDepth = 50.f;
+	const vec3 scaledDir = rayDir * searhDepth;
+
+	for(pbd::SoftBody* body : phy_scene.bodies) {
+		for(int i=0; i<body->nr_ptcl_tris; i++) {
+			uvec3& tri = body->ptcl_tris[i]; 
+			vec3& t1 = body->x_s[tri.x];
+			vec3& t2 = body->x_s[tri.y];
+			vec3& t3 = body->x_s[tri.z];
+			
+			vec3 point;
+			if( glim::intersectTriAndRay(rayOri, scaledDir, t1, t2, t3, point) ) {
+				
+			}
+
 		}
 	}
 }
@@ -390,31 +410,33 @@ void AppPbdCpu::canvasImGui()
 
 
 	// input handling
-	if(ImGui::IsMouseClicked(ImGuiMouseButton_Right, false)) {
+	if(ImGui::IsMouseClicked(ImGuiMouseButton_Left, false)) {
 		const vec3 mouseRay = vp.getMousePosRayDir();
-		updatePicking(mouseRay, vp.camera.pos);
-		if( picked_info.picked ) {
-			picked_info.w() = 0.f;
-			picked_info.v() = vec3(0.f);
+		pickPtcl(mouseRay, vp.camera.pos);
+		if( picked_ptcl_info.picked ) {
+			vp.camera.enabled = false;
+			picked_ptcl_info.w() = 0.f;
+			picked_ptcl_info.v() = vec3(0.f);
 		}
 	}
-	if(picked_info.picked && ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
-		const vec3 toObj = picked_info.p() - vp.camera.pos;
+	if(picked_ptcl_info.picked && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+		const vec3 toObj = picked_ptcl_info.p() - vp.camera.pos;
 		const vec3 mouseRay = vp.getMousePosRayDir();
 		const float depth = dot(vp.camera.front, toObj)/dot(vp.camera.front, mouseRay);
 		const vec3 targetPos = depth*mouseRay+vp.camera.pos;
-		picked_info.x() = targetPos;
-		picked_info.p() = targetPos;
+		picked_ptcl_info.x() = targetPos;
+		picked_ptcl_info.p() = targetPos;
 	}
-	if(ImGui::IsMouseReleased(ImGuiMouseButton_Right)) {
-		picked_info.picked = false;
+	if(ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
+		vp.camera.enabled = true;
+		picked_ptcl_info.picked = false;
 	}
 	if(ImGui::IsMouseClicked(ImGuiMouseButton_Middle, false)) {
 		const vec3 mouseRay = vp.getMousePosRayDir();
-		updatePicking(mouseRay, vp.camera.pos);
-		if( picked_info.picked ) {
-			picked_info.w() = picked_info.body->inv_ptcl_mass;
-			picked_info.picked = false;
+		pickPtcl(mouseRay, vp.camera.pos);
+		if( picked_ptcl_info.picked ) {
+			picked_ptcl_info.w() = picked_ptcl_info.body->inv_ptcl_mass;
+			picked_ptcl_info.picked = false;
 		}
 	}
 	if(ImGui::IsKeyPressed(ImGuiKey_B, false)) {

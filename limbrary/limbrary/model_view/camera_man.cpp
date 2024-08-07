@@ -145,6 +145,10 @@ void CameraController::updateScrollMode()
 }
 void CameraController::updateFromInput()
 {
+	if( enabled == false )
+		return;
+
+	// switch view mode
 	if( ImGui::IsKeyPressed(ImGuiKey_Tab, false) ) {
 		setViewMode((VIEWING_MODE)(viewing_mode+1));
 	}
@@ -235,11 +239,10 @@ void CameraManVp::deinitCallbacks()
 }
 void CameraManVp::initCallbacks(Viewport* _vp)
 {
+	assert( _vp != nullptr );
 	if( vp )
 		deinitCallbacks();
 	vp = _vp;
-	if( vp == nullptr )
-		return;
 	
 	aspect = vp->getAspect();
 	updateProjMat();

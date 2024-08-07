@@ -1,5 +1,7 @@
 /*
     2024-07-23 / im dong ye
+
+	glim = glm + lim
 */
 
 #ifndef __glm_tools_h_
@@ -102,6 +104,93 @@ namespace glim {
 			{        0,        0, 0, 1}, 
 		};
 	}
+
+	// From: https://members.loria.fr/SLazard/ARC-Visi3D/Pant-project/files/Line_Segment_Triangle.html
+	inline bool intersectTriAndSegLine(const glm::vec3& p1, const glm::vec3& p2
+		, const glm::vec3& t1, const glm::vec3& t2, const glm::vec3& t3
+		, glm::vec3& point)
+	{
+		glm::vec3 diff, u, v, n, w0, w;
+		float r, a, b;
+
+		diff = p2 - p1;
+		u = t2-t1;
+		v = t3-t1;
+		n = glm::cross(u, v);
+
+		w0 = t1-p1;
+		a = glm::dot(w0, n);
+		b = glm::dot(diff, n);
+
+		r = a/b;
+		if( r<0.0 || r>1.0 )
+			return false;
+		
+		point = p1 + r*diff;
+		w = t1-point;
+
+		float uu, uv, vv, wu, wv, D;
+		uu = glm::dot(u,u);
+		uv = glm::dot(u,v);
+		vv = glm::dot(v,v);
+		wu = glm::dot(w,u);
+		wv = glm::dot(w,v);
+		D = uv*uv - uu*vv;
+
+		float s, t;
+		s = (uv*wv - vv*wu) / D;
+		if( s<0.0 || s>1.0 ) 
+			return false;
+		t = (uv*wu - uu*wv) / D;
+		if( t<0.0 || t>1.0 ) 
+			return false;
+
+		return true;
+	}
+
+
+	// Todo: bool대신 깊이 반환
+	inline bool intersectTriAndRay(const glm::vec3& origin, const glm::vec3& scaledDir
+		, const glm::vec3& t1, const glm::vec3& t2, const glm::vec3& t3
+		, glm::vec3& point)
+	{
+		glm::vec3 u, v, n, w0, w;
+		float r, a, b;
+
+		u = t2-t1;
+		v = t3-t1;
+		n = glm::cross(u, v);
+
+		w0 = t1-origin;
+		a = glm::dot(w0, n);
+		b = glm::dot(scaledDir, n);
+
+		r = a/b;
+		if( r<0.0 || r>1.0 )
+			return false;
+		
+		point = origin + r*scaledDir;
+		w = t1-point;
+
+		float uu, uv, vv, wu, wv, D;
+		uu = glm::dot(u,u);
+		uv = glm::dot(u,v);
+		vv = glm::dot(v,v);
+		wu = glm::dot(w,u);
+		wv = glm::dot(w,v);
+		D = uv*uv - uu*vv;
+
+		float s, t;
+		s = (uv*wv - vv*wu) / D;
+		if( s<0.0 || s>1.0 ) 
+			return false;
+		t = (uv*wu - uu*wv) / D;
+		if( t<0.0 || t>1.0 ) 
+			return false;
+
+		return true;
+	}
+
 }
 
 
