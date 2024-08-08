@@ -16,7 +16,7 @@ using namespace pbd;
 ConstraintPoint::ConstraintPoint(const SoftBody& body, int idxP, const vec3& _point) 
     : idx_p(idxP), point(_point)
 {
-    ori_dist = length(point - body.p_s[idx_p]);
+    ori_dist = length(point - body.x_s[idx_p]);
 }
 void ConstraintPoint::project(SoftBody& body, float alpha) 
 {
@@ -44,7 +44,7 @@ void ConstraintPoint::project(SoftBody& body, float alpha)
 ConstraintDistance::ConstraintDistance(const SoftBody& body, const uvec2& idxPs)
     : idx_ps(idxPs)
 {
-    ori_dist = length(body.p_s[idx_ps.x] - body.p_s[idx_ps.y]);
+    ori_dist = length(body.x_s[idx_ps.x] - body.x_s[idx_ps.y]);
 }
 void ConstraintDistance::project(SoftBody& body, float alpha) 
 {
@@ -105,10 +105,10 @@ e3\  /e4    e4 = p3-p1
 ConstraintDihedralBend::ConstraintDihedralBend(const SoftBody& body, const uvec4& idxPs)
     : idx_ps(idxPs)
 {
-    vec3 p0 = body.p_s[idx_ps.x];
-    vec3 p1 = body.p_s[idx_ps.y];
-    vec3 p2 = body.p_s[idx_ps.z];
-    vec3 p3 = body.p_s[idx_ps.w];
+    vec3 p0 = body.x_s[idx_ps.x];
+    vec3 p1 = body.x_s[idx_ps.y];
+    vec3 p2 = body.x_s[idx_ps.z];
+    vec3 p3 = body.x_s[idx_ps.w];
     vec3 e0 = p0 - p1;
     vec3 e1 = p2 - p1;
     vec3 e4 = p3 - p1;
@@ -224,10 +224,10 @@ https://carmencincotti.com/2022-08-29/the-isometric-bending-constraint-of-xpbd/
 ConstraintIsometricBend::ConstraintIsometricBend(const SoftBody& body, const uvec4& idxPs)
     : idx_ps(idxPs)
 {
-    const vec3& p0 = body.p_s[idx_ps.x];
-    const vec3& p1 = body.p_s[idx_ps.y];
-    const vec3& p2 = body.p_s[idx_ps.z];
-    const vec3& p3 = body.p_s[idx_ps.w];
+    const vec3& p0 = body.x_s[idx_ps.x];
+    const vec3& p1 = body.x_s[idx_ps.y];
+    const vec3& p2 = body.x_s[idx_ps.z];
+    const vec3& p3 = body.x_s[idx_ps.w];
     vec3 e0 = p0 - p1;
     vec3 e1 = p2 - p1;
     vec3 e4 = p3 - p1;

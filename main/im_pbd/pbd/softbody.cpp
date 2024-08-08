@@ -39,6 +39,9 @@ SoftBody::SoftBody(const lim::Mesh& src, int nrShear, BendType bendType
     , float bodyMass, bool refCloseVerts
 ) : lim::Mesh(src), compliance()
 {
+    nr_verts = (int)poss.size();
+    nr_tris = (int)tris.size();
+
     // rm same pos verts to ptcls ====================
     if( refCloseVerts ) {
         vector<int> vertIdxToPtclIdx(nr_verts, -1);
@@ -65,12 +68,10 @@ SoftBody::SoftBody(const lim::Mesh& src, int nrShear, BendType bendType
             }
         }
 
+        // make ptcl triangle
+        ptcl_tris.reserve(nr_tris);
 
-        nr_ptcls = (int)tempPtcls.size();
-        nr_ptcl_tris = (int)tris.size();
-        ptcl_tris.reserve(nr_ptcl_tris);
-
-        for( int i=0; i<nr_ptcl_tris; i++ ) {
+        for( int i=0; i<nr_tris; i++ ) {
             uvec3 pTri;
             for( int j=0; j<3; j++ ) {
                 pTri[j] = vertIdxToPtclIdx[tris[i][j]];
@@ -78,23 +79,19 @@ SoftBody::SoftBody(const lim::Mesh& src, int nrShear, BendType bendType
             ptcl_tris.push_back(pTri);
         }
 
-        idx_verts.resize(nr_ptcls, ivec4(-1));
-        idx_verts2.resize(nr_ptcls, ivec4(-1));
-        idx_verts3.resize(nr_ptcls, ivec4(-1));
+
+        // make idx_verts
+        nr_ptcls = (int)tempPtcls.size();
+        idx_verts_part_infos.reserve(nr_ptcls);
+        idx_verts.reserve(nr_verts);
+
         for( int i=0; i<nr_ptcls; i++ ) {
-            auto pToV = ptclIdxToVertIdxs[i];
-            int nrIdxVs = (int)pToV.size();
-            assert(nrIdxVs<=12); // maximum is 12 verts per ptcl
-            for( int j=0; j<nrIdxVs; j++ ) {
-                if( j<4 ) {
-                    idx_verts[i][j] = pToV[j];
-                }
-                else if( j<8) {
-                    idx_verts2[i][j-4] = pToV[j];
-                }
-                else {
-                    idx_verts3[i][j-8] = pToV[j];
-                }
+            auto pToVs = ptclIdxToVertIdxs[i];
+            uint offset = (uint)idx_verts.size();
+            uint count = (uint)pToVs.size();
+            idx_verts_part_infos.push_back( {offset, offset+count} );
+            for( uint j=0; j<count; j++ ) {
+                idx_verts.push_back(pToVs[j]);
             }
         }
         prev_x_s = tempPtcls;
@@ -104,14 +101,13 @@ SoftBody::SoftBody(const lim::Mesh& src, int nrShear, BendType bendType
 
     else {
         nr_ptcls = (int)poss.size();
-        nr_ptcl_tris = (int)tris.size();
 
         prev_x_s = poss;
         x_s = poss;
         p_s = poss;
         ptcl_tris = tris;
 
-        // poss and tris delete in initGL
+        // poss and tris will delete in initGL
     }
 
 
@@ -133,9 +129,9 @@ SoftBody::SoftBody(const lim::Mesh& src, int nrShear, BendType bendType
     };
     vector<Edge> aEdges; // aside edges
 
-    int nrDupEdges = nr_ptcl_tris*3;
+    int nrDupEdges = nr_tris*3;
     aEdges.reserve( nrDupEdges );
-    for( int i=0; i<nr_ptcl_tris; i++ ) {
+    for( int i=0; i<nr_tris; i++ ) {
         const uvec3& tri = ptcl_tris[i];
         aEdges.push_back( {makeEdgeIdx(tri.x, tri.y), tri.z, i} );
         aEdges.push_back( {makeEdgeIdx(tri.x, tri.z), tri.y, i} );
@@ -240,48 +236,6 @@ float SoftBody::getVolumeTimesSix() const {
     return volume;
 }
 
-// it can be process in gpu
-void SoftBody::updateVerts() {
-    int i,j;
-    for( i=0; i<nr_ptcls; i++ ) {
-        vec3 p = x_s[i];
-        uvec4 pToV = idx_verts[i];
-        for( j=0; j<4; j++ ) {
-            if( pToV[j] == -1 )
-                break;
-            poss[pToV[j]] = p;
-        }
-        if( j!=4 ) {
-            continue;
-        }
-        pToV = idx_verts2[i];
-        for( j=0; j<4; j++ ) {
-            if( pToV[j] == -1 )
-                break;
-            poss[pToV[j]] = p;
-        }
-        if( j!=4 ) {
-            continue;
-        }
-        pToV = idx_verts3[i];
-        for( j=0; j<4; j++ ) {
-            if( pToV[j] == -1 )
-                break;
-            poss[pToV[j]] = p;
-        }
-    }
-}
-void SoftBody::uploadToBuf() {
-    assert( buf_pos != 0 );
-	glBindBuffer(GL_ARRAY_BUFFER, buf_pos);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vec3)*nr_verts, (poss.empty()) ? x_s.data() : poss.data());
-
-    updateNorsFromTris();
-    assert( buf_nor != 0 );
-	glBindBuffer(GL_ARRAY_BUFFER, buf_nor);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vec3)*nr_verts, nors.data());
-}
-
 void SoftBody::initGL()
 {
     Mesh::initGL(false);
@@ -291,30 +245,108 @@ void SoftBody::initGL()
     }
 }
 
-void SoftBody::updateNorsFromTris()
-{
-    if( poss.empty() ) {
-        assert( nors.size()==x_s.size() );
+/*
+    update normal has 3 types
+    1. poss.empty() -> no ref verts, refCloseVerts == false in constructor
+    2. update with ptcls
+        use p_s to temp storage
+    3. update with verts
 
-        std::fill(nors.begin(), nors.end(), vec3(0));
-        for( const uvec3& t : ptcl_tris )
-        {
-            vec3 e1 = x_s[t.y] - x_s[t.x];
-            vec3 e2 = x_s[t.z] - x_s[t.x];
-            vec3 n = normalize(cross(e1, e2));
-            nors[t.x] += n;
-            nors[t.y] += n;
-            nors[t.z] += n;
-        }
-        for( vec3& n : nors )
-        {
-            n = normalize(n);
-        }
-    }
-    else {
-        Mesh::updateNorsFromTris();
-    }
+Todo:
+    normal 가중치 면적 크기 비례해야하나?
+
+*/
+// type 1 of update normal
+void SoftBody::updateNorsAndUpload() {
+    assert( poss.empty()==true && nors.size()==x_s.size() );
+
+	std::fill(nors.begin(), nors.end(), vec3(0));
+	for( const uvec3& t : tris )
+	{
+		vec3 e1 = x_s[t.y] - x_s[t.x];
+        vec3 e2 = x_s[t.z] - x_s[t.x];
+        vec3 n = normalize(cross(e1, e2));
+		nors[t.x] += n;
+		nors[t.y] += n;
+		nors[t.z] += n;
+	}
+	for( vec3& n : nors )
+	{
+		n = normalize(n);
+	}
+
+
+    // upload to gl buf
+    assert( buf_pos != 0 );
+	glBindBuffer(GL_ARRAY_BUFFER, buf_pos);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vec3)*nr_verts, x_s.data());
+
+    assert( buf_nor != 0 );
+	glBindBuffer(GL_ARRAY_BUFFER, buf_nor);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vec3)*nr_verts, nors.data());
 }
+
+// type 2 of update normal
+void SoftBody::updatePossAndNorsWithPtclAndUpload() {
+    // make normal
+    std::fill(p_s.begin(), p_s.end(), vec3(0));
+    for( const uvec3& ptri : ptcl_tris ) {
+        vec3 e1 = x_s[ptri.y] - x_s[ptri.x];
+        vec3 e2 = x_s[ptri.z] - x_s[ptri.x];
+        vec3 n = normalize(cross(e1, e2)); // Todo 면적크기
+        // temp storage
+        p_s[ptri.x] += n;
+        p_s[ptri.y] += n;
+        p_s[ptri.z] += n;
+    }
+    for( vec3& n : p_s ) {
+        n = normalize(n);
+    }
+    // update verts
+    for( int i=0; i<nr_ptcls; i++ ) {
+        const auto& idxVertsPartInfo = idx_verts_part_infos[i];
+        const vec3& p = x_s[i];
+        const vec3& v = p_s[i];
+        for( uint j=idxVertsPartInfo.x; j<idxVertsPartInfo.y; j++ ) {
+            poss[idx_verts[j]] = p;
+            nors[idx_verts[j]] = v;
+        }
+    }
+
+    // upload to gl buf
+    assert( buf_pos != 0 );
+	glBindBuffer(GL_ARRAY_BUFFER, buf_pos);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vec3)*nr_verts, poss.data());
+
+    assert( buf_nor != 0 );
+	glBindBuffer(GL_ARRAY_BUFFER, buf_nor);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vec3)*nr_verts, nors.data());
+}
+
+// type 3 of update normal
+void SoftBody::updatePossAndNorsWithVertAndUpload() {
+    // update verts
+    for( int i=0; i<nr_ptcls; i++ ) {
+        const auto& idxVertsPartInfo = idx_verts_part_infos[i];
+        const vec3& p = x_s[i];
+        for( uint j=idxVertsPartInfo.x; j<idxVertsPartInfo.y; j++ ) {
+            poss[idx_verts[j]] = p;
+        }
+    }
+
+    // make nors
+    Mesh::updateNorsFromTris();
+
+    // upload to gl buf
+    assert( buf_pos != 0 );
+	glBindBuffer(GL_ARRAY_BUFFER, buf_pos);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vec3)*nr_verts, poss.data());
+
+    assert( buf_nor != 0 );
+	glBindBuffer(GL_ARRAY_BUFFER, buf_nor);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vec3)*nr_verts, nors.data());
+}
+
 
 
 
@@ -331,7 +363,7 @@ void SoftBody::updateNorsFromTris()
 
 // for test individual particle
 SoftBody::SoftBody()
-    : inv_body_mass(1.f), inv_ptcl_mass(1.f), nr_ptcls(0), nr_ptcl_tris(0)
+    : inv_body_mass(1.f), inv_ptcl_mass(1.f), nr_ptcls(0)
 {
     constexpr int defalutSize = 50;
     x_s.reserve(defalutSize);

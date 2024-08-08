@@ -179,6 +179,7 @@ void SoftBody::update(float dt, const PhyScene& scene)
         for( int i=0; i<nr_ptcls; i++ )
         {
             if( w_s[i] == 0.f ) {
+                p_s[i] = x_s[i];
                 continue;
             }
             vec3 acc = scene.G;

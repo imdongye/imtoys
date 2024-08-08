@@ -102,7 +102,7 @@ namespace pbd
         Compliance compliance;
 
         float inv_body_mass, inv_ptcl_mass;
-        int nr_ptcls, nr_ptcl_tris;
+        int nr_ptcls;
 
         float pressure = 0.f;
 
@@ -110,17 +110,20 @@ namespace pbd
         float ptcl_radius = 0.02f;
 
 
+        // nr tris
+        std::vector<glm::uvec3> ptcl_tris;
+        // nr verts
+        std::vector<glm::uint> idx_verts;
+
+        // per ptcl
         std::vector<glm::vec3> prev_x_s;
         std::vector<glm::vec3> x_s; // current poss (X)
         std::vector<glm::vec3> p_s; // new, predicted poss (P)
         std::vector<glm::vec3> v_s;
         std::vector<float>     w_s; // inv ptcl mass or inv infinity mass (0)
         std::vector<glm::vec3> debug_dirs;
-        std::vector<glm::uvec3> ptcl_tris;
-        // mached mesh poss idx (maximum 12 vertexs)
-        std::vector<glm::ivec4> idx_verts; 
-        std::vector<glm::ivec4> idx_verts2;
-        std::vector<glm::ivec4> idx_verts3;
+        std::vector<glm::uvec2> idx_verts_part_infos; // offset(start), end for idx_verts
+
 
         std::vector<ConstraintPoint>         c_points;
         std::vector<ConstraintDistance>      c_stretchs;
@@ -142,11 +145,11 @@ namespace pbd
         virtual float getSdNor(const glm::vec3& p, glm::vec3& outNor) const final;
 
         void initGL();
-        void uploadToBuf();
 
-
-        void updateVerts();
-        void updateNorsFromTris();
+        
+        void updateNorsAndUpload();
+        void updatePossAndNorsWithPtclAndUpload();
+        void updatePossAndNorsWithVertAndUpload();
 
         SoftBody();
         void addPtcl(const glm::vec3& p, float w, const glm::vec3& v);
@@ -163,7 +166,7 @@ namespace pbd
     struct PhyScene 
     {
         glm::vec3 G = {0.f, -9.8f, 0.f};
-        float air_drag = 0.0001f;
+        float air_drag = 0.0008f;
         // this is refs
         std::vector<ICollider*> colliders;
         std::vector<SoftBody*> bodies;

@@ -27,6 +27,8 @@ namespace {
 	bool fix_start = true;
 	pbd::SoftBody::BendType bend_type = pbd::SoftBody::BT_NONE;
 	bool is_ptcl_ref_close_verts = true;
+	// turn false if you want vertex tri face normal
+	bool update_nor_with_ptcl = true;
 
 	const char* mesh_type_names[] = {
 		"Bunny", "Duck",
@@ -70,35 +72,42 @@ static void resetSoftBody()
 		case MT_DUCK: {
 			Model md;
 			md.importFromFile("assets/models/pbd_test/cheems.obj");
-			md.setUnitScaleAndPivot({0,0,0}, 1.f);
+			md.setUnitScaleAndPivot({0,0,0}, 2.f);
 			ms = md.own_meshes[0];
 			md.own_meshes[0] = nullptr;
 			tf = md.tf_norm->mtx;
 			break;
 		}
 		case MT_CUBE: {
+			nr_ms_slices = min(4, nr_ms_slices);
 			ms = new MeshCube(1.f, true, true);
 			ms->subdivide(nr_ms_slices);
 			break;
 		}
 		case MT_SHARED_CUBE: {
+			nr_ms_slices = min(4, nr_ms_slices);
 			ms = new MeshCube(1.f, false, false);
 			ms->subdivide(nr_ms_slices);
 			break;
 		}
 		case MT_SPHERE: {
-			ms = new MeshSphere(1.f, nr_ms_slices, nr_ms_slices/2, true, false);
+			int nrSlices = max(6, nr_ms_slices);
+			int nrStacks = max(4, nr_ms_slices/2);
+			ms = new MeshSphere(1.f, nrSlices, nrStacks, true, false);
 			break;
 		}
 		case MT_ICO_SPHERE: {
+			nr_ms_slices = min(2, nr_ms_slices);
 			ms = new MeshIcoSphere(1.f, nr_ms_slices, true, true);
 			break;
 		}
 		case MT_PLANE: {
+			nr_ms_slices = max(1, nr_ms_slices);
 			ms = new MeshPlane(1.f, 1.f, nr_ms_slices, nr_ms_slices, true, true);
 			break;
 		}
 		case MT_CLOTH: {
+			nr_ms_slices = max(1, nr_ms_slices);
 			ms = new MeshCloth(1.f, 1.f, nr_ms_slices, nr_ms_slices, true, true);
 			break;
 		}
@@ -159,7 +168,15 @@ void AppPbdCpu::canvasUpdate()
 		return;
 	phy_scene.update(delta_time*time_speed);
 	if( draw_mesh ) {
-		cur_body->uploadToBuf();
+		if( is_ptcl_ref_close_verts == false ) {
+			cur_body->updateNorsAndUpload();
+		}
+		else if( update_nor_with_ptcl ) {
+			cur_body->updatePossAndNorsWithPtclAndUpload();
+		}
+		else {
+			cur_body->updatePossAndNorsWithVertAndUpload();
+		}
 	}
 
 }
@@ -270,9 +287,6 @@ namespace
 		vec3& x() {
 			return body->x_s[ptcl_idx];
 		}
-		vec3& p(){
-			return body->p_s[ptcl_idx];
-		}
 		vec3& v() {
 			return body->v_s[ptcl_idx];
 		}
@@ -337,7 +351,7 @@ static void pickTriangle( const vec3& rayDir, const vec3& rayOri ) {
 	picked_tri_info.picked = false;
 
 	for(pbd::SoftBody* body : phy_scene.bodies) {
-		for(int i=0; i<body->nr_ptcl_tris; i++) {
+		for(int i=0; i<body->nr_tris; i++) {
 			uvec3& tri = body->ptcl_tris[i]; 
 			vec3& t1 = body->x_s[tri.x];
 			vec3& t2 = body->x_s[tri.y];
@@ -378,7 +392,7 @@ void AppPbdCpu::canvasImGui()
 			needReset |= ImGui::Combo("mesh type", (int*)&cur_mesh_type, mesh_type_names, nr_mesh_type_names);
 			needReset |= ImGui::Checkbox("ptcl ref close verts", &is_ptcl_ref_close_verts);
 			needReset |= ImGui::SliderFloat("size scale", &size_scale, 0.5f, 3.f);
-			needReset |= ImGui::SliderInt("nr ms slices", &nr_ms_slices, 1, 20);
+			needReset |= ImGui::SliderInt("nr ms slices", &nr_ms_slices, 0, 20);
 			needReset |= ImGui::SliderInt("nr shears", &nr_shear, 0, 2);
 			needReset |= ImGui::Combo("bendType", (int*)&bend_type, "none\0distance\0dihedral\0isometric\0", 4);
 			needReset |= ImGui::Checkbox("fix", &fix_start);
@@ -394,15 +408,16 @@ void AppPbdCpu::canvasImGui()
 	
 	if( ImGui::CollapsingHeader("draw&run") ) {
 		ImGui::Checkbox("draw dPi dir draw", &draw_dpi_dir);
+		ImGui::Checkbox("nor with ptcl tris", &update_nor_with_ptcl);
 		ImGui::Checkbox("draw mesh", &draw_mesh);
 		ImGui::SliderInt("# steps", &cur_body->nr_steps, 1, 50);
-		ImGui::SliderInt("max fps", &max_fps, -1, 300);
+		ImGui::SliderInt("max fps", &max_fps, 20, 300);
 		ImGui::SliderFloat("time speed", &time_speed, 0.1f, 2.f);
 	}
 	if( ImGui::CollapsingHeader("info") ) {
 		ImGui::Text("#vert %d", cur_body->nr_verts);
 		ImGui::Text("#ptcl %d", cur_body->nr_ptcls);
-		ImGui::Text("#tris %d", cur_body->nr_ptcl_tris);
+		ImGui::Text("#tris %d", cur_body->nr_tris);
 		ImGui::Separator();
 		ImGui::Text("#stretch %d", cur_body->c_stretchs.size());
 		ImGui::Text("#shear %d", cur_body->c_shears.size());
@@ -456,7 +471,6 @@ void AppPbdCpu::canvasImGui()
 		vec3 target = picked_ptcl_info.x();
 		vp.movePosFormMouse(target);
 		picked_ptcl_info.x() = target;
-		picked_ptcl_info.p() = target;
 	}
 	else if(ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
 		vp.camera.enabled = true;
