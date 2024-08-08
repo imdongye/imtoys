@@ -169,7 +169,7 @@ void main()
 	// 	N = -N;
 	float NDL = max(dot(N, L),0);
     vec3 outColor;
-	outColor = shadowing() * NDL * oColor.xyz;
+	outColor = (0.05f+0.95f*shadowing()) * NDL * oColor.xyz;
 
 
 	// debug

@@ -166,7 +166,7 @@ namespace pbd
     struct PhyScene 
     {
         glm::vec3 G = {0.f, -9.8f, 0.f};
-        float air_drag = 0.0008f;
+        float air_drag = 0.2f;
         // this is refs
         std::vector<ICollider*> colliders;
         std::vector<SoftBody*> bodies;

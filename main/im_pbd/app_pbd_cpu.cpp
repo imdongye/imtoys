@@ -18,27 +18,28 @@ namespace {
 	pbd::ColliderSphere c_sphere({0,0.5f,0}, 0.3f);
 	bool is_paused = true;
 	bool draw_mesh = false;
+	bool enable_tex = true;
 	bool draw_dpi_dir = false;
 	int nr_ms_slices = 13;
 	float size_scale = 0.7f;
-	int nr_shear = 1;
+	int nr_shear = 2;
 	float time_speed = 1.f;
 	float body_mass = 1.f;
 	bool fix_start = true;
-	pbd::SoftBody::BendType bend_type = pbd::SoftBody::BT_NONE;
+	pbd::SoftBody::BendType bend_type = pbd::SoftBody::BT_DISTANCE;
 	bool is_ptcl_ref_close_verts = true;
 	// turn false if you want vertex tri face normal
 	bool update_nor_with_ptcl = true;
 
 	const char* mesh_type_names[] = {
-		"Bunny", "Duck",
+		"Bunny", "Cheems", "Buff"
 		"Cube", "Shared Cube",
 		"Sphere", "Ico Sphere",
 		"Plane", "Cloth",
 	};
 	const int nr_mesh_type_names = sizeof(mesh_type_names)/sizeof(mesh_type_names[0]);
 	enum MeshType {
-		MT_BUNNY, MT_DUCK,
+		MT_BUNNY, MT_CHEEMS, MT_BUFF,
 		MT_CUBE, MT_SHARED_CUBE,
 		MT_SPHERE, MT_ICO_SPHERE,
 		MT_PLANE, MT_CLOTH, 
@@ -69,10 +70,19 @@ static void resetSoftBody()
 			tf = md.tf_norm->mtx;
 			break;
 		}
-		case MT_DUCK: {
+		case MT_CHEEMS: {
 			Model md;
 			md.importFromFile("assets/models/pbd_test/cheems.obj");
 			md.setUnitScaleAndPivot({0,0,0}, 2.f);
+			ms = md.own_meshes[0];
+			md.own_meshes[0] = nullptr;
+			tf = md.tf_norm->mtx;
+			break;
+		}
+		case MT_BUFF: {
+			Model md;
+			md.importFromFile("assets/models/pbd_test/buff-doge.obj");
+			md.setUnitScaleAndPivot({0,0,0}, 1.f);
 			ms = md.own_meshes[0];
 			md.own_meshes[0] = nullptr;
 			tf = md.tf_norm->mtx;
@@ -93,7 +103,7 @@ static void resetSoftBody()
 		case MT_SPHERE: {
 			int nrSlices = max(6, nr_ms_slices);
 			int nrStacks = max(4, nr_ms_slices/2);
-			ms = new MeshSphere(1.f, nrSlices, nrStacks, true, false);
+			ms = new MeshSphere(1.f, nrSlices, nrStacks, true, true);
 			break;
 		}
 		case MT_ICO_SPHERE: {
@@ -153,14 +163,17 @@ static void resetApp() {
 AppPbdCpu::AppPbdCpu() : AppBaseCanvas3d(1200, 780, APP_NAME, false, 10, 1000000, 10000000)
 {
 	max_fps = 60;
-	prog_ms.attatch("mvp.vs").attatch("ndl.fs").link();
+	prog_ms.attatch("mvp.vs").attatch("im_pbd/shaders/ndl_tex.fs").link();
+
+	texture.s_wrap_param = GL_REPEAT;
+	texture.initFromFile("assets/images/uv_grid.jpg", true);
 	
 	g_app = this;
 	resetApp();
 }
 AppPbdCpu::~AppPbdCpu()
 {
-	delete cur_body;
+	safeDel(cur_body);
 }
 void AppPbdCpu::canvasUpdate()
 {
@@ -200,17 +213,19 @@ void AppPbdCpu::customDraw(const Camera& cam, const LightDirectional& lit) const
 {
 	if( !draw_mesh )
 		return;
-	glEnable(GL_CULL_FACE);
+	// glEnable(GL_CULL_FACE);
 
 	prog_ms.use();
 	cam.setUniformTo(prog_ms);
 	lit.setUniformTo(prog_ms);
+	prog_ms.setUniform("enable_Tex", enable_tex);
 	prog_ms.setUniform("mtx_Model", glm::mat4(1));
+	prog_ms.setTexture("tex", texture.tex_id);
 
 	// glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	cur_body->bindAndDrawGL();
 	// glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	glDisable(GL_CULL_FACE);
+	// glDisable(GL_CULL_FACE);
 
 }
 
@@ -239,13 +254,13 @@ static void drawBody(const pbd::SoftBody& body) {
 		}
 	}
 	for( const auto& c : body.c_dih_bends ) {
-		g_app->drawCylinder( body.x_s[c.idx_ps.x], body.x_s[c.idx_ps.y], {0,0,1} );
+		g_app->drawCylinder( body.x_s[c.idx_ps.x], body.x_s[c.idx_ps.y], {0,0,1}, 0.027f );
 		if( draw_dpi_dir ) for( int i=0; i<4; i++ ) {
 			g_app->drawCylinder( body.x_s[c.idx_ps[i]], body.x_s[c.idx_ps[i]]+c.dPi[i], {0,0,1} );
 		}
 	}
 	for( const auto& c : body.c_iso_bends ) {
-		g_app->drawCylinder( body.x_s[c.idx_ps.x], body.x_s[c.idx_ps.y], {0,0,1} );
+		g_app->drawCylinder( body.x_s[c.idx_ps.x], body.x_s[c.idx_ps.y], {0,0,1}, 0.027f );
 		if( draw_dpi_dir ) for( int i=0; i<4; i++ ) {
 			g_app->drawCylinder( body.x_s[c.idx_ps[i]], body.x_s[c.idx_ps[i]]+c.dPi[i], {0,0,1} );
 		}
@@ -357,7 +372,7 @@ static void pickTriangle( const vec3& rayDir, const vec3& rayOri ) {
 			vec3& t2 = body->x_s[tri.y];
 			vec3& t3 = body->x_s[tri.z];
 			
-			float depth = glim::intersectTriAndRay(rayOri, rayDir, t1, t2, t3);
+			float depth = glim::intersectTriAndRayBothFaces(rayOri, rayDir, t1, t2, t3);
 			if( depth<0 || depth>searchDepth || depth>minDepth )
 				continue;
 			minDepth = depth;
@@ -371,6 +386,7 @@ static void pickTriangle( const vec3& rayDir, const vec3& rayOri ) {
 void AppPbdCpu::canvasImGui()
 {
 	ImGui::Begin("pbd ctrl");
+	ImGui::SetNextItemOpen(true, ImGuiCond_Once);
 	if( ImGui::CollapsingHeader("process") ) {
 		ImGui::Text("you can remake mesh when paused");
 		ImGui::Checkbox("pause", &is_paused);
@@ -407,9 +423,10 @@ void AppPbdCpu::canvasImGui()
 	}
 	
 	if( ImGui::CollapsingHeader("draw&run") ) {
-		ImGui::Checkbox("draw dPi dir draw", &draw_dpi_dir);
-		ImGui::Checkbox("nor with ptcl tris", &update_nor_with_ptcl);
 		ImGui::Checkbox("draw mesh", &draw_mesh);
+		ImGui::Checkbox("enable texture", &enable_tex);
+		ImGui::Checkbox("make nor with ptcl tris", &update_nor_with_ptcl);
+		ImGui::Checkbox("draw dPi dir draw", &draw_dpi_dir);
 		ImGui::SliderInt("# steps", &cur_body->nr_steps, 1, 50);
 		ImGui::SliderInt("max fps", &max_fps, 20, 300);
 		ImGui::SliderFloat("time speed", &time_speed, 0.1f, 2.f);

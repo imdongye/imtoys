@@ -284,6 +284,7 @@ vec3 ViewportWithCamera::getMousePosRayDir() const {
 void ViewportWithCamera::movePosFormMouse(vec3& target) const {
 	const vec3 mouseRay = getMousePosRayDir();
 	const vec3 toTarget = target - camera.pos;
-	const float depth = dot(camera.front, toTarget)/dot(camera.front, mouseRay);
+	float depth = dot(camera.front, toTarget)/dot(camera.front, mouseRay);
+	depth += scroll_off.y*0.1f;
 	target = depth*mouseRay+camera.pos;
 }

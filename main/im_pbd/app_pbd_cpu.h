@@ -7,6 +7,7 @@
 #define __app_pbd_cpu_h_
 
 #include <limbrary/extension/appbase_canvas3d.h>
+#include <limbrary/texture.h>
 #include "pbd/pbd.h"
 
 namespace lim
@@ -18,6 +19,7 @@ namespace lim
 		inline static constexpr CStr APP_DIR  = "im_pbd";
 		inline static constexpr CStr APP_DESCRIPTION = "pearlabyss summer internship";
 		Program prog_ms;
+		Texture texture;
 		
 	public:
 		AppPbdCpu();

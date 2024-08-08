@@ -19,7 +19,7 @@ namespace {
 AppIK* g_app = nullptr;
 
 int step_size = 10;
-float ik_speed = 3.f;
+float ik_speed = 10.f;
 float body_length = 1.f;
 int nr_joints = 4;
 
@@ -197,7 +197,7 @@ void AppIK::canvasImGui() {
 	ImGui::Begin("test window##ik");
 	LimGui::PlotVal("fps", "", ImGui::GetIO().Framerate);
 	ImGui::SliderInt("step size", &step_size, 1, 200);
-	ImGui::SliderFloat("ik speed", &ik_speed, 1.f, 10.f);
+	ImGui::SliderFloat("ik speed", &ik_speed, 1.f, 15.f);
 	if(ImGui::SliderInt("nr joints", &nr_joints, 1, 10)) {
 		body.setJoints();
 	}

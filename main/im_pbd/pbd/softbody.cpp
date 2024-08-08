@@ -15,7 +15,7 @@ static inline uvec2 makeEdgeIdx(uint a1, uint a2) {
 SoftBody::Compliance::Compliance()
     : dist(0.001f)
     , stretch_pct(1.f), shear_pct(0.8f), bend_pct(0.6f)
-    , dih_bend(0.001f), iso_bend(0.001f), point(0.01f)
+    , dih_bend(46.f), iso_bend(46.f), point(0.0006f)
 {
 }
 
@@ -143,6 +143,8 @@ SoftBody::SoftBody(const lim::Mesh& src, int nrShear, BendType bendType
 
     // add constraints ======================================
     c_points.reserve(3);
+
+    // Todo: make plane to cloth topology
 
     for( int i=0; i<nrDupEdges; i++ ) {
         const Edge& edge1 = aEdges[i];
