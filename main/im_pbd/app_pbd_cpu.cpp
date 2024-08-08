@@ -160,7 +160,7 @@ static void resetApp() {
 
 
 
-AppPbdCpu::AppPbdCpu() : AppBaseCanvas3d(1200, 780, APP_NAME, false, 10, 1000000, 10000000)
+AppPbdCpu::AppPbdCpu() : AppBaseCanvas3d(1200, 780, APP_NAME, false, 10, 10000, 100000)
 {
 	max_fps = 60;
 	prog_ms.attatch("mvp.vs").attatch("im_pbd/shaders/ndl_tex.fs").link();

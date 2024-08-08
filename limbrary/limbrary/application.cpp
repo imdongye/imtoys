@@ -321,14 +321,6 @@ void AppBase::run()
 		mouse_off = mouse_pos - prevPos;
 		prevPos = mouse_pos;
 
-		update();
-		for( auto& cb : update_hooks ) 
-			cb(delta_time);
-		
-		// for custom viewports
-		glFinish();
-
-
 
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
@@ -337,11 +329,16 @@ void AppBase::run()
 		ImGuizmo::BeginFrame();
 
 		updateImGui();
-		draw_appselector();
 		_drawProfilerFps();
 		
 		ImGui::Render();
 
+		// if update before updateImGui then black screen when resize viewport
+		// i don't know why
+		update();
+		for( auto& cb : update_hooks ) 
+			cb(delta_time);
+		draw_appselector();
 		
 		
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

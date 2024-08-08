@@ -185,6 +185,7 @@ AppClothGPU::AppClothGPU()
 	, viewport("viewport##gpgpu", new FramebufferMs())
 	, ground(1.f, 2.f)
 {
+	ground.initGL();
 	g_app = this;
 	viewport.camera.pivot = vec3(0, 1.0, 0);
     viewport.camera.pos = vec3(0, 1.5, 3.4);

@@ -10,7 +10,7 @@ Callbacks는 포인터를 키로 한 헤쉬테이블 맵이다. glfw콜백이 �
 Todo:
 1. crtp로 참조 줄이기, 
 2. glfw에서 함수 이름 스네이크/카멜 혼용 이유 찾기
-3. glfwSwapInterval(1); // vsync??
+3. updateImGui전에 update하면 resize할때 깜박거림
 
 */
 
