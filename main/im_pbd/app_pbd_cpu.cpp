@@ -90,7 +90,7 @@ static void resetSoftBody()
 			break;
 		}
 		case MT_ICO_SPHERE: {
-			ms = new MeshIcoSphere(1.f, 4, true, true);
+			ms = new MeshIcoSphere(1.f, nr_ms_slices, true, true);
 			break;
 		}
 		case MT_PLANE: {
@@ -103,12 +103,12 @@ static void resetSoftBody()
 		}
 	}
 
-	ms->initGL();
 	tf = translate(vec3(0,2,0)) * glim::rotateX(glim::pi90*0.1f)* glim::rotateY(glim::pi90*0.2f) * scale(vec3(size_scale))* tf;
 	for( vec3& p : ms->poss ) {
 		p = vec3(tf*vec4(p,1));
 	}
 	cur_body = new pbd::SoftBody(*ms, nr_shear, bend_type, body_mass);
+	cur_body->initGL();
 	cur_body->compliance = tempComp;
 	cur_body->pressure = pressure;
 	if( fix_start ) {
@@ -158,9 +158,7 @@ void AppPbdCpu::canvasUpdate()
 		return;
 	phy_scene.update(delta_time*time_speed);
 	if( draw_mesh ) {
-		for( auto& sb : phy_scene.bodies ) {
-			sb->uploadToBuf();
-		}
+		cur_body->uploadToBuf();
 	}
 
 }
@@ -234,6 +232,10 @@ static void drawBody(const pbd::SoftBody& body) {
 			g_app->drawCylinder( body.x_s[c.idx_ps[i]], body.x_s[c.idx_ps[i]]+c.dPi[i], {0,0,1} );
 		}
 	}
+	for( const auto& c : body.c_points ) {
+		g_app->drawCylinder( c.point, body.x_s[c.idx_p], {0,0,1} );
+		g_app->drawSphere( c.point, {1,0,0} );
+	}
 	if( draw_dpi_dir ) for( int i=0; i<body.nr_ptcls; i++ ) {
 		g_app->drawCylinder( body.x_s[i], body.x_s[i]+body.debug_dirs[i], {0,0,1} );
 	}
@@ -285,11 +287,30 @@ namespace
 		pbd::SoftBody* body;
 		uvec3 tri;
 		vec3 point;
+		void setPointConstraints() {
+			body->c_points.push_back(
+				pbd::ConstraintPoint(*body, tri.x, point)
+			);
+			body->c_points.push_back(
+				pbd::ConstraintPoint(*body, tri.y, point)
+			);
+			body->c_points.push_back(
+				pbd::ConstraintPoint(*body, tri.z, point)
+			);
+		}
+		void updatePointConstraints() {
+			for(auto& c : body->c_points) {
+				c.point = point;
+			}
+		}
+		void delPointConstraints() {
+			body->c_points.clear();
+		}
 	};
 	PickedTriInfo picked_tri_info;
 }
 
-static void pickPtcl( const vec3& rayDir, const vec3& rayOri ) {
+static void pickPtcl( const vec3& rayOri, const vec3& rayDir ) {
 	float minDepth = FLT_MAX;
 	picked_ptcl_info.picked = false;
 
@@ -311,8 +332,7 @@ static void pickPtcl( const vec3& rayDir, const vec3& rayOri ) {
 }
 static void pickTriangle( const vec3& rayDir, const vec3& rayOri ) {
 	float minDepth = FLT_MAX;
-	const float searhDepth = 50.f;
-	const vec3 scaledDir = rayDir * searhDepth;
+	const float searchDepth = 50.f;
 	picked_tri_info.picked = false;
 
 	for(pbd::SoftBody* body : phy_scene.bodies) {
@@ -322,14 +342,14 @@ static void pickTriangle( const vec3& rayDir, const vec3& rayOri ) {
 			vec3& t2 = body->x_s[tri.y];
 			vec3& t3 = body->x_s[tri.z];
 			
-			vec3 point;
-			float depth = glim::intersectTriAndRay(rayOri, scaledDir, t1, t2, t3, point);
-			if( depth>0 && depth<minDepth ) {
-				minDepth = depth;
-				picked_tri_info.picked = true;
-				picked_tri_info.body = body;
-				picked_tri_info.tri = tri;
-			}
+			float depth = glim::intersectTriAndRay(rayOri, rayDir, t1, t2, t3);
+			if( depth<0 || depth>searchDepth || depth>minDepth )
+				continue;
+			minDepth = depth;
+			picked_tri_info.picked = true;
+			picked_tri_info.body = body;
+			picked_tri_info.tri = tri;
+			picked_tri_info.point = depth*rayDir + rayOri;
 		}
 	}
 }
@@ -398,6 +418,7 @@ void AppPbdCpu::canvasImGui()
 		ImGui::Text("#iso_bend %d", cur_body->c_iso_bends.size());
 	}
 	if( ImGui::CollapsingHeader("compliance") ) {
+		ImGui::SliderFloat("point", &cur_body->compliance.point, 0.f, 1.0f, "%.6f");
 		ImGui::SliderFloat("distance", &cur_body->compliance.dist, 0.f, 1.0f, "%.6f");
 		ImGui::SliderFloat("stretch_pct", &cur_body->compliance.stretch_pct, 0.f, 1.0f, "%.6f");
 		ImGui::SliderFloat("shear_pct", &cur_body->compliance.shear_pct, 0.f, 1.0f, "%.6f");
@@ -431,33 +452,56 @@ void AppPbdCpu::canvasImGui()
 	// input handling
 	if(ImGui::IsMouseClicked(ImGuiMouseButton_Left, false)) {
 		const vec3 mouseRay = vp.getMousePosRayDir();
-		pickPtcl(mouseRay, vp.camera.pos);
+		pickPtcl(vp.camera.pos, mouseRay);
 		if( picked_ptcl_info.picked ) {
 			vp.camera.enabled = false;
 			picked_ptcl_info.w() = 0.f;
 			picked_ptcl_info.v() = vec3(0.f);
 		}
 	}
-	if(picked_ptcl_info.picked && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
-		const vec3 toObj = picked_ptcl_info.p() - vp.camera.pos;
-		const vec3 mouseRay = vp.getMousePosRayDir();
-		const float depth = dot(vp.camera.front, toObj)/dot(vp.camera.front, mouseRay);
-		const vec3 targetPos = depth*mouseRay+vp.camera.pos;
-		picked_ptcl_info.x() = targetPos;
-		picked_ptcl_info.p() = targetPos;
+	else if(picked_ptcl_info.picked && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+		vec3 target = picked_ptcl_info.x();
+		vp.movePosFormMouse(target);
+		picked_ptcl_info.x() = target;
+		picked_ptcl_info.p() = target;
 	}
-	if(ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
+	else if(ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
 		vp.camera.enabled = true;
 		picked_ptcl_info.picked = false;
 	}
 	if(ImGui::IsMouseClicked(ImGuiMouseButton_Middle, false)) {
 		const vec3 mouseRay = vp.getMousePosRayDir();
-		pickPtcl(mouseRay, vp.camera.pos);
+		pickPtcl(vp.camera.pos, mouseRay);
 		if( picked_ptcl_info.picked ) {
 			picked_ptcl_info.w() = picked_ptcl_info.body->inv_ptcl_mass;
 			picked_ptcl_info.picked = false;
 		}
 	}
+
+
+
+	if(ImGui::IsMouseClicked(ImGuiMouseButton_Right, false)) {
+		const vec3 mouseRay = vp.getMousePosRayDir();
+		pickTriangle(mouseRay, vp.camera.pos);
+		if( picked_tri_info.picked ) {
+			vp.camera.enabled = false;
+			picked_tri_info.setPointConstraints();
+		}
+	}
+	else if(picked_tri_info.picked && ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
+		vp.movePosFormMouse(picked_tri_info.point);
+		picked_tri_info.updatePointConstraints();
+	}
+	else if(ImGui::IsMouseReleased(ImGuiMouseButton_Right)) {
+		vp.camera.enabled = true;
+		if( picked_tri_info.picked ) {
+			picked_tri_info.delPointConstraints();
+			picked_tri_info.picked = false;
+		}
+	}
+
+
+
 	if(ImGui::IsKeyPressed(ImGuiKey_B, false)) {
 		const vec3 mouseRay = vp.getMousePosRayDir();
 		ptcl_test.inv_body_mass = 1/0.1f;

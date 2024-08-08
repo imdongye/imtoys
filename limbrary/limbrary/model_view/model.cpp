@@ -287,7 +287,8 @@ void Model::copyFrom(const Model& src) {
 
 	own_meshes.reserve(src.own_meshes.size());
 	for( Mesh* srcMs : src.own_meshes ) {
-		own_meshes.push_back( new Mesh(*srcMs) );
+		own_meshes.push_back( new Mesh(*srcMs) ); // clone
+		own_meshes.back()->initGL();
 	}
 
 	matchRdTree(root, src.root, *this, src);

@@ -146,6 +146,7 @@ namespace lim
 		ViewportWithCamera(std::string_view _name, IFramebuffer* createdFB);
 		virtual ~ViewportWithCamera();
 		glm::vec3 getMousePosRayDir() const;
+		void movePosFormMouse(glm::vec3& target ) const;
 	};
 }
 

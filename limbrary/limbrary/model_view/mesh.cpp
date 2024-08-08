@@ -28,8 +28,9 @@ Mesh::Mesh(const Mesh& src)
 	, bitangents(src.bitangents)
 	, bone_infos(src.bone_infos)
 	, tris(src.tris)
+	, nr_verts(poss.size())
+	, nr_tris(tris.size())
 {
-	initGL();
 }
 Mesh::~Mesh()
 {
@@ -41,7 +42,7 @@ void Mesh::initGL(bool withClearMem)
 	assert( poss.empty() == false ); // no verts in mesh
 
 	if( vao!=0 ) {
-		log::warn("recreate mesh buffer");
+		log::warn("recreate mesh buffer\n");
 		deinitGL();
 	}
 

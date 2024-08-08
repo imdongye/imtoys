@@ -9,15 +9,15 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
-#include <glm/gtx/intersect.hpp>
 #include <limits>
+// #include <glm/gtx/intersect.hpp>
 
 
 namespace glim {
 	constexpr float pi45 = 0.78539816339f; // quarter
 	constexpr float pi90 = 1.57079632679f; // half
 	constexpr float pi 	 = 3.14159265359f; // float
-	constexpr float pi2  = 6.28318530718f; // double
+	constexpr float pi2  = 6.28318530718f;
 	constexpr float feps = std::numeric_limits<float>::epsilon();
 	constexpr glm::vec3 maximum_vec3 = glm::vec3(std::numeric_limits<float>::max());
 	constexpr glm::vec3 minimum_vec3 = glm::vec3(std::numeric_limits<float>::min());
@@ -106,105 +106,24 @@ namespace glim {
 		};
 	}
 
-	// From: 
 /*
-	Ref:
+Ref:
 	https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm
 	https://en.wikipedia.org/wiki/Pl%C3%BCcker_coordinates
 	https://members.loria.fr/SLazard/ARC-Visi3D/Pant-project/files/Line_Segment_Triangle.html
 	https://fileadmin.cs.lth.se/cs/Personal/Tomas_Akenine-Moller/raytri/
 	https://github.com/g-truc/glm/blob/ea678faff9340ae4a79f50f2edd947141405e128/glm/gtx/intersect.inl
 	https://wjdgh283.tistory.com/entry/%EC%82%BC%EA%B0%81%ED%98%95-%EC%95%88%EC%97%90-%EC%9E%88%EB%8A%94-%EC%A0%90%EC%9D%98-%EB%AC%B4%EA%B2%8C%EC%A4%91%EC%8B%AC-%EC%A2%8C%ED%91%9Cbarycentric-coordinate-%EA%B5%AC%ED%95%98%EA%B8%B0
+From:
+	BrunoLevy
+	https://stackoverflow.com/questions/42740765/intersection-between-line-and-triangle-in-3d
+
+	if intersect return depth
+	else return -1
 */
-	// barycentric coordinate 
-	inline bool intersectTriAndSegLine(const glm::vec3& p1, const glm::vec3& p2
-		, const glm::vec3& t1, const glm::vec3& t2, const glm::vec3& t3
-		, glm::vec3& point)
-	{
-		glm::vec3 diff, u, v, n, w0, w;
-		float r, a, b;
-
-		diff = p2 - p1;
-		u = t2-t1;
-		v = t3-t1;
-		n = glm::cross(u, v);
-
-		w0 = t1-p1;
-		a = glm::dot(w0, n);
-		b = glm::dot(diff, n);
-
-		r = a/b;
-		if( r<0.0 || r>1.0 )
-			return false;
-		
-		point = p1 + r*diff;
-		w = t1-point;
-
-		float uu, uv, vv, wu, wv, D;
-		uu = glm::dot(u,u);
-		uv = glm::dot(u,v);
-		vv = glm::dot(v,v);
-		wu = glm::dot(w,u);
-		wv = glm::dot(w,v);
-		D = uv*uv - uu*vv;
-
-		float s, t;
-		s = (uv*wv - vv*wu) / D;
-		if( s<0.0 || s>1.0 ) 
-			return false;
-		t = (uv*wu - uu*wv) / D;
-		if( t<0.0 || t>1.0 ) 
-			return false;
-
-		return true;
-	}
-
-
-	// Todo: bool대신 깊이 반환
-	inline bool intersectTriAndRay(const glm::vec3& origin, const glm::vec3& scaledDir
-		, const glm::vec3& t1, const glm::vec3& t2, const glm::vec3& t3
-		, glm::vec3& point)
-	{
-		glm::vec3 u, v, n, w0, w;
-		float r, a, b;
-
-		u = t2-t1;
-		v = t3-t1;
-		n = glm::cross(u, v);
-
-		// dot(w0, n) == 0
-		// 
-		w0 = t1-origin;
-		a = glm::dot(w0, n);
-		b = glm::dot(scaledDir, n);
-
-		r = a/b;
-		if( r<0.0 || r>1.0 )
-			return false;
-		
-		point = origin + r*scaledDir;
-		w = t1-point;
-
-		float uu, uv, vv, wu, wv, D;
-		uu = glm::dot(u,u);
-		uv = glm::dot(u,v);
-		vv = glm::dot(v,v);
-		wu = glm::dot(w,u);
-		wv = glm::dot(w,v);
-		D = uv*uv - uu*vv;
-
-		float s, t;
-		s = (uv*wv - vv*wu) / D;
-		if( s<0.0 || s>1.0 ) 
-			return false;
-		t = (uv*wu - uu*wv) / D;
-		if( t<0.0 || t>1.0 ) 
-			return false;
-
-		return true;
-	}
-
+	float intersectTriAndRay (
+		const glm::vec3& O, const glm::vec3& D,
+		const glm::vec3& A, const glm::vec3& B, const glm::vec3& C
+	);
 }
-
-
 #endif

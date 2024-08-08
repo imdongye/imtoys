@@ -45,10 +45,10 @@ namespace pbd
 
     struct ConstraintPoint
     {
-        glm::vec3 target;
+        glm::vec3 point;
         float ori_dist;
         int idx_p;
-        ConstraintPoint(const SoftBody& body, int idxP, const glm::vec3& _target);
+        ConstraintPoint(const SoftBody& body, int idxP, const glm::vec3& _point);
         void project(SoftBody& body, float alpha);
     };
 

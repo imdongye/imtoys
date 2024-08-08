@@ -281,3 +281,9 @@ ViewportWithCamera::~ViewportWithCamera() noexcept
 vec3 ViewportWithCamera::getMousePosRayDir() const {
 	return camera.screenPosToDir(mouse_uv_pos);
 }
+void ViewportWithCamera::movePosFormMouse(vec3& target) const {
+	const vec3 mouseRay = getMousePosRayDir();
+	const vec3 toTarget = target - camera.pos;
+	const float depth = dot(camera.front, toTarget)/dot(camera.front, mouseRay);
+	target = depth*mouseRay+camera.pos;
+}

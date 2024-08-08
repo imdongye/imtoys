@@ -152,8 +152,15 @@ SoftBody::SoftBody(const lim::Mesh& src, int nrShear, BendType bendType, float b
             vec3 n1 = normalize(cross(e1, e0));
             vec3 n2 = normalize(cross(e0, e4));
 
+
+            e1 = normalize(e1);
+            e4 = normalize(e4);
+            e2 = normalize(e2);
+            e3 = normalize(e3);
+            static constexpr float rigthCosThreshold = 0.68f;
+            float cosSum = abs(dot(e1, e2)) + abs(dot(e2, e3)) + abs(dot(e3, e4)) + abs(dot(e4, e1));
             // check shear
-            if( abs(dot(e1, e4)) < 0.0001f && abs(dot(e2, e3)) < 0.0001f && abs(dot(n1, n2)) > 0.9999f ) {
+            if( cosSum < rigthCosThreshold && abs(dot(n1, n2)) > 0.9999f ) {
                 isShear = true;
                 if( nrShear>1 ) {
                     c_shears.push_back( {*this, makeEdgeIdx(edge1.idx_opp, edge2.idx_opp)} );
@@ -214,32 +221,6 @@ float SoftBody::getVolumeTimesSix() const {
     return volume;
 }
 
-
-
-// for test individual particle
-SoftBody::SoftBody()
-    : inv_body_mass(1.f), inv_ptcl_mass(1.f), nr_ptcls(0), nr_ptcl_tris(0)
-{
-    constexpr int defalutSize = 50;
-    poss.reserve(defalutSize);
-    x_s.reserve(defalutSize);
-    prev_x_s.reserve(defalutSize);
-    p_s.reserve(defalutSize);
-    v_s.reserve(defalutSize);
-    w_s.reserve(defalutSize);
-    debug_dirs.reserve(defalutSize);
-}
-void SoftBody::addPtcl(const vec3& p, float w, const vec3& v) {
-    nr_ptcls++;
-    poss.push_back( p );
-    x_s.push_back( p );
-    prev_x_s.push_back( p );
-    p_s.push_back( p );
-    v_s.push_back( v );
-    w_s.push_back( w );
-    debug_dirs.push_back( vec3(0) );
-}
-
 // it can be process in gpu
 void SoftBody::uploadToBuf() {
     int i,j;
@@ -294,3 +275,28 @@ void SoftBody::uploadToBuf() {
     }
     restoreNorBuf();
 }
+
+
+
+// for test individual particle
+SoftBody::SoftBody()
+    : inv_body_mass(1.f), inv_ptcl_mass(1.f), nr_ptcls(0), nr_ptcl_tris(0)
+{
+    constexpr int defalutSize = 50;
+    x_s.reserve(defalutSize);
+    prev_x_s.reserve(defalutSize);
+    p_s.reserve(defalutSize);
+    v_s.reserve(defalutSize);
+    w_s.reserve(defalutSize);
+    debug_dirs.reserve(defalutSize);
+}
+void SoftBody::addPtcl(const vec3& p, float w, const vec3& v) {
+    nr_ptcls++;
+    x_s.push_back( p );
+    prev_x_s.push_back( p );
+    p_s.push_back( p );
+    v_s.push_back( v );
+    w_s.push_back( w );
+    debug_dirs.push_back( vec3(0) );
+}
+
