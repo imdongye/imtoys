@@ -31,78 +31,97 @@ p0----p1    e2 = p2-p0
 e3\  /e4    e4 = p3-p1
    p3
    n2
+
+RefFrom:
+    CreateConstraints() in SoftBodySharedcpp of JoltPhysics
 */
-// ref From: CreateConstraints() in SoftBodySharedcpp of JoltPhysics
-SoftBody::SoftBody(const lim::Mesh& src, int nrShear, BendType bendType, float bodyMass)
-    : lim::Mesh(src), compliance()
+SoftBody::SoftBody(const lim::Mesh& src, int nrShear, BendType bendType
+    , float bodyMass, bool refCloseVerts
+) : lim::Mesh(src), compliance()
 {
     // rm same pos verts to ptcls ====================
-    vector<int> vertIdxToPtclIdx(nr_verts, -1);
-    vector<vec3>  tempPtcls;
-    vector<vector<int>> ptclIdxToVertIdxs;
-    tempPtcls.reserve(nr_verts);
-    ptclIdxToVertIdxs.reserve(nr_verts);
+    if( refCloseVerts ) {
+        vector<int> vertIdxToPtclIdx(nr_verts, -1);
+        vector<vec3>  tempPtcls;
+        vector<vector<int>> ptclIdxToVertIdxs;
+        tempPtcls.reserve(nr_verts);
+        ptclIdxToVertIdxs.reserve(nr_verts);
 
-    for( int i=0; i<nr_verts; i++ ) {
-        if( vertIdxToPtclIdx[i]>=0 )
-            continue;
-        const vec3& curPos = poss[i];
-        int ptclIdx = (int)tempPtcls.size();
-        tempPtcls.push_back( curPos );
-        vertIdxToPtclIdx[i] = ptclIdx;
-        ptclIdxToVertIdxs.push_back( {i} );
-        for( int j=i+1; j<nr_verts; j++ ) {
-            if( vertIdxToPtclIdx[j]>=0 )
+        for( int i=0; i<nr_verts; i++ ) {
+            if( vertIdxToPtclIdx[i]>=0 )
                 continue;
-            if( length2(curPos-poss[j]) < 1.0e-6f ) {
-                vertIdxToPtclIdx[j] = ptclIdx;
-                ptclIdxToVertIdxs[ptclIdx].push_back(j);
+            const vec3& curPos = poss[i];
+            int ptclIdx = (int)tempPtcls.size();
+            tempPtcls.push_back( curPos );
+            vertIdxToPtclIdx[i] = ptclIdx;
+            ptclIdxToVertIdxs.push_back( {i} );
+            for( int j=i+1; j<nr_verts; j++ ) {
+                if( vertIdxToPtclIdx[j]>=0 )
+                    continue;
+                if( length2(curPos-poss[j]) < 1.0e-6f ) {
+                    vertIdxToPtclIdx[j] = ptclIdx;
+                    ptclIdxToVertIdxs[ptclIdx].push_back(j);
+                }
             }
         }
+
+
+        nr_ptcls = (int)tempPtcls.size();
+        nr_ptcl_tris = (int)tris.size();
+        ptcl_tris.reserve(nr_ptcl_tris);
+
+        for( int i=0; i<nr_ptcl_tris; i++ ) {
+            uvec3 pTri;
+            for( int j=0; j<3; j++ ) {
+                pTri[j] = vertIdxToPtclIdx[tris[i][j]];
+            }
+            ptcl_tris.push_back(pTri);
+        }
+
+        idx_verts.resize(nr_ptcls, ivec4(-1));
+        idx_verts2.resize(nr_ptcls, ivec4(-1));
+        idx_verts3.resize(nr_ptcls, ivec4(-1));
+        for( int i=0; i<nr_ptcls; i++ ) {
+            auto pToV = ptclIdxToVertIdxs[i];
+            int nrIdxVs = (int)pToV.size();
+            assert(nrIdxVs<=12); // maximum is 12 verts per ptcl
+            for( int j=0; j<nrIdxVs; j++ ) {
+                if( j<4 ) {
+                    idx_verts[i][j] = pToV[j];
+                }
+                else if( j<8) {
+                    idx_verts2[i][j-4] = pToV[j];
+                }
+                else {
+                    idx_verts3[i][j-8] = pToV[j];
+                }
+            }
+        }
+        prev_x_s = tempPtcls;
+        x_s = tempPtcls;
+        p_s = tempPtcls;
+    } // end rm same pos verts to ptcls =============
+
+    else {
+        nr_ptcls = (int)poss.size();
+        nr_ptcl_tris = (int)tris.size();
+
+        prev_x_s = poss;
+        x_s = poss;
+        p_s = poss;
+        ptcl_tris = tris;
+
+        // poss and tris delete in initGL
     }
 
 
-    nr_ptcls = (int)tempPtcls.size();
-    nr_ptcl_tris = (int)tris.size();
-    ptcl_tris.reserve(nr_ptcl_tris);
+
+
+
+
     inv_body_mass = 1.f/bodyMass;
     inv_ptcl_mass = inv_body_mass*nr_ptcls;
-
-
-    for( int i=0; i<nr_ptcl_tris; i++ ) {
-        uvec3 pTri;
-        for( int j=0; j<3; j++ ) {
-            pTri[j] = vertIdxToPtclIdx[tris[i][j]];
-        }
-        ptcl_tris.push_back(pTri);
-    }
-
-    idx_verts.resize(nr_ptcls, ivec4(-1));
-    idx_verts2.resize(nr_ptcls, ivec4(-1));
-    idx_verts3.resize(nr_ptcls, ivec4(-1));
-    for( int i=0; i<nr_ptcls; i++ ) {
-        auto pToV = ptclIdxToVertIdxs[i];
-        int nrIdxVs = (int)pToV.size();
-        assert(nrIdxVs<=12); // maximum is 12 verts per ptcl
-        for( int j=0; j<nrIdxVs; j++ ) {
-            if( j<4 ) {
-                idx_verts[i][j] = pToV[j];
-            }
-            else if( j<8) {
-                idx_verts2[i][j-4] = pToV[j];
-            }
-            else {
-                idx_verts3[i][j-8] = pToV[j];
-            }
-        }
-    }
-    // end rm same pos verts to ptcls =============
-
-
-
-    prev_x_s = tempPtcls;
-    p_s = tempPtcls;
-    x_s = tempPtcls;
+    
     v_s.resize(nr_ptcls, vec3(0));
     debug_dirs.resize(nr_ptcls, vec3(0));
     w_s.resize(nr_ptcls, inv_ptcl_mass);
@@ -222,7 +241,7 @@ float SoftBody::getVolumeTimesSix() const {
 }
 
 // it can be process in gpu
-void SoftBody::uploadToBuf() {
+void SoftBody::updateVerts() {
     int i,j;
     for( i=0; i<nr_ptcls; i++ ) {
         vec3 p = x_s[i];
@@ -251,30 +270,62 @@ void SoftBody::uploadToBuf() {
             poss[pToV[j]] = p;
         }
     }
-    restorePosBuf();
-    
-    
-    // gen normal
-    if( nors.empty() ) {
-        return;
+}
+void SoftBody::uploadToBuf() {
+    assert( buf_pos != 0 );
+	glBindBuffer(GL_ARRAY_BUFFER, buf_pos);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vec3)*nr_verts, (poss.empty()) ? x_s.data() : poss.data());
+
+    updateNorsFromTris();
+    assert( buf_nor != 0 );
+	glBindBuffer(GL_ARRAY_BUFFER, buf_nor);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vec3)*nr_verts, nors.data());
+}
+
+void SoftBody::initGL()
+{
+    Mesh::initGL(false);
+    if( poss.empty() ) {
+        poss.clear();
+        tris.clear();
     }
-    for( vec3& n : nors ) {
-        n = vec3(0);
-    }
-    for( uvec3& tri: tris ) {
-        vec3 e1 = poss[tri.y] - poss[tri.x];
-        vec3 e2 = poss[tri.z] - poss[tri.x];
-        vec3 n = cross(e1, e2);
-        n = normalize(n);
-        for( j=0; j<3; j++ ) {
-            nors[tri[j]] += n;
+}
+
+void SoftBody::updateNorsFromTris()
+{
+    if( poss.empty() ) {
+        assert( nors.size()==x_s.size() );
+
+        std::fill(nors.begin(), nors.end(), vec3(0));
+        for( const uvec3& t : ptcl_tris )
+        {
+            vec3 e1 = x_s[t.y] - x_s[t.x];
+            vec3 e2 = x_s[t.z] - x_s[t.x];
+            vec3 n = normalize(cross(e1, e2));
+            nors[t.x] += n;
+            nors[t.y] += n;
+            nors[t.z] += n;
+        }
+        for( vec3& n : nors )
+        {
+            n = normalize(n);
         }
     }
-    for( vec3& n : nors ) {
-        n = normalize(n);
+    else {
+        Mesh::updateNorsFromTris();
     }
-    restoreNorBuf();
 }
+
+
+
+
+
+
+
+
+
+
+
 
 
 

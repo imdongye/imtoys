@@ -1,8 +1,18 @@
 /*
     2024-07-17 / imdongye
 
-    From: https://matthias-research.github.io/pages/publications/posBasedDyn.pdf
-    Ref : JoltPhysics
+From:
+    https://matthias-research.github.io/pages/publications/posBasedDyn.pdf
+Ref:
+    JoltPhysics
+Note:
+    Ptcl in SoftBody can referrence Vertexs in Mesh
+    if that
+        uploadToBuf do updateVerts for poss and upload poss
+    else
+        clear poss, tris
+        and uploadToBuf do upload x_s
+
 */
 
 #ifndef __app_pbd_h_
@@ -30,14 +40,14 @@ namespace pbd
         glm::vec3 n;
         float r;
         ColliderPlane(const glm::vec3& _n = {0,1,0}, float _r = 0.f);
-        virtual float getSdNor( const glm::vec3& p, glm::vec3& outNor ) const override;
+        virtual float getSdNor( const glm::vec3& p, glm::vec3& outNor ) const final;
     };
     struct ColliderSphere: public ICollider
     {
         glm::vec3 c;
         float r;
         ColliderSphere(const glm::vec3& _c, float _r = 0.5f);
-        virtual float getSdNor( const glm::vec3& p, glm::vec3& outNor ) const override;
+        virtual float getSdNor( const glm::vec3& p, glm::vec3& outNor ) const final;
     };
 
 
@@ -126,10 +136,17 @@ namespace pbd
             BT_ISOMETRIC,
         };
         // nrShear => [0,2]
-        SoftBody(const lim::Mesh& src, int nrShear = 1, BendType bendType = BT_NONE, float bodyMass = 1.f );
+        SoftBody(const lim::Mesh& src, int nrShear = 1, BendType bendType = BT_NONE
+            , float bodyMass = 1.f, bool refCloseVerts = false );
         void update(float dt, const PhyScene& scene);
-        float getSdNor(const glm::vec3& p, glm::vec3& outNor) const;
+        virtual float getSdNor(const glm::vec3& p, glm::vec3& outNor) const final;
+
+        void initGL();
         void uploadToBuf();
+
+
+        void updateVerts();
+        void updateNorsFromTris();
 
         SoftBody();
         void addPtcl(const glm::vec3& p, float w, const glm::vec3& v);

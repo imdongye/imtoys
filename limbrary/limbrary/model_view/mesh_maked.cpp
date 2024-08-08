@@ -168,6 +168,27 @@ void Mesh::subdivide(int level)
 }
 
 
+void Mesh::updateNorsFromTris()
+{
+	assert( nors.size()==poss.size() );
+
+	std::fill(nors.begin(), nors.end(), vec3(0));
+	for( const uvec3& t : tris )
+	{
+		vec3 e1 = poss[t.y] - poss[t.x];
+        vec3 e2 = poss[t.z] - poss[t.x];
+        vec3 n = normalize(cross(e1, e2));
+		nors[t.x] += n;
+		nors[t.y] += n;
+		nors[t.z] += n;
+	}
+	for( vec3& n : nors )
+	{
+		n = normalize(n);
+	}
+}
+
+
 
 
 

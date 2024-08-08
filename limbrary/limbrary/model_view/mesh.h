@@ -1,11 +1,12 @@
 /*
 
-2022-07-20 / im dong ye
-shared vertex triangle mesh
+	2022-07-20 / im dong ye
+	shared vertex triangle mesh
 
 Note:
-Material은 Mesh에 종속적이지 않음.
-vertex is SOA not AOS
+	Material은 Mesh에 종속적이지 않음.
+	vertex is SOA not AOS
+	nr_verts, nr_tris update in initGL()
 
 */
 
@@ -64,17 +65,17 @@ namespace lim
 		virtual ~Mesh();
 		
 		void initGL(bool withClearMem = false);
-		void restorePosBuf();
-		void restoreNorBuf();
 		void deinitGL();
 		void clearMem();
-		void print() const;
 		void bindGL() const;
 		void drawGL() const;
 		void bindAndDrawGL() const;
+
+
+		void updateNorsFromTris();
 		// becareful memory fragmentation
-		// and need initGL
 		void subdivide(int level = 1);
+		void print() const;
 	};
 }
 

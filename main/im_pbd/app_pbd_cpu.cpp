@@ -26,6 +26,7 @@ namespace {
 	float body_mass = 1.f;
 	bool fix_start = true;
 	pbd::SoftBody::BendType bend_type = pbd::SoftBody::BT_NONE;
+	bool is_ptcl_ref_close_verts = true;
 
 	const char* mesh_type_names[] = {
 		"Bunny", "Duck",
@@ -107,7 +108,7 @@ static void resetSoftBody()
 	for( vec3& p : ms->poss ) {
 		p = vec3(tf*vec4(p,1));
 	}
-	cur_body = new pbd::SoftBody(*ms, nr_shear, bend_type, body_mass);
+	cur_body = new pbd::SoftBody(*ms, nr_shear, bend_type, body_mass, is_ptcl_ref_close_verts);
 	cur_body->initGL();
 	cur_body->compliance = tempComp;
 	cur_body->pressure = pressure;
@@ -357,6 +358,7 @@ void AppPbdCpu::canvasImGui()
 {
 	ImGui::Begin("pbd ctrl");
 	if( ImGui::CollapsingHeader("process") ) {
+		ImGui::Text("you can remake mesh when paused");
 		ImGui::Checkbox("pause", &is_paused);
 		if( is_paused ) {
 			if( ImGui::Button("next 0.05sec") ) {
@@ -372,25 +374,16 @@ void AppPbdCpu::canvasImGui()
 				phy_scene.update(delta_time);
 				cur_body->nr_steps = tempIter;
 			}
-			if( ImGui::Combo("mesh type", (int*)&cur_mesh_type, mesh_type_names, nr_mesh_type_names) ) {
-				resetApp();
-			}
-			if( ImGui::SliderFloat("size scale", &size_scale, 0.5f, 3.f) ) {
-				resetApp();
-			}
-			if( ImGui::SliderInt("nr ms slices", &nr_ms_slices, 1, 20) ) {
-				resetApp();
-			}
-			if( ImGui::SliderInt("nr shears", &nr_shear, 0, 2) ) {
-				resetApp();
-			}
-			if( ImGui::Combo("bendType", (int*)&bend_type, "none\0distance\0dihedral\0isometric\0", 4) ) {
-				resetApp();
-			}
-			if( ImGui::Checkbox("fix", &fix_start) ) {
-				resetApp();
-			}
-			if( ImGui::SliderFloat("body mass", &body_mass, 0.01f, 2.f) ) {
+			bool needReset = false;
+			needReset |= ImGui::Combo("mesh type", (int*)&cur_mesh_type, mesh_type_names, nr_mesh_type_names);
+			needReset |= ImGui::Checkbox("ptcl ref close verts", &is_ptcl_ref_close_verts);
+			needReset |= ImGui::SliderFloat("size scale", &size_scale, 0.5f, 3.f);
+			needReset |= ImGui::SliderInt("nr ms slices", &nr_ms_slices, 1, 20);
+			needReset |= ImGui::SliderInt("nr shears", &nr_shear, 0, 2);
+			needReset |= ImGui::Combo("bendType", (int*)&bend_type, "none\0distance\0dihedral\0isometric\0", 4);
+			needReset |= ImGui::Checkbox("fix", &fix_start);
+			needReset |= ImGui::SliderFloat("body mass", &body_mass, 0.01f, 2.f);
+			if( needReset ) {
 				resetApp();
 			}
 		}

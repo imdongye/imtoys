@@ -52,6 +52,8 @@ void Mesh::initGL(bool withClearMem)
 	nr_verts = poss.size();
 	nr_tris = tris.size();
 
+	// now no assert for nr_verts != nr_attribs
+	// because SoftBody reinit in there initGL
 	if( poss.size()>0 ){
 		glGenBuffers(1, &buf_pos);
 		glBindBuffer(GL_ARRAY_BUFFER, buf_pos);
@@ -117,19 +119,6 @@ void Mesh::initGL(bool withClearMem)
 		glFinish();
 		clearMem();
 	}
-}
-void Mesh::restorePosBuf()
-{
-	assert( buf_pos != 0 );
-	glBindBuffer(GL_ARRAY_BUFFER, buf_pos);
-	// glMap보다 조금 더 빠름, buffer usage dynamic_draw에 따른 차이 없음
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vec3)*nr_verts, poss.data());
-}
-void Mesh::restoreNorBuf()
-{
-	assert( buf_nor != 0 );
-	glBindBuffer(GL_ARRAY_BUFFER, buf_nor);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vec3)*nr_verts, nors.data());
 }
 void Mesh::deinitGL()
 {
