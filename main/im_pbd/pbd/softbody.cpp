@@ -241,9 +241,9 @@ float SoftBody::getVolumeTimesSix() const {
 void SoftBody::initGL()
 {
     Mesh::initGL(false);
-    if( poss.empty() ) {
-        poss.clear();
-        tris.clear();
+    if( idx_verts.empty() ) {
+        poss.clear(); poss.shrink_to_fit();
+        tris.clear(); tris.shrink_to_fit();
     }
 }
 
@@ -258,12 +258,12 @@ Todo:
     normal 가중치 면적 크기 비례해야하나?
 
 */
-// type 1 of update normal
+// type 1 : no ref verts
 void SoftBody::updateNorsAndUpload() {
     assert( poss.empty()==true && nors.size()==x_s.size() );
 
 	std::fill(nors.begin(), nors.end(), vec3(0));
-	for( const uvec3& t : tris )
+	for( const uvec3& t : ptcl_tris )
 	{
 		vec3 e1 = x_s[t.y] - x_s[t.x];
         vec3 e2 = x_s[t.z] - x_s[t.x];
@@ -288,8 +288,10 @@ void SoftBody::updateNorsAndUpload() {
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vec3)*nr_verts, nors.data());
 }
 
-// type 2 of update normal
+// type 2 : update nors with ptcl ( smooth normal )
 void SoftBody::updatePossAndNorsWithPtclAndUpload() {
+    assert( poss.empty() == false);
+
     // make normal
     std::fill(p_s.begin(), p_s.end(), vec3(0));
     for( const uvec3& ptri : ptcl_tris ) {
@@ -325,8 +327,10 @@ void SoftBody::updatePossAndNorsWithPtclAndUpload() {
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vec3)*nr_verts, nors.data());
 }
 
-// type 3 of update normal
+// type 3 : update nors with verts ( face normal )
 void SoftBody::updatePossAndNorsWithVertAndUpload() {
+    assert( poss.empty() == false);
+
     // update verts
     for( int i=0; i<nr_ptcls; i++ ) {
         const auto& idxVertsPartInfo = idx_verts_part_infos[i];

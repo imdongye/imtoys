@@ -433,7 +433,9 @@ void AppPbdCpu::canvasImGui()
 	if( ImGui::CollapsingHeader("draw&run") ) {
 		ImGui::Checkbox("draw mesh", &draw_mesh);
 		ImGui::Checkbox("enable texture", &enable_tex);
-		ImGui::Checkbox("make nor with ptcl tris", &update_nor_with_ptcl);
+		if( is_ptcl_ref_close_verts ) {
+			ImGui::Checkbox("make nor with ptcl tris", &update_nor_with_ptcl);
+		}
 		ImGui::Checkbox("draw dPi dir draw", &draw_dpi_dir);
 		ImGui::SliderInt("# steps", &cur_body->nr_steps, 1, 50);
 		ImGui::SliderInt("max fps", &max_fps, 20, 300);
