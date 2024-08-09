@@ -325,14 +325,14 @@ class SymetricMatrix {
 namespace Simplify
 {
 	// Global Variables & Strctures
-	enum Attributes {
-		NONE,
-		NORMAL = 2,
-		TEXCOORD = 4,
-		COLOR = 8
+	enum Attributes : int {
+		ATRB_NONE,
+		ATRB_NORMAL = 2,
+		ATRB_TEXCOORD = 4,
+		ATRB_COLOR = 8
 	};
-	struct Triangle { int v[3];double err[4];int deleted,dirty,attr;vec3f n;vec3f uvs[3];int material; };
-	struct Vertex { vec3f p;int tstart,tcount;SymetricMatrix q;int border;};
+	struct Triangle { int v[3]; double err[4]; int deleted,dirty; int attr; vec3f n; vec3f uvs[3]; int material; };
+	struct Vertex { vec3f p; int tstart,tcount; SymetricMatrix q; int border; };
 	struct Ref { int tid,tvertex; };
 	std::vector<Triangle> triangles;
 	std::vector<Vertex> vertices;
@@ -425,7 +425,7 @@ namespace Simplify
 
 					if( flipped(p,i1,i0,v1,v0,deleted1) ) continue;
 
-					if ( (t.attr & TEXCOORD) == TEXCOORD  )
+					if ( (t.attr & ATRB_TEXCOORD) == ATRB_TEXCOORD  )
 					{
 						update_uvs(i0,v0,p,deleted0);
 						update_uvs(i0,v1,p,deleted1);
@@ -516,7 +516,7 @@ namespace Simplify
 					if( flipped(p,i0,i1,v0,v1,deleted0) ) continue;
 					if( flipped(p,i1,i0,v1,v0,deleted1) ) continue;
 
-					if ( (t.attr & TEXCOORD) == TEXCOORD )
+					if ( (t.attr & ATRB_TEXCOORD) == ATRB_TEXCOORD )
 					{
 						update_uvs(i0,v0,p,deleted0);
 						update_uvs(i0,v1,p,deleted1);
@@ -628,7 +628,7 @@ namespace Simplify
 					if( flipped(p, i1, i0, v1, v0, deleted1) )
 						continue;
 
-					if( (t.attr & TEXCOORD) == TEXCOORD ) {
+					if( (t.attr & ATRB_TEXCOORD) == ATRB_TEXCOORD ) {
 						update_uvs(i0, v0, p, deleted0);
 						update_uvs(i0, v1, p, deleted1);
 					}
@@ -1082,7 +1082,7 @@ namespace Simplify
 						indices.push_back(integers[7]-1-vertex_cnt);
 						indices.push_back(integers[8]-1-vertex_cnt);
 						uvMap.push_back(indices);
-						t.attr |= TEXCOORD;
+						t.attr |= ATRB_TEXCOORD;
 					}
 
 					t.material = material;
@@ -1113,7 +1113,7 @@ namespace Simplify
 	{
 		FILE *file=fopen(filename, "w");
 		int cur_material = -1;
-		bool has_uv = (triangles.size() && (triangles[0].attr & TEXCOORD) == TEXCOORD);
+		bool has_uv = (triangles.size() && (triangles[0].attr & ATRB_TEXCOORD) == ATRB_TEXCOORD);
 
 		if (!file)
 		{

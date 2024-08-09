@@ -736,7 +736,7 @@ void sdf::drawImGui()
         static int viewingMode = 0;
         static const char* viewingModeNames[] = {"Free", "Pivoted"};
         if( ImGui::Combo("Mode",  &viewingMode, viewingModeNames, 3) ) {
-            camera->setViewMode((CameraController::VIEWING_MODE)viewingMode);
+            camera->setViewMode((CameraController::ViewingMode)viewingMode);
         }
         
         ImGui::PopItemWidth();

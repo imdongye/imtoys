@@ -41,7 +41,7 @@ namespace lim
 	struct MeshCubeSphere2 : public Mesh { MeshCubeSphere2(float width = 1.f, int nrSlices = 1, bool genNors = true, bool genUvs = true); };
 	struct MeshCylinder : public Mesh { MeshCylinder(float width = 1.f, float height = 1.f, int nrSlices = 50, bool genNors = true, bool genUvs = true); }; // vertical
 	struct MeshCapsule : public Mesh { MeshCapsule(float width = 1.f, float height = 2.f,  int nrSlices = 50, int nrStacks = 25, bool genNors = true, bool genUvs = true); }; // vertical
-	struct MeshDonut : public Mesh { MeshDonut(float width = 1.f, float height = 0.2f, int nrSlices = 50, int nrRingVerts = 10, bool genNors = true, bool genUvs = true); };
+	struct MeshDonut : public Mesh { MeshDonut(float width = 1.f, float height = 0.4f, int nrSlices = 50, int nrRingVerts = 10, bool genNors = true, bool genUvs = true); };
 }
 
 #endif

@@ -204,9 +204,9 @@ static void drawAnimator(Animator& animator) {
 	ImGui::Begin(me_animator_name);
 	ImGui::Text("#bones in mesh : %d", animator.mtx_Bones.size());
 	switch(animator.state) {
-	case Animator::State::PLAY: ImGui::Text("state : PLAY"); break;
-	case Animator::State::PAUSE: ImGui::Text("state : PAUSE"); break;
-	case Animator::State::STOP: ImGui::Text("state : STOP"); break;
+	case Animator::ST_PLAY: ImGui::Text("state : PLAY"); break;
+	case Animator::ST_PAUSE: ImGui::Text("state : PAUSE"); break;
+	case Animator::ST_STOP: ImGui::Text("state : STOP"); break;
 	}
 	float progress = animator.elapsed_sec / animator.duration_sec; 
 	ImGui::ProgressBar(progress);

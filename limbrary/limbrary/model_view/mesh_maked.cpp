@@ -1042,13 +1042,13 @@ MeshCapsule::MeshCapsule(float width, float height, int nrSlices, int nrStacks, 
 
 
 
-MeshDonut::MeshDonut(float radius, float height, int nrSlices, int nrRingVerts, bool genNors, bool genUvs)
+MeshDonut::MeshDonut(float width, float height, int nrSlices, int nrRingVerts, bool genNors, bool genUvs)
 {
 	name = fmtStrToBuf("donut_s%d_r", nrSlices, nrRingVerts);
 
 	
 	const float ringRad = height*0.5f;
-	const float donutRad = radius;
+	const float donutRad = width*0.5f;
 
 	// calculus : shell method
 	for( int slice=0; slice<=nrSlices; slice++ )

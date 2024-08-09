@@ -30,7 +30,7 @@ void Animator::clear() {
     skeleton.clear();
     mtx_Bones.clear();
     cur_anim = nullptr;
-    state = State::STOP;
+    state = ST_STOP;
 }
 Animator& Animator::operator=(const Animator& src) {
     is_enabled = src.is_enabled;
@@ -52,13 +52,13 @@ void Animator::setAnim(const Animation* anim) {
     is_enabled = true;
     cur_anim = anim;
     duration_sec = cur_anim->nr_ticks/cur_anim->ticks_per_sec;
-    state = State::STOP;
+    state = ST_STOP;
 }
 void Animator::setTimeline(const float pct, bool updateMenualy) {
     elapsed_sec = duration_sec*pct;
     if(updateMenualy) {
         State temp = state;
-        state = State::PLAY;
+        state = ST_PLAY;
         update(0.f);
         state = temp;
     }
@@ -68,18 +68,18 @@ void Animator::play() {
         log::err("no selected animation\n");
         assert(false);
     }
-    if( state != State::PAUSE ) {
+    if( state != ST_PAUSE ) {
         elapsed_sec = 0;
     }
-    state = State::PLAY;
+    state = ST_PLAY;
 }
 void Animator::pause() {
-    if( state == State::STOP )
+    if( state == ST_STOP )
         return;
-    state = State::PAUSE;
+    state = ST_PAUSE;
 }
 void Animator::stop() {
-    state = State::STOP;
+    state = ST_STOP;
     elapsed_sec = 0;
 }
 void Animator::setUniformTo(const Program& prog) const {
@@ -145,7 +145,7 @@ void Animator::updateMtxBones() {
     }
 }
 void Animator::update(float dt) {
-    if( state!=State::PLAY || !cur_anim )
+    if( state!=ST_PLAY || !cur_anim )
         return;
     elapsed_sec += dt;
     if( elapsed_sec > duration_sec ) {
@@ -153,7 +153,7 @@ void Animator::update(float dt) {
             elapsed_sec = fmod(elapsed_sec, duration_sec);
         } 
         else {
-            state = State::STOP;
+            state = ST_STOP;
             return;
         }
     }

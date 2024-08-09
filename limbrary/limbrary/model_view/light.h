@@ -26,7 +26,7 @@ namespace lim
 	class ILight
 	{
 	public:
-		enum LightType {
+		enum LightType : int {
 			LT_DIRECTIONAL,
 			LT_POINT,
 			LT_SPOT,
@@ -43,7 +43,7 @@ namespace lim
 		ILight& operator=(const ILight&) = delete;
 		ILight& operator=(ILight&&)      = delete;
 
-		ILight(enum LightType lt);
+		ILight(LightType lt);
 
 	public:
 		virtual ~ILight() = default;

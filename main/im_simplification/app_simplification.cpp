@@ -408,7 +408,7 @@ void lim::AppSimplification::updateImGui()
 		static const char *vmode_strs[] = {"free", "pivot", "scroll"};
 		int viewMode = 0;
 		if( ImGui::Combo("mode", &viewMode, vmode_strs, sizeof(vmode_strs) / sizeof(char *)) ) {
-			viewports[last_focused_vp_idx]->camera.setViewMode((CameraController::VIEWING_MODE)viewMode);
+			viewports[last_focused_vp_idx]->camera.setViewMode((CameraController::ViewingMode)viewMode);
 		}
 		ImGui::Checkbox("use same camera", &is_same_camera);
 		static float cameraMoveSpeed = 4.0f;

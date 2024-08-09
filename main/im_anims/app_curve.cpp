@@ -36,7 +36,7 @@ namespace {
 		"cubic spline closed",
 		"cubic spline natural qr"
 	};
-	enum CurveType {
+	enum CurveType : int {
 		LINEAR,
 		LAGLANGE,
 		BEZIER_QUADRATIC,

@@ -37,7 +37,7 @@ namespace
 			}
 			hasUv = mesh.uvs.size()>0;
 			if( hasUv ) {
-				to.attr |= Simplify::TEXCOORD;
+				to.attr |= Simplify::ATRB_TEXCOORD;
 				to.uvs[0]  = vec3f(mesh.uvs[from.x].x, mesh.uvs[from.x].y, 1);
 				to.uvs[1]  = vec3f(mesh.uvs[from.y].x, mesh.uvs[from.y].y, 1);
 				to.uvs[2]  = vec3f(mesh.uvs[from.z].x, mesh.uvs[from.z].y, 1);

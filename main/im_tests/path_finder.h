@@ -17,7 +17,7 @@ namespace lim
 	class PathFinder
 	{
 	public:
-		enum NodeState
+		enum NodeState : int
 		{
 			NS_ROAD, NS_OPEN, NS_CLOSE, NS_WALL, NS_START, NS_END, NS_PATH
 		};

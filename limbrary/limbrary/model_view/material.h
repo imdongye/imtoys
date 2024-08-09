@@ -26,7 +26,7 @@ namespace lim
     // copyable
     struct Material
     {
-        enum FactorFlag {
+        enum FactorFlag : int {
             FF_NONE         = 0,
             FF_COLOR_BASE   = 1<<0,
             FF_SPECULAR     = 1<<1,
@@ -39,7 +39,7 @@ namespace lim
             FF_ROUGHNESS    = 1<<8,
             FF_METALNESS    = 1<<9,
         };
-        enum MapFlag{
+        enum MapFlag : int {
             MF_NONE       = 0,
             MF_COLOR_BASE = 1<<0, // 1
             MF_SPECULAR   = 1<<1, // 2

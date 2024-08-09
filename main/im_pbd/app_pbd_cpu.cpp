@@ -32,17 +32,17 @@ namespace {
 	bool update_nor_with_ptcl = true;
 
 	const char* mesh_type_names[] = {
-		"Bunny", "Cheems", "Buff"
+		"Bunny", "Cheems", "Buff",
 		"Cube", "Shared Cube",
 		"Sphere", "Ico Sphere",
-		"Plane", "Cloth",
+		"Plane", "Cloth", "Donut",
 	};
 	const int nr_mesh_type_names = sizeof(mesh_type_names)/sizeof(mesh_type_names[0]);
-	enum MeshType {
+	enum MeshType : int {
 		MT_BUNNY, MT_CHEEMS, MT_BUFF,
 		MT_CUBE, MT_SHARED_CUBE,
 		MT_SPHERE, MT_ICO_SPHERE,
-		MT_PLANE, MT_CLOTH, 
+		MT_PLANE, MT_CLOTH, MT_DONUT, 
 	};
 	MeshType cur_mesh_type = MT_SPHERE;
 }
@@ -102,7 +102,7 @@ static void resetSoftBody()
 		}
 		case MT_SPHERE: {
 			int nrSlices = max(6, nr_ms_slices);
-			int nrStacks = max(4, nr_ms_slices/2);
+			int nrStacks = nrSlices/2;
 			ms = new MeshSphere(1.f, nrSlices, nrStacks, true, true);
 			break;
 		}
@@ -121,6 +121,12 @@ static void resetSoftBody()
 			ms = new MeshCloth(1.f, 1.f, nr_ms_slices, nr_ms_slices, true, true);
 			break;
 		}
+		case MT_DONUT: {
+			int nrSlices = max(10, nr_ms_slices);
+			int nrRingVerts = nrSlices/2;
+			ms = new MeshDonut(2.f, 0.7f, nrSlices, nrRingVerts, true, true);
+			break;
+		}
 	}
 
 	tf = translate(vec3(0,2,0)) * glim::rotateX(glim::pi90*0.1f)* glim::rotateY(glim::pi90*0.2f) * scale(vec3(size_scale))* tf;
@@ -133,7 +139,9 @@ static void resetSoftBody()
 	cur_body->pressure = pressure;
 	if( fix_start ) {
 		cur_body->w_s[0] = 0.f;
-		cur_body->w_s[nr_ms_slices] = 0.f;
+		if( cur_mesh_type==MT_PLANE||cur_mesh_type==MT_CLOTH ) {
+			cur_body->w_s[nr_ms_slices] = 0.f;
+		}
 	}
 
 	delete ms;

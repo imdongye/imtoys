@@ -40,7 +40,7 @@ namespace lim
 	class Viewport
 	{
 	public:
-		enum WindowMode
+		enum WindowMode : int
 		{
 			WM_FREE,
 			WM_FIXED_RATIO,

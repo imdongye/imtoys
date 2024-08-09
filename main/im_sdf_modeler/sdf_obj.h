@@ -5,7 +5,7 @@
 #include <glm/glm.hpp>
 #include <vector>
 
-enum PrimitiveType {
+enum PrimitiveType : int {
     PT_SPHERE, PT_BOX, PT_PIPE, PT_DONUT
 };
 constexpr int nr_prim_types = 4;
@@ -13,7 +13,7 @@ inline const char* prim_type_names[nr_prim_types] = {
     "Sphere", "Box", "Pipe", "Donut"
 };
 
-enum OperationGroup {
+enum OperationGroup : int {
     OG_ADDITION,
     OG_SUBTITUTION,
     OG_INTERSECTION,
@@ -22,7 +22,7 @@ constexpr int nr_prim_oper_groups = 3;
 inline const char* prim_oper_group_names[nr_prim_oper_groups] = {
     "Addition", "Subtitution", "Intersection"
 };
-enum OperationSpec {
+enum OperationSpec : int {
     OS_ROUND,
     OS_EDGE,
 };
@@ -31,7 +31,7 @@ inline const char* prim_oper_spec_names[nr_prim_oper_specs] = {
     "Round", "Edge",
 };
 
-enum OperationType {
+enum OperationType : int {
     OT_ADD_ROUND, // addition
     OT_ADD_EDGE,
     OT_SUB_ROUND, // subtitution

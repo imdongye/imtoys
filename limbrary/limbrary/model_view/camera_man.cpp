@@ -18,13 +18,13 @@ CameraController::CameraController()
 CameraController::~CameraController()
 {
 }
-void CameraController::setViewMode(VIEWING_MODE vm)
+void CameraController::setViewMode(ViewingMode vm)
 {
 	viewing_mode = vm%3;
 }
-CameraController::VIEWING_MODE CameraController::getViewMode()
+CameraController::ViewingMode CameraController::getViewMode()
 {
-	return (VIEWING_MODE)viewing_mode;
+	return (ViewingMode)viewing_mode;
 }
 void CameraController::updateFreeMode()
 {
@@ -150,7 +150,7 @@ void CameraController::updateFromInput()
 
 	// switch view mode
 	if( ImGui::IsKeyPressed(ImGuiKey_Tab, false) ) {
-		setViewMode((VIEWING_MODE)(viewing_mode+1));
+		setViewMode((ViewingMode)(viewing_mode+1));
 	}
 	switch( viewing_mode ) {
 		case VM_PIVOT:  updatePivotMode(); break;

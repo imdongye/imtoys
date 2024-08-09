@@ -10,7 +10,7 @@
 using namespace glm;
 using namespace lim;
 
-ILight::ILight(enum LightType lt) : light_type((int)lt)
+ILight::ILight(LightType lt) : light_type((int)lt)
 {
 	tf.theta = 35.f;
 	tf.phi =  -35.f;

@@ -132,7 +132,7 @@ namespace pbd
         std::vector<ConstraintDihedralBend>  c_dih_bends;
         std::vector<ConstraintIsometricBend> c_iso_bends;
 
-        enum BendType {
+        enum BendType : int {
             BT_NONE,
             BT_DISTANCE,
             BT_DIHEDRAL,

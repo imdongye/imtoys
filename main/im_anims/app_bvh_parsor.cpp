@@ -29,7 +29,7 @@ struct Motion {
 
 
 struct Joint {
-	enum CHANNEL {
+	enum CHANNEL : int {
 		X_POS, Y_POS, Z_POS,
 		X_ROT, Y_ROT, Z_ROT,
 	};

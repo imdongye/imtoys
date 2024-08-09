@@ -76,12 +76,13 @@ namespace lim
     class Animator
     {
     public:
-        enum class State {
-            PLAY,
-            PAUSE,
-            STOP,
+        enum State : int
+        {
+            ST_PLAY,
+            ST_PAUSE,
+            ST_STOP,
         };
-        State state = State::STOP;
+        State state = ST_STOP;
         bool is_enabled = false;
         int nr_bone_nodes; // skeletion.size()
         std::vector<BoneNode> skeleton;

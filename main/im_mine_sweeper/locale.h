@@ -2,7 +2,7 @@
 #define __locale_h_
 
 namespace lang {
-    enum LOCALE {
+    enum LOCALE : int {
         LC_KOR,
         LC_ENG,
     };

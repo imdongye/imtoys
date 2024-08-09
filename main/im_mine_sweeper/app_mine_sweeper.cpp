@@ -26,10 +26,10 @@ namespace {
 	constexpr float UI_FONT_SIZE = 20.f;
 	constexpr float CELL_FONT_SIZE = 30.f;
 		
-	enum class UiState{
-		NEW,
-		PLAYING,
-		OVER,
+	enum UiState : int {
+		US_NEW,
+		US_PLAYING,
+		US_OVER,
 	};
 	struct Adjustable { // for ui
 		int width = 9;
@@ -164,11 +164,11 @@ void Board::dig(int x, int y) {
 				nr_remain_view++;
 			}
 		});
-		game_state = UiState::OVER;
+		game_state = US_OVER;
 		is_game_win = false;
 	}
 	else if( nr_closed==nr_mine ) {
-		game_state = UiState::OVER;
+		game_state = US_OVER;
 		is_game_win = true;
 	}
 }
@@ -270,7 +270,7 @@ void Board::compute2() {
 
 
 static void setNewGame() {
-	game_state = UiState::NEW;
+	game_state = US_NEW;
 	elapsed_time = 0.0;
 	board.clear();
 	board.width = adj.width;
@@ -374,11 +374,11 @@ void AppMineSweeper::updateImGui()
 			}
 		}
 		else { // closed
-			if( isHovered || (game_state == UiState::OVER && cell.is_mine) ) {
+			if( isHovered || (game_state == US_OVER && cell.is_mine) ) {
 				col.Value.w = 0.3f;
 			}
 			drawList->AddRectFilled(tlPos, brPos, col, rounding);
-			if( game_state == UiState::OVER ) {
+			if( game_state == US_OVER ) {
 				if( !cell.is_flaged && !cell.is_mine)
 					return;
 			}
@@ -397,11 +397,11 @@ void AppMineSweeper::updateImGui()
 		if( cell.is_flaged ) {
 			fontSize *= 0.8f;
 			txPos.x -= fontSize*0.21f;
-			col = boardColors[(game_state==UiState::OVER&&cell.is_mine)?COL_FLAG_RIGHT_IDX:COL_FLAG_WRONG_IDX];
+			col = boardColors[(game_state==US_OVER&&cell.is_mine)?COL_FLAG_RIGHT_IDX:COL_FLAG_WRONG_IDX];
 			txPtr = u8"\uE800";
 		} 
 		else if( cell.is_mine ) {
-			if( game_state == UiState::PLAYING && !cell.is_open )
+			if( game_state == US_PLAYING && !cell.is_open )
 				return;
 			fontSize *= 0.8f;
 			txPos.x -= fontSize*0.16f;
@@ -424,15 +424,15 @@ void AppMineSweeper::updateImGui()
 	//
 	//	Board Input
 	//
-	if( game_state!=UiState::OVER && isBoardHovered && !board.isOutside(hoveredX, hoveredY)) {
+	if( game_state!=US_OVER && isBoardHovered && !board.isOutside(hoveredX, hoveredY)) {
 		if( ImGui::IsMouseReleased(0) ) {
-			if( game_state == UiState::NEW ) {
-				game_state = UiState::PLAYING;
+			if( game_state == US_NEW ) {
+				game_state = US_PLAYING;
 				start_time = ImGui::GetTime();
 				board.plantMines(hoveredX, hoveredY);
 			}
 			board.dig(hoveredX, hoveredY);
-		} else if( ImGui::IsMouseReleased(1) && game_state==UiState::PLAYING ) {
+		} else if( ImGui::IsMouseReleased(1) && game_state==US_PLAYING ) {
 			board.switchFlag(hoveredX, hoveredY);
 		}
 	}
@@ -443,16 +443,16 @@ void AppMineSweeper::updateImGui()
 	//
 	//	State
 	//
-	if( game_state != UiState::NEW ) {
+	if( game_state != US_NEW ) {
 		ImGui::Begin(lang::state, nullptr, ImGuiWindowFlags_HorizontalScrollbar);
 		ImGui::PushFont(ui_font);
 
-		if( game_state == UiState::PLAYING ) {
+		if( game_state == US_PLAYING ) {
 			elapsed_time = ImGui::GetTime() - start_time;
 		}
 		int eSec = (int)elapsed_time;
 		ImGui::AlignTextToFramePadding();
-		if( game_state==UiState::OVER ) {
+		if( game_state==US_OVER ) {
 			ImGui::TextUnformatted(( is_game_win )?lang::clear:lang::over);
 			ImGui::SameLine(0.f,20.f);
 		}
@@ -461,8 +461,8 @@ void AppMineSweeper::updateImGui()
 
 		ImGui::SameLine();
 		ImGui::Text("\uE802 %2d/%d", board.nr_remain_view, board.nr_mine);
-		if( game_state != UiState::NEW ) {
-			if( game_state == UiState::PLAYING ) {
+		if( game_state != US_NEW ) {
+			if( game_state == US_PLAYING ) {
 				ImGui::SameLine();
 				if( ImGui::Button(lang::auto_btn1) ) {
 					board.compute1();
@@ -500,7 +500,7 @@ void AppMineSweeper::updateImGui()
 	//
 	static int level = 0;
 	static bool isAdjChanged = false;
-	if( game_state == UiState::NEW ) {
+	if( game_state == US_NEW ) {
 		ImGui::Begin(lang::setting, nullptr, ImGuiWindowFlags_HorizontalScrollbar);
 		ImGui::PushFont(ui_font);
 		ImGui::SetNextItemWidth(100.f);

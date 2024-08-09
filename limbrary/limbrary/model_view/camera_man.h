@@ -66,7 +66,7 @@ namespace lim
 		float spd_zoom_dist = 3.5f;
 	#endif
 	
-		enum VIEWING_MODE {
+		enum ViewingMode : int {
 			VM_FREE=0,
 			VM_PIVOT,
 			VM_SCROLL
@@ -75,7 +75,7 @@ namespace lim
 		bool enabled = true;
 	protected:
 
-		enum INPUT_STATUS {
+		enum InputStatus : int {
 			IST_NONE     = 1<<0,
 			IST_SCROLLED = 1<<1,
 			IST_FOCUSED  = 1<<2,
@@ -92,8 +92,8 @@ namespace lim
 		CameraController();
 		virtual ~CameraController();
 
-		void setViewMode(VIEWING_MODE vm);
-		VIEWING_MODE getViewMode();
+		void setViewMode(ViewingMode vm);
+		ViewingMode getViewMode();
 
 		void updateFromInput();
 	private:
