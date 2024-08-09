@@ -35,9 +35,9 @@ e3\  /e4    e4 = p3-p1
 RefFrom:
     CreateConstraints() in SoftBodySharedcpp of JoltPhysics
 */
-SoftBody::SoftBody(const lim::Mesh& src, int nrShear, BendType bendType
+SoftBody::SoftBody(lim::Mesh&& src, int nrShear, BendType bendType
     , float bodyMass, bool refCloseVerts
-) : lim::Mesh(src), compliance()
+) : lim::Mesh(std::move(src)), compliance()
 {
     nr_verts = (int)poss.size();
     nr_tris = (int)tris.size();

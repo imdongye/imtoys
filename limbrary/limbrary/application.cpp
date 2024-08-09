@@ -329,6 +329,7 @@ void AppBase::run()
 		ImGuizmo::BeginFrame();
 
 		updateImGui();
+		draw_appselector();
 		_drawProfilerFps();
 		
 		ImGui::Render();
@@ -338,7 +339,6 @@ void AppBase::run()
 		update();
 		for( auto& cb : update_hooks ) 
 			cb(delta_time);
-		draw_appselector();
 		
 		
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

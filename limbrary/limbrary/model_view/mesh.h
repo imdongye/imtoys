@@ -56,11 +56,12 @@ namespace lim
 		GLuint vao = 0;
 
 	public:
-		Mesh(Mesh&& src)			 = delete;
+		
 		Mesh& operator=(const Mesh&) = delete;
 		Mesh& operator=(Mesh&& src)  = delete;
 		
 		Mesh();
+		Mesh(Mesh&& src);
 		Mesh(const Mesh& src); // clone
 		virtual ~Mesh();
 		

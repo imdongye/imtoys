@@ -18,6 +18,32 @@ using namespace lim;
 Mesh::Mesh()
 {
 }
+Mesh::Mesh(Mesh&& src)
+	: name(move(src.name))
+	, poss(move(src.poss))
+	, nors(move(src.nors))
+	, uvs(move(src.uvs))
+	, cols(move(src.cols))
+	, tangents(move(src.tangents))
+	, bitangents(move(src.bitangents))
+	, bone_infos(move(src.bone_infos))
+	, tris(move(src.tris))
+	, nr_verts(src.nr_verts)
+	, nr_tris(src.nr_tris)
+	, buf_pos(src.buf_pos), buf_nor(src.buf_nor), buf_uv(src.buf_uv)
+	, buf_color(src.buf_color), buf_tangent(src.buf_tangent), buf_bitangent(src.buf_bitangent)
+	, buf_bone_info(src.buf_bone_info), buf_tris(src.buf_tris), vao(src.vao)
+{
+	src.buf_pos = 0;
+	src.buf_nor = 0;
+	src.buf_uv = 0;
+	src.buf_color = 0;
+	src.buf_tangent = 0;
+	src.buf_bitangent = 0;
+	src.buf_bone_info = 0;
+	src.buf_tris = 0;
+	src.vao = 0;
+}
 Mesh::Mesh(const Mesh& src)
 	: name(src.name+"-cloned")
 	, poss(src.poss)

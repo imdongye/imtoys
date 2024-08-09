@@ -127,7 +127,7 @@ static void resetSoftBody()
 	for( vec3& p : ms->poss ) {
 		p = vec3(tf*vec4(p,1));
 	}
-	cur_body = new pbd::SoftBody(*ms, nr_shear, bend_type, body_mass, is_ptcl_ref_close_verts);
+	cur_body = new pbd::SoftBody(std::move(*ms), nr_shear, bend_type, body_mass, is_ptcl_ref_close_verts);
 	cur_body->initGL();
 	cur_body->compliance = tempComp;
 	cur_body->pressure = pressure;

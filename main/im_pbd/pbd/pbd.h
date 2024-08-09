@@ -138,8 +138,9 @@ namespace pbd
             BT_DIHEDRAL,
             BT_ISOMETRIC,
         };
+		SoftBody(const Mesh& src) = delete;
         // nrShear => [0,2]
-        SoftBody(const lim::Mesh& src, int nrShear = 1, BendType bendType = BT_NONE
+        SoftBody(lim::Mesh&& src, int nrShear = 1, BendType bendType = BT_NONE
             , float bodyMass = 1.f, bool refCloseVerts = false );
         void update(float dt, const PhyScene& scene);
         virtual float getSdNor(const glm::vec3& p, glm::vec3& outNor) const final;
