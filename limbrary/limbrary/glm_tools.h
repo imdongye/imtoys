@@ -10,6 +10,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <limits>
+// #include <glm/gtc/random.hpp>
 // #include <glm/gtx/intersect.hpp>
 
 
@@ -26,7 +27,9 @@ namespace glim {
 	constexpr glm::vec3 right = {1,0,0};
 	constexpr glm::vec3 front = {0,0,1};
 
-
+	inline float randFloat() {
+  		return (float)std::rand() / RAND_MAX;
+	}
 
     // glm::exp(quat) fixed version
 	inline glm::quat exp(const glm::quat& q) {

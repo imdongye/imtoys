@@ -21,6 +21,7 @@ Note: callbacks
 #include <limbrary/log.h>
 #include <algorithm>
 #include <map>
+#include <random>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 
@@ -37,6 +38,16 @@ namespace lim
 	inline void safeDel(T*& p) {
 		delete p; // delete nullptr is ok
 		p = nullptr;
+	}
+
+
+	// From: https://en.cppreference.com/w/cpp/algorithm/random_shuffle
+	// removed std::random_shuffle in cpp 17
+	template<typename T>
+	void randomShuffle(std::vector<T>& vec) {
+		std::random_device rd;
+		std::mt19937 g(rd());
+		std::shuffle(vec.begin(), vec.end(), g);
 	}
 
 
@@ -118,9 +129,7 @@ namespace lim
 	}
 
 
-	inline float randFloat() {
-  		return (float)rand() / RAND_MAX;
-	}
+	
 
 	//template <class Ftype>
 	//using Callbacks = std::map<const void*, std::function<Ftype>>;

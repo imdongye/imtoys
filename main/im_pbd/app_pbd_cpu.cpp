@@ -50,11 +50,10 @@ namespace {
 
 static void resetSoftBody()
 {
-	pbd::SoftBody::Compliance tempComp;
+	pbd::SoftBody::ConstraintParams tempComp;
 	float pressure = 0.f;
 	if(cur_body) {
-		tempComp = cur_body->compliance;
-		pressure = cur_body->pressure;
+		tempComp = cur_body->params;
 		delete cur_body;
 	}
 	Mesh* ms = nullptr;
@@ -135,8 +134,7 @@ static void resetSoftBody()
 	}
 	cur_body = new pbd::SoftBody(std::move(*ms), nr_shear, bend_type, body_mass, is_ptcl_ref_close_verts);
 	cur_body->initGL();
-	cur_body->compliance = tempComp;
-	cur_body->pressure = pressure;
+	cur_body->params = tempComp;
 	if( fix_start ) {
 		cur_body->w_s[0] = 0.f;
 		if( cur_mesh_type==MT_PLANE||cur_mesh_type==MT_CLOTH ) {
@@ -452,18 +450,23 @@ void AppPbdCpu::canvasImGui()
 		ImGui::Text("#dih_bend %d", cur_body->c_dih_bends.size());
 		ImGui::Text("#iso_bend %d", cur_body->c_iso_bends.size());
 	}
-	if( ImGui::CollapsingHeader("compliance") ) {
-		ImGui::SliderFloat("point", &cur_body->compliance.point, 0.f, 1.0f, "%.6f");
-		ImGui::SliderFloat("distance", &cur_body->compliance.dist, 0.f, 1.0f, "%.6f");
-		ImGui::SliderFloat("stretch_pct", &cur_body->compliance.stretch_pct, 0.f, 1.0f, "%.6f");
-		ImGui::SliderFloat("shear_pct", &cur_body->compliance.shear_pct, 0.f, 1.0f, "%.6f");
-		ImGui::SliderFloat("bend_pct", &cur_body->compliance.bend_pct, 0.f, 1.0f, "%.6f");
+	if( ImGui::CollapsingHeader("params") ) {
+		ImGui::SliderFloat("point", &cur_body->params.inv_stiff_point, 0.f, 1.0f, "%.6f");
+		ImGui::SliderFloat("distance", &cur_body->params.inv_stiff_dist, 0.f, 1.0f, "%.6f");
+		ImGui::SliderFloat("stretch_pct", &cur_body->params.stretch_pct, 0.f, 1.0f, "%.6f");
+		ImGui::SliderFloat("shear_pct", &cur_body->params.shear_pct, 0.f, 1.0f, "%.6f");
+		ImGui::SliderFloat("bend_pct", &cur_body->params.bend_pct, 0.f, 1.0f, "%.6f");
 		ImGui::Separator();
+		ImGui::SliderFloat("dih_bend", &cur_body->params.inv_stiff_dih_bend, 0.f, 100.f, "%.6f");
+		ImGui::SliderFloat("iso_bend", &cur_body->params.inv_stiff_iso_bend, 0.f, 100.f, "%.6f");
+		
+		ImGui::Separator();
+		ImGui::Text("volume ori: %.4f", cur_body->c_volume.ori_six_volume);
+		ImGui::Text("volume cur: %.4f", cur_body->c_volume.cur_six_volume);
+		ImGui::SliderFloat("volume", &cur_body->params.inv_stiff_volume, 0.f, 10.f, "%.6f");
+		ImGui::SliderFloat("pressure", &cur_body->params.pressure, 0.f, 20.f, "%.6f");
+		// ImGui::SliderFloat("pressure", &cur_body->params.pressure, 0.f, 1.f, "%.6f");
 
-		ImGui::SliderFloat("dih_bend", &cur_body->compliance.dih_bend, 0.f, 100.f, "%.6f");
-		ImGui::SliderFloat("iso_bend", &cur_body->compliance.iso_bend, 0.f, 100.f, "%.6f");
-		ImGui::Separator();
-		ImGui::SliderFloat("pressure", &cur_body->pressure, 0.f, 1000.f, "%.6f");
 		ImGui::Separator();
 		ImGui::SliderFloat("air_drag", &phy_scene.air_drag, 0.f, 1.f, "%.6f");
 		ImGui::SliderFloat("ground friction", &c_ground.friction, 0.f, 1.f, "%.6f");

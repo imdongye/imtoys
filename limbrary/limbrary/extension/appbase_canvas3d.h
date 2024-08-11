@@ -3,8 +3,7 @@
 	2024-07-01 / im dong ye
 
     todo:
-    1. instance draw mesh
-    2. cacheing matrix buffer
+    1. ssbo to VBO for opengl4.1(for mac), From https://www.youtube.com/watch?v=TOPvFvL_GRY
 
     note:
     update      -> render

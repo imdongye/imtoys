@@ -7,7 +7,6 @@
 #include <limbrary/limgui.h>
 #include <functional>
 #include <limbrary/asset_lib.h>
-#include <glm/gtc/random.hpp>
 
 using namespace lim;
 using namespace glm;
@@ -50,7 +49,7 @@ lim::AppSkeletal::AppSkeletal() : AppBase(1200, 780, APP_NAME, false)
 			scene.own_mds.back()->tf->update();
 			scene.own_mds.back()->animator.is_loop = true;
 			scene.own_mds.back()->animator.play();
-			scene.own_mds.back()->animator.setTimeline(randFloat(), true);
+			scene.own_mds.back()->animator.setTimeline(glim::randFloat(), true);
 		}
 	}
 

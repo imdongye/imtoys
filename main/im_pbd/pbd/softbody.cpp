@@ -1,5 +1,6 @@
 #include "pbd.h"
 #include <algorithm>
+#include <limbrary/g_tools.h>
 #include <limbrary/glm_tools.h>
 #include <glm/gtx/norm.hpp>
 
@@ -12,10 +13,11 @@ static inline uvec2 makeEdgeIdx(uint a1, uint a2) {
     return (a1<a2)?uvec2{a1,a2}:uvec2{a2,a1};
 }
 
-SoftBody::Compliance::Compliance()
-    : dist(0.001f)
+SoftBody::ConstraintParams::ConstraintParams()
+    : inv_stiff_dist(0.001f)
     , stretch_pct(1.f), shear_pct(0.8f), bend_pct(0.6f)
-    , dih_bend(46.f), iso_bend(46.f), point(0.0006f)
+    , inv_stiff_dih_bend(46.f), inv_stiff_iso_bend(46.f), inv_stiff_point(0.0006f)
+    , inv_stiff_volume(0.01f), pressure(0.0f)
 {
 }
 
@@ -37,7 +39,8 @@ RefFrom:
 */
 SoftBody::SoftBody(lim::Mesh&& src, int nrShear, BendType bendType
     , float bodyMass, bool refCloseVerts
-) : lim::Mesh(std::move(src)), compliance()
+) : lim::Mesh(std::move(src))
+  , params()
 {
     nr_verts = (int)poss.size();
     nr_tris = (int)tris.size();
@@ -220,6 +223,14 @@ SoftBody::SoftBody(lim::Mesh&& src, int nrShear, BendType bendType
             c_shears.push_back( {*this, edge1.idx_ps} );
         }
     }
+
+    lim::randomShuffle(c_stretchs);
+    lim::randomShuffle(c_shears);
+    lim::randomShuffle(c_dist_bends);
+    lim::randomShuffle(c_dih_bends);
+    lim::randomShuffle(c_iso_bends);
+
+    c_volume.ori_six_volume = getVolumeTimesSix();
 }
 
 float SoftBody::getVolume() const {

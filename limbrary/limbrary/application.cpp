@@ -12,6 +12,7 @@
 #include <backend/imgui_impl_glfw.h>
 #include <backend/imgui_impl_opengl3.h>
 #include <algorithm>
+#include <cstdlib>
 
 using namespace lim;
 
@@ -174,7 +175,7 @@ AppBase::AppBase(int winWidth, int winHeight, const char* title, bool vsync)
 
 	// init singleton
 	glClampColor(GL_CLAMP_READ_COLOR, GL_FALSE);
-	srand(time(0));
+	std::srand(time(0));
 	AppPrefs::create();
 	AssetLib::create(this);
 

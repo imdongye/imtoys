@@ -18,7 +18,7 @@ ConstraintPoint::ConstraintPoint(const SoftBody& body, int idxP, const vec3& _po
 {
     ori_dist = length(point - body.x_s[idx_p]);
 }
-void ConstraintPoint::project(SoftBody& body, float alpha) 
+void ConstraintPoint::project(SoftBody& body, float alpha)
 {
     vec3 p = body.p_s[idx_p];
     float w = body.w_s[idx_p];
@@ -46,7 +46,7 @@ ConstraintDistance::ConstraintDistance(const SoftBody& body, const uvec2& idxPs)
 {
     ori_dist = length(body.x_s[idx_ps.x] - body.x_s[idx_ps.y]);
 }
-void ConstraintDistance::project(SoftBody& body, float alpha) 
+void ConstraintDistance::project(SoftBody& body, float alpha)
 {
     vec3 p1 = body.p_s[idx_ps.x]; // gause-seidel iteration
     vec3 p2 = body.p_s[idx_ps.y];
@@ -120,7 +120,7 @@ ConstraintDihedralBend::ConstraintDihedralBend(const SoftBody& body, const uvec4
     float sign = glm::sign(dot(cross(n1, n2), e0));
     ori_angle = sign * glim::acosApprox(cosAngle);
 }
-void ConstraintDihedralBend::project(SoftBody& body, float alpha) 
+void ConstraintDihedralBend::project(SoftBody& body, float alpha)
 {
     for( int i=0; i<4; i++ ) {
         dPi[i] = vec3(0.f);
@@ -163,11 +163,11 @@ void ConstraintDihedralBend::project(SoftBody& body, float alpha)
         C += 2.0f * glim::pi;
     LimGui::PlotValAddValue("dih_c", C);
     // float maxPctC = 0.2f;
-    float maxPctC = glim::pi*max(body.compliance.dih_bend, 0.1f);
-    if( abs(C) > maxPctC ) {
-        return;
-        // C *=0.01f;
-    }
+    // float maxPctC = glim::pi*max(body.params.inv_stiff_dih_bend, 0.1f);
+    // if( abs(C) > maxPctC ) {
+    //     return;
+    //     // C *=0.01f;
+    // }
     // if( C < -glim::pi*maxPctC )
     //     C = -glim::pi*maxPctC;
     // if( C >  glim::pi*maxPctC )
@@ -295,3 +295,93 @@ void ConstraintIsometricBend::project(SoftBody& body, float alpha)
     }
 }
 
+
+// From: https://namu.wiki/w/%EC%95%95%EB%A0%A5
+void ConstraintVolume::applyImpulse(SoftBody& body, float pressure, float dt)
+{
+    cur_six_volume = body.getVolumeTimesSix();
+    if( pressure<glim::feps ) {
+        return;
+    }
+    
+    if( cur_six_volume < glim::feps ) {
+        return;
+    }
+
+    // vec3 F = pressure*twoAreaAndNor/sixVolume;
+    float coeff = pressure*dt/cur_six_volume;
+
+    for( uvec3 tri : body.ptcl_tris ) {
+        vec3 e1 = body.p_s[tri.y] - body.p_s[tri.x];
+        vec3 e2 = body.p_s[tri.z] - body.p_s[tri.x];
+        vec3 twoAreaAndNor = cross(e1, e2);
+
+       body.v_s[tri.x] += body.w_s[tri.x]*coeff * twoAreaAndNor;
+       body.v_s[tri.y] += body.w_s[tri.y]*coeff * twoAreaAndNor;
+       body.v_s[tri.z] += body.w_s[tri.z]*coeff * twoAreaAndNor;
+    }
+}
+
+void ConstraintVolume::projectImpulse(SoftBody& body, float pressure, float dt)
+{
+    if( pressure<glim::feps ) {
+        return;
+    }
+    
+    cur_six_volume = body.getVolumeTimesSix();
+    if( cur_six_volume < glim::feps ) {
+        return;
+    }
+
+
+    // vec3 F = pressure*twoAreaAndNor/sixVolume;
+    float coeff = pressure*dt/cur_six_volume;
+
+    for( uvec3 tri : body.ptcl_tris ) {
+        vec3 e1 = body.p_s[tri.y] - body.p_s[tri.x];
+        vec3 e2 = body.p_s[tri.z] - body.p_s[tri.x];
+        vec3 twoAreaAndNor = cross(e1, e2);
+
+       body.p_s[tri.x] += body.w_s[tri.x]*coeff * twoAreaAndNor;
+       body.p_s[tri.y] += body.w_s[tri.y]*coeff * twoAreaAndNor;
+       body.p_s[tri.z] += body.w_s[tri.z]*coeff * twoAreaAndNor;
+    }
+}
+
+void ConstraintVolume::projectXpbd(SoftBody& body, float pressure, float alpha)
+{
+    cur_six_volume = body.getVolumeTimesSix();
+    if( pressure<glim::feps ) {
+        return;
+    }
+    
+    if( cur_six_volume < glim::feps ) {
+        return;
+    }
+
+    // use v_s to temp gradient variable
+    for( const uvec3& tri : body.ptcl_tris ) {
+        const vec3& p1 = body.p_s[tri.x];
+        const vec3& p2 = body.p_s[tri.y];
+        const vec3& p3 = body.p_s[tri.z];
+        body.v_s[tri.x] += cross(p3, p2)/6.f;
+        body.v_s[tri.y] += cross(p1, p3)/6.f;
+        body.v_s[tri.z] += cross(p2, p1)/6.f;
+    }
+
+    float sixC = cur_six_volume - pressure*ori_six_volume;
+    if( abs(sixC) < glim::feps )
+        return;
+
+    float denom = alpha;
+    for( int i=0; i<body.nr_ptcls; i++ ) {
+        denom += body.w_s[i]*length2(body.v_s[i]);
+    }
+    if( denom < glim::feps )
+        return;
+    float lambda = sixC / (6.f*denom);
+
+    for( int i=0; i<body.nr_ptcls; i++ ) {
+        body.p_s[i] = lambda * body.w_s[i] * body.v_s[i];
+    }
+}

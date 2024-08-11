@@ -75,7 +75,7 @@ namespace pbd
     {
         glm::uvec4 idx_ps; // edge, opp1, opp2
         float ori_angle;
-        glm::vec3 dPi[4];
+         glm::vec3 dPi[4];
         ConstraintDihedralBend(const SoftBody& body, const glm::uvec4& idxPs);
         void project(SoftBody& body, float alpha);
     };
@@ -89,22 +89,30 @@ namespace pbd
         void project(SoftBody& body, float alpha);
     };
 
+    struct ConstraintVolume
+    {
+        float ori_six_volume; // need init from body
+        float cur_six_volume;
+        void applyImpulse(SoftBody& body, float pressure, float dt);
+        void projectImpulse(SoftBody& body, float pressure, float dt);
+        void projectXpbd(SoftBody& body, float pressure, float alpha);
+    };
+
 
 
 
     struct SoftBody: public lim::Mesh, public ICollider 
     {
-        struct Compliance {
-            float dist, stretch_pct, shear_pct, bend_pct;
-            float dih_bend, iso_bend, point;
-            Compliance();
+        struct ConstraintParams {
+            float inv_stiff_dist, stretch_pct, shear_pct, bend_pct;
+            float inv_stiff_dih_bend, inv_stiff_iso_bend, inv_stiff_point;
+            float inv_stiff_volume, pressure;
+            ConstraintParams();
         };
-        Compliance compliance;
+        ConstraintParams params;
 
         float inv_body_mass, inv_ptcl_mass;
         int nr_ptcls;
-
-        float pressure = 0.f;
 
         int nr_steps = 20;
         float ptcl_radius = 0.02f;
@@ -131,6 +139,7 @@ namespace pbd
         std::vector<ConstraintDistance>      c_dist_bends;
         std::vector<ConstraintDihedralBend>  c_dih_bends;
         std::vector<ConstraintIsometricBend> c_iso_bends;
+        ConstraintVolume c_volume;
 
         enum BendType : int {
             BT_NONE,
@@ -154,13 +163,13 @@ namespace pbd
 
         SoftBody();
         void addPtcl(const glm::vec3& p, float w, const glm::vec3& v);
-    private:
-        void subStepConstraintProject(float dt);
+
         float getVolume() const;
         float getVolumeTimesSix() const;
+    private:
+        void subStepConstraintProject(float dt);
         void applyCollision(float dt, const std::vector<ICollider*>& colliders);
         void applyCollisionInterSubstep(const std::vector<ICollider*>& colliders);
-        void applyPressureImpulse(float dt);
     };
 
 
