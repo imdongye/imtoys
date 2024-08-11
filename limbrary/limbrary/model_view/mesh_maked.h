@@ -9,7 +9,7 @@ st : down left
 Note:
 	texture wrap repeat가정
 	after construction, you should call inigGL();
-
+	nrStacks is nr Row face lines not verts lines
 Todo:
 	2. 코드 최적화관련 https://modoocode.com/129
 	3. 최소 최대 slice 예외처리
@@ -32,16 +32,26 @@ namespace lim
 	struct MeshQuad : public Mesh { MeshQuad(float width = 1.f, float height = 1.f, bool genNors = true, bool genUvs = true); };
 	struct MeshPlane : public Mesh { MeshPlane(float width = 1.f, float height = 1.f, int nrCols = 5, int nrRows = 5, bool genNors = true, bool genUvs = true); };
 	struct MeshCloth : public Mesh { MeshCloth(float width = 1.f, float height = 1.f, int nrCols = 5, int nrRows = 5, bool genNors = true, bool genUvs = true); };
+
+
 	struct MeshCube : public Mesh { MeshCube(float width = 1.f, bool genNors = true, bool genUvs = true); };
+
+
 	struct MeshSphere : public Mesh { MeshSphere(float width = 1.f, int nrSlices = 50, int nrStacks = 25, bool genNors = true, bool genUvs = true); };
 	struct MeshEnvSphere : public Mesh { MeshEnvSphere(float width = 20.f, int nrSlices = 50, int nrStacks = 25); }; // inv triangles
 	struct MeshIcoSphere : public Mesh { MeshIcoSphere(float width = 1.f, int subdivision = 0, bool genNors = true, bool genUvs = true); };
 	
 	struct MeshCubeSphere : public Mesh { MeshCubeSphere(float width = 1.f, int nrSlices = 1, bool genNors = true, bool genUvs = true); };
-	struct MeshCubeSphere2 : public Mesh { MeshCubeSphere2(float width = 1.f, int nrSlices = 1, bool genNors = true, bool genUvs = true); };
+	struct MeshCubeSphereSmooth : public Mesh { MeshCubeSphereSmooth(float width = 1.f, int nrSlices = 1, bool genNors = true, bool genUvs = true); };
+
+
 	struct MeshCylinder : public Mesh { MeshCylinder(float width = 1.f, float height = 1.f, int nrSlices = 50, bool genNors = true, bool genUvs = true); }; // vertical
 	struct MeshCapsule : public Mesh { MeshCapsule(float width = 1.f, float height = 2.f,  int nrSlices = 50, int nrStacks = 25, bool genNors = true, bool genUvs = true); }; // vertical
+
+
 	struct MeshDonut : public Mesh { MeshDonut(float width = 1.f, float height = 0.4f, int nrSlices = 50, int nrRingVerts = 10, bool genNors = true, bool genUvs = true); };
+	struct MeshDonutWithRadius : public MeshDonut { MeshDonutWithRadius(float outerRadius = 1.f, float innerRadius = 0.4f, int nrSlices = 50, int nrRingVerts = 10, bool genNors = true, bool genUvs = true); };
+	struct MeshDonutWithRadius2 : public MeshDonut { MeshDonutWithRadius2(float donutRadius = 1.f, float thickRadius = 0.4f, int nrSlices = 50, int nrRingVerts = 10, bool genNors = true, bool genUvs = true); };
 }
 
 #endif

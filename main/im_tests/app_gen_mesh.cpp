@@ -38,19 +38,19 @@ namespace lim
 
 
 		/* gen models */
+		addMeshToScene(new MeshQuad());
+		addMeshToScene(new MeshCube());
 		addMeshToScene(new MeshSphere(1.f, 10, 4, 5));
 		addMeshToScene(new MeshEnvSphere(1.f, 10));
 		addMeshToScene(new MeshIcoSphere(1.f, 0));
 		addMeshToScene(new MeshIcoSphere(1.f, 1));
 		addMeshToScene(new MeshIcoSphere(1.f, 2));
 		addMeshToScene(new MeshIcoSphere(1.f, 3));
-		addMeshToScene(new MeshDonut(0.5f, 0.2f, 50, 25));
-		addMeshToScene(new MeshCapsule(1.f, 2.f, 50, 25));
-		addMeshToScene(new MeshCubeSphere(1.f, 2));
-		addMeshToScene(new MeshCubeSphere2(1.f, 5));
-		addMeshToScene(new MeshQuad());
-		addMeshToScene(new MeshCube());
+		addMeshToScene(new MeshCubeSphere(1.f, 3));
+		addMeshToScene(new MeshCubeSphereSmooth(1.f, 3));
 		addMeshToScene(new MeshCylinder());
+		addMeshToScene(new MeshCapsule(1.f, 2.f, 8, 5, true, false));
+		addMeshToScene(new MeshDonut(0.5f, 0.2f, 50, 25));
 
 		Model* md = new Model();
 		md->importFromFile("assets/models/objs/spot.obj");

@@ -866,7 +866,7 @@ MeshCubeSphere::MeshCubeSphere(float width, int nrSlices, bool genNors, bool gen
 
 
 // smooth version
-MeshCubeSphere2::MeshCubeSphere2(float width, int nrSlices, bool genNors, bool genUvs)
+MeshCubeSphereSmooth::MeshCubeSphereSmooth(float width, int nrSlices, bool genNors, bool genUvs)
 {
 	name = fmtStrToBuf("smoothcubesphere_s%d", nrSlices);
 	
@@ -992,49 +992,224 @@ MeshCapsule::MeshCapsule(float width, float height, int nrSlices, int nrStacks, 
 	const int halfStacks = nrStacks / 2;
 	nrStacks = halfStacks * 2;
 
+	const float fNrSlices = (float)nrSlices;
+	const float fNrStacks = (float)nrStacks;
+
+	nr_tris = nrSlices*2 + (nrStacks-2)*nrSlices*2;
+	tris.reserve(nr_tris);
+
+	if( genUvs ) // has seams
+	{
+		nr_verts = 2*nrSlices + 2*(nrSlices+1)*(nrStacks-1);
+		poss.reserve(nr_verts);
+		uvs.reserve(nr_verts);
+		if( genNors )
+			nors.reserve(nr_verts);
+
+
+		bool doneMakeDupLings = false;
+		float posShiftHeight = halfCylinder;
+		float uvShiftHeight = 0.5f;
+
+		// 1. make inter triangles
+		for( int stack = 1; stack < nrStacks; stack++ )
+		{
+			float phi = glim::pi90 - glim::pi * stack / fNrStacks;
+			float y = sin(phi);
+			float cosPhi = cos(phi);
+			for( int slice = 0; slice <= nrSlices; slice++ )
+			{
+				float theta = glim::pi2 * slice / fNrSlices;
+				float x = cosPhi * cos(theta);
+				float z = -cosPhi * sin(theta);
+				vec3 nor = {x, y, z};
+				vec3 pos = radius * nor;
+				vec2 uv = { 1.f*slice/(float)nrSlices, (1.f-stack/(float)(nrStacks-1)) };
+				pos.y += posShiftHeight;
+				uv.y += uvShiftHeight;
+
+				poss.push_back(pos);
+				uvs.push_back(uv);
+				if( genNors ) {
+					nors.push_back(nor);
+				}
+			}
+			// if half do again
+			if( !doneMakeDupLings && stack == halfStacks ) {
+				posShiftHeight = -halfCylinder;
+				uvShiftHeight = -0.5f;
+				stack--;
+				doneMakeDupLings = true;
+			}
+		}
+		for( int stack = 0; stack < nrStacks-1; stack++ )
+		{
+			int curRow = (nrSlices+1)*stack;
+			int nextRow = (nrSlices+1)*(stack+1);
+			for( int slice = 0; slice < nrSlices; slice++ )
+			{
+			/*
+				cc nc
+				cn nn
+			*/
+				int curCol = slice;
+				int nextCol = slice+1;
+				tris.push_back({ curCol+curRow, nextCol+nextRow, nextCol+curRow });
+				tris.push_back({ curCol+curRow, curCol+nextRow, nextCol+nextRow });
+			}
+		}
+
+
+		// 2. make top and bot triangles
+		const float halfHeight = height*0.5f;
+		int topIdx = poss.size();
+		for( int slice = 0; slice < nrSlices; slice++ ) {
+			poss.push_back({0, halfHeight, 0});
+			uvs.push_back({ 2.f*slice/fNrSlices, 1.f });
+			if( genNors )
+				nors.push_back({0,1,0});
+		}
+		int botIdx = poss.size();
+		for( int slice = 0; slice < nrSlices; slice++ ) {
+			poss.push_back({0, -halfHeight, 0});
+			uvs.push_back({ 2.f*slice/fNrSlices, 0.f });
+			if( genNors )
+				nors.push_back({0,-1,0});
+		}
+
+		int topRow = 0;
+		int botRow = (nrSlices+1)*(nrStacks-1);
+		for( int slice = 0; slice < nrSlices; slice++ ) {
+			int curCol = slice;
+			int nextCol = slice+1;
+			tris.push_back({ curCol+topRow, nextCol+topRow, topIdx+slice });
+			tris.push_back({ nextCol+botRow, curCol+botRow, botIdx+slice });
+		}
+	}
+	else // no seams, all shared verts mesh
+	{
+		nr_verts = (nrSlices)*(nrStacks-1)+2;
+		poss.reserve(nr_verts);
+		if( genNors ) {
+			nors.reserve(nr_verts);
+		}
+
+		bool doneMakeDupLings = false;
+		float posShiftHeight = halfCylinder;
+
+		// 1. make inter triangles
+		for( int stack = 1; stack < nrStacks; stack++ )
+		{
+			float phi = glim::pi90 - glim::pi * stack / fNrStacks;
+			float y = sin(phi);
+			float cosPhi = cos(phi);
+			for( int slice = 0; slice < nrSlices; slice++ )
+			{
+				float theta = glim::pi2 * slice / fNrSlices;
+				float x = cosPhi * cos(theta);
+				float z = -cosPhi * sin(theta);
+				vec3 nor = {x, y, z};
+				vec3 pos = radius * nor;
+				pos.y += posShiftHeight;
+				poss.push_back(pos);
+				if( genNors ) {
+					nors.push_back(nor);
+				}
+			}
+			// if half do again
+			if( !doneMakeDupLings && stack == halfStacks ) {
+				posShiftHeight = -halfCylinder;
+				stack--;
+				doneMakeDupLings = true;
+			}
+		}
+		for( int stack = 0; stack < nrStacks-1; stack++ )
+		{
+			int curRow = nrSlices*stack;
+			int nextRow = nrSlices*(stack+1);
+			for( int slice = 0; slice < nrSlices; slice++ )
+			{
+			/*
+				cc nc
+				cn nn
+			*/
+				int curCol = slice;
+				int nextCol = (slice==nrSlices-1) ? 0 : slice+1;
+				tris.push_back({ curCol+curRow, nextCol+nextRow, nextCol+curRow });
+				tris.push_back({ curCol+curRow, curCol+nextRow, nextCol+nextRow });
+			}
+		}
+		
+
+		// 2. make top and bot triangles
+		int topIdx = poss.size();
+		int botIdx = topIdx + 1;
+		poss.push_back({0, height*0.5f, 0});
+		poss.push_back({0, -height*0.5f, 0});
+		if( genNors ) {
+			nors.push_back({0, 1,0});
+			nors.push_back({0,-1,0});
+		}
+
+		int topRow = 0;
+		int botRow = nrSlices*(nrStacks-1);
+		for( int slice = 0; slice < nrSlices; slice++ ) {
+			int curCol = slice;
+			int nextCol = (slice==nrSlices-1) ? 0 : slice+1;
+			tris.push_back({ curCol+topRow, nextCol+topRow, topIdx });
+			tris.push_back({ nextCol+botRow, curCol+botRow, botIdx });
+		}
+	}
+
+
+
+
+
+
+
 	// phi : angle form xy-plane [-pi/2, pi/2]
 	// theta : y-axis angle [0, 2pi]
-	for( int stack=0; stack<nrStacks; stack++ )
-	{
-		float phi = glim::pi90 - glim::pi * stack/(float)(nrStacks-1);
-		float y = sin(phi);
-		float cosPhi = cos(phi);
-		for( int slice=0; slice<=nrSlices; slice++ )
-		{
-			float theta = glim::pi2 * slice / (float)nrSlices;
-			float x = cosPhi * cos(theta);
-			float z = -cosPhi * sin(theta);
-			vec3 nor = {x, y, z};
-			vec3 pos = radius * nor;
-			vec2 uv = { 1.f*slice/(float)nrSlices, (1.f-stack/(float)(nrStacks-1)) };
-			pos.y += (stack<halfStacks)? halfCylinder : (-halfCylinder);
-			uv.y += (stack<halfStacks)? 0.5f : -0.5f;
-			uv.y = fract(uv.y);
+	// for( int stack=0; stack<nrStacks; stack++ )
+	// {
+	// 	float phi = glim::pi90 - glim::pi * stack/(float)(nrStacks-1);
+	// 	float y = sin(phi);
+	// 	float cosPhi = cos(phi);
+	// 	for( int slice=0; slice<=nrSlices; slice++ )
+	// 	{
+	// 		float theta = glim::pi2 * slice / (float)nrSlices;
+	// 		float x = cosPhi * cos(theta);
+	// 		float z = -cosPhi * sin(theta);
+	// 		vec3 nor = {x, y, z};
+	// 		vec3 pos = radius * nor;
+	// 		vec2 uv = { 1.f*slice/(float)nrSlices, (1.f-stack/(float)(nrStacks-1)) };
+	// 		pos.y += (stack<halfStacks)? halfCylinder : (-halfCylinder);
+	// 		uv.y += (stack<halfStacks)? 0.5f : -0.5f;
+	// 		uv.y = fract(uv.y);
 
-			poss.push_back(pos);
-			if( genNors ) nors.push_back(nor);
-			if( genUvs )  uvs.push_back(uv);
-		}
-	}
+	// 		poss.push_back(pos);
+	// 		if( genNors ) nors.push_back(nor);
+	// 		if( genUvs )  uvs.push_back(uv);
+	// 	}
+	// }
 
-	const int nrCols = nrSlices + 1;
+	// const int nrCols = nrSlices + 1;
 
-	for (int stack = 0; stack < nrStacks; stack++)
-	{
-		int curRow = nrCols * stack;
-		int nextRow = nrCols * (stack + 1);
-		for (int slice = 0; slice < nrSlices; slice++)
-		{
-			int cur_col = slice;
-			int next_col = slice + 1;
-			if (stack < nrStacks) { // upper
-				tris.push_back({ curRow+cur_col, nextRow+cur_col, nextRow+next_col });
-			}
-			if (stack > 0) { // lower
-				tris.push_back({ curRow+cur_col, nextRow+next_col, curRow+next_col });
-			}
-		}
-	}
+	// for (int stack = 0; stack < nrStacks; stack++)
+	// {
+	// 	int curRow = nrCols * stack;
+	// 	int nextRow = nrCols * (stack + 1);
+	// 	for (int slice = 0; slice < nrSlices; slice++)
+	// 	{
+	// 		int cur_col = slice;
+	// 		int next_col = slice + 1;
+	// 		if (stack < nrStacks) { // upper
+	// 			tris.push_back({ curRow+cur_col, nextRow+cur_col, nextRow+next_col });
+	// 		}
+	// 		if (stack > 0) { // lower
+	// 			tris.push_back({ curRow+cur_col, nextRow+next_col, curRow+next_col });
+	// 		}
+	// 	}
+	// }
 }
 
 
@@ -1082,4 +1257,14 @@ MeshDonut::MeshDonut(float width, float height, int nrSlices, int nrRingVerts, b
 			tris.push_back({ curRing+curVert, nextRing+nextVert, curRing+nextVert }); // lower
 		}
 	}
+}
+
+MeshDonutWithRadius::MeshDonutWithRadius(float outerRadius, float innerRadius, int nrSlices, int nrRingVerts, bool genNors, bool genUvs)
+	: MeshDonut::MeshDonut(outerRadius, outerRadius-innerRadius, nrSlices, nrRingVerts, genNors, genUvs)
+{
+}
+
+MeshDonutWithRadius2::MeshDonutWithRadius2(float donutRadius, float thickRadius, int nrSlices, int nrRingVerts, bool genNors, bool genUvs)
+	: MeshDonut::MeshDonut(donutRadius+thickRadius, thickRadius, nrSlices, nrRingVerts, genNors, genUvs)
+{
 }
