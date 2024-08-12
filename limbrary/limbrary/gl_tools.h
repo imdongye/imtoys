@@ -50,8 +50,11 @@ namespace gl {
             }
         }
     }
-}
-}
 
+    inline void errorAssert() {
+        assert(glGetError()==GL_NO_ERROR);
+    }
+}
+}
 
 #endif

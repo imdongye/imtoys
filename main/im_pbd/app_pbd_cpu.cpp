@@ -16,20 +16,23 @@ namespace {
 	pbd::SoftBody* cur_body = nullptr;
 	pbd::ColliderPlane c_ground;
 	pbd::ColliderSphere c_sphere({0,0.5f,0}, 0.3f);
+	
 	bool is_paused = true;
+	float time_speed = 1.f;
 	bool draw_mesh = false;
 	bool enable_tex = true;
 	bool draw_dpi_dir = false;
+	bool update_nor_with_ptcl = true;
+	
 	int nr_ms_slices = 13;
-	float size_scale = 0.7f;
 	int nr_shear = 2;
-	float time_speed = 1.f;
+	float size_scale = 0.7f;
 	float body_mass = 1.f;
 	bool fix_start = true;
+	bool is_ptcl_ref_close_verts = false;
+
 	pbd::SoftBody::BendType bend_type = pbd::SoftBody::BT_DISTANCE;
-	bool is_ptcl_ref_close_verts = true;
 	// turn false if you want vertex tri face normal
-	bool update_nor_with_ptcl = true;
 
 	const char* mesh_type_names[] = {
 		"Bunny", "Cheems", "Buff",
@@ -48,10 +51,13 @@ namespace {
 }
 
 
-static void resetSoftBody()
-{
+
+
+
+
+static void resetApp() {
+	// make new soft body ==============================================
 	pbd::SoftBody::ConstraintParams tempComp;
-	float pressure = 0.f;
 	if(cur_body) {
 		tempComp = cur_body->params;
 		delete cur_body;
@@ -143,13 +149,11 @@ static void resetSoftBody()
 	}
 
 	delete ms;
-}
 
-static void resetApp() {
+	// update scene ================================================
 	
 	is_paused = true;
 
-	resetSoftBody();
 
 	phy_scene.bodies.clear();
 	phy_scene.bodies.push_back( cur_body );
@@ -224,8 +228,8 @@ void AppPbdCpu::customDraw(const Camera& cam, const LightDirectional& lit) const
 	prog_ms.use();
 	cam.setUniformTo(prog_ms);
 	lit.setUniformTo(prog_ms);
-	prog_ms.setUniform("enable_Tex", enable_tex);
 	prog_ms.setUniform("mtx_Model", glm::mat4(1));
+	prog_ms.setUniform("enable_Tex", enable_tex);
 	prog_ms.setTexture("tex", texture.tex_id);
 
 	// glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);

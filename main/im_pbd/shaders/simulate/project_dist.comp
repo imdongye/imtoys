@@ -1,0 +1,28 @@
+#version 460 core
+layout(local_size_x = 16, local_size_y = 1) in;
+
+layout(std430, binding=0) readonly buffer buf_xw_s {
+    vec4 xw_s[];
+};
+layout(std430, binding=1) writeonly buffer buf_p_s {
+    vec4 pw_s[];
+};
+layout(std430, binding=2) buffer buf_v_s {
+    vec4 v_s[];
+};
+
+uniform int nr_ptcls;
+uniform vec3 gravity;
+uniform float dt;
+
+void main()
+{
+    uint idx = gl_GlobalInvocationID.x;
+    if( idx >= nr_ptcls )
+        return;
+
+    float w = xw_s[idx].w;
+    vec3 f = gravity/w;
+    vec3 v = v_s[idx].xyz + f*w*dt;
+    v_s[idx] = vec4(v, 0.f);
+}

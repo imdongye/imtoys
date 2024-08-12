@@ -65,22 +65,22 @@ void SoftBody::applyCollision(float dt, const vector<ICollider*>& colliders)
     {
         if( w_s[i] == 0.f )
             continue;
-        vec3 p = x_s[i];
-        vec3 v = (p - prev_x_s[i]) / dt;
+        vec3 x = x_s[i];
+        vec3 v = (x - prev_x_s[i]) / dt;
 
-        vec3 sNor, vNor, vTan;
+        vec3 surfNor, vNor, vTan;
         for( auto pC : colliders ) {
-            float inter_dist = -pC->getSdNor( p, sNor )+ptcl_radius;
-            if( inter_dist < 0 )
+            float signedDist = pC->getSdNor( x, surfNor )-ptcl_radius;
+            if( signedDist > 0 )
                 continue;
-            p += inter_dist*sNor;
-            vNor = dot( sNor, v ) * sNor;
+            x -= signedDist*surfNor;
+            vNor = dot( surfNor, v ) * surfNor;
             vTan = v - vNor;
             v = (pC->friction * friction * vTan) - (pC->restitution * restitution * vNor);
         }
 
-        prev_x_s[i] = p;
-        x_s[i] = p;
+        prev_x_s[i] = x;
+        x_s[i] = x;
         v_s[i] = v;
     }
 }
@@ -91,21 +91,21 @@ void SoftBody::applyCollisionInterSubstep(const vector<ICollider*>& colliders)
     {
         if( w_s[i] == 0.f )
             continue;
-        vec3 p = x_s[i];
+        vec3 x = x_s[i];
         vec3 v = v_s[i];
 
-        vec3 sNor, vNor, vTan;
+        vec3 surfNor, vNor, vTan;
         for( auto pC : colliders ) {
-            float inter_dist = -pC->getSdNor( p, sNor )+ptcl_radius;
-            if( inter_dist < 0 )
+            float signedDist = pC->getSdNor( x, surfNor )-ptcl_radius;
+            if( signedDist > 0 )
                 continue;
-            p += inter_dist*sNor;
-            vNor = dot( sNor, v ) * sNor;
+            x -= signedDist*surfNor;
+            vNor = dot( surfNor, v ) * surfNor;
             vTan = v - vNor;
             v = (pC->friction * friction * vTan) - (pC->restitution * restitution * vNor);
         }
 
-        x_s[i] = p;
+        x_s[i] = x;
         v_s[i] = v;
     }
 }

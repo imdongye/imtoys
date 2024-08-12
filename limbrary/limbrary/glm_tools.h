@@ -31,6 +31,11 @@ namespace glim {
   		return (float)std::rand() / RAND_MAX;
 	}
 
+	// From: https://stackoverflow.com/questions/2745074/fast-ceiling-of-an-integer-division-in-c-c
+	inline int fastIntCeil(int x, int y) {
+		return (x % y) ? (x / y + 1) : (x / y);
+	}
+
     // glm::exp(quat) fixed version
 	inline glm::quat exp(const glm::quat& q) {
 		const glm::vec3 u{q.x, q.y, q.z};

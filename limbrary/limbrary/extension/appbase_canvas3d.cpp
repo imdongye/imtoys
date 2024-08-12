@@ -77,25 +77,29 @@ void AppBaseCanvas3d::updateInstance() const
     PrimInfo* pMapped;
     size_t bufSize;
 
-    glBindBuffer(GL_ARRAY_BUFFER, buf_quads);
-    bufSize = sizeof(PrimInfo)*nr_quads;
-    pMapped = (PrimInfo*)glMapBufferRange(GL_ARRAY_BUFFER, 0, bufSize, accessFlags);
-    memcpy(pMapped, quads.data(), bufSize);
-    glUnmapBuffer(GL_ARRAY_BUFFER);
+    if( nr_quads>0 ) {
+        glBindBuffer(GL_ARRAY_BUFFER, buf_quads);
+        bufSize = sizeof(PrimInfo)*nr_quads;
+        pMapped = (PrimInfo*)glMapBufferRange(GL_ARRAY_BUFFER, 0, bufSize, accessFlags);
+        memcpy(pMapped, quads.data(), bufSize);
+        glUnmapBuffer(GL_ARRAY_BUFFER);
+    }
 
-    
-    glBindBuffer(GL_ARRAY_BUFFER, buf_spheres);
-    bufSize = sizeof(PrimInfo)*nr_spheres;
-    pMapped = (PrimInfo*)glMapBufferRange(GL_ARRAY_BUFFER, 0, bufSize, accessFlags);
-    memcpy(pMapped, spheres.data(), bufSize);
-    glUnmapBuffer(GL_ARRAY_BUFFER);
+    if( nr_spheres>0 ) {
+        glBindBuffer(GL_ARRAY_BUFFER, buf_spheres);
+        bufSize = sizeof(PrimInfo)*nr_spheres;
+        pMapped = (PrimInfo*)glMapBufferRange(GL_ARRAY_BUFFER, 0, bufSize, accessFlags);
+        memcpy(pMapped, spheres.data(), bufSize);
+        glUnmapBuffer(GL_ARRAY_BUFFER);
+    }
 
-    glBindBuffer(GL_ARRAY_BUFFER, buf_cylinders);
-    bufSize = sizeof(PrimInfo)*nr_cylinders;
-    pMapped = (PrimInfo*)glMapBufferRange(GL_ARRAY_BUFFER, 0, bufSize, accessFlags);
-    memcpy(pMapped, cylinders.data(), bufSize);
-    glUnmapBuffer(GL_ARRAY_BUFFER);
-
+    if( nr_cylinders>0 ) {
+        glBindBuffer(GL_ARRAY_BUFFER, buf_cylinders);
+        bufSize = sizeof(PrimInfo)*nr_cylinders;
+        pMapped = (PrimInfo*)glMapBufferRange(GL_ARRAY_BUFFER, 0, bufSize, accessFlags);
+        memcpy(pMapped, cylinders.data(), bufSize);
+        glUnmapBuffer(GL_ARRAY_BUFFER);
+    }
 }
 void AppBaseCanvas3d::drawInstance() const
 {
@@ -124,7 +128,6 @@ void AppBaseCanvas3d::update()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     canvasUpdate();
-
     resetInstance();
     canvasDraw();
     updateInstance();

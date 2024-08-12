@@ -1,0 +1,47 @@
+#version 460 core
+layout(local_size_x = 16, local_size_y = 1) in;
+
+layout(std430, binding=0)           buffer buf_x_s {
+    float x_s[];
+};
+layout(std430, binding=1) readonly  buffer buf_p_s {
+    float p_s[];
+};
+layout(std430, binding=2) writeonly buffer buf_v_s {
+    float v_s[];
+};
+
+uniform int nr_ptcls;
+uniform float dt; // todo inv dt
+
+
+uint idxV1, idxV2, idxV3;
+
+void main()
+{
+    uint idx = gl_GlobalInvocationID.x;
+    if( idx >= nr_ptcls )
+        return;
+    idxV1 = idx*3;
+    idxV2 = idxV1+1;
+    idxV3 = idxV2+1;
+
+    vec3 p;
+    p.x = p_s[idxV1];
+    p.y = p_s[idxV2];
+    p.z = p_s[idxV3];
+
+    vec3 x;
+    x.x = x_s[idxV1];
+    x.y = x_s[idxV2];
+    x.z = x_s[idxV3];
+
+    vec3 v = (p-x)/dt;
+    v_s[idxV1] = v.x;
+    v_s[idxV2] = v.y;
+    v_s[idxV3] = v.z;
+    
+    x_s[idxV1] = p.x;
+    x_s[idxV2] = p.y;
+    x_s[idxV3] = p.z;
+}
