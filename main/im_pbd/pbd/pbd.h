@@ -199,6 +199,7 @@ namespace pbd
         GLuint buf_c_stretchs=0,    buf_c_stretch_offsets=0;
         GLuint buf_c_shears=0,      buf_c_shear_offsets=0;
         GLuint buf_c_dist_bends=0,  buf_c_dist_bend_offsets=0;
+        GLuint buf_debug=0;
         // GLuint buf_c_dih_bends=0, buf_c_iso_bends=0, buf_c_g_volumes=0;
 
         inline static constexpr int nr_threads = 16;
@@ -219,6 +220,7 @@ namespace pbd
         glm::vec3 G = {0.f, -9.8f, 0.f};
         float air_drag = 0.2f;
 
+        lim::Program prog_pbd;
         lim::Program prog_update_p_s;
         lim::Program prog_project_dist;
         lim::Program prog_update_x_s;

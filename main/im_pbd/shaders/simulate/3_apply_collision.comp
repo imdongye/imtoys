@@ -12,10 +12,10 @@ uniform int nr_ptcls;
 uniform float dt; // todo inv dt
 
 
-uint idxV1, idxV2, idxV3;
 
 void main()
 {
+    uint idxV1, idxV2, idxV3;
     uint idx = gl_GlobalInvocationID.x;
     if( idx >= nr_ptcls )
         return;
@@ -33,7 +33,7 @@ void main()
     x.y = x_s[idxV2];
     x.z = x_s[idxV3];
 
-    float signedDist = x.y-0.3;
+    float signedDist = x.y-0.01f;
     if( signedDist>0.0 ) {
         return;
     } 
@@ -43,10 +43,17 @@ void main()
     v.y = v_s[idxV2];
     v.z = v_s[idxV3];
 
-    vec3 vNor = dot( surfNor, v ) * surfNor;
+    float vdn = dot( surfNor, v );
+
+    if( vdn>0 ) {
+        return;
+    }
+    
+    x -= signedDist*surfNor;
+
+    vec3 vNor = vdn*surfNor;
     vec3 vTan = v-vNor;
     v = (friction*vTan)-(restitution*vNor);
-
 
 
     v_s[idxV1] = v.x;

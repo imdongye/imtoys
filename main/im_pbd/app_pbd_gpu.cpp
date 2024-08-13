@@ -18,7 +18,7 @@ namespace {
 	bool update_nor_with_ptcl = true;
 
 
-	int nr_ms_slices = 4;
+	int nr_ms_slices = 14;
 	int nr_shear = 2;
 	float size_scale = 0.7f;
 	float body_mass = 1.f;
@@ -58,12 +58,14 @@ static void resetApp() {
 	switch(cur_mesh_type) {
 		case MT_PLANE: {
 			nr_ms_slices = max(1, nr_ms_slices);
-			ms = new MeshPlane(1.f, 1.f, nr_ms_slices, nr_ms_slices, true, true);
+			ms = new MeshCloth(1.f, 1.f, nr_ms_slices, nr_ms_slices, true, true);
 			break;
 		}
 	}
 
-	tf = translate(vec3(0,2,0)) * glim::rotateX(glim::pi90*0.1f)* glim::rotateY(glim::pi90*0.2f) * scale(vec3(size_scale))* tf;
+	// tf = translate(vec3(0,2,0)) * glim::rotateX(glim::pi90*0.1f)* glim::rotateY(glim::pi90*0.2f) * scale(vec3(size_scale))* tf;
+	// tf = translate(vec3(0,3.5f,0)) * glim::rotateZ(glim::pi90*0.6f) * scale(vec3(size_scale))* tf;
+	tf = translate(vec3(0,2,0)) * scale(vec3(size_scale))* tf;
 	for( vec3& p : ms->poss ) {
 		p = vec3(tf*vec4(p,1));
 	}
@@ -94,7 +96,7 @@ static void resetApp() {
 
 AppPbdGpu::AppPbdGpu() : AppBaseCanvas3d(1200, 780, APP_NAME, false, 10, 100, 100)
 {
-	max_fps = 60;
+	max_fps = 600;
 	prog_ms.attatch("mvp.vs").attatch("im_pbd/shaders/ndl_tex.fs").link();
 
 	texture.s_wrap_param = GL_REPEAT;
@@ -124,10 +126,9 @@ void AppPbdGpu::customDrawShadow(const mat4& mtx_View, const mat4& mtx_Proj) con
 	sProg.setUniform("mtx_Proj", mtx_Proj);
 	sProg.setUniform("mtx_Model", glm::mat4(1));
 
-	// glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	cur_body->bindAndDrawGL();
-
-	// glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 void AppPbdGpu::customDraw(const Camera& cam, const LightDirectional& lit) const 
 {
@@ -138,10 +139,9 @@ void AppPbdGpu::customDraw(const Camera& cam, const LightDirectional& lit) const
 	prog_ms.setUniform("enable_Tex", enable_tex);
 	prog_ms.setTexture("tex", texture.tex_id);
 
-	// glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	cur_body->bindAndDrawGL();
-
-	// glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 void AppPbdGpu::canvasDraw() const
@@ -181,11 +181,12 @@ void AppPbdGpu::canvasImGui()
 
 		ImGui::Checkbox("enable_tex", &enable_tex);
 		ImGui::SliderInt("# steps", &cur_body->nr_steps, 1, 50);
-		ImGui::SliderInt("max fps", &max_fps, 20, 300);
+		ImGui::SliderInt("max fps", &max_fps, 20, 600);
 		ImGui::SliderFloat("time speed", &time_speed, 0.1f, 2.f);
 	}
 
 	if( ImGui::CollapsingHeader("info") ) {
+		ImGui::Text("#thread*#threadgroup %d*%d", cur_body->nr_threads, cur_body->nr_thread_groups);
 		ImGui::Text("#vert %d", cur_body->nr_verts);
 		ImGui::Text("#ptcl %d", cur_body->nr_ptcls);
 		ImGui::Text("#tris %d", cur_body->nr_tris);
@@ -198,6 +199,7 @@ void AppPbdGpu::canvasImGui()
 	}
 
 	if( ImGui::CollapsingHeader("params") ) {
+		ImGui::SliderFloat("gravity", &phy_scene.G.y, 0.f, -15.f);
 		ImGui::SliderFloat("point", &cur_body->params.inv_stiff_point, 0.f, 1.0f, "%.6f");
 		ImGui::SliderFloat("distance", &cur_body->params.inv_stiff_dist, 0.f, 1.0f, "%.6f");
 		ImGui::SliderFloat("stretch_pct", &cur_body->params.stretch_pct, 0.f, 1.0f, "%.6f");
@@ -211,4 +213,12 @@ void AppPbdGpu::canvasImGui()
 		LimGui::PlotVal("fps", "", ImGui::GetIO().Framerate);
 	}
 	ImGui::End();
+
+
+	if( ImGui::IsKeyPressed(ImGuiKey_Space) ) {
+		is_paused = !is_paused;
+	}
+	if( ImGui::IsKeyPressed(ImGuiKey_R) ) {
+		resetApp();
+	}
 }
