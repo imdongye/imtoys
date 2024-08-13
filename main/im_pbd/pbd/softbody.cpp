@@ -249,12 +249,16 @@ float SoftBody::getVolumeTimesSix() const {
     return volume;
 }
 
-void SoftBody::initGL()
+void SoftBody::initGL(bool withClearMem)
 {
     Mesh::initGL(false);
     if( idx_verts.empty() ) {
+        glFinish();
         poss.clear(); poss.shrink_to_fit();
         tris.clear(); tris.shrink_to_fit();
+    }
+    else if( withClearMem) {
+        // delte mesh data in memory except tris, poss, nors
     }
 }
 

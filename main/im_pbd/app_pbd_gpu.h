@@ -17,6 +17,10 @@ namespace lim
 		inline static constexpr CStr APP_NAME = "PBD_GPU";
 		inline static constexpr CStr APP_DIR  = "im_pbd";
 		inline static constexpr CStr APP_DESCRIPTION = "pearlabyss summer internship";
+
+		pbd::PhySceneGpu phy_scene;
+
+		Texture texture;
 		Program prog_ms;
 
 	public:

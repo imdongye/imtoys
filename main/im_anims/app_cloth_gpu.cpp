@@ -14,6 +14,7 @@
 #include <limbrary/asset_lib.h>
 #include <limbrary/limgui.h>
 #include <limbrary/gl_tools.h>
+#include <limbrary/glm_tools.h>
 
 using namespace lim;
 using namespace glm;
@@ -176,7 +177,7 @@ static void makeClothDataAndInitGL() {
 	g_app->prog_comp_nor.setUniform("nr_p", nr_p);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, buf_posm_ids[src_buf_idx]);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, buf_nor_id);
-	glDispatchCompute(fastIntCeil(nr_p.x, invocations_width), fastIntCeil(nr_p.y, invocations_width), 1);
+	glDispatchCompute(glim::fastIntCeil(nr_p.x, invocations_width), glim::fastIntCeil(nr_p.y, invocations_width), 1);
 	glMemoryBarrier( GL_SHADER_STORAGE_BARRIER_BIT );
 }
 
@@ -263,7 +264,7 @@ void AppClothGPU::update()
 			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, buf_vel_ids[src_buf_idx]);
 			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, buf_posm_ids[dst_buf_idx]);
 			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, buf_vel_ids[dst_buf_idx]);
-			glDispatchCompute(fastIntCeil(nr_p.x, invocations_width), fastIntCeil(nr_p.y, invocations_width), 1);
+			glDispatchCompute(glim::fastIntCeil(nr_p.x, invocations_width), glim::fastIntCeil(nr_p.y, invocations_width), 1);
 			glMemoryBarrier( GL_SHADER_STORAGE_BARRIER_BIT );
 			std::swap(src_buf_idx, dst_buf_idx);
 		}
@@ -272,7 +273,7 @@ void AppClothGPU::update()
 		prog_comp_nor.setUniform("nr_p", nr_p);
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, buf_posm_ids[src_buf_idx]);
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, buf_nor_id);
-		glDispatchCompute(fastIntCeil(nr_p.x, invocations_width), fastIntCeil(nr_p.y, invocations_width), 1);
+		glDispatchCompute(glim::fastIntCeil(nr_p.x, invocations_width), glim::fastIntCeil(nr_p.y, invocations_width), 1);
 		glMemoryBarrier( GL_SHADER_STORAGE_BARRIER_BIT );
 	}
 

@@ -11,13 +11,13 @@ layout(std430, binding=2) buffer buf_v_s {
     vec4 v_s[];
 };
 
-uniform ivec2 nr_ptcls;
+uniform int nr_ptcls;
 uniform vec3 gravity;
 uniform float dt;
 
 void main()
 {
-    int idx = gl_GlobalInvocationID.x;
+    uint idx = gl_GlobalInvocationID.x;
     if( idx >= nr_ptcls )
         return;
 
@@ -25,8 +25,6 @@ void main()
     vec3 f = gravity/w;
     vec3 v = v_s[idx].xyz + f*w*dt;
     v_s[idx] = vec4(v, 0.f);
-
-    pw_s 
 }
 
 

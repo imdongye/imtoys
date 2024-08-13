@@ -1,0 +1,66 @@
+#version 460 core
+layout(local_size_x = 16, local_size_y = 1) in;
+
+layout(std430, binding=0) buffer buf_x_s {
+    float x_s[];
+};
+layout(std430, binding=2) buffer buf_v_s {
+    float v_s[];
+};
+
+uniform int nr_ptcls;
+uniform float dt; // todo inv dt
+
+
+
+void main()
+{
+    uint idxV1, idxV2, idxV3;
+    uint idx = gl_GlobalInvocationID.x;
+    if( idx >= nr_ptcls )
+        return;
+
+    vec3 surfNor = {0,1,0};
+    float friction = 0.8;
+    float restitution = 0.8;
+    
+    idxV1 = idx*3;
+    idxV2 = idxV1+1;
+    idxV3 = idxV2+1;
+
+    vec3 x;
+    x.x = x_s[idxV1];
+    x.y = x_s[idxV2];
+    x.z = x_s[idxV3];
+
+    float signedDist = x.y-0.01f;
+    if( signedDist>0.0 ) {
+        return;
+    } 
+
+    vec3 v;
+    v.x = v_s[idxV1];
+    v.y = v_s[idxV2];
+    v.z = v_s[idxV3];
+
+    float vdn = dot( surfNor, v );
+
+    if( vdn>0 ) {
+        return;
+    }
+    
+    x -= signedDist*surfNor;
+
+    vec3 vNor = vdn*surfNor;
+    vec3 vTan = v-vNor;
+    v = (friction*vTan)-(restitution*vNor);
+
+
+    v_s[idxV1] = v.x;
+    v_s[idxV2] = v.y;
+    v_s[idxV3] = v.z;
+    
+    x_s[idxV1] = x.x;
+    x_s[idxV2] = x.y;
+    x_s[idxV3] = x.z;
+}

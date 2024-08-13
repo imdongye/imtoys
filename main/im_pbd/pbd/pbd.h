@@ -23,6 +23,7 @@ Todo:
 
 #include <limbrary/glm_tools.h>
 #include <limbrary/model_view/mesh.h>
+#include <limbrary/program.h>
 #include <vector>
 
 
@@ -30,6 +31,7 @@ namespace pbd
 {
     struct SoftBody;
     struct PhyScene;
+    struct PhySceneGpu;
 
 
     struct ICollider
@@ -61,6 +63,7 @@ namespace pbd
         glm::vec3 point;
         float ori_dist;
         int idx_p;
+
         ConstraintPoint(const SoftBody& body, int idxP, const glm::vec3& _point);
         void project(SoftBody& body, float alpha);
     };
@@ -69,6 +72,7 @@ namespace pbd
     {
         glm::uvec2 idx_ps;
         float ori_dist;
+
         glm::vec3 dPi[2];
         ConstraintDistance(const SoftBody& body, const glm::uvec2& idxPs);
         void project(SoftBody& body, float alpha);
@@ -78,6 +82,7 @@ namespace pbd
     {
         glm::uvec4 idx_ps; // edge, opp1, opp2
         float ori_angle;
+
          glm::vec3 dPi[4];
         ConstraintDihedralBend(const SoftBody& body, const glm::uvec4& idxPs);
         void project(SoftBody& body, float alpha);
@@ -87,6 +92,7 @@ namespace pbd
     {
         glm::uvec4 idx_ps; // edge, opp1, opp2
         glm::mat4 Q;
+
         glm::vec3 dPi[4];
         ConstraintIsometricBend(const SoftBody& body, const glm::uvec4& idxPs);
         void project(SoftBody& body, float alpha);
@@ -157,8 +163,7 @@ namespace pbd
         void update(float dt, const PhyScene& scene);
         virtual float getSdNor(const glm::vec3& p, glm::vec3& outNor) const final;
 
-        void initGL();
-
+        void initGL(bool withClearMem = false);
         
         void updateNorsAndUpload();
         void updatePossAndNorsWithPtclAndUpload();
@@ -187,28 +192,50 @@ namespace pbd
     };
 
 
-    // struct SoftBodyGpu : public SoftBody
-    // {
-    //     bool upload_to_buf = false;
-    //     GLuint buf_xw_s=0, buf_pw_s=0, buf_v_s=0, buf_f_s=0; // vec4
-    //     GLuint buf_c_stretchs=0, buf_c_shears=0, buf_c_dist_bends=0;
-    //     GLuint buf_c_dih_bends=0, buf_c_iso_bends=0, buf_c_g_volumes=0;
-    //     GLuint vao_soft_body=0;
+    struct SoftBodyGpu : public SoftBody
+    {
+        // vec3
+        GLuint buf_x_s=0, buf_p_s=0, buf_v_s=0, buf_w_s=0; 
+        // GLuint buf_f_s=0;
+
+        // (int, float), ivec2
+        GLuint buf_c_stretchs=0,    buf_c_stretch_offsets=0;
+        GLuint buf_c_shears=0,      buf_c_shear_offsets=0;
+        GLuint buf_c_dist_bends=0,  buf_c_dist_bend_offsets=0;
+        GLuint buf_debug=0;
+        // GLuint buf_c_dih_bends=0, buf_c_iso_bends=0, buf_c_g_volumes=0;
+
+        inline static constexpr int nr_threads = 16;
+        int nr_thread_groups;
 
 
-    //     SoftBodyGpu(const lim::Mesh& src, int nrShear = 1, BendType bendType = BT_NONE, float totalMass = 1.f);
-    //     ~SoftBodyGpu();
-    // };
+        SoftBodyGpu(lim::Mesh&& src, int nrShear = 1, BendType bendType = BT_NONE
+            , float bodyMass = 1.f, bool refCloseVerts = false );
+        ~SoftBodyGpu();
 
-    // struct SimulatorGpu
-    // {
-    //     int nr_steps = 20;
-    //     float ptcl_radius = 0.02f;
-    //     float air_drag = 0.0001f;
-    //     SoftBody* body = nullptr;
+        void initGL(bool withClearMem = false);
+        void deinitGL();
+        void update(float dt, const PhySceneGpu& scene );
+    };
 
-    //     void update( float dt );
-    // };
+    struct PhySceneGpu
+    {
+        glm::vec3 G = {0.f, -9.8f, 0.f};
+        float air_drag = 0.2f;
+
+        lim::Program prog_pbd;
+        lim::Program prog_update_p_s;
+        lim::Program prog_project_dist;
+        lim::Program prog_update_x_s;
+        lim::Program prog_update_verts;
+        lim::Program prog_apply_collision;
+
+        std::vector<ICollider*> colliders;
+        std::vector<SoftBodyGpu*> bodies;
+
+        PhySceneGpu();
+        void update( float dt );
+    };
 }
 
 #endif
