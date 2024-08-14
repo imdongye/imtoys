@@ -30,41 +30,37 @@ void SoftBodyGpu::initGL(bool withClearMem)
 {
     Mesh::initGL(false);
 
-    size_t elem_size = sizeof(vec3);
-
-    glGenBuffers(1, &buf_x_s);
-    glBindBuffer(GL_ARRAY_BUFFER, buf_x_s);
-    glBufferData(GL_ARRAY_BUFFER, elem_size*x_s.size(), x_s.data(), GL_STATIC_COPY);
-    
-    if( idx_verts.empty() ) {
-        lim::gl::safeDelBufs(&buf_pos);
-        glBindVertexArray(vao);
-        glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, elem_size, 0);
+    if( vert_to_ptcl.empty() ) {
+        buf_x_s = buf_pos;
+        buf_pos = 0;
         poss.clear(); poss.shrink_to_fit();
         tris.clear(); tris.shrink_to_fit();
+    }
+    else {
+        glGenBuffers(1, &buf_x_s);
+        glBindBuffer(GL_ARRAY_BUFFER, buf_x_s);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vec3)*x_s.size(), x_s.data(), GL_STATIC_COPY);
     }
     
 
     glGenBuffers(1, &buf_p_s);
     glBindBuffer(GL_ARRAY_BUFFER, buf_p_s);
-    glBufferData(GL_ARRAY_BUFFER, elem_size*p_s.size(), p_s.data(), GL_STATIC_COPY);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vec3)*p_s.size(), p_s.data(), GL_STATIC_COPY);
 
 
     glGenBuffers(1, &buf_v_s);
     glBindBuffer(GL_ARRAY_BUFFER, buf_v_s);
-    glBufferData(GL_ARRAY_BUFFER, elem_size*v_s.size(), v_s.data(), GL_STATIC_COPY);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vec3)*v_s.size(), v_s.data(), GL_STATIC_COPY);
 
     // glGenBuffers(1, &buf_f_s);
     // glBindBuffer(GL_ARRAY_BUFFER, buf_f_s);
     // glBufferData(GL_ARRAY_BUFFER, elem_size*f_s.size(), f_s.data(), GL_DYNAMIC_COPY);
 
-    elem_size = sizeof(float);
+
     glGenBuffers(1, &buf_w_s);
     glBindBuffer(GL_ARRAY_BUFFER, buf_w_s);
-    glBufferData(GL_ARRAY_BUFFER, elem_size*w_s.size(), w_s.data(), GL_STATIC_COPY);
-
-
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float)*w_s.size(), w_s.data(), GL_STATIC_COPY);
+    
 
     glGenBuffers(1, &buf_debug);
     glBindBuffer(GL_ARRAY_BUFFER, buf_debug);

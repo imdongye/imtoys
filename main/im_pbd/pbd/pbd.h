@@ -127,7 +127,7 @@ namespace pbd
         // nr tris
         std::vector<glm::uvec3> ptcl_tris;
         // nr verts
-        std::vector<glm::uint> idx_verts;
+        std::vector<int> vert_to_ptcl;
 
         // per ptcl
         std::vector<glm::vec3> prev_x_s;
@@ -136,7 +136,6 @@ namespace pbd
         std::vector<glm::vec3> v_s;
         std::vector<float>     w_s; // inv ptcl mass or inv infinity mass (0)
         std::vector<glm::vec3> debug_dirs;
-        std::vector<glm::uvec2> idx_verts_part_infos; // offset(start), end for idx_verts
 
 
         std::vector<ConstraintPoint>         c_points;

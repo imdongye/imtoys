@@ -39,70 +39,54 @@ RefFrom:
 */
 SoftBody::SoftBody(lim::Mesh&& src, int nrShear, BendType bendType
     , float bodyMass, bool refCloseVerts
-) : lim::Mesh(std::move(src))
-  , params()
+) : lim::Mesh(std::move(src)), params()
 {
     nr_verts = (int)poss.size();
     nr_tris = (int)tris.size();
 
     // rm same pos verts to ptcls ====================
     if( refCloseVerts ) {
-        vector<int> vertIdxToPtclIdx(nr_verts, -1);
-        vector<vec3>  tempPtcls;
-        vector<vector<int>> ptclIdxToVertIdxs;
+        vector<vec3> tempPtcls;
         tempPtcls.reserve(nr_verts);
-        ptclIdxToVertIdxs.reserve(nr_verts);
+        vert_to_ptcl.resize(nr_verts, -1);
 
         for( int i=0; i<nr_verts; i++ ) {
-            if( vertIdxToPtclIdx[i]>=0 )
+            if( vert_to_ptcl[i]>=0 )
                 continue;
             const vec3& curPos = poss[i];
-            int ptclIdx = (int)tempPtcls.size();
+            const int ptclIdx = (int)tempPtcls.size();
             tempPtcls.push_back( curPos );
-            vertIdxToPtclIdx[i] = ptclIdx;
-            ptclIdxToVertIdxs.push_back( {i} );
+            vert_to_ptcl[i] = ptclIdx;
+
             for( int j=i+1; j<nr_verts; j++ ) {
-                if( vertIdxToPtclIdx[j]>=0 )
+                if( vert_to_ptcl[j]>=0 )
                     continue;
                 if( length2(curPos-poss[j]) < 1.0e-6f ) {
-                    vertIdxToPtclIdx[j] = ptclIdx;
-                    ptclIdxToVertIdxs[ptclIdx].push_back(j);
+                    vert_to_ptcl[j] = ptclIdx;
                 }
             }
         }
 
         // make ptcl triangle
         ptcl_tris.reserve(nr_tris);
-
         for( int i=0; i<nr_tris; i++ ) {
             uvec3 pTri;
             for( int j=0; j<3; j++ ) {
-                pTri[j] = vertIdxToPtclIdx[tris[i][j]];
+                pTri[j] = vert_to_ptcl[tris[i][j]];
             }
             ptcl_tris.push_back(pTri);
         }
 
 
-        // make idx_verts
+        // update member vars
         nr_ptcls = (int)tempPtcls.size();
-        idx_verts_part_infos.reserve(nr_ptcls);
-        idx_verts.reserve(nr_verts);
-
-        for( int i=0; i<nr_ptcls; i++ ) {
-            auto pToVs = ptclIdxToVertIdxs[i];
-            uint offset = (uint)idx_verts.size();
-            uint count = (uint)pToVs.size();
-            idx_verts_part_infos.push_back( {offset, offset+count} );
-            for( uint j=0; j<count; j++ ) {
-                idx_verts.push_back(pToVs[j]);
-            }
-        }
         prev_x_s = tempPtcls;
         x_s = tempPtcls;
         p_s = tempPtcls;
-    } // end rm same pos verts to ptcls =============
+    } 
 
-    else {
+
+    else { // type1 no ref verts ===================
         nr_ptcls = (int)poss.size();
 
         prev_x_s = poss;
@@ -252,12 +236,12 @@ float SoftBody::getVolumeTimesSix() const {
 void SoftBody::initGL(bool withClearMem)
 {
     Mesh::initGL(false);
-    if( idx_verts.empty() ) {
+    if( vert_to_ptcl.empty() ) {
         glFinish();
         poss.clear(); poss.shrink_to_fit();
         tris.clear(); tris.shrink_to_fit();
     }
-    else if( withClearMem) {
+    else if( withClearMem ) {
         // delte mesh data in memory except tris, poss, nors
     }
 }
@@ -321,15 +305,12 @@ void SoftBody::updatePossAndNorsWithPtclAndUpload() {
     for( vec3& n : p_s ) {
         n = normalize(n);
     }
+
     // update verts
-    for( int i=0; i<nr_ptcls; i++ ) {
-        const auto& idxVertsPartInfo = idx_verts_part_infos[i];
-        const vec3& p = x_s[i];
-        const vec3& v = p_s[i];
-        for( uint j=idxVertsPartInfo.x; j<idxVertsPartInfo.y; j++ ) {
-            poss[idx_verts[j]] = p;
-            nors[idx_verts[j]] = v;
-        }
+    for( int i=0; i<nr_verts; i++ ) {
+        int idxP = vert_to_ptcl[i];
+        poss[i] = x_s[idxP];
+        nors[i] = p_s[idxP];
     }
 
     // upload to gl buf
@@ -347,12 +328,9 @@ void SoftBody::updatePossAndNorsWithVertAndUpload() {
     assert( poss.empty() == false);
 
     // update verts
-    for( int i=0; i<nr_ptcls; i++ ) {
-        const auto& idxVertsPartInfo = idx_verts_part_infos[i];
-        const vec3& p = x_s[i];
-        for( uint j=idxVertsPartInfo.x; j<idxVertsPartInfo.y; j++ ) {
-            poss[idx_verts[j]] = p;
-        }
+    for( int i=0; i<nr_verts; i++ ) {
+        int idxP = vert_to_ptcl[i];
+        poss[i] = x_s[idxP];
     }
 
     // make nors
