@@ -41,7 +41,7 @@ namespace lim
 		std::vector<glm::vec3> bitangents;
 		std::vector<glm::vec3> cols;
 		std::vector<VertBoneInfo> bone_infos;
-		std::vector<glm::uvec3> tris;
+		std::vector<glm::ivec3> tris;
 
 		// update in initGL()
 		int nr_verts, nr_tris; 

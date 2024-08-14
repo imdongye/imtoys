@@ -9,8 +9,8 @@ using namespace pbd;
 using std::vector;
 
 
-static inline uvec2 makeEdgeIdx(uint a1, uint a2) {
-    return (a1<a2)?uvec2{a1,a2}:uvec2{a2,a1};
+static inline ivec2 makeEdgeIdx(int a1, int a2) {
+    return (a1<a2)?ivec2{a1,a2}:ivec2{a2,a1};
 }
 
 SoftBody::ConstraintParams::ConstraintParams()
@@ -70,7 +70,7 @@ SoftBody::SoftBody(lim::Mesh&& src, int nrShear, BendType bendType
         // make ptcl triangle
         ptcl_tris.reserve(nr_tris);
         for( int i=0; i<nr_tris; i++ ) {
-            uvec3 pTri;
+            ivec3 pTri;
             for( int j=0; j<3; j++ ) {
                 pTri[j] = vert_to_ptcl[tris[i][j]];
             }
@@ -110,8 +110,8 @@ SoftBody::SoftBody(lim::Mesh&& src, int nrShear, BendType bendType
     w_s.resize(nr_ptcls, inv_ptcl_mass);
 
     struct Edge {
-        uvec2 idx_ps;
-        uint idx_opp;
+        ivec2 idx_ps;
+        int idx_opp;
         int idx_tri;
     };
     vector<Edge> aEdges; // aside edges
@@ -119,7 +119,7 @@ SoftBody::SoftBody(lim::Mesh&& src, int nrShear, BendType bendType
     int nrDupEdges = nr_tris*3;
     aEdges.reserve( nrDupEdges );
     for( int i=0; i<nr_tris; i++ ) {
-        const uvec3& tri = ptcl_tris[i];
+        const ivec3& tri = ptcl_tris[i];
         aEdges.push_back( {makeEdgeIdx(tri.x, tri.y), tri.z, i} );
         aEdges.push_back( {makeEdgeIdx(tri.x, tri.z), tri.y, i} );
         aEdges.push_back( {makeEdgeIdx(tri.y, tri.z), tri.x, i} );
@@ -147,7 +147,7 @@ SoftBody::SoftBody(lim::Mesh&& src, int nrShear, BendType bendType
             else if( j==nrDupEdges-1 ) {
                 i = nrDupEdges;
             }
-            uvec4 idxPs = {edge1.idx_ps, edge1.idx_opp, edge2.idx_opp};
+            ivec4 idxPs = {edge1.idx_ps, edge1.idx_opp, edge2.idx_opp};
             vec3 e0 = p_s[idxPs.x] - p_s[idxPs.y];
             vec3 e1 = p_s[idxPs.z] - p_s[idxPs.y];
             vec3 e2 = p_s[idxPs.z] - p_s[idxPs.x];
@@ -180,7 +180,7 @@ SoftBody::SoftBody(lim::Mesh&& src, int nrShear, BendType bendType
                     break;
                 }
                 bool isInside = false;
-                uvec2 idxEdge = makeEdgeIdx(edge1.idx_opp, edge2.idx_opp);
+                ivec2 idxEdge = makeEdgeIdx(edge1.idx_opp, edge2.idx_opp);
                 for( const auto& c : c_dist_bends ) {
                     if( c.idx_ps == idxEdge ) {
                         isInside = true;
@@ -262,7 +262,7 @@ void SoftBody::updateNorsAndUpload() {
     assert( poss.empty()==true && nors.size()==x_s.size() );
 
 	std::fill(nors.begin(), nors.end(), vec3(0));
-	for( const uvec3& t : ptcl_tris )
+	for( const ivec3& t : ptcl_tris )
 	{
 		vec3 e1 = x_s[t.y] - x_s[t.x];
         vec3 e2 = x_s[t.z] - x_s[t.x];
@@ -293,7 +293,7 @@ void SoftBody::updatePossAndNorsWithPtclAndUpload() {
 
     // make normal
     std::fill(p_s.begin(), p_s.end(), vec3(0));
-    for( const uvec3& ptri : ptcl_tris ) {
+    for( const ivec3& ptri : ptcl_tris ) {
         vec3 e1 = x_s[ptri.y] - x_s[ptri.x];
         vec3 e2 = x_s[ptri.z] - x_s[ptri.x];
         vec3 n = normalize(cross(e1, e2)); // Todo 면적크기

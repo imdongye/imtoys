@@ -41,7 +41,7 @@ void ConstraintPoint::project(SoftBody& body, float alpha)
     Distance constraint
     C = ||p1 - p0|| - d
 */
-ConstraintDistance::ConstraintDistance(const SoftBody& body, const uvec2& idxPs)
+ConstraintDistance::ConstraintDistance(const SoftBody& body, const ivec2& idxPs)
     : idx_ps(idxPs)
 {
     ori_dist = length(body.x_s[idx_ps.x] - body.x_s[idx_ps.y]);
@@ -102,7 +102,7 @@ e3\  /e4    e4 = p3-p1
    n2
 */
 // PBD, Appendix A: Bending constraint proejection
-ConstraintDihedralBend::ConstraintDihedralBend(const SoftBody& body, const uvec4& idxPs)
+ConstraintDihedralBend::ConstraintDihedralBend(const SoftBody& body, const ivec4& idxPs)
     : idx_ps(idxPs)
 {
     vec3 p0 = body.x_s[idx_ps.x];
@@ -221,7 +221,7 @@ From: https://carmencincotti.com/2022-08-29/the-isometric-bending-constraint-of-
 https://carmencincotti.com/2022-08-29/the-isometric-bending-constraint-of-xpbd/
 
 */
-ConstraintIsometricBend::ConstraintIsometricBend(const SoftBody& body, const uvec4& idxPs)
+ConstraintIsometricBend::ConstraintIsometricBend(const SoftBody& body, const ivec4& idxPs)
     : idx_ps(idxPs)
 {
     const vec3& p0 = body.x_s[idx_ps.x];
@@ -311,7 +311,7 @@ void ConstraintVolume::applyImpulse(SoftBody& body, float pressure, float dt)
     // vec3 F = pressure*twoAreaAndNor/sixVolume;
     float coeff = pressure*dt/cur_six_volume;
 
-    for( uvec3 tri : body.ptcl_tris ) {
+    for( ivec3 tri : body.ptcl_tris ) {
         vec3 e1 = body.p_s[tri.y] - body.p_s[tri.x];
         vec3 e2 = body.p_s[tri.z] - body.p_s[tri.x];
         vec3 twoAreaAndNor = cross(e1, e2);
@@ -337,7 +337,7 @@ void ConstraintVolume::projectImpulse(SoftBody& body, float pressure, float dt)
     // vec3 F = pressure*twoAreaAndNor/sixVolume;
     float coeff = pressure*dt/cur_six_volume;
 
-    for( uvec3 tri : body.ptcl_tris ) {
+    for( ivec3 tri : body.ptcl_tris ) {
         vec3 e1 = body.p_s[tri.y] - body.p_s[tri.x];
         vec3 e2 = body.p_s[tri.z] - body.p_s[tri.x];
         vec3 twoAreaAndNor = cross(e1, e2);
@@ -360,7 +360,7 @@ void ConstraintVolume::projectXpbd(SoftBody& body, float pressure, float alpha)
     }
 
     // use v_s to temp gradient variable
-    for( const uvec3& tri : body.ptcl_tris ) {
+    for( const ivec3& tri : body.ptcl_tris ) {
         const vec3& p1 = body.p_s[tri.x];
         const vec3& p2 = body.p_s[tri.y];
         const vec3& p3 = body.p_s[tri.z];

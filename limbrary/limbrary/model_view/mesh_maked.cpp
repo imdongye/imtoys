@@ -17,30 +17,30 @@ using namespace glm;
 
 
 namespace {
-	inline uvec2 makeEdgeIdx(uint a1, uint a2) {
-		return (a1<a2)?uvec2{a1,a2}:uvec2{a2,a1};
+	inline ivec2 makeEdgeIdx(int a1, int a2) {
+		return (a1<a2)?ivec2{a1,a2}:ivec2{a2,a1};
 	}
 	struct SubEdge {
-		uvec2 idx_vs;
-		uint idx_inter;
+		ivec2 idx_vs;
+		int idx_inter;
 	};
-	uint getIdxInter( const std::vector<SubEdge>& subEdges, const uvec2& edgeIdx ) {
+	int getIdxInter( const std::vector<SubEdge>& subEdges, const ivec2& edgeIdx ) {
 		for( const SubEdge& subEdge : subEdges ) {
 			if( subEdge.idx_vs == edgeIdx ) {
 				return subEdge.idx_inter;
 			}
 		}
-		return glim::maximum_uint;
+		return -1;
 	}
 	Mesh::VertBoneInfo blendBoneInfos( const Mesh::VertBoneInfo& a, const Mesh::VertBoneInfo& b ) {
-		uint nrUsedBones = 0;
-		std::pair<uint, float> idxWeights[8];
+		int nrUsedBones = 0;
+		std::pair<int, float> idxWeights[8];
 
 		// 1. weighted sum by idx
 		for(int i=0; i<4; i++) {
-			uint idx = a.idxs[i];
+			int idx = a.idxs[i];
 			float weight = a.weights[i];
-			uint targetIdx = 0;
+			int targetIdx = 0;
 			for(; targetIdx<nrUsedBones; targetIdx++) {
 				if( idxWeights[targetIdx].first == idx )
 					break;
@@ -52,9 +52,9 @@ namespace {
 			idxWeights[targetIdx].second += weight;
 		}
 		for(int i=0; i<4; i++) {
-			uint idx = b.idxs[i];
+			int idx = b.idxs[i];
 			float weight = b.weights[i];
-			uint targetIdx = 0;
+			int targetIdx = 0;
 			for(; targetIdx<nrUsedBones; targetIdx++) {
 				if( idxWeights[targetIdx].first == idx )
 					break;
@@ -110,15 +110,15 @@ void Mesh::subdivide(int level)
 	
 	std::vector<SubEdge> subEdges;
 	subEdges.reserve(tris.size()*3);
-	std::vector<uvec3> srcTris = tris;
+	std::vector<ivec3> srcTris = tris;
 	tris.clear();
 	tris.reserve(srcTris.size()*4);
 
 	int idxNewVert = poss.size();
-	for( uvec3 t : srcTris )
+	for( ivec3 t : srcTris )
 	{
-		uvec3 p;
-		uvec2 edges[3] = {
+		ivec3 p;
+		ivec2 edges[3] = {
 			makeEdgeIdx(t.x, t.y),
 			makeEdgeIdx(t.y, t.z),
 			makeEdgeIdx(t.z, t.x),
@@ -127,9 +127,9 @@ void Mesh::subdivide(int level)
 		// make inter vert idxs
 		for( int i=0; i<3; i++ )
 		{
-			uvec2 e = edges[i];
-			uint idxInter = getIdxInter( subEdges, e );
-			if( idxInter == glim::maximum_uint ) {
+			ivec2 e = edges[i];
+			int idxInter = getIdxInter( subEdges, e );
+			if( idxInter<0 ) {
 				idxInter = idxNewVert++;
 				subEdges.push_back({edges[i], idxInter});
 			}
@@ -173,7 +173,7 @@ void Mesh::updateNorsFromTris()
 	assert( nors.size()==poss.size() );
 
 	std::fill(nors.begin(), nors.end(), vec3(0));
-	for( const uvec3& t : tris )
+	for( const ivec3& t : tris )
 	{
 		vec3 e1 = poss[t.y] - poss[t.x];
         vec3 e2 = poss[t.z] - poss[t.x];
@@ -359,7 +359,7 @@ MeshCloth::MeshCloth(float width, float height, int nrCols, int nrRows, bool gen
 
 
 // input : counterclockwise
-static void addTriFaceFromQuad(uvec4 quad, std::vector<uvec3>& tris) {
+static void addTriFaceFromQuad(ivec4 quad, std::vector<ivec3>& tris) {
 	tris.emplace_back(quad.x, quad.y, quad.z);
 	tris.emplace_back(quad.x, quad.z, quad.w);
 }
@@ -834,7 +834,7 @@ MeshCubeSphere::MeshCubeSphere(float width, int nrSlices, bool genNors, bool gen
 		vec3 t = cbTans[side];
 		vec3 b = cross(n, t);
 
-		GLuint offset = poss.size();
+		int offset = poss.size();
 
 		for( int y=0; y<=nrSlices; y++ ) for( int x=0; x<=nrSlices; x++ ) 
 		{
@@ -849,8 +849,8 @@ MeshCubeSphere::MeshCubeSphere(float width, int nrSlices, bool genNors, bool gen
 		const int nrCols = nrSlices + 1;
 		for (int y = 0; y < nrSlices; y++)
 		{
-			const GLuint curRow = offset + y * nrCols;
-			const GLuint nextRow = offset + (y + 1) * nrCols;
+			const int curRow = offset + y * nrCols;
+			const int nextRow = offset + (y + 1) * nrCols;
 			for (int x = 0; x < nrSlices; x++)
 			{
 				tris.push_back({ nextRow+x, curRow+x, 	curRow+x+1  });
@@ -903,8 +903,8 @@ MeshCubeSphereSmooth::MeshCubeSphereSmooth(float width, int nrSlices, bool genNo
 		}
 
 		for( int y=0; y<nrSlices; y++ ) {
-			const GLuint curRow = offset + y*nrCols;
-			const GLuint upRow = offset + (y+1)*nrCols;
+			const int curRow = offset + y*nrCols;
+			const int upRow = offset + (y+1)*nrCols;
 			for( int x=0; x<nrSlices; x++ ) {
 				tris.push_back({upRow+x, curRow+x, curRow+x+1});
 				tris.push_back({upRow+x, curRow+x+1, upRow+x+1});
@@ -936,7 +936,7 @@ MeshCylinder::MeshCylinder(float width, float height, int nrSlices, bool genNors
 		uvs.push_back({ .5f, .5f });
 	}
 
-	for( GLuint i=0; i<=nrSlices; i++ )
+	for( int i=0; i<=nrSlices; i++ )
 	{
 		float theta = glim::pi2*i/(float)nrSlices;
 		float x =  radius*cos(theta);
@@ -968,8 +968,8 @@ MeshCylinder::MeshCylinder(float width, float height, int nrSlices, bool genNors
 			uvs.push_back(circleUv);
 		}
 	}
-	const GLuint nrCols = 4;
-	for( GLuint i=0; i<nrSlices; i++ )
+	const int nrCols = 4;
+	for( int i=0; i<nrSlices; i++ )
 	{
 		tris.push_back({ 0,          2+nrCols*i,     2+nrCols*(i+1) });
 		tris.push_back({ 3+nrCols*i, 4+nrCols*i, 	 4+nrCols*(i+1) }); // upper

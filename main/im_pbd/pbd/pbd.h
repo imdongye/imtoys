@@ -67,31 +67,31 @@ namespace pbd
 
     struct ConstraintDistance 
     {
-        glm::uvec2 idx_ps;
+        glm::ivec2 idx_ps;
         float ori_dist;
 
         glm::vec3 dPi[2];
-        ConstraintDistance(const SoftBody& body, const glm::uvec2& idxPs);
+        ConstraintDistance(const SoftBody& body, const glm::ivec2& idxPs);
         void project(SoftBody& body, float alpha);
     };
 
     struct ConstraintDihedralBend 
     {
-        glm::uvec4 idx_ps; // edge, opp1, opp2
+        glm::ivec4 idx_ps; // edge, opp1, opp2
         float ori_angle;
 
          glm::vec3 dPi[4];
-        ConstraintDihedralBend(const SoftBody& body, const glm::uvec4& idxPs);
+        ConstraintDihedralBend(const SoftBody& body, const glm::ivec4& idxPs);
         void project(SoftBody& body, float alpha);
     };
 
     struct ConstraintIsometricBend 
     {
-        glm::uvec4 idx_ps; // edge, opp1, opp2
+        glm::ivec4 idx_ps; // edge, opp1, opp2
         glm::mat4 Q;
 
         glm::vec3 dPi[4];
-        ConstraintIsometricBend(const SoftBody& body, const glm::uvec4& idxPs);
+        ConstraintIsometricBend(const SoftBody& body, const glm::ivec4& idxPs);
         void project(SoftBody& body, float alpha);
     };
 
@@ -125,7 +125,7 @@ namespace pbd
 
 
         // nr tris
-        std::vector<glm::uvec3> ptcl_tris;
+        std::vector<glm::ivec3> ptcl_tris;
         // nr verts
         std::vector<int> vert_to_ptcl;
 

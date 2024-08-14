@@ -325,7 +325,7 @@ namespace
 	struct PickedTriInfo {
 		bool picked = false;
 		pbd::SoftBody* body;
-		uvec3 tri;
+		ivec3 tri;
 		vec3 point;
 		void setPointConstraints() {
 			body->c_points.push_back(
@@ -377,7 +377,7 @@ static void pickTriangle( const vec3& rayDir, const vec3& rayOri ) {
 
 	for(pbd::SoftBody* body : phy_scene.bodies) {
 		for(int i=0; i<body->nr_tris; i++) {
-			uvec3& tri = body->ptcl_tris[i]; 
+			ivec3& tri = body->ptcl_tris[i]; 
 			vec3& t1 = body->x_s[tri.x];
 			vec3& t2 = body->x_s[tri.y];
 			vec3& t3 = body->x_s[tri.z];

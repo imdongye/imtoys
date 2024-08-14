@@ -25,7 +25,7 @@ namespace
 		int triIdx = 0;
 		Simplify::triangles.clear();
 		Simplify::triangles.resize(mesh.tris.size());
-		for( glm::uvec3& from : mesh.tris ) {
+		for( glm::ivec3& from : mesh.tris ) {
 			Simplify::Triangle& to = Simplify::triangles[triIdx++];
 			to.v[0] = from.x;
 			to.v[1] = from.y;
