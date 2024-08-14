@@ -209,7 +209,7 @@ namespace pbd
         GLuint buf_debug=0; // 4
 
         GLuint buf_adj_tri_idx_offsets = 0;
-        
+
         GLuint buf_ptcl_tris = 0;
         GLuint buf_adj_tri_idxs = 0;
         GLuint buf_vert_to_ptcl = 0;
@@ -219,6 +219,7 @@ namespace pbd
         GLuint buf_c_stretchs=0,    buf_c_stretch_offsets=0;
         GLuint buf_c_shears=0,      buf_c_shear_offsets=0;
         GLuint buf_c_dist_bends=0,  buf_c_dist_bend_offsets=0;
+        GLuint buf_c_points=0,      buf_c_point_offsets=0;
 
         // GLuint buf_c_dih_bends=0, buf_c_iso_bends=0, buf_c_g_volumes=0;
 
@@ -237,6 +238,11 @@ namespace pbd
         void initGL(bool withClearMem = false);
         void deinitGL();
         void update(float dt, const PhySceneGpu& scene );
+
+        void downloadXs();
+        void uploadX(int idx);
+        void uploadConstraintPoints()
+        void uploadWs()
     };
 
     struct PhySceneGpu
