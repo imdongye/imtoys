@@ -17,21 +17,21 @@ void main()
     if( idxP >= nr_ptcls ) {
         return;
     }
-    int idxV1 = idxP*3;
-    int idxV2 = idxV1+1;
-    int idxV3 = idxV2+1;
+    int idxP1 = idxP*3;
+    int idxP2 = idxP1+1;
+    int idxP3 = idxP2+1;
 
     vec3 surfNor = {0,1,0};
     float friction = 0.8;
     float restitution = 0.8;
 
-    vec3 x = vec3(x_s[idxV1], x_s[idxV2], x_s[idxV3]);
+    vec3 x = vec3(x_s[idxP1], x_s[idxP2], x_s[idxP3]);
 
     float signedDist = x.y-0.01f;
     if( signedDist>0.0 ) {
         return;
     } 
-    vec3 v = vec3(v_s[idxV1], v_s[idxV2], v_s[idxV3]);
+    vec3 v = vec3(v_s[idxP1], v_s[idxP2], v_s[idxP3]);
     float vdn = dot( surfNor, v );
     if( vdn>0.0 ) {
         return;
@@ -44,11 +44,11 @@ void main()
     v = (friction*vTan)-(restitution*vNor);
 
 
-    x_s[idxV1] = x.x;
-    x_s[idxV2] = x.y;
-    x_s[idxV3] = x.z;
+    x_s[idxP1] = x.x;
+    x_s[idxP2] = x.y;
+    x_s[idxP3] = x.z;
     
-    v_s[idxV1] = v.x;
-    v_s[idxV2] = v.y;
-    v_s[idxV3] = v.z;
+    v_s[idxP1] = v.x;
+    v_s[idxP2] = v.y;
+    v_s[idxP3] = v.z;
 }

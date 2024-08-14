@@ -189,11 +189,12 @@ namespace pbd
 
 
 /*
-if no ref verts
-    buf_x_s = buf_poss
-    buf_poss = 0
+    if no ref verts
+        buf_x_s = buf_poss
+        buf_poss = 0,
+        but buf_ptcl_tris = buf_tris, because buf_tris is used at draw
 
-    buf_ptcl_tris = buf_tris because buf_tris is used at draw 
+    SoftBodyGpu does not have make nors with verts
 */
     struct SoftBodyGpu : public SoftBody
     {
@@ -204,13 +205,12 @@ if no ref verts
         GLuint buf_w_s=0; // 3
         GLuint buf_debug=0; // 4
 
+        GLuint buf_adj_tri_idx_offsets = 0;
+        
         GLuint buf_ptcl_tris = 0;
         GLuint buf_adj_tri_idxs = 0;
-        GLuint buf_adj_tri_idx_offsets = 0;
         GLuint buf_vert_to_ptcl = 0;
 
-        
-        // GLuint buf_f_s=0;
 
         // (int, float), ivec2
         GLuint buf_c_stretchs=0,    buf_c_stretch_offsets=0;
@@ -220,11 +220,15 @@ if no ref verts
         // GLuint buf_c_dih_bends=0, buf_c_iso_bends=0, buf_c_g_volumes=0;
 
         inline static constexpr int nr_threads = 16;
-        int nr_thread_groups;
+        int nr_thread_groups_by_ptcls;
+        int nr_thread_groups_by_verts;
+
+        const bool is_make_nors_with_ptcl;
 
 
         SoftBodyGpu(lim::Mesh&& src, int nrShear = 1, BendType bendType = BT_NONE
-            , float bodyMass = 1.f, bool refCloseVerts = false);
+            , float bodyMass = 1.f, bool refCloseVerts = false
+            , bool isMakeNorsWithPtcl = true );
         ~SoftBodyGpu();
 
         void initGL(bool withClearMem = false);
@@ -238,11 +242,12 @@ if no ref verts
         float air_drag = 0.2f;
 
         lim::Program prog_pbd;
-        lim::Program prog_update_p_s;
-        lim::Program prog_project_dist;
-        lim::Program prog_update_x_s;
-        lim::Program prog_update_nors_with_ptcl;
-        lim::Program prog_apply_collision;
+        lim::Program prog_0_update_p_s;
+        lim::Program prog_1_project_dist;
+        lim::Program prog_2_update_x_s;
+        lim::Program prog_3_apply_collision;
+        lim::Program prog_4_make_ptcl_nors;
+        lim::Program prog_4_update_vert_poss_nors;
 
         std::vector<ICollider*> colliders;
         std::vector<SoftBodyGpu*> bodies;

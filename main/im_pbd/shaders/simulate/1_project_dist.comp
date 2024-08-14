@@ -41,10 +41,10 @@ void main()
     if( w==0.0 ) {
         return;
     }
-    int idxV1 = idxP*3;
-    int idxV2 = idxV1+1;
-    int idxV3 = idxV2+1;
-    vec3 p = vec3(p_s[idxV1], p_s[idxV2], p_s[idxV3]);
+    int idxP1 = idxP*3;
+    int idxP2 = idxP1+1;
+    int idxP3 = idxP2+1;
+    vec3 p = vec3(p_s[idxP1], p_s[idxP2], p_s[idxP3]);
     
     ivec2 offsets = c_dist_offsets[idxP];
     for( int j=offsets.x; j<offsets.y; j++ ) {
@@ -64,7 +64,7 @@ void main()
         float lambda = C / denom;
         p -= lambda*w*dC;
     }
-    p_s[idxV1] = p.x;
-    p_s[idxV2] = p.y;
-    p_s[idxV3] = p.z;
+    p_s[idxP1] = p.x;
+    p_s[idxP2] = p.y;
+    p_s[idxP3] = p.z;
 }

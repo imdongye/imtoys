@@ -54,12 +54,12 @@ void main()
 
     ptclN = normalize(ptclN);
 
-    int idxV1 = idxP*3;
-    int idxV2 = idxV1+1;
-    int idxV3 = idxV2+1;
-    nors[idxV1] = ptclN.x;
-    nors[idxV2] = ptclN.y;
-    nors[idxV3] = ptclN.z;
+    int idxP1 = idxP*3;
+    int idxP2 = idxP1+1;
+    int idxP3 = idxP2+1;
+    nors[idxP1] = ptclN.x;
+    nors[idxP2] = ptclN.y;
+    nors[idxP3] = ptclN.z;
 }
 
 

@@ -10,10 +10,13 @@ using std::vector;
 
 
 
-SoftBodyGpu::SoftBodyGpu(lim::Mesh&& src, int nrShear, BendType bendType, float totalMass, bool refCloseVerts)
-    : SoftBody(std::move(src), nrShear, bendType, totalMass, refCloseVerts)
+SoftBodyGpu::SoftBodyGpu(lim::Mesh&& src, int nrShear, BendType bendType, float totalMass
+    , bool refCloseVerts, bool isMakeNorsWithPtcl
+) : SoftBody(std::move(src), nrShear, bendType, totalMass, refCloseVerts)
+  , is_make_nors_with_ptcl(isMakeNorsWithPtcl)
 {
-    nr_thread_groups = glim::fastIntCeil(nr_ptcls, nr_threads);
+    nr_thread_groups_by_ptcls = glim::fastIntCeil(nr_ptcls, nr_threads);
+    nr_thread_groups_by_verts = glim::fastIntCeil(nr_verts, nr_threads);
 }
 SoftBodyGpu::~SoftBodyGpu()
 {
@@ -21,8 +24,6 @@ SoftBodyGpu::~SoftBodyGpu()
 }
 
 /*
-    poss, nors는 ssbo로 접근해야하기때문에 vec4로 만들고 vec3 stride로 vao에 연결한다
-
     no ref verts 는 poss 삭제하고 x_s를 연결한다.
 
 */
@@ -45,6 +46,10 @@ void SoftBodyGpu::initGL(bool withClearMem)
         glGenBuffers(1, &buf_ptcl_tris);
         glBindBuffer(GL_ARRAY_BUFFER, buf_ptcl_tris);
         glBufferData(GL_ARRAY_BUFFER, sizeof(ivec3)*ptcl_tris.size(), ptcl_tris.data(), GL_STATIC_COPY);
+
+        glGenBuffers(1, &buf_vert_to_ptcl);
+        glBindBuffer(GL_ARRAY_BUFFER, buf_vert_to_ptcl);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(int)*vert_to_ptcl.size(), vert_to_ptcl.data(), GL_STATIC_COPY);
     }
     
 
@@ -95,8 +100,6 @@ void SoftBodyGpu::initGL(bool withClearMem)
     glGenBuffers(1, &buf_adj_tri_idx_offsets);
     glBindBuffer(GL_ARRAY_BUFFER, buf_adj_tri_idx_offsets);
     glBufferData(GL_ARRAY_BUFFER, sizeof(ivec2)*offsetsPerPtcl.size(), offsetsPerPtcl.data(), GL_STATIC_DRAW );
-
-
 
 
     // make distance constraints
@@ -212,12 +215,13 @@ void SoftBodyGpu::deinitGL()
     lim::gl::safeDelBufs(&buf_p_s); // 1
     lim::gl::safeDelBufs(&buf_v_s); // 2
     lim::gl::safeDelBufs(&buf_w_s); // 3
-    lim::gl::safeDelBufs(&buf_w_s); // 3
+    lim::gl::safeDelBufs(&buf_debug); // 3
+    
+    lim::gl::safeDelBufs(&buf_vert_to_ptcl);
 
     lim::gl::safeDelBufs(&buf_ptcl_tris);
     lim::gl::safeDelBufs(&buf_adj_tri_idxs);
     lim::gl::safeDelBufs(&buf_adj_tri_idx_offsets);
-    lim::gl::safeDelBufs(&buf_vert_to_ptcl);
 
     lim::gl::safeDelBufs(&buf_c_stretchs);
     lim::gl::safeDelBufs(&buf_c_stretch_offsets);

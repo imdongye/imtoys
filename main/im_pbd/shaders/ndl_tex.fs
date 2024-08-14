@@ -25,14 +25,14 @@ void main()
     vec3 N = (gl_FrontFacing)?normalize(wNor):normalize(-wNor);
 
 
-    float shade = max(dot(N, L),0);
+    float shading = max(dot(N, L),0.05);
 
     vec3 baseColor;
     if (enable_Tex)
         baseColor = texture(tex, mUv).xyz;
     else
         baseColor = vec3(1);
-    vec3 outColor = shade * baseColor;
+    vec3 outColor = shading * baseColor;
     
     outColor = pow(outColor, vec3(1/gamma));
     FragColor = vec4(outColor, 1);

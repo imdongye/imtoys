@@ -62,6 +62,12 @@ static void resetApp() {
 			ms = new MeshCloth(1.f, 1.f, nr_ms_slices, nr_ms_slices, true, true);
 			break;
 		}
+		case MT_DONUT: {
+			int nrSlices = max(10, nr_ms_slices);
+			int nrRingVerts = nrSlices/2;
+			ms = new MeshDonut(2.f, 0.7f, nrSlices, nrRingVerts, true, true);
+			break;
+		}
 	}
 
 	// tf = translate(vec3(0,2,0)) * glim::rotateX(glim::pi90*0.1f)* glim::rotateY(glim::pi90*0.2f) * scale(vec3(size_scale))* tf;
@@ -174,6 +180,7 @@ void AppPbdGpu::canvasImGui()
 		ImGui::Checkbox("pause", &is_paused);
 		if( is_paused ) {
 			bool needReset = false;
+			needReset |= ImGui::Combo("mesh type", (int*)&cur_mesh_type, mesh_type_names, nr_mesh_type_names);
 			needReset |= ImGui::SliderInt("nr ms slices", &nr_ms_slices, 0, 30);
 			needReset |= ImGui::Checkbox("ptcl ref close verts", &is_ptcl_ref_close_verts);
 			if( needReset ) {
@@ -200,7 +207,7 @@ void AppPbdGpu::canvasImGui()
 	if( ImGui::CollapsingHeader("info") ) {
 		ImGui::Text("subDt: %.10f", delta_time/cur_body->nr_steps);
 		ImGui::Text("max #step: %d", int(delta_time/0.0001f)); // if subDt is under 0.0001s, verlet integral get error
-		ImGui::Text("#thread*#threadgroup %d*%d", cur_body->nr_threads, cur_body->nr_thread_groups);
+		ImGui::Text("#thread*#threadgroup %d*%d", cur_body->nr_threads, cur_body->nr_thread_groups_by_ptcls);
 		ImGui::Text("#vert %d", cur_body->nr_verts);
 		ImGui::Text("#ptcl %d", cur_body->nr_ptcls);
 		ImGui::Text("#tris %d", cur_body->nr_tris);

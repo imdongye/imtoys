@@ -1,0 +1,50 @@
+#version 460 core
+layout(local_size_x = 16, local_size_y = 1) in;
+
+layout(std430, binding=0) readonly buffer buf_x_s {
+    float x_s[];
+};
+layout(std430, binding=1) readonly buffer buf_ptcl_nors {
+    float ptcl_nors[];
+};
+layout(std430, binding=2) writeonly buffer buf_poss {
+    float poss[];
+};
+layout(std430, binding=3) writeonly buffer buf_nors {
+    float nors[];
+};
+layout(std430, binding=4) readonly buffer buf_vert_to_ptcl {
+    int vert_to_ptcl[];
+};
+
+uniform int nr_verts;
+
+vec3 getX(int idx) {
+    int base = idx*3;
+    return vec3(x_s[base], x_s[base+1], x_s[base+2]);
+}
+
+void main()
+{
+    int idxV = int(gl_GlobalInvocationID.x);
+    if( idxV >= nr_verts )
+        return;
+    int idxP = vert_to_ptcl[idxV];
+    int idxP1 = idxP*3;
+    int idxP2 = idxP1+1;
+    int idxP3 = idxP2+1;
+
+    int idxV1 = idxV*3;
+    int idxV2 = idxV1+1;
+    int idxV3 = idxV2+1;
+
+    poss[idxV1] = x_s[idxP1];
+    poss[idxV2] = x_s[idxP2];
+    poss[idxV3] = x_s[idxP3];
+
+    nors[idxV1] = ptcl_nors[idxP1];
+    nors[idxV2] = ptcl_nors[idxP2];
+    nors[idxV3] = ptcl_nors[idxP3];
+}
+
+
