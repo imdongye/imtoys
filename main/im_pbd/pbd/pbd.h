@@ -13,6 +13,9 @@ Note:
         clear poss, tris
         and uploadToBuf do upload x_s
 
+Todo:
+    elastic bungee constraint : 당기는 힘만
+
 */
 
 #ifndef __app_pbd_h_

@@ -35,6 +35,7 @@
 #include "im_pbd/app_pbd_cpu.h"
 #include "im_pbd/app_pbd_gpu.h"
 #include "im_anims/app_curve.h"
+#include "im_physics/app_phy2d.h"
 
 
 static int _selected_app_idx;
