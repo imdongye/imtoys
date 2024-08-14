@@ -22,7 +22,8 @@ void main()
 {    
     vec3 L = normalize(lit.Pos - wPos);
     // vec3 N = normalize (cross (dFdx(wPos.xyz), dFdy(wPos.xyz)));
-	vec3 N = normalize(wNor);
+    vec3 N = (gl_FrontFacing)?normalize(wNor):normalize(-wNor);
+
 
     float shade = max(dot(N, L),0);
 

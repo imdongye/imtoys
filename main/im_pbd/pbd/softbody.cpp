@@ -278,12 +278,12 @@ void SoftBody::updateNorsAndUpload() {
 
 
     // upload to gl buf
-    assert( buf_pos != 0 );
-	glBindBuffer(GL_ARRAY_BUFFER, buf_pos);
+    assert( buf_poss != 0 );
+	glBindBuffer(GL_ARRAY_BUFFER, buf_poss);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vec3)*nr_verts, x_s.data());
 
-    assert( buf_nor != 0 );
-	glBindBuffer(GL_ARRAY_BUFFER, buf_nor);
+    assert( buf_nors != 0 );
+	glBindBuffer(GL_ARRAY_BUFFER, buf_nors);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vec3)*nr_verts, nors.data());
 }
 
@@ -314,12 +314,12 @@ void SoftBody::updatePossAndNorsWithPtclAndUpload() {
     }
 
     // upload to gl buf
-    assert( buf_pos != 0 );
-	glBindBuffer(GL_ARRAY_BUFFER, buf_pos);
+    assert( buf_poss != 0 );
+	glBindBuffer(GL_ARRAY_BUFFER, buf_poss);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vec3)*nr_verts, poss.data());
 
-    assert( buf_nor != 0 );
-	glBindBuffer(GL_ARRAY_BUFFER, buf_nor);
+    assert( buf_nors != 0 );
+	glBindBuffer(GL_ARRAY_BUFFER, buf_nors);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vec3)*nr_verts, nors.data());
 }
 
@@ -337,12 +337,12 @@ void SoftBody::updatePossAndNorsWithVertAndUpload() {
     Mesh::updateNorsFromTris();
 
     // upload to gl buf
-    assert( buf_pos != 0 );
-	glBindBuffer(GL_ARRAY_BUFFER, buf_pos);
+    assert( buf_poss != 0 );
+	glBindBuffer(GL_ARRAY_BUFFER, buf_poss);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vec3)*nr_verts, poss.data());
 
-    assert( buf_nor != 0 );
-	glBindBuffer(GL_ARRAY_BUFFER, buf_nor);
+    assert( buf_nors != 0 );
+	glBindBuffer(GL_ARRAY_BUFFER, buf_nors);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vec3)*nr_verts, nors.data());
 }
 

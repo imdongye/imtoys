@@ -31,15 +31,20 @@ void SoftBodyGpu::initGL(bool withClearMem)
     Mesh::initGL(false);
 
     if( vert_to_ptcl.empty() ) {
-        buf_x_s = buf_pos;
-        buf_pos = 0;
         poss.clear(); poss.shrink_to_fit();
         tris.clear(); tris.shrink_to_fit();
+        buf_x_s = buf_poss;
+        buf_poss = 0;
+        buf_ptcl_tris = buf_tris;
     }
     else {
         glGenBuffers(1, &buf_x_s);
         glBindBuffer(GL_ARRAY_BUFFER, buf_x_s);
         glBufferData(GL_ARRAY_BUFFER, sizeof(vec3)*x_s.size(), x_s.data(), GL_STATIC_COPY);
+
+        glGenBuffers(1, &buf_ptcl_tris);
+        glBindBuffer(GL_ARRAY_BUFFER, buf_ptcl_tris);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(ivec3)*ptcl_tris.size(), ptcl_tris.data(), GL_STATIC_COPY);
     }
     
 
@@ -60,7 +65,7 @@ void SoftBodyGpu::initGL(bool withClearMem)
     glGenBuffers(1, &buf_w_s);
     glBindBuffer(GL_ARRAY_BUFFER, buf_w_s);
     glBufferData(GL_ARRAY_BUFFER, sizeof(float)*w_s.size(), w_s.data(), GL_STATIC_COPY);
-    
+
 
     glGenBuffers(1, &buf_debug);
     glBindBuffer(GL_ARRAY_BUFFER, buf_debug);
@@ -68,21 +73,45 @@ void SoftBodyGpu::initGL(bool withClearMem)
 
 
 
+    // make adjacent triangles per vertex
+    vector<ivec2> offsetsPerPtcl;
+    offsetsPerPtcl.reserve(nr_ptcls);
+    vector<int> adjacentTris;
+    adjacentTris.reserve(nr_verts*4);
+    for( int i=0; i<nr_ptcls; i++ ) {
+        int sOffset = adjacentTris.size();
+        for( int j=0; j<nr_tris; j++ ) {
+            if( ptcl_tris[j].x == i || ptcl_tris[j].y == i || ptcl_tris[j].z == i ) {
+                adjacentTris.push_back(j);
+            }
+        }
+        int eOffset = adjacentTris.size();
+        offsetsPerPtcl.push_back(ivec2{sOffset, eOffset});
+    }
+    glGenBuffers(1, &buf_adj_tri_idxs);
+    glBindBuffer(GL_ARRAY_BUFFER, buf_adj_tri_idxs);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(int)*adjacentTris.size(), adjacentTris.data(), GL_STATIC_DRAW );
 
+    glGenBuffers(1, &buf_adj_tri_idx_offsets);
+    glBindBuffer(GL_ARRAY_BUFFER, buf_adj_tri_idx_offsets);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(ivec2)*offsetsPerPtcl.size(), offsetsPerPtcl.data(), GL_STATIC_DRAW );
+
+
+
+
+    // make distance constraints
     struct GpuConstraintDist {
         int idx_p;
         float ori_dist;
     };
     vector<GpuConstraintDist> gpuDistConstraints;
     gpuDistConstraints.reserve(c_stretchs.size()*2);
-    vector<ivec2> constraintOffsets;
-    constraintOffsets.reserve(nr_ptcls);
-
+    offsetsPerPtcl.clear();
 
 
     // stretch 
     gpuDistConstraints.clear();
-    constraintOffsets.clear();
+    offsetsPerPtcl.clear();
     for( int idxP=0; idxP<nr_ptcls; idxP++ ) {
         int sOffset = gpuDistConstraints.size();
         for( const auto& c: c_stretchs ) { // stretch
@@ -99,20 +128,20 @@ void SoftBodyGpu::initGL(bool withClearMem)
             gpuDistConstraints.push_back({idxOpp, c.ori_dist});
         }
         int eOffset = gpuDistConstraints.size();
-        constraintOffsets.push_back(ivec2{sOffset, eOffset});
+        offsetsPerPtcl.push_back(ivec2{sOffset, eOffset});
     }
     glGenBuffers(1, &buf_c_stretchs);
     glBindBuffer(GL_ARRAY_BUFFER, buf_c_stretchs);
     glBufferData(GL_ARRAY_BUFFER, sizeof(GpuConstraintDist)*gpuDistConstraints.size(), gpuDistConstraints.data(), GL_STATIC_DRAW );
     glGenBuffers(1, &buf_c_stretch_offsets);
     glBindBuffer(GL_ARRAY_BUFFER, buf_c_stretch_offsets);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(ivec2)*constraintOffsets.size(), constraintOffsets.data(), GL_STATIC_DRAW );
+    glBufferData(GL_ARRAY_BUFFER, sizeof(ivec2)*offsetsPerPtcl.size(), offsetsPerPtcl.data(), GL_STATIC_DRAW );
 
 
 
     // shear 
     gpuDistConstraints.clear();
-    constraintOffsets.clear();
+    offsetsPerPtcl.clear();
     for( int idxP=0; idxP<nr_ptcls; idxP++ ) {
         int sOffset = gpuDistConstraints.size();
         for( const auto& c: c_shears ) { // shear
@@ -129,21 +158,21 @@ void SoftBodyGpu::initGL(bool withClearMem)
             gpuDistConstraints.push_back({idxOpp, c.ori_dist});
         }
         int eOffset = gpuDistConstraints.size();
-        constraintOffsets.push_back(ivec2{sOffset, eOffset});
+        offsetsPerPtcl.push_back(ivec2{sOffset, eOffset});
     }
     glGenBuffers(1, &buf_c_shears);
     glBindBuffer(GL_ARRAY_BUFFER, buf_c_shears);
     glBufferData(GL_ARRAY_BUFFER, sizeof(GpuConstraintDist)*gpuDistConstraints.size(), gpuDistConstraints.data(), GL_STATIC_DRAW );
     glGenBuffers(1, &buf_c_shear_offsets);
     glBindBuffer(GL_ARRAY_BUFFER, buf_c_shear_offsets);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(ivec2)*constraintOffsets.size(), constraintOffsets.data(), GL_STATIC_DRAW );
+    glBufferData(GL_ARRAY_BUFFER, sizeof(ivec2)*offsetsPerPtcl.size(), offsetsPerPtcl.data(), GL_STATIC_DRAW );
 
 
 
 
     // bend 
     gpuDistConstraints.clear();
-    constraintOffsets.clear();
+    offsetsPerPtcl.clear();
     for( int idxP=0; idxP<nr_ptcls; idxP++ ) {
         int sOffset = gpuDistConstraints.size();
         for( const auto& c: c_dist_bends ) { // bend
@@ -160,19 +189,20 @@ void SoftBodyGpu::initGL(bool withClearMem)
             gpuDistConstraints.push_back({idxOpp, c.ori_dist});
         }
         int eOffset = gpuDistConstraints.size();
-        constraintOffsets.push_back(ivec2{sOffset, eOffset});
+        offsetsPerPtcl.push_back(ivec2{sOffset, eOffset});
     }
     glGenBuffers(1, &buf_c_dist_bends);
     glBindBuffer(GL_ARRAY_BUFFER, buf_c_dist_bends);
     glBufferData(GL_ARRAY_BUFFER, sizeof(GpuConstraintDist)*gpuDistConstraints.size(), gpuDistConstraints.data(), GL_STATIC_DRAW );
     glGenBuffers(1, &buf_c_dist_bend_offsets);
     glBindBuffer(GL_ARRAY_BUFFER, buf_c_dist_bend_offsets);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(ivec2)*constraintOffsets.size(), constraintOffsets.data(), GL_STATIC_DRAW );
+    glBufferData(GL_ARRAY_BUFFER, sizeof(ivec2)*offsetsPerPtcl.size(), offsetsPerPtcl.data(), GL_STATIC_DRAW );
 
 
 
     // Todo: dih bend, iso bend ...   
 }
+
 
 
 
@@ -182,15 +212,19 @@ void SoftBodyGpu::deinitGL()
     lim::gl::safeDelBufs(&buf_p_s); // 1
     lim::gl::safeDelBufs(&buf_v_s); // 2
     lim::gl::safeDelBufs(&buf_w_s); // 3
-    // lim::gl::safeDelBufs(&buf_f_s);
+    lim::gl::safeDelBufs(&buf_w_s); // 3
 
-    lim::gl::safeDelBufs(&buf_c_stretchs); // 4
-    lim::gl::safeDelBufs(&buf_c_stretch_offsets); // 5
-    lim::gl::safeDelBufs(&buf_c_shears); // 6
-    lim::gl::safeDelBufs(&buf_c_shear_offsets); // 7
-    lim::gl::safeDelBufs(&buf_c_dist_bends); // 8
-    lim::gl::safeDelBufs(&buf_c_dist_bend_offsets); // 9
-    lim::gl::safeDelBufs(&buf_debug); // 9
+    lim::gl::safeDelBufs(&buf_ptcl_tris);
+    lim::gl::safeDelBufs(&buf_adj_tri_idxs);
+    lim::gl::safeDelBufs(&buf_adj_tri_idx_offsets);
+    lim::gl::safeDelBufs(&buf_vert_to_ptcl);
+
+    lim::gl::safeDelBufs(&buf_c_stretchs);
+    lim::gl::safeDelBufs(&buf_c_stretch_offsets);
+    lim::gl::safeDelBufs(&buf_c_shears);
+    lim::gl::safeDelBufs(&buf_c_shear_offsets);
+    lim::gl::safeDelBufs(&buf_c_dist_bends); 
+    lim::gl::safeDelBufs(&buf_c_dist_bend_offsets);
 
     Mesh::deinitGL();
 }

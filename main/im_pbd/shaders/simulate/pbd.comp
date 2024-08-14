@@ -51,8 +51,8 @@ vec3 getP(int idx) {
 
 void main()
 {
-    uint idxV1, idxV2, idxV3;
-    uint idxP = gl_GlobalInvocationID.x;
+    int idxV1, idxV2, idxV3;
+    int idxP = int(gl_GlobalInvocationID.x);
     float w;
     vec3 x, p, v;
     int i, j;

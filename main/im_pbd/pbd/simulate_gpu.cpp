@@ -18,7 +18,7 @@ PhySceneGpu::PhySceneGpu()
     prog_project_dist.attatch(   "im_pbd/shaders/simulate/1_project_dist.comp").link();
     prog_update_x_s.attatch(     "im_pbd/shaders/simulate/2_update_x_s.comp").link();
     prog_apply_collision.attatch("im_pbd/shaders/simulate/3_apply_collision.comp").link();
-    prog_update_verts.attatch(   "im_pbd/shaders/simulate/4_update_verts.comp").link();
+    prog_update_nors_with_ptcl.attatch(   "im_pbd/shaders/simulate/4_update_nors_with_ptcl.comp").link();
 }
 
 
@@ -129,8 +129,7 @@ void SoftBodyGpu::update( float dt, const PhySceneGpu& scene )
         // update v and x (verlet integration)
         {
             glMemoryBarrier( GL_SHADER_STORAGE_BARRIER_BIT );
-            const lim::Program& prog = scene.prog_update_x_s;
-            prog.use();
+            const lim::Program& prog = scene.prog_update_x_s.use();
             prog.setUniform("nr_ptcls", nr_ptcls);
             prog.setUniform("inv_dt", invSubDt);
             glDispatchCompute(nr_thread_groups, 1, 1);
@@ -139,17 +138,25 @@ void SoftBodyGpu::update( float dt, const PhySceneGpu& scene )
         // apply collision
         {
             glMemoryBarrier( GL_SHADER_STORAGE_BARRIER_BIT );
-
-            const lim::Program& prog = scene.prog_apply_collision;
-            prog.use();
+            const lim::Program& prog = scene.prog_apply_collision.use();
             prog.setUniform("nr_ptcls", nr_ptcls);
             glDispatchCompute(nr_thread_groups, 1, 1);
         }
 
         lim::gl::errorAssert();
     }
-    // update verts
 
+    // update verts
+    {
+        glMemoryBarrier( GL_SHADER_STORAGE_BARRIER_BIT );
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, buf_nors);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, buf_ptcl_tris);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, buf_adj_tri_idxs);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, buf_adj_tri_idx_offsets);
+        const lim::Program& prog = scene.prog_update_nors_with_ptcl.use();
+        prog.setUniform("nr_ptcls", nr_ptcls);
+        glDispatchCompute(nr_thread_groups, 1, 1);
+    }
 
     glMemoryBarrier( GL_ALL_BARRIER_BITS );
 }

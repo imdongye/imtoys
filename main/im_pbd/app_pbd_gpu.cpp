@@ -13,7 +13,8 @@ namespace {
 
 
 	bool is_paused = true;
-	bool enable_tex = true;;
+	bool enable_tex = true;
+	bool draw_edges = false;
 	float time_speed = 1.f;
 	bool update_nor_with_ptcl = true;
 
@@ -126,9 +127,14 @@ void AppPbdGpu::customDrawShadow(const mat4& mtx_View, const mat4& mtx_Proj) con
 	sProg.setUniform("mtx_Proj", mtx_Proj);
 	sProg.setUniform("mtx_Model", glm::mat4(1));
 
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	cur_body->bindAndDrawGL();
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	if( draw_edges ) {
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		cur_body->bindAndDrawGL();
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	}
+	else {
+		cur_body->bindAndDrawGL();
+	}
 }
 void AppPbdGpu::customDraw(const Camera& cam, const LightDirectional& lit) const 
 {
@@ -139,9 +145,14 @@ void AppPbdGpu::customDraw(const Camera& cam, const LightDirectional& lit) const
 	prog_ms.setUniform("enable_Tex", enable_tex);
 	prog_ms.setTexture("tex", texture.tex_id);
 
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	cur_body->bindAndDrawGL();
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	if( draw_edges ) {
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		cur_body->bindAndDrawGL();
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	}
+	else {
+		cur_body->bindAndDrawGL();
+	}
 }
 
 void AppPbdGpu::canvasDraw() const
@@ -163,7 +174,7 @@ void AppPbdGpu::canvasImGui()
 		ImGui::Checkbox("pause", &is_paused);
 		if( is_paused ) {
 			bool needReset = false;
-			needReset |= ImGui::SliderInt("nr ms slices", &nr_ms_slices, 0, 100);
+			needReset |= ImGui::SliderInt("nr ms slices", &nr_ms_slices, 0, 30);
 			needReset |= ImGui::Checkbox("ptcl ref close verts", &is_ptcl_ref_close_verts);
 			if( needReset ) {
 				resetApp();
@@ -179,7 +190,8 @@ void AppPbdGpu::canvasImGui()
 			ImGui::Checkbox("make nor with ptcl tris", &update_nor_with_ptcl);
 		}
 
-		ImGui::Checkbox("enable_tex", &enable_tex);
+		ImGui::Checkbox("enable tex", &enable_tex);
+		ImGui::Checkbox("draw edges", &draw_edges);
 		ImGui::SliderInt("# steps", &cur_body->nr_steps, 1, 50);
 		ImGui::SliderInt("max fps", &max_fps, 20, 1000);
 		ImGui::SliderFloat("time speed", &time_speed, 0.1f, 2.f);

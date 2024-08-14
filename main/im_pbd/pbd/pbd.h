@@ -188,6 +188,13 @@ namespace pbd
     };
 
 
+/*
+if no ref verts
+    buf_x_s = buf_poss
+    buf_poss = 0
+
+    buf_ptcl_tris = buf_tris because buf_tris is used at draw 
+*/
     struct SoftBodyGpu : public SoftBody
     {
         // vec3
@@ -197,8 +204,10 @@ namespace pbd
         GLuint buf_w_s=0; // 3
         GLuint buf_debug=0; // 4
 
-        GLuint buf_tris_of_ptcls;
-        GLuint buf_tris_of_ptcl_offsets;
+        GLuint buf_ptcl_tris = 0;
+        GLuint buf_adj_tri_idxs = 0;
+        GLuint buf_adj_tri_idx_offsets = 0;
+        GLuint buf_vert_to_ptcl = 0;
 
         
         // GLuint buf_f_s=0;
@@ -215,7 +224,7 @@ namespace pbd
 
 
         SoftBodyGpu(lim::Mesh&& src, int nrShear = 1, BendType bendType = BT_NONE
-            , float bodyMass = 1.f, bool refCloseVerts = false );
+            , float bodyMass = 1.f, bool refCloseVerts = false);
         ~SoftBodyGpu();
 
         void initGL(bool withClearMem = false);
@@ -232,7 +241,7 @@ namespace pbd
         lim::Program prog_update_p_s;
         lim::Program prog_project_dist;
         lim::Program prog_update_x_s;
-        lim::Program prog_update_verts;
+        lim::Program prog_update_nors_with_ptcl;
         lim::Program prog_apply_collision;
 
         std::vector<ICollider*> colliders;

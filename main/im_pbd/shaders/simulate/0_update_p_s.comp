@@ -23,14 +23,14 @@ uniform float dt;
 
 void main()
 {
-    uint idxP = gl_GlobalInvocationID.x;
+    int idxP = int(gl_GlobalInvocationID.x);
     if( idxP >= nr_ptcls ) {
         return;
     }
 
-    uint idxV1 = idxP*3;
-    uint idxV2 = idxV1+1;
-    uint idxV3 = idxV2+1;
+    int idxV1 = idxP*3;
+    int idxV2 = idxV1+1;
+    int idxV3 = idxV2+1;
 
     float w = w_s[idxP];
     if( w==0.0 ) {
