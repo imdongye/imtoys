@@ -192,14 +192,23 @@ namespace pbd
     struct SoftBodyGpu : public SoftBody
     {
         // vec3
-        GLuint buf_x_s=0, buf_p_s=0, buf_v_s=0, buf_w_s=0; 
+        GLuint buf_x_s=0; // 0
+        GLuint buf_p_s=0; // 1
+        GLuint buf_v_s=0; // 2
+        GLuint buf_w_s=0; // 3
+        GLuint buf_debug=0; // 4
+
+        GLuint buf_tris_of_ptcls;
+        GLuint buf_tris_of_ptcl_offsets;
+
+        
         // GLuint buf_f_s=0;
 
         // (int, float), ivec2
         GLuint buf_c_stretchs=0,    buf_c_stretch_offsets=0;
         GLuint buf_c_shears=0,      buf_c_shear_offsets=0;
         GLuint buf_c_dist_bends=0,  buf_c_dist_bend_offsets=0;
-        GLuint buf_debug=0;
+
         // GLuint buf_c_dih_bends=0, buf_c_iso_bends=0, buf_c_g_volumes=0;
 
         inline static constexpr int nr_threads = 16;

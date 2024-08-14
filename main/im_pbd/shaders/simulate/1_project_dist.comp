@@ -1,60 +1,70 @@
 #version 460 core
 layout(local_size_x = 16, local_size_y = 1) in;
 
-layout(std430, binding=0) readonly  buffer buf_x_s {
-    float x_s[];
-};
-layout(std430, binding=1) writeonly buffer buf_p_s {
+
+layout(std430, binding=1) buffer buf_p_s {
     float p_s[];
 };
-layout(std430, binding=2) buffer buf_v_s {
-    float v_s[];
-};
-layout(std430, binding=3) readonly  buffer buf_w_s {
+layout(std430, binding=3) readonly buffer buf_w_s {
     float w_s[];
 };
 
-uniform int nr_ptcls;
-uniform vec3 gravity;
-uniform float air_drag;
-uniform float inv_body_mass;
-uniform float dt;
 
+struct ConstraintDist {
+    int idx_p;
+    float ori_dist;
+};
+layout(std430, binding=5) readonly buffer buf_c_dists {
+    ConstraintDist c_dists[];
+};
+layout(std430, binding=6) readonly buffer buf_c_dist_offsets {
+    ivec2 c_dist_offsets[];
+};
+
+
+uniform int nr_ptcls;
+uniform float alpha;
+
+vec3 getP(uint idx) {
+    uint base = idx*3;
+    return vec3(p_s[base], p_s[base+1], p_s[base+2]);
+}
 
 void main()
 {
-    uint idxV1, idxV2, idxV3;
-    uint idx = gl_GlobalInvocationID.x;
-    if( idx < nr_ptcls ){
-        idxV1 = idx*3;
-        idxV2 = idxV1+1;
-        idxV3 = idxV2+1;
-
-        float w = w_s[idx];
-        if( w==0.f ) {
-            p_s[idxV1] = x_s[idxV1];
-            p_s[idxV2] = x_s[idxV2];
-            p_s[idxV3] = x_s[idxV3];
-        }
-        else {
-            vec3 v = vec3(v_s[idxV1], v_s[idxV2], v_s[idxV3]);
-
-            vec3 acc = gravity;
-            // acc -= (air_drag*inv_body_mass) * v;
-            v  += acc*dt;
-
-
-            v_s[idxV1] = v.x;
-            v_s[idxV2] = v.y;
-            v_s[idxV3] = v.z;
-            
-            vec3 dx = v*dt;
-            p_s[idxV1] = x_s[idxV1] + dx.x;
-            p_s[idxV2] = x_s[idxV2] + dx.y;
-            p_s[idxV3] = x_s[idxV3] + dx.z;
-        }
+    uint idxP = gl_GlobalInvocationID.x;
+    if( idxP >= nr_ptcls ){
+        return;
     }
 
-    memoryBarrierBuffer();
-    barrier();
+    float w = w_s[idxP];
+    if( w==0.0 ) {
+        return;
+    }
+    uint idxV1 = idxP*3;
+    uint idxV2 = idxV1+1;
+    uint idxV3 = idxV2+1;
+    vec3 p = vec3(p_s[idxV1], p_s[idxV2], p_s[idxV3]);
+    
+    ivec2 cOffset = c_dist_offsets[idxP];
+    for( int j=cOffset.x; j<cOffset.y; j++ ) {
+        ConstraintDist cDistInfo = c_dists[j];
+        float oppW = w_s[idxP];
+        vec3 oppP = getP(cDistInfo.idx_p);
+
+        vec3 diff = p - oppP;
+        float dist = length(diff);
+        float C = dist - cDistInfo.ori_dist;
+        vec3 dC = diff / dist;
+
+        float denom = w + oppW + alpha;
+        if( denom < 0.0000000001 ) {
+            continue;
+        }
+        float lambda = C / denom;
+        p -= lambda*w*dC;
+    }
+    p_s[idxV1] = p.x;
+    p_s[idxV2] = p.y;
+    p_s[idxV3] = p.z;
 }

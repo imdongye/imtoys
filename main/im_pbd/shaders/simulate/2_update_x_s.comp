@@ -12,37 +12,29 @@ layout(std430, binding=2) writeonly buffer buf_v_s {
 };
 
 uniform int nr_ptcls;
-uniform float dt; // todo inv dt
+uniform float inv_dt; // todo inv dt
 
 
 
 void main()
 {
-    uint idx = gl_GlobalInvocationID.x;
-    if( idx < nr_ptcls ) {
-        uint idxV1, idxV2, idxV3;
-        idxV1 = idx*3;
-        idxV2 = idxV1+1;
-        idxV3 = idxV2+1;
-
-
-
-        vec3 p = vec3(p_s[idxV1], p_s[idxV2], p_s[idxV3]);
-        vec3 x = vec3(x_s[idxV1], x_s[idxV2], x_s[idxV3]);
-
-
-
-        // Todo p is not updated though barriered
-        vec3 v = (p-x)/dt;
-        v_s[idxV1] = v.x;
-        v_s[idxV2] = v.y;
-        v_s[idxV3] = v.z;
-
-        x_s[idxV1] = p.x;
-        x_s[idxV2] = p.y;
-        x_s[idxV3] = p.z;
-
+    uint idxP = gl_GlobalInvocationID.x;
+    if( idxP >= nr_ptcls ) {
+        return;
     }
-    memoryBarrierBuffer();
-    barrier();
+    uint idxV1 = idxP*3;
+    uint idxV2 = idxV1+1;
+    uint idxV3 = idxV2+1;
+
+    vec3 p = vec3(p_s[idxV1], p_s[idxV2], p_s[idxV3]);
+    vec3 x = vec3(x_s[idxV1], x_s[idxV2], x_s[idxV3]);
+    vec3 v = (p-x)*inv_dt;
+
+    v_s[idxV1] = v.x;
+    v_s[idxV2] = v.y;
+    v_s[idxV3] = v.z;
+
+    x_s[idxV1] = p.x;
+    x_s[idxV2] = p.y;
+    x_s[idxV3] = p.z;
 }

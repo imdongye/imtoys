@@ -64,8 +64,8 @@ static void resetApp() {
 	}
 
 	// tf = translate(vec3(0,2,0)) * glim::rotateX(glim::pi90*0.1f)* glim::rotateY(glim::pi90*0.2f) * scale(vec3(size_scale))* tf;
-	// tf = translate(vec3(0,3.5f,0)) * glim::rotateZ(glim::pi90*0.6f) * scale(vec3(size_scale))* tf;
-	tf = translate(vec3(0,2,0)) * scale(vec3(size_scale))* tf;
+	tf = translate(vec3(0,2.5f,0)) * glim::rotateZ(glim::pi90*0.6f) * scale(vec3(size_scale))* tf;
+	// tf = translate(vec3(0,2,0)) * scale(vec3(size_scale))* tf;
 	for( vec3& p : ms->poss ) {
 		p = vec3(tf*vec4(p,1));
 	}
@@ -96,7 +96,7 @@ static void resetApp() {
 
 AppPbdGpu::AppPbdGpu() : AppBaseCanvas3d(1200, 780, APP_NAME, false, 10, 100, 100)
 {
-	max_fps = 600;
+	max_fps = 1000;
 	prog_ms.attatch("mvp.vs").attatch("im_pbd/shaders/ndl_tex.fs").link();
 
 	texture.s_wrap_param = GL_REPEAT;
@@ -163,7 +163,7 @@ void AppPbdGpu::canvasImGui()
 		ImGui::Checkbox("pause", &is_paused);
 		if( is_paused ) {
 			bool needReset = false;
-			needReset |= ImGui::SliderInt("nr ms slices", &nr_ms_slices, 0, 20);
+			needReset |= ImGui::SliderInt("nr ms slices", &nr_ms_slices, 0, 100);
 			needReset |= ImGui::Checkbox("ptcl ref close verts", &is_ptcl_ref_close_verts);
 			if( needReset ) {
 				resetApp();
@@ -181,11 +181,13 @@ void AppPbdGpu::canvasImGui()
 
 		ImGui::Checkbox("enable_tex", &enable_tex);
 		ImGui::SliderInt("# steps", &cur_body->nr_steps, 1, 50);
-		ImGui::SliderInt("max fps", &max_fps, 20, 600);
+		ImGui::SliderInt("max fps", &max_fps, 20, 1000);
 		ImGui::SliderFloat("time speed", &time_speed, 0.1f, 2.f);
 	}
 
 	if( ImGui::CollapsingHeader("info") ) {
+		ImGui::Text("subDt: %.10f", delta_time/cur_body->nr_steps);
+		ImGui::Text("max #step: %d", int(delta_time/0.0001f)); // if subDt is under 0.0001s, verlet integral get error
 		ImGui::Text("#thread*#threadgroup %d*%d", cur_body->nr_threads, cur_body->nr_thread_groups);
 		ImGui::Text("#vert %d", cur_body->nr_verts);
 		ImGui::Text("#ptcl %d", cur_body->nr_ptcls);

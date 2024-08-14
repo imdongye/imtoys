@@ -37,16 +37,16 @@ void SoftBody::subStepConstraintProject(float dt)
     // Todo: skinning
 
     float distAlpha = params.inv_stiff_dist/sqdt;
-    alpha = distAlpha/params.stretch_pct;
-    for( auto& c : c_dist_bends ) {
+    alpha = distAlpha / params.bend_pct;
+    for( auto& c : c_stretchs ) {
         c.project( *this, alpha );
     }
-    alpha = distAlpha/params.shear_pct;
+    alpha = distAlpha / params.shear_pct;
     for( auto& c : c_shears ) {
         c.project( *this, alpha );
     }
-    alpha = distAlpha/params.bend_pct;
-    for( auto& c : c_stretchs ) {
+    alpha = distAlpha / params.stretch_pct;
+    for( auto& c : c_dist_bends ) {
         c.project( *this, alpha );
     }
 

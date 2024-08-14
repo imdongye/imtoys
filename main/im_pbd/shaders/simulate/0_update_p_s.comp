@@ -23,38 +23,37 @@ uniform float dt;
 
 void main()
 {
-    uint idxV1, idxV2, idxV3;
-    uint idx = gl_GlobalInvocationID.x;
-    if( idx < nr_ptcls ){
-        idxV1 = idx*3;
-        idxV2 = idxV1+1;
-        idxV3 = idxV2+1;
-
-        float w = w_s[idx];
-        if( w==0.f ) {
-            p_s[idxV1] = x_s[idxV1];
-            p_s[idxV2] = x_s[idxV2];
-            p_s[idxV3] = x_s[idxV3];
-        }
-        else {
-            vec3 v = vec3(v_s[idxV1], v_s[idxV2], v_s[idxV3]);
-
-            vec3 acc = gravity;
-            // acc -= (air_drag*inv_body_mass) * v;
-            v  += acc*dt;
-
-
-            v_s[idxV1] = v.x;
-            v_s[idxV2] = v.y;
-            v_s[idxV3] = v.z;
-            
-            vec3 dx = v*dt;
-            p_s[idxV1] = x_s[idxV1] + dx.x;
-            p_s[idxV2] = x_s[idxV2] + dx.y;
-            p_s[idxV3] = x_s[idxV3] + dx.z;
-        }
+    uint idxP = gl_GlobalInvocationID.x;
+    if( idxP >= nr_ptcls ) {
+        return;
     }
 
-    memoryBarrierBuffer();
-    barrier();
+    uint idxV1 = idxP*3;
+    uint idxV2 = idxV1+1;
+    uint idxV3 = idxV2+1;
+
+    float w = w_s[idxP];
+    if( w==0.0 ) {
+        p_s[idxV1] = x_s[idxV1];
+        p_s[idxV2] = x_s[idxV2];
+        p_s[idxV3] = x_s[idxV3];
+        return;
+    }
+    
+    vec3 v = vec3(v_s[idxV1], v_s[idxV2], v_s[idxV3]);
+
+    vec3 acc = gravity;
+    // acc -= (air_drag*inv_body_mass) * v;
+    v  += acc*dt;
+
+    vec3 x = vec3(x_s[idxV1], x_s[idxV2], x_s[idxV3]);
+    vec3 p = x + v*dt;
+
+    p_s[idxV1] = p.x;
+    p_s[idxV2] = p.y;
+    p_s[idxV3] = p.z;
+
+    v_s[idxV1] = v.x;
+    v_s[idxV2] = v.y;
+    v_s[idxV3] = v.z;
 }
