@@ -102,6 +102,8 @@ void SoftBodyGpu::initGL(bool withClearMem)
     glBufferData(GL_ARRAY_BUFFER, sizeof(ivec2)*offsetsPerPtcl.size(), offsetsPerPtcl.data(), GL_STATIC_DRAW );
 
 
+    // constraint part ============================================
+
     // make distance constraints
     struct GpuConstraintDist {
         int idx_p;
@@ -203,10 +205,15 @@ void SoftBodyGpu::initGL(bool withClearMem)
 
 
 
+
     // Todo: dih bend, iso bend ...   
 }
 
-
+void SoftBodyGpu::downloadXs()
+{
+    glBindBuffer(GL_ARRAY_BUFFER, buf_x_s);
+    glGetBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vec3)*x_s.size(), x_s.data());
+}
 
 
 void SoftBodyGpu::deinitGL()
@@ -229,6 +236,8 @@ void SoftBodyGpu::deinitGL()
     lim::gl::safeDelBufs(&buf_c_shear_offsets);
     lim::gl::safeDelBufs(&buf_c_dist_bends); 
     lim::gl::safeDelBufs(&buf_c_dist_bend_offsets);
+
+    lim::gl::safeDelBufs(&buf_c_points);
 
     Mesh::deinitGL();
 }

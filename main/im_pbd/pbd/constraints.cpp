@@ -28,7 +28,7 @@ void ConstraintPoint::project(SoftBody& body, float alpha)
     float C = dist - ori_dist;
     vec3 dC = diff / dist;
 
-    float denom = w+alpha;
+    float denom = 1.f+w+alpha; // target point is 1kg mass
     if( denom < glim::feps )
         return;
     float lambda = C / denom;

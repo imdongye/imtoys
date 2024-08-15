@@ -62,7 +62,7 @@ namespace pbd
     {
         glm::vec3 point;
         float ori_dist;
-        int idx_p;
+        alignas(16)int idx_p;
 
         ConstraintPoint(const SoftBody& body, int idxP, const glm::vec3& _point);
         void project(SoftBody& body, float alpha);
@@ -83,7 +83,7 @@ namespace pbd
         glm::ivec4 idx_ps; // edge, opp1, opp2
         float ori_angle;
 
-         glm::vec3 dPi[4];
+        glm::vec3 dPi[4];
         ConstraintDihedralBend(const SoftBody& body, const glm::ivec4& idxPs);
         void project(SoftBody& body, float alpha);
     };
@@ -197,7 +197,9 @@ namespace pbd
         buf_poss = 0,
         but buf_ptcl_tris = buf_tris, because buf_tris is used at draw
 
-    SoftBodyGpu does not have make nors with verts
+    SoftBodyGpu does not have make nors with verts (type 3)
+
+    c_points not ensure multiple c_points on one particle
 */
     struct SoftBodyGpu : public SoftBody
     {
@@ -215,11 +217,14 @@ namespace pbd
         GLuint buf_vert_to_ptcl = 0;
 
 
-        // (int, float), ivec2
+        // distance constraint : struct{int targetIdx, float length} per ptcls
+        // and offsets : ivec2
         GLuint buf_c_stretchs=0,    buf_c_stretch_offsets=0;
         GLuint buf_c_shears=0,      buf_c_shear_offsets=0;
         GLuint buf_c_dist_bends=0,  buf_c_dist_bend_offsets=0;
-        GLuint buf_c_points=0,      buf_c_point_offsets=0;
+
+        // point constraint : struct{vec3 point, float length, int idx_p} per constraints
+        GLuint buf_c_points=0;
 
         // GLuint buf_c_dih_bends=0, buf_c_iso_bends=0, buf_c_g_volumes=0;
 
@@ -240,9 +245,6 @@ namespace pbd
         void update(float dt, const PhySceneGpu& scene );
 
         void downloadXs();
-        void uploadX(int idx);
-        void uploadConstraintPoints()
-        void uploadWs()
     };
 
     struct PhySceneGpu
@@ -253,6 +255,7 @@ namespace pbd
         lim::Program prog_pbd;
         lim::Program prog_0_update_p_s;
         lim::Program prog_1_project_dist;
+        lim::Program prog_1_project_point;
         lim::Program prog_2_update_x_s;
         lim::Program prog_3_apply_collision;
         lim::Program prog_4_make_ptcl_nors;

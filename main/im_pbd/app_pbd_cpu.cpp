@@ -551,4 +551,7 @@ void AppPbdCpu::canvasImGui()
 	if(ImGui::IsKeyPressed(ImGuiKey_Space, false)) {
 		is_paused = !is_paused;
 	}
+	if( ImGui::IsKeyPressed(ImGuiKey_R) ) {
+		resetApp();
+	}
 }

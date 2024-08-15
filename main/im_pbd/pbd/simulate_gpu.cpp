@@ -16,6 +16,7 @@ PhySceneGpu::PhySceneGpu()
     prog_pbd.attatch(                       "im_pbd/shaders/simulate/pbd.comp").link();
     prog_0_update_p_s.attatch(              "im_pbd/shaders/simulate/0_update_p_s.comp").link();
     prog_1_project_dist.attatch(            "im_pbd/shaders/simulate/1_project_dist.comp").link();
+    prog_1_project_point.attatch(           "im_pbd/shaders/simulate/1_project_point.comp").link();
     prog_2_update_x_s.attatch(              "im_pbd/shaders/simulate/2_update_x_s.comp").link();
     prog_3_apply_collision.attatch(         "im_pbd/shaders/simulate/3_apply_collision.comp").link();
     prog_4_make_ptcl_nors.attatch(          "im_pbd/shaders/simulate/4_make_ptcl_nors.comp").link();
@@ -79,6 +80,7 @@ void SoftBodyGpu::update( float dt, const PhySceneGpu& scene )
     float stretchAlpha = distAlpha / params.stretch_pct;
     float shearAlpha = distAlpha / params.shear_pct;
     float bendAlpha = distAlpha / params.bend_pct;
+    float pointAlpha = params.inv_stiff_point / sqSubDt;
 
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, buf_x_s);
@@ -101,7 +103,9 @@ void SoftBodyGpu::update( float dt, const PhySceneGpu& scene )
             glDispatchCompute(nr_thread_groups_by_ptcls, 1, 1);
         }
 
-        // project constraints
+
+
+        // project distance constraints
         {
             // dist_bend
             glMemoryBarrier( GL_SHADER_STORAGE_BARRIER_BIT );
@@ -126,7 +130,17 @@ void SoftBodyGpu::update( float dt, const PhySceneGpu& scene )
             prog.setUniform("alpha", stretchAlpha);
             glDispatchCompute(nr_thread_groups_by_ptcls, 1, 1);
         }
+        // project point constraints
+        if( buf_c_points!=0 ) {
+            glMemoryBarrier( GL_SHADER_STORAGE_BARRIER_BIT );
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, buf_c_points);
+            const lim::Program& prog = scene.prog_1_project_point.use();
+            prog.setUniform("alpha", pointAlpha);
+            glDispatchCompute(c_points.size(), 1, 1);
+        }
         
+
+
         // update v and x (verlet integration)
         {
             glMemoryBarrier( GL_SHADER_STORAGE_BARRIER_BIT );

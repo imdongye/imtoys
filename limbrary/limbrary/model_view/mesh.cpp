@@ -81,66 +81,59 @@ void Mesh::initGL(bool withClearMem)
 	// now no assert for nr_verts != nr_attribs
 	// because SoftBody reinit in there initGL
 	if( poss.size()>0 ){
-		size_t elem_size = sizeof(vec3);
 		glGenBuffers(1, &buf_poss);
 		glBindBuffer(GL_ARRAY_BUFFER, buf_poss);
-		glBufferData(GL_ARRAY_BUFFER, elem_size*poss.size(), poss.data(), GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vec3)*poss.size(), poss.data(), GL_STATIC_DRAW);
 		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, elem_size, 0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vec3), 0);
 	}
 	if( nors.size()>0 ){
-		size_t elem_size = sizeof(vec3);
 		glGenBuffers(1, &buf_nors);
 		glBindBuffer(GL_ARRAY_BUFFER, buf_nors);
-		glBufferData(GL_ARRAY_BUFFER, elem_size*nors.size(), nors.data(), GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vec3)*nors.size(), nors.data(), GL_STATIC_DRAW);
 		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, elem_size, 0);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vec3), 0);
 	}
 	if( uvs.size()>0 ){
-		size_t elem_size = sizeof(vec2);
 		glGenBuffers(1, &buf_uvs);
 		glBindBuffer(GL_ARRAY_BUFFER, buf_uvs);
-		glBufferData(GL_ARRAY_BUFFER, elem_size*uvs.size(), uvs.data(), GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vec2)*uvs.size(), uvs.data(), GL_STATIC_DRAW);
 		glEnableVertexAttribArray(2);
-		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, elem_size, 0);
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(vec2), 0);
 	}
 	if( cols.size()>0 ){
-		size_t elem_size = sizeof(vec3);
 		glGenBuffers(1, &buf_colors);
 		glBindBuffer(GL_ARRAY_BUFFER, buf_colors);
-		glBufferData(GL_ARRAY_BUFFER, elem_size*cols.size(), cols.data(), GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vec3)*cols.size(), cols.data(), GL_STATIC_DRAW);
 		glEnableVertexAttribArray(3);
-		glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, elem_size, 0);
+		glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(vec3), 0);
 	}
 	if( tangents.size()>0 ){
-		size_t elem_size = sizeof(vec3);
 		glGenBuffers(1, &buf_tangents);
 		glBindBuffer(GL_ARRAY_BUFFER, buf_tangents);
-		glBufferData(GL_ARRAY_BUFFER, elem_size*tangents.size(), tangents.data(), GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vec3)*tangents.size(), tangents.data(), GL_STATIC_DRAW);
 		glEnableVertexAttribArray(4);
-		glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, elem_size, 0);
+		glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(vec3), 0);
 	}
 	if( bitangents.size()>0 ){
-		size_t elem_size = sizeof(vec3);
 		glGenBuffers(1, &buf_bitangents);
 		glBindBuffer(GL_ARRAY_BUFFER, buf_bitangents);
-		glBufferData(GL_ARRAY_BUFFER, elem_size*bitangents.size(), bitangents.data(), GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vec3)*bitangents.size(), bitangents.data(), GL_STATIC_DRAW);
 		glEnableVertexAttribArray(5);
-		glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, elem_size, 0);
+		glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, sizeof(vec3), 0);
 	}
 	if( bone_infos.size()>0 ){
-		size_t elem_size = sizeof(VertBoneInfo);
 		glGenBuffers(1, &buf_bone_infos);
 		glBindBuffer(GL_ARRAY_BUFFER, buf_bone_infos);
-		glBufferData(GL_ARRAY_BUFFER, elem_size*bone_infos.size(), bone_infos.data(), GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(VertBoneInfo)*bone_infos.size(), bone_infos.data(), GL_STATIC_DRAW);
 		
 		GLsizei stride = sizeof(VertBoneInfo);
-		const void* weightOffset = (void *)(MAX_BONE_PER_VERT*sizeof(int));
+		const void* weightOffset = (void*)(MAX_BONE_PER_VERT*sizeof(int));
 
 		glEnableVertexAttribArray(6);
-		glVertexAttribIPointer(6, MAX_BONE_PER_VERT, GL_INT, elem_size, 0);
+		glVertexAttribIPointer(6, MAX_BONE_PER_VERT, GL_INT, stride, 0);
 		glEnableVertexAttribArray(7);
-		glVertexAttribPointer(7, MAX_BONE_PER_VERT, GL_FLOAT, GL_FALSE, elem_size, weightOffset);
+		glVertexAttribPointer(7, MAX_BONE_PER_VERT, GL_FLOAT, GL_FALSE, stride, weightOffset);
 	}
 	if( tris.size()>0 ){
 		size_t elem_size = sizeof(uvec3);

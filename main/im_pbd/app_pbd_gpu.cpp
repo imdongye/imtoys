@@ -1,6 +1,7 @@
 #include "app_pbd_gpu.h"
 #include <limbrary/limgui.h>
 #include <limbrary/asset_lib.h>
+#include <limbrary/gl_tools.h>
 
 using namespace lim;
 using namespace glm;
@@ -171,6 +172,59 @@ void AppPbdGpu::canvasDraw() const
 	drawQuad(vec3{0}, {0,1,0}, {0,0.3f,0});
 }
 
+
+
+
+
+namespace
+{
+	int picked_ptcl_idx = -1;
+	int picked_tri_idx = -1;
+	vec3 picked_tri_pos;
+}
+
+static void pickPtcl( const vec3& rayOri, const vec3& rayDir ) {
+	float minDepth = FLT_MAX;
+	picked_ptcl_idx = -1;
+
+	cur_body->downloadXs();
+
+	for(int i=0; i<cur_body->nr_ptcls; i++) {
+		vec3 toObj = cur_body->x_s[i] - rayOri;
+		float distFromLine = glm::length( glm::cross(rayDir, toObj) );
+		if( distFromLine < 0.02f ) {
+			float distProjLine = glm::dot(rayDir, toObj);
+			if( distProjLine>0 && distProjLine<minDepth ) {
+				minDepth = distProjLine;
+				picked_ptcl_idx = i;
+			}
+		}
+	}
+}
+static void pickTriangle( const vec3& rayDir, const vec3& rayOri ) {
+	const float searchDepth = 50.f;
+	float minDepth = FLT_MAX;
+	picked_tri_idx = -1;
+
+	cur_body->downloadXs();
+
+	for(int i=0; i<cur_body->nr_tris; i++) {
+		ivec3& tri = cur_body->ptcl_tris[i]; 
+		vec3& t1 = cur_body->x_s[tri.x];
+		vec3& t2 = cur_body->x_s[tri.y];
+		vec3& t3 = cur_body->x_s[tri.z];
+		
+		float depth = glim::intersectTriAndRayBothFaces(rayOri, rayDir, t1, t2, t3);
+		if( depth<0 || depth>searchDepth || depth>minDepth )
+			continue;
+		minDepth = depth;
+		picked_tri_idx = i;
+		picked_tri_pos = depth*rayDir + rayOri;
+	}
+}
+
+
+
 void AppPbdGpu::canvasImGui()
 {
 	ImGui::Begin("pbd ctrl");
@@ -183,6 +237,7 @@ void AppPbdGpu::canvasImGui()
 			needReset |= ImGui::Combo("mesh type", (int*)&cur_mesh_type, mesh_type_names, nr_mesh_type_names);
 			needReset |= ImGui::SliderInt("nr ms slices", &nr_ms_slices, 0, 30);
 			needReset |= ImGui::Checkbox("ptcl ref close verts", &is_ptcl_ref_close_verts);
+			needReset |= ImGui::Checkbox("fix start", &fix_start);
 			if( needReset ) {
 				resetApp();
 			}
@@ -236,6 +291,84 @@ void AppPbdGpu::canvasImGui()
 	ImGui::End();
 
 
+
+	// input handling
+	if(ImGui::IsMouseClicked(ImGuiMouseButton_Left, false)) {
+		const vec3 mouseRay = vp.getMousePosRayDir();
+		pickPtcl(vp.camera.pos, mouseRay);
+		if( picked_ptcl_idx >= 0 ) {
+			vp.camera.enabled = false;
+			float invInfMass = 0.f;
+			cur_body->w_s[picked_ptcl_idx] = invInfMass;
+			glBindBuffer(GL_ARRAY_BUFFER, cur_body->buf_w_s);
+			glBufferSubData(GL_ARRAY_BUFFER, sizeof(float)*picked_ptcl_idx, sizeof(float), &invInfMass);
+		}
+	}
+	else if(picked_ptcl_idx >= 0 && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+		vec3 target = cur_body->x_s[picked_ptcl_idx];
+		vp.movePosFormMouse(target);
+		cur_body->x_s[picked_ptcl_idx] = target;
+		glBindBuffer(GL_ARRAY_BUFFER, cur_body->buf_x_s);
+		glBufferSubData(GL_ARRAY_BUFFER, sizeof(vec3)*picked_ptcl_idx, sizeof(vec3), &target);
+	}
+	else if(ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
+		vp.camera.enabled = true;
+		picked_ptcl_idx = -1;
+	}
+	if(ImGui::IsMouseClicked(ImGuiMouseButton_Middle, false)) {
+		const vec3 mouseRay = vp.getMousePosRayDir();
+		pickPtcl(vp.camera.pos, mouseRay);
+		if( picked_ptcl_idx>=0 ) {
+			float invPtclMass = cur_body->inv_ptcl_mass;
+			cur_body->w_s[picked_ptcl_idx] = invPtclMass;
+			glBindBuffer(GL_ARRAY_BUFFER, cur_body->buf_w_s);
+			glBufferSubData(GL_ARRAY_BUFFER, sizeof(float)*picked_ptcl_idx, sizeof(float), &invPtclMass);
+			picked_ptcl_idx = -1;
+		}
+	}
+
+	if(ImGui::IsMouseClicked(ImGuiMouseButton_Right, false)) {
+		const vec3 mouseRay = vp.getMousePosRayDir();
+		pickTriangle(mouseRay, vp.camera.pos);
+		if( picked_tri_idx>=0) {
+			vp.camera.enabled = false;
+			ivec3 tri = cur_body->ptcl_tris[picked_tri_idx];
+			cur_body->c_points.clear();
+			cur_body->c_points.push_back(
+				pbd::ConstraintPoint(*cur_body, tri.x, picked_tri_pos)
+			);
+			cur_body->c_points.push_back(
+				pbd::ConstraintPoint(*cur_body, tri.y, picked_tri_pos)
+			);
+			cur_body->c_points.push_back(
+				pbd::ConstraintPoint(*cur_body, tri.z, picked_tri_pos)
+			);
+			assert(cur_body->buf_c_points==0);
+			glGenBuffers(1, &cur_body->buf_c_points);
+			glBindBuffer(GL_ARRAY_BUFFER, cur_body->buf_c_points);
+			glBufferData(GL_ARRAY_BUFFER, sizeof(pbd::ConstraintPoint)*3, cur_body->c_points.data(), GL_DYNAMIC_DRAW);
+		}
+	}
+	else if(picked_tri_idx>=0 && ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
+		vp.movePosFormMouse(picked_tri_pos);
+		for( auto& c : cur_body->c_points ) {
+			c.point = picked_tri_pos;
+		}
+		glBindBuffer(GL_ARRAY_BUFFER, cur_body->buf_c_points);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(pbd::ConstraintPoint)*3, cur_body->c_points.data());
+	}
+	else if(picked_tri_idx>=0 && ImGui::IsMouseReleased(ImGuiMouseButton_Right)) {
+		vp.camera.enabled = true;
+		picked_tri_idx = -1;
+		gl::safeDelBufs(&cur_body->buf_c_points);
+	}
+
+
+	if( ImGui::IsKeyPressed(ImGuiKey_F) ) {
+		std::fill(cur_body->w_s.begin(), cur_body->w_s.end(), cur_body->inv_ptcl_mass);
+		glBindBuffer(GL_ARRAY_BUFFER, cur_body->buf_w_s);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float)*cur_body->nr_ptcls, cur_body->w_s.data());
+	}
 	if( ImGui::IsKeyPressed(ImGuiKey_Space) ) {
 		is_paused = !is_paused;
 	}

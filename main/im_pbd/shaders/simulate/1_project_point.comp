@@ -1,5 +1,5 @@
 #version 460 core
-layout(local_size_x = 16, local_size_y = 1) in;
+layout(local_size_x = 1, local_size_y = 1) in;
 
 
 layout(std430, binding=1) buffer buf_p_s {
@@ -9,61 +9,45 @@ layout(std430, binding=3) readonly buffer buf_w_s {
     float w_s[];
 };
 
-
-struct ConstraintDist {
-    vec3 point;
-    float ori_dist;
+struct ConstraintPoint {
+    vec4 point_and_dist;
+    int idx_p;
 };
 layout(std430, binding=5) readonly buffer buf_c_points {
-    ConstraintDist c_points[];
-};
-layout(std430, binding=6) readonly buffer buf_c_point_offsets {
-    ivec2 c_point_offsets[];
+    ConstraintPoint c_points[];
 };
 
-
-uniform int nr_ptcls;
 uniform float alpha;
-
-vec3 getP(int idx) {
-    int base = idx*3;
-    return vec3(p_s[base], p_s[base+1], p_s[base+2]);
-}
 
 void main()
 {
-    int idxP = int(gl_GlobalInvocationID.x);
-    if( idxP >= nr_ptcls ){
-        return;
-    }
+    int idxC = int(gl_GlobalInvocationID.x);
+    ConstraintPoint cPoint = c_points[idxC];
+    int idxP = cPoint.idx_p;
 
     float w = w_s[idxP];
     if( w==0.0 ) {
+        return;
+    }
+
+    float denom = w + 0.0 + alpha;
+    if( denom < 0.0000000001 ) {
         return;
     }
     int idxP1 = idxP*3;
     int idxP2 = idxP1+1;
     int idxP3 = idxP2+1;
     vec3 p = vec3(p_s[idxP1], p_s[idxP2], p_s[idxP3]);
+    vec3 point = cPoint.point_and_dist.xyz;
     
-    ivec2 offsets = c_dist_offsets[idxP];
-    for( int j=offsets.x; j<offsets.y; j++ ) {
-        ConstraintDist cDistInfo = c_dists[j];
-        float oppW = w_s[idxP];
-        vec3 oppP = getP(cDistInfo.idx_p);
+    vec3 diff = p - point;
+    float dist = length(diff);
+    float C = dist - cPoint.point_and_dist.w;
+    vec3 dC = diff / dist;
 
-        vec3 diff = p - oppP;
-        float dist = length(diff);
-        float C = dist - cDistInfo.ori_dist;
-        vec3 dC = diff / dist;
-
-        float denom = w + oppW + alpha;
-        if( denom < 0.0000000001 ) {
-            continue;
-        }
-        float lambda = C / denom;
-        p -= lambda*w*dC;
-    }
+    
+    float lambda = C / denom;
+    p -= lambda*w*dC;
     p_s[idxP1] = p.x;
     p_s[idxP2] = p.y;
     p_s[idxP3] = p.z;
