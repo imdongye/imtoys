@@ -1,0 +1,56 @@
+#version 460 core
+layout(local_size_x = 1, local_size_y = 1) in;
+
+
+layout(std430, binding=1) buffer buf_p_s {
+    float p_s[];
+};
+layout(std430, binding=3) readonly buffer buf_w_s {
+    float w_s[];
+};
+
+struct ConstraintDihedralBend {
+    ivec4 idx_ps; // edge, opp1, opp2
+    float ori_angle;
+    int my_idx;
+};
+layout(std430, binding=5) readonly buffer buf_c_dih_bends {
+    ConstraintDist c_dih_bends[];
+};
+layout(std430, binding=6) readonly buffer buf_c_dih_bend_offsets {
+    ivec2 c_dih_bend_offsets[];
+};
+
+uniform int nr_ptcls;
+uniform float alpha;
+
+vec3 getP(int idx)
+
+void main()
+{
+    int idxP = int(gl_GlobalInvocationID.x);
+    if( idx>=nr_ptcls ) {
+        return;
+    }
+    if( w_s[idxP]==0.0 ) {
+        return;
+    }
+    int idxP = cPoint.idx_p;
+    int idxP1 = idxP*3;
+    int idxP2 = idxP1+1;
+    int idxP3 = idxP2+1;
+    vec3 p = vec3(p_s[idxP1], p_s[idxP2], p_s[idxP3]);
+    vec3 point = cPoint.point_and_dist.xyz;
+    
+    vec3 diff = p - point;
+    float dist = length(diff);
+    float C = dist - cPoint.point_and_dist.w;
+    vec3 dC = diff / dist;
+
+    
+    float lambda = C / denom;
+    p -= lambda*w*dC;
+    p_s[idxP1] = p.x;
+    p_s[idxP2] = p.y;
+    p_s[idxP3] = p.z;
+}

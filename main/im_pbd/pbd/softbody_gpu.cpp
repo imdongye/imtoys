@@ -111,7 +111,6 @@ void SoftBodyGpu::initGL(bool withClearMem)
     };
     vector<GpuConstraintDist> gpuDistConstraints;
     gpuDistConstraints.reserve(c_stretchs.size()*2);
-    offsetsPerPtcl.clear();
 
 
     // stretch 
@@ -206,7 +205,43 @@ void SoftBodyGpu::initGL(bool withClearMem)
 
 
 
-    // Todo: dih bend, iso bend ...   
+    // // Todo: dih bend, iso bend ...
+    // struct GpuConstraintDist {
+    //     int idx_p;
+    //     float ori_dist;
+    // };
+    // vector<GpuConstraintDist> gpuDistConstraints;
+    // gpuDistConstraints.reserve(c_stretchs.size()*2);
+
+
+    // // stretch 
+    // gpuDistConstraints.clear();
+    // offsetsPerPtcl.clear();
+    // for( int idxP=0; idxP<nr_ptcls; idxP++ ) {
+    //     int sOffset = gpuDistConstraints.size();
+    //     for( const auto& c: c_stretchs ) { // stretch
+    //         int idxOpp;
+    //         if( c.idx_ps[0] == idxP ) {
+    //             idxOpp = c.idx_ps[1];
+    //         }
+    //         else if( c.idx_ps[1] == idxP ) {
+    //             idxOpp = c.idx_ps[0];
+    //         }
+    //         else {
+    //             continue;
+    //         }
+    //         gpuDistConstraints.push_back({idxOpp, c.ori_dist});
+    //     }
+    //     int eOffset = gpuDistConstraints.size();
+    //     offsetsPerPtcl.push_back(ivec2{sOffset, eOffset});
+    // }
+    // glGenBuffers(1, &buf_c_stretchs);
+    // glBindBuffer(GL_ARRAY_BUFFER, buf_c_stretchs);
+    // glBufferData(GL_ARRAY_BUFFER, sizeof(GpuConstraintDist)*gpuDistConstraints.size(), gpuDistConstraints.data(), GL_STATIC_DRAW );
+    // glGenBuffers(1, &buf_c_stretch_offsets);
+    // glBindBuffer(GL_ARRAY_BUFFER, buf_c_stretch_offsets);
+    // glBufferData(GL_ARRAY_BUFFER, sizeof(ivec2)*offsetsPerPtcl.size(), offsetsPerPtcl.data(), GL_STATIC_DRAW );
+
 }
 
 void SoftBodyGpu::downloadXs()

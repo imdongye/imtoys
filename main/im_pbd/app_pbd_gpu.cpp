@@ -277,7 +277,7 @@ void AppPbdGpu::canvasImGui()
 	if( ImGui::CollapsingHeader("params") ) {
 		ImGui::SliderFloat("gravity", &phy_scene.G.y, 0.f, -15.f);
 		ImGui::SliderFloat("point", &cur_body->params.inv_stiff_point, 0.f, 1.0f, "%.6f");
-		ImGui::SliderFloat("distance", &cur_body->params.inv_stiff_dist, 0.f, 1.0f, "%.6f");
+		ImGui::SliderFloat("distance", &cur_body->params.inv_stiff_dist, 0.0001f, 1.0f, "%.6f");
 		ImGui::SliderFloat("stretch_pct", &cur_body->params.stretch_pct, 0.f, 1.0f, "%.6f");
 		ImGui::SliderFloat("shear_pct", &cur_body->params.shear_pct, 0.f, 1.0f, "%.6f");
 		ImGui::SliderFloat("bend_pct", &cur_body->params.bend_pct, 0.f, 1.0f, "%.6f");
