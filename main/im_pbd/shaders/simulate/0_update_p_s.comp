@@ -43,7 +43,7 @@ void main()
     vec3 v = vec3(v_s[idxP1], v_s[idxP2], v_s[idxP3]);
 
     vec3 acc = gravity;
-    // acc -= (air_drag*inv_body_mass) * v;
+    acc -= (air_drag*inv_body_mass) * v;
     v  += acc*dt;
 
     vec3 x = vec3(x_s[idxP1], x_s[idxP2], x_s[idxP3]);

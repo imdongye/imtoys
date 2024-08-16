@@ -81,9 +81,7 @@ namespace pbd
     struct ConstraintDihedralBend 
     {
         glm::ivec4 idx_ps; // edge, opp1, opp2
-        float ori_angle;
-
-        glm::vec3 dPi[4];
+        alignas(16)float ori_angle;
         ConstraintDihedralBend(const SoftBody& body, const glm::ivec4& idxPs);
         void project(SoftBody& body, float alpha);
     };
@@ -208,25 +206,25 @@ namespace pbd
         GLuint buf_p_s=0; // 1
         GLuint buf_v_s=0; // 2
         GLuint buf_w_s=0; // 3
-        GLuint buf_debug=0; // 4
+        GLuint buf_debugs=0; // 4
 
         GLuint buf_adj_tri_idx_offsets = 0;
-
-        GLuint buf_ptcl_tris = 0;
         GLuint buf_adj_tri_idxs = 0;
+        GLuint buf_ptcl_tris = 0;
+
         GLuint buf_vert_to_ptcl = 0;
 
 
         // distance constraint : struct{int targetIdx, float length} per ptcls
         // and offsets : ivec2
-        GLuint buf_c_stretchs=0,    buf_c_stretch_offsets=0;
-        GLuint buf_c_shears=0,      buf_c_shear_offsets=0;
-        GLuint buf_c_dist_bends=0,  buf_c_dist_bend_offsets=0;
+        GLuint buf_c_stretch_offsets=0,   buf_c_stretchs=0;
+        GLuint buf_c_shear_offsets=0,     buf_c_shears=0;
+        GLuint buf_c_dist_bend_offsets=0, buf_c_dist_bends=0;
 
         // point constraint : struct{vec3 point, float length, int idx_p} per constraints
         GLuint buf_c_points=0;
 
-        // GLuint buf_c_dih_bends=0, buf_c_iso_bends=0, buf_c_g_volumes=0;
+        GLuint buf_c_dih_bend_idx_offsets=0, buf_c_dih_bend_idxs=0, buf_c_dih_bends=0;
 
         inline static constexpr int nr_threads = 16;
         int nr_thread_groups_by_ptcls;
@@ -254,6 +252,7 @@ namespace pbd
 
         lim::Program prog_pbd;
         lim::Program prog_0_update_p_s;
+        lim::Program prog_1_project_dih_bend;
         lim::Program prog_1_project_dist;
         lim::Program prog_1_project_point;
         lim::Program prog_2_update_x_s;

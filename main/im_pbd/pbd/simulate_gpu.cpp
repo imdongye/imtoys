@@ -15,6 +15,7 @@ PhySceneGpu::PhySceneGpu()
 {
     prog_pbd.attatch(                       "im_pbd/shaders/simulate/pbd.comp").link();
     prog_0_update_p_s.attatch(              "im_pbd/shaders/simulate/0_update_p_s.comp").link();
+    prog_1_project_dih_bend.attatch(        "im_pbd/shaders/simulate/1_project_dih_bend.comp").link();
     prog_1_project_dist.attatch(            "im_pbd/shaders/simulate/1_project_dist.comp").link();
     prog_1_project_point.attatch(           "im_pbd/shaders/simulate/1_project_point.comp").link();
     prog_2_update_x_s.attatch(              "im_pbd/shaders/simulate/2_update_x_s.comp").link();
@@ -39,7 +40,7 @@ PhySceneGpu::PhySceneGpu()
 // 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, buf_c_shear_offsets);
 // 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 8, buf_c_dist_bends);
 // 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 9, buf_c_dist_bend_offsets);
-// 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 10, buf_debug);
+// 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 10, buf_debugs);
 	
 
 //     float subDt = dt/nr_steps;;
@@ -76,6 +77,7 @@ void SoftBodyGpu::update( float dt, const PhySceneGpu& scene )
     float subDt = dt/nr_steps;
     float invSubDt = 1.f/subDt;
     float sqSubDt = subDt*subDt;
+    float dihBendAlpha = params.inv_stiff_dih_bend / sqSubDt;
     float distAlpha = params.inv_stiff_dist / sqSubDt;
     float stretchAlpha = distAlpha / params.stretch_pct;
     float shearAlpha = distAlpha / params.shear_pct;
@@ -87,7 +89,7 @@ void SoftBodyGpu::update( float dt, const PhySceneGpu& scene )
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, buf_p_s);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, buf_v_s);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, buf_w_s);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, buf_debug);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, buf_debugs);
 
     for( int step=0; step<nr_steps; step++ )
     {
@@ -104,6 +106,18 @@ void SoftBodyGpu::update( float dt, const PhySceneGpu& scene )
         }
 
 
+
+        // project dihedral bend constraints
+        if( buf_c_dih_bends!=0 ) {
+            glMemoryBarrier( GL_SHADER_STORAGE_BARRIER_BIT );
+            const lim::Program& prog = scene.prog_1_project_dih_bend.use();
+            prog.setUniform("nr_ptcls", nr_ptcls);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, buf_c_dih_bend_idx_offsets);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, buf_c_dih_bend_idxs);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, buf_c_dih_bends);
+            prog.setUniform("alpha", dihBendAlpha);
+            glDispatchCompute(nr_thread_groups_by_ptcls, 1, 1);
+        }
 
         // project distance constraints
         {

@@ -58,7 +58,62 @@ static void resetApp() {
 	mat4 tf = mat4(1);
 
 	switch(cur_mesh_type) {
+		case MT_BUNNY: {
+			Model md;
+			md.importFromFile("assets/models/pbd_test/bunny.obj");
+			md.setUnitScaleAndPivot({0,0,0}, 1.f);
+			ms = md.own_meshes[0];
+			md.own_meshes[0] = nullptr;
+			tf = md.tf_norm->mtx;
+			break;
+		}
+		case MT_CHEEMS: {
+			Model md;
+			md.importFromFile("assets/models/dwarf/Dwarf_2_Very_Low.obj");
+			md.setUnitScaleAndPivot({0,0,0}, 2.f);
+			ms = md.own_meshes[0];
+			md.own_meshes[0] = nullptr;
+			tf = md.tf_norm->mtx;
+			break;
+		}
+		case MT_BUFF: {
+			Model md;
+			md.importFromFile("assets/models/pbd_test/buff-doge.obj");
+			md.setUnitScaleAndPivot({0,0,0}, 1.f);
+			ms = md.own_meshes[0];
+			md.own_meshes[0] = nullptr;
+			tf = md.tf_norm->mtx;
+			break;
+		}
+		case MT_CUBE: {
+			nr_ms_slices = min(4, nr_ms_slices);
+			ms = new MeshCube(1.f, true, true);
+			ms->subdivide(nr_ms_slices);
+			break;
+		}
+		case MT_SHARED_CUBE: {
+			nr_ms_slices = min(4, nr_ms_slices);
+			ms = new MeshCube(1.f, false, false);
+			ms->subdivide(nr_ms_slices);
+			break;
+		}
+		case MT_SPHERE: {
+			int nrSlices = max(6, nr_ms_slices);
+			int nrStacks = nrSlices/2;
+			ms = new MeshSphere(1.f, nrSlices, nrStacks, true, true);
+			break;
+		}
+		case MT_ICO_SPHERE: {
+			nr_ms_slices = min(2, nr_ms_slices);
+			ms = new MeshIcoSphere(1.f, nr_ms_slices, true, true);
+			break;
+		}
 		case MT_PLANE: {
+			nr_ms_slices = max(1, nr_ms_slices);
+			ms = new MeshPlane(1.f, 1.f, nr_ms_slices, nr_ms_slices, true, true);
+			break;
+		}
+		case MT_CLOTH: {
 			nr_ms_slices = max(1, nr_ms_slices);
 			ms = new MeshCloth(1.f, 1.f, nr_ms_slices, nr_ms_slices, true, true);
 			break;
@@ -71,9 +126,8 @@ static void resetApp() {
 		}
 	}
 
-	// tf = translate(vec3(0,2,0)) * glim::rotateX(glim::pi90*0.1f)* glim::rotateY(glim::pi90*0.2f) * scale(vec3(size_scale))* tf;
-	tf = translate(vec3(0,2.5f,0)) * glim::rotateZ(glim::pi90*0.6f) * scale(vec3(size_scale))* tf;
-	// tf = translate(vec3(0,2,0)) * scale(vec3(size_scale))* tf;
+	tf = translate(vec3(0,2,0)) * glim::rotateX(glim::pi90*0.1f)* glim::rotateY(glim::pi90*0.2f) * scale(vec3(size_scale))* tf;
+	
 	for( vec3& p : ms->poss ) {
 		p = vec3(tf*vec4(p,1));
 	}
@@ -235,8 +289,10 @@ void AppPbdGpu::canvasImGui()
 		if( is_paused ) {
 			bool needReset = false;
 			needReset |= ImGui::Combo("mesh type", (int*)&cur_mesh_type, mesh_type_names, nr_mesh_type_names);
+			needReset |= ImGui::Combo("bendType", (int*)&bend_type, "none\0distance\0dihedral\0isometric\0", 4);
 			needReset |= ImGui::SliderInt("nr ms slices", &nr_ms_slices, 0, 30);
 			needReset |= ImGui::Checkbox("ptcl ref close verts", &is_ptcl_ref_close_verts);
+			needReset |= ImGui::SliderFloat("body mass", &body_mass, 0.01f, 2.f);
 			needReset |= ImGui::Checkbox("fix start", &fix_start);
 			if( needReset ) {
 				resetApp();
@@ -281,6 +337,16 @@ void AppPbdGpu::canvasImGui()
 		ImGui::SliderFloat("stretch_pct", &cur_body->params.stretch_pct, 0.f, 1.0f, "%.6f");
 		ImGui::SliderFloat("shear_pct", &cur_body->params.shear_pct, 0.f, 1.0f, "%.6f");
 		ImGui::SliderFloat("bend_pct", &cur_body->params.bend_pct, 0.f, 1.0f, "%.6f");
+
+		ImGui::SliderFloat("dih_bend", &cur_body->params.inv_stiff_dih_bend, 0.f, 100.f, "%.6f");
+
+
+		ImGui::Separator();
+		ImGui::SliderFloat("air_drag", &phy_scene.air_drag, 0.f, 3.f, "%.6f");
+		ImGui::SliderFloat("ground friction", &c_ground.friction, 0.f, 1.f, "%.6f");
+		ImGui::SliderFloat("ground restitution", &c_ground.restitution, 0.f, 1.f, "%.6f");
+		ImGui::SliderFloat("sphere friction", &c_sphere.friction, 0.f, 1.f, "%.6f");
+		ImGui::SliderFloat("sphere restitution", &c_sphere.restitution, 0.f, 1.f, "%.6f");
 	}
 
 	ImGui::SetNextItemOpen(true, ImGuiCond_Once);

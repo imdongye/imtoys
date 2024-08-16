@@ -265,9 +265,6 @@ static void drawBody(const pbd::SoftBody& body) {
 	}
 	for( const auto& c : body.c_dih_bends ) {
 		g_app->drawCylinder( body.x_s[c.idx_ps.x], body.x_s[c.idx_ps.y], {0,0,1}, 0.027f );
-		if( draw_dpi_dir ) for( int i=0; i<4; i++ ) {
-			g_app->drawCylinder( body.x_s[c.idx_ps[i]], body.x_s[c.idx_ps[i]]+c.dPi[i], {0,0,1} );
-		}
 	}
 	for( const auto& c : body.c_iso_bends ) {
 		g_app->drawCylinder( body.x_s[c.idx_ps.x], body.x_s[c.idx_ps.y], {0,0,1}, 0.027f );
@@ -480,10 +477,6 @@ void AppPbdCpu::canvasImGui()
 	}
 
 	if( ImGui::CollapsingHeader("debug") ) {
-		LimGui::PlotVal("dih_c", "");
-		LimGui::PlotVal("dih_denom", "");
-		LimGui::PlotVal("dih_e0Len", "");
-		
 		LimGui::PlotVal("dt", "ms", delta_time*1000.f);
 		LimGui::PlotVal("fps", "", ImGui::GetIO().Framerate);
 	}
