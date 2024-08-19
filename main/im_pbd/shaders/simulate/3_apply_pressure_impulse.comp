@@ -4,8 +4,11 @@ layout(local_size_x = 16, local_size_y = 1) in;
 layout(std430, binding=0) readonly buffer buf_x_s {
     float x_s[];
 };
-layout(std430, binding=1) writeonly buffer buf_nors { // or p_s
-    float nors[];
+layout(std430, binding=2) buffer buf_v_s {
+    float v_s[];
+};
+layout(std430, binding=3) readonly buffer buf_w_s {
+    float w_s[];
 };
 
 
@@ -19,6 +22,7 @@ layout(std430, binding=7) readonly buffer buf_ptcl_tris {
     int tris[];
 };
 
+uniform float coeff;
 uniform int nr_ptcls;
 
 vec3 getX(int idx) {
@@ -32,7 +36,12 @@ void main()
     if( idxP >= nr_ptcls ) {
         return;
     }
-    vec3 ptclN = vec3(0);
+    float w = w_s[idxP];
+    if( w==0.0 ) {
+        return;
+    }
+
+    vec3 dV = vec3(0);
 
     ivec2 offsets = adj_tri_idx_offsets[idxP];
     for( int i=offsets.x; i<offsets.y; i++ ) {
@@ -49,19 +58,16 @@ void main()
         vec3 t3 = getX(idxTv3);
         vec3 e1 = t2-t1;
         vec3 e2 = t3-t1;
-        vec3 triN = normalize(cross(e1, e2));
-
-        ptclN += triN;
+        dV += cross(e1, e2);
     }
 
-    ptclN = normalize(ptclN);
+    dV *= w*coeff;
 
     int idxP1 = idxP*3;
     int idxP2 = idxP1+1;
     int idxP3 = idxP2+1;
-    nors[idxP1] = ptclN.x;
-    nors[idxP2] = ptclN.y;
-    nors[idxP3] = ptclN.z;
+
+    v_s[idxP1] += dV.x;
+    v_s[idxP2] += dV.y;
+    v_s[idxP3] += dV.z;
 }
-
-

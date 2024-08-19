@@ -163,6 +163,10 @@ AppPbdGpu::AppPbdGpu() : AppBaseCanvas3d(1200, 780, APP_NAME, false, 10, 100, 10
 
 	texture.s_wrap_param = GL_REPEAT;
 	texture.initFromFile("assets/images/uv_grid.jpg", true);
+
+	int max_ssbo_bindings;
+	glGetIntegerv(GL_MAX_COMPUTE_SHADER_STORAGE_BLOCKS, &max_ssbo_bindings);
+	log::pure("GL_MAX_COMPUTE_SHADER_STORAGE_BLOCKS: %d\n", max_ssbo_bindings);
 	
 	g_app = this;
 	resetApp();
@@ -339,6 +343,9 @@ void AppPbdGpu::canvasImGui()
 		ImGui::SliderFloat("bend_pct", &cur_body->params.bend_pct, 0.f, 1.0f, "%.6f");
 
 		ImGui::SliderFloat("dih_bend", &cur_body->params.inv_stiff_dih_bend, 0.f, 100.f, "%.6f");
+
+		ImGui::Text("volume cur: %.4f", cur_body->c_volume.cur_six_volume);
+		ImGui::SliderFloat("pressure", &cur_body->params.pressure, 0.f, 100.f, "%.6f");
 
 
 		ImGui::Separator();

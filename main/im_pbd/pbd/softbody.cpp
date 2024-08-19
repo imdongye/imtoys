@@ -220,7 +220,7 @@ SoftBody::SoftBody(lim::Mesh&& src, int nrShear, BendType bendType
 float SoftBody::getVolume() const {
     float volume = 0;
     for( const auto& t : ptcl_tris ) {
-        volume += glim::signedTetrahedronVolumeTimesSix( p_s[t.x], p_s[t.y], p_s[t.z] );
+        volume += glim::signedTetrahedronVolumeTimesSix( x_s[t.x], x_s[t.y], x_s[t.z] );
     }
     return volume/6.f;
 }
@@ -228,7 +228,7 @@ float SoftBody::getVolume() const {
 float SoftBody::getVolumeTimesSix() const {
     float volume = 0;
     for( const auto& t : ptcl_tris ) {
-        volume += glim::signedTetrahedronVolumeTimesSix( p_s[t.x], p_s[t.y], p_s[t.z] );
+        volume += glim::signedTetrahedronVolumeTimesSix( x_s[t.x], x_s[t.y], x_s[t.z] );
     }
     return volume;
 }

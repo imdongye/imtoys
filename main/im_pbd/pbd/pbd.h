@@ -257,6 +257,7 @@ namespace pbd
         lim::Program prog_1_project_point;
         lim::Program prog_2_update_x_s;
         lim::Program prog_3_apply_collision;
+        lim::Program prog_3_apply_pressure_impulse;
         lim::Program prog_4_make_ptcl_nors;
         lim::Program prog_4_update_vert_poss_nors;
 

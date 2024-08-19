@@ -20,6 +20,7 @@ PhySceneGpu::PhySceneGpu()
     prog_1_project_point.attatch(           "im_pbd/shaders/simulate/1_project_point.comp").link();
     prog_2_update_x_s.attatch(              "im_pbd/shaders/simulate/2_update_x_s.comp").link();
     prog_3_apply_collision.attatch(         "im_pbd/shaders/simulate/3_apply_collision.comp").link();
+    prog_3_apply_pressure_impulse.attatch(  "im_pbd/shaders/simulate/3_apply_pressure_impulse.comp").link();
     prog_4_make_ptcl_nors.attatch(          "im_pbd/shaders/simulate/4_make_ptcl_nors.comp").link();
     prog_4_update_vert_poss_nors.attatch(   "im_pbd/shaders/simulate/4_update_vert_poss_nors.comp").link();
 }
@@ -173,33 +174,54 @@ void SoftBodyGpu::update( float dt, const PhySceneGpu& scene )
         }
 
         lim::gl::errorAssert();
+    } // end substeps
+
+
+
+
+    // applyPressureImpulse
+    if( params.pressure > glim::feps ) {
+        downloadXs(); // Todo: update volume in gpu
+        c_volume.cur_six_volume = getVolumeTimesSix();
+        if( c_volume.cur_six_volume > glim::feps ) {
+            float coeff = params.pressure*dt/c_volume.cur_six_volume;
+            glMemoryBarrier( GL_SHADER_STORAGE_BARRIER_BIT );
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, buf_adj_tri_idx_offsets);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, buf_adj_tri_idxs);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, buf_ptcl_tris);
+            const lim::Program& prog = scene.prog_3_apply_pressure_impulse.use();
+            prog.setUniform("nr_ptcls", nr_ptcls);
+            prog.setUniform("coeff", coeff);
+            glDispatchCompute(nr_thread_groups_by_ptcls, 1, 1);
+        }
     }
+
 
     // update verts
     if( buf_vert_to_ptcl==0 ) {
         glMemoryBarrier( GL_SHADER_STORAGE_BARRIER_BIT );
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, buf_nors); // update vertex normals
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, buf_ptcl_tris);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, buf_adj_tri_idxs);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, buf_adj_tri_idx_offsets);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, buf_adj_tri_idx_offsets);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, buf_adj_tri_idxs);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, buf_ptcl_tris);
         const lim::Program& prog = scene.prog_4_make_ptcl_nors.use();
         prog.setUniform("nr_ptcls", nr_ptcls);
         glDispatchCompute(nr_thread_groups_by_ptcls, 1, 1);
     }
     else {
         glMemoryBarrier( GL_SHADER_STORAGE_BARRIER_BIT );
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, buf_p_s); // make ptcl nors to p_s(temp storage);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, buf_ptcl_tris);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, buf_adj_tri_idxs);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, buf_adj_tri_idx_offsets);
+        // binding=1 : ps // make ptcl nors to p_s(temp storage);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, buf_adj_tri_idx_offsets);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, buf_adj_tri_idxs);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, buf_ptcl_tris);
         const lim::Program& progA = scene.prog_4_make_ptcl_nors.use();
         progA.setUniform("nr_ptcls", nr_ptcls);
         glDispatchCompute(nr_thread_groups_by_ptcls, 1, 1);
 
         glMemoryBarrier( GL_SHADER_STORAGE_BARRIER_BIT );
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, buf_poss);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, buf_nors);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, buf_vert_to_ptcl);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, buf_poss);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, buf_nors);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, buf_vert_to_ptcl);
         const lim::Program& progB = scene.prog_4_update_vert_poss_nors.use();
         progB.setUniform("nr_verts", nr_verts);
         glDispatchCompute(nr_thread_groups_by_verts, 1, 1);
