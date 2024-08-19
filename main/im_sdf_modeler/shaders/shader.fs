@@ -121,8 +121,13 @@ float fOpDifferenceRound (float a, float b, float r) {
 	return fOpIntersectionRound(a, -b, r);
 }
 float getObjDist(int objIdx, vec3 wPos) {
-    mat4 transform = transforms[objIdx];
-    vec3 mPos = (transform*vec4(wPos,1)).xyz;
+    mat4 wdToMd = transforms[objIdx];
+    // mat4 mdToWd = inverse(wdToMd);
+    // vec3 objToSample = wPos - mdToWd[3].xyz;
+    // float minScale = 1.0/length(mat3(mdToWd)*objToSample);
+
+    vec3 mPos = (wdToMd*vec4(wPos,1)).xyz;
+
     float minScale = scaling_factors[objIdx];
     int primIdx = prim_idxs[objIdx];
     float primDist = 0;

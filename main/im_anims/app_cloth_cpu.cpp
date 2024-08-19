@@ -25,7 +25,7 @@ struct Particle {
 	vec3 v = vec3{0};
 	vec3 f = vec3{0};
 
-	vec3 color = {1.f,1.f,0.f};
+	vec4 color = {1.f,1.f,0.f,1.f};
 	bool fixed = false;
 
 	void clearForce() {
@@ -43,7 +43,7 @@ struct Particle {
 		p += v*dt; // p먼저 업데이트해야 발산안하는 이유가 뭐지
 	}
 	void draw() {
-		g_app->drawSphere(p, (fixed)?vec3{1,0,0}:color);
+		g_app->drawSphere(p, 0.05f, (fixed)?vec3{1,0,0}:color);
 	}
 };
 
@@ -80,7 +80,7 @@ struct Spring {
 		p2.addForce(-force * dir);
 	}
 	void draw() {
-		g_app->drawCylinder(p1.p, p2.p, color);
+		g_app->drawCylinder(p1.p, p2.p, 0.025f, color);
 	}
 };
 
@@ -113,7 +113,7 @@ struct ColPlane : ICollider {
 
 	}
 	virtual void draw() override {
-		g_app->drawQuad(p, n, color);
+		g_app->drawQuad(p, n, vec2{100,100}, color);
 	}
 };
 
@@ -138,7 +138,7 @@ struct ColSphere : ICollider {
 		}
 	}
 	virtual void draw() override {
-		g_app->drawSphere(p, color, r);
+		g_app->drawSphere(p, r*2.f, color);
 	}
 };
 
@@ -381,9 +381,9 @@ void AppClothCPU::canvasUpdate()
 }
 void AppClothCPU::canvasDraw() const {
 	// basis object 10cm
-	drawCylinder({0,0,0}, {0.1f,0,0}, {1,0,0});
-	drawCylinder({0,0,0}, {0,0.1f,0}, {0,1,0});
-	drawCylinder({0,0,0}, {0,0,0.1f}, {0,0,1});
+	drawCylinder({0,0,0}, {0.1f,0,0}, 0.025f, {1,0,0});
+	drawCylinder({0,0,0}, {0,0.1f,0}, 0.025f, {0,1,0});
+	drawCylinder({0,0,0}, {0,0,0.1f}, 0.025f, {0,0,1});
 
 	for(auto& c : colliders) c->draw();
 	for(auto& p : particles) p.draw();

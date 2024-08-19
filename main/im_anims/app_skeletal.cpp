@@ -35,23 +35,23 @@ lim::AppSkeletal::AppSkeletal() : AppBase(1200, 780, APP_NAME, false)
 	scene.addRef(&model);
 
 
-	{
-		int nrWidth = 10;
-		vec2 posSize{20, 20};
-		vec2 startPos{-posSize/vec2{2.f}};
-		vec2 stepSize = posSize/vec2{nrWidth-1, nrWidth-1};
+	// {
+	// 	int nrWidth = 10;
+	// 	vec2 posSize{20, 20};
+	// 	vec2 startPos{-posSize/vec2{2.f}};
+	// 	vec2 stepSize = posSize/vec2{nrWidth-1, nrWidth-1};
 
-		for(int i=0; i<nrWidth; i++) for(int j=0; j<nrWidth; j++)  {
-			scene.addOwn(new ModelView(model));
-			vec2 targetPos = startPos+stepSize*vec2{i, j};
-			scene.own_mds.back()->tf->pos.x = targetPos.x;
-			scene.own_mds.back()->tf->pos.z = targetPos.y;
-			scene.own_mds.back()->tf->update();
-			scene.own_mds.back()->animator.is_loop = true;
-			scene.own_mds.back()->animator.play();
-			scene.own_mds.back()->animator.setTimeline(glim::randFloat(), true);
-		}
-	}
+	// 	for(int i=0; i<nrWidth; i++) for(int j=0; j<nrWidth; j++)  {
+	// 		scene.addOwn(new ModelView(model));
+	// 		vec2 targetPos = startPos+stepSize*vec2{i, j};
+	// 		scene.own_mds.back()->tf->pos.x = targetPos.x;
+	// 		scene.own_mds.back()->tf->pos.z = targetPos.y;
+	// 		scene.own_mds.back()->tf->update();
+	// 		scene.own_mds.back()->animator.is_loop = true;
+	// 		scene.own_mds.back()->animator.play();
+	// 		scene.own_mds.back()->animator.setTimeline(glim::randFloat(), true);
+	// 	}
+	// }
 
 
 
@@ -63,7 +63,7 @@ lim::AppSkeletal::AppSkeletal() : AppBase(1200, 780, APP_NAME, false)
 	floor->setProgToAllMat(&prog_static);
 	scene.addOwn(floor);
 
-	viewport.camera.moveShift(glm::vec3(0,model.tf->pos.y,0));
+	viewport.camera.moveShift(glm::vec3(0,1.4f,0));
 	viewport.camera.updateViewMat();
 
 	

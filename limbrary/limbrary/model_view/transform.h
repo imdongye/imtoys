@@ -46,6 +46,13 @@ namespace lim
         // void updateOrientation(); // todo
     };
 
+    struct TransformWithInv : public Transform
+    {
+        glm::mat4 inv_mtx = glm::mat4(1);
+
+        void update();
+    };
+
     inline glm::mat4 getMtxTf(const Transform* tf) {
 		return (tf) ? tf->mtx : glm::mat4(1.f);
 	}

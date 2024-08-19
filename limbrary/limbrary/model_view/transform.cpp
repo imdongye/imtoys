@@ -43,3 +43,15 @@ void TransformPivoted::updateWithRotAndDist() {
 	pos = pivot+dist*dir;
     update();
 }
+
+
+
+void TransformWithInv::update() {
+    mtx = glm::translate(pos) 
+        * glm::mat4_cast(ori) 
+        * glm::scale(scale);
+    inv_mtx = glm::inverse(mtx);
+    
+    if( update_callback )
+        update_callback(this);
+}

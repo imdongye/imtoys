@@ -24,6 +24,7 @@ Todo:
 #include <limbrary/glm_tools.h>
 #include <limbrary/model_view/mesh.h>
 #include <limbrary/program.h>
+#include <limbrary/model_view/transform.h>
 #include <vector>
 
 
@@ -38,6 +39,7 @@ namespace pbd
     {
         float friction = 0.8f;
         float restitution = 0.8f;
+        
         virtual float getSdNor( const glm::vec3& p, glm::vec3& outNor ) const = 0;
     };
     struct ColliderPlane: public ICollider

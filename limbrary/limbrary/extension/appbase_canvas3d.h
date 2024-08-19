@@ -64,9 +64,12 @@ namespace lim
 		#pragma warning( default : 4100 ) 
 
 
-        void drawQuad( const glm::vec3& p, const glm::vec3& n, const glm::vec3& color, const glm::vec2& sz={100, 100} ) const;
-        void drawSphere( const glm::vec3& p, const glm::vec3& color, const float w=0.05f ) const;
-        void drawCylinder( const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& color, const float w=0.025f ) const;
+        void drawQuad( const glm::vec3& p, const glm::vec3& n, const glm::vec2& sz, const glm::vec3& color, const float alpha=1.f ) const;
+        void drawQuad( const glm::mat4& mtx, const glm::vec3& color, const float alpha=1.f ) const;
+        void drawSphere( const glm::vec3& p, const float width, const glm::vec3& color, const float alpha=1.f ) const;
+        void drawSphere( const glm::mat4& mtx, const glm::vec3& color, const float alpha=1.f ) const;
+        void drawCylinder( const glm::vec3& p1, const glm::vec3& p2, const float width, const glm::vec3& color, const float alpha=1.f ) const;
+        void drawCylinder( const glm::mat4& mtx, const glm::vec3& color, const float alpha=1.f ) const;
     private:
         void resetInstance();
         void updateInstance() const;

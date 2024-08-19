@@ -220,6 +220,8 @@ void Model::setUnitScaleAndPivot(glm::vec3 pivot, float maxSize)
 	tf_norm->pos = -boundary_min*normScale - halfBoundaryBasis - halfBoundaryBasis*pivot;
 	// tf_norm->pos = glm::vec3(0);
 	tf_norm->update();
+	// animator.skeleton[0].tf.mtx = tf_norm->mtx * animator.skeleton[0].tf.mtx;
+	// animator.skeleton[0].tf.decomposeMtx();
 }
 
 

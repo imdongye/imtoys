@@ -56,8 +56,8 @@ struct Joint {
 		pos = parent->pos + vec3{p.x,p.y,p.z};
 	}
 	void draw() const {
-		g_app->drawCylinder(parent->pos, pos, {1,1,0});
-		g_app->drawSphere( pos, {1,1,0} );
+		g_app->drawCylinder(parent->pos, pos, 0.025f, {1,1,0});
+		g_app->drawSphere( pos, 0.05f, {1,1,0} );
 	}
 	void solveIK(const vec3& target_pos, float dt) {
 		dt = ik_speed * dt/step_size;
@@ -130,7 +130,7 @@ struct Body {
 		}
 	}
 	void draw() const {
-		g_app->drawSphere( vec3{0}, {1,1,0} );
+		g_app->drawSphere( vec3{0}, 0.05f, {1,1,0} );
 		for( const auto& j: joints ) {
 			j.draw();
 		}
@@ -177,18 +177,18 @@ void AppIK::canvasUpdate() {
 }
 void AppIK::canvasDraw() const {
 	if( target_jnt ) {
-		drawSphere(target_pos, {1,0,0}, 0.03f);
+		drawSphere(target_pos, 0.03f, {1,0,0});
 	}
 
 	body.draw();
 
 	// axis object 10cm
 	constexpr vec3 ori{1,0,0};
-	drawCylinder(ori, ori+vec3{0.1f,0,0}, {1,0,0});
-	drawCylinder(ori, ori+vec3{0,0.1f,0}, {0,1,0});
-	drawCylinder(ori, ori+vec3{0,0,0.1f}, {0,0,1});
+	drawCylinder(ori, ori+vec3{0.1f,0,0}, 0.025f, {1,0,0});
+	drawCylinder(ori, ori+vec3{0,0.1f,0}, 0.025f, {0,1,0});
+	drawCylinder(ori, ori+vec3{0,0,0.1f}, 0.025f, {0,0,1});
 
-	drawQuad({0,0,0}, {0,1,0}, {0,0.3f,0});
+	drawQuad({0,0,0}, {0,1,0}, vec2{100,100}, {0.f, 0.3f, 0.f});
 }
 
 void AppIK::canvasImGui() {

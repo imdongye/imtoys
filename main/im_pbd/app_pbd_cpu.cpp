@@ -243,41 +243,41 @@ void AppPbdCpu::customDraw(const Camera& cam, const LightDirectional& lit) const
 
 static void drawBody(const pbd::SoftBody& body) {
 	for( int i=0; i<body.nr_ptcls; i++ ) {
-		g_app->drawSphere(body.x_s[i], (body.w_s[i]>0)?vec3{1,1,0}:vec3{1,0,0});
+		g_app->drawSphere(body.x_s[i], 0.05f, (body.w_s[i]>0)?vec3{1,1,0}:vec3{1,0,0});
 	}
 	for( const auto& c : body.c_stretchs ) {
-		g_app->drawCylinder( body.x_s[c.idx_ps.x], body.x_s[c.idx_ps.y], {1,1,0} );
+		g_app->drawCylinder( body.x_s[c.idx_ps.x], body.x_s[c.idx_ps.y], 0.025f, {1,1,0} );
 		// if( draw_dpi_dir ) for( int i=0; i<2; i++ ) {
 		// 	g_app->drawCylinder( body.x_s[c.idx_ps[i]], body.x_s[c.idx_ps[i]]+c.dPi[i]*0.1f, {0,0,1} );
 		// }
 	}
 	for( const auto& c : body.c_shears ) {
-		g_app->drawCylinder( body.x_s[c.idx_ps.x], body.x_s[c.idx_ps.y], {0,1,1} );
+		g_app->drawCylinder( body.x_s[c.idx_ps.x], body.x_s[c.idx_ps.y], 0.025f, {0,1,1} );
 		// for( int i=0; i<2; i++ ) {
 		// 	g_app->drawCylinder( body.x_s[c.idx_ps[i]], body.x_s[c.idx_ps[i]]+c.dPi[i]*0.1f, {0,0,1} );
 		// }
 	}
 	for( const auto& c : body.c_dist_bends ) {
-		g_app->drawCylinder( body.x_s[c.idx_ps.x], body.x_s[c.idx_ps.y], {0.7,0.1,0}, 0.03f );
+		g_app->drawCylinder( body.x_s[c.idx_ps.x], body.x_s[c.idx_ps.y], 0.025f, {0.7,0.1,0}, 0.03f );
 		if( draw_dpi_dir ) for( int i=0; i<2; i++ ) {
-			g_app->drawCylinder( body.x_s[c.idx_ps[i]], body.x_s[c.idx_ps[i]]+c.dPi[i], {0,0,1} );
+			g_app->drawCylinder( body.x_s[c.idx_ps[i]], body.x_s[c.idx_ps[i]]+c.dPi[i], 0.025f, {0,0,1} );
 		}
 	}
 	for( const auto& c : body.c_dih_bends ) {
-		g_app->drawCylinder( body.x_s[c.idx_ps.x], body.x_s[c.idx_ps.y], {0,0,1}, 0.027f );
+		g_app->drawCylinder( body.x_s[c.idx_ps.x], body.x_s[c.idx_ps.y], 0.025f, {0,0,1}, 0.027f );
 	}
 	for( const auto& c : body.c_iso_bends ) {
-		g_app->drawCylinder( body.x_s[c.idx_ps.x], body.x_s[c.idx_ps.y], {0,0,1}, 0.027f );
+		g_app->drawCylinder( body.x_s[c.idx_ps.x], body.x_s[c.idx_ps.y], 0.025f, {0,0,1}, 0.027f );
 		if( draw_dpi_dir ) for( int i=0; i<4; i++ ) {
-			g_app->drawCylinder( body.x_s[c.idx_ps[i]], body.x_s[c.idx_ps[i]]+c.dPi[i], {0,0,1} );
+			g_app->drawCylinder( body.x_s[c.idx_ps[i]], body.x_s[c.idx_ps[i]]+c.dPi[i], 0.025f, {0,0,1} );
 		}
 	}
 	for( const auto& c : body.c_points ) {
-		g_app->drawCylinder( c.point, body.x_s[c.idx_p], {0,0,1} );
-		g_app->drawSphere( c.point, {1,0,0} );
+		g_app->drawSphere( c.point, 0.05f, {1,0,0} );
+		g_app->drawCylinder( c.point, body.x_s[c.idx_p], 0.025f, {0,0,1} );
 	}
 	if( draw_dpi_dir ) for( int i=0; i<body.nr_ptcls; i++ ) {
-		g_app->drawCylinder( body.x_s[i], body.x_s[i]+body.debug_dirs[i], {0,0,1} );
+		g_app->drawCylinder( body.x_s[i], body.x_s[i]+body.debug_dirs[i], 0.025f, {0,0,1} );
 	}
 }
 void AppPbdCpu::canvasDraw() const
@@ -288,14 +288,14 @@ void AppPbdCpu::canvasDraw() const
 		}
 	}
 
-	drawSphere(c_sphere.c, {1,0,0}, c_sphere.r*2.f);
+	drawSphere(c_sphere.c, c_sphere.r*2.f, {1,0,0});
 
 	// basis object 10cm
-	drawCylinder({0,0,0}, {0.1f,0,0}, {1,0,0});
-	drawCylinder({0,0,0}, {0,0.1f,0}, {0,1,0});
-	drawCylinder({0,0,0}, {0,0,0.1f}, {0,0,1});
+	drawCylinder({0,0,0}, {0.1f,0,0}, 0.025f, {1,0,0});
+	drawCylinder({0,0,0}, {0,0.1f,0}, 0.025f, {0,1,0});
+	drawCylinder({0,0,0}, {0,0,0.1f}, 0.025f, {0,0,1});
 
-	drawQuad(vec3{0}, c_ground.n, {0,0.3f,0});
+	drawQuad(vec3{0}, c_ground.n, {100,100}, {0,0.3f,0});
 }
 
 

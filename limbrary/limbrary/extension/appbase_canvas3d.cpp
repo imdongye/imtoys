@@ -165,7 +165,7 @@ void AppBaseCanvas3d::updateImGui() {
 
 
 
-void AppBaseCanvas3d::drawQuad( const vec3& p, const vec3& n, const vec3& color, const vec2& sz ) const {
+void AppBaseCanvas3d::drawQuad(const vec3& p, const vec3& n, const vec2& sz, const vec3& color, const float alpha) const {
     vec3 s = {sz.x, sz.y, 1.f};
     vec3 axis = cross(vec3{0,0,1}, n);
     float l = length(axis);
@@ -176,18 +176,20 @@ void AppBaseCanvas3d::drawQuad( const vec3& p, const vec3& n, const vec3& color,
     else 
         mtx_Model = translate(p) * scale(s);
     
-    quads[nr_quads] = {mtx_Model, vec4(color, 1)};
+    quads[nr_quads] = {mtx_Model, vec4(color, alpha)};
     nr_quads++;
 }
 
-void AppBaseCanvas3d::drawSphere( const vec3& p, const vec3& color, const float w ) const {
+
+void AppBaseCanvas3d::drawSphere(const vec3& p, const float w, const vec3& color, const float alpha) const {
     mat4 mtx_Model = translate(p) * scale(vec3(w));
 
-    spheres[nr_spheres] = {mtx_Model, vec4(color, 1)};
+    spheres[nr_spheres] = {mtx_Model, vec4(color, alpha)};
     nr_spheres++;
 }
 
-void AppBaseCanvas3d::drawCylinder( const vec3& p1, const vec3& p2, const vec3& color, const float w ) const {
+
+void AppBaseCanvas3d::drawCylinder( const vec3& p1, const vec3& p2, const float w, const vec3& color, const float alpha ) const {
     vec3 diff = p1 - p2;
     vec3 mid = (p1 + p2) * 0.5f;
     vec3 s = {w, length(diff), w};
@@ -195,11 +197,25 @@ void AppBaseCanvas3d::drawCylinder( const vec3& p1, const vec3& p2, const vec3& 
     float l = length(axis);
     float angle = atan2f(l, diff.y);
     mat4 mtx_Model;
-    if( l>0.0000001 )
+    if( l>0.0000001f )
         mtx_Model = translate(mid) * rotate(angle, axis) * scale(s);
     else 
         mtx_Model = translate(mid) * scale(s);
     
-    cylinders[nr_cylinders] = {mtx_Model, vec4(color, 1)};
+    cylinders[nr_cylinders] = {mtx_Model, vec4(color, alpha)};
+    nr_cylinders++;
+}
+
+
+void AppBaseCanvas3d::drawQuad(const mat4& mtx, const vec3& color, const float alpha) const {
+    quads[nr_quads] = {mtx, vec4(color, alpha)};
+    nr_quads++;
+}
+void AppBaseCanvas3d::drawSphere(const mat4& mtx, const vec3& color, const float alpha) const {
+    spheres[nr_spheres] = {mtx, vec4(color, alpha)};
+    nr_spheres++;
+}
+void AppBaseCanvas3d::drawCylinder( const mat4& mtx, const vec3& color, const float alpha ) const {
+    cylinders[nr_cylinders] = {mtx, vec4(color, alpha)};
     nr_cylinders++;
 }

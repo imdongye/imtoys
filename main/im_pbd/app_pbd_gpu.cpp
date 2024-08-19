@@ -223,11 +223,11 @@ void AppPbdGpu::customDraw(const Camera& cam, const LightDirectional& lit) const
 void AppPbdGpu::canvasDraw() const
 {
 	// basis object 10cm
-	drawCylinder({0,0,0}, {0.1f,0,0}, {1,0,0});
-	drawCylinder({0,0,0}, {0,0.1f,0}, {0,1,0});
-	drawCylinder({0,0,0}, {0,0,0.1f}, {0,0,1});
+	drawCylinder({0,0,0}, {0.1f,0,0}, 0.025f, {1,0,0});
+	drawCylinder({0,0,0}, {0,0.1f,0}, 0.025f, {0,1,0});
+	drawCylinder({0,0,0}, {0,0,0.1f}, 0.025f, {0,0,1});
 
-	drawQuad(vec3{0}, {0,1,0}, {0,0.3f,0});
+	drawQuad(vec3{0}, {0,1,0}, vec2{100,100}, {0,0.3f,0});
 }
 
 

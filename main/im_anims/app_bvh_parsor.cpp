@@ -75,12 +75,12 @@ struct Body {
 	float scale = 1.f;
 
 	void draw(const AppBvhParsor& app) {
-		for (auto& j : joints) {
+		for(auto& j : joints) {
 			vec3 p = j.position;
-			app.drawSphere(p, {1,0.5f,0});
-			if (j.parent_id >= 0) {
+			app.drawSphere(p, 0.05f, {1.f, 0.5f, 0.f});
+			if( j.parent_id >= 0 ) {
 				vec3 pp = joints[j.parent_id].position;
-				app.drawCylinder(p, pp, {1,0.7f,0});
+				app.drawCylinder(p, pp, 0.025f, {1.f, 0.7f, 0.f});
 			}
 		}
 	}
@@ -88,7 +88,7 @@ struct Body {
 
 	void updateJointsGlobal() {
 		joints[0].update(position, quat(1, 0, 0, 0), scale);
-		for (int i = 1; i < joints.size(); i++) {
+		for(int i = 1; i < joints.size(); i++) {
 			Joint& j = joints[i];
 			const Joint& p = joints[j.parent_id];
 			j.update(p.position, p.orientation, scale);
@@ -97,7 +97,7 @@ struct Body {
 
 
 	void setPose(const vector<vector<float>>& frame) {
-		for (int i = 0; i < nr_joints; i++) {
+		for(int i = 0; i < nr_joints; i++) {
 			Joint& joint = joints[i];
 			joint.poseByKeys(frame[i]);
 		}
@@ -349,11 +349,11 @@ void AppBvhParsor::canvasDraw() const
 
 	// axis object 10cm
 	constexpr vec3 ori{0,0,0};
-	drawCylinder(ori, ori+vec3{0.1f,0,0}, {1,0,0});
-	drawCylinder(ori, ori+vec3{0,0.1f,0}, {0,1,0});
-	drawCylinder(ori, ori+vec3{0,0,0.1f}, {0,0,1});
+	drawCylinder(ori, ori+vec3{0.1f,0,0}, 0.025f, {1,0,0});
+	drawCylinder(ori, ori+vec3{0,0.1f,0}, 0.025f, {0,1,0});
+	drawCylinder(ori, ori+vec3{0,0,0.1f}, 0.025f, {0,0,1});
 
-	drawQuad({0,0,0}, {0,1,0}, {0,0.3f,0});
+	drawQuad({0,0,0}, {0,1,0}, vec2{100,100}, {0,0.3f,0});
 }
 
 void AppBvhParsor::canvasImGui()
