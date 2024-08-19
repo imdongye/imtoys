@@ -11,26 +11,20 @@ using namespace glm;
 using std::vector;
 using namespace pbd;
 
-ColliderPlane::ColliderPlane(const vec3& _n, float r)
-    : n(_n), r(r)
-{
-}
+
 float ColliderPlane::getSdNor( const vec3& p, vec3& outNor ) const
 {
-    outNor = n;
-    return dot(p, n) - r;
+    outNor = tf.ori*glim::front;
+    float r = dot(tf.pos, outNor);
+    return dot(p, outNor) - r;
 }
 
-ColliderSphere::ColliderSphere(const vec3& _c, float r)
-    : c(_c), r(r)
-{
-}
 float ColliderSphere::getSdNor( const vec3& p, vec3& outNor ) const
 {
-    vec3 diff = p - c;
+    vec3 diff = p - tf.pos;
     float dist = length(diff);
     outNor = diff/dist;
-    return dist - r;
+    return dist - tf.scale.x*0.5f;
 }
 
 float SoftBody::getSdNor( const vec3& p, vec3& outNor ) const

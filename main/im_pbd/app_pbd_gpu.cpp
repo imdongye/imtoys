@@ -10,7 +10,7 @@ namespace {
 	AppPbdGpu* g_app = nullptr;
 	pbd::SoftBodyGpu* cur_body = nullptr;
 	pbd::ColliderPlane c_ground;
-	pbd::ColliderSphere c_sphere({0,0.5f,0}, 0.3f);
+	pbd::ColliderSphere c_sphere;
 
 
 	bool is_paused = true;

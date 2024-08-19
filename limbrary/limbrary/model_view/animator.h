@@ -28,7 +28,7 @@ animation key 선택 O(N)을 줄이기 위한 방법
 #include <vector>
 #include <string>
 #include <limbrary/model_view/transform.h>
-#include <map>
+// #include <map>
 
 namespace lim
 {
@@ -48,9 +48,12 @@ namespace lim
             int idx_bone_node = -1;
             int nr_poss, nr_scales, nr_oris;
             // tick, value
-            std::map<float, glm::vec3> poss;
-            std::map<float, glm::vec3> scales;
-            std::map<float, glm::quat> oris;
+            std::vector<KeyVec3> poss;
+            std::vector<KeyVec3> scales;
+            std::vector<KeyQuat> oris;
+            // std::map<float, glm::vec3> poss;
+            // std::map<float, glm::vec3> scales;
+            // std::map<float, glm::quat> oris;
         };
         std::string name;
         int nr_tracks;

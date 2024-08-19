@@ -362,6 +362,7 @@ static void convertAnim(Animation& dst, const aiAnimation& src) {
 	dst.nr_tracks = src.mNumChannels;
 
 	dst.tracks.resize(dst.nr_tracks);
+	log::pure("%s : %d %lf %d\n", dst.name.c_str(), dst.nr_tracks, dst.nr_ticks, dst.ticks_per_sec);
 	for( uint i=0; i<dst.nr_tracks; i++ ) {
 		const aiNodeAnim& srcTrack = *(src.mChannels[i]);
 		Animation::Track& track = dst.tracks[i];
@@ -369,20 +370,24 @@ static void convertAnim(Animation& dst, const aiAnimation& src) {
 		track.idx_bone_node = -1; // after convertTree
 
 		track.nr_poss = srcTrack.mNumPositionKeys;
+		track.poss.reserve(track.nr_poss);
 		for( uint j=0; j<track.nr_poss; j++ ) {
 			const aiVectorKey& k = srcTrack.mPositionKeys[j];
-			track.poss[float(k.mTime)] = toGLM(k.mValue);
+			track.poss.push_back({(float)k.mTime, toGLM(k.mValue)});
 		}
 		track.nr_scales = srcTrack.mNumScalingKeys;
+		track.scales.reserve(track.nr_scales);
 		for( uint j=0; j<track.nr_scales; j++ ) {
 			const aiVectorKey& k = srcTrack.mScalingKeys[j];
-			track.scales[float(k.mTime)] = toGLM(k.mValue);
+			track.scales.push_back({(float)k.mTime, toGLM(k.mValue)});
 		}
 		track.nr_oris = srcTrack.mNumRotationKeys;
+		track.oris.reserve(track.nr_oris);
 		for( uint j=0; j<track.nr_oris; j++ ) {
 			const aiQuatKey& k = srcTrack.mRotationKeys[j];
-			track.oris[float(k.mTime)] = toGLM(k.mValue);
+			track.oris.push_back({(float)k.mTime, toGLM(k.mValue)});
 		}
+		log::pure("%s : %d %d %d\n", track.name.c_str(), track.nr_poss, track.nr_scales, track.nr_oris);
 	}
 }
 // static bool isEndPostfix(std::string name) {

@@ -15,7 +15,7 @@ namespace {
 	pbd::SoftBody ptcl_test;
 	pbd::SoftBody* cur_body = nullptr;
 	pbd::ColliderPlane c_ground;
-	pbd::ColliderSphere c_sphere({0,0.5f,0}, 0.3f);
+	pbd::ColliderSphere c_sphere;
 	
 	bool is_paused = true;
 	float time_speed = 1.f;
@@ -56,6 +56,14 @@ namespace {
 
 
 static void resetApp() {
+	c_sphere.tf.pos = {0,0.5f,0};
+	c_sphere.tf.scale = vec3(0.3f);
+	c_sphere.tf.update();
+
+	c_ground.tf.scale = {50.f, 50.f, 1.f};
+	c_ground.tf.ori = glim::rotateV(glim::right, -90.f);
+	c_ground.tf.update();
+
 	// make new soft body ==============================================
 	pbd::SoftBody::ConstraintParams tempComp;
 	if(cur_body) {
@@ -288,14 +296,15 @@ void AppPbdCpu::canvasDraw() const
 		}
 	}
 
-	drawSphere(c_sphere.c, c_sphere.r*2.f, {1,0,0});
+	drawSphere(c_sphere.tf.mtx, {1,0,0});
 
 	// basis object 10cm
 	drawCylinder({0,0,0}, {0.1f,0,0}, 0.025f, {1,0,0});
 	drawCylinder({0,0,0}, {0,0.1f,0}, 0.025f, {0,1,0});
 	drawCylinder({0,0,0}, {0,0,0.1f}, 0.025f, {0,0,1});
 
-	drawQuad(vec3{0}, c_ground.n, {100,100}, {0,0.3f,0});
+	drawSphere(c_sphere.tf.mtx, {1,0,0});
+	drawQuad(c_ground.tf.mtx, {0,0.3f,0});
 }
 
 

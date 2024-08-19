@@ -86,42 +86,71 @@ void Animator::setUniformTo(const Program& prog) const {
     prog.setUniform("mtx_Bones", mtx_Bones);
 }
 
-template<typename T>
-static void getKeyIdx(const std::vector<T>& keys, const int nrKeys, double curTick, int& idx, float& factor ) {
+
+static vec3 getInterpolatedValue( const std::vector<Animation::KeyVec3>& keys, float curTick ) {
+    const int nrKeys = keys.size(); 
+    Animation::KeyVec3 k1, k2;
     for( int i=0; i<nrKeys; i++ ) {
         if( curTick < keys[i].tick ) {
-            float dt = keys[i].tick - keys[i-1].tick;
-            float diff = curTick - keys[i-1].tick;
-            factor = diff / dt;
-            idx = i;
-            return;
+            if(i==0) {
+                k1 = keys[nrKeys-1];
+                k1.tick = 0.f;
+            } else {
+                k1 = keys[i-1];
+            }
+            k2 = keys[i];
+            break;
         }
     }
+    float factor = (curTick - k1.tick) / (k2.tick - k1.tick);
+    return k1.value + (k2.value - k1.value) * factor;
 }
 
-static vec3 getInterpolatedValue( const std::map<float, vec3>& keys, float curTick ) {
-    auto it = keys.lower_bound( curTick );
-    float t2 = it->first;
-    vec3 v2 = it->second;
-    it--;
-    float t1 = it->first;
-    vec3 v1 = it->second;
-    float dt = t2 - t1;
-    float factor = (curTick - t1) / dt;
-    return v1 + (v2 - v1) * factor;
+static quat getInterpolatedValue( const std::vector<Animation::KeyQuat>& keys, float curTick ) {
+    const int nrKeys = keys.size(); 
+    Animation::KeyQuat k1, k2;
+    for( int i=0; i<nrKeys; i++ ) {
+        if( curTick < keys[i].tick ) {
+            if(i==0) {
+                k1 = keys[nrKeys-1];
+                k1.tick = 0.f;
+            } else {
+                k1 = keys[i-1];
+            }
+            k2 = keys[i];
+            break;
+        }
+    }
+    float factor = (curTick - k1.tick) / (k2.tick - k1.tick);
+    return slerp(k1.value, k2.value, factor);
 }
 
-static quat getInterpolatedValue( const std::map<float, quat>& keys, float curTick ) {
-    auto it = keys.lower_bound( curTick );
-    float t2 = it->first;
-    quat v2 = it->second;
-    it--;
-    float t1 = it->first;
-    quat v1 = it->second;
-    float dt = t2 - t1;
-    float factor = (curTick - t1) / dt;
-    return slerp(v1, v2, factor);
-}
+
+/* stl map version */
+// Todo : handle iterator when curTick is lower then first tick
+// static vec3 getInterpolatedValue( const std::map<float, vec3>& keys, float curTick ) {
+//     auto it = keys.lower_bound( curTick );
+//     float t2 = it->first;
+//     vec3 v2 = it->second;
+//     it--;
+//     float t1 = it->first;
+//     vec3 v1 = it->second;
+//     float dt = t2 - t1;
+//     float factor = (curTick - t1) / dt;
+//     return v1 + (v2 - v1) * factor;
+// }
+
+// static quat getInterpolatedValue( const std::map<float, quat>& keys, float curTick ) {
+//     auto it = keys.lower_bound( curTick );
+//     float t2 = it->first;
+//     quat v2 = it->second;
+//     it--;
+//     float t1 = it->first;
+//     quat v1 = it->second;
+//     float dt = t2 - t1;
+//     float factor = (curTick - t1) / dt;
+//     return slerp(v1, v2, factor);
+// }
 
 
 void Animator::updateMtxBones() {
@@ -161,21 +190,9 @@ void Animator::update(float dt) {
 
     for( const Animation::Track& track : cur_anim->tracks ) {
         Transform& nodeTf = skeleton[track.idx_bone_node].tf;
-        if( track.nr_poss>1 ) {
-            nodeTf.pos = getInterpolatedValue(track.poss, cur_tick);
-        } else {
-            nodeTf.pos = track.poss.begin()->second;
-        }
-        if( track.nr_scales>1 ) {
-            nodeTf.scale = getInterpolatedValue(track.scales, cur_tick);
-        } else {
-            nodeTf.scale = track.scales.begin()->second;
-        }
-        if( track.nr_oris>1 ) {
-            nodeTf.ori = getInterpolatedValue(track.oris, cur_tick);
-        } else {
-            nodeTf.ori = track.oris.begin()->second;
-        }
+        nodeTf.pos = (track.nr_poss>1)    ?getInterpolatedValue(track.poss, cur_tick):track.poss[0].value;
+        nodeTf.scale = (track.nr_scales>1)?getInterpolatedValue(track.scales, cur_tick):track.scales[0].value;
+        nodeTf.ori = (track.nr_oris>1)    ?getInterpolatedValue(track.oris, cur_tick):track.oris[0].value;
         nodeTf.update();
     }
 

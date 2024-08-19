@@ -39,21 +39,15 @@ namespace pbd
     {
         float friction = 0.8f;
         float restitution = 0.8f;
-        
+        lim::TransformWithInv tf;
         virtual float getSdNor( const glm::vec3& p, glm::vec3& outNor ) const = 0;
     };
     struct ColliderPlane: public ICollider
     {
-        glm::vec3 n;
-        float r;
-        ColliderPlane(const glm::vec3& _n = {0,1,0}, float _r = 0.f);
         virtual float getSdNor( const glm::vec3& p, glm::vec3& outNor ) const final;
     };
     struct ColliderSphere: public ICollider
     {
-        glm::vec3 c;
-        float r;
-        ColliderSphere(const glm::vec3& _c, float _r = 0.5f);
         virtual float getSdNor( const glm::vec3& p, glm::vec3& outNor ) const final;
     };
 
