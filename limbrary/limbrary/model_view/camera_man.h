@@ -38,7 +38,8 @@ Todo:
 #include "camera.h"
 #include "../application.h"
 #include "../viewport.h"
-#include <limbrary/glm_tools.h>
+#include "../tools/glim.h"
+#include "../containers/callbacks.h"
 
 namespace lim
 {

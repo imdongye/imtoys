@@ -3,11 +3,8 @@
 
 */
 #include "pbd.h"
-#include <limbrary/glm_tools.h>
+#include <limbrary/tools/glim.h>
 #include <glm/gtx/norm.hpp>
-
-// temp
-#include <limbrary/limgui.h>
 
 using namespace glm;
 using std::vector;

@@ -21,7 +21,7 @@ Todo:
 #ifndef __app_pbd_h_
 #define __app_pbd_h_
 
-#include <limbrary/glm_tools.h>
+#include <limbrary/tools/glim.h>
 #include <limbrary/model_view/mesh.h>
 #include <limbrary/program.h>
 #include <limbrary/model_view/transform.h>

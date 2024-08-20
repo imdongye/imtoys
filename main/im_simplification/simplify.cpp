@@ -1,6 +1,6 @@
 #include "simplify.h"
 #include "fqms.h"
-#include <limbrary/log.h>
+#include <limbrary/tools/log.h>
 #include <glm/glm.hpp>
 
 using namespace fqms;

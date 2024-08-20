@@ -19,7 +19,8 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/color_space.hpp>
-#include <limbrary/limgui.h>
+#include <limbrary/tools/limgui.h>
+#include <limbrary/tools/general.h>
 #include <misc/cpp/imgui_stdlib.h>
 #include <vector>
 #include <fstream>

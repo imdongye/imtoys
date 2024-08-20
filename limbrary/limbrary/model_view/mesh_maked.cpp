@@ -4,11 +4,11 @@
 
 #include <limbrary/model_view/mesh_maked.h>
 #include <limbrary/texture.h>
-#include <limbrary/g_tools.h>
 #include <vector>
 #include <memory>
 #include <glad/glad.h>
-#include <limbrary/glm_tools.h>
+#include <limbrary/tools/glim.h>
+#include <limbrary/tools/general.h>
 
 using namespace lim;
 using namespace glm;

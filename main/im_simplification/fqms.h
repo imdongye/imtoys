@@ -39,7 +39,7 @@
 #include <string>
 #include <math.h>
 #include <float.h> //FLT_EPSILON, DBL_EPSILON
-#include <limbrary/log.h>
+#include <limbrary/tools/log.h>
 
 #define loopi(start_l,end_l) for ( int i=start_l;i<end_l;++i )
 #define loopi(start_l,end_l) for ( int i=start_l;i<end_l;++i )

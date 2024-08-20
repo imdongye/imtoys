@@ -13,7 +13,7 @@
 #include "app_curve.h"
 #include <limbrary/program.h>
 #include <vector>
-#include <limbrary/limgui.h>
+#include <limbrary/tools/limgui.h>
 #include <Eigen/Core>
 #include <Eigen/QR>
 

@@ -20,7 +20,7 @@
 #include <limbrary/texture.h>
 #include <limbrary/framebuffer.h>
 #include <limbrary/program.h>
-#include <limbrary/asset_lib.h>
+#include <limbrary/tools/asset_lib.h>
 
 
 namespace ICC

@@ -1,7 +1,7 @@
-#include <limbrary/limgui.h>
+#include <limbrary/tools/limgui.h>
 #include <imgui.h>
 #include <imgui_internal.h>
-#include <limbrary/asset_lib.h>
+#include <limbrary/tools/asset_lib.h>
 #include <map>
 
 
@@ -165,7 +165,8 @@ static void drawInspector() {
 		if( nd.parent ) {
 			ImGui::Text("parrent name : %s", nd.parent->name.c_str());
 		}
-		ImGui::Text("childs : %d", nd.childs.size());
+		ImGui::Text("#childs : %d", nd.childs.size());
+		ImGui::Text("#mssets : %d", nd.meshs_mats.size());
 		ImGui::Checkbox("enabled", &nd.enabled);
 		bool edited = false;
 		edited |= ImGui::DragFloat3("pos", glm::value_ptr(nd.tf.pos), 0.01f);
@@ -391,8 +392,8 @@ void LimGui::PlotVal(const char* name, const char* postFix, float value, int buf
 
 
 void LimGui::PlotVal(const char* name, const char* postFix, int bufSize) {
-	ImGui::PushID(name);
-	ImGuiID id = ImGui::GetID("");
+	// ImGui::PushID(name);
+	// ImGuiID id = ImGui::GetID("");
 
 	auto myId = genHash(name);
 
@@ -405,7 +406,7 @@ void LimGui::PlotVal(const char* name, const char* postFix, int bufSize) {
 	assert(pvd.data.size() == bufSize);
 	ImGui::Text("%s\t%-3.4f %s", name, pvd.data[pvd.insert_idx-1], postFix);
 	ImGui::PlotLines("##plotvar", pvd.data.data(), bufSize, pvd.insert_idx, nullptr, FLT_MAX, FLT_MAX, {0, 50});
-	ImGui::PopID();
+	// ImGui::PopID();
 }
 
 void LimGui::PlotValAddValue(const char* name, float value, int bufSize) {

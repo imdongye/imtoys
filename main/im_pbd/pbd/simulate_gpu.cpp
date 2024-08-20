@@ -1,10 +1,9 @@
 #include "pbd.h"
 #include <algorithm>
-#include <limbrary/glm_tools.h>
-#include <limbrary/gl_tools.h>
+#include <limbrary/tools/glim.h>
+#include <limbrary/tools/gl.h>
+#include <limbrary/tools/log.h>
 #include <glm/gtx/norm.hpp>
-#include <limbrary/log.h>
-#include <limbrary/gl_tools.h>
 
 using namespace glm;
 using namespace pbd;

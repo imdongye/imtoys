@@ -1,8 +1,7 @@
 #include <limbrary/framebuffer.h>
 #include <vector>
-#include <limbrary/log.h>
-
-#include <limbrary/asset_lib.h>
+#include <limbrary/tools/log.h>
+#include <limbrary/tools/asset_lib.h>
 
 using namespace lim;
 

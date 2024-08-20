@@ -1,8 +1,8 @@
 #include "pbd.h"
 #include <algorithm>
-#include <limbrary/glm_tools.h>
-#include <limbrary/gl_tools.h>
-#include <limbrary/log.h>
+#include <limbrary/tools/glim.h>
+#include <limbrary/tools/gl.h>
+#include <limbrary/tools/log.h>
 
 using namespace glm;
 using namespace pbd;
@@ -192,7 +192,7 @@ void SoftBodyGpu::initGL(bool withClearMem)
             }
             gpuDistConstraints.push_back({idxOpp, c.ori_dist});
         }
-        int eOffset = gpuDistConstraints.size();
+        int eOffset = (int)gpuDistConstraints.size();
         offsetsPerPtcl.push_back(ivec2{sOffset, eOffset});
     }
     glGenBuffers(1, &buf_c_dist_bends);

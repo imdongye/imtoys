@@ -1,7 +1,9 @@
 #include "app_pbd_gpu.h"
-#include <limbrary/limgui.h>
-#include <limbrary/asset_lib.h>
-#include <limbrary/gl_tools.h>
+#include <limbrary/tools/limgui.h>
+#include <limbrary/tools/asset_lib.h>
+#include <limbrary/tools/glim.h>
+#include <limbrary/tools/general.h>
+#include <limbrary/tools/gl.h>
 
 using namespace lim;
 using namespace glm;

@@ -4,7 +4,7 @@
 
 */
 #include <limbrary/model_view/light.h>
-#include <limbrary/asset_lib.h>
+#include <limbrary/tools/asset_lib.h>
 #include <glm/gtx/transform.hpp>
 
 using namespace glm;

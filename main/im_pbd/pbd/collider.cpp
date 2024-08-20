@@ -4,7 +4,7 @@
 */
 
 #include "pbd.h"
-#include <limbrary/glm_tools.h>
+#include <limbrary/tools/glim.h>
 #include <glm/gtx/norm.hpp>
 
 using namespace glm;

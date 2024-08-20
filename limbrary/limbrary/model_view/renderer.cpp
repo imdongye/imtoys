@@ -1,8 +1,7 @@
 #include <limbrary/model_view/renderer.h>
-#include <limbrary/asset_lib.h>
-#include <limbrary/log.h>
-#include <stack>
-#include <limbrary/g_tools.h>
+#include <limbrary/tools/asset_lib.h>
+#include <limbrary/tools/log.h>
+#include <limbrary/tools/general.h>
 
 using namespace std;
 using namespace lim;

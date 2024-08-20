@@ -101,8 +101,6 @@ namespace lim
 			}
 		}
 
-		log::drawViewer("log##hdr");
-
 		ImGui::End();
 	}
 	void AppHdr::dndCallback(int count, const char **paths) 

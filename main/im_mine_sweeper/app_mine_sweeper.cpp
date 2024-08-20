@@ -7,7 +7,7 @@
 */
 #include "app_mine_sweeper.h"
 #include <glad/glad.h>
-#include <limbrary/log.h>
+#include <limbrary/tools/log.h>
 #include <imgui.h>
 #include <glm/gtc/random.hpp>
 #include <functional>

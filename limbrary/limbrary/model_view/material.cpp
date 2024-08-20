@@ -1,5 +1,5 @@
 #include <limbrary/model_view/material.h>
-#include <limbrary/asset_lib.h>
+#include <limbrary/tools/asset_lib.h>
 
 lim::Material::Material() {
     prog = &AssetLib::get().prog_ndv;

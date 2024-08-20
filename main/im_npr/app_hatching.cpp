@@ -11,10 +11,10 @@
 
 #include "app_hatching.h"
 #include <stb_image.h>
-#include <limbrary/log.h>
 #include <imgui.h>
 #include <limbrary/model_view/mesh_maked.h>
-#include <limbrary/asset_lib.h>
+#include <limbrary/tools/log.h>
+#include <limbrary/tools/asset_lib.h>
 #include <limbrary/model_view/renderer.h>
 
 

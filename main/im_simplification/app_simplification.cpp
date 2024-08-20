@@ -8,11 +8,12 @@
 #include "simplify.h"
 #include <stb_image.h>
 #include <stb_sprintf.h>
-#include <limbrary/app_prefs.h>
+#include <limbrary/tools/app_prefs.h>
+#include <limbrary/tools/general.h>
 #include <limbrary/model_view/mesh_maked.h>
 #include <imgui.h>
 #include <limbrary/model_view/renderer.h>
-#include <limbrary/asset_lib.h>
+#include <limbrary/tools/asset_lib.h>
 #include <limbrary/model_view/model_io_helper.h>
 
 

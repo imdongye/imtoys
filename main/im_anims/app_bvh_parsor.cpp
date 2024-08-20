@@ -6,9 +6,9 @@
 */
 
 #include "app_bvh_parsor.h"
-#include <limbrary/glm_tools.h>
-#include <limbrary/log.h>
-#include <limbrary/limgui.h>
+#include <limbrary/tools/glim.h>
+#include <limbrary/tools/log.h>
+#include <limbrary/tools/limgui.h>
 #include <fstream>
 #include <filesystem>
 

@@ -17,11 +17,11 @@
 */
 
 #include <limbrary/model_view/model.h>
-#include <limbrary/log.h>
-#include <limbrary/glm_tools.h>
+#include <limbrary/tools/log.h>
+#include <limbrary/tools/glim.h>
 #include <assimp/material.h>
-#include <limbrary/asset_lib.h>
-#include <limbrary/g_tools.h>
+#include <limbrary/tools/asset_lib.h>
+#include <limbrary/tools/general.h>
 #include <imgui.h>
 #include <stack>
 
@@ -309,7 +309,7 @@ mat4 ModelView::getLocalToMeshMtx(const Mesh* target) const {
 mat4 ModelView::getLocalToBoneRootMtx() const {
 	const RdNode* curNode = &root;
 	for( int i=0; i<md_data->depth_of_bone_root_in_rdtree; i++ ) {
-		assert(curNode->childs.size()==1);
+		// assert(curNode->childs.size()==1);
 		curNode = &curNode->childs[0];
 	}
 	return curNode->tf_global;

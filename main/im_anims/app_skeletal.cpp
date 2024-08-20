@@ -1,12 +1,12 @@
 #include "app_skeletal.h"
 #include <stb_image.h>
 #include <glad/glad.h>
-#include <limbrary/log.h>
 #include <imgui.h>
 #include <limbrary/model_view/mesh_maked.h>
-#include <limbrary/limgui.h>
+#include <limbrary/tools/log.h>
+#include <limbrary/tools/limgui.h>
+#include <limbrary/tools/asset_lib.h>
 #include <functional>
-#include <limbrary/asset_lib.h>
 
 using namespace lim;
 using namespace glm;
@@ -29,11 +29,11 @@ void AppSkeletal::makeScene(const char* path) {
 	// 	vec2 stepSize = posSize/vec2{nrWidth-1, nrWidth-1};
 
 	// 	for(int i=0; i<nrWidth; i++) for(int j=0; j<nrWidth; j++)  {
-	// 		scene.addOwn(new ModelView(model));
+	// 		scene.addOwn(new ModelView(*md));
 	// 		vec2 targetPos = startPos+stepSize*vec2{i, j};
-	// 		scene.own_mds.back()->tf->pos.x = targetPos.x;
-	// 		scene.own_mds.back()->tf->pos.z = targetPos.y;
-	// 		scene.own_mds.back()->tf->update();
+	// 		scene.own_mds.back()->root.tf.pos.x = targetPos.x;
+	// 		scene.own_mds.back()->root.tf.pos.z = targetPos.y;
+	// 		scene.own_mds.back()->root.tf.update();
 	// 		scene.own_mds.back()->animator.is_loop = true;
 	// 		scene.own_mds.back()->animator.play();
 	// 		scene.own_mds.back()->animator.setTimeline(glim::randFloat(), true);
@@ -93,24 +93,25 @@ void lim::AppSkeletal::update()
 	prog.use();
 	viewport.camera.setUniformTo(prog);
 
-	//	draw bones
-	{
-		const ModelView& mdview = *scene.own_mds[0];
-		glm::mat4 globalMtx = mdview.getLocalToBoneRootMtx();
-		for( const BoneNode& bone : mdview.animator.skeleton ) {
-			if( drawOffset ) {
-				if( bone.idx_bone<0 )
-					return;
-				glm::mat4 local = glm::inverse(mdview.md_data->bone_offsets[bone.idx_bone]);
-				prog.setUniform("mtx_Model", globalMtx * local);
-			}
-			else {
-				prog.setUniform("mtx_Model", globalMtx * bone.tf_model_space);
-			}
-			prog.setUniform("color", (LimGui::getPickedBoneNode() == &bone) ? glm::vec3(1, 0, 0) : glm::vec3(0, 0, 1));
-			AssetLib::get().sphere.bindAndDrawGL();
-		}
-	}
+	// todo when draw with cloth model getting to screen darker
+	//	draw bones 
+	// {
+	// 	const ModelView& mdview = *scene.own_mds[0];
+	// 	glm::mat4 globalMtx = mdview.getLocalToBoneRootMtx();
+	// 	for( const BoneNode& bone : mdview.animator.skeleton ) {
+	// 		if( drawOffset ) {
+	// 			if( bone.idx_bone<0 )
+	// 				return;
+	// 			glm::mat4 local = glm::inverse(mdview.md_data->bone_offsets[bone.idx_bone]);
+	// 			prog.setUniform("mtx_Model", globalMtx * local);
+	// 		}
+	// 		else {
+	// 			prog.setUniform("mtx_Model", globalMtx * bone.tf_model_space);
+	// 		}
+	// 		prog.setUniform("color", (LimGui::getPickedBoneNode() == &bone) ? glm::vec3(1, 0, 0) : glm::vec3(0, 0, 1));
+	// 		AssetLib::get().sphere.bindAndDrawGL();
+	// 	}
+	// }
 	glEnable(GL_DEPTH_TEST);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }

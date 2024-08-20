@@ -10,9 +10,9 @@ edit from : https://github.com/assimp/assimp/issues/203
 */
 #include <algorithm>
 #include <limbrary/model_view/model.h>
-#include <limbrary/asset_lib.h>
-#include <limbrary/log.h>
-#include <limbrary/g_tools.h>
+#include <limbrary/tools/asset_lib.h>
+#include <limbrary/tools/log.h>
+#include <limbrary/tools/general.h>
 #include <assimp/cexport.h>
 #include <assimp/Exporter.hpp>
 #include <assimp/scene.h>

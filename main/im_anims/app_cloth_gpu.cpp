@@ -8,13 +8,13 @@
 #include "app_cloth_gpu.h"
 #include <stb_image.h>
 #include <glad/glad.h>
-#include <limbrary/log.h>
 #include <imgui.h>
 #include <limbrary/program.h>
-#include <limbrary/asset_lib.h>
-#include <limbrary/limgui.h>
-#include <limbrary/gl_tools.h>
-#include <limbrary/glm_tools.h>
+#include <limbrary/tools/log.h>
+#include <limbrary/tools/asset_lib.h>
+#include <limbrary/tools/limgui.h>
+#include <limbrary/tools/gl.h>
+#include <limbrary/tools/glim.h>
 
 using namespace lim;
 using namespace glm;

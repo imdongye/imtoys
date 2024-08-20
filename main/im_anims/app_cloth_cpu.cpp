@@ -1,8 +1,8 @@
 #include "app_cloth_cpu.h"
-#include <limbrary/log.h>
-#include <limbrary/asset_lib.h>
-#include <limbrary/limgui.h>
-#include <limbrary/glm_tools.h>
+#include <limbrary/tools/log.h>
+#include <limbrary/tools/asset_lib.h>
+#include <limbrary/tools/limgui.h>
+#include <limbrary/tools/glim.h>
 
 using namespace glm;
 using namespace std;

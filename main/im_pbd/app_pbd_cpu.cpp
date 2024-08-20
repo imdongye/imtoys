@@ -1,10 +1,11 @@
 #include "app_pbd_cpu.h"
-#include <limbrary/limgui.h>
+#include <limbrary/tools/limgui.h>
 #include "pbd/pbd.h"
 #include <limbrary/model_view/mesh_maked.h>
 #include <limbrary/model_view/model.h>
-#include <limbrary/glm_tools.h>
-#include <limbrary/asset_lib.h>
+#include <limbrary/tools/glim.h>
+#include <limbrary/tools/asset_lib.h>
+#include <limbrary/tools/general.h>
 using namespace lim;
 using namespace glm;
 

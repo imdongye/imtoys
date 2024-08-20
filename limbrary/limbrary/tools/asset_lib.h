@@ -10,10 +10,10 @@ utils : AssetLib의 라이프사이클을 빌린 툴
 #define __asset_lib_h_
 
 #include <glad/glad.h>
-#include "program.h"
-#include "model_view/material.h"
-#include "model_view/mesh_maked.h"
-#include "viewport.h"
+#include "../program.h"
+#include "../model_view/material.h"
+#include "../model_view/mesh_maked.h"
+#include "../viewport.h"
 
 namespace lim
 {

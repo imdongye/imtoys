@@ -1,7 +1,7 @@
-#include <limbrary/asset_lib.h>
+#include <limbrary/tools/asset_lib.h>
 #include <limbrary/program.h>
 #include <limbrary/model_view/material.h>
-#include <limbrary/log.h>
+#include <limbrary/tools/log.h>
 #include <limbrary/model_view/mesh_maked.h>
 #include <limbrary/model_view/model.h>
 

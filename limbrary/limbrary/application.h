@@ -17,9 +17,10 @@ Todo:
 #ifndef __application_h_
 #define __application_h_
 
-#include "g_tools.h"
+#include "containers/callbacks.h"
 #include <glm/glm.hpp>
 #include <GLFW/glfw3.h>
+#include "containers/types.h"
 
 
 namespace lim

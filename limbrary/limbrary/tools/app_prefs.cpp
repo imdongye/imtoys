@@ -1,6 +1,6 @@
-#include <limbrary/app_prefs.h>
-#include <limbrary/g_tools.h>
-#include <limbrary/log.h>
+#include <limbrary/tools/app_prefs.h>
+#include <limbrary/tools/general.h>
+#include <limbrary/tools/log.h>
 #include <fstream>
 #include <nlohmann/json.h>
 #include <vector>

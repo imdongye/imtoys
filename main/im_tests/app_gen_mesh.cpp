@@ -4,7 +4,7 @@
 #include <limbrary/model_view/renderer.h>
 #include <glm/gtx/transform.hpp>
 #include <imgui.h>
-#include <limbrary/asset_lib.h>
+#include <limbrary/tools/asset_lib.h>
 
 namespace lim
 {

@@ -1,5 +1,6 @@
 #include <limbrary/model_view/animator.h>
-#include <limbrary/asset_lib.h>
+#include <limbrary/tools/asset_lib.h>
+#include <limbrary/tools/log.h>
 #include <limbrary/application.h>
 #include <limbrary/model_view/model.h>
 #include <algorithm>

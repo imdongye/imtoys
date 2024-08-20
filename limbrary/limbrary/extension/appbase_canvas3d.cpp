@@ -1,6 +1,6 @@
 
 #include "appbase_canvas3d.h"
-#include <limbrary/limgui.h>
+#include <limbrary/tools/limgui.h>
 #include <imgui.h>
 
 using namespace lim;

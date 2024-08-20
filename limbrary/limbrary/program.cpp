@@ -1,6 +1,6 @@
 #include <limbrary/program.h>
-#include <limbrary/log.h>
-#include <limbrary/g_tools.h>
+#include <limbrary/tools/log.h>
+#include <limbrary/tools/general.h>
 
 using namespace lim;
 

@@ -1,7 +1,8 @@
 #include <limbrary/application.h>
-#include <limbrary/log.h>
-#include <limbrary/app_prefs.h>
-#include <limbrary/asset_lib.h>
+#include <limbrary/tools/log.h>
+#include <limbrary/tools/general.h>
+#include <limbrary/tools/app_prefs.h>
+#include <limbrary/tools/asset_lib.h>
 #include <limbrary/viewport.h>
 #include <glad/glad.h>
 #include <iostream>

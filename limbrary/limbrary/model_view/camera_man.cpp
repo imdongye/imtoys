@@ -1,11 +1,11 @@
 #include <limbrary/model_view/camera_man.h>
-#include <limbrary/asset_lib.h>
+#include <limbrary/tools/asset_lib.h>
 #include <limbrary/application.h>
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <imguizmo/ImGuizmo.h>
-#include <limbrary/log.h>
+#include <limbrary/tools/log.h>
 #include <glm/gtx/transform.hpp>
 
 using namespace glm;

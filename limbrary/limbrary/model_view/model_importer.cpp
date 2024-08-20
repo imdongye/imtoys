@@ -11,9 +11,9 @@
 #include <limbrary/model_view/model.h>
 #include <limbrary/model_view/model_io_helper.h>
 #include <limbrary/texture.h>
-#include <limbrary/log.h>
-#include <limbrary/g_tools.h>
-#include <limbrary/glm_tools.h>
+#include <limbrary/tools/log.h>
+#include <limbrary/tools/general.h>
+#include <limbrary/tools/glim.h>
 #include <assimp/cimport.h>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
@@ -172,7 +172,14 @@ static Material* convertMaterial(aiMaterial* aiMat, bool verbose = false)
 	mat.map_Flags = Material::MF_NONE;
 	if( aiMat->GetTexture(aiTextureType_DIFFUSE, 0, &tempStr) == AI_SUCCESS ) {
 		mat.map_Flags |= Material::MF_COLOR_BASE;
-		mat.map_ColorBase = loadTexture(tempStr.C_Str(), true, "map_BaseColor"); // kd일때만 linear space변환
+		const aiTexture* tex = g_scn->GetEmbeddedTexture(tempStr.C_Str());
+		if( tex ) {
+			log::pure("fixme");
+			// https://github.com/assimp/assimp/issues/408
+		}
+		else {
+			mat.map_ColorBase = loadTexture(tempStr.C_Str(), true, "map_BaseColor"); // kd일때만 linear space변환
+		}
 	}
 	if( aiMat->GetTexture(aiTextureType_BASE_COLOR, 0, &tempStr) == AI_SUCCESS ) {
 		mat.map_Flags |= Material::MF_COLOR_BASE;
@@ -438,7 +445,17 @@ static void addBoneNode(int idxParent, const mat4 mtxParent, const aiNode* src) 
 		addBoneNode( curIdx, g_animator->skeleton[curIdx].tf_model_space, aiChild );
 	}
 }
-static bool isBoneNode(std::string name) {
+static bool isBoneNode(aiNode* aiChild) {
+	if( aiChild->mNumMeshes > 0 ) {
+		return false;
+	}
+	string name = aiChild->mName.C_Str();
+	if( name == "Armature" ) {
+		if( aiChild->mNumChildren > 1 ) {
+			return false;
+		}
+		return true;
+	}
 	if( isIn(g_model->bone_name_to_idx, name ) ) {
 		return true;
 	}
@@ -468,7 +485,7 @@ static void convertRdTree(RdNode& dst, const aiNode* src, int depth)
 	dst.childs.reserve(src->mNumChildren);
 	for( size_t i=0; i< src->mNumChildren; i++ ) {
 		aiNode* aiChild = src->mChildren[i];
-		if( isBoneNode(aiChild->mName.C_Str()) ) {
+		if( isBoneNode(aiChild) ) {
 			// assume that model has only one bone tree
 			assert(g_animator->nr_bone_nodes==0);
 			assert(g_model->depth_of_bone_root_in_rdtree<1); // normaly bone root in first node
@@ -581,10 +598,13 @@ bool lim::Model::importFromFile(
 		animator.skeleton.clear();
 		animator.skeleton.reserve(nr_bones+10);
 		g_model->depth_of_bone_root_in_rdtree = -1;
-		assert( isBoneNode(g_scn->mRootNode->mName.C_Str())==false );
-		convertRdTree(root, g_scn->mRootNode, 0);
-		assert(animator.nr_bone_nodes>0&&g_model->depth_of_bone_root_in_rdtree>=0);
+		assert( isBoneNode(g_scn->mRootNode)==false );
+	}
 
+	convertRdTree(root, g_scn->mRootNode, 0);
+
+	if( g_is_ms_has_bone ) {
+		assert(animator.nr_bone_nodes>0&&g_model->depth_of_bone_root_in_rdtree>=0);
 
 		/* update bone offset with bind pose (bone-5) */
 		/* sometimes defualt offset mtx is wrong */
@@ -607,9 +627,9 @@ bool lim::Model::importFromFile(
 	
 
 	// !Important! : rid root transform
-	if( scaleAndPivot ) {
-		// root.tf = Transform();
-	}
+	// if( scaleAndPivot ) {
+	// 	root.tf = Transform();
+	// }
 
 
 	// update import info	
@@ -657,6 +677,9 @@ bool lim::Model::importFromFile(
 		pivotNode.tf.scale = normScale;
 		pivotNode.tf.update();
 		root.childs.back().name = "pivot";
+
+
+		root.updateGlobalTransform();
 	}
 
 

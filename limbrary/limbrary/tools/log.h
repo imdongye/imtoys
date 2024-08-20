@@ -36,6 +36,8 @@ namespace lim
         void exportToFile(const char* filename = "log.txt");
         void drawViewer(const char* title, bool* pOpen = nullptr);
     }
+
+    
 }
 
 #endif

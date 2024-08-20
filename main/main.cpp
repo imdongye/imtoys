@@ -6,9 +6,9 @@
 //
 
 #include <imgui.h>
-#include <limbrary/asset_lib.h>
-#include <limbrary/app_prefs.h>
-#include <limbrary/log.h>
+#include <limbrary/tools/asset_lib.h>
+#include <limbrary/tools/app_prefs.h>
+#include <limbrary/tools/log.h>
 #include <limbrary/viewport.h>
 
 #include "im_tests/app_template.h"

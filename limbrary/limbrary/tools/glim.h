@@ -7,12 +7,40 @@
 #ifndef __glm_tools_h_
 #define __glm_tools_h_
 
+#include "log.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <limits>
 // #include <glm/gtc/random.hpp>
 // #include <glm/gtx/intersect.hpp>
 
+namespace lim {
+    namespace log {
+		inline void pure(const glm::vec2& v) {
+			log::pure("%-3.3f %-3.3f\n", v.x, v.y);
+		}
+		inline void pure(const glm::vec3& v) {
+			log::pure("%-3.3f %-3.3f %-3.3f\n", v.x, v.y, v.z);
+		}
+		inline void pure(const glm::vec4& v) {
+			log::pure("%-3.3f %-3.3f %-3.3f %-3.3f\n", v.x, v.y, v.z, v.w);
+		}
+		inline void pure(const glm::quat& q) {
+			log::pure("%-3.3f %-3.3f %-3.3f %-3.3f\n", q.x, q.y, q.z, q.w);
+		}
+		inline void pure(const glm::mat3& m) {
+			log::pure("%-3.3f %-3.3f %-3.3f\n", m[0][0], m[0][1], m[0][2]);
+			log::pure("%-3.3f %-3.3f %-3.3f\n", m[1][0], m[1][1], m[1][2]);
+			log::pure("%-3.3f %-3.3f %-3.3f\n", m[2][0], m[2][1], m[2][2]);
+		}
+		inline void pure(const glm::mat4& m) {
+			log::pure("%-3.3f %-3.3f %-3.3f %-3.3f\n", m[0][0], m[0][1], m[0][2], m[0][3]);
+			log::pure("%-3.3f %-3.3f %-3.3f %-3.3f\n", m[1][0], m[1][1], m[1][2], m[1][3]);
+			log::pure("%-3.3f %-3.3f %-3.3f %-3.3f\n", m[2][0], m[2][1], m[2][2], m[2][3]);
+			log::pure("%-3.3f %-3.3f %-3.3f %-3.3f\n", m[3][0], m[3][1], m[3][2], m[3][3]);
+		}
+	}
+}
 
 namespace glim {
 	constexpr float pi45 = 0.78539816339f; // quarter

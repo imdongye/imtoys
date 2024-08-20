@@ -11,9 +11,10 @@ Todo:
 #include <imgui.h>
 #include <limbrary/model_view/model_io_helper.h>
 #include <limbrary/model_view/renderer.h>
-#include <limbrary/asset_lib.h>
-#include <limbrary/limgui.h>
-#include <limbrary/glm_tools.h>
+#include <limbrary/tools/asset_lib.h>
+#include <limbrary/tools/limgui.h>
+#include <limbrary/tools/glim.h>
+#include <limbrary/tools/general.h>
 #include <glad/glad.h>
 
 using namespace lim;

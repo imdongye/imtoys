@@ -1,6 +1,6 @@
-#include <limbrary/g_tools.h>
-#include <limbrary/glm_tools.h>
-#include <limbrary/log.h>
+#include <limbrary/tools/general.h>
+#include <limbrary/tools/glim.h>
+#include <limbrary/tools/log.h>
 #include <fstream>
 #include <sstream>
 #include <stb_sprintf.h>

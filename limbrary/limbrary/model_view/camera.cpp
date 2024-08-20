@@ -17,7 +17,7 @@
 
 #include <limbrary/model_view/camera.h>
 #include <glm/gtx/transform.hpp>
-#include <limbrary/log.h>
+#include <limbrary/tools/log.h>
 
 using namespace glm;
 using namespace lim;
