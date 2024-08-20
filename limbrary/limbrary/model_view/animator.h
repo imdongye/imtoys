@@ -69,7 +69,9 @@ namespace lim
         std::string name = "nonamed node";
         Transform tf; // bone space
         glm::mat4 tf_model_space;
-        int idx_bone = -1; // for mtx_Bones in ModelView, bone_offsets in Model
+        // for mtx_Bones in ModelView, bone_offsets in Model
+        // if not used in skinning then -1
+        int idx_bone = -1;
         int idx_parent_bone_node = -1; // for skeleton in ModelView
         int nr_childs;
     };
@@ -88,7 +90,7 @@ namespace lim
         State state = ST_STOP;
         bool is_enabled = false;
         int nr_bone_nodes; // skeletion.size()
-        std::vector<BoneNode> skeleton;
+        std::vector<BoneNode> skeleton; // bone tree
         std::vector<glm::mat4> mtx_Bones; // nr_bones
         const Animation* cur_anim = nullptr;
         const Model* md_data = nullptr;

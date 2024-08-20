@@ -156,10 +156,13 @@ static quat getInterpolatedValue( const std::vector<Animation::KeyQuat>& keys, f
 void Animator::updateMtxBones() {
     BoneNode& rootBoneNode = skeleton[0];
     rootBoneNode.tf_model_space = rootBoneNode.tf.mtx;
-    if( rootBoneNode.idx_bone == 0) {
+
+    if( rootBoneNode.idx_bone>=0) {
+        assert(rootBoneNode.idx_bone==0);
         mtx_Bones[0] = rootBoneNode.tf_model_space * md_data->bone_offsets[0];
     }
 
+    // recursive term
     for(int i=1; i<nr_bone_nodes; i++) {
         BoneNode& curBoneNode = skeleton[i];
         BoneNode& parentBoneNode = skeleton[curBoneNode.idx_parent_bone_node];

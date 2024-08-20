@@ -60,11 +60,9 @@ lim::AppSimplification::AppSimplification() : AppBase(1200, 780, APP_NAME, false
 	ground.own_meshes.push_back(new MeshPlane());
 	ground.own_meshes.back()->initGL();
 	ground.root.addMsMat(ground.own_meshes.back(), ground.own_materials.back());
-	ground.tf->pos = {0, 0, 0};
-	ground.tf->scale = {10, 1, 10};
-	ground.tf->update();
-
-	light.setShadowEnabled(true);
+	ground.root.tf.pos = {0, 0, 0};
+	ground.root.tf.scale = {10, 1, 10};
+	ground.root.tf.update();
 
 	setProg(0);
 
@@ -77,7 +75,6 @@ lim::AppSimplification::~AppSimplification()
 	for( auto prog : programs )	delete prog;
 	for( auto vp : viewports ) delete vp;
 	for( auto scn : scenes ) delete scn;
-	for( auto md : models ) delete md;
 }
 void lim::AppSimplification::addEmptyViewport()
 {
@@ -86,12 +83,11 @@ void lim::AppSimplification::addEmptyViewport()
 	vp->camera.updateViewMat();
 	viewports.push_back(vp);
 
-	models.push_back(new Model());
-
 	Scene* scn = new Scene();
-	scn->addRef(&ground);
-	scn->addRef(models.back());
-	scn->addRef(&light);
+	scn->addOwn(new Model());
+	scn->addOwn(new ModelView(ground));
+	scn->addOwn(new LightDirectional())->setShadowEnabled(true);
+
 	scenes.push_back(scn);
 	nr_viewports++;
 }
@@ -113,8 +109,6 @@ void lim::AppSimplification::subViewport(int vpIdx)
 
 	delete viewports[vpIdx];
 	viewports.erase(viewports.begin()+vpIdx);
-	delete models[vpIdx];
-	models.erase(models.begin()+vpIdx);
 	delete scenes[vpIdx];
 	scenes.erase(scenes.begin()+vpIdx);
 	for( int i=vpIdx; i<nr_viewports; i++ ) {
@@ -128,13 +122,11 @@ void lim::AppSimplification::doImportModel(std::string_view path, int vpIdx)
 		return;
 	}
 
-	Model& md = *models[vpIdx];
+	Model& md = *(Model*)scenes[vpIdx]->own_mds[0];
 
-	if( !md.importFromFile(path.data()) ) {
+	if( !md.importFromFile(path.data(), false, true) ) {
 		return;
 	}
-
-	md.setUnitScaleAndPivot();
 
 	auto& vp = viewports[vpIdx];
 	vp->camera.pivot.y = 1.f;
@@ -145,36 +137,40 @@ void lim::AppSimplification::doImportModel(std::string_view path, int vpIdx)
 }
 void lim::AppSimplification::doExportModel(size_t pIndex, int vpIdx)
 {
-	if(  models[vpIdx] == nullptr ) {
+	Model& md = *(Model*)scenes[vpIdx]->own_mds[0];
+	if( md.own_meshes.empty() ) {
 		log::err("export\n");
 		return;
 	}
-	models[vpIdx]->exportToFile(pIndex, export_path);
+	md.exportToFile(pIndex, export_path);
 }
 void lim::AppSimplification::doSimplifyModel(float lived_pct, int version, int agressiveness, bool verbose)
 {
-	Model* srcMd = models[src_vp_idx];
-	Model* dstMd = models[dst_vp_idx];
+	Model& srcMd = *(Model*)scenes[src_vp_idx]->own_mds[0];
+	Model& dstMd = *(Model*)scenes[dst_vp_idx]->own_mds[0];
 
-	dstMd->copyFrom(*srcMd);
+	dstMd.copyFrom(srcMd);
 
-	simplifyModel(*dstMd, lived_pct, version, agressiveness, verbose);
-	int pct = 100.0 * dstMd->total_verts / srcMd->total_verts;
-	dstMd->name += "_"+std::to_string(pct)+"_pct";
+	simplifyModel(dstMd, lived_pct, version, agressiveness, verbose);
+	int pct = 100.0 * dstMd.total_verts / srcMd.total_verts;
+	dstMd.name += "_"+std::to_string(pct)+"_pct";
 
-	viewports[dst_vp_idx]->camera.pivot = dstMd->tf->pos;
+	viewports[dst_vp_idx]->camera.pivot = dstMd.root.tf.pos;
 	viewports[dst_vp_idx]->camera.updateViewMat();
 }
 void lim::AppSimplification::doBakeNormalMap(int texSize)
 {
-	if( models[src_vp_idx] != nullptr && models[dst_vp_idx] != nullptr )
-		bakeNormalMap( *models[src_vp_idx], *models[dst_vp_idx], texSize );
-	else
+	Model& srcMd = *(Model*)scenes[src_vp_idx]->own_mds[0];
+	Model& dstMd = *(Model*)scenes[dst_vp_idx]->own_mds[0];
+	if( srcMd.own_meshes.empty() || dstMd.own_meshes.empty() )
 		log::err("You Must to simplify before baking\n");
+	else
+		bakeNormalMap( srcMd, dstMd, texSize );
 }
 void lim::AppSimplification::setProg(int idx) {
-	for(Model* md: models) {
-		md->setProgToAllMat(programs[idx]);
+	for(Scene* scn: scenes) {
+		Model& md = *(Model*)scn->own_mds[0];
+		md.setProgToAllMat(programs[idx]);
 	}
 	ground.setProgToAllMat(programs[idx]);
 }
@@ -207,7 +203,9 @@ void lim::AppSimplification::update()
 			fb.bind();
 			prog.use();
 
-			models[i]->root.treversal([&](const Mesh* ms, const Material* mat, const glm::mat4& tf) {
+			Model& md = *(Model*)scenes[i]->own_mds[0];
+
+			md.root.treversal([&](const Mesh* ms, const Material* mat, const glm::mat4& tf) {
 				if( curMat != mat ) {
 					curMat = mat;
 					curMat->setUniformTo(prog);
@@ -217,6 +215,7 @@ void lim::AppSimplification::update()
 					curMesh->bindGL();
 				}
 				curMesh->bindAndDrawGL();
+				return true;
 			});
 
 			fb.unbind();
@@ -244,8 +243,8 @@ void lim::AppSimplification::update()
 }
 void lim::AppSimplification::updateImGui()
 {
-	const Model& srcMd = *models[src_vp_idx];
-	const Model& dstMd = *models[dst_vp_idx];
+	Model& srcMd = *(Model*)scenes[src_vp_idx]->own_mds[0];
+	Model& dstMd = *(Model*)scenes[dst_vp_idx]->own_mds[0];
 
 	ImGui::DockSpaceOverViewport();
 
@@ -282,7 +281,7 @@ void lim::AppSimplification::updateImGui()
 			{
 				for( int i = 0; i < nr_viewports; i++ )
 				{
-					const Model& md = *models[i];
+					const Model& md = *(Model*)scenes[i]->own_mds[0];
 					if( md.own_meshes.empty() )
 						continue;
 
@@ -337,7 +336,8 @@ void lim::AppSimplification::updateImGui()
 		ImGui::Text("From viewport:");
 		for( int i=0; i<nr_viewports; i++ )
 		{
-			if( models[i]->own_meshes.size() == 0 )
+			Model& md = *(Model*)scenes[i]->own_mds[0];
+			if( md.own_meshes.empty() )
 				continue;
 			ImGui::SameLine();
 			if( ImGui::RadioButton( fmtStrToBuf("%d##1", i), &src_vp_idx, i) && src_vp_idx == dst_vp_idx ) {
@@ -396,7 +396,8 @@ void lim::AppSimplification::updateImGui()
 		}
 		if( ImGui::Button("BumpMap To Normal Map") )
 		{
-			convertBumpMapToNormalMap(*models[src_vp_idx]);
+			Model& md = *(Model*)scenes[src_vp_idx]->own_mds[0];
+			convertBumpMapToNormalMap(md);
 		}
 	}
 	ImGui::End();
@@ -421,6 +422,7 @@ void lim::AppSimplification::updateImGui()
 		ImGui::Dummy(ImVec2(0.0f, 3.0f));
 
 		ImGui::Text("<shader>");
+		LightDirectional& light = *(LightDirectional*)scenes[dst_vp_idx]->own_lits.back();
 		if( ImGui::Combo("type", &selected_prog_idx, shader_names.data(), shader_names.size()) )
 		{
 			setProg(selected_prog_idx);
@@ -443,16 +445,18 @@ void lim::AppSimplification::updateImGui()
 
 		static float bumpHeight = 100;
 		if( ImGui::SliderFloat("bumpHeight", &bumpHeight, 0.0, 300.0) ) {
-			for( Model* md : models ) {
-				for( Material* mat : md->own_materials ) {
+			for( Scene* scn : scenes ) {
+				Model& md = *(Model*)scn->own_mds[0];
+				for( Material* mat : md.own_materials ) {
 					mat->BumpHeight = bumpHeight;
 				}
 			}
 		}
-		static float texDelta = 0.00001;
+		static float texDelta = 0.00001f;
 		if( ImGui::SliderFloat("texDelta", &texDelta, 0.000001, 0.0001, "%f") ) {
-			for( Model* md : models ) {
-				for( Material* mat : md->own_materials ) {
+			for( Scene* scn : scenes ) {
+				Model& md = *(Model*)scn->own_mds[0];
+				for( Material* mat : md.own_materials ) {
 					mat->TexDelta = texDelta;
 				}
 			}
@@ -478,70 +482,70 @@ void lim::AppSimplification::updateImGui()
 			ImGui::TableNextRow();
 			if( ImGui::TableSetColumnIndex(column++) )
 				ImGui::Text("name");
-			for( const Model* md : models )
-			{
+			for( Scene* scn : scenes ) {
+				Model& md = *(Model*)scn->own_mds[0];
 				if( ImGui::TableSetColumnIndex(column++) )
 				{
-					if( md->own_meshes.empty() )
+					if( md.own_meshes.empty() )
 						ImGui::Text("");
 					else
-						ImGui::Text("%s", md->name.c_str());
+						ImGui::Text("%s", md.name.c_str());
 				}
 			}
 			column = 0;
 			ImGui::TableNextRow();
 			if( ImGui::TableSetColumnIndex(column++) )
 				ImGui::Text("#verticies");
-			for( const Model* md : models )
-			{
+			for( Scene* scn : scenes ) {
+				Model& md = *(Model*)scn->own_mds[0];
 				if( ImGui::TableSetColumnIndex(column++) )
 				{
-					if( md->own_meshes.empty() )
+					if( md.own_meshes.empty() )
 						ImGui::Text("");
 					else
-						ImGui::Text("%d", md->total_verts);
+						ImGui::Text("%d", md.total_verts);
 				}
 			}
 			column = 0;
 			ImGui::TableNextRow();
 			if( ImGui::TableSetColumnIndex(column++) )
 				ImGui::Text("#triangles");
-			for( const Model* md : models )
-			{
+			for( Scene* scn : scenes ) {
+				Model& md = *(Model*)scn->own_mds[0];
 				if( ImGui::TableSetColumnIndex(column++) )
 				{
-					if( md->own_meshes.empty() )
+					if( md.own_meshes.empty() )
 						ImGui::Text("");
 					else
-						ImGui::Text("%d", md->total_tris);
+						ImGui::Text("%d", md.total_tris);
 				}
 			}
 			column = 0;
 			ImGui::TableNextRow();
 			if( ImGui::TableSetColumnIndex(column++) )
 				ImGui::Text("boundary_x");
-			for( const Model* md : models )
-			{
+			for( Scene* scn : scenes ) {
+				Model& md = *(Model*)scn->own_mds[0];
 				if( ImGui::TableSetColumnIndex(column++) )
 				{
-					if( md->own_meshes.empty() )
+					if( md.own_meshes.empty() )
 						ImGui::Text("");
 					else
-						ImGui::Text("%f", md->boundary_size.x);
+						ImGui::Text("%f", md.boundary_size.x);
 				}
 			}
 			column = 0;
 			ImGui::TableNextRow();
 			if( ImGui::TableSetColumnIndex(column++) )
 				ImGui::Text("boundary_y");
-			for( const Model* md : models )
-			{
+			for( Scene* scn : scenes ) {
+				Model& md = *(Model*)scn->own_mds[0];
 				if( ImGui::TableSetColumnIndex(column++) )
 				{
-					if( md->own_meshes.empty() )
+					if( md.own_meshes.empty() )
 						ImGui::Text("");
 					else
-						ImGui::Text("%f", md->boundary_size.y);
+						ImGui::Text("%f", md.boundary_size.y);
 				}
 			}
 
@@ -549,28 +553,28 @@ void lim::AppSimplification::updateImGui()
 			ImGui::TableNextRow();
 			if( ImGui::TableSetColumnIndex(column++) )
 				ImGui::Text("#meshes");
-			for( const Model* md : models )
-			{
+			for( Scene* scn : scenes ) {
+				Model& md = *(Model*)scn->own_mds[0];
 				if( ImGui::TableSetColumnIndex(column++) )
 				{
-					if( md->own_meshes.empty() )
+					if( md.own_meshes.empty() )
 						ImGui::Text("");
 					else
-						ImGui::Text("%d", (int)md->own_meshes.size());
+						ImGui::Text("%d", (int)md.own_meshes.size());
 				}
 			}
 			column = 0;
 			ImGui::TableNextRow();
 			if( ImGui::TableSetColumnIndex(column++) )
 				ImGui::Text("#textures");
-			for( const Model* md : models )
-			{
+			for( Scene* scn : scenes ) {
+				Model& md = *(Model*)scn->own_mds[0];
 				if( ImGui::TableSetColumnIndex(column++) )
 				{
-					if( md->own_meshes.empty() )
+					if( md.own_meshes.empty() )
 						ImGui::Text("");
 					else
-						ImGui::Text("%d", (int)md->own_textures.size());
+						ImGui::Text("%d", (int)md.own_textures.size());
 				}
 			}
 			ImGui::EndTable();
@@ -606,7 +610,7 @@ void lim::AppSimplification::updateImGui()
 		data->DesiredSize.x = glm::max(data->DesiredSize.x, data->DesiredSize.y);
 		data->DesiredSize.y = data->DesiredSize.x; 
 	});
-
+	LightDirectional& light = *(LightDirectional*)scenes[dst_vp_idx]->own_lits.back();
 	if( ImGui::Begin("shadowMap##simp") && light.shadow->Enabled )
 	{
 		ImVec2 vMin = ImGui::GetWindowContentRegionMin();

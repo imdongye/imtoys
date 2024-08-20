@@ -60,29 +60,27 @@ static void resetApp() {
 	switch(cur_mesh_type) {
 		case MT_BUNNY: {
 			Model md;
-			md.importFromFile("assets/models/pbd_test/bunny.obj");
-			md.setUnitScaleAndPivot({0,0,0}, 1.f);
+			md.importFromFile("assets/models/pbd_test/bunny.obj", false, true, 1.f, vec3(0));
 			ms = md.own_meshes[0];
 			md.own_meshes[0] = nullptr;
-			tf = md.tf_norm->mtx;
+			tf = md.getLocalToMeshMtx(ms);
 			break;
 		}
 		case MT_CHEEMS: {
 			Model md;
-			md.importFromFile("assets/models/dwarf/Dwarf_2_Very_Low.obj");
-			md.setUnitScaleAndPivot({0,0,0}, 2.f);
+			md.importFromFile("assets/models/dwarf/Dwarf_2_Very_Low.obj", false, true, 1.f, vec3(0));
 			ms = md.own_meshes[0];
 			md.own_meshes[0] = nullptr;
-			tf = md.tf_norm->mtx;
+			tf = md.getLocalToMeshMtx(ms);
+
 			break;
 		}
 		case MT_BUFF: {
 			Model md;
-			md.importFromFile("assets/models/pbd_test/buff-doge.obj");
-			md.setUnitScaleAndPivot({0,0,0}, 1.f);
+			md.importFromFile("assets/models/pbd_test/buff-doge.obj", false, true, 1.f, vec3(0));
 			ms = md.own_meshes[0];
 			md.own_meshes[0] = nullptr;
-			tf = md.tf_norm->mtx;
+			tf = md.getLocalToMeshMtx(ms);
 			break;
 		}
 		case MT_CUBE: {

@@ -13,6 +13,7 @@
 #include <limbrary/texture.h>
 #include <limbrary/log.h>
 #include <limbrary/g_tools.h>
+#include <limbrary/glm_tools.h>
 #include <assimp/cimport.h>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
@@ -32,10 +33,8 @@ namespace
 	Model* g_model = nullptr; // temp model
 	Animator* g_animator = nullptr;
 	bool g_is_ms_has_bone = false;
-	bool g_is_find_bone_node = false;
 	const aiScene* g_scn;
 	std::string g_model_dir;
-	mat4 global_transform = mat4(1);
 
 	const int g_nr_formats = (int)aiGetImportFormatCount();
 	const char* g_formats[32] = { nullptr, };
@@ -338,9 +337,11 @@ static Mesh* convertMesh(const aiMesh* aiMs)
 			if( face.mNumIndices == 3 ) {
 				ms.tris.push_back( uvec3(face.mIndices[0], face.mIndices[1], face.mIndices[2]));
 			} else if( face.mNumIndices == 4 ) {
+				assert(false); // already aiProcess_Triangulate
 				ms.tris.push_back( uvec3(face.mIndices[0], face.mIndices[1], face.mIndices[3]));
 				ms.tris.push_back( uvec3(face.mIndices[3], face.mIndices[2], face.mIndices[1]));
 			} else {
+				assert(false);
 				nrNotTriFace++;
 			}
 		}
@@ -397,6 +398,7 @@ static void convertAnim(Animation& dst, const aiAnimation& src) {
 // 	return name=="_end";
 // }
 static void addBoneNode(int idxParent, const mat4 mtxParent, const aiNode* src) {
+	assert(src->mNumMeshes==0);
 	g_animator->nr_bone_nodes++;
 	g_animator->skeleton.emplace_back();
 	int curIdx = g_animator->nr_bone_nodes-1;
@@ -451,12 +453,14 @@ static bool isBoneNode(std::string name) {
 }
 static void convertRdTree(RdNode& dst, const aiNode* src) 
 {
+	if( g_is_ms_has_bone && g_animator->nr_bone_nodes==0 ) {
+		g_model->depth_of_bone_root_in_rdtree++;
+		assert(g_model->depth_of_bone_root_in_rdtree<2); // normaly bone root in first node
+	}
+
 	dst.name = src->mName.C_Str();
 	dst.tf.mtx = toGLM(src->mTransformation);
 	dst.tf.decomposeMtx();
-	if( !g_is_find_bone_node ) {
-		global_transform = global_transform * dst.tf.mtx;
-	}
 
 	for( size_t i=0; i<src->mNumMeshes; i++ ) {
 		const int msIdx = src->mMeshes[i];
@@ -468,12 +472,13 @@ static void convertRdTree(RdNode& dst, const aiNode* src)
 	dst.childs.reserve(src->mNumChildren);
 	for( size_t i=0; i< src->mNumChildren; i++ ) {
 		aiNode* aiChild = src->mChildren[i];
-		if( !g_is_find_bone_node && isBoneNode(aiChild->mName.C_Str()) ) {
-			g_is_find_bone_node = true;
+		if( isBoneNode(aiChild->mName.C_Str()) ) {
+			// assume that model has only one bone tree
+			assert(g_animator->nr_bone_nodes==0);
 			addBoneNode( -1, mat4(1), aiChild );
 			continue;
 		}
-		dst.childs.push_back({});
+		dst.addChild("unknown");
 		convertRdTree( dst.childs.back(), aiChild );
 	}
 }
@@ -483,7 +488,10 @@ static void convertRdTree(RdNode& dst, const aiNode* src)
 
 
 
-bool lim::Model::importFromFile(string_view modelPath, bool withAnims)
+bool lim::Model::importFromFile(
+	string_view modelPath, bool withAnims
+	, bool scaleAndPivot, float maxSize, vec3 pivot	
+)
 {
 	const char* extension = strrchr(modelPath.data(), '.');
 	if( !extension ) {
@@ -496,11 +504,6 @@ bool lim::Model::importFromFile(string_view modelPath, bool withAnims)
 	}
 
 	clear();
-	
-	g_is_ms_has_bone = false;
-	if(withAnims) {
-		g_animator = &animator;
-	}
 
 	g_model = this;
 	path = modelPath;
@@ -522,7 +525,6 @@ bool lim::Model::importFromFile(string_view modelPath, bool withAnims)
 	// pFrags |= aiProcess_OptimizeMeshes : mesh를 합쳐서 draw call을 줄인다. batching?
 	pFrags |= aiProcessPreset_TargetRealtime_MaxQuality;
 	pFrags |= aiProcess_LimitBoneWeights;
-
 	aiPropertyStore* props = aiCreatePropertyStore();
 	// bone node $AssimpFbx$ PreRotation Translation 추가 노드 생성
 	aiSetImportPropertyInteger(props, AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, 0);
@@ -554,6 +556,10 @@ bool lim::Model::importFromFile(string_view modelPath, bool withAnims)
 	}
 
 	/* import my_meshes, make bone_name_map ( bone-1 ) */
+	g_is_ms_has_bone = false;
+	if( withAnims ) {
+		g_animator = &animator;
+	}
 	own_meshes.reserve(g_scn->mNumMeshes);
 	for( GLuint i=0; i<g_scn->mNumMeshes; i++ ) {
 		own_meshes.push_back(convertMesh(g_scn->mMeshes[i]));
@@ -571,12 +577,65 @@ bool lim::Model::importFromFile(string_view modelPath, bool withAnims)
 
 	/* set bone node tree structure (bone-3)
 	   and link animation (bone-4) */
-	g_is_find_bone_node = false; // for escape convertRdTree
-	global_transform = mat4(1);
 	animator.nr_bone_nodes = 0;
 	animator.skeleton.clear();
 	animator.skeleton.reserve(nr_bones+10);
+	assert( isBoneNode(g_scn->mRootNode->mName.C_Str())==false );
+	g_model->depth_of_bone_root_in_rdtree = -1;
 	convertRdTree(root, g_scn->mRootNode);
+
+
+	// !Important! : rid root transform
+	root.tf = Transform();
+
+
+
+	// update import info	
+	total_verts = 0;
+	total_tris = 0;
+	boundary_max = glim::minimum_vec3;
+	boundary_min = glim::maximum_vec3;
+
+	root.updateGlobalTransform();
+	root.treversal([&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
+		total_verts += ms->poss.size();
+		total_tris += ms->tris.size();
+		for(glm::vec3 p : ms->poss) {
+			p = transform * glm::vec4(p, 1);
+			boundary_max = glm::max(boundary_max, p);
+			boundary_min = glm::min(boundary_min, p);
+		}
+		return true;
+	});
+	boundary_size = boundary_max-boundary_min;
+
+
+
+	/* scale and pivot */
+	if( scaleAndPivot ) {
+		depth_of_bone_root_in_rdtree++;
+
+		float max_axis_length = glm::max(glm::max(boundary_size.x, boundary_size.y), boundary_size.z);
+		// float min_axis_length = glm::min(glm::min(boundary_size.x, boundary_size.y), boundary_size.z);
+		glm::vec3 normScale = glm::vec3(maxSize/max_axis_length);
+
+		vec3 halfBoundaryBasis = boundary_size*0.5f*normScale;
+		vec3 normPos =  -boundary_min*normScale - halfBoundaryBasis - halfBoundaryBasis*pivot;
+
+		RdNode temp = root;
+		temp.tf = Transform();
+
+		root.meshs_mats.clear();
+		root.childs.clear();
+		root.childs.push_back(temp);
+		RdNode& pivotNode = root.childs.back();
+		pivotNode.name = "pivot";
+		pivotNode.tf.pos = normPos;
+		pivotNode.tf.scale = normScale;
+		pivotNode.tf.update();
+		root.childs.back().name = "pivot";
+	}
+
 
 	/* update bone offset with bind pose (bone-5) */
 	if( g_is_ms_has_bone ) {
@@ -595,8 +654,6 @@ bool lim::Model::importFromFile(string_view modelPath, bool withAnims)
 		}
 		animator.updateMtxBones();
 	}
-
-	updateNrAndBoundary();
 
 
 	log::pure("#meshs %d, #mats %d, #verts %d, #tris %d\n", own_meshes.size(), own_materials.size(), total_verts, total_tris);

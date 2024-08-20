@@ -76,9 +76,7 @@ namespace lim
   	public:
 		std::vector<ModelView*> own_mds;
         std::vector<ILight*> own_lits;
-		std::vector<const ModelView*> mds;
-		std::vector<const ILight*> lights;
-        const IBLight* ib_light = nullptr;
+        const IBLight* ib_light = nullptr; // ref
         bool is_draw_env_map = false;
 
     public:
@@ -90,13 +88,10 @@ namespace lim
         Scene() = default;
         virtual ~Scene();
 
-        void releaseData();
+        void clear();
 
         ModelView* addOwn(ModelView* md);
         ILight* addOwn(ILight* lit);
-        const ModelView* addRef(const ModelView* md);
-        const ILight* addRef(const ILight* lit);
-
 	};
 
 

@@ -110,9 +110,12 @@ namespace lim
 	//
 	void simplifyModel(lim::Model& model, float lived_pct, int version, int agressiveness, bool verbose)
 	{
+		model.total_verts = 0;
+		model.total_tris = 0;
 		for( lim::Mesh *mesh : model.own_meshes ) {
 			simplifyMesh(*mesh, lived_pct, version, agressiveness, verbose);
+			model.total_verts += mesh->poss.size();
+			model.total_tris += mesh->tris.size();
 		}
-		model.updateNrAndBoundary();
 	}
 }

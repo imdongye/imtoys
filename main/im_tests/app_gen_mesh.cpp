@@ -53,34 +53,32 @@ namespace lim
 		addMeshToScene(new MeshDonut(0.5f, 0.2f, 50, 25));
 
 		Model* md = new Model();
-		md->importFromFile("assets/models/objs/spot.obj");
-		md->setUnitScaleAndPivot({0,0,0}, 1.f);
+		md->importFromFile("assets/models/objs/spot.obj", false, true, 1.f, glm::vec3(0));
 		md->setSameMat(&default_mat);
 
 		scene.addOwn(md);
 
 		md = new Model();
-		md->importFromFile("assets/models/objs/Wooden Crate.obj");
-		md->setUnitScaleAndPivot({0,0,0}, 1.f);
+		md->importFromFile("assets/models/objs/Wooden Crate.obj", false, true, 1.f, glm::vec3(0));
 		md->setSameMat(&default_mat);
 		scene.addOwn(md);
 
 
 		const float interModels = 1.2f;
-		const float biasModels = -interModels * scene.mds.size() / 2.f;
+		const float biasModels = -interModels * scene.own_mds.size() / 2.f;
 
-		for( int i = 0; i < scene.mds.size(); i++ )
+		for( int i = 0; i < scene.own_mds.size(); i++ )
 		{
-			scene.own_mds[i]->tf->pos = {biasModels + interModels * i, 0, 0};
-			scene.own_mds[i]->tf->update();
+			scene.own_mds[i]->root.tf.pos = {biasModels + interModels * i, 0, 0};
+			scene.own_mds[i]->root.tf.update();
 		}
 
 		addMeshToScene(new MeshPlane());
-		scene.own_mds.back()->tf->pos = {0, -1.f, 0};
-		scene.own_mds.back()->tf->scale = glm::vec3{20.f};
-		scene.own_mds.back()->tf->update();
+		scene.own_mds.back()->root.tf.pos = {0, -1.f, 0};
+		scene.own_mds.back()->root.tf.scale = glm::vec3{20.f};
+		scene.own_mds.back()->root.tf.update();
 
-		scene.addRef(&light);
+		scene.addOwn(new LightDirectional());
 
 
 		debugging_tex.s_wrap_param = GL_REPEAT;
@@ -117,9 +115,10 @@ namespace lim
 		ImGui::Begin("controller##genMesh");
 		ImGui::SliderFloat("vs_t", &vs_t, 0.f, 1.f);
 		ImGui::Text("<light>");
-		const static float litThetaSpd = 70 * 0.001;
-		const static float litPiSpd = 360 * 0.001;
+		const static float litThetaSpd = 70 * 0.001f;
+		const static float litPiSpd = 360 * 0.001f;
 		bool isLightDraged = false;
+		LightDirectional& light = *(LightDirectional*)scene.own_lits[0];
 		isLightDraged |= ImGui::DragFloat("light phi", &light.tf.phi, litPiSpd, 0, 360, "%.3f");
 		isLightDraged |= ImGui::DragFloat("light theta", &light.tf.theta, litThetaSpd, 0, 180, "%.3f");
 		if( isLightDraged ) {

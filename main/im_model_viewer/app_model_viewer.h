@@ -27,7 +27,6 @@ namespace lim
 		Model floor_md;
 
 		ProgramReloadable program;
-		LightDirectional d_light;
 
 	public:
 		AppModelViewer();

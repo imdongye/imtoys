@@ -264,11 +264,12 @@ namespace
 		mesh는 같지만 material이 다른경우 assimp에서는 mesh를 각각 만들어줘야한다.
 		*/
 		g_materialed_meshes.clear();
-		md.root.treversal([&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
+		md.root.treversal([&](const Mesh* ms, const Material* mat, const glm::mat4& _) {
 			auto pair = std::make_pair(ms, mat);
 			if( findIdx(g_materialed_meshes, pair)<0 ) {
 				g_materialed_meshes.push_back(pair);
 			}
+			return true;
 		});
 		
 

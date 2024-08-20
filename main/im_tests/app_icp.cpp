@@ -179,16 +179,11 @@ namespace lim
 
         Material* mat = new Material();
         Model md;
-        md.importFromFile("assets/models/objs/woody.obj");
-        md.setUnitScaleAndPivot();
+        md.importFromFile("assets/models/objs/woody.obj", false, true);
         md.setSameMat(mat);
         md.addOwn(mat);
-        const Transform& nomalized_term = *md.tf_norm;
-        log::pure(glm::to_string(nomalized_term.pos).c_str());
-        log::pure("\n");
-        log::pure(glm::to_string(nomalized_term.scale).c_str());
-
-        makeTransformedMesh(*md.own_meshes[0], dst_ms, nomalized_term.mtx);
+        glm::mat4 toWorld = md.getLocalToMeshMtx(md.own_meshes[0]);
+        makeTransformedMesh(*md.own_meshes[0], dst_ms, toWorld);
 
         glm::mat4 rigidMat = glm::translate(glm::vec3 {3,1, 0}) * glm::rotate(0.2f, glm::vec3 {0,0,1});
         makeTransformedMesh(dst_ms, src_ms, rigidMat);

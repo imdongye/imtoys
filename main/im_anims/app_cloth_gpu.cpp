@@ -199,8 +199,7 @@ AppClothGPU::AppClothGPU()
 
 	prog_comp_nor.attatch("im_anims/shaders/cloth_normal.comp").link();
 
-	model.importFromFile("assets/models/jump.fbx", true);
-	model.setUnitScaleAndPivot();
+	model.importFromFile("assets/models/jump.fbx", true, true);
 	model.animator.play();
 	model.animator.is_loop = true;
 
@@ -216,8 +215,7 @@ void AppClothGPU::update()
 	// get skind vert pos
 	{
 		int idxClothVert = 0;
-		mat4 boneMtx = model.getGlobalTfMtx() * model.animator.skeleton[22].tf_model_space;
-		vec3 target = vec3(boneMtx*vec4(0,0,0,1));
+		vec3 target = model.getBoneWorldPos(22);
 
 		glBindBuffer(GL_ARRAY_BUFFER, buf_posm_ids[src_buf_idx]);
 		vec3* pPos = (vec3*)glMapBufferRange(GL_ARRAY_BUFFER, sizeof(vec4)*idxClothVert, sizeof(vec3), GL_MAP_WRITE_BIT); 
@@ -304,6 +302,7 @@ void AppClothGPU::update()
 	model.root.treversalEnabled([&](const Mesh* ms, const Material*, const glm::mat4& transform) {
 		prog_skin.setUniform("mtx_Model", transform);
 		ms->bindAndDrawGL();
+		return true;
 	});
 
 	if(collision_enabled) {

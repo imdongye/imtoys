@@ -44,13 +44,11 @@ namespace lim
 		int dst_vp_idx = 1;
 		int last_focused_vp_idx = 0;
 		
-		LightDirectional light;
 		Model ground;
 
 		int nr_viewports = 0;
 		std::vector<ViewportWithCamera*> viewports;
 		std::vector<Scene*> scenes;
-		std::vector<Model*> models;
 
 		const char* export_path = "exports/simp_rst";
 

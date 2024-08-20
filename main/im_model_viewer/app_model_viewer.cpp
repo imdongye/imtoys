@@ -84,21 +84,14 @@ lim::AppModelViewer::AppModelViewer() : AppBase(1373, 780, APP_NAME, false)
 	program.name = "brdf_prog";
 	program.attatch("mvp_shadow.vs").attatch("im_model_viewer/shaders/brdf.fs").link();
 
-	d_light.tf.theta = 35.f;
-	d_light.tf.phi =  -35.f;
-	d_light.tf.dist = 7.f;
-	d_light.tf.updateWithRotAndDist();
-	d_light.Intensity = 55.f;
-	d_light.setShadowEnabled(true);
-
 	floor_md.name = "floor";
 	floor_md.addOwn(new MeshPlane(2.f, 2.f));
 	floor_md.own_meshes.back()->initGL(true);
 	Material* flMat = floor_md.addOwn(new Material());
 	flMat->prog = &program;
 	floor_md.root.addMsMat(floor_md.own_meshes.back(), flMat);
-	floor_md.tf->scale = glm::vec3(5.f);
-	floor_md.tf->update();
+	floor_md.root.tf.scale = glm::vec3(5.f);
+	floor_md.root.tf.update();
 
 	Texture* flTex;
 	flTex = floor_md.addOwn(new Texture());
@@ -132,11 +125,17 @@ lim::AppModelViewer::~AppModelViewer()
 void lim::AppModelViewer::addModelViewer(string path) 
 {
 	Model* md = new Model();
-	if( md->importFromFile(findModelInDirectory(path))==false ) {
+	if( md->importFromFile(findModelInDirectory(path), false, true)==false ) {
 		delete md;
 		return;
 	}
-	md->setUnitScaleAndPivot();
+	LightDirectional* lit = new LightDirectional();
+	lit->tf.theta = 35.f;
+	lit->tf.phi =  -35.f;
+	lit->tf.dist = 7.f;
+	lit->tf.updateWithRotAndDist();
+	lit->Intensity = 55.f;
+	lit->setShadowEnabled(true);
 
 	brdf_test_infos.push_back({});
 	brdf_test_infos.back().ctrl_name = md->name+" ctrl ##modelviewer";
@@ -148,9 +147,9 @@ void lim::AppModelViewer::addModelViewer(string path)
 	md->setSetProgToAllMat(makeSetProg(brdf_test_infos.back()));
 
 	Scene* scn = new Scene();
-	scn->addRef(&d_light);
-	scn->addRef(&floor_md);
+	scn->addOwn(lit);
 	scn->addOwn(md);
+	scn->addOwn(new ModelView(floor_md));
 	scn->ib_light = &ib_light;
 	scenes.push_back(scn);
 
@@ -205,7 +204,7 @@ void lim::AppModelViewer::updateImGui()
 
 	// log::drawViewer("logger##model_viewer");
 
-	LimGui::LightDirectionalEditor(d_light);
+	LimGui::LightDirectionalEditor(*(LightDirectional*)scenes[selected_vp_idx]->own_lits[0]);
 
 	// draw common ctrl
 	{
@@ -260,16 +259,16 @@ void lim::AppModelViewer::updateImGui()
 		ImGui::Begin(tInfo.ctrl_name.c_str());
 		ImGui::Checkbox("rotate", &tInfo.is_rotate_md);
 		if( tInfo.is_rotate_md ) {
-			md.tf->ori = glm::rotate(md.tf->ori, glim::pi45*delta_time, {0,1,0});
-			md.tf->update();
+			md.root.tf.ori = glm::rotate(md.root.tf.ori, glim::pi45*delta_time, {0,1,0});
+			md.root.tf.update();
 		}
 		
 		if( ImGui::Checkbox("floor", &tInfo.is_draw_floor) ) {
 			if(tInfo.is_draw_floor) {
-				scenes[i]->addRef(&floor_md);
+				scenes[i]->own_mds[1]->root.enabled = true;
 			}
 			else {
-				scenes[i]->mds.pop_back();
+				scenes[i]->own_mds[1]->root.enabled = false;
 			}
 		}
 

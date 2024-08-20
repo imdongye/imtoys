@@ -12,28 +12,15 @@ using namespace lim;
 using namespace glm;
 
 
-void AppSkeletal::importModel(const char* path) {
-	model.importFromFile(path, true);
-	model.setUnitScaleAndPivot();
-	model.setProgToAllMat(&prog_skinned);
+void AppSkeletal::makeScene(const char* path) {
+	Model* md;
+	scene.clear();
 	LimGui::ModelEditorReset();
-}
-lim::AppSkeletal::AppSkeletal() : AppBase(1200, 780, APP_NAME, false)
-	, viewport("viewport##skeletal", new FramebufferTexDepth())
-{
-	LightDirectional* lit = new LightDirectional();
-	scene.addOwn(lit);
 
-	prog_skinned.name = "skeletal prog";
-	prog_skinned.attatch("mvp_skinned.vs").attatch("ndv.fs").link();
-
-
-	prog_static.name = "static prog";
-	prog_static.attatch("mvp.vs").attatch("ndv.fs").link();
-	
-	importModel("assets/models/jump.fbx");
-	scene.addRef(&model);
-
+	md = new Model();
+	md->importFromFile(path, true, true);
+	md->setProgToAllMat(&prog_skinned);
+	scene.addOwn(md);
 
 	// {
 	// 	int nrWidth = 10;
@@ -55,18 +42,32 @@ lim::AppSkeletal::AppSkeletal() : AppBase(1200, 780, APP_NAME, false)
 
 
 
-	Model* floor = new Model();
-	Mesh* ms = floor->addOwn(new MeshPlane(30.f, 30.f));
+	// floor
+	md = new Model();
+	Mesh* ms = md->addOwn(new MeshPlane(30.f, 30.f));
 	ms->initGL(true);
-	Material* mat = floor->addOwn(new Material());
-	floor->root.addMsMat(ms, mat);
-	floor->setProgToAllMat(&prog_static);
-	scene.addOwn(floor);
+	Material* mat = md->addOwn(new Material());
+	md->root.addMsMat(ms, mat);
+	md->setProgToAllMat(&prog_static);
+	scene.addOwn(md);
+}
+lim::AppSkeletal::AppSkeletal() : AppBase(1200, 780, APP_NAME, false)
+	, viewport("viewport##skeletal", new FramebufferTexDepth())
+{
+	LightDirectional* lit = new LightDirectional();
+	scene.addOwn(lit);
+
+	prog_skinned.name = "skeletal prog";
+	prog_skinned.attatch("mvp_skinned.vs").attatch("ndv.fs").link();
+
+
+	prog_static.name = "static prog";
+	prog_static.attatch("mvp.vs").attatch("ndv.fs").link();
+	
+	makeScene("assets/models/jump.fbx");
 
 	viewport.camera.moveShift(glm::vec3(0,1.4f,0));
 	viewport.camera.updateViewMat();
-
-	
 }
 lim::AppSkeletal::~AppSkeletal()
 {
@@ -91,19 +92,24 @@ void lim::AppSkeletal::update()
 	Program& prog = AssetLib::get().prog_color;
 	prog.use();
 	viewport.camera.setUniformTo(prog);
-	glm::mat4 globalMtx = model.getGlobalTfMtx();
-	for( const BoneNode& bone : model.animator.skeleton ) {
-		if( drawOffset ) {
-			if( bone.idx_bone<0 )
-				return;
-			glm::mat4 local = glm::inverse(model.bone_offsets[bone.idx_bone]);
-			prog.setUniform("mtx_Model", globalMtx * local);
+
+	//	draw bones
+	{
+		const ModelView& mdview = *scene.own_mds[0];
+		glm::mat4 globalMtx = mdview.getLocalToBoneRootMtx();
+		for( const BoneNode& bone : mdview.animator.skeleton ) {
+			if( drawOffset ) {
+				if( bone.idx_bone<0 )
+					return;
+				glm::mat4 local = glm::inverse(mdview.md_data->bone_offsets[bone.idx_bone]);
+				prog.setUniform("mtx_Model", globalMtx * local);
+			}
+			else {
+				prog.setUniform("mtx_Model", globalMtx * bone.tf_model_space);
+			}
+			prog.setUniform("color", (LimGui::getPickedBoneNode() == &bone) ? glm::vec3(1, 0, 0) : glm::vec3(0, 0, 1));
+			AssetLib::get().sphere.bindAndDrawGL();
 		}
-		else {
-			prog.setUniform("mtx_Model", globalMtx * bone.tf_model_space);
-		}
-		prog.setUniform("color", (LimGui::getPickedBoneNode() == &bone) ? glm::vec3(1, 0, 0) : glm::vec3(0, 0, 1));
-		AssetLib::get().sphere.bindAndDrawGL();
 	}
 	glEnable(GL_DEPTH_TEST);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -116,8 +122,7 @@ void lim::AppSkeletal::updateImGui()
 
 	viewport.drawImGui();
 
-	LimGui::ModelEditor(model);
-	// LimGui::ModelEditor(*scene.own_mds.front());
+	LimGui::ModelEditor(*scene.own_mds.front());
 
 	ImGui::Begin("skeletal ctrl");
 	LimGui::PlotVal("dt", "ms", delta_time);
@@ -126,5 +131,5 @@ void lim::AppSkeletal::updateImGui()
 	ImGui::End();
 }
 void lim::AppSkeletal::dndCallback(int cnt, const char **paths) {
-	importModel(paths[0]);
+	makeScene(paths[0]);
 }

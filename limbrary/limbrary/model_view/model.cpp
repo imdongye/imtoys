@@ -23,45 +23,85 @@
 #include <limbrary/asset_lib.h>
 #include <limbrary/g_tools.h>
 #include <imgui.h>
+#include <stack>
 
 using namespace lim;
 
-RdNode* RdNode::makeChild(std::string_view _name) {
-	childs.push_back(RdNode());
-	childs.back().name = _name;
-	return &childs.back();
+using glm::vec3;
+using glm::vec4;
+using glm::mat4;
+
+
+RdNode::RdNode(std::string_view _name, RdNode* _parent)
+	: name(_name), parent(_parent)
+{
+}
+RdNode::RdNode(const RdNode& src)
+{
+	*this = src;
+}
+RdNode& RdNode::operator=(const RdNode& src)
+{
+	name = src.name;
+	tf = src.tf;
+	parent = src.parent;
+	childs = src.childs;
+	meshs_mats = src.meshs_mats;
+	enabled = src.enabled;
+	// recursivly bottom to top
+	// todo test
+	for( auto& child : childs ) {
+		child.parent = this;
+	}
+	return *this;
+}
+
+void RdNode::addChild(std::string_view _name) {
+	childs.push_back(RdNode(_name, this));
 }
 void RdNode::addMsMat(const Mesh* ms, const Material* mat) {
 	meshs_mats.push_back({ms, mat});
-}
-void RdNode::treversal(std::function<void(const Mesh* ms, const Material* mat, const glm::mat4& transform)> callback, const glm::mat4& mtxPrevTf ) const {
-	const glm::mat4 curTf = mtxPrevTf * tf.mtx;
-
-	for( const auto& msset : meshs_mats ) {
-		callback(msset.ms, msset.mat, curTf);
-	}
-	for( const RdNode& child : childs ) {
-		child.treversal(callback, curTf);
-	}
-}
-void RdNode::treversalEnabled(std::function<void(const Mesh* ms, const Material* mat, const glm::mat4& transform)> callback, const glm::mat4& mtxPrevTf ) const {
-	if( !enabled )
-		return;
-	const glm::mat4 curTf = mtxPrevTf * tf.mtx;
-
-	for( const auto& msset : meshs_mats ) {
-		if( msset.enabled ) {
-			callback(msset.ms, msset.mat, curTf);
-		}
-	}
-	for( const RdNode& child : childs ) {
-		child.treversalEnabled(callback, curTf);
-	}
 }
 void RdNode::clear() {
 	meshs_mats.clear();
 	childs.clear();
 }
+
+
+void RdNode::updateGlobalTransform(mat4 prevTf) {
+	tf_global = prevTf * tf.mtx;
+	for( RdNode& child : childs ) {
+		child.updateGlobalTransform(tf_global);
+	}
+}
+
+
+void RdNode::treversal(std::function<bool(const Mesh* ms, const Material* mat, const glm::mat4& transform)> callback) const {
+	for( const auto& msset : meshs_mats ) {
+		if( callback(msset.ms, msset.mat, tf_global) == false ) {
+			return;
+		}
+	}
+	for( const RdNode& child : childs ) {
+		child.treversal(callback);
+	}
+}
+void RdNode::treversalEnabled(std::function<bool(const Mesh* ms, const Material* mat, const glm::mat4& transform)> callback) const {
+	if( !enabled )
+		return;
+	for( const auto& msset : meshs_mats ) {
+		if( msset.enabled ) {
+			if( callback(msset.ms, msset.mat, tf_global) == false ) {
+				return;
+			}
+		}
+	}
+	for( const RdNode& child : childs ) {
+		child.treversalEnabled(callback);
+	}
+}
+
+
 
 
 static Transform* findTf(RdNode& dst, const RdNode& src, const Transform* srcTf) {
@@ -78,34 +118,23 @@ static Transform* findTf(RdNode& dst, const RdNode& src, const Transform* srcTf)
 }
 
 
-ModelView::ModelView() {
-	tf = &root.tf;
+ModelView::ModelView()
+	: root("empty", nullptr)
+{
 }
 ModelView::~ModelView() {
 }
-ModelView::ModelView(const ModelView& src) {
+ModelView::ModelView(const ModelView& src)
+	: root("empty", nullptr)
+{
 	operator=(src);
 }
 ModelView& ModelView::operator=(const ModelView& src) {
 	root = src.root;
 	tf_prev = src.tf_prev;
-	tf = findTf(root, src.root, src.tf);
-	tf_norm = findTf(root, src.root, src.tf_norm);
 	md_data = src.md_data;
 	animator = src.animator;
 	return *this;
-}
-
-const glm::mat4 ModelView::getGlobalTfMtx() const {
-	glm::mat4 mtx = glm::mat4(1);
-	if( tf_prev ) {
-		mtx = tf_prev->mtx;
-	}
-	mtx = mtx * tf->mtx;
-	if( tf_norm ) {
-		mtx = mtx * tf_norm->mtx;
-	}
-	return mtx;
 }
 
 
@@ -119,8 +148,6 @@ Model::~Model() {
 }
 void Model::clear() {
 	root.clear();
-	tf = &root.tf;
-	tf_norm = nullptr;
 
 	animator.clear();
 	animations.clear();
@@ -178,53 +205,6 @@ static void setMatInTree(RdNode& root, const Material* mat) {
 void Model::setSameMat(const Material* mat) {
 	setMatInTree(root, mat);
 }
-
-
-
-void Model::updateNrAndBoundary()
-{
-	total_verts = 0;
-	total_tris = 0;
-	boundary_max = glim::minimum_vec3;
-	boundary_min = glim::maximum_vec3;
-	boundary_size = glm::vec3(0);
-
-	root.treversal([&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
-		total_verts += ms->poss.size();
-		total_tris += ms->tris.size();
-		for(glm::vec3 p : ms->poss) {
-			p = transform * glm::vec4(p, 1);
-			boundary_max = glm::max(boundary_max, p);
-			boundary_min = glm::min(boundary_min, p);
-		}
-	});
-	boundary_size = boundary_max-boundary_min;
-}
-void Model::setUnitScaleAndPivot(glm::vec3 pivot, float maxSize)
-{
-	float max_axis_length = glm::max(glm::max(boundary_size.x, boundary_size.y), boundary_size.z);
-	// float min_axis_length = glm::min(glm::min(boundary_size.x, boundary_size.y), boundary_size.z);
-	float normScale = maxSize/max_axis_length;
-
-	if( !tf_norm ) {
-		RdNode real = root;
-		root.meshs_mats.clear();
-		root.childs.clear();
-		root.childs.push_back(real);
-		root.childs.back().name = "pivot";
-		tf_norm = &(root.childs.back().tf);
-	}
-
-	glm::vec3 halfBoundaryBasis = boundary_size*0.5f*normScale;
-	tf_norm->scale = glm::vec3(normScale);
-	tf_norm->pos = -boundary_min*normScale - halfBoundaryBasis - halfBoundaryBasis*pivot;
-	// tf_norm->pos = glm::vec3(0);
-	tf_norm->update();
-	// animator.skeleton[0].tf.mtx = tf_norm->mtx * animator.skeleton[0].tf.mtx;
-	// animator.skeleton[0].tf.decomposeMtx();
-}
-
-
 
 static void correctMatTexLink( Material& dst, const Material& src
 	, std::vector<Texture*>& dstTexs, const std::vector<Texture*>& srcTexs )
@@ -305,7 +285,38 @@ void Model::copyFrom(const Model& src) {
 
 	
 	nr_bones = src.nr_bones;
+	depth_of_bone_root_in_rdtree = src.depth_of_bone_root_in_rdtree;
 	bone_name_to_idx = src.bone_name_to_idx;
 	bone_offsets = src.bone_offsets;
 	animations = src.animations;
+}
+
+mat4 ModelView::getLocalToMeshMtx(const Mesh* target) const {
+	bool isFindMs = false;
+	mat4 rst = mat4(1.0f);
+	root.treversal([&](const Mesh* ms, const Material* mat, const glm::mat4& tf) {
+		if( target == ms ) {
+			rst = tf;
+			isFindMs = true;
+			return false;
+		}
+		return true;
+	});
+	assert(isFindMs);
+	return rst;
+}
+
+mat4 ModelView::getLocalToBoneRootMtx() const {
+	const RdNode* curNode = &root;
+	for( int i=0; i<md_data->depth_of_bone_root_in_rdtree; i++ ) {
+		assert(curNode->childs.size()==1);
+		curNode = &curNode->childs[0];
+	}
+	return curNode->tf_global;
+}
+
+vec3 ModelView::getBoneWorldPos(int boneNodeIdx) const {
+    mat4 toBoneRoot = getLocalToBoneRootMtx();
+	vec3 rst = vec3( toBoneRoot * animator.skeleton[boneNodeIdx].tf_model_space * vec4(0,0,0,1) );
+    return rst;
 }

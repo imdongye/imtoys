@@ -25,7 +25,7 @@ namespace LimGui
     
 	// only one in updateImGui
     void ModelEditor(lim::ModelView& md);
-    void ModelEditorReset(const char* hname="hierarchy", const char* iname = "inspector", const char* aname = "animator");
+    void ModelEditorReset(const char* windowName = "Model Editor");
     lim::BoneNode* getPickedBoneNode();
 
     void LightDirectionalEditor(lim::LightDirectional& lit);

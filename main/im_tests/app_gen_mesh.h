@@ -25,7 +25,6 @@ namespace lim
 		Material default_mat;
 		ViewportWithCamera viewport;
 		Texture debugging_tex;
-		LightDirectional light;
 		Scene scene;
 
 	public:

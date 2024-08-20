@@ -48,15 +48,25 @@ namespace lim
 		};
 		std::string name = "nonamed node";
         Transform tf;
+		glm::mat4 tf_global = glm::mat4(1); // update in render() also
+		RdNode* parent = nullptr;
         std::vector<RdNode> childs;
 		bool enabled = true;
 		std::vector<MsSet> meshs_mats;
 
-		RdNode* makeChild(std::string_view name="nonamed node");
+		RdNode(std::string_view _name, RdNode* _parent);
+		RdNode(const RdNode& src);
+		RdNode& operator=(const RdNode&);
+		
+		void addChild(std::string_view _name);
 		void addMsMat(const Mesh* ms, const Material* mat);
-		void treversal(std::function<void(const Mesh* ms, const Material* mat, const glm::mat4& transform)> callback, const glm::mat4& mtxPrevTf = glm::mat4(1) ) const;
-		void treversalEnabled(std::function<void(const Mesh* ms, const Material* mat, const glm::mat4& transform)> callback, const glm::mat4& mtxPrevTf = glm::mat4(1) ) const;
 		void clear();
+
+		// if ModelView tf_prev to prevTf
+		void updateGlobalTransform(glm::mat4 prevTf=glm::mat4(1));
+		// if you want stop treversal return false;
+		void treversal(std::function<bool(const Mesh* ms, const Material* mat, const glm::mat4& tf)> callback) const;
+		void treversalEnabled(std::function<bool(const Mesh* ms, const Material* mat, const glm::mat4& tf)> callback) const;
 	};
 
 
@@ -66,18 +76,21 @@ namespace lim
 	public:
 		RdNode root;
 		const Transform* tf_prev = nullptr;
-		Transform* tf = nullptr;
-		Transform* tf_norm = nullptr;
 		Animator animator;
 		Model* md_data = nullptr;
 	public:
 		ModelView();
 		virtual ~ModelView();
+
+		
+		// before use this you must call root.updateGlobalTransform();
+		glm::mat4 getLocalToMeshMtx(const Mesh* ms) const;
+		glm::mat4 getLocalToBoneRootMtx() const;
+        glm::vec3 getBoneWorldPos(int boneNodeIdx) const;
+
 		// make ref with model
 		ModelView(const ModelView& src);
 		ModelView& operator=(const ModelView& src);
-		
-		const glm::mat4 getGlobalTfMtx() const;
 	};
 
 
@@ -103,6 +116,7 @@ namespace lim
 
 		/* bone */
 		int nr_bones = 0;
+		int depth_of_bone_root_in_rdtree = -1;
 		std::map<std::string, int> bone_name_to_idx;
 		std::vector<glm::mat4> bone_offsets;
         std::vector<Animation> animations;
@@ -123,11 +137,10 @@ namespace lim
 		void setProgToAllMat(const Program* prog);
 		void setSetProgToAllMat(std::function<void(const Program&)> setProg);
 
-		void updateNrAndBoundary();
-		void setUnitScaleAndPivot(glm::vec3 pivot={0,-1,0}, float maxSize = 2.f);
 
 		void copyFrom(const Model& src); // now for model simplification
-		bool importFromFile(std::string_view modelPath, bool withAnim = false);
+		bool importFromFile(std::string_view modelPath, bool withAnim = false
+			, bool scaleAndPivot = false, float maxSize=2.f, glm::vec3 pivot={0,-1,0});
 		// render tree에서 사용하는 mesh와 material은 모두 own_에 포함되어있어야 export가능.
 		bool exportToFile(size_t pIndex, std::string_view exportDir); // dir without last slash
 	};

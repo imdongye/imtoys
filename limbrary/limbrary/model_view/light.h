@@ -6,6 +6,10 @@ point or directional light
 point is pos.w == 1
 direcitonal is pos.w == 0
 
+Todo:
+	roll back to no vertual func
+
+
 Note:
 shadow사용할때 flustum크기 시야와 오브젝트 고려해서 잘 조절해야됨.(자동으로 해주는게 필요할듯)
 

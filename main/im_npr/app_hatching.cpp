@@ -110,8 +110,7 @@ lim::AppHatching::AppHatching(): AppBase(1200, 780, APP_NAME)
 	viewport.setClearColor({0.1f, 0.1f, 0.1f, 1.0f});
 
 	Model* md = new Model();
-	md->importFromFile("assets/models/dwarf/Dwarf_2_Low.obj");
-	md->setUnitScaleAndPivot();
+	md->importFromFile("assets/models/dwarf/Dwarf_2_Low.obj", false, true);
 	md->setSameMat(&h_mat);
 	scene.addOwn(md);
 	
@@ -120,17 +119,16 @@ lim::AppHatching::AppHatching(): AppBase(1200, 780, APP_NAME)
 	scene.addOwn(md);
 
 	md = new Model();
-	md->importFromFile("assets/models/dwarf/Dwarf_2_Low.obj");
-	md->setUnitScaleAndPivot();
+	md->importFromFile("assets/models/dwarf/Dwarf_2_Low.obj", false, true);
 	md->setSameMat(&h_mat);
 	scene.addOwn(md);
 
 	const float interModels = 2.f;
-	const float biasModels = -interModels*(scene.mds.size()-1)*0.5f;
+	const float biasModels = -interModels*(scene.own_mds.size()-1)*0.5f;
 
-	for( int i = 0; i<scene.mds.size(); i++ ) {
-		scene.own_mds[i]->tf->pos ={biasModels + interModels*i, 0, 0};
-		scene.own_mds[i]->tf->update();
+	for( int i = 0; i<scene.own_mds.size(); i++ ) {
+		scene.own_mds[i]->root.tf.pos ={biasModels + interModels*i, 0, 0};
+		scene.own_mds[i]->root.tf.update();
 	}
 
 
@@ -139,8 +137,8 @@ lim::AppHatching::AppHatching(): AppBase(1200, 780, APP_NAME)
 	md->addOwn(new MeshPlane());
 	md->own_meshes.back()->initGL();
 	md->root.addMsMat(md->own_meshes.back(), &h_mat);
-	md->tf->scale = glm::vec3(20);
-	md->tf->update();
+	md->root.tf.scale = glm::vec3(20);
+	md->root.tf.update();
 	scene.addOwn(md);
 
 
@@ -152,7 +150,7 @@ lim::AppHatching::AppHatching(): AppBase(1200, 780, APP_NAME)
 		tam.push_back(new ArtMap(filename, 0));
 	}
 
-	scene.lights.push_back(&light);
+	scene.addOwn(&light);
 }
 lim::AppHatching::~AppHatching()
 {

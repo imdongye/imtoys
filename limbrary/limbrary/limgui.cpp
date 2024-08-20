@@ -70,15 +70,22 @@ void LimGui::Vec3(glm::vec3& v) {
 
 
 
-static ModelView* cur_md = nullptr;
-static RdNode* picked_nd = nullptr;
-static BoneNode* picked_bone = nullptr; // temp used in app_skeletal.cpp
-static RdNode::MsSet* picked_msset = nullptr;
-static const char* me_inspector_name = "inspector";
-static const char* me_hierarchy_name = "hierarchy";
-static const char* me_animator_name  = "animator";
-static const char* dl_name			 = "d_light editor";
-static const char* dl_shadow_map_name= "d_light shadow map";
+
+
+
+namespace {
+	ModelView* cur_md = nullptr;
+	RdNode* picked_nd = nullptr;
+	BoneNode* picked_bone = nullptr; // temp used in app_skeletal.cpp
+	RdNode::MsSet* picked_msset = nullptr;
+	const char* model_editor_window_name = "ModelEditor";
+}
+
+void LimGui::ModelEditorReset(const char* windowName) {
+	cur_md = nullptr;
+	model_editor_window_name = windowName;
+}
+
 
 static void drawHierarchy(RdNode& nd) {
 	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_None;
@@ -117,7 +124,8 @@ static void drawHierarchy(RdNode& nd) {
 		ImGui::TreePop();
 	}
 }
-static void drawHierarchy(std::vector<BoneNode>& skel, int curIdx) {
+
+static void drawHierarchy(std::vector<BoneNode>& skel, int curIdx, int curLevel=0) {
 	BoneNode& curBone = skel[curIdx];
 	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_None;
 	if( picked_bone == &curBone ) {
@@ -127,7 +135,10 @@ static void drawHierarchy(std::vector<BoneNode>& skel, int curIdx) {
 		flags |= ImGuiTreeNodeFlags_Leaf;
 	}
 	else {
-		flags |= ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_DefaultOpen;
+		flags |= ImGuiTreeNodeFlags_OpenOnArrow;
+		if( curLevel!=2 ) {
+			flags |= ImGuiTreeNodeFlags_DefaultOpen;
+		}
 	}
 	
 	if( ImGui::TreeNodeEx(&curBone, flags, curBone.name.c_str()) ) {
@@ -140,14 +151,13 @@ static void drawHierarchy(std::vector<BoneNode>& skel, int curIdx) {
 		for( int i=curIdx+1; nrFinded<curBone.nr_childs; i++ ) {
 			if( skel[i].idx_parent_bone_node == curIdx ) {
 				nrFinded++;
-				drawHierarchy(skel, i);
+				drawHierarchy(skel, i, curLevel+1);
 			}
 		}
 		ImGui::TreePop();
 	}
 }
 static void drawInspector() {
-	ImGui::Begin(me_inspector_name);
 	if( picked_nd ) {
 		RdNode& nd = *picked_nd;
 		ImGui::Text("name : %s", nd.name.c_str());
@@ -195,13 +205,16 @@ static void drawInspector() {
 		ImGui::Text("material : %s", mat->name.c_str());
 		ImGui::Checkbox("enabled", &picked_msset->enabled);
 	}
-	ImGui::End();
+	else {
+		ImGui::Dummy(ImVec2(0.0f, 20.0f));
+		ImGui::Text("nothing selected");
+		ImGui::Dummy(ImVec2(0.0f, 20.0f));
+	}
 }
 static void drawAnimator(Animator& animator) {
 	if( animator.cur_anim == nullptr )
 		return;
-	
-	ImGui::Begin(me_animator_name);
+
 	ImGui::Text("#bones in mesh : %d", animator.mtx_Bones.size());
 	switch(animator.state) {
 	case Animator::ST_PLAY: ImGui::Text("state : PLAY"); break;
@@ -238,7 +251,6 @@ static void drawAnimator(Animator& animator) {
 		animator.setAnim(&animator.md_data->animations[anim_idx]);
 	}
 	ImGui::Text("#tracks in anim : %d", animator.cur_anim->tracks.size());
-	ImGui::End();
 }
 
 void LimGui::ModelEditor(ModelView& md) {
@@ -248,26 +260,63 @@ void LimGui::ModelEditor(ModelView& md) {
 		picked_bone = nullptr;
 		picked_msset = nullptr;
 	}
+	ImGui::Begin(model_editor_window_name);
+	if( ImGui::CollapsingHeader("Data") ) {
+		ImGui::Text("name : %s", md.md_data->name.c_str());
+		ImGui::Text("depth of bone root : %d", md.md_data->depth_of_bone_root_in_rdtree);
+		if( ImGui::TreeNode("boundary") ) {
+			ImGui::Text("min : %.2f %.2f %.2f", md.md_data->boundary_min.x, md.md_data->boundary_min.y, md.md_data->boundary_min.z);
+			ImGui::Text("max : %.2f %.2f %.2f", md.md_data->boundary_max.x, md.md_data->boundary_max.y, md.md_data->boundary_max.z);
+			ImGui::Text("size: %.2f %.2f %.2f", md.md_data->boundary_size.x, md.md_data->boundary_size.y, md.md_data->boundary_size.z);
+			ImGui::TreePop();
+		}
+		if( ImGui::TreeNode("number of") ) {
+			ImGui::Text("verteces : %d", md.md_data->total_verts);
+			ImGui::Text("tris : %d", md.md_data->total_tris);
+			ImGui::Text("meshes : %d", md.md_data->own_meshes.size());
+			ImGui::Text("textures : %d", md.md_data->own_textures.size());
+			ImGui::Text("materials : %d", md.md_data->own_materials.size());
+			ImGui::TreePop();
+		}
+	}
 
-	ImGui::Begin(me_hierarchy_name);
-	drawHierarchy(md.root);
-	ImGui::Separator();
-	drawHierarchy(md.animator.skeleton, 0);
+
+	ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+	if( ImGui::CollapsingHeader("Inspactor") ) {
+		drawInspector();
+	}
+	ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+	if( ImGui::CollapsingHeader("Render tree") ) {
+		drawHierarchy(md.root);
+	}
+	if( ImGui::CollapsingHeader("Bone tree") ) {
+		drawHierarchy(md.animator.skeleton, 0);
+	}
+	if( ImGui::CollapsingHeader("Animator") ) {
+		drawAnimator(md.animator);
+	}
 	ImGui::End();
-
-	drawInspector();
-
-	drawAnimator(md.animator);
 }
-void LimGui::ModelEditorReset(const char* hname, const char* iname, const char* aname) {
-	cur_md = nullptr;
-	me_hierarchy_name = hname;
-	me_inspector_name = iname;
-	me_animator_name = aname;
-}
+
 lim::BoneNode* LimGui::getPickedBoneNode() {
 	return picked_bone;
 }
+
+
+
+
+
+namespace {
+	const char* dl_name			 = "d_light editor";
+	const char* dl_shadow_map_name= "d_light shadow map";
+}
+
+void LimGui::LightDirectionalEditorReset(const char* name, const char* smName) {
+	dl_name = name;
+	dl_shadow_map_name = smName; // not used
+	AssetLib::get().texture_viewer.name = smName;
+}
+
 
 void LimGui::LightDirectionalEditor(lim::LightDirectional& lit) {
 	const static float lit_theta_spd = 70 * 0.001f;
@@ -296,11 +345,14 @@ void LimGui::LightDirectionalEditor(lim::LightDirectional& lit) {
 	}
 	ImGui::End();
 }
-void LimGui::LightDirectionalEditorReset(const char* name, const char* smName) {
-	dl_name = name;
-	dl_shadow_map_name = smName; // not used
-	AssetLib::get().texture_viewer.name = smName;
-}
+
+
+
+
+
+
+
+
 
 
 struct PlotVarData {

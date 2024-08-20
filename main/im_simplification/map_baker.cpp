@@ -40,15 +40,16 @@ namespace lim
         unordered_map< int, vector<pair<const Mesh*, const Mesh*>> > mergeByNormalMap;
         src.root.treversal([&](const Mesh* srcMs, const Material* srcMat, const glm::mat4& tf) {
             if( srcMat->map_Bump==nullptr ) 
-                return;
+                return true;
             if( srcMs->uvs.empty() ) {
                 log::err("no uvs in mesh when bakeNorMap\n\n");
-                return;
+                return true;
             }
             int bumpMatIdx = findIdx(src.own_materials, (Material*)srcMat);
             const Mesh* dstMs = dst.own_meshes[ findIdx(src.own_meshes, (Mesh*)srcMs) ];
 
             mergeByNormalMap[bumpMatIdx].push_back( make_pair(srcMs, dstMs) );
+            return true;
         });
 
 
@@ -117,15 +118,16 @@ namespace lim
 
         md.root.treversal([&](const Mesh* ms, const Material* mat, const glm::mat4& tf) {
             if( mat==nullptr || (mat->map_Flags|Material::MF_HEIGHT)==0 ) 
-                return;
+                return true;
             if( ms->uvs.empty() ) {
                 log::err("no uvs in mesh when bakeNorMap\n\n");
-                return;
+                return true;
             }
             int bumpMatIdx = findIdx(md.own_materials, (Material*)mat);
             int msIdx = findIdx(md.own_meshes, (Mesh*)ms);
 
             mergeByNormalMap[bumpMatIdx].insert(msIdx);
+            return true;
         });
 
 

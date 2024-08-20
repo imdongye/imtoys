@@ -24,8 +24,7 @@ namespace lim
 		Program prog_static;
 		ViewportWithCamera viewport;
 		Scene scene;
-		Model model;
-		void importModel(const char* path);
+		void makeScene(const char* path);
 
 	public:
 		AppSkeletal();
