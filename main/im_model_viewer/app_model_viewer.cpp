@@ -92,6 +92,7 @@ lim::AppModelViewer::AppModelViewer() : AppBase(1373, 780, APP_NAME, false)
 	floor_md.root.addMsMat(floor_md.own_meshes.back(), flMat);
 	floor_md.root.tf.scale = glm::vec3(5.f);
 	floor_md.root.tf.update();
+	floor_md.root.updateGlobalTransform();
 
 	Texture* flTex;
 	flTex = floor_md.addOwn(new Texture());
@@ -261,6 +262,8 @@ void lim::AppModelViewer::updateImGui()
 		if( tInfo.is_rotate_md ) {
 			md.root.tf.ori = glm::rotate(md.root.tf.ori, glim::pi45*delta_time, {0,1,0});
 			md.root.tf.update();
+			md.root.updateGlobalTransform();
+
 		}
 		
 		if( ImGui::Checkbox("floor", &tInfo.is_draw_floor) ) {

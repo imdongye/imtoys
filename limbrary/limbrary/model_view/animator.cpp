@@ -89,7 +89,8 @@ void Animator::setUniformTo(const Program& prog) const {
 
 static vec3 getInterpolatedValue( const std::vector<Animation::KeyVec3>& keys, float curTick ) {
     const int nrKeys = keys.size(); 
-    Animation::KeyVec3 k1, k2;
+    Animation::KeyVec3 k1 = keys[0];
+    Animation::KeyVec3 k2 = keys[1];
     for( int i=0; i<nrKeys; i++ ) {
         if( curTick < keys[i].tick ) {
             if(i==0) {
@@ -107,8 +108,9 @@ static vec3 getInterpolatedValue( const std::vector<Animation::KeyVec3>& keys, f
 }
 
 static quat getInterpolatedValue( const std::vector<Animation::KeyQuat>& keys, float curTick ) {
-    const int nrKeys = keys.size(); 
-    Animation::KeyQuat k1, k2;
+    const int nrKeys = keys.size();
+    Animation::KeyQuat k1 = keys[0];
+    Animation::KeyQuat k2 = keys[1];
     for( int i=0; i<nrKeys; i++ ) {
         if( curTick < keys[i].tick ) {
             if(i==0) {

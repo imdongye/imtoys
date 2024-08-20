@@ -129,6 +129,7 @@ lim::AppHatching::AppHatching(): AppBase(1200, 780, APP_NAME)
 	for( int i = 0; i<scene.own_mds.size(); i++ ) {
 		scene.own_mds[i]->root.tf.pos ={biasModels + interModels*i, 0, 0};
 		scene.own_mds[i]->root.tf.update();
+		scene.own_mds[i]->root.updateGlobalTransform();
 	}
 
 
@@ -139,6 +140,7 @@ lim::AppHatching::AppHatching(): AppBase(1200, 780, APP_NAME)
 	md->root.addMsMat(md->own_meshes.back(), &h_mat);
 	md->root.tf.scale = glm::vec3(20);
 	md->root.tf.update();
+	md->root.updateGlobalTransform();
 	scene.addOwn(md);
 
 

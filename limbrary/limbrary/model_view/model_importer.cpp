@@ -451,13 +451,9 @@ static bool isBoneNode(std::string name) {
 	}
 	return false;
 }
-static void convertRdTree(RdNode& dst, const aiNode* src) 
+// assume
+static void convertRdTree(RdNode& dst, const aiNode* src, int depth) 
 {
-	if( g_is_ms_has_bone && g_animator->nr_bone_nodes==0 ) {
-		g_model->depth_of_bone_root_in_rdtree++;
-		assert(g_model->depth_of_bone_root_in_rdtree<2); // normaly bone root in first node
-	}
-
 	dst.name = src->mName.C_Str();
 	dst.tf.mtx = toGLM(src->mTransformation);
 	dst.tf.decomposeMtx();
@@ -475,11 +471,14 @@ static void convertRdTree(RdNode& dst, const aiNode* src)
 		if( isBoneNode(aiChild->mName.C_Str()) ) {
 			// assume that model has only one bone tree
 			assert(g_animator->nr_bone_nodes==0);
+			assert(g_model->depth_of_bone_root_in_rdtree<1); // normaly bone root in first node
+
+			g_model->depth_of_bone_root_in_rdtree = depth;
 			addBoneNode( -1, mat4(1), aiChild );
 			continue;
 		}
 		dst.addChild("unknown");
-		convertRdTree( dst.childs.back(), aiChild );
+		convertRdTree( dst.childs.back(), aiChild, depth+1 );
 	}
 }
 
@@ -565,29 +564,52 @@ bool lim::Model::importFromFile(
 		own_meshes.push_back(convertMesh(g_scn->mMeshes[i]));
 	}
 
-	/* import anims( bone-2 ) */
 	if( g_is_ms_has_bone ) {
+		/* import anims( bone-2 ) */
 		animator.init(this);
 		animations.resize(g_scn->mNumAnimations);
 		for( uint i=0; i<g_scn->mNumAnimations; i++ ) {
 			convertAnim(animations[i], *(g_scn->mAnimations[i]));
 		}
 		animator.setAnim(&animations[0]);
+	
+		/* set bone node tree structure (bone-3)
+		and link animation (bone-4) 
+		assume that first node is not bone root node
+		*/
+		animator.nr_bone_nodes = 0;
+		animator.skeleton.clear();
+		animator.skeleton.reserve(nr_bones+10);
+		g_model->depth_of_bone_root_in_rdtree = -1;
+		assert( isBoneNode(g_scn->mRootNode->mName.C_Str())==false );
+		convertRdTree(root, g_scn->mRootNode, 0);
+		assert(animator.nr_bone_nodes>0&&g_model->depth_of_bone_root_in_rdtree>=0);
+
+
+		/* update bone offset with bind pose (bone-5) */
+		/* sometimes defualt offset mtx is wrong */
+		// mat4 invGlobalTf = inverse(global_transform);
+		// for( mat4& offset : bone_offsets ) {
+		// 	offset = offset*global_transform;
+		// }
+
+		for( const BoneNode& nd : animator.skeleton ) {
+			int boneIdx = nd.idx_bone;
+			if( boneIdx<0 )
+				continue;
+			bone_offsets[boneIdx] = glm::inverse(nd.tf_model_space);
+		}
+		animator.updateMtxBones();
 	}
 
-	/* set bone node tree structure (bone-3)
-	   and link animation (bone-4) */
-	animator.nr_bone_nodes = 0;
-	animator.skeleton.clear();
-	animator.skeleton.reserve(nr_bones+10);
-	assert( isBoneNode(g_scn->mRootNode->mName.C_Str())==false );
-	g_model->depth_of_bone_root_in_rdtree = -1;
-	convertRdTree(root, g_scn->mRootNode);
 
+
+	
 
 	// !Important! : rid root transform
-	root.tf = Transform();
-
+	if( scaleAndPivot ) {
+		// root.tf = Transform();
+	}
 
 
 	// update import info	
@@ -623,6 +645,7 @@ bool lim::Model::importFromFile(
 		vec3 normPos =  -boundary_min*normScale - halfBoundaryBasis - halfBoundaryBasis*pivot;
 
 		RdNode temp = root;
+		temp.parent = &root;
 		temp.tf = Transform();
 
 		root.meshs_mats.clear();
@@ -634,25 +657,6 @@ bool lim::Model::importFromFile(
 		pivotNode.tf.scale = normScale;
 		pivotNode.tf.update();
 		root.childs.back().name = "pivot";
-	}
-
-
-	/* update bone offset with bind pose (bone-5) */
-	if( g_is_ms_has_bone ) {
-
-		/* sometimes defualt offset mtx is wrong */
-		// mat4 invGlobalTf = inverse(global_transform);
-		// for( mat4& offset : bone_offsets ) {
-		// 	offset = offset*global_transform;
-		// }
-
-		for( const BoneNode& nd : animator.skeleton ) {
-			int boneIdx = nd.idx_bone;
-			if( boneIdx<0 )
-				continue;
-			bone_offsets[boneIdx] = glm::inverse(nd.tf_model_space);
-		}
-		animator.updateMtxBones();
 	}
 
 

@@ -299,6 +299,7 @@ void AppClothGPU::update()
 	prog_skin.use();
 	viewport.camera.setUniformTo(prog_skin);
 	model.animator.setUniformTo(prog_skin);
+	model.root.updateGlobalTransform();
 	model.root.treversalEnabled([&](const Mesh* ms, const Material*, const glm::mat4& transform) {
 		prog_skin.setUniform("mtx_Model", transform);
 		ms->bindAndDrawGL();

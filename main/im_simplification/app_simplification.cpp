@@ -63,6 +63,7 @@ lim::AppSimplification::AppSimplification() : AppBase(1200, 780, APP_NAME, false
 	ground.root.tf.pos = {0, 0, 0};
 	ground.root.tf.scale = {10, 1, 10};
 	ground.root.tf.update();
+	ground.root.updateGlobalTransform();
 
 	setProg(0);
 

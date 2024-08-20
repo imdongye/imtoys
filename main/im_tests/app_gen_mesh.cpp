@@ -71,12 +71,14 @@ namespace lim
 		{
 			scene.own_mds[i]->root.tf.pos = {biasModels + interModels * i, 0, 0};
 			scene.own_mds[i]->root.tf.update();
+			scene.own_mds[i]->root.updateGlobalTransform();
 		}
 
 		addMeshToScene(new MeshPlane());
 		scene.own_mds.back()->root.tf.pos = {0, -1.f, 0};
 		scene.own_mds.back()->root.tf.scale = glm::vec3{20.f};
 		scene.own_mds.back()->root.tf.update();
+		scene.own_mds.back()->root.updateGlobalTransform();
 
 		scene.addOwn(new LightDirectional());
 

@@ -159,8 +159,12 @@ static void drawHierarchy(std::vector<BoneNode>& skel, int curIdx, int curLevel=
 }
 static void drawInspector() {
 	if( picked_nd ) {
+		ImGui::TextUnformatted("<RdNode>");
 		RdNode& nd = *picked_nd;
 		ImGui::Text("name : %s", nd.name.c_str());
+		if( nd.parent ) {
+			ImGui::Text("parrent name : %s", nd.parent->name.c_str());
+		}
 		ImGui::Text("childs : %d", nd.childs.size());
 		ImGui::Checkbox("enabled", &nd.enabled);
 		bool edited = false;
@@ -177,6 +181,7 @@ static void drawInspector() {
 		LimGui::Mat4(nd.tf.mtx);
 	}
 	else if( picked_bone ) {
+		ImGui::TextUnformatted("<BoneNode>");
 		BoneNode& nd = *picked_bone;
 		ImGui::Text("name : %s", nd.name.c_str());
 		ImGui::Text("childs : %d", nd.nr_childs);
@@ -199,6 +204,7 @@ static void drawInspector() {
 		}
 	}
 	else if( picked_msset ) {
+		ImGui::TextUnformatted("<MeshMat>");
 		const Mesh* ms = picked_msset->ms;
 		const Material* mat = picked_msset->mat;
 		ImGui::Text("name : %s", ms->name.c_str());
@@ -207,7 +213,7 @@ static void drawInspector() {
 	}
 	else {
 		ImGui::Dummy(ImVec2(0.0f, 20.0f));
-		ImGui::Text("nothing selected");
+		ImGui::Text("<nothing selected>");
 		ImGui::Dummy(ImVec2(0.0f, 20.0f));
 	}
 }
