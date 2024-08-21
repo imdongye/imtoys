@@ -2,6 +2,7 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <limbrary/tools/asset_lib.h>
+#include <limbrary/tools/general.h>
 #include <map>
 
 
@@ -205,12 +206,19 @@ static void drawInspector() {
 		}
 	}
 	else if( picked_msset ) {
-		ImGui::TextUnformatted("<MeshMat>");
-		const Mesh* ms = picked_msset->ms;
-		const Material* mat = picked_msset->mat;
-		ImGui::Text("name : %s", ms->name.c_str());
-		ImGui::Text("material : %s", mat->name.c_str());
 		ImGui::Checkbox("enabled", &picked_msset->enabled);
+		ImGui::TextUnformatted("<Mesh>");
+		const Mesh& ms = *picked_msset->ms;
+		ImGui::Text("name : %s", ms.name.c_str());
+		ImGui::Text("#tris: %d, #verts: %d", ms.nr_tris, ms.nr_verts);
+		ImGui::Text("pos:%s,nor:%s,uv:%s,col:%s,tan:%s,bitan:%s,bone_info:%s"
+			, boolStrOX(!ms.poss.empty()), boolStrOX(!ms.nors.empty()), boolStrOX(!ms.uvs.empty())
+			, boolStrOX(!ms.cols.empty()), boolStrOX(!ms.tangents.empty())
+			, boolStrOX(!ms.bitangents.empty()), boolStrOX(!ms.bone_infos.empty()));
+
+		ImGui::TextUnformatted("<Material>");
+		const Material* mat = picked_msset->mat;
+		ImGui::Text("name : %s", mat->name.c_str());
 	}
 	else {
 		ImGui::Dummy(ImVec2(0.0f, 20.0f));

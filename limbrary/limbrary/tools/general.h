@@ -27,6 +27,13 @@ namespace lim
 		p = nullptr;
 	}
 
+	inline const char* boolStr(bool b) {
+		return b ? "true" : "false";
+	}
+	inline const char* boolStrOX(bool b) {
+		return b ? "O" : "X";
+	}
+
 	// From: https://en.cppreference.com/w/cpp/algorithm/random_shuffle
 	// removed std::random_shuffle in cpp 17
 	template<typename T>

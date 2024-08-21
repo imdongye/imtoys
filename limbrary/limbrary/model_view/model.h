@@ -78,6 +78,7 @@ namespace lim
 		const Transform* tf_prev = nullptr;
 		Animator animator;
 		Model* md_data = nullptr;
+		
 	public:
 		ModelView();
 		virtual ~ModelView();
