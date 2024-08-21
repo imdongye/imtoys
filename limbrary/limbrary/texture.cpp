@@ -211,6 +211,38 @@ bool Texture::initFromFile(std::string_view filePath, bool convertLinear)
 	log::pure("%s(%dx%dx%dx%dbits)\n", name.c_str(), width, height, nr_channels, bit_per_channel);
 	return true;
 }
+
+bool Texture::initFromMem(const unsigned char* pcData, int aWidth, int aHeight
+	, bool convertLinear, const char* implicitFilePath)
+{
+	int length = (aHeight==0) ? aWidth : aWidth*aHeight;
+	void* data = stbi_load_from_memory(pcData, length, &width, &height, &nr_channels, 0);
+	file_path = implicitFilePath;
+	file_format = file_path.c_str()+file_path.rfind('.')+1;
+	name = std::string(file_path.c_str()+file_path.find_last_of("/\\")+1);
+	bit_per_channel = 8;
+
+	stbi_set_flip_vertically_on_load(true);
+
+	if(!data)
+		return false;
+
+	if( !updateFormat(nr_channels, bit_per_channel, convertLinear, true) ) {
+		log::err("no mached format\n");
+		stbi_image_free(data);
+		return false;
+	}
+
+	initGL(data);
+	stbi_image_free(data);
+
+	log::pure("%s(%dx%dx%dx%dbits)\n", name.c_str(), width, height, nr_channels, bit_per_channel);
+	return true;
+}
+
+
+
+
 GLuint Texture::getTexId() const {
 	return tex_id;
 }

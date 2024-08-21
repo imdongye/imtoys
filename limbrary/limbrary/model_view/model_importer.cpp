@@ -91,7 +91,16 @@ static Texture* loadTexture(string texPath, bool convertLinear, const char* msg)
 	if( !rst ) {
 		loadedTexs.push_back(new Texture());
 		lim::log::pure("%s ", msg);
-		loadedTexs.back()->initFromFile(texPath, convertLinear);
+		const aiTexture* aTex = g_scn->GetEmbeddedTexture(texPath.c_str());
+		if( aTex ) {
+			// From: https://github.com/assimp/assimp/issues/408
+			log::pure("embbed tex fm hint: %s\n", aTex->achFormatHint);
+			loadedTexs.back()->initFromMem((unsigned char*)aTex->pcData, aTex->mWidth, aTex->mHeight
+				, convertLinear, aTex->mFilename.C_Str());
+		}
+		else {
+			loadedTexs.back()->initFromFile(texPath, convertLinear);
+		}
 		rst = loadedTexs.back();
 	}
 	return rst;
@@ -172,14 +181,7 @@ static Material* convertMaterial(aiMaterial* aiMat, bool verbose = false)
 	mat.map_Flags = Material::MF_NONE;
 	if( aiMat->GetTexture(aiTextureType_DIFFUSE, 0, &tempStr) == AI_SUCCESS ) {
 		mat.map_Flags |= Material::MF_COLOR_BASE;
-		const aiTexture* tex = g_scn->GetEmbeddedTexture(tempStr.C_Str());
-		if( tex ) {
-			log::pure("fixme");
-			// https://github.com/assimp/assimp/issues/408
-		}
-		else {
-			mat.map_ColorBase = loadTexture(tempStr.C_Str(), true, "map_BaseColor"); // kd일때만 linear space변환
-		}
+		mat.map_ColorBase = loadTexture(tempStr.C_Str(), true, "map_BaseColor"); // kd일때만 linear space변환
 	}
 	if( aiMat->GetTexture(aiTextureType_BASE_COLOR, 0, &tempStr) == AI_SUCCESS ) {
 		mat.map_Flags |= Material::MF_COLOR_BASE;
@@ -573,6 +575,7 @@ bool lim::Model::importFromFile(
 
 	/* import my_meshes, make bone_name_map ( bone-1 ) */
 	g_is_ms_has_bone = false;
+	g_animator = nullptr;
 	if( withAnims ) {
 		g_animator = &animator;
 	}
