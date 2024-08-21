@@ -601,7 +601,9 @@ bool lim::Model::importFromFile(
 		g_model->depth_of_bone_root_in_rdtree = -1;
 		assert( isBoneNode(g_scn->mRootNode)==false );
 	}
-
+	// root.name = "root";
+	// root.addChild("start");
+	// convertRdTree(root.childs.back(), g_scn->mRootNode, 0);
 	convertRdTree(root, g_scn->mRootNode, 0);
 
 	if( g_is_ms_has_bone ) {

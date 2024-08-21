@@ -44,7 +44,7 @@ SoftBody::SoftBody(lim::Mesh&& src, int nrShear, BendType bendType
     nr_verts = (int)poss.size();
     nr_tris = (int)tris.size();
 
-    w_s
+    // w_s
 
     // rm same pos verts to ptcls ====================
     if( refCloseVerts ) {

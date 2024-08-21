@@ -24,12 +24,14 @@ namespace lim
 		Program prog_skinned;
 		Program prog_static;
 		ViewportWithCamera viewport;
-		Model* src_model = nullptr;
+
+
+		IBLight ib_light;
 		Scene scene;
 		pbd::PhySceneGpu phy_scene;
 
 		
-		void makeScene(const char* path);
+		void reloadModel(const char* path);
 
 	public:
 		AppSoftbodyInModel();

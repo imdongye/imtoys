@@ -286,7 +286,7 @@ static void pickTriangle( const vec3& rayDir, const vec3& rayOri ) {
 
 void AppPbdGpu::canvasImGui()
 {
-	ImGui::Begin("pbd ctrl");
+	ImGui::Begin("pbd ctrl##gpu");
 	ImGui::SetNextItemOpen(true, ImGuiCond_Once);
 	if( ImGui::CollapsingHeader("process") ) {
 		ImGui::Text("you can remake mesh when paused");

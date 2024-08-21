@@ -277,8 +277,9 @@ void LimGui::ModelEditor(ModelView& md) {
 		picked_msset = nullptr;
 	}
 	ImGui::Begin(model_editor_window_name);
-	if( ImGui::CollapsingHeader("Data") ) {
+	if( ImGui::CollapsingHeader("Info") ) {
 		ImGui::Text("name : %s", md.md_data->name.c_str());
+		ImGui::Text("path : %s", md.md_data->path.c_str());
 		if( ImGui::TreeNode("boundary") ) {
 			ImGui::Text("min : %.2f %.2f %.2f", md.md_data->boundary_min.x, md.md_data->boundary_min.y, md.md_data->boundary_min.z);
 			ImGui::Text("max : %.2f %.2f %.2f", md.md_data->boundary_max.x, md.md_data->boundary_max.y, md.md_data->boundary_max.z);
@@ -308,6 +309,7 @@ void LimGui::ModelEditor(ModelView& md) {
 		ImGui::Text("depth of bone root : %d", md.md_data->depth_of_bone_root_in_rdtree);
 		drawHierarchy(md.animator.skeleton, 0);
 	}
+	ImGui::SetNextItemOpen(true, ImGuiCond_Once);
 	if( ImGui::CollapsingHeader("Animator") ) {
 		drawAnimator(md.animator);
 	}

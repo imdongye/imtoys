@@ -71,7 +71,7 @@ namespace lim
     };
 
 
-	class Scene
+	class Scene final
 	{
   	public:
 		std::vector<ModelView*> own_mds;
@@ -86,7 +86,7 @@ namespace lim
 		Scene& operator=(Scene&&)      = delete;
 
         Scene() = default;
-        virtual ~Scene();
+        ~Scene();
 
         void clear();
 

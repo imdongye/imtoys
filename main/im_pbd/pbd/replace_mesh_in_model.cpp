@@ -20,5 +20,6 @@ pbd::SoftBodyGpu* pbd::replaceMeshInModelToSoftBody(ModelView& model, RdNode::Ms
     sb->initGL();
     msset.ms = sb;
     msset.transformWhenRender = false;
+    model.own_meshes.push_back(sb);
     return sb;
 }
