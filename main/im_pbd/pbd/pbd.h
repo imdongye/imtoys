@@ -22,7 +22,7 @@ Todo:
 #define __app_pbd_h_
 
 #include <limbrary/tools/glim.h>
-#include <limbrary/model_view/mesh.h>
+#include <limbrary/model_view/model.h>
 #include <limbrary/program.h>
 #include <limbrary/model_view/transform.h>
 #include <vector>
@@ -150,7 +150,12 @@ namespace pbd
             BT_ISOMETRIC,
         };
 		SoftBody(const Mesh& src) = delete;
+
+
         // nrShear => [0,2]
+        SoftBody();
+        virtual ~SoftBody();
+        void addPtcl(const glm::vec3& p, float w, const glm::vec3& v);
         SoftBody(lim::Mesh&& src, int nrShear = 1, BendType bendType = BT_NONE
             , float bodyMass = 1.f, bool refCloseVerts = false );
         void update(float dt, const PhyScene& scene);
@@ -161,9 +166,6 @@ namespace pbd
         void updateNorsAndUpload();
         void updatePossAndNorsWithPtclAndUpload();
         void updatePossAndNorsWithVertAndUpload();
-
-        SoftBody();
-        void addPtcl(const glm::vec3& p, float w, const glm::vec3& v);
 
         float getVolume() const;
         float getVolumeTimesSix() const;
@@ -232,7 +234,7 @@ namespace pbd
         SoftBodyGpu(lim::Mesh&& src, int nrShear = 1, BendType bendType = BT_NONE
             , float bodyMass = 1.f, bool refCloseVerts = false
             , bool isMakeNorsWithPtcl = true );
-        ~SoftBodyGpu();
+        virtual ~SoftBodyGpu();
 
         void initGL(bool withClearMem = false);
         void deinitGL();
@@ -263,6 +265,10 @@ namespace pbd
         PhySceneGpu();
         void update( float dt );
     };
+
+
+    SoftBodyGpu* replaceMeshInModelToSoftBody(lim::ModelView& model, lim::RdNode::MsSet& msset, int nrShear=1
+        , SoftBody::BendType bendType = SoftBody::BT_DISTANCE, float bodyMass = 1.f, bool refCloseVerts = true);
 }
 
 #endif

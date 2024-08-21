@@ -53,8 +53,8 @@ Mesh::Mesh(const Mesh& src)
 	, bitangents(src.bitangents)
 	, bone_infos(src.bone_infos)
 	, tris(src.tris)
-	, nr_verts(poss.size())
-	, nr_tris(tris.size())
+	, nr_verts(src.nr_verts)
+	, nr_tris(src.nr_tris)
 {
 }
 Mesh::~Mesh()

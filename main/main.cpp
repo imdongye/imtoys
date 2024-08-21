@@ -36,6 +36,7 @@
 #include "im_pbd/app_pbd_gpu.h"
 #include "im_anims/app_curve.h"
 #include "im_physics/app_phy2d.h"
+#include "im_pbd/app_softbody_in_model.h"
 
 
 static int _selected_app_idx;
@@ -86,6 +87,7 @@ static void pushAppData()
 
 int main()
 {
+	pushAppData<lim::AppSoftbodyInModel>();
 	pushAppData<lim::AppSkeletal>();
 	pushAppData<lim::AppPbdCpu>();
 	pushAppData<lim::AppPbdGpu>();

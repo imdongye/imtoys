@@ -372,7 +372,6 @@ static void convertAnim(Animation& dst, const aiAnimation& src) {
 	dst.nr_tracks = src.mNumChannels;
 
 	dst.tracks.resize(dst.nr_tracks);
-	log::pure("%s : %d %lf %d\n", dst.name.c_str(), dst.nr_tracks, dst.nr_ticks, dst.ticks_per_sec);
 	for( uint i=0; i<dst.nr_tracks; i++ ) {
 		const aiNodeAnim& srcTrack = *(src.mChannels[i]);
 		Animation::Track& track = dst.tracks[i];
@@ -397,7 +396,6 @@ static void convertAnim(Animation& dst, const aiAnimation& src) {
 			const aiQuatKey& k = srcTrack.mRotationKeys[j];
 			track.oris.push_back({(float)k.mTime, toGLM(k.mValue)});
 		}
-		log::pure("%s : %d %d %d\n", track.name.c_str(), track.nr_poss, track.nr_scales, track.nr_oris);
 	}
 }
 // static bool isEndPostfix(std::string name) {
@@ -481,13 +479,13 @@ static void convertRdTree(RdNode& dst, const aiNode* src, int depth)
 		const int msIdx = src->mMeshes[i];
 		const aiMesh* aiMs = g_scn->mMeshes[msIdx];
 		const Material* mat = g_model->own_materials[aiMs->mMaterialIndex];
-		dst.meshs_mats.push_back({g_model->own_meshes[msIdx], mat, true});
+		dst.addMsMat(g_model->own_meshes[msIdx], mat);
 	}
 
 	dst.childs.reserve(src->mNumChildren);
 	for( size_t i=0; i< src->mNumChildren; i++ ) {
 		aiNode* aiChild = src->mChildren[i];
-		if( isBoneNode(aiChild) ) {
+		if( g_is_ms_has_bone && isBoneNode(aiChild) ) {
 			// assume that model has only one bone tree
 			assert(g_animator->nr_bone_nodes==0);
 			assert(g_model->depth_of_bone_root_in_rdtree<1); // normaly bone root in first node
@@ -616,12 +614,12 @@ bool lim::Model::importFromFile(
 		// 	offset = offset*global_transform;
 		// }
 
-		for( const BoneNode& nd : animator.skeleton ) {
-			int boneIdx = nd.idx_bone;
-			if( boneIdx<0 )
-				continue;
-			bone_offsets[boneIdx] = glm::inverse(nd.tf_model_space);
-		}
+		// for( const BoneNode& nd : animator.skeleton ) {
+		// 	int boneIdx = nd.idx_bone;
+		// 	if( boneIdx<0 )
+		// 		continue;
+		// 	bone_offsets[boneIdx] = glm::inverse(nd.tf_model_space);
+		// }
 		animator.updateMtxBones();
 	}
 

@@ -37,14 +37,18 @@ Model에 의존하지 않고 RdNode에 의존하는 Scene
 #include "camera.h"
 #include "transform.h"
 #include "animator.h"
+#include "material.h"
+#include "mesh_skinned.h"
 
 namespace lim
 {
 	struct RdNode {
 		struct MsSet {
+			bool enabled = true;
+			bool transformWhenRender = true;
 			const Mesh* ms = nullptr;
 			const Material* mat = nullptr;
-			bool enabled = true;
+			MsSet(const Mesh* _ms, const Material* _mat);
 		};
 		std::string name = "nonamed node";
         Transform tf;
@@ -78,7 +82,9 @@ namespace lim
 		const Transform* tf_prev = nullptr;
 		Animator animator;
 		Model* md_data = nullptr;
-		
+		std::vector<Mesh*> own_meshes; // for delete soft body
+		std::vector<MeshSkinned> skinned_meshes;
+
 	public:
 		ModelView();
 		virtual ~ModelView();

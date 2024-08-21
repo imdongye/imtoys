@@ -15,7 +15,6 @@ Note:
 
 #include <string>
 #include <vector>
-#include <array>
 #include <glm/glm.hpp>
 #include <glad/glad.h>
 #include "material.h"
@@ -61,7 +60,7 @@ namespace lim
 		Mesh& operator=(Mesh&& src)  = delete;
 		
 		Mesh();
-		Mesh(Mesh&& src);
+		Mesh(Mesh&& src); // used in SoftBody
 		Mesh(const Mesh& src); // clone
 		virtual ~Mesh();
 		

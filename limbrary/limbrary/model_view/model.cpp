@@ -32,6 +32,11 @@ using glm::vec4;
 using glm::mat4;
 
 
+RdNode::MsSet::MsSet(const Mesh* _ms, const Material* _mat) 
+	: ms(_ms), mat(_mat)
+{
+}
+
 RdNode::RdNode(std::string_view _name, RdNode* _parent)
 	: name(_name), parent(_parent)
 {
@@ -60,7 +65,7 @@ void RdNode::addChild(std::string_view _name) {
 	childs.push_back(RdNode(_name, this));
 }
 void RdNode::addMsMat(const Mesh* ms, const Material* mat) {
-	meshs_mats.push_back({ms, mat});
+	meshs_mats.push_back(MsSet(ms, mat));
 }
 void RdNode::clear() {
 	meshs_mats.clear();
@@ -78,7 +83,7 @@ void RdNode::updateGlobalTransform(mat4 prevTf) {
 
 void RdNode::treversal(std::function<bool(const Mesh* ms, const Material* mat, const glm::mat4& transform)> callback) const {
 	for( const auto& msset : meshs_mats ) {
-		if( callback(msset.ms, msset.mat, tf_global) == false ) {
+		if( callback(msset.ms, msset.mat, (msset.transformWhenRender)?tf_global:glm::mat4(1)) == false ) {
 			return;
 		}
 	}
@@ -91,7 +96,7 @@ void RdNode::treversalEnabled(std::function<bool(const Mesh* ms, const Material*
 		return;
 	for( const auto& msset : meshs_mats ) {
 		if( msset.enabled ) {
-			if( callback(msset.ms, msset.mat, tf_global) == false ) {
+			if( callback(msset.ms, msset.mat, (msset.transformWhenRender)?tf_global:glm::mat4(1)) == false ) {
 				return;
 			}
 		}
@@ -123,6 +128,10 @@ ModelView::ModelView()
 {
 }
 ModelView::~ModelView() {
+	for( Mesh* ms : own_meshes ) {
+		delete ms;
+	}
+	own_meshes.clear();
 }
 ModelView::ModelView(const ModelView& src)
 	: root("empty", nullptr)
@@ -134,6 +143,15 @@ ModelView& ModelView::operator=(const ModelView& src) {
 	tf_prev = src.tf_prev;
 	md_data = src.md_data;
 	animator = src.animator;
+	for( Mesh* ms : own_meshes ) {
+		delete ms;
+	}
+	own_meshes.clear();
+	own_meshes.reserve(src.own_meshes.size());
+	for( Mesh* ms : src.own_meshes ) {
+		own_meshes.push_back(new Mesh(*ms));
+		// todo detect SoftBody or SkinnedMesh
+	}
 	return *this;
 }
 
@@ -240,7 +258,9 @@ static void matchRdTree(RdNode& dst, const RdNode& src, const Model& dstMd, cons
 		const RdNode::MsSet& srcMsset = src.meshs_mats[i];
 		int msIdx = findIdx(srcMd.own_meshes, (Mesh*)srcMsset.ms);
 		int matIdx = findIdx(srcMd.own_materials, (Material*)srcMsset.mat);
-		dst.meshs_mats[i] = {dstMd.own_meshes[msIdx], dstMd.own_materials[matIdx], srcMsset.enabled};
+		dst.meshs_mats[i] = RdNode::MsSet(dstMd.own_meshes[msIdx], dstMd.own_materials[matIdx]);
+		dst.meshs_mats[i].enabled = srcMsset.enabled;
+		dst.meshs_mats[i].transformWhenRender = srcMsset.transformWhenRender;
 	}
 	
 	int nrChilds = src.childs.size();

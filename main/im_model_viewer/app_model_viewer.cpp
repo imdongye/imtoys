@@ -169,6 +169,7 @@ void lim::AppModelViewer::rmModelViewer(int idx)
 	scenes.erase(scenes.begin()+idx);
 	viewports.erase(viewports.begin()+idx);
 	brdf_test_infos.erase(brdf_test_infos.begin()+idx);
+	selected_vp_idx = 0;
 }
 
 void lim::AppModelViewer::drawModelsToViewports()

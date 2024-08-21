@@ -22,15 +22,16 @@ namespace {
 	bool update_nor_with_ptcl = true;
 
 
-	int nr_ms_slices = 14;
 	int nr_shear = 2;
-	float size_scale = 0.7f;
-	float body_mass = 1.f;
-	bool fix_start = true;
-	bool is_ptcl_ref_close_verts = false;
-
-
 	pbd::SoftBody::BendType bend_type = pbd::SoftBody::BT_DISTANCE;
+	float body_mass = 1.f;
+	bool is_ptcl_ref_close_verts = true;
+
+	int nr_ms_slices = 14;
+	float size_scale = 0.7f;
+	bool fix_start = true;
+
+
 	const char* mesh_type_names[] = {
 		"Bunny", "Cheems", "Buff",
 		"Cube", "Shared Cube",
@@ -295,6 +296,7 @@ void AppPbdGpu::canvasImGui()
 			needReset |= ImGui::Combo("mesh type", (int*)&cur_mesh_type, mesh_type_names, nr_mesh_type_names);
 			needReset |= ImGui::Combo("bendType", (int*)&bend_type, "none\0distance\0dihedral\0isometric\0", 4);
 			needReset |= ImGui::SliderInt("nr ms slices", &nr_ms_slices, 0, 30);
+			needReset |= ImGui::SliderInt("nr shears", &nr_shear, 0, 2);
 			needReset |= ImGui::Checkbox("ptcl ref close verts", &is_ptcl_ref_close_verts);
 			needReset |= ImGui::SliderFloat("body mass", &body_mass, 0.01f, 2.f);
 			needReset |= ImGui::Checkbox("fix start", &fix_start);

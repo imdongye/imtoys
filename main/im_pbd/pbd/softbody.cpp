@@ -44,6 +44,8 @@ SoftBody::SoftBody(lim::Mesh&& src, int nrShear, BendType bendType
     nr_verts = (int)poss.size();
     nr_tris = (int)tris.size();
 
+    w_s
+
     // rm same pos verts to ptcls ====================
     if( refCloseVerts ) {
         vector<vec3> tempPtcls;
@@ -61,7 +63,7 @@ SoftBody::SoftBody(lim::Mesh&& src, int nrShear, BendType bendType
             for( int j=i+1; j<nr_verts; j++ ) {
                 if( vert_to_ptcl[j]>=0 )
                     continue;
-                if( length2(curPos-poss[j]) < 1.0e-6f ) {
+                if( length2(curPos-poss[j]) < 1.0e-5f ) {
                     vert_to_ptcl[j] = ptclIdx;
                 }
             }
@@ -371,6 +373,9 @@ SoftBody::SoftBody()
     v_s.reserve(defalutSize);
     w_s.reserve(defalutSize);
     debug_dirs.reserve(defalutSize);
+}
+SoftBody::~SoftBody()
+{
 }
 void SoftBody::addPtcl(const vec3& p, float w, const vec3& v) {
     nr_ptcls++;

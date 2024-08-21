@@ -204,7 +204,7 @@ void lim::render( const IFramebuffer& fb,
                     shadowStatic.setUniform("mtx_Proj", mtx_Proj);
                 }
 
-                md->root.treversal([](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
+                md->root.treversalEnabled([](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
                     g_cur_prog->setUniform("mtx_Model", transform);
                     ms->bindAndDrawGL();
                     return true;

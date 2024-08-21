@@ -27,6 +27,7 @@ namespace LimGui
     void ModelEditor(lim::ModelView& md);
     void ModelEditorReset(const char* windowName = "Model Editor");
     lim::BoneNode* getPickedBoneNode();
+    lim::RdNode::MsSet* getPickedMsSet();
 
     void LightDirectionalEditor(lim::LightDirectional& lit);
     void LightDirectionalEditorReset(const char* name="d_light editor", const char* smName="d_light shadow map");
