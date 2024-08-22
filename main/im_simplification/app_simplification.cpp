@@ -12,7 +12,7 @@
 #include <limbrary/tools/general.h>
 #include <limbrary/model_view/mesh_maked.h>
 #include <imgui.h>
-#include <limbrary/model_view/renderer.h>
+#include <limbrary/model_view/scene.h>
 #include <limbrary/tools/asset_lib.h>
 #include <limbrary/model_view/model_io_helper.h>
 
@@ -232,7 +232,7 @@ void lim::AppSimplification::update()
 		for( int i=0; i<nr_viewports; i++ ) {
 			cam.aspect = (i==last_focused_vp_idx)? backupAspect : viewports[i]->camera.aspect;
 			cam.updateProjMat();
-			render(viewports[i]->getFb(), cam, *scenes[i]);
+			scenes[i]->render(viewports[i]->getFb(), cam);
 		}
 		cam.aspect = backupAspect;
 		cam.updateProjMat();
@@ -240,7 +240,7 @@ void lim::AppSimplification::update()
 	else
 	{
 		for( int i=0; i<nr_viewports; i++ )
-			render(viewports[i]->getFb(), viewports[i]->camera, *scenes[i]);
+			scenes[i]->render(viewports[i]->getFb(), viewports[i]->camera);
 	}
 }
 void lim::AppSimplification::updateImGui()

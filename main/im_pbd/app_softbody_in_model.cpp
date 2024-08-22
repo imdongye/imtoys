@@ -129,7 +129,7 @@ void AppSoftbodyInModel::update()
 	if( draw_edges ) {
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	}
-	render(viewport.getFb(), viewport.camera, scene);
+	scene.render(viewport.getFb(), viewport.camera);
 	if( draw_edges ) {
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	}

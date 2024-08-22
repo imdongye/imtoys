@@ -7,7 +7,6 @@
 #define __app_sdf_modeler_h_
 
 #include <limbrary/application.h>
-#include <limbrary/model_view/renderer.h>
 #include <limbrary/model_view/camera_man.h>
 
 namespace lim

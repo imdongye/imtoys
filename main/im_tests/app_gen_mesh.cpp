@@ -1,7 +1,7 @@
 #include "app_gen_mesh.h"
 #include <stb_image.h>
 #include <limbrary/model_view/mesh_maked.h>
-#include <limbrary/model_view/renderer.h>
+#include <limbrary/model_view/scene.h>
 #include <glm/gtx/transform.hpp>
 #include <imgui.h>
 #include <limbrary/tools/asset_lib.h>
@@ -94,7 +94,7 @@ namespace lim
 	void AppGenMesh::update()
 	{
 		/* render to fbo in viewport */
-		render(viewport.getFb(), viewport.camera, scene);
+		scene.render(viewport.getFb(), viewport.camera);
 
 		// clear backbuffer
 		glEnable(GL_DEPTH_TEST);

@@ -1,4 +1,4 @@
-#include <limbrary/model_view/renderer.h>
+#include <limbrary/model_view/scene.h>
 #include <limbrary/tools/asset_lib.h>
 #include <limbrary/tools/log.h>
 #include <limbrary/tools/general.h>
@@ -24,7 +24,7 @@ bool IBLight::setMapAndBake(std::string_view path)
     map_Light.s_wrap_param = GL_REPEAT;
     map_Light.t_wrap_param = GL_MIRRORED_REPEAT;
     map_Light.mag_filter = GL_LINEAR;
-    map_Light.min_filter = GL_LINEAR_MIPMAP_NEAREST;// Todo: mipmap 쓰면 경계 검은색 나옴;;
+    map_Light.min_filter = GL_LINEAR_MIPMAP_NEAREST; // Todo: mipmap 쓰면 경계 검은색 나옴;;
     if(!map_Light.initFromFile(path, false)) {
         return false;
     }
@@ -42,7 +42,7 @@ bool IBLight::setMapAndBake(std::string_view path)
     fb.color_tex.s_wrap_param = GL_REPEAT;
     fb.color_tex.t_wrap_param = GL_MIRRORED_REPEAT;
     fb.color_tex.mag_filter = GL_LINEAR;
-    fb.color_tex.min_filter = GL_LINEAR;// Todo: mipmap 쓰면 경계 검은색 나옴;;
+    fb.color_tex.min_filter = GL_LINEAR; // Todo: mipmap 쓰면 경계 검은색 나옴;;
 	fb.resize(256, 128);
 	iblProg.attatch("canvas.vs").attatch("bake_irr.fs").link();
 
@@ -176,22 +176,19 @@ mesh바뀌면 1.ms바인딩
 마지막 drawcall
 
 */
-void lim::render( const IFramebuffer& fb,
-                const Camera& cam,
-                const Scene& scn,
-                const bool isDrawLight )
+void Scene::render( const IFramebuffer& fb, const Camera& cam, const bool isDrawLight )
 {
     const Program& shadowStatic = AssetLib::get().prog_shadow_static;
     const Program& shadowSkinned = AssetLib::get().prog_shadow_skinned;
 
-    for( ModelView* md : scn.own_mds ) {
+    for( ModelView* md : own_mds ) {
         md->root.updateGlobalTransform(getMtxTf(md->tf_prev));
     }
 
     // bake shadow map
-    for( ILight* lit : scn.own_lits ) {
+    for( ILight* lit : own_lits ) {
         lit->bakeShadowMap([&](const glm::mat4& mtx_View, const glm::mat4& mtx_Proj) {
-            for( const ModelView* md : scn.own_mds ) {
+            for( const ModelView* md : own_mds ) {
                 if( md->animator.is_enabled ) {
                     shadowSkinned.use();
                     md->animator.setUniformTo(shadowSkinned);
@@ -215,8 +212,8 @@ void lim::render( const IFramebuffer& fb,
 
     // main rendering
     fb.bind();
-    if( scn.is_draw_env_map&& scn.ib_light != nullptr ) {
-        utils::drawEnvSphere(scn.ib_light->map_Light, cam.mtx_View, cam.mtx_Proj);
+    if( is_draw_env_map&& ib_light != nullptr ) {
+        utils::drawEnvSphere(ib_light->map_Light, cam.mtx_View, cam.mtx_Proj);
     }
     
     const Program* curProg = nullptr;
@@ -227,7 +224,7 @@ void lim::render( const IFramebuffer& fb,
     bool isMeshChanged = true;
     bool isModelChanged = true;
 
-    for( const ModelView* md : scn.own_mds ) {
+    for( const ModelView* md : own_mds ) {
         isModelChanged = true;
         md->root.treversalEnabled([&](const Mesh* ms, const Material* mat, const glm::mat4& tf) {
             if( curMat != mat ) {
@@ -247,14 +244,14 @@ void lim::render( const IFramebuffer& fb,
                 curProg->use();
                 curMat->setUniformTo(*curProg);
                 cam.setUniformTo(*curProg);
-                for( const ILight* lit : scn.own_lits ) {
+                for( const ILight* lit : own_lits ) {
                     lit->setUniformTo(*curProg);
                 }
-                if( scn.ib_light ) {
-                    scn.ib_light->setUniformTo(*curProg);
+                if( ib_light ) {
+                    ib_light->setUniformTo(*curProg);
                 }
-                if( scn.idx_LitMod >=0 ) {
-                    curProg->setUniform("idx_LitMod", scn.idx_LitMod);
+                if( idx_LitMod >=0 ) {
+                    curProg->setUniform("idx_LitMod", idx_LitMod);
                 }
                 if( md->animator.is_enabled ) {
                     md->animator.setUniformTo(*curProg);
@@ -285,7 +282,7 @@ void lim::render( const IFramebuffer& fb,
         cam.setUniformTo(prog);
 
         // todo: diff color
-        for( auto lit : scn.own_lits ) {
+        for( auto lit : own_lits ) {
             prog.setUniform("mtx_Model", lit->tf.mtx);
             // todo: draw dir with line
             AssetLib::get().small_sphere.bindAndDrawGL();

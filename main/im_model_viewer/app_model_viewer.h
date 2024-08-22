@@ -9,7 +9,7 @@
 #include <limbrary/application.h>
 #include <limbrary/model_view/camera_man.h>
 #include <limbrary/program.h>
-#include <limbrary/model_view/renderer.h>
+#include <limbrary/model_view/scene.h>
 
 namespace lim
 {

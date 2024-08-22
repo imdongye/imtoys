@@ -15,7 +15,7 @@
 #include <limbrary/model_view/mesh_maked.h>
 #include <limbrary/tools/log.h>
 #include <limbrary/tools/asset_lib.h>
-#include <limbrary/model_view/renderer.h>
+#include <limbrary/model_view/scene.h>
 
 
 lim::ArtMap::ArtMap(const std::string_view _path, GLint _tone)
@@ -173,7 +173,7 @@ void lim::AppHatching::update()
 
 	/* render to fbo in viewport */
 
-	render(viewport.getFb(), viewport.camera, scene, true);
+	scene.render(viewport.getFb(), viewport.camera, true);
 }
 void lim::AppHatching::updateImGui()
 {

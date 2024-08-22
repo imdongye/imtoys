@@ -30,8 +30,8 @@ Todo:
 
 */
 
-#ifndef __renderer_h_
-#define __renderer_h_
+#ifndef __scene_h_
+#define __scene_h_
 
 #include <vector>
 #include "model.h"
@@ -93,14 +93,11 @@ namespace lim
 
         ModelView* addOwn(ModelView* md);
         ILight* addOwn(ILight* lit);
+
+
+        // use prog in mat
+        void render(const IFramebuffer& fb, const Camera& cam, const bool isDrawLight = false);
 	};
-
-
-    // use prog in mat
-    void render( const IFramebuffer& fb,
-                 const Camera& cam,
-                 const Scene& scn,
-                 const bool isDrawLight = false );
 }
 
 

@@ -10,7 +10,7 @@ Todo:
 #include "app_model_viewer.h"
 #include <imgui.h>
 #include <limbrary/model_view/model_io_helper.h>
-#include <limbrary/model_view/renderer.h>
+#include <limbrary/model_view/scene.h>
 #include <limbrary/tools/asset_lib.h>
 #include <limbrary/tools/limgui.h>
 #include <limbrary/tools/glim.h>
@@ -180,7 +180,7 @@ void lim::AppModelViewer::drawModelsToViewports()
 		if( selected_vp_idx!=i && vp.is_focused )
 			selected_vp_idx = i;
 			
-		render(vp.getFb(), vp.camera, *scenes[i], true);
+		scenes[i]->render(vp.getFb(), vp.camera, true);
 
 		if( !vp.is_opened ) {
 			rmModelViewer(i);

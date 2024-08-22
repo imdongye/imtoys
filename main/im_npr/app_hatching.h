@@ -14,7 +14,7 @@
 #include <limbrary/model_view/camera_man.h>
 #include <limbrary/model_view/model.h>
 #include <glad/glad.h>
-#include <limbrary/model_view/renderer.h>
+#include <limbrary/model_view/scene.h>
 
 namespace lim
 {

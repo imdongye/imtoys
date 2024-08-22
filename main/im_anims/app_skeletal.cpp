@@ -82,7 +82,7 @@ void lim::AppSkeletal::update()
 	glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	render(viewport.getFb(), viewport.camera, scene);
+	scene.render(viewport.getFb(), viewport.camera);
 
 
 	const IFramebuffer& fb = viewport.getFb();

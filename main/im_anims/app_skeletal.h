@@ -8,8 +8,7 @@
 
 #include <limbrary/application.h>
 #include <limbrary/model_view/camera_man.h>
-#include <limbrary/model_view/renderer.h>
-#include <limbrary/model_view/animator.h>
+#include <limbrary/model_view/scene.h>
 
 namespace lim
 {

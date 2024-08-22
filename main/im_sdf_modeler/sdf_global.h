@@ -9,7 +9,7 @@
 #include <imgui.h>
 #include <imguizmo/ImGuizmo.h>
 #include <limbrary/model_view/light.h>
-#include <limbrary/model_view/renderer.h>
+#include <limbrary/model_view/scene.h>
 #include <limbrary/model_view/camera_man.h>
 
 /************* glsl data **************/
