@@ -215,7 +215,7 @@ void lim::render( const IFramebuffer& fb,
 
     // main rendering
     fb.bind();
-    if( scn.is_draw_env_map ) {
+    if( scn.is_draw_env_map&& scn.ib_light != nullptr ) {
         utils::drawEnvSphere(scn.ib_light->map_Light, cam.mtx_View, cam.mtx_Proj);
     }
     
@@ -252,6 +252,9 @@ void lim::render( const IFramebuffer& fb,
                 }
                 if( scn.ib_light ) {
                     scn.ib_light->setUniformTo(*curProg);
+                }
+                if( scn.idx_LitMod >=0 ) {
+                    curProg->setUniform("idx_LitMod", scn.idx_LitMod);
                 }
                 if( md->animator.is_enabled ) {
                     md->animator.setUniformTo(*curProg);

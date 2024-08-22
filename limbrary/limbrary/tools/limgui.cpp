@@ -206,6 +206,7 @@ static void drawInspector() {
 		}
 	}
 	else if( picked_msset ) {
+		ImGui::TextUnformatted("<MeshSet>");
 		ImGui::Checkbox("enabled", &picked_msset->enabled);
 		ImGui::Checkbox("transformWhenRender", &picked_msset->transformWhenRender);
 		ImGui::TextUnformatted("<Mesh>");
@@ -218,8 +219,12 @@ static void drawInspector() {
 			, boolStrOX(!ms.bitangents.empty()), boolStrOX(!ms.bone_infos.empty()));
 
 		ImGui::TextUnformatted("<Material>");
-		const Material* mat = picked_msset->mat;
-		ImGui::Text("name : %s", mat->name.c_str());
+		Material& mat = *(Material*)picked_msset->mat; // warning : rid const
+		ImGui::Text("name : %s", mat.name.c_str());
+		ImGui::SliderFloat("shininess", &mat.Shininess, 0.5f, 300);
+		ImGui::SliderFloat("roughness", &mat.Roughness, 0.015f, 1);
+		ImGui::SliderFloat("metalness", &mat.Metalness, 0.000f, 1);
+		ImGui::ColorEdit3("ambient color", &mat.AmbientColor[0]);
 	}
 	else {
 		ImGui::Dummy(ImVec2(0.0f, 20.0f));

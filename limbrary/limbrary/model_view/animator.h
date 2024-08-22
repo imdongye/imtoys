@@ -96,7 +96,7 @@ namespace lim
         const Model* md_data = nullptr;
         double elapsed_sec, duration_sec;
         float cur_tick = 0.f;
-        bool is_loop = false;
+        bool is_loop = true;
 
         
     public:

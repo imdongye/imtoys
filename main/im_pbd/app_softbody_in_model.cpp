@@ -6,6 +6,7 @@
 #include <limbrary/tools/log.h>
 #include <limbrary/tools/limgui.h>
 #include <limbrary/tools/asset_lib.h>
+#include <limbrary/tools/gl.h>
 #include <functional>
 #include "pbd/pbd.h"
 
@@ -15,7 +16,8 @@ using namespace glm;
 
 namespace {
 	float time_speed = 1.f;
-	bool is_paused = false;
+	bool is_paused = true;
+	bool draw_edges = false;
 
 	int nr_shear = 2;
 	pbd::SoftBody::BendType bend_type = pbd::SoftBody::BT_DISTANCE;
@@ -35,23 +37,29 @@ void AppSoftbodyInModel::reloadModel(const char* path) {
 	delete scene.own_mds[0];
 	Model* srcMd = new Model();
 	srcMd->importFromFile(path, true, true);
+	for(Material* mat : srcMd->own_materials) {
+		mat->Roughness = 0.519f;
+		mat->Metalness = 0.73f;
+	}
 	srcMd->setProgToAllMat(&prog_skinned);
 
 	scene.own_mds[0] = new ModelView(*srcMd);
 }
 AppSoftbodyInModel::AppSoftbodyInModel() : AppBase(1480, 780, APP_NAME, false)
-	, viewport("viewport##skeletal", new FramebufferTexDepth())
+	, viewport("viewport##skeletal", new FramebufferMs())
 	, ib_light("assets/images/ibls/artist_workshop_4k.hdr")
 {
 
 	prog_skinned.name = "skeletal prog";
-	prog_skinned.attatch("mvp_skinned_shadow.vs").attatch("im_model_viewer/shaders/brdf.fs").link();
+	prog_skinned.attatch("mvp_skinned_shadow.vs").attatch("im_pbd/shaders/brdf.fs").link();
 
 	prog_static.name = "static prog";
-	prog_static.attatch("mvp.vs_shadow").attatch("im_model_viewer/shaders/brdf.fs").link();
+	prog_static.attatch("mvp_shadow.vs").attatch("im_pbd/shaders/brdf.fs").link();
 
 
 	scene.ib_light = &ib_light;
+	scene.is_draw_env_map = true;
+	scene.idx_LitMod = 0;
 	scene.addOwn(new LightDirectional());
 	scene.own_lits.back()->setShadowEnabled(true);
 
@@ -59,7 +67,7 @@ AppSoftbodyInModel::AppSoftbodyInModel() : AppBase(1480, 780, APP_NAME, false)
 	scene.own_mds.resize(2);
 
 	scene.own_mds[0] = nullptr;
-	reloadModel("assets/models/jump.fbx");
+	reloadModel("assets/models/my/color.fbx");
 
 
 	// floor
@@ -118,8 +126,71 @@ void AppSoftbodyInModel::update()
 	glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	if( draw_edges ) {
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	}
 	render(viewport.getFb(), viewport.camera, scene);
+	if( draw_edges ) {
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	}
 }
+
+
+
+
+namespace
+{
+	int picked_ptcl_idx = -1;
+	int picked_tri_idx = -1;
+	vec3 picked_tri_pos;
+}
+
+static void pickPtcl( const vec3& rayOri, const vec3& rayDir ) {
+	float minDepth = FLT_MAX;
+	picked_ptcl_idx = -1;
+
+	cur_body->downloadXs();
+
+	for(int i=0; i<cur_body->nr_ptcls; i++) {
+		vec3 toObj = cur_body->x_s[i] - rayOri;
+		float distFromLine = glm::length( glm::cross(rayDir, toObj) );
+		if( distFromLine < 0.02f ) {
+			float distProjLine = glm::dot(rayDir, toObj);
+			if( distProjLine>0 && distProjLine<minDepth ) {
+				minDepth = distProjLine;
+				picked_ptcl_idx = i;
+			}
+		}
+	}
+}
+static void pickTriangle( const vec3& rayDir, const vec3& rayOri ) {
+	const float searchDepth = 50.f;
+	float minDepth = FLT_MAX;
+	picked_tri_idx = -1;
+
+	cur_body->downloadXs();
+
+	for(int i=0; i<cur_body->nr_tris; i++) {
+		ivec3& tri = cur_body->ptcl_tris[i]; 
+		vec3& t1 = cur_body->x_s[tri.x];
+		vec3& t2 = cur_body->x_s[tri.y];
+		vec3& t3 = cur_body->x_s[tri.z];
+		
+		float depth = glim::intersectTriAndRayBothFaces(rayOri, rayDir, t1, t2, t3);
+		if( depth<0 || depth>searchDepth || depth>minDepth )
+			continue;
+		minDepth = depth;
+		picked_tri_idx = i;
+		picked_tri_pos = depth*rayDir + rayOri;
+	}
+}
+
+
+
+
+
+
+
 void AppSoftbodyInModel::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
@@ -135,6 +206,8 @@ void AppSoftbodyInModel::updateImGui()
 
 	ImGui::Begin("Scene");
 	ImGui::Checkbox("draw envMap", &scene.is_draw_env_map);
+	ImGui::Combo("light mode", &scene.idx_LitMod, "point\0ibl");
+	ImGui::Checkbox("draw edges", &draw_edges);
 	ImGui::End();
 
 
@@ -151,12 +224,21 @@ void AppSoftbodyInModel::updateImGui()
 		if( ImGui::Button("replace") ) {
 			cur_body = pbd::replaceMeshInModelToSoftBody(md, *msset
 				, nr_shear, bend_type, body_mass, is_ptcl_ref_close_verts);
-			phy_scene.bodies.clear();
+			Material* noSkinnedMat = new Material(*msset->mat);
+			noSkinnedMat->name = noSkinnedMat->name + "-noSkinned";
+			noSkinnedMat->prog = &prog_static;
+			md.md_data->own_materials.push_back(noSkinnedMat);
+			msset->mat = noSkinnedMat;
+
+			// phy_scene.bodies.clear();
 			phy_scene.bodies.push_back(cur_body);
 		}
 	}
 	else {
 		ImGui::Text("not selected");
+		if( msset && msset->transformWhenRender==false ) {
+			cur_body = (pbd::SoftBodyGpu*)msset->ms;
+		}
 	}
 
 
@@ -175,6 +257,7 @@ void AppSoftbodyInModel::updateImGui()
 
 	if( cur_body ) {
 		if( ImGui::CollapsingHeader("info") ) {
+			ImGui::Text("name: %s", cur_body->name.c_str());
 			ImGui::Text("subDt: %.10f", delta_time/cur_body->nr_steps);
 			ImGui::Text("max #step: %d", int(delta_time/0.0001f)); // if subDt is under 0.0001s, verlet integral get error
 			ImGui::Text("#thread*#threadgroup %d*%d", cur_body->nr_threads, cur_body->nr_thread_groups_by_ptcls);
@@ -213,7 +296,88 @@ void AppSoftbodyInModel::updateImGui()
 		}
 	}
 	ImGui::End();
+
+
+
+
+
+	// input handling
+	if( cur_body )
+	{
+		if(ImGui::IsMouseClicked(ImGuiMouseButton_Left, false)) {
+			const vec3 mouseRay = viewport.getMousePosRayDir();
+			pickPtcl(viewport.camera.pos, mouseRay);
+			if( picked_ptcl_idx >= 0 ) {
+				viewport.camera.enabled = false;
+				float invInfMass = 0.f;
+				cur_body->w_s[picked_ptcl_idx] = invInfMass;
+				glBindBuffer(GL_ARRAY_BUFFER, cur_body->buf_w_s);
+				glBufferSubData(GL_ARRAY_BUFFER, sizeof(float)*picked_ptcl_idx, sizeof(float), &invInfMass);
+			}
+		}
+		else if(picked_ptcl_idx >= 0 && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+			vec3 target = cur_body->x_s[picked_ptcl_idx];
+			viewport.movePosFormMouse(target);
+			cur_body->x_s[picked_ptcl_idx] = target;
+			glBindBuffer(GL_ARRAY_BUFFER, cur_body->buf_x_s);
+			glBufferSubData(GL_ARRAY_BUFFER, sizeof(vec3)*picked_ptcl_idx, sizeof(vec3), &target);
+		}
+		else if(ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
+			viewport.camera.enabled = true;
+			picked_ptcl_idx = -1;
+		}
+		if(ImGui::IsMouseClicked(ImGuiMouseButton_Middle, false)) {
+			const vec3 mouseRay = viewport.getMousePosRayDir();
+			pickPtcl(viewport.camera.pos, mouseRay);
+			if( picked_ptcl_idx>=0 ) {
+				float invPtclMass = cur_body->inv_ptcl_mass;
+				cur_body->w_s[picked_ptcl_idx] = invPtclMass;
+				glBindBuffer(GL_ARRAY_BUFFER, cur_body->buf_w_s);
+				glBufferSubData(GL_ARRAY_BUFFER, sizeof(float)*picked_ptcl_idx, sizeof(float), &invPtclMass);
+				picked_ptcl_idx = -1;
+			}
+		}
+
+		if(ImGui::IsMouseClicked(ImGuiMouseButton_Right, false)) {
+			const vec3 mouseRay = viewport.getMousePosRayDir();
+			pickTriangle(mouseRay, viewport.camera.pos);
+			if( picked_tri_idx>=0) {
+				viewport.camera.enabled = false;
+				ivec3 tri = cur_body->ptcl_tris[picked_tri_idx];
+				cur_body->c_points.clear();
+				cur_body->c_points.push_back(
+					pbd::ConstraintPoint(*cur_body, tri.x, picked_tri_pos)
+				);
+				cur_body->c_points.push_back(
+					pbd::ConstraintPoint(*cur_body, tri.y, picked_tri_pos)
+				);
+				cur_body->c_points.push_back(
+					pbd::ConstraintPoint(*cur_body, tri.z, picked_tri_pos)
+				);
+				assert(cur_body->buf_c_points==0);
+				glGenBuffers(1, &cur_body->buf_c_points);
+				glBindBuffer(GL_ARRAY_BUFFER, cur_body->buf_c_points);
+				glBufferData(GL_ARRAY_BUFFER, sizeof(pbd::ConstraintPoint)*3, cur_body->c_points.data(), GL_DYNAMIC_DRAW);
+			}
+		}
+		else if(picked_tri_idx>=0 && ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
+			viewport.movePosFormMouse(picked_tri_pos);
+			for( auto& c : cur_body->c_points ) {
+				c.point = picked_tri_pos;
+			}
+			glBindBuffer(GL_ARRAY_BUFFER, cur_body->buf_c_points);
+			glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(pbd::ConstraintPoint)*3, cur_body->c_points.data());
+		}
+		else if(picked_tri_idx>=0 && ImGui::IsMouseReleased(ImGuiMouseButton_Right)) {
+			viewport.camera.enabled = true;
+			picked_tri_idx = -1;
+			gl::safeDelBufs(&cur_body->buf_c_points);
+		}	
+	}
 }
+
+
+
 void AppSoftbodyInModel::dndCallback(int _, const char **paths) {
 	reloadModel(paths[0]);
 }

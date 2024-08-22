@@ -22,4 +22,6 @@ pbd::SoftBodyGpu* pbd::replaceMeshInModelToSoftBody(ModelView& model, RdNode::Ms
     msset.transformWhenRender = false;
     model.own_meshes.push_back(sb);
     return sb;
+
+    // todo if skinned mesh then change vertex shader in there material
 }

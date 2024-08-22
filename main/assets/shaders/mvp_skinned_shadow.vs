@@ -5,8 +5,8 @@ const int MAX_BONE_PER_VERT = 4;
 layout(location=0) in vec3 aPos;
 layout(location=1) in vec3 aNor;
 layout(location=2) in vec2 aUv;
-layout(location=2) in ivec4 aBoneIdxs;
-layout(location=3) in vec4 aBoneWeights;
+layout(location=6) in ivec4 aBoneIdxs;
+layout(location=7) in vec4 aBoneWeights;
 
 out vec3 wPos;
 out vec3 wNor;

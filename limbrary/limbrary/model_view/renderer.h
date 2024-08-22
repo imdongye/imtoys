@@ -78,6 +78,7 @@ namespace lim
         std::vector<ILight*> own_lits;
         const IBLight* ib_light = nullptr; // ref
         bool is_draw_env_map = false;
+        int idx_LitMod = -1;
 
     public:
 		Scene(const Scene&)	           = delete;

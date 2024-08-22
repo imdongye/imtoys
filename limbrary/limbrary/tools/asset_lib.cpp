@@ -12,7 +12,7 @@ lim::AssetLib::AssetLib()
 	, small_sphere(0.2f, 8, 4,true, false)
 	, thin_cylinder(0.1f)
 	, texture_viewer("replace before drawImGui", new FramebufferNoDepth(3,32))
-	, env_sphere(20.f)
+	, env_sphere(80.f)
 {
 	screen_quad.initGL(true);
 	sphere.initGL(true);

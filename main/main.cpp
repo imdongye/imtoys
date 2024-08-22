@@ -92,12 +92,12 @@ int main()
 	pushAppData<lim::AppPbdCpu>();
 	pushAppData<lim::AppPbdGpu>();
 	pushAppData<lim::AppIK>();
-	pushAppData<lim::AppBvhParsor>();
-	pushAppData<lim::AppRay>();
 	pushAppData<lim::AppClothCPU>();
-	pushAppData<lim::AppCurve>();
 	pushAppData<lim::AppClothGPU>();
 	pushAppData<lim::AppParticle>();
+	pushAppData<lim::AppCurve>();
+	pushAppData<lim::AppBvhParsor>();
+	pushAppData<lim::AppRay>();
 	pushAppData<lim::AppMineSweeper>();
 	pushAppData<lim::AppModelViewer>();
 	pushAppData<lim::AppSdfModeler>();

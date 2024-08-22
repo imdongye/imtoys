@@ -44,8 +44,6 @@ SoftBody::SoftBody(lim::Mesh&& src, int nrShear, BendType bendType
     nr_verts = (int)poss.size();
     nr_tris = (int)tris.size();
 
-    // w_s
-
     // rm same pos verts to ptcls ====================
     if( refCloseVerts ) {
         vector<vec3> tempPtcls;
@@ -63,7 +61,7 @@ SoftBody::SoftBody(lim::Mesh&& src, int nrShear, BendType bendType
             for( int j=i+1; j<nr_verts; j++ ) {
                 if( vert_to_ptcl[j]>=0 )
                     continue;
-                if( length2(curPos-poss[j]) < 1.0e-5f ) {
+                if( length2(curPos-poss[j]) < 1.0e-9f ) {
                     vert_to_ptcl[j] = ptclIdx;
                 }
             }
@@ -109,7 +107,28 @@ SoftBody::SoftBody(lim::Mesh&& src, int nrShear, BendType bendType
     
     v_s.resize(nr_ptcls, vec3(0));
     debug_dirs.resize(nr_ptcls, vec3(0));
+
+    // update ptcl mass with vertex color r channel
     w_s.resize(nr_ptcls, inv_ptcl_mass);
+    if( cols.empty() == false ) {
+        if( vert_to_ptcl.empty() ) {
+            for( int i=0; i<nr_ptcls; i++ ) {
+                float massMultiplier = 1.f-cols[i].r;
+                w_s[i] *= massMultiplier;
+            }
+        }
+        else {
+            for( int i=0; i<nr_verts; i++ ) {
+                int ptclIdx = vert_to_ptcl[i];
+                float massMultiplier = 1.f-cols[i].r;
+                if( massMultiplier < 0.2f ) {
+                    w_s[ptclIdx] = 0.f;
+                } else {
+                    w_s[ptclIdx] *= massMultiplier;
+                }
+            }
+        }
+    }
 
     struct Edge {
         ivec2 idx_ps;
