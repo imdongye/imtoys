@@ -79,11 +79,12 @@ namespace lim
 	{
 	public:
 		RdNode root;
+		Animator* animator = nullptr; // own
+		std::vector<Mesh*> own_meshes; // for delete soft body & skinned mesh
+		std::vector<RdNode> skinned_mesh_nodes; // for update skinned mesh buffer
+
 		const Transform* tf_prev = nullptr;
-		Animator animator;
 		Model* md_data = nullptr;
-		std::vector<Mesh*> own_meshes; // for delete soft body
-		std::vector<MeshSkinned> skinned_meshes;
 
 	public:
 		ModelView();
