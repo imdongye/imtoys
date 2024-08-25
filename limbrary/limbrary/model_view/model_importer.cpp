@@ -312,13 +312,13 @@ static Mesh* convertMesh(const aiMesh* aiMs)
 			const aiBone* aiBone = aiMs->mBones[i];
 			std::string boneName = aiBone->mName.C_Str();
 			int boneIdx;
-			if( !isIn(g_model->bone_name_to_idx, boneName) ) {
-				boneIdx = g_model->nr_bones;
-				g_model->nr_bones++;
-				g_model->bone_name_to_idx[boneName] = boneIdx;
-				g_model->bone_offsets.push_back(toGLM(aiBone->mOffsetMatrix));
+			if( !isIn(g_model->name_to_weighted_bone_idx, boneName) ) {
+				boneIdx = g_model->nr_weighted_bones;
+				g_model->nr_weighted_bones++;
+				g_model->name_to_weighted_bone_idx[boneName] = boneIdx;
+				g_model->weighted_bone_offsets.push_back(toGLM(aiBone->mOffsetMatrix));
 			} else {
-				boneIdx = g_model->bone_name_to_idx[boneName];
+				boneIdx = g_model->name_to_weighted_bone_idx[boneName];
 			}
 			auto aiWeights = aiBone->mWeights;
 			auto nrWeights = aiBone->mNumWeights;
@@ -406,17 +406,17 @@ static void convertAnim(Animation& dst, const aiAnimation& src) {
 // }
 static void addBoneNode(int idxParent, const mat4 mtxParent, const aiNode* src) {
 	assert(src->mNumMeshes==0);
-	g_animator->nr_bone_nodes++;
-	g_animator->skeleton.emplace_back();
-	int curIdx = g_animator->nr_bone_nodes-1;
-	BoneNode& dst = g_animator->skeleton.back();
+	g_animator->nr_bones++;
+	g_animator->bones.emplace_back();
+	int curIdx = g_animator->nr_bones-1;
+	BoneNode& dst = g_animator->bones.back();
 	dst.name = src->mName.C_Str();
 	dst.nr_childs = src->mNumChildren;
 
-	if( isIn(g_model->bone_name_to_idx, dst.name) ) {
-		dst.idx_bone = g_model->bone_name_to_idx[dst.name];
+	if( isIn(g_model->name_to_weighted_bone_idx, dst.name) ) {
+		dst.idx_weighted_bone = g_model->name_to_weighted_bone_idx[dst.name];
 	} else {
-		dst.idx_bone = -1;
+		dst.idx_weighted_bone = -1;
 	}
 	dst.idx_parent_bone_node = idxParent;
 
@@ -431,7 +431,7 @@ static void addBoneNode(int idxParent, const mat4 mtxParent, const aiNode* src) 
 
 	dst.tf.mtx = toGLM(src->mTransformation);
 	dst.tf.decomposeMtx();
-	dst.tf_model_space = mtxParent * dst.tf.mtx;
+	dst.mtx_model_space = mtxParent * dst.tf.mtx;
 
 	
 	for( size_t i=0; i< src->mNumChildren; i++ ) {
@@ -442,7 +442,7 @@ static void addBoneNode(int idxParent, const mat4 mtxParent, const aiNode* src) 
 		
 		// !! do not use dst pointer 
 		// 	  because vector array memory can be moved by under recursive func
-		addBoneNode( curIdx, g_animator->skeleton[curIdx].tf_model_space, aiChild );
+		addBoneNode( curIdx, g_animator->bones[curIdx].mtx_model_space, aiChild );
 	}
 }
 static bool isBoneNode(aiNode* aiChild) {
@@ -456,7 +456,7 @@ static bool isBoneNode(aiNode* aiChild) {
 		}
 		return true;
 	}
-	if( isIn(g_model->bone_name_to_idx, name ) ) {
+	if( isIn(g_model->name_to_weighted_bone_idx, name ) ) {
 		return true;
 	}
 	for( const auto& anim : g_model->animations ) {
@@ -487,7 +487,7 @@ static void convertRdTree(RdNode& dst, const aiNode* src, int depth)
 		aiNode* aiChild = src->mChildren[i];
 		if( g_is_ms_has_bone && isBoneNode(aiChild) ) {
 			// assume that model has only one bone tree
-			assert(g_animator->nr_bone_nodes==0);
+			assert(g_animator->nr_bones==0);
 			assert(g_model->depth_of_bone_root_in_rdtree<1); // normaly bone root in first node
 
 			g_model->depth_of_bone_root_in_rdtree = depth;
@@ -539,9 +539,10 @@ bool lim::Model::importFromFile(
 	pFrags |= aiProcess_JoinIdenticalVertices; // shared vertex
 	// pFrags |= aiProcess_SplitLargeMeshes : 큰 mesh를 작은 sub mesh로 나눠줌
 	// pFrags |= aiProcess_OptimizeMeshes : mesh를 합쳐서 draw call을 줄인다. batching?
-	pFrags |= aiProcessPreset_TargetRealtime_MaxQuality;
+	// pFrags |= aiProcessPreset_TargetRealtime_MaxQuality; // Todo: Tangent 생성해서 사용하는게 좋을까
 	pFrags |= aiProcess_LimitBoneWeights;
 	aiPropertyStore* props = aiCreatePropertyStore();
+	
 	// bone node $AssimpFbx$ PreRotation Translation 추가 노드 생성
 	aiSetImportPropertyInteger(props, AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, 0);
 
@@ -575,7 +576,7 @@ bool lim::Model::importFromFile(
 	g_is_ms_has_bone = false;
 	g_animator = nullptr;
 	if( withAnims ) {
-		g_animator = &animator;
+		g_animator = &own_animator;
 	}
 	own_meshes.reserve(g_scn->mNumMeshes);
 	for( GLuint i=0; i<g_scn->mNumMeshes; i++ ) {
@@ -584,20 +585,20 @@ bool lim::Model::importFromFile(
 
 	if( g_is_ms_has_bone ) {
 		/* import anims( bone-2 ) */
-		animator.init(this);
+		own_animator.init(this);
 		animations.resize(g_scn->mNumAnimations);
 		for( uint i=0; i<g_scn->mNumAnimations; i++ ) {
 			convertAnim(animations[i], *(g_scn->mAnimations[i]));
 		}
-		animator.setAnim(&animations[0]);
+		own_animator.setAnim(&animations[0]);
 	
 		/* set bone node tree structure (bone-3)
 		and link animation (bone-4) 
 		assume that first node is not bone root node
 		*/
-		animator.nr_bone_nodes = 0;
-		animator.skeleton.clear();
-		animator.skeleton.reserve(nr_bones+10);
+		own_animator.nr_bones = 0;
+		own_animator.bones.clear();
+		own_animator.bones.reserve(nr_weighted_bones+10);
 		g_model->depth_of_bone_root_in_rdtree = -1;
 		assert( isBoneNode(g_scn->mRootNode)==false );
 	}
@@ -607,22 +608,22 @@ bool lim::Model::importFromFile(
 	convertRdTree(root, g_scn->mRootNode, 0);
 
 	if( g_is_ms_has_bone ) {
-		assert(animator.nr_bone_nodes>0&&g_model->depth_of_bone_root_in_rdtree>=0);
+		assert(own_animator.nr_bones>0&&g_model->depth_of_bone_root_in_rdtree>=0);
 
 		/* update bone offset with bind pose (bone-5) */
 		/* sometimes defualt offset mtx is wrong */
 		// mat4 invGlobalTf = inverse(global_transform);
-		// for( mat4& offset : bone_offsets ) {
+		// for( mat4& offset : weighted_bone_offsets ) {
 		// 	offset = offset*global_transform;
 		// }
 
-		// for( const BoneNode& nd : animator.skeleton ) {
-		// 	int boneIdx = nd.idx_bone;
+		// for( const BoneNode& nd : animator.bones ) {
+		// 	int boneIdx = nd.idx_weighted_bone;
 		// 	if( boneIdx<0 )
 		// 		continue;
-		// 	bone_offsets[boneIdx] = glm::inverse(nd.tf_model_space);
+		// 	weighted_bone_offsets[boneIdx] = glm::inverse(nd.mtx_model_space);
 		// }
-		animator.updateMtxBones();
+		own_animator.updateMtxBones();
 	}
 
 
@@ -694,6 +695,8 @@ bool lim::Model::importFromFile(
 	
 	return true;
 }
+
+
 
 
 int lim::getNrImportFormats()

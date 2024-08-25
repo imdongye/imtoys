@@ -17,32 +17,6 @@ using namespace lim;
 Mesh::Mesh()
 {
 }
-Mesh::Mesh(Mesh&& src)
-	: name(move(src.name))
-	, poss(move(src.poss))
-	, nors(move(src.nors))
-	, uvs(move(src.uvs))
-	, cols(move(src.cols))
-	, tangents(move(src.tangents))
-	, bitangents(move(src.bitangents))
-	, bone_infos(move(src.bone_infos))
-	, tris(move(src.tris))
-	, nr_verts(src.nr_verts)
-	, nr_tris(src.nr_tris)
-	, buf_poss(src.buf_poss), buf_nors(src.buf_nors), buf_uvs(src.buf_uvs)
-	, buf_colors(src.buf_colors), buf_tangents(src.buf_tangents), buf_bitangents(src.buf_bitangents)
-	, buf_bone_infos(src.buf_bone_infos), buf_tris(src.buf_tris), vao(src.vao)
-{
-	src.buf_poss = 0;
-	src.buf_nors = 0;
-	src.buf_uvs = 0;
-	src.buf_colors = 0;
-	src.buf_tangents = 0;
-	src.buf_bitangents = 0;
-	src.buf_bone_infos = 0;
-	src.buf_tris = 0;
-	src.vao = 0;
-}
 Mesh::Mesh(const Mesh& src)
 	: name(src.name+"-cloned")
 	, poss(src.poss)
@@ -56,11 +30,83 @@ Mesh::Mesh(const Mesh& src)
 	, nr_verts(src.nr_verts)
 	, nr_tris(src.nr_tris)
 {
+	if(src.vao != 0) {
+		initGL();
+	}
+}
+Mesh& Mesh::operator=(const Mesh& src)
+{
+	if(vao != 0) {
+		deinitGL();
+	}
+
+	name = src.name+"-cloned";
+	poss = src.poss;
+	nors = src.nors;
+	uvs = src.uvs;
+	cols = src.cols;
+	tangents = src.tangents;
+	bitangents = src.bitangents;
+	bone_infos = src.bone_infos;
+	tris = src.tris;
+	nr_verts = src.nr_verts;
+	nr_tris = src.nr_tris;
+
+	if(src.vao != 0) {
+		initGL();
+	}
+	return *this;
+}
+Mesh::Mesh(Mesh&& src) noexcept
+{
+	operator=(move(src));
+}
+Mesh& Mesh::operator=(Mesh&& src) noexcept
+{
+	if(vao != 0) {
+		deinitGL();
+	}
+
+	name = move(src.name);
+	poss = move(src.poss);
+	nors = move(src.nors);
+	uvs = move(src.uvs);
+	cols = move(src.cols);
+	tangents = move(src.tangents);
+	bitangents = move(src.bitangents);
+	bone_infos = move(src.bone_infos);
+	tris = move(src.tris);
+	nr_verts = src.nr_verts;
+	nr_tris = src.nr_tris;
+
+	buf_poss = src.buf_poss;
+	buf_nors = src.buf_nors;
+	buf_uvs = src.buf_uvs;
+	buf_colors = src.buf_colors;
+	buf_tangents = src.buf_tangents;
+	buf_bitangents = src.buf_bitangents;
+	buf_bone_infos = src.buf_bone_infos;
+	buf_tris = src.buf_tris;
+	vao = src.vao;
+
+	src.buf_poss = 0;
+	src.buf_nors = 0;
+	src.buf_uvs = 0;
+	src.buf_colors = 0;
+	src.buf_tangents = 0;
+	src.buf_bitangents = 0;
+	src.buf_bone_infos = 0;
+	src.buf_tris = 0;
+	src.vao = 0;
+	
+	return *this;
 }
 Mesh::~Mesh()
 {
 	deinitGL();
 }
+
+
 // upload VRAM
 void Mesh::initGL(bool withClearMem)
 {
@@ -168,6 +214,9 @@ void Mesh::clearMem() {
 	bone_infos.clear(); bone_infos.shrink_to_fit();
 	tris.clear(); 		tris.shrink_to_fit();
 }
+
+
+
 void Mesh::bindGL() const {
 	assert( vao != 0 && buf_tris != 0 );
 	glBindVertexArray(vao);
@@ -182,6 +231,10 @@ void Mesh::bindAndDrawGL() const {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buf_tris);
 	glDrawElements(GL_TRIANGLES, nr_tris*3, GL_UNSIGNED_INT, nullptr);
 }
+
+
+
+
 void Mesh::print() const
 {
 	log::pure("mesh: %s, verts %d, tris %d\n", name.c_str(), poss.size(), tris.size());

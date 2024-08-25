@@ -74,8 +74,8 @@ namespace lim
 	class Scene final
 	{
   	public:
-		std::vector<ModelView*> own_mds;
-        std::vector<ILight*> own_lits;
+		std::vector<OwnPtr<ModelView>> own_mds;
+        std::vector<OwnPtr<ILight>> own_lits;
         const IBLight* ib_light = nullptr; // ref
         bool is_draw_env_map = false;
         int idx_LitMod = -1;

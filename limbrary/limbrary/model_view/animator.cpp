@@ -15,7 +15,7 @@ void Animator::init(const Model* md) {
     if( !md )
         return;
     md_data = md;
-    mtx_Bones.resize(md_data->nr_bones);
+    mtx_Bones.resize(md_data->nr_weighted_bones);
     if( !AssetLib::get().app->update_hooks.isIn(this) ) {
         AssetLib::get().app->update_hooks[this] = [this](float dt) {update(dt);};
     }
@@ -27,16 +27,20 @@ Animator::~Animator() {
     } 
 }
 void Animator::clear() {
-    nr_bone_nodes = 0;
-    skeleton.clear();
+    nr_bones = 0;
+    bones.clear();
     mtx_Bones.clear();
     cur_anim = nullptr;
     state = ST_STOP;
 }
+Animator::Animator(const Animator& src) {
+    operator=(src);
+}
 Animator& Animator::operator=(const Animator& src) {
+    state = src.state;
     is_enabled = src.is_enabled;
-    nr_bone_nodes = src.nr_bone_nodes;
-    skeleton = src.skeleton;
+    nr_bones = src.nr_bones;
+    bones = src.bones;
     mtx_Bones = src.mtx_Bones;
 
     setAnim(src.cur_anim);
@@ -157,25 +161,25 @@ static quat getInterpolatedValue( const std::vector<Animation::KeyQuat>& keys, f
 
 
 void Animator::updateMtxBones() {
-    BoneNode& rootBoneNode = skeleton[0];
-    rootBoneNode.tf_model_space = rootBoneNode.tf.mtx;
+    BoneNode& rootBoneNode = bones[0];
+    rootBoneNode.mtx_model_space = rootBoneNode.tf.mtx;
 
-    if( rootBoneNode.idx_bone>=0) {
-        assert(rootBoneNode.idx_bone==0);
-        mtx_Bones[0] = rootBoneNode.tf_model_space * md_data->bone_offsets[0];
+    if( rootBoneNode.idx_weighted_bone>=0) {
+        assert(rootBoneNode.idx_weighted_bone==0);
+        mtx_Bones[0] = rootBoneNode.mtx_model_space * md_data->weighted_bone_offsets[0];
     }
 
     // recursive term
-    for(int i=1; i<nr_bone_nodes; i++) {
-        BoneNode& curBoneNode = skeleton[i];
-        BoneNode& parentBoneNode = skeleton[curBoneNode.idx_parent_bone_node];
-        curBoneNode.tf_model_space = parentBoneNode.tf_model_space * curBoneNode.tf.mtx;
-        int idxBone = curBoneNode.idx_bone;
+    for(int i=1; i<nr_bones; i++) {
+        BoneNode& curBoneNode = bones[i];
+        BoneNode& parentBoneNode = bones[curBoneNode.idx_parent_bone_node];
+        curBoneNode.mtx_model_space = parentBoneNode.mtx_model_space * curBoneNode.tf.mtx;
+        int idxBone = curBoneNode.idx_weighted_bone;
         if( idxBone<0 ){
             continue;
         }
         else {
-            mtx_Bones[idxBone] = curBoneNode.tf_model_space * md_data->bone_offsets[idxBone];
+            mtx_Bones[idxBone] = curBoneNode.mtx_model_space * md_data->weighted_bone_offsets[idxBone];
         }
     }
 }
@@ -195,7 +199,7 @@ void Animator::update(float dt) {
     cur_tick = elapsed_sec * cur_anim->ticks_per_sec;
 
     for( const Animation::Track& track : cur_anim->tracks ) {
-        Transform& nodeTf = skeleton[track.idx_bone_node].tf;
+        Transform& nodeTf = bones[track.idx_bone_node].tf;
         nodeTf.pos = (track.nr_poss>1)    ?getInterpolatedValue(track.poss, cur_tick):track.poss[0].value;
         nodeTf.scale = (track.nr_scales>1)?getInterpolatedValue(track.scales, cur_tick):track.scales[0].value;
         nodeTf.ori = (track.nr_oris>1)    ?getInterpolatedValue(track.oris, cur_tick):track.oris[0].value;

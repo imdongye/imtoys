@@ -197,12 +197,12 @@ static void drawInspector() {
 		}
 		if( edited ) {
 			nd.tf.update();
-			cur_md->animator.updateMtxBones();
+			cur_md->own_animator.updateMtxBones();
 		}
 		LimGui::Mat4(nd.tf.mtx);
-		ImGui::Text("bone_idx : %d", nd.idx_bone);
-		if( nd.idx_bone>=0 ) {
-			LimGui::Mat4(cur_md->md_data->bone_offsets[nd.idx_bone]);
+		ImGui::Text("bone_idx : %d", nd.idx_weighted_bone);
+		if( nd.idx_weighted_bone>=0 ) {
+			LimGui::Mat4(cur_md->md_data->weighted_bone_offsets[nd.idx_weighted_bone]);
 		}
 	}
 	else if( picked_msset ) {
@@ -312,11 +312,11 @@ void LimGui::ModelEditor(ModelView& md) {
 	}
 	if( ImGui::CollapsingHeader("Bone tree") ) {
 		ImGui::Text("depth of bone root : %d", md.md_data->depth_of_bone_root_in_rdtree);
-		drawHierarchy(md.animator.skeleton, 0);
+		drawHierarchy(md.own_animator.bones, 0);
 	}
 	ImGui::SetNextItemOpen(true, ImGuiCond_Once);
 	if( ImGui::CollapsingHeader("Animator") ) {
-		drawAnimator(md.animator);
+		drawAnimator(md.own_animator);
 	}
 	ImGui::End();
 }

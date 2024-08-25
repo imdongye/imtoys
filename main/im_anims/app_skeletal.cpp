@@ -98,15 +98,15 @@ void lim::AppSkeletal::update()
 	// {
 	// 	const ModelView& mdview = *scene.own_mds[0];
 	// 	glm::mat4 globalMtx = mdview.getLocalToBoneRootMtx();
-	// 	for( const BoneNode& bone : mdview.animator.skeleton ) {
+	// 	for( const BoneNode& bone : mdview.animator.bones ) {
 	// 		if( drawOffset ) {
-	// 			if( bone.idx_bone<0 )
+	// 			if( bone.idx_weighted_bone<0 )
 	// 				return;
-	// 			glm::mat4 local = glm::inverse(mdview.md_data->bone_offsets[bone.idx_bone]);
+	// 			glm::mat4 local = glm::inverse(mdview.md_data->weighted_bone_offsets[bone.idx_weighted_bone]);
 	// 			prog.setUniform("mtx_Model", globalMtx * local);
 	// 		}
 	// 		else {
-	// 			prog.setUniform("mtx_Model", globalMtx * bone.tf_model_space);
+	// 			prog.setUniform("mtx_Model", globalMtx * bone.mtx_model_space);
 	// 		}
 	// 		prog.setUniform("color", (LimGui::getPickedBoneNode() == &bone) ? glm::vec3(1, 0, 0) : glm::vec3(0, 0, 1));
 	// 		AssetLib::get().sphere.bindAndDrawGL();

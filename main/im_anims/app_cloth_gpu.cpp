@@ -200,8 +200,8 @@ AppClothGPU::AppClothGPU()
 	prog_comp_nor.attatch("im_anims/shaders/cloth_normal.comp").link();
 
 	model.importFromFile("assets/models/jump.fbx", true, true);
-	model.animator.play();
-	model.animator.is_loop = true;
+	model.own_animator.play();
+	model.own_animator.is_loop = true;
 
 	resetParams();
 	makeClothDataAndInitGL();
@@ -298,7 +298,7 @@ void AppClothGPU::update()
 
 	prog_skin.use();
 	viewport.camera.setUniformTo(prog_skin);
-	model.animator.setUniformTo(prog_skin);
+	model.own_animator.setUniformTo(prog_skin);
 	model.root.updateGlobalTransform();
 	model.root.treversalEnabled([&](const Mesh* ms, const Material*, const glm::mat4& transform) {
 		prog_skin.setUniform("mtx_Model", transform);

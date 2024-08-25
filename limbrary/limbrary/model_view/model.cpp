@@ -32,167 +32,266 @@ using glm::vec4;
 using glm::mat4;
 
 
-RdNode::MsSet::MsSet(const Mesh* _ms, const Material* _mat) 
-	: ms(_ms), mat(_mat)
-{
-}
 
-RdNode::RdNode(std::string_view _name, RdNode* _parent)
-	: name(_name), parent(_parent)
+RdNode::RdNode(std::string_view _name, const  RdNode* _parent, const Mesh* _ms, const Material* _mat)
+	: name(_name), parent(_parent), ms(_ms), mat(_mat)
 {
+	if( parent ) {
+		mtx_global = parent->mtx_global;
+	}
 }
 RdNode::RdNode(const RdNode& src)
 {
-	*this = src;
+	operator=(src);
 }
 RdNode& RdNode::operator=(const RdNode& src)
 {
 	name = src.name;
 	tf = src.tf;
-	parent = src.parent;
+	mtx_global = src.mtx_global;
+	parent = src.parent; // override next time
 	childs = src.childs;
-	meshs_mats = src.meshs_mats;
-	enabled = src.enabled;
 	// recursivly bottom to top
-	// todo test
 	for( auto& child : childs ) {
 		child.parent = this;
 	}
+
+	enabled = src.enabled;
+	visible = src.visible;
+	is_identity_mtx = src.is_identity_mtx;
+
+	ms = src.ms;
+	mat = src.mat;
+	return *this;
+}
+RdNode::RdNode(RdNode&& src) noexcept
+{
+	operator=(std::move(src));
+}
+RdNode& RdNode::operator=(RdNode&& src) noexcept
+{
+	name = std::move(src.name);
+	tf = src.tf;
+	mtx_global = src.mtx_global;
+	parent = src.parent; // override next time
+	childs.clear();
+	childs = std::move(src.childs);
+	// recursivly bottom to top
+	for( auto& child : childs ) {
+		child.parent = this;
+	}
+
+	enabled = src.enabled;
+	visible = src.visible;
+	is_identity_mtx = src.is_identity_mtx;
+
+	ms = src.ms;
+	mat = src.mat;
 	return *this;
 }
 
-void RdNode::addChild(std::string_view _name) {
-	childs.push_back(RdNode(_name, this));
-}
-void RdNode::addMsMat(const Mesh* ms, const Material* mat) {
-	meshs_mats.push_back(MsSet(ms, mat));
-}
-void RdNode::clear() {
-	meshs_mats.clear();
+void RdNode::clear() noexcept
+{
+	parent = nullptr;
 	childs.clear();
+	ms = nullptr;
+	mat = nullptr;
+}
+
+
+void RdNode::addChild(std::string_view _name, const Mesh* _ms, const Material* _mat)
+{
+	childs.emplace_back(_name, this, _ms, _mat);
 }
 
 
 void RdNode::updateGlobalTransform(mat4 prevTf) {
-	tf_global = prevTf * tf.mtx;
+	if( is_local_is_global ) {
+		mtx_global = tf.mtx;
+	}
+	else if( is_identity_mtx ) {
+		mtx_global = prevTf;
+	}
+	else {
+		mtx_global = prevTf * tf.mtx;
+	}
 	for( RdNode& child : childs ) {
-		child.updateGlobalTransform(tf_global);
+		child.updateGlobalTransform(mtx_global);
 	}
 }
 
-
-void RdNode::treversal(std::function<bool(const Mesh* ms, const Material* mat, const glm::mat4& transform)> callback) const {
-	for( const auto& msset : meshs_mats ) {
-		if( callback(msset.ms, msset.mat, (msset.transformWhenRender)?tf_global:glm::mat4(1)) == false ) {
-			return;
-		}
-	}
-	for( const RdNode& child : childs ) {
-		child.treversal(callback);
-	}
-}
-void RdNode::treversalEnabled(std::function<bool(const Mesh* ms, const Material* mat, const glm::mat4& transform)> callback) const {
-	if( !enabled )
+void RdNode::dfsRender(std::function<void(const Mesh* ms, const Material* mat, const glm::mat4& mtxGlobal)> callback) const
+{
+	if( enabled == false ) {
 		return;
-	for( const auto& msset : meshs_mats ) {
-		if( msset.enabled ) {
-			if( callback(msset.ms, msset.mat, (msset.transformWhenRender)?tf_global:glm::mat4(1)) == false ) {
-				return;
-			}
-		}
+	}
+	if( visible ) {
+		callback(ms, mat, mtx_global);
 	}
 	for( const RdNode& child : childs ) {
-		child.treversalEnabled(callback);
+		child.dfsRender(callback);
+	}
+}
+void RdNode::dfsAll(std::function<bool(RdNode& nd)> callback)
+{
+	if( callback(*this) == false ) {
+		return;
+	}
+	for( RdNode& child : childs ) {
+		child.dfsAll(callback);
+	}
+}
+void RdNode::dfsAll(std::function<bool(const RdNode& nd)> callback) const
+{
+	if( callback(*this) == false ) {
+		return;
+	}
+	for( const RdNode& child : childs ) {
+		child.dfsAll(callback);
 	}
 }
 
 
 
 
-static Transform* findTf(RdNode& dst, const RdNode& src, const Transform* srcTf) {
-	if(srcTf == &src.tf) {
-		return &dst.tf;
-	}
-	int nrChilds = src.childs.size();
-	for( int i=0; i<nrChilds; i++ ) {
-		Transform* rst = findTf(dst.childs[i], src.childs[i], srcTf);
-		if( rst )
-			return rst;
-	}
-	return nullptr;
-}
+
+
+
+
+
+
 
 
 ModelView::ModelView()
-	: root("empty", nullptr)
+	: root("root", nullptr, nullptr, nullptr)
 {
 }
-ModelView::~ModelView() {
-	for( Mesh* ms : own_meshes ) {
-		delete ms;
-	}
-	own_meshes.clear();
+ModelView::~ModelView()
+{
 }
 ModelView::ModelView(const ModelView& src)
-	: root("empty", nullptr)
+	: ModelView()
 {
 	operator=(src);
 }
-ModelView& ModelView::operator=(const ModelView& src) {
+ModelView& ModelView::operator=(const ModelView& src) 
+{
 	root = src.root;
+	own_animator = src.own_animator;
+
+	own_meshes.clear();
+	skinned_mesh_nodes.clear();
+	if( src.own_meshes.empty() == false )
+	{
+		skinned_mesh_nodes.clear();
+		int nrSkMs = src.skinned_mesh_nodes.size();
+		skinned_mesh_nodes.reserve(nrSkMs);
+		// copy meshes
+		own_meshes = src.own_meshes;
+		int nrMs = src.own_meshes.size();
+		
+		root.dfsAll([&](RdNode& nd) {
+			for( int i=0; i<nrMs; i++ ) {
+				if( nd.ms==src.own_meshes[i].raw ) {
+					for( int j=0; j<nrSkMs; j++ ) {
+						if( nd.ms==src.skinned_mesh_nodes[j]->ms ) {
+							skinned_mesh_nodes[j] = &nd;
+						}
+					}
+					nd.ms = own_meshes[i].raw;
+				}
+			}
+			return true;
+		});
+
+		assert(skinned_mesh_nodes.size()==nrSkMs);
+	}
+
 	tf_prev = src.tf_prev;
 	md_data = src.md_data;
-	animator = src.animator;
-	for( Mesh* ms : own_meshes ) {
-		delete ms;
-	}
-	own_meshes.clear();
-	own_meshes.reserve(src.own_meshes.size());
-	for( Mesh* ms : src.own_meshes ) {
-		own_meshes.push_back(new Mesh(*ms));
-		// todo detect SoftBody or SkinnedMesh
-	}
 	return *this;
 }
 
 
+void ModelView::clear() noexcept
+{
+	root.clear();
+	own_animator.clear();
+	own_meshes.clear();
+	skinned_mesh_nodes.clear();
+	tf_prev = nullptr;
+	md_data = nullptr;
+}
+
+mat4 ModelView::getLocalToMeshMtx(const Mesh* target) const
+{
+	bool isFindMs = false;
+	mat4 rst = mat4(1.0f);
+	root.dfsAll([&](const RdNode& nd) {
+		if( target == nd.ms ) {
+			rst = nd.tf.mtx;
+			isFindMs = true;
+			return false;
+		}
+		return true;
+	});
+	assert(isFindMs);
+	return rst;
+}
+
+mat4 ModelView::getLocalToBoneRootMtx() const
+{
+	const RdNode* curNode = &root;
+	for( int i=0; i<md_data->depth_of_bone_root_in_rdtree; i++ ) {
+		assert(curNode->childs.size()==1);
+		curNode = &curNode->childs[0];
+	}
+	return curNode->mtx_global;
+}
+
+vec3 ModelView::getBoneWorldPos(int boneNodeIdx) const
+{
+    mat4 toBoneRoot = getLocalToBoneRootMtx();
+	vec3 rst = vec3( toBoneRoot * own_animator->bones[boneNodeIdx].mtx_model_space * vec4(0,0,0,1) );
+    return rst;
+}
 
 
-Model::Model(std::string_view _name): name(_name) {
+
+Model::Model(std::string_view _name): name(_name)
+{
 	md_data = this;
 }
-Model::~Model() {
+Model::~Model()
+{
 	clear();
 }
-void Model::clear() {
-	root.clear();
-
-	animator.clear();
-	animations.clear();
-
-
-	for( Material* mat : own_materials )
-		delete mat;
+void Model::clear() noexcept
+{
+	ModelView::clear();
 	own_materials.clear();
-	for( Texture* tex : own_textures )
-		delete tex;
 	own_textures.clear();
-	for( Mesh* ms : own_meshes )
-		delete ms;
 	own_meshes.clear();
+
+	name_to_weighted_bone_idx.clear();
+	weighted_bone_offsets.clear();
+	animations.clear();
 }
 
 
 
-Material* Model::addOwn(Material* md) {
+Material* Model::addOwn(Material* md)
+{
 	own_materials.push_back(md);
 	return md;
 }
-Texture* Model::addOwn(Texture* tex) {
+Texture* Model::addOwn(Texture* tex)
+{
 	own_textures.push_back(tex);
 	return tex;
 }
-Mesh* Model::addOwn(Mesh* ms) {
+Mesh* Model::addOwn(Mesh* ms)
+{
 	own_meshes.push_back(ms);
 	return ms;
 }
@@ -201,74 +300,65 @@ Mesh* Model::addOwn(Mesh* ms) {
 
 void Model::setProgToAllMat(const Program* prog)
 {
-	for( Material* mat : own_materials ) {
+	for( auto& mat : own_materials ) {
 		mat->prog = prog;
 	}
 }
 void Model::setSetProgToAllMat(std::function<void(const Program&)> setProg)
 {
-	for( Material* mat : own_materials ) {
+	for( auto& mat : own_materials ) {
 		mat->set_prog = setProg;
 	}
 }
+void Model::setSameMat(const Material* mat)
+{
+	root.dfsAll([&](RdNode& nd) {
+		nd.mat = mat;
+		return true;
+	});
+}
 
-static void setMatInTree(RdNode& root, const Material* mat) {
-	for( auto& msset : root.meshs_mats ) {
-		msset.mat = mat;
-	}
-	for( RdNode& child : root.childs ) {
-		setMatInTree(child, mat);
-	}
-}
-void Model::setSameMat(const Material* mat) {
-	setMatInTree(root, mat);
-}
 
 static void correctMatTexLink( Material& dst, const Material& src
-	, std::vector<Texture*>& dstTexs, const std::vector<Texture*>& srcTexs )
-{
+	, std::vector<OwnPtr<Texture>>& dstTexs, const std::vector<OwnPtr<Texture>>& srcTexs ) {
 	if( dst.map_ColorBase ) {
-		dst.map_ColorBase = dstTexs[findIdx(srcTexs, src.map_ColorBase)];
+		dst.map_ColorBase = dstTexs[findIdx(srcTexs, src.map_ColorBase)].raw;
 	}
 	if( dst.map_Specular ) {
-		dst.map_Specular = dstTexs[findIdx(srcTexs, src.map_Specular)];
+		dst.map_Specular = dstTexs[findIdx(srcTexs, src.map_Specular)].raw;
 	}
 	if( dst.map_Bump ) {
-		dst.map_Bump = dstTexs[findIdx(srcTexs, src.map_Bump)];
+		dst.map_Bump = dstTexs[findIdx(srcTexs, src.map_Bump)].raw;
 	}
 	if( dst.map_AmbOcc ) {
-		dst.map_AmbOcc = dstTexs[findIdx(srcTexs, src.map_AmbOcc)];
+		dst.map_AmbOcc = dstTexs[findIdx(srcTexs, src.map_AmbOcc)].raw;
 	}
 	if( dst.map_Roughness ) {
-		dst.map_Roughness = dstTexs[findIdx(srcTexs, src.map_Roughness)];
+		dst.map_Roughness = dstTexs[findIdx(srcTexs, src.map_Roughness)].raw;
 	}
 	if( dst.map_Metalness ) {
-		dst.map_Metalness = dstTexs[findIdx(srcTexs, src.map_Metalness)];
+		dst.map_Metalness = dstTexs[findIdx(srcTexs, src.map_Metalness)].raw;
 	}
 	if( dst.map_Emission ) {
-		dst.map_Emission = dstTexs[findIdx(srcTexs, src.map_Emission)];
+		dst.map_Emission = dstTexs[findIdx(srcTexs, src.map_Emission)].raw;
 	}
 	if( dst.map_Opacity ) {
-		dst.map_Opacity = dstTexs[findIdx(srcTexs, src.map_Opacity)];
+		dst.map_Opacity = dstTexs[findIdx(srcTexs, src.map_Opacity)].raw;
 	}
 }
 static void matchRdTree(RdNode& dst, const RdNode& src, const Model& dstMd, const Model& srcMd) {
-	int nr_msmats = src.meshs_mats.size();
-	for( int i=0 ; i<nr_msmats; i++ ) {
-		const RdNode::MsSet& srcMsset = src.meshs_mats[i];
-		int msIdx = findIdx(srcMd.own_meshes, (Mesh*)srcMsset.ms);
-		int matIdx = findIdx(srcMd.own_materials, (Material*)srcMsset.mat);
-		dst.meshs_mats[i] = RdNode::MsSet(dstMd.own_meshes[msIdx], dstMd.own_materials[matIdx]);
-		dst.meshs_mats[i].enabled = srcMsset.enabled;
-		dst.meshs_mats[i].transformWhenRender = srcMsset.transformWhenRender;
-	}
-	
-	int nrChilds = src.childs.size();
+	const int msIdx = findIdx(srcMd.own_meshes, (Mesh*)src.ms);
+	const int matIdx = findIdx(srcMd.own_materials, (Material*)src.mat);
+	dst.ms = dstMd.own_meshes[msIdx].raw;
+	dst.mat = dstMd.own_materials[matIdx].raw;
+
+	const int nrChilds = src.childs.size();
 	for( int i=0 ; i<nrChilds; i++ ) {
 		matchRdTree(dst.childs[i], src.childs[i], dstMd, srcMd);
 	}
 }
-void Model::copyFrom(const Model& src) {
+void Model::copyFrom(const Model& src)
+{
 	clear();
 	ModelView::operator=(src);
 
@@ -276,23 +366,15 @@ void Model::copyFrom(const Model& src) {
 	name = src.name;
 	path = src.path;
 
-	own_textures.reserve(src.own_textures.size());
-	for( Texture* srcTex : src.own_textures ) {
-		own_textures.push_back( new Texture(*srcTex) );
-	}
+	own_materials = src.own_materials;
+	own_textures = src.own_textures;
+	own_meshes = src.own_meshes;
 
-	own_materials.reserve(src.own_materials.size());
 	for( int i=0; i<src.own_materials.size(); i++ ) {
-		own_materials.push_back( new Material(*src.own_materials[i]) );
 		correctMatTexLink( *own_materials[i], *src.own_materials[i], own_textures, src.own_textures);
 	}
 
-	own_meshes.reserve(src.own_meshes.size());
-	for( Mesh* srcMs : src.own_meshes ) {
-		own_meshes.push_back( new Mesh(*srcMs) ); // clone
-		own_meshes.back()->initGL();
-	}
-
+	// root = src.root; in ModelView Copy
 	matchRdTree(root, src.root, *this, src);
 
 
@@ -304,39 +386,10 @@ void Model::copyFrom(const Model& src) {
 	ai_backup_flags = src.ai_backup_flags;
 
 	
-	nr_bones = src.nr_bones;
 	depth_of_bone_root_in_rdtree = src.depth_of_bone_root_in_rdtree;
-	bone_name_to_idx = src.bone_name_to_idx;
-	bone_offsets = src.bone_offsets;
+	nr_weighted_bones = src.nr_weighted_bones;
+	name_to_weighted_bone_idx = src.name_to_weighted_bone_idx;
+	weighted_bone_offsets = src.weighted_bone_offsets;
 	animations = src.animations;
 }
 
-mat4 ModelView::getLocalToMeshMtx(const Mesh* target) const {
-	bool isFindMs = false;
-	mat4 rst = mat4(1.0f);
-	root.treversal([&](const Mesh* ms, const Material* mat, const glm::mat4& tf) {
-		if( target == ms ) {
-			rst = tf;
-			isFindMs = true;
-			return false;
-		}
-		return true;
-	});
-	assert(isFindMs);
-	return rst;
-}
-
-mat4 ModelView::getLocalToBoneRootMtx() const {
-	const RdNode* curNode = &root;
-	for( int i=0; i<md_data->depth_of_bone_root_in_rdtree; i++ ) {
-		// assert(curNode->childs.size()==1);
-		curNode = &curNode->childs[0];
-	}
-	return curNode->tf_global;
-}
-
-vec3 ModelView::getBoneWorldPos(int boneNodeIdx) const {
-    mat4 toBoneRoot = getLocalToBoneRootMtx();
-	vec3 rst = vec3( toBoneRoot * animator.skeleton[boneNodeIdx].tf_model_space * vec4(0,0,0,1) );
-    return rst;
-}

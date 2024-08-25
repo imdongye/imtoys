@@ -39,79 +39,85 @@ Model에 의존하지 않고 RdNode에 의존하는 Scene
 #include "animator.h"
 #include "material.h"
 #include "mesh_skinned.h"
+#include "../containers/own_ptr.h"
 
 namespace lim
 {
 	struct RdNode {
-		struct MsSet {
-			bool enabled = true;
-			bool transformWhenRender = true;
-			const Mesh* ms = nullptr;
-			const Material* mat = nullptr;
-			MsSet(const Mesh* _ms, const Material* _mat);
-		};
 		std::string name = "nonamed node";
         Transform tf;
-		glm::mat4 tf_global = glm::mat4(1); // update in render() also
-		RdNode* parent = nullptr;
+		glm::mat4 mtx_global = glm::mat4(1); // update in render() also
+		const RdNode* parent = nullptr;
         std::vector<RdNode> childs;
+		
 		bool enabled = true;
-		std::vector<MsSet> meshs_mats;
+		bool visible = true;
+		bool is_identity_mtx = false;
+		bool is_local_is_global = true;
 
-		RdNode(std::string_view _name, RdNode* _parent);
+		const Mesh* ms = nullptr;
+		const Material* mat = nullptr;
+
+
+		RdNode(std::string_view _name, const RdNode* _parent, const Mesh* _ms, const Material* _mat);
 		RdNode(const RdNode& src);
 		RdNode& operator=(const RdNode&);
+		RdNode(RdNode&& src) noexcept;
+		RdNode& operator=(RdNode&& src) noexcept;
+
+		void clear() noexcept;
 		
-		void addChild(std::string_view _name);
-		void addMsMat(const Mesh* ms, const Material* mat);
-		void clear();
+		void addChild(std::string_view _name, const Mesh* _ms, const Material* _mat);
 
 		// if ModelView tf_prev to prevTf
 		void updateGlobalTransform(glm::mat4 prevTf=glm::mat4(1));
+
+		void dfsRender(std::function<void(const Mesh* ms, const Material* mat, const glm::mat4& mtxGlobal)> callback) const;
+
 		// if you want stop treversal return false;
-		void treversal(std::function<bool(const Mesh* ms, const Material* mat, const glm::mat4& tf)> callback) const;
-		void treversalEnabled(std::function<bool(const Mesh* ms, const Material* mat, const glm::mat4& tf)> callback) const;
+		void dfsAll(std::function<bool(RdNode& nd)> callback);
+		void dfsAll(std::function<bool(const RdNode& nd)> callback) const;
 	};
 
 
-	class Model;
-	class ModelView 
+	struct Model;
+	struct ModelView 
 	{
-	public:
 		RdNode root;
-		Animator* animator = nullptr; // own
-		std::vector<Mesh*> own_meshes; // for delete soft body & skinned mesh
-		std::vector<RdNode> skinned_mesh_nodes; // for update skinned mesh buffer
+		OwnPtr<Animator> own_animator = nullptr; // own
+		std::vector<OwnPtr<Mesh>> own_meshes; // for delete soft body & skinned mesh
+		std::vector<RdNode*> skinned_mesh_nodes; // for update skinned own mesh buffer
 
 		const Transform* tf_prev = nullptr;
-		Model* md_data = nullptr;
+		const Model* md_data = nullptr;
 
-	public:
+
 		ModelView();
 		virtual ~ModelView();
+		// make ref with model
+		ModelView(const ModelView& src);
+		ModelView& operator=(const ModelView& src);
+		ModelView(ModelView&& src) = delete;
+		ModelView& operator=(ModelView&& src) = delete;
 
-		
+		void clear() noexcept;
+
 		// before use this you must call root.updateGlobalTransform();
 		glm::mat4 getLocalToMeshMtx(const Mesh* ms) const;
 		glm::mat4 getLocalToBoneRootMtx() const;
         glm::vec3 getBoneWorldPos(int boneNodeIdx) const;
-
-		// make ref with model
-		ModelView(const ModelView& src);
-		ModelView& operator=(const ModelView& src);
 	};
 
 
-	class Model: public ModelView
+	struct Model: public ModelView
 	{
-	public:
 		std::string name = "nonamed model";
 		std::string path = "nodir";
 
 		/* delete when model deleted */
-		std::vector<Material*> own_materials;
-		std::vector<Texture*> own_textures;
-		std::vector<Mesh*> own_meshes;
+		std::vector<OwnPtr<Material>> own_materials;
+		std::vector<OwnPtr<Texture>> own_textures;
+		std::vector<OwnPtr<Mesh>> own_meshes;
 
 		/* infos */
 		GLuint total_verts = 0;
@@ -123,19 +129,20 @@ namespace lim
 
 
 		/* bone */
-		int nr_bones = 0;
 		int depth_of_bone_root_in_rdtree = -1;
-		std::map<std::string, int> bone_name_to_idx;
-		std::vector<glm::mat4> bone_offsets;
+		int nr_weighted_bones = 0;
+		std::map<std::string, int> name_to_weighted_bone_idx;
+		std::vector<glm::mat4> weighted_bone_offsets;
         std::vector<Animation> animations;
 
-	public:
+
+
 		Model(const Model& src)		   = delete;
 		Model& operator=(const Model&) = delete;
 
 		Model(std::string_view name="nonamed");
 		~Model();
-		void clear();
+		void clear() noexcept;
 
 		Material* addOwn(Material* md);
 		Texture* addOwn(Texture* tex);

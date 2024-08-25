@@ -189,9 +189,9 @@ void Scene::render( const IFramebuffer& fb, const Camera& cam, const bool isDraw
     for( ILight* lit : own_lits ) {
         lit->bakeShadowMap([&](const glm::mat4& mtx_View, const glm::mat4& mtx_Proj) {
             for( const ModelView* md : own_mds ) {
-                if( md->animator.is_enabled ) {
+                if( md->own_animator.is_enabled ) {
                     shadowSkinned.use();
-                    md->animator.setUniformTo(shadowSkinned);
+                    md->own_animator.setUniformTo(shadowSkinned);
                     shadowSkinned.setUniform("mtx_View", mtx_View);
                     shadowSkinned.setUniform("mtx_Proj", mtx_Proj);
                 }
@@ -253,8 +253,8 @@ void Scene::render( const IFramebuffer& fb, const Camera& cam, const bool isDraw
                 if( idx_LitMod >=0 ) {
                     curProg->setUniform("idx_LitMod", idx_LitMod);
                 }
-                if( md->animator.is_enabled ) {
-                    md->animator.setUniformTo(*curProg);
+                if( md->own_animator.is_enabled ) {
+                    md->own_animator.setUniformTo(*curProg);
                 }
             }
             else {
@@ -262,8 +262,8 @@ void Scene::render( const IFramebuffer& fb, const Camera& cam, const bool isDraw
                     curMat->setUniformTo(*curProg);
                 }
                 if( isModelChanged ) {
-                    if( md->animator.is_enabled ) {
-                        md->animator.setUniformTo(*curProg);
+                    if( md->own_animator.is_enabled ) {
+                        md->own_animator.setUniformTo(*curProg);
                     }
                 }
             }

@@ -4,7 +4,7 @@
 edit learnopengl code
 
 Note:
-nr_bones(mesh) != nr_tracks != nr_bone_nodes
+nr_weighted_bones(mesh) != nr_tracks != nr_bone_nodes
 animations를 model(data)에서 공유하면 Track에 BoneNode를 
 
 
@@ -64,23 +64,21 @@ namespace lim
     
 
 
-    // assume nr_bone_nodes(skeleton) >= nr_bones
+    // assume nr_bone_nodes(bones) >= nr_weighted_bones
     struct BoneNode {
         std::string name = "nonamed node";
         Transform tf; // bone space
-        glm::mat4 tf_model_space;
-        // for mtx_Bones in ModelView, bone_offsets in Model
+        glm::mat4 mtx_model_space;
+        int idx_parent_bone_node = -1; // for bones in animator
+        // for mtx_Bones in ModelView, weighted_bone_offsets in Model
         // if not used in skinning then -1
-        int idx_bone = -1;
-        int idx_parent_bone_node = -1; // for skeleton in ModelView
+        int idx_weighted_bone = -1;
         int nr_childs;
     };
 
-    class Model;
-
-    class Animator
+    struct Model;
+    struct Animator
     {
-    public:
         enum State : int
         {
             ST_PLAY,
@@ -89,9 +87,9 @@ namespace lim
         };
         State state = ST_STOP;
         bool is_enabled = false;
-        int nr_bone_nodes; // skeletion.size()
-        std::vector<BoneNode> skeleton; // bone tree
-        std::vector<glm::mat4> mtx_Bones; // nr_bones
+        int nr_bones;
+        std::vector<BoneNode> bones; // bone tree
+        std::vector<glm::mat4> mtx_Bones; // nr_weighted_bones
         const Animation* cur_anim = nullptr;
         const Model* md_data = nullptr;
         double elapsed_sec, duration_sec;
@@ -99,12 +97,11 @@ namespace lim
         bool is_loop = true;
 
         
-    public:
-        Animator(const Animator& src)		 = delete;
 		Animator(Animator&&)			     = delete;
 		Animator& operator=(Animator&&)      = delete;
 
         Animator();
+        Animator(const Animator& src);
 		Animator& operator=(const Animator& src); // todo default
         ~Animator();
         void init(const Model* md);
@@ -121,7 +118,6 @@ namespace lim
     private:
         void update(float dt);
     };
-
 }
 
 #endif
