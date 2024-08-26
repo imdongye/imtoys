@@ -10,17 +10,9 @@
 using namespace glm;
 using namespace lim;
 
-ILight::ILight(LightType lt) : light_type((int)lt)
-{
-	tf.theta = 35.f;
-	tf.phi =  -35.f;
-	tf.dist = 7.f;
-	tf.updateWithRotAndDist();
-}
 
 
-const int LightDirectional::Shadow::map_size = 1024;
-LightDirectional::Shadow::Shadow(TransformPivoted& tf) 
+ShadowMap::ShadowMap(TransformPivoted& tf) 
 	: map(3, 32)
 	, Enabled(true)
 	, ZNear(0.f)
@@ -52,19 +44,19 @@ LightDirectional::Shadow::Shadow(TransformPivoted& tf)
 
 
 
-LightDirectional::LightDirectional() : ILight(ILight::LT_DIRECTIONAL)
+LightDirectional::LightDirectional()
 {
+	tf.theta = 35.f;
+	tf.phi =  -35.f;
+	tf.dist = 7.f;
+	tf.updateWithRotAndDist();
 }
 LightDirectional::~LightDirectional()
 {
-	if(shadow) {
-		delete shadow;
-		shadow = nullptr;
-	}
 }
 void LightDirectional::setShadowEnabled(bool enabled) {
 	if( shadow == nullptr ) {
-		shadow = new Shadow(tf);
+		shadow = new ShadowMap(tf);
 	}
 	shadow->Enabled = enabled;
 }

@@ -233,12 +233,11 @@ namespace
 		dst->mName = aiString(src.name.data());
 		dst->mTransformation = toAi(src.tf.mtx);
 
-		const int nrMeshes = src.meshs_mats.size();
-		dst->mNumMeshes = nrMeshes;
-		dst->mMeshes = new unsigned int[nrMeshes];
-		for( int i=0; i<nrMeshes; i++ ) {
-			auto pair = std::make_pair(src.meshs_mats[i].ms, src.meshs_mats[i].mat);
-			dst->mMeshes[i] = findIdx(g_materialed_meshes, pair);
+		if( src.ms!=nullptr ) {
+			dst->mNumMeshes = 1;
+			dst->mMeshes = new unsigned int[1];
+			auto pair = std::make_pair(src.ms, src.mat);
+			dst->mMeshes[0] = findIdx(g_materialed_meshes, pair);
 		}
 
 		const size_t nrChilds = src.childs.size();
@@ -264,14 +263,12 @@ namespace
 		mesh는 같지만 material이 다른경우 assimp에서는 mesh를 각각 만들어줘야한다.
 		*/
 		g_materialed_meshes.clear();
-		md.root.treversal([&](const Mesh* ms, const Material* mat, const glm::mat4& _) {
-			auto pair = std::make_pair(ms, mat);
-			if( findIdx(g_materialed_meshes, pair)<0 ) {
-				g_materialed_meshes.push_back(pair);
+		md.root.dfsAll([&](const RdNode& nd) {
+			if( nd.ms!=nullptr ) {
+				g_materialed_meshes.push_back({nd.ms, nd.mat});
 			}
 			return true;
 		});
-		
 
 		const GLuint nrMats = md.own_materials.size();
 		scn->mNumMaterials = nrMats;
@@ -316,7 +313,7 @@ namespace lim
 		std::string mdPath = md_dir + "/" + name +'.'+format->fileExtension;
 		path = mdPath;
 		// export할때 모델의 상대 경로로 임시 변경
-		for( Texture* tex : own_textures ) {
+		for( auto& tex : own_textures ) {
 			tex->file_path = tex->file_path.c_str() + lastSlashPosInOriMdPath+1;
 		}
 
@@ -346,7 +343,7 @@ namespace lim
 
 		/* export texture */
 		elapsedTime = glfwGetTime();
-		for( Texture* tex : own_textures )
+		for( const auto& tex : own_textures )
 		{
 			std::string newTexPath = md_dir + "/" + tex->file_path.c_str();
 			tex->file_path = newTexPath;

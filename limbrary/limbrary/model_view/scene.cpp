@@ -141,12 +141,6 @@ Scene::~Scene() {
     clear();
 }
 void Scene::clear() {
-    for( ModelView* md: own_mds ){
-        delete md;
-    }
-    for( ILight* lit: own_lits ){
-        delete lit;
-    }
     own_mds.clear();
     own_lits.clear();
 }
@@ -181,17 +175,17 @@ void Scene::render( const IFramebuffer& fb, const Camera& cam, const bool isDraw
     const Program& shadowStatic = AssetLib::get().prog_shadow_static;
     const Program& shadowSkinned = AssetLib::get().prog_shadow_skinned;
 
-    for( ModelView* md : own_mds ) {
+    for( auto& md : own_mds ) {
         md->root.updateGlobalTransform(getMtxTf(md->tf_prev));
     }
 
     // bake shadow map
-    for( ILight* lit : own_lits ) {
+    for( auto& lit : own_lits ) {
         lit->bakeShadowMap([&](const glm::mat4& mtx_View, const glm::mat4& mtx_Proj) {
-            for( const ModelView* md : own_mds ) {
-                if( md->own_animator.is_enabled ) {
+            for( auto& md : own_mds ) {
+                if( md->own_animator->is_enabled ) {
                     shadowSkinned.use();
-                    md->own_animator.setUniformTo(shadowSkinned);
+                    md->own_animator->setUniformTo(shadowSkinned);
                     shadowSkinned.setUniform("mtx_View", mtx_View);
                     shadowSkinned.setUniform("mtx_Proj", mtx_Proj);
                 }
@@ -201,8 +195,8 @@ void Scene::render( const IFramebuffer& fb, const Camera& cam, const bool isDraw
                     shadowStatic.setUniform("mtx_Proj", mtx_Proj);
                 }
 
-                md->root.treversalEnabled([](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
-                    g_cur_prog->setUniform("mtx_Model", transform);
+                md->root.dfsRender([](const Mesh* ms, const Material* mat, const glm::mat4& mtxGlobal) {
+                    g_cur_prog->setUniform("mtx_Model", mtxGlobal);
                     ms->bindAndDrawGL();
                     return true;
                 });
@@ -224,9 +218,9 @@ void Scene::render( const IFramebuffer& fb, const Camera& cam, const bool isDraw
     bool isMeshChanged = true;
     bool isModelChanged = true;
 
-    for( const ModelView* md : own_mds ) {
+    for( const auto& md : own_mds ) {
         isModelChanged = true;
-        md->root.treversalEnabled([&](const Mesh* ms, const Material* mat, const glm::mat4& tf) {
+        md->root.dfsRender([&](const Mesh* ms, const Material* mat, const glm::mat4& tf) {
             if( curMat != mat ) {
                 curMat = mat;
                 isMatChanged = true;
@@ -244,7 +238,7 @@ void Scene::render( const IFramebuffer& fb, const Camera& cam, const bool isDraw
                 curProg->use();
                 curMat->setUniformTo(*curProg);
                 cam.setUniformTo(*curProg);
-                for( const ILight* lit : own_lits ) {
+                for( const auto& lit : own_lits ) {
                     lit->setUniformTo(*curProg);
                 }
                 if( ib_light ) {
@@ -253,8 +247,8 @@ void Scene::render( const IFramebuffer& fb, const Camera& cam, const bool isDraw
                 if( idx_LitMod >=0 ) {
                     curProg->setUniform("idx_LitMod", idx_LitMod);
                 }
-                if( md->own_animator.is_enabled ) {
-                    md->own_animator.setUniformTo(*curProg);
+                if( md->own_animator->is_enabled ) {
+                    md->own_animator->setUniformTo(*curProg);
                 }
             }
             else {
@@ -262,8 +256,8 @@ void Scene::render( const IFramebuffer& fb, const Camera& cam, const bool isDraw
                     curMat->setUniformTo(*curProg);
                 }
                 if( isModelChanged ) {
-                    if( md->own_animator.is_enabled ) {
-                        md->own_animator.setUniformTo(*curProg);
+                    if( md->own_animator->is_enabled ) {
+                        md->own_animator->setUniformTo(*curProg);
                     }
                 }
             }
