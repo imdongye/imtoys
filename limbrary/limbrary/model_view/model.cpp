@@ -99,9 +99,10 @@ void RdNode::clear() noexcept
 }
 
 
-void RdNode::addChild(std::string_view _name, const Mesh* _ms, const Material* _mat)
+RdNode& RdNode::addChild(std::string_view _name, const Mesh* _ms, const Material* _mat)
 {
 	childs.emplace_back(_name, this, _ms, _mat);
+	return childs.back();
 }
 
 

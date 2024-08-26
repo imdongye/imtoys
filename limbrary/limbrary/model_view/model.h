@@ -67,7 +67,7 @@ namespace lim
 
 		void clear() noexcept;
 		
-		void addChild(std::string_view _name, const Mesh* _ms, const Material* _mat);
+		RdNode& addChild(std::string_view _name, const Mesh* _ms, const Material* _mat);
 
 		// if ModelView tf_prev to prevTf
 		void updateGlobalTransform(glm::mat4 prevTf=glm::mat4(1));

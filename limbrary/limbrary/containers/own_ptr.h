@@ -23,7 +23,7 @@ namespace lim
         OwnPtr(T* ptr) : raw(ptr) {}
         OwnPtr(const OwnPtr<T>& src) : raw(new T(*src.raw)) {}
         OwnPtr<T>& operator=(const OwnPtr<T>& src) { delete raw; raw = new T(*src.raw); return *this; }
-        OwnPtr<T>& operator=(T* ptr) { delete raw; raw = new T(*src.raw); return *this; }
+        OwnPtr<T>& operator=(T* ptr) { delete raw; raw = new T(*ptr); return *this; }
         OwnPtr(OwnPtr<T>&& src) noexcept : raw(src.raw) { src.raw = nullptr; }
         OwnPtr<T>& operator=(OwnPtr<T>&& src) noexcept { delete raw; raw = src.raw; src.raw = nullptr; return *this; }
         ~OwnPtr() noexcept { delete raw; }
@@ -38,6 +38,12 @@ namespace lim
         bool operator==(const T* ptr) const noexcept { return raw == ptr; }
         bool operator!=(const T* ptr) const noexcept { return raw != ptr; }
     };
+
+    // template <typename T>
+    // inline T* operator=(T* dst, const OwnPtr<T>& src) {
+    //     dst = src.raw;
+    //     return dst;
+    // }
 
     template <typename T>
 	inline int findIdx(const std::vector<OwnPtr<T>>& v, const T* ptr) {

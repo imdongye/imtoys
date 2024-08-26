@@ -77,7 +77,7 @@ namespace
 static Texture* loadTexture(string texPath, bool convertLinear, const char* msg)
 {
 	Texture* rst = nullptr;
-	std::vector<Texture*>& loadedTexs = g_model->own_textures; 
+	std::vector<OwnPtr<Texture>>& loadedTexs = g_model->own_textures; 
 
 	// assimp가 mtl의 뒤에오는 옵션을 읽지 않음 (ex: eye.png -bm 0.4) 그래서 아래와 같이 필터링한다.
 	texPath = texPath.substr(0, texPath.find_first_of(' '));
@@ -85,23 +85,23 @@ static Texture* loadTexture(string texPath, bool convertLinear, const char* msg)
 
 	for( size_t i = 0; i < loadedTexs.size(); i++ ) {
 		if( texPath.compare(loadedTexs[i]->file_path)==0 ) {
-			rst = loadedTexs[i];
+			rst = loadedTexs[i].raw;
 		}
 	}
 	if( !rst ) {
-		loadedTexs.push_back(new Texture());
+		rst = new Texture();
+		loadedTexs.push_back(rst);
 		lim::log::pure("%s ", msg);
 		const aiTexture* aTex = g_scn->GetEmbeddedTexture(texPath.c_str());
 		if( aTex ) {
 			// From: https://github.com/assimp/assimp/issues/408
 			log::pure("embbed tex fm hint: %s\n", aTex->achFormatHint);
-			loadedTexs.back()->initFromMem((unsigned char*)aTex->pcData, aTex->mWidth, aTex->mHeight
+			rst->initFromMem((unsigned char*)aTex->pcData, aTex->mWidth, aTex->mHeight
 				, convertLinear, aTex->mFilename.C_Str());
 		}
 		else {
-			loadedTexs.back()->initFromFile(texPath, convertLinear);
+			rst->initFromFile(texPath, convertLinear);
 		}
-		rst = loadedTexs.back();
 	}
 	return rst;
 }
@@ -469,20 +469,27 @@ static bool isBoneNode(aiNode* aiChild) {
 	return false;
 }
 // assume
-static void convertRdTree(RdNode& dst, const aiNode* src, int depth) 
+static void convertRdTree(RdNode& dstParent, const aiNode* src, int depth) 
 {
-	dst.name = src->mName.C_Str();
-	dst.tf.mtx = toGLM(src->mTransformation);
-	dst.tf.decomposeMtx();
+	Transform tf;
+	tf.mtx = toGLM(src->mTransformation);
+	tf.decomposeMtx();
+	// todo determine identity matrix
 
 	for( size_t i=0; i<src->mNumMeshes; i++ ) {
 		const int msIdx = src->mMeshes[i];
 		const aiMesh* aiMs = g_scn->mMeshes[msIdx];
-		const Material* mat = g_model->own_materials[aiMs->mMaterialIndex];
-		dst.addMsMat(g_model->own_meshes[msIdx], mat);
+		RdNode& rdNd = dstParent.addChild(src->mName.C_Str()
+			, g_model->own_meshes[msIdx].raw
+			, g_model->own_materials[aiMs->mMaterialIndex].raw);
+		rdNd.tf = tf;
 	}
 
-	dst.childs.reserve(src->mNumChildren);
+	// transform node( parent )
+	RdNode& tfNd = dstParent.addChild(src->mName.C_Str(), nullptr, nullptr);
+	tfNd.tf = tf;
+
+	tfNd.childs.reserve(src->mNumChildren);
 	for( size_t i=0; i< src->mNumChildren; i++ ) {
 		aiNode* aiChild = src->mChildren[i];
 		if( g_is_ms_has_bone && isBoneNode(aiChild) ) {
@@ -494,8 +501,7 @@ static void convertRdTree(RdNode& dst, const aiNode* src, int depth)
 			addBoneNode( -1, mat4(1), aiChild );
 			continue;
 		}
-		dst.addChild("unknown");
-		convertRdTree( dst.childs.back(), aiChild, depth+1 );
+		convertRdTree( tfNd, aiChild, depth+1 );
 	}
 }
 
@@ -576,7 +582,8 @@ bool lim::Model::importFromFile(
 	g_is_ms_has_bone = false;
 	g_animator = nullptr;
 	if( withAnims ) {
-		g_animator = &own_animator;
+		own_animator = new Animator();
+		g_animator = own_animator.raw;
 	}
 	own_meshes.reserve(g_scn->mNumMeshes);
 	for( GLuint i=0; i<g_scn->mNumMeshes; i++ ) {
@@ -585,30 +592,28 @@ bool lim::Model::importFromFile(
 
 	if( g_is_ms_has_bone ) {
 		/* import anims( bone-2 ) */
-		own_animator.init(this);
+		own_animator->init(this);
 		animations.resize(g_scn->mNumAnimations);
 		for( uint i=0; i<g_scn->mNumAnimations; i++ ) {
 			convertAnim(animations[i], *(g_scn->mAnimations[i]));
 		}
-		own_animator.setAnim(&animations[0]);
+		own_animator->setAnim(&animations[0]);
 	
 		/* set bone node tree structure (bone-3)
 		and link animation (bone-4) 
 		assume that first node is not bone root node
 		*/
-		own_animator.nr_bones = 0;
-		own_animator.bones.clear();
-		own_animator.bones.reserve(nr_weighted_bones+10);
+		own_animator->nr_bones = 0;
+		own_animator->bones.clear();
+		own_animator->bones.reserve(nr_weighted_bones+10);
 		g_model->depth_of_bone_root_in_rdtree = -1;
 		assert( isBoneNode(g_scn->mRootNode)==false );
 	}
-	// root.name = "root";
-	// root.addChild("start");
-	// convertRdTree(root.childs.back(), g_scn->mRootNode, 0);
+	root.name = "rootStart";
 	convertRdTree(root, g_scn->mRootNode, 0);
 
 	if( g_is_ms_has_bone ) {
-		assert(own_animator.nr_bones>0&&g_model->depth_of_bone_root_in_rdtree>=0);
+		assert(own_animator->nr_bones>0&&g_model->depth_of_bone_root_in_rdtree>=0);
 
 		/* update bone offset with bind pose (bone-5) */
 		/* sometimes defualt offset mtx is wrong */
@@ -623,7 +628,7 @@ bool lim::Model::importFromFile(
 		// 		continue;
 		// 	weighted_bone_offsets[boneIdx] = glm::inverse(nd.mtx_model_space);
 		// }
-		own_animator.updateMtxBones();
+		own_animator->updateMtxBones();
 	}
 
 
@@ -631,9 +636,9 @@ bool lim::Model::importFromFile(
 	
 
 	// !Important! : rid root transform
-	// if( scaleAndPivot ) {
-	// 	root.tf = Transform();
-	// }
+	if( scaleAndPivot ) {
+		root.tf = Transform();
+	}
 
 
 	// update import info	
@@ -643,11 +648,12 @@ bool lim::Model::importFromFile(
 	boundary_min = glim::maximum_vec3;
 
 	root.updateGlobalTransform();
-	root.treversal([&](const Mesh* ms, const Material* mat, const glm::mat4& transform) {
-		total_verts += ms->poss.size();
-		total_tris += ms->tris.size();
-		for(glm::vec3 p : ms->poss) {
-			p = transform * glm::vec4(p, 1);
+
+	root.dfsAll([&](const RdNode& nd) {
+		total_verts += nd.ms->poss.size();
+		total_tris += nd.ms->tris.size();
+		for(glm::vec3 p : nd.ms->poss) {
+			p = nd.mtx_global * glm::vec4(p, 1);
 			boundary_max = glm::max(boundary_max, p);
 			boundary_min = glm::min(boundary_min, p);
 		}
@@ -668,20 +674,16 @@ bool lim::Model::importFromFile(
 		vec3 halfBoundaryBasis = boundary_size*0.5f*normScale;
 		vec3 normPos =  -boundary_min*normScale - halfBoundaryBasis - halfBoundaryBasis*pivot;
 
-		RdNode temp = root;
-		temp.parent = &root;
-		temp.tf = Transform();
+		RdNode pivotTemp = root;
+		pivotTemp.parent = &root;
 
-		root.meshs_mats.clear();
-		root.childs.clear();
-		root.childs.push_back(temp);
+		root.clear();
+		root.childs.emplace_back(move(pivotTemp));
 		RdNode& pivotNode = root.childs.back();
 		pivotNode.name = "pivot";
 		pivotNode.tf.pos = normPos;
 		pivotNode.tf.scale = normScale;
 		pivotNode.tf.update();
-		root.childs.back().name = "pivot";
-
 
 		root.updateGlobalTransform();
 	}
