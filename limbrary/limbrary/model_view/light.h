@@ -85,6 +85,7 @@ namespace lim
 
 	struct LightOmni
 	{
+		OwnPtr<ShadowMap> shadow = nullptr;
 		Transform tf;
 	};
 }

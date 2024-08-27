@@ -142,15 +142,15 @@ Scene::~Scene() {
 }
 void Scene::clear() {
     own_mds.clear();
-    own_lits.clear();
+    own_dir_lits.clear();
 }
 
 ModelView* Scene::addOwn(ModelView* md)  {
     own_mds.push_back(md);
     return md;
 }
-ILight* Scene::addOwn(ILight* lit) {
-    own_lits.push_back(lit);
+LightDirectional* Scene::addOwn(LightDirectional* lit) {
+    own_dir_lits.push_back(lit);
     return lit;
 }
 
@@ -180,7 +180,7 @@ void Scene::render( const IFramebuffer& fb, const Camera& cam, const bool isDraw
     }
 
     // bake shadow map
-    for( auto& lit : own_lits ) {
+    for( auto& lit : own_dir_lits ) {
         lit->bakeShadowMap([&](const glm::mat4& mtx_View, const glm::mat4& mtx_Proj) {
             for( auto& md : own_mds ) {
                 if( md->own_animator->is_enabled ) {
@@ -238,7 +238,7 @@ void Scene::render( const IFramebuffer& fb, const Camera& cam, const bool isDraw
                 curProg->use();
                 curMat->setUniformTo(*curProg);
                 cam.setUniformTo(*curProg);
-                for( const auto& lit : own_lits ) {
+                for( const auto& lit : own_dir_lits ) {
                     lit->setUniformTo(*curProg);
                 }
                 if( ib_light ) {
@@ -276,7 +276,7 @@ void Scene::render( const IFramebuffer& fb, const Camera& cam, const bool isDraw
         cam.setUniformTo(prog);
 
         // todo: diff color
-        for( auto lit : own_lits ) {
+        for( const auto& lit : own_dir_lits ) {
             prog.setUniform("mtx_Model", lit->tf.mtx);
             // todo: draw dir with line
             AssetLib::get().small_sphere.bindAndDrawGL();

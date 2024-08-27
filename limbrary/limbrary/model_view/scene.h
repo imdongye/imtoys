@@ -75,7 +75,7 @@ namespace lim
 	{
   	public:
 		std::vector<OwnPtr<ModelView>> own_mds;
-        std::vector<OwnPtr<ILight>> own_lits;
+        std::vector<OwnPtr<LightDirectional>> own_dir_lits;
         const IBLight* ib_light = nullptr; // ref
         bool is_draw_env_map = false;
         int idx_LitMod = -1;
@@ -91,8 +91,8 @@ namespace lim
 
         void clear();
 
-        ModelView* addOwn(ModelView* md);
-        ILight* addOwn(ILight* lit);
+        ModelView*          addOwn(ModelView* md);
+        LightDirectional*   addOwn(LightDirectional* lit);
 
 
         // use prog in mat

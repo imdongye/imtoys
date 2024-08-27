@@ -20,14 +20,15 @@
 namespace LimGui
 {
     IMGUI_API bool CheckBox3(const char* label, bool v[3]);
-    IMGUI_API void Mat4(glm::mat4& m);
-    IMGUI_API void Vec3(glm::vec3& v);
+    IMGUI_API void Mat4(const glm::mat4& m);
+    IMGUI_API void Vec3(const glm::vec3& v);
     
 	// only one in updateImGui
     void ModelEditor(lim::ModelView& md);
     void ModelEditorReset(const char* windowName = "Model Editor");
-    lim::BoneNode* getPickedBoneNode();
-    lim::RdNode::MsSet* getPickedMsSet();
+    lim::RdNode*    getPickedRenderNode();
+    lim::BoneNode*  getPickedBoneNode();
+
 
     void LightDirectionalEditor(lim::LightDirectional& lit);
     void LightDirectionalEditorReset(const char* name="d_light editor", const char* smName="d_light shadow map");

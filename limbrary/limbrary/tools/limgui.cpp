@@ -52,7 +52,7 @@ bool LimGui::CheckBox3(const char* label, bool v[3])
     return value_changed;
 }
 
-void LimGui::Mat4(glm::mat4& m) {
+void LimGui::Mat4(const glm::mat4& m) {
     static ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoHostExtendX;
     if( ImGui::BeginTable("matrix", 4, flags) ) {
         for( int i = 0; i < 4; i++ ) {
@@ -65,7 +65,7 @@ void LimGui::Mat4(glm::mat4& m) {
         ImGui::EndTable();
     }
 }
-void LimGui::Vec3(glm::vec3& v) {
+void LimGui::Vec3(const glm::vec3& v) {
     ImGui::Text("%.2f %.2f %.2f", v.x, v.y, v.z);
 }
 
@@ -76,9 +76,8 @@ void LimGui::Vec3(glm::vec3& v) {
 
 namespace {
 	ModelView* cur_md = nullptr;
-	RdNode* picked_nd = nullptr;
+	RdNode*	  picked_nd = nullptr;
 	BoneNode* picked_bone = nullptr; // temp used in app_skeletal.cpp
-	RdNode::MsSet* picked_msset = nullptr;
 	const char* model_editor_window_name = "ModelEditor";
 }
 
@@ -104,20 +103,6 @@ static void drawHierarchy(RdNode& nd) {
 		if( picked_nd!=&nd && ImGui::IsItemClicked(0) ) {
 			picked_nd = &nd;
 			picked_bone = nullptr;
-			picked_msset = nullptr;
-		}
-		for(auto& msset: nd.meshs_mats) {
-			ImGuiTreeNodeFlags msflags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_Bullet;
-			if( picked_msset == &msset ) {
-				msflags |= ImGuiTreeNodeFlags_Selected;
-			}
-			ImGui::TreeNodeEx(&msset, msflags, "%s", msset.ms->name.c_str());
-			if( picked_msset!=&msset && ImGui::IsItemClicked(0) ) {
-				picked_nd = nullptr;
-				picked_bone = nullptr;
-				picked_msset = &msset;
-			}
-			ImGui::TreePop();
 		}
 		for(auto& c : nd.childs) {
 			drawHierarchy(c);
@@ -146,7 +131,6 @@ static void drawHierarchy(std::vector<BoneNode>& skel, int curIdx, int curLevel=
 		if( picked_bone!=&curBone && ImGui::IsItemClicked(0) ) {
 			picked_nd = nullptr;
 			picked_bone = &curBone;
-			picked_msset = nullptr;
 		}
 		int nrFinded = 0;
 		for( int i=curIdx+1; nrFinded<curBone.nr_childs; i++ ) {
@@ -158,6 +142,7 @@ static void drawHierarchy(std::vector<BoneNode>& skel, int curIdx, int curLevel=
 		ImGui::TreePop();
 	}
 }
+
 static void drawInspector() {
 	if( picked_nd ) {
 		ImGui::TextUnformatted("<RdNode>");
@@ -167,8 +152,9 @@ static void drawInspector() {
 			ImGui::Text("parrent name : %s", nd.parent->name.c_str());
 		}
 		ImGui::Text("#childs : %d", nd.childs.size());
-		ImGui::Text("#mssets : %d", nd.meshs_mats.size());
 		ImGui::Checkbox("enabled", &nd.enabled);
+		ImGui::Checkbox("enabled", &nd.is_identity_mtx);
+		ImGui::Checkbox("enabled", &nd.is_local_is_global);
 		bool edited = false;
 		edited |= ImGui::DragFloat3("pos", glm::value_ptr(nd.tf.pos), 0.01f);
 		edited |= ImGui::DragFloat3("scale", glm::value_ptr(nd.tf.scale), 0.01f);
@@ -181,6 +167,25 @@ static void drawInspector() {
 			nd.tf.update();
 		}
 		LimGui::Mat4(nd.tf.mtx);
+		if( nd.ms ) {
+			ImGui::TextUnformatted("<Mesh>");
+			const Mesh& ms = *nd.ms;
+			ImGui::Text("name : %s", ms.name.c_str());
+			ImGui::Text("#tris: %d, #verts: %d", ms.nr_tris, ms.nr_verts);
+			ImGui::Text("pos:%s,nor:%s,uv:%s,col:%s,tan:%s,bitan:%s,bone_info:%s"
+				, boolStrOX(!ms.poss.empty()), boolStrOX(!ms.nors.empty()), boolStrOX(!ms.uvs.empty())
+				, boolStrOX(!ms.cols.empty()), boolStrOX(!ms.tangents.empty())
+				, boolStrOX(!ms.bitangents.empty()), boolStrOX(!ms.bone_infos.empty()));
+
+			ImGui::TextUnformatted("<Material>");
+			Material& mat = *(Material*)nd.mat; // warning : rid const
+			ImGui::Text("name : %s", mat.name.c_str());
+			ImGui::SliderFloat("shininess", &mat.Shininess, 0.5f, 300);
+			ImGui::SliderFloat("roughness", &mat.Roughness, 0.015f, 1);
+			ImGui::SliderFloat("metalness", &mat.Metalness, 0.000f, 1);
+			ImGui::ColorEdit3("ambient color", &mat.AmbientColor[0]);
+
+		}
 	}
 	else if( picked_bone ) {
 		ImGui::TextUnformatted("<BoneNode>");
@@ -197,34 +202,13 @@ static void drawInspector() {
 		}
 		if( edited ) {
 			nd.tf.update();
-			cur_md->own_animator.updateMtxBones();
+			cur_md->own_animator->updateMtxBones();
 		}
 		LimGui::Mat4(nd.tf.mtx);
 		ImGui::Text("bone_idx : %d", nd.idx_weighted_bone);
 		if( nd.idx_weighted_bone>=0 ) {
 			LimGui::Mat4(cur_md->md_data->weighted_bone_offsets[nd.idx_weighted_bone]);
 		}
-	}
-	else if( picked_msset ) {
-		ImGui::TextUnformatted("<MeshSet>");
-		ImGui::Checkbox("enabled", &picked_msset->enabled);
-		ImGui::Checkbox("transformWhenRender", &picked_msset->transformWhenRender);
-		ImGui::TextUnformatted("<Mesh>");
-		const Mesh& ms = *picked_msset->ms;
-		ImGui::Text("name : %s", ms.name.c_str());
-		ImGui::Text("#tris: %d, #verts: %d", ms.nr_tris, ms.nr_verts);
-		ImGui::Text("pos:%s,nor:%s,uv:%s,col:%s,tan:%s,bitan:%s,bone_info:%s"
-			, boolStrOX(!ms.poss.empty()), boolStrOX(!ms.nors.empty()), boolStrOX(!ms.uvs.empty())
-			, boolStrOX(!ms.cols.empty()), boolStrOX(!ms.tangents.empty())
-			, boolStrOX(!ms.bitangents.empty()), boolStrOX(!ms.bone_infos.empty()));
-
-		ImGui::TextUnformatted("<Material>");
-		Material& mat = *(Material*)picked_msset->mat; // warning : rid const
-		ImGui::Text("name : %s", mat.name.c_str());
-		ImGui::SliderFloat("shininess", &mat.Shininess, 0.5f, 300);
-		ImGui::SliderFloat("roughness", &mat.Roughness, 0.015f, 1);
-		ImGui::SliderFloat("metalness", &mat.Metalness, 0.000f, 1);
-		ImGui::ColorEdit3("ambient color", &mat.AmbientColor[0]);
 	}
 	else {
 		ImGui::Dummy(ImVec2(0.0f, 20.0f));
@@ -279,7 +263,6 @@ void LimGui::ModelEditor(ModelView& md) {
 		cur_md = &md;
 		picked_nd = nullptr;
 		picked_bone = nullptr;
-		picked_msset = nullptr;
 	}
 	ImGui::Begin(model_editor_window_name);
 	if( ImGui::CollapsingHeader("Info") ) {
@@ -312,11 +295,11 @@ void LimGui::ModelEditor(ModelView& md) {
 	}
 	if( ImGui::CollapsingHeader("Bone tree") ) {
 		ImGui::Text("depth of bone root : %d", md.md_data->depth_of_bone_root_in_rdtree);
-		drawHierarchy(md.own_animator.bones, 0);
+		drawHierarchy(md.own_animator->bones, 0);
 	}
 	ImGui::SetNextItemOpen(true, ImGuiCond_Once);
 	if( ImGui::CollapsingHeader("Animator") ) {
-		drawAnimator(md.own_animator);
+		drawAnimator(*md.own_animator);
 	}
 	ImGui::End();
 }
@@ -325,8 +308,8 @@ lim::BoneNode* LimGui::getPickedBoneNode() {
 	return picked_bone;
 }
 
-lim::RdNode::MsSet* LimGui::getPickedMsSet() {
-	return picked_msset;
+lim::RdNode* LimGui::getPickedRenderNode() {
+	return picked_nd;
 }
 
 
