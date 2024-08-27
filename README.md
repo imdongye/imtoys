@@ -4,17 +4,20 @@
 
 and there are several toys that use limbrary
 
--   model simplifier, normal map baker [report link](https://imdongye.notion.site/Simplification-d21e692652104cb39ce3befde034fcd2?pvs=4)
+-   SDF modeler [report](https://drive.google.com/file/d/1fsZAitytSMygLGITExE0Y6ucwJFRNriO/view?usp=sharing) [presentation](https://youtu.be/KKeihZ03pAs) [demo](https://youtu.be/l02dHs1q9Jo)
+
+-   model simplifier, normal map baker [report link](https://imdongye.notion.site/Simplification-d21e692652104cb39ce3befde034fcd2?pvs=4) [demo](https://youtu.be/wZzI8Hjm5jQ)
+
+-   PBR with IBL [demo](https://youtu.be/Yxrlhfb-fXo)
 
 -   color aware image viewer
-
--   PBR tester
 
 -   real time hatching tester
 
 -   astar visualizer
 
--   SDF modeler [report](https://drive.google.com/file/d/1fsZAitytSMygLGITExE0Y6ucwJFRNriO/view?usp=sharing) [presentation](https://youtu.be/KKeihZ03pAs)
+-   [other demo videos](https://youtu.be/GvtG-AYt6d4)
+
 
 ## Note
 
@@ -48,16 +51,6 @@ F1 key to open app selector
 
 ## Dependency
 
-c++17, glfw, glad, stb(image, write, truetype), assimp, imgui, nlohmann/json, fqms, nanovg, freetype
+c++17, glfw, glad, [stb(image, write, truetype)](https://github.com/nothings/stb), [imgui](https://github.com/ocornut/imgui), [assimp](https://github.com/assimp/assimp), [nlohmann/json](https://github.com/nlohmann/json), [fqms](https://github.com/sp4cerat/Fast-Quadric-Mesh-Simplification)
 
-https://github.com/nothings/stb
-
-https://github.com/ocornut/imgui
-
-https://github.com/nlohmann/json
-
-https://github.com/assimp/assimp
-
-https://github.com/sp4cerat/Fast-Quadric-Mesh-Simplification
-
-https://github.com/memononen/nanovg
+Use gl4.1core by default, but use 4.6 core when using compute shader or ssbo. (PBD, canvas3d)
