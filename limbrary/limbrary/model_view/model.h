@@ -39,6 +39,7 @@ Model에 의존하지 않고 RdNode에 의존하는 Scene
 #include "animator.h"
 #include "material.h"
 #include "mesh_skinned.h"
+#include "../tools/mecro.h"
 #include "../containers/own_ptr.h"
 
 namespace lim
@@ -53,7 +54,7 @@ namespace lim
 		bool enabled = true;
 		bool visible = true;
 		bool is_identity_mtx = false;
-		bool is_local_is_global = true;
+		bool is_local_is_global = false;
 
 		const Mesh* ms = nullptr;
 		const Material* mat = nullptr;
@@ -81,15 +82,17 @@ namespace lim
 
 
 	struct Model;
-	struct ModelView 
+
+	// view of model data
+	struct ModelView : public NoMove
 	{
 		RdNode root;
 		OwnPtr<Animator> own_animator = nullptr; // own
-		std::vector<OwnPtr<Mesh>> own_meshes; // for delete soft body & skinned mesh
+		std::vector<OwnPtr<Mesh>> own_meshes_in_view; // for delete soft body & skinned mesh
 		std::vector<RdNode*> skinned_mesh_nodes; // for update skinned own mesh buffer
 
 		const Transform* tf_prev = nullptr;
-		const Model* md_data = nullptr;
+		Model* src_md = nullptr;
 
 
 		ModelView();
@@ -97,8 +100,6 @@ namespace lim
 		// make ref with model
 		ModelView(const ModelView& src);
 		ModelView& operator=(const ModelView& src);
-		ModelView(ModelView&& src) = delete;
-		ModelView& operator=(ModelView&& src) = delete;
 
 		void clear() noexcept;
 
@@ -109,6 +110,7 @@ namespace lim
 	};
 
 
+	// model data
 	struct Model: public ModelView
 	{
 		std::string name = "nonamed model";
@@ -136,13 +138,13 @@ namespace lim
         std::vector<Animation> animations;
 
 
-
-		Model(const Model& src)		   = delete;
-		Model& operator=(const Model&) = delete;
-
 		Model(std::string_view name="nonamed");
 		~Model();
 		void clear() noexcept;
+		// copy : now for model simplification
+		Model(const Model& src);
+		Model& operator=(const Model& src);
+
 
 		Material* addOwn(Material* md);
 		Texture* addOwn(Texture* tex);
@@ -152,8 +154,6 @@ namespace lim
 		void setProgToAllMat(const Program* prog);
 		void setSetProgToAllMat(std::function<void(const Program&)> setProg);
 
-
-		void copyFrom(const Model& src); // now for model simplification
 		bool importFromFile(std::string_view modelPath, bool withAnim = false
 			, bool scaleAndPivot = false, float maxSize=2.f, glm::vec3 pivot={0,-1,0});
 		// render tree에서 사용하는 mesh와 material은 모두 own_에 포함되어있어야 export가능.

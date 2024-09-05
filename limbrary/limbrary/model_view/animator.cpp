@@ -1,5 +1,5 @@
 #include <limbrary/model_view/animator.h>
-#include <limbrary/tools/asset_lib.h>
+#include <limbrary/application.h>
 #include <limbrary/tools/log.h>
 #include <limbrary/application.h>
 #include <limbrary/model_view/model.h>
@@ -14,16 +14,16 @@ Animator::Animator() {
 void Animator::init(const Model* md) {
     if( !md )
         return;
-    md_data = md;
-    mtx_Bones.resize(md_data->nr_weighted_bones);
-    if( !AssetLib::get().app->update_hooks.isIn(this) ) {
-        AssetLib::get().app->update_hooks[this] = [this](float dt) {update(dt);};
+    src_md = md;
+    mtx_Bones.resize(src_md->nr_weighted_bones);
+    if( !AppBase::g_ptr->update_hooks.isIn(this) ) {
+        AppBase::g_ptr->update_hooks[this] = [this](float dt) {update(dt);};
     }
 }
 Animator::~Animator() {
     clear();
-    if( md_data ) {
-        AssetLib::get().app->update_hooks.erase(this);
+    if( src_md ) {
+        AppBase::g_ptr->update_hooks.erase(this);
     } 
 }
 void Animator::clear() {
@@ -44,7 +44,7 @@ Animator& Animator::operator=(const Animator& src) {
     mtx_Bones = src.mtx_Bones;
 
     setAnim(src.cur_anim);
-    init(src.md_data);
+    init(src.src_md);
     elapsed_sec = src.elapsed_sec;
     duration_sec = src.duration_sec;
     is_loop = src.is_loop;
@@ -166,7 +166,7 @@ void Animator::updateMtxBones() {
 
     if( rootBoneNode.idx_weighted_bone>=0) {
         assert(rootBoneNode.idx_weighted_bone==0);
-        mtx_Bones[0] = rootBoneNode.mtx_model_space * md_data->weighted_bone_offsets[0];
+        mtx_Bones[0] = rootBoneNode.mtx_model_space * src_md->weighted_bone_offsets[0];
     }
 
     // recursive term
@@ -179,7 +179,7 @@ void Animator::updateMtxBones() {
             continue;
         }
         else {
-            mtx_Bones[idxBone] = curBoneNode.mtx_model_space * md_data->weighted_bone_offsets[idxBone];
+            mtx_Bones[idxBone] = curBoneNode.mtx_model_space * src_md->weighted_bone_offsets[idxBone];
         }
     }
 }

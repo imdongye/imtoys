@@ -11,7 +11,7 @@ Todo:
 #include <imgui.h>
 #include <limbrary/model_view/model_io_helper.h>
 #include <limbrary/model_view/scene.h>
-#include <limbrary/tools/asset_lib.h>
+#include <limbrary/tools/s_asset_lib.h>
 #include <limbrary/tools/limgui.h>
 #include <limbrary/tools/glim.h>
 #include <limbrary/tools/general.h>
@@ -39,16 +39,16 @@ namespace
 		float metalness = 0.f;
 		float ambient_int = 0.008f;
 		void setup(Model& md) {
-			for(Material* mat : md.own_materials) {
+			for(auto& mat : md.own_materials) {
 				mat->Shininess = shininess;
 			}
-			for(Material* mat : md.own_materials) {
+			for(auto& mat : md.own_materials) {
 				mat->Roughness = roughness;
 			}
-			for(Material* mat : md.own_materials) {
+			for(auto& mat : md.own_materials) {
 				mat->Metalness = metalness;
 			}
-			for(Material* mat : md.own_materials) {
+			for(auto& mat : md.own_materials) {
 				mat->AmbientColor = glm::vec3(1)*ambient_int;
 			}
 		}
@@ -86,11 +86,11 @@ lim::AppModelViewer::AppModelViewer() : AppBase(1373, 780, APP_NAME, false)
 	program.attatch("mvp_shadow.vs").attatch("im_model_viewer/shaders/brdf.fs").link();
 
 	floor_md.name = "floor";
-	floor_md.addOwn(new MeshPlane(2.f, 2.f));
+	floor_md.root.ms = floor_md.addOwn(new MeshPlane(2.f, 2.f));
 	floor_md.own_meshes.back()->initGL(true);
 	Material* flMat = floor_md.addOwn(new Material());
+	floor_md.root.mat = flMat;
 	flMat->prog = &program;
-	floor_md.root.addMsMat(floor_md.own_meshes.back(), flMat);
 	floor_md.root.tf.scale = glm::vec3(5.f);
 	floor_md.root.tf.update();
 	floor_md.root.updateGlobalTransform();
@@ -207,7 +207,7 @@ void lim::AppModelViewer::updateImGui()
 
 	// log::drawViewer("logger##model_viewer");
 
-	LimGui::LightDirectionalEditor(*(LightDirectional*)scenes[selected_vp_idx]->own_lits[0]);
+	LimGui::LightDirectionalEditor(*scenes[selected_vp_idx]->own_dir_lits[0]);
 
 	// draw common ctrl
 	{
@@ -307,29 +307,29 @@ void lim::AppModelViewer::updateImGui()
 			if( ImGui::Combo("F", &tInfo.idx_F, fStrs, IM_ARRAYSIZE(fStrs)) ) { isInfoChanged = true; }
 		}
 		if( isInfoChanged ) {
-			md.md_data->setSetProgToAllMat(makeSetProg(tInfo));
+			((Model*)(md.src_md))->setSetProgToAllMat(makeSetProg(tInfo));
 		}
 		if( tInfo.idx_Brdf<2 ) { // phong, blinn phong
 			if( ImGui::SliderFloat("shininess", &tInfo.shininess, 0.5f, 300) ) {
-				for(Material* mat : md.md_data->own_materials) {
+				for(auto& mat : md.src_md->own_materials) {
 					mat->Shininess = tInfo.shininess;
 				}
 			}
 		}
 		else { // cook-torrance
 			if( ImGui::SliderFloat("roughness", &tInfo.roughness, 0.015f, 1) ) {
-				for(Material* mat : md.md_data->own_materials) {
+				for(auto& mat : md.src_md->own_materials) {
 					mat->Roughness = tInfo.roughness;
 				}
 			}
 			if( ImGui::SliderFloat("metalness", &tInfo.metalness, 0.000f, 1) ) {
-				for(Material* mat : md.md_data->own_materials) {
+				for(auto& mat : md.src_md->own_materials) {
 					mat->Metalness = tInfo.metalness;
 				}
 			}
 		}
 		if( ImGui::SliderFloat("ambient light", &tInfo.ambient_int, 0.000, 0.05f) ) {
-			for(Material* mat : md.md_data->own_materials) {
+			for(auto& mat : md.src_md->own_materials) {
 				mat->AmbientColor = glm::vec3(1)*tInfo.ambient_int;
 			}
 		}

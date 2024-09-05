@@ -29,7 +29,7 @@ namespace lim
 	public:
 		inline static constexpr CStr APP_NAME =  "Cloth-Simplificator";
 		inline static constexpr CStr APP_DIR  =  "im_simplification";
-		inline static constexpr CStr APP_DESCRIPTION =  "simplify and bake normal map";
+		inline static constexpr CStr APP_INFO =  "simplify and bake normal map";
 
 	private:
 		bool is_same_camera = true;

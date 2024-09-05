@@ -4,7 +4,7 @@
 #include <limbrary/model_view/mesh_maked.h>
 #include <limbrary/model_view/model.h>
 #include <limbrary/tools/glim.h>
-#include <limbrary/tools/asset_lib.h>
+#include <limbrary/tools/s_asset_lib.h>
 #include <limbrary/tools/general.h>
 using namespace lim;
 using namespace glm;
@@ -78,7 +78,7 @@ static void resetApp() {
 		case MT_BUNNY: {
 			Model md;
 			md.importFromFile("assets/models/pbd_test/bunny.obj", false, true, 1.f, vec3(0));
-			ms = md.own_meshes[0];
+			ms = md.own_meshes[0].raw;
 			md.own_meshes[0] = nullptr;
 			tf = md.getLocalToMeshMtx(ms);
 			break;
@@ -86,7 +86,7 @@ static void resetApp() {
 		case MT_CHEEMS: {
 			Model md;
 			md.importFromFile("assets/models/pbd_test/cheems.obj", false, true, 1.f, vec3(0));
-			ms = md.own_meshes[0];
+			ms = md.own_meshes[0].raw;
 			md.own_meshes[0] = nullptr;
 			tf = md.getLocalToMeshMtx(ms);
 			break;
@@ -94,7 +94,7 @@ static void resetApp() {
 		case MT_BUFF: {
 			Model md;
 			md.importFromFile("assets/models/pbd_test/buff-doge.obj", false, true, 1.f, vec3(0));
-			ms = md.own_meshes[0];
+			ms = md.own_meshes[0].raw;
 			md.own_meshes[0] = nullptr;
 			tf = md.getLocalToMeshMtx(ms);
 			break;

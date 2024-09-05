@@ -36,6 +36,7 @@ struct Joint {
 	// global
 	vec3 pos{0};
 	quat ori{1,0,0,0};
+	float max_length = -1.f;
 
 	Joint( Joint* p, const vec3& l ) : parent(p), link(l) {
 		if( !parent )
@@ -43,6 +44,11 @@ struct Joint {
 		connection.reserve(parent->connection.size()+1);
 		connection = parent->connection;
 		connection.push_back(this);
+
+		max_length = 0.f;
+		for(Joint* j : connection) {
+			max_length += length(j->link);
+		}
 	}
 	void rotate( const quat& rot ) {
 		q = rot*q;
@@ -59,7 +65,7 @@ struct Joint {
 		g_app->drawCylinder(parent->pos, pos, 0.025f, {1,1,0});
 		g_app->drawSphere( pos, 0.05f, {1,1,0} );
 	}
-	void solveIK(const vec3& target_pos, float dt) {
+	void solveIK(const vec3& targetPos, float dt) {
 		dt = ik_speed * dt/step_size;
 
 		// 힌지가 볼엔소캣이기 때문에 xyz축으로 각각 돌린다.
@@ -75,7 +81,7 @@ struct Joint {
 		Eigen::VectorXf dThetas{connectionSize*3};
 
 		for( int step=0; step<step_size; step++ ) {
-			vec3 d = target_pos - pos;
+			vec3 d = targetPos - pos;
 			b << d.x, d.y, d.z;
 			int curCol = 0;
 			for( const Joint* curJnt : connection ) {
@@ -171,6 +177,10 @@ AppIK::~AppIK() {
 }
 void AppIK::canvasUpdate() {
 	if( target_jnt ) {
+		float targetPosLength = length( target_pos - body.root.link );
+		if( targetPosLength > target_jnt->max_length ) {
+			target_pos = body.root.link + (target_pos * target_jnt->max_length/targetPosLength);
+		}
 		target_jnt->solveIK( target_pos, delta_time );
 	}
 	body.update();

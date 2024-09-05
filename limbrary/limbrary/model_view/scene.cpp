@@ -1,7 +1,8 @@
 #include <limbrary/model_view/scene.h>
-#include <limbrary/tools/asset_lib.h>
+#include <limbrary/tools/s_asset_lib.h>
 #include <limbrary/tools/log.h>
 #include <limbrary/tools/general.h>
+#include <limbrary/tools/render.h>
 
 using namespace std;
 using namespace lim;
@@ -153,7 +154,14 @@ LightDirectional* Scene::addOwn(LightDirectional* lit) {
     own_dir_lits.push_back(lit);
     return lit;
 }
-
+LightSpot* Scene::addOwn(LightSpot* lit) {
+    own_spot_lits.push_back(lit);
+    return lit;
+}
+LightOmni* Scene::addOwn(LightOmni* lit) {
+    own_omni_lits.push_back(lit);
+    return lit;
+}
 
 
 /*
@@ -175,6 +183,7 @@ void Scene::render( const IFramebuffer& fb, const Camera& cam, const bool isDraw
     const Program& shadowStatic = AssetLib::get().prog_shadow_static;
     const Program& shadowSkinned = AssetLib::get().prog_shadow_skinned;
 
+    // todo: update menually
     for( auto& md : own_mds ) {
         md->root.updateGlobalTransform(getMtxTf(md->tf_prev));
     }
@@ -183,7 +192,7 @@ void Scene::render( const IFramebuffer& fb, const Camera& cam, const bool isDraw
     for( auto& lit : own_dir_lits ) {
         lit->bakeShadowMap([&](const glm::mat4& mtx_View, const glm::mat4& mtx_Proj) {
             for( auto& md : own_mds ) {
-                if( md->own_animator->is_enabled ) {
+                if( md->own_animator && md->own_animator->is_enabled ) {
                     shadowSkinned.use();
                     md->own_animator->setUniformTo(shadowSkinned);
                     shadowSkinned.setUniform("mtx_View", mtx_View);
@@ -207,7 +216,7 @@ void Scene::render( const IFramebuffer& fb, const Camera& cam, const bool isDraw
     // main rendering
     fb.bind();
     if( is_draw_env_map&& ib_light != nullptr ) {
-        utils::drawEnvSphere(ib_light->map_Light, cam.mtx_View, cam.mtx_Proj);
+        drawEnvSphere(ib_light->map_Light, cam.mtx_View, cam.mtx_Proj);
     }
     
     const Program* curProg = nullptr;
@@ -220,7 +229,7 @@ void Scene::render( const IFramebuffer& fb, const Camera& cam, const bool isDraw
 
     for( const auto& md : own_mds ) {
         isModelChanged = true;
-        md->root.dfsRender([&](const Mesh* ms, const Material* mat, const glm::mat4& tf) {
+        md->root.dfsRender([&](const Mesh* ms, const Material* mat, const glm::mat4& mtxGlobal) {
             if( curMat != mat ) {
                 curMat = mat;
                 isMatChanged = true;
@@ -247,7 +256,7 @@ void Scene::render( const IFramebuffer& fb, const Camera& cam, const bool isDraw
                 if( idx_LitMod >=0 ) {
                     curProg->setUniform("idx_LitMod", idx_LitMod);
                 }
-                if( md->own_animator->is_enabled ) {
+                if( md->own_animator && md->own_animator->is_enabled ) {
                     md->own_animator->setUniformTo(*curProg);
                 }
             }
@@ -256,7 +265,7 @@ void Scene::render( const IFramebuffer& fb, const Camera& cam, const bool isDraw
                     curMat->setUniformTo(*curProg);
                 }
                 if( isModelChanged ) {
-                    if( md->own_animator->is_enabled ) {
+                    if( md->own_animator && md->own_animator->is_enabled ) {
                         md->own_animator->setUniformTo(*curProg);
                     }
                 }
@@ -264,7 +273,7 @@ void Scene::render( const IFramebuffer& fb, const Camera& cam, const bool isDraw
             if( isMeshChanged ) {
                 curMesh->bindGL();
             }
-            curProg->setUniform("mtx_Model", tf);
+            curProg->setUniform("mtx_Model", mtxGlobal);
             curMesh->drawGL();
             return true;
         });

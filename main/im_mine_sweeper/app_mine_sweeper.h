@@ -15,7 +15,7 @@ namespace lim
 	public:
 		inline static constexpr CStr APP_NAME = "minesweeper demo";
 		inline static constexpr CStr APP_DIR  = "im_tests";
-		inline static constexpr CStr APP_DESCRIPTION = "...";
+		inline static constexpr CStr APP_INFO = "...";
 	public:
 		AppMineSweeper();
 		~AppMineSweeper();

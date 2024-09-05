@@ -10,7 +10,7 @@
 
 #include <limbrary/texture.h>
 #include <limbrary/program.h>
-#include <limbrary/tools/asset_lib.h>
+#include <limbrary/tools/s_asset_lib.h>
 #include <limbrary/tools/log.h>
 #include <stb_image.h>
 #include <glm/gtc/type_ptr.hpp>

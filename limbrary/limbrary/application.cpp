@@ -1,8 +1,8 @@
 #include <limbrary/application.h>
 #include <limbrary/tools/log.h>
 #include <limbrary/tools/general.h>
-#include <limbrary/tools/app_prefs.h>
-#include <limbrary/tools/asset_lib.h>
+#include <limbrary/tools/s_save_file.h>
+#include <limbrary/tools/s_asset_lib.h>
 #include <limbrary/viewport.h>
 #include <glad/glad.h>
 #include <iostream>
@@ -17,67 +17,12 @@
 
 using namespace lim;
 
-namespace
-{
-	double _refresh_time = 0.0;
-	glm::vec2 _fps_graph_data[110] = {};
-
-	void _drawProfilerFps() {
-		static bool isFpsOpened = false;
-		if( ImGui::IsKeyPressed(ImGuiKey_F2, false) )
-			isFpsOpened = !isFpsOpened;
-		if( isFpsOpened ) {
-			ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoMove;
-			const float PAD = 10.0f;
-			const ImGuiViewport* viewport = ImGui::GetMainViewport();
-			ImVec2 workPos = viewport->WorkPos;
-			ImVec2 windowPos = {workPos.x+PAD, workPos.y+PAD+PAD*1.8f};
-
-			
-			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
-			ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always);
-			ImGui::SetNextWindowViewport(viewport->ID);
-
-			ImGui::SetNextWindowBgAlpha(0.35f); // Transparent background
-			if( ImGui::Begin("debug overlay", &isFpsOpened, window_flags) )
-			{
-				static int fpsGraphOffset = 0;
-				const int refreshRate = lim::AssetLib::get().app->monitor_max_fps;
-				const float framerate = ImGui::GetIO().Framerate;
-				float time = ImGui::GetTime();
-				if( _refresh_time == 0.0 )
-					_refresh_time = time;
-				while( _refresh_time < time )
-				{
-					_fps_graph_data[fpsGraphOffset] = {time, refreshRate};
-					fpsGraphOffset = (fpsGraphOffset + 1) % IM_ARRAYSIZE(_fps_graph_data);
-					_refresh_time += 1.0f / (float)refreshRate;
-				}
-
-				const int mid = refreshRate;
-				const int pad = mid/4;
-				const char* fpsStr = lim::fmtStrToBuf("%.3f ms/frame, %.2fFPS", 1000.0f/framerate, framerate);
-				ImGui::PlotHistogram("##FPS", &_fps_graph_data[0].y, IM_ARRAYSIZE(_fps_graph_data), fpsGraphOffset, fpsStr, mid-pad, mid+pad, ImVec2(0, 40.0f), 8);
-
-				
-			}
-			ImGui::PopStyleVar();
-			ImGui::End();
-		}
-	}
-	void _resetProfiler()
-	{
-		_refresh_time = 0.0;
-		std::fill_n(_fps_graph_data, IM_ARRAYSIZE(_fps_graph_data), glm::vec2(0));
-	}
-}
-
-
 
 
 AppBase::AppBase(int winWidth, int winHeight, const char* title, bool vsync)
 	:win_width(winWidth), win_height(winHeight)
 {
+	g_ptr = this;
 	//
 	//	GLFW
 	//
@@ -165,7 +110,7 @@ AppBase::AppBase(int winWidth, int winHeight, const char* title, bool vsync)
 
 		glGetIntegerv(GL_MAX_SAMPLES, &iTemp);
 		log::pure("#max ms samples    	: %d\n", iTemp);
-		
+		g_max_ms_samples = iTemp;
 		
 		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &iTemp);
 		log::pure("#Texture Slots       : %d\n", iTemp);
@@ -177,8 +122,8 @@ AppBase::AppBase(int winWidth, int winHeight, const char* title, bool vsync)
 	// init singleton
 	glClampColor(GL_CLAMP_READ_COLOR, GL_FALSE);
 	std::srand(time(0));
-	AppPrefs::create();
-	AssetLib::create(this);
+	SaveFile::create();
+	AssetLib::create();
 
 
 	//
@@ -209,32 +154,30 @@ AppBase::AppBase(int winWidth, int winHeight, const char* title, bool vsync)
 			dndCallback(count, path); 
 		};
 
-		glfwSetWindowSizeCallback(window, [](GLFWwindow *window, int width, int height) {
-			AppBase& app = *AssetLib::get().app;
-			app.win_width = width; app.win_height = height;
-			app.aspect_ratio = width/(float)height;
-			app.pixel_ratio = app.fb_width/(float)app.win_width;
-			for(auto& cb : app.win_size_callbacks ) cb(width, height);
+		glfwSetWindowSizeCallback(window, [](GLFWwindow* _, int width, int height) {
+			g_ptr->win_width = width; g_ptr->win_height = height;
+			g_ptr->aspect_ratio = width/(float)height;
+			g_ptr->pixel_ratio = g_ptr->fb_width/(float)g_ptr->win_width;
+			for(auto& cb : g_ptr->win_size_callbacks ) cb(width, height);
 		});
-		glfwSetFramebufferSizeCallback(window, [](GLFWwindow *window, int width, int height) {
-			AppBase& app = *AssetLib::get().app;
-			app.fb_width = width; app.fb_height = height;
-			for( auto& cb : app.framebuffer_size_callbacks ) cb(width, height);
+		glfwSetFramebufferSizeCallback(window, [](GLFWwindow* _, int width, int height) {
+			g_ptr->fb_width = width; g_ptr->fb_height = height;
+			for( auto& cb : g_ptr->framebuffer_size_callbacks ) cb(width, height);
 		});
-		glfwSetKeyCallback(window, [](GLFWwindow *window, int key, int scancode, int action, int mods) {
-			for( auto& cb : AssetLib::get().app->key_callbacks ) cb(key, scancode, action, mods);
+		glfwSetKeyCallback(window, [](GLFWwindow* _, int key, int scancode, int action, int mods) {
+			for( auto& cb : g_ptr->key_callbacks ) cb(key, scancode, action, mods);
 		});
-		glfwSetMouseButtonCallback(window, [](GLFWwindow *window, int button, int action, int mods) {
-			for( auto& cb : AssetLib::get().app->mouse_btn_callbacks ) cb(button, action, mods);
+		glfwSetMouseButtonCallback(window, [](GLFWwindow* _, int button, int action, int mods) {
+			for( auto& cb : g_ptr->mouse_btn_callbacks ) cb(button, action, mods);
 		});
-		glfwSetScrollCallback(window, [](GLFWwindow *window, double xOff, double yOff) {
-			for( auto& cb : AssetLib::get().app->scroll_callbacks) cb(xOff, yOff);
+		glfwSetScrollCallback(window, [](GLFWwindow* _, double xOff, double yOff) {
+			for( auto& cb : g_ptr->scroll_callbacks) cb(xOff, yOff);
 		});
-		glfwSetCursorPosCallback(window, [](GLFWwindow *window, double xPos, double yPos) {
-			for( auto& cb : AssetLib::get().app->cursor_pos_callbacks) cb(xPos, yPos);
+		glfwSetCursorPosCallback(window, [](GLFWwindow* _, double xPos, double yPos) {
+			for( auto& cb : g_ptr->cursor_pos_callbacks) cb(xPos, yPos);
 		});
-		glfwSetDropCallback(window, [](GLFWwindow *window, int count, const char **paths) {
-			for( auto& cb : AssetLib::get().app->dnd_callbacks ) cb(count, paths);
+		glfwSetDropCallback(window, [](GLFWwindow* _, int count, const char **paths) {
+			for( auto& cb : g_ptr->dnd_callbacks ) cb(count, paths);
 		});
 	}
 
@@ -291,17 +234,16 @@ AppBase::~AppBase()
 	//ImPlot::DestroyContext();
 	ImGui::DestroyContext();
 
-	AppPrefs::get().saveToFile();
-	AppPrefs::destroy();
+	SaveFile::destroy();
 	AssetLib::destroy();
-
-	_resetProfiler();
 
 	glfwDestroyWindow(window);
 	glfwTerminate();
 
 	log::pure("\n\n\n");
 	log::clear();
+
+	g_ptr = nullptr;
 }
 
 
@@ -332,7 +274,6 @@ void AppBase::run()
 
 		updateImGui();
 		draw_appselector();
-		_drawProfilerFps();
 		
 		ImGui::Render();
 

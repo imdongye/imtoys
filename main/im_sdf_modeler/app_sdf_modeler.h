@@ -16,7 +16,7 @@ namespace lim
 	public:
 		inline static constexpr CStr APP_NAME = "sdf_modeler";
 		inline static constexpr CStr APP_DIR  = "im_sdf_modeler";
-		inline static constexpr CStr APP_DESCRIPTION = "hello, world";
+		inline static constexpr CStr APP_INFO = "hello, world";
 
 	private:
 		ProgramReloadable prog;

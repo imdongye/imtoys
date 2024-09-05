@@ -18,7 +18,7 @@ namespace lim
 	public:
 		inline static constexpr CStr APP_NAME = "Softbody In Model";
 		inline static constexpr CStr APP_DIR  = "im_pbd";
-		inline static constexpr CStr APP_DESCRIPTION = "in pearabyss";
+		inline static constexpr CStr APP_INFO = "in pearabyss";
 
 		Program prog_skinned;
 		Program prog_static;

@@ -1,7 +1,7 @@
 #include <limbrary/framebuffer.h>
 #include <vector>
 #include <limbrary/tools/log.h>
-#include <limbrary/tools/asset_lib.h>
+#include <limbrary/application.h>
 
 using namespace lim;
 
@@ -51,7 +51,7 @@ void IFramebuffer::bind() const
 		glEnable(GL_BLEND);
 		// glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		utils::glErr("asdf");
+		log::glError();
 	}
 }
 void IFramebuffer::unbind() const
@@ -258,7 +258,7 @@ void FramebufferRbDepth::myUnbind() const
 
 
 FramebufferMs::FramebufferMs(int _samples, int nrChannels, int bitPerChannel)
-	: IFramebuffer(), samples(glm::min(utils::getMsMaxSamples(),_samples))
+	: IFramebuffer(), samples(glm::min(AppBase::g_max_ms_samples,_samples))
 	, intermediate_fb(nrChannels, bitPerChannel)
 {
 }

@@ -267,7 +267,7 @@ namespace pbd
     };
 
 
-    SoftBodyGpu* replaceMeshInModelToSoftBody(lim::ModelView& model, lim::RdNode::MsSet& msset, int nrShear=1
+    SoftBodyGpu* replaceMeshInModelToSoftBody(lim::ModelView& model, lim::RdNode& nd, int nrShear=1
         , SoftBody::BendType bendType = SoftBody::BT_DISTANCE, float bodyMass = 1.f, bool refCloseVerts = true);
 }
 

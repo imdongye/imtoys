@@ -3,14 +3,13 @@
 using namespace lim;
 using namespace glm;
 
-pbd::SoftBodyGpu* pbd::replaceMeshInModelToSoftBody(ModelView& model, RdNode::MsSet& msset, int nrShear
+pbd::SoftBodyGpu* pbd::replaceMeshInModelToSoftBody(ModelView& model, RdNode& nd, int nrShear
     , SoftBody::BendType bendType, float bodyMass, bool refCloseVerts
 )
 {
-    assert(&model!=model.md_data); // if src model then ori ms is orphan mem rick
-    assert(msset.transformWhenRender == true); // do not again
+    assert(nd.is_local_is_global == false); // do not again
 
-    const Mesh* srcMs = msset.ms;
+    const Mesh* srcMs = nd.ms;
     Mesh* copiedMeshForMove = new Mesh(*srcMs); // now initGL yet
     mat4 localToWorld = model.getLocalToMeshMtx(srcMs);
     for( vec3& p : copiedMeshForMove->poss ) {
@@ -18,9 +17,9 @@ pbd::SoftBodyGpu* pbd::replaceMeshInModelToSoftBody(ModelView& model, RdNode::Ms
 	}
     SoftBodyGpu* sb = new SoftBodyGpu(std::move(*copiedMeshForMove), nrShear, bendType, bodyMass, refCloseVerts, true);
     sb->initGL();
-    msset.ms = sb;
-    msset.transformWhenRender = false;
-    model.own_meshes.push_back(sb);
+    nd.ms = sb;
+    nd.is_local_is_global = true;
+    model.own_meshes_in_view.push_back(sb);
     return sb;
 
     // todo if skinned mesh then change vertex shader in there material

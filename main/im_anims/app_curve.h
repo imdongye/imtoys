@@ -16,7 +16,7 @@ namespace lim
 	public:
 		inline static constexpr const char *APP_NAME = "curve interpolation";
 		inline static constexpr const char *APP_DIR  = "im_anims";
-		inline static constexpr const char *APP_DESCRIPTION = "hello, world";
+		inline static constexpr const char *APP_INFO = "hello, world";
 
 	public:
 		AppCurve();

@@ -5,7 +5,7 @@
 #include <imgui.h>
 #include <Eigen/Eigen>
 #include <numeric>
-#include <limbrary/tools/asset_lib.h>
+#include <limbrary/tools/s_asset_lib.h>
 
 using namespace lim;
 using namespace Eigen;
@@ -182,7 +182,8 @@ namespace lim
         md.importFromFile("assets/models/objs/woody.obj", false, true);
         md.setSameMat(mat);
         md.addOwn(mat);
-        glm::mat4 toWorld = md.getLocalToMeshMtx(md.own_meshes[0]);
+        md.root.updateGlobalTransform();
+        glm::mat4 toWorld = md.getLocalToMeshMtx(md.own_meshes[0].raw);
         makeTransformedMesh(*md.own_meshes[0], dst_ms, toWorld);
 
         glm::mat4 rigidMat = glm::translate(glm::vec3 {3,1, 0}) * glm::rotate(0.2f, glm::vec3 {0,0,1});

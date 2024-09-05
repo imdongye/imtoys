@@ -5,7 +5,7 @@
 #include <limbrary/model_view/mesh_maked.h>
 #include <limbrary/tools/log.h>
 #include <limbrary/tools/limgui.h>
-#include <limbrary/tools/asset_lib.h>
+#include <limbrary/tools/s_asset_lib.h>
 #include <limbrary/tools/gl.h>
 #include <functional>
 #include "pbd/pbd.h"
@@ -34,16 +34,15 @@ void AppSoftbodyInModel::reloadModel(const char* path) {
 	src_mesh = nullptr;
 	LimGui::ModelEditorReset();
 
-	delete scene.own_mds[0];
 	Model* srcMd = new Model();
 	srcMd->importFromFile(path, true, true);
-	for(Material* mat : srcMd->own_materials) {
+	for(auto& mat : srcMd->own_materials) {
 		mat->Roughness = 0.519f;
 		mat->Metalness = 0.73f;
 	}
 	srcMd->setProgToAllMat(&prog_skinned);
 
-	scene.own_mds[0] = new ModelView(*srcMd);
+	scene.own_mds[0] = srcMd; // delete and change in OwnPtr
 }
 AppSoftbodyInModel::AppSoftbodyInModel() : AppBase(1480, 780, APP_NAME, false)
 	, viewport("viewport##skeletal", new FramebufferMs())
@@ -61,7 +60,7 @@ AppSoftbodyInModel::AppSoftbodyInModel() : AppBase(1480, 780, APP_NAME, false)
 	scene.is_draw_env_map = true;
 	scene.idx_LitMod = 0;
 	scene.addOwn(new LightDirectional());
-	scene.own_lits.back()->setShadowEnabled(true);
+	scene.own_dir_lits.back()->setShadowEnabled(true);
 
 
 	scene.own_mds.resize(2);
@@ -73,12 +72,12 @@ AppSoftbodyInModel::AppSoftbodyInModel() : AppBase(1480, 780, APP_NAME, false)
 	// floor
 	{
 		Model* floorMd = new Model();
-		floorMd->name = "floor";
-		floorMd->addOwn(new MeshPlane(2.f, 2.f));
-		floorMd->own_meshes.back()->initGL(true);
 		Material* flMat = floorMd->addOwn(new Material());
+		floorMd->name = "floor";
+		floorMd->root.ms = floorMd->addOwn(new MeshPlane(2.f, 2.f));
+		floorMd->root.mat = flMat;
+		floorMd->own_meshes.back()->initGL(true);
 		flMat->prog = &prog_static;
-		floorMd->root.addMsMat(floorMd->own_meshes.back(), flMat);
 		floorMd->root.tf.scale = glm::vec3(5.f);
 		floorMd->root.tf.update();
 		floorMd->root.updateGlobalTransform();
@@ -213,22 +212,22 @@ void AppSoftbodyInModel::updateImGui()
 
 	ImGui::Begin("pbd ctrl##sbinmd");
 
-	RdNode::MsSet* msset = LimGui::getPickedMsSet();
+	RdNode* pickedNd = LimGui::getPickedRenderNode();
 	ImGui::SetNextItemOpen(true, ImGuiCond_Once);
-	if( ImGui::CollapsingHeader("soft body replacer") && msset && msset->transformWhenRender ) {
-		ImGui::Text("%s mesh selected", msset->ms->name.c_str());
+	if( ImGui::CollapsingHeader("soft body replacer") && pickedNd && pickedNd->ms && !pickedNd->is_local_is_global ) {
+		ImGui::Text("%s mesh selected", pickedNd->ms->name.c_str());
 		ImGui::SliderInt("nr shears", &nr_shear, 0, 2);
 		ImGui::Combo("bendType", (int*)&bend_type, "none\0distance\0dihedral\0isometric\0", 4);
 		ImGui::Checkbox("ptcl ref close verts", &is_ptcl_ref_close_verts);
 
 		if( ImGui::Button("replace") ) {
-			cur_body = pbd::replaceMeshInModelToSoftBody(md, *msset
+			cur_body = pbd::replaceMeshInModelToSoftBody(md, *pickedNd
 				, nr_shear, bend_type, body_mass, is_ptcl_ref_close_verts);
-			Material* noSkinnedMat = new Material(*msset->mat);
+			Material* noSkinnedMat = new Material(*pickedNd->mat);
 			noSkinnedMat->name = noSkinnedMat->name + "-noSkinned";
 			noSkinnedMat->prog = &prog_static;
-			md.md_data->own_materials.push_back(noSkinnedMat);
-			msset->mat = noSkinnedMat;
+			md.src_md->addOwn(noSkinnedMat);
+			pickedNd->mat = noSkinnedMat;
 
 			// phy_scene.bodies.clear();
 			phy_scene.bodies.push_back(cur_body);
@@ -236,8 +235,8 @@ void AppSoftbodyInModel::updateImGui()
 	}
 	else {
 		ImGui::Text("not selected");
-		if( msset && msset->transformWhenRender==false ) {
-			cur_body = (pbd::SoftBodyGpu*)msset->ms;
+		if( pickedNd && pickedNd->is_local_is_global ) {
+			cur_body = (pbd::SoftBodyGpu*)pickedNd->ms;
 		}
 	}
 

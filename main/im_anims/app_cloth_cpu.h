@@ -15,7 +15,7 @@ namespace lim
 	public:
 		inline static constexpr CStr APP_NAME = "cloth_cpu";
 		inline static constexpr CStr APP_DIR  = "im_anims";
-		inline static constexpr CStr APP_DESCRIPTION = "limbrary template application";
+		inline static constexpr CStr APP_INFO = "limbrary template application";
 
 	public:
 		AppClothCPU();

@@ -24,10 +24,11 @@ animation key 선택 O(N)을 줄이기 위한 방법
 #define __animator_h_
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
-#include <limbrary/program.h>
 #include <vector>
 #include <string>
-#include <limbrary/model_view/transform.h>
+#include "../program.h"
+#include "transform.h"
+#include "../tools/mecro.h"
 // #include <map>
 
 namespace lim
@@ -77,7 +78,7 @@ namespace lim
     };
 
     struct Model;
-    struct Animator
+    struct Animator : public NoMove
     {
         enum State : int
         {
@@ -91,7 +92,7 @@ namespace lim
         std::vector<BoneNode> bones; // bone tree
         std::vector<glm::mat4> mtx_Bones; // nr_weighted_bones
         const Animation* cur_anim = nullptr;
-        const Model* md_data = nullptr;
+        const Model* src_md = nullptr;
         double elapsed_sec, duration_sec;
         float cur_tick = 0.f;
         bool is_loop = true;

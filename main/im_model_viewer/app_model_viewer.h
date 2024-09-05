@@ -18,7 +18,7 @@ namespace lim
 	public:
 		inline static constexpr CStr APP_NAME = "model viewer";
 		inline static constexpr CStr APP_DIR  = "im_model_viewer";
-		inline static constexpr CStr APP_DESCRIPTION = "model viewer for test materials";
+		inline static constexpr CStr APP_INFO = "model viewer for test materials";
 	private:
 		std::vector<ViewportWithCamera*> viewports;
 		Viewport vp_light_map, vp_irr_map, vp_pfenv_map, vp_pfbrdf_map;

@@ -38,7 +38,7 @@ namespace lim
 
         // 노멀 맵을 사용하는 메쉬들을 찾아서 자료구조에 저장.  Todo: 사용안해도 저장
         unordered_map< int, vector<pair<const Mesh*, const Mesh*>> > mergeByNormalMap;
-        src.root.treversal([&](const Mesh* srcMs, const Material* srcMat, const glm::mat4& tf) {
+        src.root.dfsRender([&](const Mesh* srcMs, const Material* srcMat, const glm::mat4& _) {
             if( srcMat->map_Bump==nullptr ) 
                 return true;
             if( srcMs->uvs.empty() ) {
@@ -46,7 +46,7 @@ namespace lim
                 return true;
             }
             int bumpMatIdx = findIdx(src.own_materials, (Material*)srcMat);
-            const Mesh* dstMs = dst.own_meshes[ findIdx(src.own_meshes, (Mesh*)srcMs) ];
+            const Mesh* dstMs = dst.own_meshes[ findIdx(src.own_meshes, (Mesh*)srcMs) ].raw;
 
             mergeByNormalMap[bumpMatIdx].push_back( make_pair(srcMs, dstMs) );
             return true;
@@ -116,7 +116,7 @@ namespace lim
 
         unordered_map< int,  set<int> > mergeByNormalMap;
 
-        md.root.treversal([&](const Mesh* ms, const Material* mat, const glm::mat4& tf) {
+        md.root.dfsRender([&](const Mesh* ms, const Material* mat, const glm::mat4& _) {
             if( mat==nullptr || (mat->map_Flags|Material::MF_HEIGHT)==0 ) 
                 return true;
             if( ms->uvs.empty() ) {

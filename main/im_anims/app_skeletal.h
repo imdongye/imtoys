@@ -17,7 +17,7 @@ namespace lim
 	public:
 		inline static constexpr CStr APP_NAME = "Skeletal Animation";
 		inline static constexpr CStr APP_DIR  = "im_anims";
-		inline static constexpr CStr APP_DESCRIPTION = "learn with LearnOpenGL";
+		inline static constexpr CStr APP_INFO = "learn with LearnOpenGL";
 
 		Program prog_skinned;
 		Program prog_static;

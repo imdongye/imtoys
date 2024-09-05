@@ -8,17 +8,31 @@
 #include "simplify.h"
 #include <stb_image.h>
 #include <stb_sprintf.h>
-#include <limbrary/tools/app_prefs.h>
+#include <limbrary/tools/s_asset_lib.h>
+#include <limbrary/tools/s_save_file.h>
 #include <limbrary/tools/general.h>
 #include <limbrary/model_view/mesh_maked.h>
 #include <imgui.h>
 #include <limbrary/model_view/scene.h>
-#include <limbrary/tools/asset_lib.h>
 #include <limbrary/model_view/model_io_helper.h>
 
+#include <limbrary/using_in_cpp/std.h>
+using namespace lim;
 
-lim::AppSimplification::AppSimplification() : AppBase(1200, 780, APP_NAME, false)
+namespace
 {
+	vector<string> recent_model_paths;
+}
+
+
+AppSimplification::AppSimplification() : AppBase(1200, 780, APP_NAME, false)
+{
+	recent_model_paths.clear();
+	if( SaveFile::get().data.empty() == false ) {
+		recent_model_paths = SaveFile::get().data["recentModelPaths"];
+	}
+
+
 	{
 		Program* prog;
 		prog = new Program("Normal Dot View");
@@ -52,15 +66,14 @@ lim::AppSimplification::AppSimplification() : AppBase(1200, 780, APP_NAME, false
 			shader_names.push_back(prog->name.c_str());
 	}
 
-	ground.own_textures.push_back(new Texture());
+	ground.addOwn(new Texture());
 	ground.own_textures.back()->initFromFile("assets/images/uv_grid.jpg", true);
-	ground.own_materials.push_back(new Material());
+	ground.root.mat = ground.addOwn(new Material());
 	ground.own_materials.back()->BaseColor = {0,1,0};
-	ground.own_materials.back()->map_ColorBase = ground.own_textures.back();
+	ground.own_materials.back()->map_ColorBase = ground.own_textures.back().raw;
 	ground.own_materials.back()->map_Flags |= Material::MF_COLOR_BASE;
-	ground.own_meshes.push_back(new MeshPlane());
+	ground.root.ms = ground.addOwn(new MeshPlane());
 	ground.own_meshes.back()->initGL();
-	ground.root.addMsMat(ground.own_meshes.back(), ground.own_materials.back());
 	ground.root.tf.pos = {0, 0, 0};
 	ground.root.tf.scale = {10, 1, 10};
 	ground.root.tf.update();
@@ -72,13 +85,14 @@ lim::AppSimplification::AppSimplification() : AppBase(1200, 780, APP_NAME, false
 	doImportModel("assets/models/dwarf/Dwarf_2_Low.obj", 0);
 	addEmptyViewport();
 }
-lim::AppSimplification::~AppSimplification()
+AppSimplification::~AppSimplification()
 {
+	SaveFile::get().data["recentModelPaths"] = recent_model_paths;
 	for( auto prog : programs )	delete prog;
 	for( auto vp : viewports ) delete vp;
 	for( auto scn : scenes ) delete scn;
 }
-void lim::AppSimplification::addEmptyViewport()
+void AppSimplification::addEmptyViewport()
 {
 	auto vp = new ViewportWithCamera(fmtStrToBuf("viewport%d##simp", nr_viewports), new FramebufferMs);
 	vp->camera.moveShift({0,1,-1.6f});
@@ -93,7 +107,7 @@ void lim::AppSimplification::addEmptyViewport()
 	scenes.push_back(scn);
 	nr_viewports++;
 }
-void lim::AppSimplification::subViewport(int vpIdx)
+void AppSimplification::subViewport(int vpIdx)
 {
 	if( vpIdx<0||vpIdx>=nr_viewports ) {
 		log::err("wrong vpIdx for close\n");
@@ -117,14 +131,36 @@ void lim::AppSimplification::subViewport(int vpIdx)
 		viewports[i]->name = fmtStrToBuf("viewport%d##simp", i);
 	}
 }
-void lim::AppSimplification::doImportModel(std::string_view path, int vpIdx)
+
+
+
+static void saveRecentModelPath(const char* path)
+{
+	// 절대경로를 상대경로로
+	std::filesystem::path ap(path);
+	std::string rp = std::filesystem::relative(ap, std::filesystem::current_path()).u8string();
+	std::replace(rp.begin(), rp.end(), '\\', '/');
+	log::pure("%s\n", rp.c_str());
+
+	if( rp.empty() )
+		return;
+
+	auto samePathPos = std::find(recent_model_paths.begin(), recent_model_paths.end(), rp);
+	if( samePathPos!=recent_model_paths.end() )
+		recent_model_paths.erase(samePathPos);
+	recent_model_paths.emplace_back(rp);
+}
+
+
+
+void AppSimplification::doImportModel(std::string_view path, int vpIdx)
 {
 	if( vpIdx<0||vpIdx>=nr_viewports ) {
 		log::err("wrong vpIdx in load model");
 		return;
 	}
 
-	Model& md = *(Model*)scenes[vpIdx]->own_mds[0];
+	Model& md = *(Model*)scenes[vpIdx]->own_mds[0].raw;
 
 	if( !md.importFromFile(path.data(), false, true) ) {
 		return;
@@ -135,23 +171,23 @@ void lim::AppSimplification::doImportModel(std::string_view path, int vpIdx)
 	vp->camera.pos.y = 1.5f;
 	vp->camera.updateViewMat();
 
-	AppPrefs::get().saveRecentModelPath(path.data());
+	saveRecentModelPath(path.data());
 }
-void lim::AppSimplification::doExportModel(size_t pIndex, int vpIdx)
+void AppSimplification::doExportModel(size_t pIndex, int vpIdx)
 {
-	Model& md = *(Model*)scenes[vpIdx]->own_mds[0];
+	Model& md = *(Model*)scenes[vpIdx]->own_mds[0].raw;
 	if( md.own_meshes.empty() ) {
 		log::err("export\n");
 		return;
 	}
 	md.exportToFile(pIndex, export_path);
 }
-void lim::AppSimplification::doSimplifyModel(float lived_pct, int version, int agressiveness, bool verbose)
+void AppSimplification::doSimplifyModel(float lived_pct, int version, int agressiveness, bool verbose)
 {
-	Model& srcMd = *(Model*)scenes[src_vp_idx]->own_mds[0];
-	Model& dstMd = *(Model*)scenes[dst_vp_idx]->own_mds[0];
+	Model& srcMd = *(Model*)scenes[src_vp_idx]->own_mds[0].raw;
+	Model& dstMd = *(Model*)scenes[dst_vp_idx]->own_mds[0].raw;
 
-	dstMd.copyFrom(srcMd);
+	dstMd = srcMd; // copy
 
 	simplifyModel(dstMd, lived_pct, version, agressiveness, verbose);
 	int pct = 100.0 * dstMd.total_verts / srcMd.total_verts;
@@ -160,18 +196,18 @@ void lim::AppSimplification::doSimplifyModel(float lived_pct, int version, int a
 	viewports[dst_vp_idx]->camera.pivot = dstMd.root.tf.pos;
 	viewports[dst_vp_idx]->camera.updateViewMat();
 }
-void lim::AppSimplification::doBakeNormalMap(int texSize)
+void AppSimplification::doBakeNormalMap(int texSize)
 {
-	Model& srcMd = *(Model*)scenes[src_vp_idx]->own_mds[0];
-	Model& dstMd = *(Model*)scenes[dst_vp_idx]->own_mds[0];
+	Model& srcMd = *(Model*)scenes[src_vp_idx]->own_mds[0].raw;
+	Model& dstMd = *(Model*)scenes[dst_vp_idx]->own_mds[0].raw;
 	if( srcMd.own_meshes.empty() || dstMd.own_meshes.empty() )
 		log::err("You Must to simplify before baking\n");
 	else
 		bakeNormalMap( srcMd, dstMd, texSize );
 }
-void lim::AppSimplification::setProg(int idx) {
+void AppSimplification::setProg(int idx) {
 	for(Scene* scn: scenes) {
-		Model& md = *(Model*)scn->own_mds[0];
+		Model& md = *(Model*)scn->own_mds[0].raw;
 		md.setProgToAllMat(programs[idx]);
 	}
 	ground.setProgToAllMat(programs[idx]);
@@ -182,7 +218,7 @@ void lim::AppSimplification::setProg(int idx) {
 
 
 
-void lim::AppSimplification::update()
+void AppSimplification::update()
 {
 	// clear backbuffer
 	glEnable(GL_DEPTH_TEST);
@@ -205,9 +241,9 @@ void lim::AppSimplification::update()
 			fb.bind();
 			prog.use();
 
-			Model& md = *(Model*)scenes[i]->own_mds[0];
+			Model& md = *(Model*)scenes[i]->own_mds[0].raw;
 
-			md.root.treversal([&](const Mesh* ms, const Material* mat, const glm::mat4& tf) {
+			md.root.dfsRender([&](const Mesh* ms, const Material* mat, const glm::mat4& _) {
 				if( curMat != mat ) {
 					curMat = mat;
 					curMat->setUniformTo(prog);
@@ -243,10 +279,10 @@ void lim::AppSimplification::update()
 			scenes[i]->render(viewports[i]->getFb(), viewports[i]->camera);
 	}
 }
-void lim::AppSimplification::updateImGui()
+void AppSimplification::updateImGui()
 {
-	Model& srcMd = *(Model*)scenes[src_vp_idx]->own_mds[0];
-	Model& dstMd = *(Model*)scenes[dst_vp_idx]->own_mds[0];
+	Model& srcMd = *(Model*)scenes[src_vp_idx]->own_mds[0].raw;
+	Model& dstMd = *(Model*)scenes[dst_vp_idx]->own_mds[0].raw;
 
 	ImGui::DockSpaceOverViewport();
 
@@ -261,8 +297,8 @@ void lim::AppSimplification::updateImGui()
 					if( ImGui::BeginMenu(("Viewport" + std::to_string(i)).c_str())) 
 					{
 						typename std::vector<std::string>::reverse_iterator iter;
-						for( iter = AppPrefs::get().recent_model_paths.rbegin();
-								iter != AppPrefs::get().recent_model_paths.rend(); iter++ )
+						for( iter = recent_model_paths.rbegin();
+								iter != recent_model_paths.rend(); iter++ )
 						{
 							if( ImGui::MenuItem((*iter).c_str()) )
 							{
@@ -272,7 +308,7 @@ void lim::AppSimplification::updateImGui()
 						}
 						if(ImGui::MenuItem("Clear Recent") )
 						{
-							AppPrefs::get().clearData();
+							recent_model_paths.clear();
 						}
 						ImGui::EndMenu();
 					}
@@ -283,7 +319,7 @@ void lim::AppSimplification::updateImGui()
 			{
 				for( int i = 0; i < nr_viewports; i++ )
 				{
-					const Model& md = *(Model*)scenes[i]->own_mds[0];
+					const Model& md = *(Model*)scenes[i]->own_mds[0].raw;
 					if( md.own_meshes.empty() )
 						continue;
 
@@ -338,7 +374,7 @@ void lim::AppSimplification::updateImGui()
 		ImGui::Text("From viewport:");
 		for( int i=0; i<nr_viewports; i++ )
 		{
-			Model& md = *(Model*)scenes[i]->own_mds[0];
+			Model& md = *(Model*)scenes[i]->own_mds[0].raw;
 			if( md.own_meshes.empty() )
 				continue;
 			ImGui::SameLine();
@@ -398,7 +434,7 @@ void lim::AppSimplification::updateImGui()
 		}
 		if( ImGui::Button("BumpMap To Normal Map") )
 		{
-			Model& md = *(Model*)scenes[src_vp_idx]->own_mds[0];
+			Model& md = *(Model*)scenes[src_vp_idx]->own_mds[0].raw;
 			convertBumpMapToNormalMap(md);
 		}
 	}
@@ -424,7 +460,7 @@ void lim::AppSimplification::updateImGui()
 		ImGui::Dummy(ImVec2(0.0f, 3.0f));
 
 		ImGui::Text("<shader>");
-		LightDirectional& light = *(LightDirectional*)scenes[dst_vp_idx]->own_lits.back();
+		LightDirectional& light = *scenes[dst_vp_idx]->own_dir_lits.back();
 		if( ImGui::Combo("type", &selected_prog_idx, shader_names.data(), shader_names.size()) )
 		{
 			setProg(selected_prog_idx);
@@ -448,8 +484,8 @@ void lim::AppSimplification::updateImGui()
 		static float bumpHeight = 100;
 		if( ImGui::SliderFloat("bumpHeight", &bumpHeight, 0.0, 300.0) ) {
 			for( Scene* scn : scenes ) {
-				Model& md = *(Model*)scn->own_mds[0];
-				for( Material* mat : md.own_materials ) {
+				Model& md = *(Model*)scn->own_mds[0].raw;
+				for( auto& mat : md.own_materials ) {
 					mat->BumpHeight = bumpHeight;
 				}
 			}
@@ -457,8 +493,8 @@ void lim::AppSimplification::updateImGui()
 		static float texDelta = 0.00001f;
 		if( ImGui::SliderFloat("texDelta", &texDelta, 0.000001, 0.0001, "%f") ) {
 			for( Scene* scn : scenes ) {
-				Model& md = *(Model*)scn->own_mds[0];
-				for( Material* mat : md.own_materials ) {
+				Model& md = *(Model*)scn->own_mds[0].raw;
+				for( auto& mat : md.own_materials ) {
 					mat->TexDelta = texDelta;
 				}
 			}
@@ -485,7 +521,7 @@ void lim::AppSimplification::updateImGui()
 			if( ImGui::TableSetColumnIndex(column++) )
 				ImGui::Text("name");
 			for( Scene* scn : scenes ) {
-				Model& md = *(Model*)scn->own_mds[0];
+				Model& md = *(Model*)scn->own_mds[0].raw;
 				if( ImGui::TableSetColumnIndex(column++) )
 				{
 					if( md.own_meshes.empty() )
@@ -499,7 +535,7 @@ void lim::AppSimplification::updateImGui()
 			if( ImGui::TableSetColumnIndex(column++) )
 				ImGui::Text("#verticies");
 			for( Scene* scn : scenes ) {
-				Model& md = *(Model*)scn->own_mds[0];
+				Model& md = *(Model*)scn->own_mds[0].raw;
 				if( ImGui::TableSetColumnIndex(column++) )
 				{
 					if( md.own_meshes.empty() )
@@ -513,7 +549,7 @@ void lim::AppSimplification::updateImGui()
 			if( ImGui::TableSetColumnIndex(column++) )
 				ImGui::Text("#triangles");
 			for( Scene* scn : scenes ) {
-				Model& md = *(Model*)scn->own_mds[0];
+				Model& md = *(Model*)scn->own_mds[0].raw;
 				if( ImGui::TableSetColumnIndex(column++) )
 				{
 					if( md.own_meshes.empty() )
@@ -527,7 +563,7 @@ void lim::AppSimplification::updateImGui()
 			if( ImGui::TableSetColumnIndex(column++) )
 				ImGui::Text("boundary_x");
 			for( Scene* scn : scenes ) {
-				Model& md = *(Model*)scn->own_mds[0];
+				Model& md = *(Model*)scn->own_mds[0].raw;
 				if( ImGui::TableSetColumnIndex(column++) )
 				{
 					if( md.own_meshes.empty() )
@@ -541,7 +577,7 @@ void lim::AppSimplification::updateImGui()
 			if( ImGui::TableSetColumnIndex(column++) )
 				ImGui::Text("boundary_y");
 			for( Scene* scn : scenes ) {
-				Model& md = *(Model*)scn->own_mds[0];
+				Model& md = *(Model*)scn->own_mds[0].raw;
 				if( ImGui::TableSetColumnIndex(column++) )
 				{
 					if( md.own_meshes.empty() )
@@ -556,7 +592,7 @@ void lim::AppSimplification::updateImGui()
 			if( ImGui::TableSetColumnIndex(column++) )
 				ImGui::Text("#meshes");
 			for( Scene* scn : scenes ) {
-				Model& md = *(Model*)scn->own_mds[0];
+				Model& md = *(Model*)scn->own_mds[0].raw;
 				if( ImGui::TableSetColumnIndex(column++) )
 				{
 					if( md.own_meshes.empty() )
@@ -570,7 +606,7 @@ void lim::AppSimplification::updateImGui()
 			if( ImGui::TableSetColumnIndex(column++) )
 				ImGui::Text("#textures");
 			for( Scene* scn : scenes ) {
-				Model& md = *(Model*)scn->own_mds[0];
+				Model& md = *(Model*)scn->own_mds[0].raw;
 				if( ImGui::TableSetColumnIndex(column++) )
 				{
 					if( md.own_meshes.empty() )
@@ -612,7 +648,7 @@ void lim::AppSimplification::updateImGui()
 		data->DesiredSize.x = glm::max(data->DesiredSize.x, data->DesiredSize.y);
 		data->DesiredSize.y = data->DesiredSize.x; 
 	});
-	LightDirectional& light = *(LightDirectional*)scenes[dst_vp_idx]->own_lits.back();
+	LightDirectional& light = *scenes[dst_vp_idx]->own_dir_lits.back();
 	if( ImGui::Begin("shadowMap##simp") && light.shadow->Enabled )
 	{
 		ImVec2 vMin = ImGui::GetWindowContentRegionMin();
@@ -626,7 +662,7 @@ void lim::AppSimplification::updateImGui()
 	ImGui::PopStyleVar();
 }
 
-void lim::AppSimplification::keyCallback(int key, int scancode, int action, int mods)
+void AppSimplification::keyCallback(int key, int scancode, int action, int mods)
 {
 	if( (GLFW_MOD_CONTROL == mods) && (GLFW_KEY_S == key) )
 	{
@@ -642,7 +678,7 @@ void lim::AppSimplification::keyCallback(int key, int scancode, int action, int 
 		glfwSetWindowShouldClose(window, GL_TRUE);
 	}
 }
-void lim::AppSimplification::mouseBtnCallback(int button, int action, int mods)
+void AppSimplification::mouseBtnCallback(int button, int action, int mods)
 {
 	// 이전에 선택된 viewport 저장
 	if( viewports[last_focused_vp_idx]->is_hovered == false )
@@ -662,7 +698,7 @@ void lim::AppSimplification::mouseBtnCallback(int button, int action, int mods)
 		}
 	}
 }
-void lim::AppSimplification::dndCallback(int count, const char **paths)
+void AppSimplification::dndCallback(int count, const char **paths)
 {
 	addEmptyViewport();
 	doImportModel(paths[0], nr_viewports-1);

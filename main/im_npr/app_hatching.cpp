@@ -14,7 +14,7 @@
 #include <imgui.h>
 #include <limbrary/model_view/mesh_maked.h>
 #include <limbrary/tools/log.h>
-#include <limbrary/tools/asset_lib.h>
+#include <limbrary/tools/s_asset_lib.h>
 #include <limbrary/model_view/scene.h>
 
 
@@ -115,7 +115,8 @@ lim::AppHatching::AppHatching(): AppBase(1200, 780, APP_NAME)
 	scene.addOwn(md);
 	
 	md = new Model("sphere");
-	md->root.addMsMat(&AssetLib::get().sphere, &h_mat);
+	md->root.ms = &AssetLib::get().sphere;
+	md->root.mat = &h_mat;
 	scene.addOwn(md);
 
 	md = new Model();
@@ -137,7 +138,8 @@ lim::AppHatching::AppHatching(): AppBase(1200, 780, APP_NAME)
 	md = new Model("ground");
 	md->addOwn(new MeshPlane());
 	md->own_meshes.back()->initGL();
-	md->root.addMsMat(md->own_meshes.back(), &h_mat);
+	md->root.ms = md->own_meshes.back().raw;
+	md->root.mat = &h_mat;
 	md->root.tf.scale = glm::vec3(20);
 	md->root.tf.update();
 	md->root.updateGlobalTransform();

@@ -1,6 +1,6 @@
 #include "app_pbd_gpu.h"
 #include <limbrary/tools/limgui.h>
-#include <limbrary/tools/asset_lib.h>
+#include <limbrary/tools/s_asset_lib.h>
 #include <limbrary/tools/glim.h>
 #include <limbrary/tools/general.h>
 #include <limbrary/tools/gl.h>
@@ -64,7 +64,7 @@ static void resetApp() {
 		case MT_BUNNY: {
 			Model md;
 			md.importFromFile("assets/models/pbd_test/bunny.obj", false, true, 1.f, vec3(0));
-			ms = md.own_meshes[0];
+			ms = md.own_meshes[0].raw;
 			md.own_meshes[0] = nullptr;
 			tf = md.getLocalToMeshMtx(ms);
 			break;
@@ -72,7 +72,7 @@ static void resetApp() {
 		case MT_CHEEMS: {
 			Model md;
 			md.importFromFile("assets/models/dwarf/Dwarf_2_Very_Low.obj", false, true, 1.f, vec3(0));
-			ms = md.own_meshes[0];
+			ms = md.own_meshes[0].raw;
 			md.own_meshes[0] = nullptr;
 			tf = md.getLocalToMeshMtx(ms);
 
@@ -81,7 +81,7 @@ static void resetApp() {
 		case MT_BUFF: {
 			Model md;
 			md.importFromFile("assets/models/pbd_test/buff-doge.obj", false, true, 1.f, vec3(0));
-			ms = md.own_meshes[0];
+			ms = md.own_meshes[0].raw;
 			md.own_meshes[0] = nullptr;
 			tf = md.getLocalToMeshMtx(ms);
 			break;

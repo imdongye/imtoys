@@ -31,7 +31,7 @@ namespace lim
 	public:
 		inline static constexpr CStr APP_NAME = "ImShaderToys";
 		inline static constexpr CStr APP_DIR  = "im_shadertoy";
-		inline static constexpr CStr APP_DESCRIPTION = "offline shadertoy";
+		inline static constexpr CStr APP_INFO = "offline shadertoy";
 	private:
 		Viewport viewport;
 		ProgramShaderToy program;

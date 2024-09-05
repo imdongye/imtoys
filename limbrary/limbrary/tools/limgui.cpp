@@ -1,7 +1,7 @@
 #include <limbrary/tools/limgui.h>
 #include <imgui.h>
 #include <imgui_internal.h>
-#include <limbrary/tools/asset_lib.h>
+#include <limbrary/tools/s_asset_lib.h>
 #include <limbrary/tools/general.h>
 #include <map>
 
@@ -153,8 +153,8 @@ static void drawInspector() {
 		}
 		ImGui::Text("#childs : %d", nd.childs.size());
 		ImGui::Checkbox("enabled", &nd.enabled);
-		ImGui::Checkbox("enabled", &nd.is_identity_mtx);
-		ImGui::Checkbox("enabled", &nd.is_local_is_global);
+		ImGui::Checkbox("is identity mtx", &nd.is_identity_mtx);
+		ImGui::Checkbox("is local is global", &nd.is_local_is_global);
 		bool edited = false;
 		edited |= ImGui::DragFloat3("pos", glm::value_ptr(nd.tf.pos), 0.01f);
 		edited |= ImGui::DragFloat3("scale", glm::value_ptr(nd.tf.scale), 0.01f);
@@ -165,6 +165,7 @@ static void drawInspector() {
 		}
 		if( edited ) {
 			nd.tf.update();
+			nd.updateGlobalTransform();
 		}
 		LimGui::Mat4(nd.tf.mtx);
 		if( nd.ms ) {
@@ -207,7 +208,7 @@ static void drawInspector() {
 		LimGui::Mat4(nd.tf.mtx);
 		ImGui::Text("bone_idx : %d", nd.idx_weighted_bone);
 		if( nd.idx_weighted_bone>=0 ) {
-			LimGui::Mat4(cur_md->md_data->weighted_bone_offsets[nd.idx_weighted_bone]);
+			LimGui::Mat4(cur_md->src_md->weighted_bone_offsets[nd.idx_weighted_bone]);
 		}
 	}
 	else {
@@ -248,12 +249,12 @@ static void drawAnimator(Animator& animator) {
 	// 	animator.updateDefaultMtxBones();
 	// }
 	std::vector<const char*> anim_list;
-	for(auto& anim : animator.md_data->animations) {
+	for(auto& anim : animator.src_md->animations) {
 		anim_list.push_back(anim.name.c_str());
 	}
 	static int anim_idx = 0;
 	if(ImGui::Combo("animation", &anim_idx, anim_list.data(), anim_list.size())) {
-		animator.setAnim(&animator.md_data->animations[anim_idx]);
+		animator.setAnim(&animator.src_md->animations[anim_idx]);
 	}
 	ImGui::Text("#tracks in anim : %d", animator.cur_anim->tracks.size());
 }
@@ -266,20 +267,20 @@ void LimGui::ModelEditor(ModelView& md) {
 	}
 	ImGui::Begin(model_editor_window_name);
 	if( ImGui::CollapsingHeader("Info") ) {
-		ImGui::Text("name : %s", md.md_data->name.c_str());
-		ImGui::Text("path : %s", md.md_data->path.c_str());
+		ImGui::Text("name : %s", md.src_md->name.c_str());
+		ImGui::Text("path : %s", md.src_md->path.c_str());
 		if( ImGui::TreeNode("boundary") ) {
-			ImGui::Text("min : %.2f %.2f %.2f", md.md_data->boundary_min.x, md.md_data->boundary_min.y, md.md_data->boundary_min.z);
-			ImGui::Text("max : %.2f %.2f %.2f", md.md_data->boundary_max.x, md.md_data->boundary_max.y, md.md_data->boundary_max.z);
-			ImGui::Text("size: %.2f %.2f %.2f", md.md_data->boundary_size.x, md.md_data->boundary_size.y, md.md_data->boundary_size.z);
+			ImGui::Text("min : %.2f %.2f %.2f", md.src_md->boundary_min.x, md.src_md->boundary_min.y, md.src_md->boundary_min.z);
+			ImGui::Text("max : %.2f %.2f %.2f", md.src_md->boundary_max.x, md.src_md->boundary_max.y, md.src_md->boundary_max.z);
+			ImGui::Text("size: %.2f %.2f %.2f", md.src_md->boundary_size.x, md.src_md->boundary_size.y, md.src_md->boundary_size.z);
 			ImGui::TreePop();
 		}
 		if( ImGui::TreeNode("number of") ) {
-			ImGui::Text("verteces : %d", md.md_data->total_verts);
-			ImGui::Text("tris : %d", md.md_data->total_tris);
-			ImGui::Text("meshes : %d", md.md_data->own_meshes.size());
-			ImGui::Text("textures : %d", md.md_data->own_textures.size());
-			ImGui::Text("materials : %d", md.md_data->own_materials.size());
+			ImGui::Text("verteces : %d", md.src_md->total_verts);
+			ImGui::Text("tris : %d", md.src_md->total_tris);
+			ImGui::Text("meshes : %d", md.src_md->own_meshes.size());
+			ImGui::Text("textures : %d", md.src_md->own_textures.size());
+			ImGui::Text("materials : %d", md.src_md->own_materials.size());
 			ImGui::TreePop();
 		}
 	}
@@ -294,7 +295,7 @@ void LimGui::ModelEditor(ModelView& md) {
 		drawHierarchy(md.root);
 	}
 	if( ImGui::CollapsingHeader("Bone tree") ) {
-		ImGui::Text("depth of bone root : %d", md.md_data->depth_of_bone_root_in_rdtree);
+		ImGui::Text("depth of bone root : %d", md.src_md->depth_of_bone_root_in_rdtree);
 		drawHierarchy(md.own_animator->bones, 0);
 	}
 	ImGui::SetNextItemOpen(true, ImGuiCond_Once);

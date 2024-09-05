@@ -343,17 +343,16 @@ static int getCubeInfoIdx(vec3 wPos, vec3 radius) {
 void exportMesh(std::string_view dir, std::string_view modelName,  int sampleRate) {
     lim::Model model;
     model.name = modelName;
-    model.addOwn(new lim::Mesh());
-    model.addOwn(new lim::Material());
-    model.root.addMsMat(model.own_meshes.back(), model.own_materials.back());
+    model.root.ms = model.addOwn(new lim::Mesh());
+    model.root.mat = model.addOwn(new lim::Material());
     lim::Mesh& mesh = *model.own_meshes.back();
 
     vec3 volumeMin = {-5, -5, -5};
     vec3 volumeMax = { 5,  5,  5};
     vec3 volumeSize = volumeMax - volumeMin;
-    vec3 radius = volumeSize/vec3(2*sampleRate);
+    vec3 radius = volumeSize/vec3(2.f*sampleRate);
 
-    float elapsedTime = glfwGetTime();
+    float elapsedTime = (float)glfwGetTime();
 
 
     for(int x=0; x<sampleRate; x++) for(int y=0; y<sampleRate; y++) for(int z=0; z<sampleRate; z++)
@@ -366,7 +365,7 @@ void exportMesh(std::string_view dir, std::string_view modelName,  int sampleRat
         for(int i=0; i<12; i++) {
             if( (edgeInfo&1)>0 ) {
                 vec3 edgeCenter = radius*cubeEdgeCenters[i] + cubePos;
-                vertIdxs[i] = mesh.poss.size();
+                vertIdxs[i] = (int)mesh.poss.size();
                 mesh.poss.push_back(edgeCenter);
             }
             edgeInfo >>= 1;

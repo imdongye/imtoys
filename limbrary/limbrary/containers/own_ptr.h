@@ -21,8 +21,8 @@ namespace lim
 
         OwnPtr() : raw(nullptr) {}
         OwnPtr(T* ptr) : raw(ptr) {}
-        OwnPtr(const OwnPtr<T>& src) : raw(new T(*src.raw)) {}
-        OwnPtr<T>& operator=(const OwnPtr<T>& src) { delete raw; raw = new T(*src.raw); return *this; }
+        OwnPtr(const OwnPtr<T>& src) : raw( src.raw ? new T(*src.raw) : nullptr ) {}
+        OwnPtr<T>& operator=(const OwnPtr<T>& src) { delete raw; raw = src.raw ? new T(*src.raw) : nullptr; return *this; }
         OwnPtr<T>& operator=(T* ptr) { delete raw; raw = ptr; return *this; }
         OwnPtr(OwnPtr<T>&& src) noexcept : raw(src.raw) { src.raw = nullptr; }
         OwnPtr<T>& operator=(OwnPtr<T>&& src) noexcept { delete raw; raw = src.raw; src.raw = nullptr; return *this; }
@@ -30,8 +30,8 @@ namespace lim
 
         void clear() noexcept { delete raw; raw = nullptr; }
 
-        T* operator->() const noexcept { assert(raw!=nullptr); return raw;  }
-        T& operator* () const noexcept { assert(raw!=nullptr); return *raw; }
+        T* operator->() const noexcept { return raw;  }
+        T& operator* () const noexcept { return *raw; }
         operator bool() const noexcept { return raw != nullptr; }
         bool operator==(const OwnPtr<T>& src) const noexcept { return raw == src.raw; }
         bool operator!=(const OwnPtr<T>& src) const noexcept { return raw != src.raw; }

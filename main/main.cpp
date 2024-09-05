@@ -6,10 +6,6 @@
 //
 
 #include <imgui.h>
-#include <limbrary/tools/asset_lib.h>
-#include <limbrary/tools/app_prefs.h>
-#include <limbrary/tools/log.h>
-#include <limbrary/viewport.h>
 
 #include "im_tests/app_template.h"
 #include "im_tests/app_imgui_test.h"
@@ -39,18 +35,21 @@
 #include "im_pbd/app_softbody_in_model.h"
 
 
-static int _selected_app_idx;
+using namespace lim;
 
-static std::vector<std::function<lim::AppBase*()>> _app_constructors;
-static std::vector<const char*> _app_names;
-static std::vector<const char*> _app_descriptions;
+static int selected_app_idx;
+static std::vector<std::function<AppBase*()>> app_constructors;
+static std::vector<const char*> app_names;
+static std::vector<const char*> app_dirs;
+static std::vector<const char*> app_infos;
+
 
 static void drawAppSellector()
 {
-	ImGuiIO io = ImGui::GetIO();
-	const lim::AppBase& app = *lim::AssetLib::get().app;
-	// draw app selector
 	static bool isSelectorOpened = false;
+	const AppBase& app = *AppBase::g_ptr;
+
+	// draw app selector
 	if( ImGui::IsKeyPressed(ImGuiKey_F1, false) ) {
 		if( !isSelectorOpened ) {
 			isSelectorOpened = true;
@@ -60,11 +59,12 @@ static void drawAppSellector()
 			isSelectorOpened = false;
 		}
 	}
+
 	ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 	if( ImGui::BeginPopupModal("AppSelector", &isSelectorOpened, ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoResize) ) {
-		for( int i = 0; i<_app_names.size(); i++ ) {
-			if( ImGui::Button(_app_names[i]) ) {
-				_selected_app_idx = i;
+		for( int i = 0; i<app_names.size(); i++ ) {
+			if( ImGui::Button(app_names[i]) ) {
+				selected_app_idx = i;
 				isSelectorOpened = false;
 				ImGui::CloseCurrentPopup();
 				glfwSetWindowShouldClose(app.window, true);
@@ -79,53 +79,59 @@ static void drawAppSellector()
 template <typename TApp>
 static void pushAppData()
 {
-	_app_names.push_back(TApp::APP_NAME);
-	_app_descriptions.push_back( TApp::APP_DESCRIPTION );
-	_app_constructors.push_back( [](){ return new TApp(); } );
+	app_constructors.push_back( [](){ return new TApp(); } );
+	app_names.push_back(TApp::APP_NAME);
+	app_dirs.push_back(TApp::APP_DIR);
+	app_infos.push_back( TApp::APP_INFO );
 }
 
 
 int main()
 {
-	pushAppData<lim::AppSoftbodyInModel>();
-	pushAppData<lim::AppSkeletal>();
-	pushAppData<lim::AppPbdCpu>();
-	pushAppData<lim::AppPbdGpu>();
-	pushAppData<lim::AppIK>();
-	pushAppData<lim::AppClothCPU>();
-	pushAppData<lim::AppClothGPU>();
-	pushAppData<lim::AppParticle>();
-	pushAppData<lim::AppCurve>();
-	pushAppData<lim::AppBvhParsor>();
-	pushAppData<lim::AppRay>();
-	pushAppData<lim::AppMineSweeper>();
-	pushAppData<lim::AppModelViewer>();
-	pushAppData<lim::AppSdfModeler>();
-	pushAppData<lim::AppTemplate>();
-	pushAppData<lim::AppImGuiTest>();
-	pushAppData<lim::AppICP>();
-	pushAppData<lim::AppGenMesh>();
-	pushAppData<lim::AppAstar>();
-	pushAppData<lim::AppMovingWindow>();
-	pushAppData<lim::AppSimplification>();
-	pushAppData<lim::AppHatching>();
-	pushAppData<lim::AppHdr>();
-	pushAppData<lim::AppFluid>();
-	pushAppData<lim::AppShaderToy>();
+	pushAppData<AppSkeletal>();
+	pushAppData<AppAstar>();
+	pushAppData<AppSoftbodyInModel>();
+	pushAppData<AppPbdCpu>();
+	pushAppData<AppPbdGpu>();
+	pushAppData<AppIK>();
+	pushAppData<AppClothCPU>();
+	pushAppData<AppClothGPU>();
+	pushAppData<AppParticle>();
+	pushAppData<AppCurve>();
+	pushAppData<AppBvhParsor>();
+	pushAppData<AppRay>();
+	pushAppData<AppMineSweeper>();
+	pushAppData<AppModelViewer>();
+	pushAppData<AppSdfModeler>();
+	pushAppData<AppTemplate>();
+	pushAppData<AppImGuiTest>();
+	pushAppData<AppICP>();
+	pushAppData<AppGenMesh>();
+	pushAppData<AppMovingWindow>();
+	pushAppData<AppSimplification>();
+	pushAppData<AppHatching>();
+	pushAppData<AppHdr>();
+	pushAppData<AppFluid>();
+	pushAppData<AppShaderToy>();
 
-	_selected_app_idx = 0;
+	selected_app_idx = 0;
 
-	if( _app_names.size()>1 ) {
-		lim::AppBase::draw_appselector = drawAppSellector;
+	if( app_names.size()>1 ) {
+		AppBase::draw_appselector = drawAppSellector;
 	}
 
-	while( _selected_app_idx>=0 ) {
-		lim::AppBase* app = _app_constructors[_selected_app_idx]();
-		_selected_app_idx = -1;
+	while( selected_app_idx>=0 )
+	{
+		AppBase::g_app_name = app_names[selected_app_idx];
+		AppBase::g_app_dir = app_dirs[selected_app_idx];
+		AppBase::g_app_info = app_infos[selected_app_idx];
+		AppBase::g_ptr = app_constructors[selected_app_idx]();
 
-		app->run();
+		selected_app_idx = -1;
 
-		delete app;
+		AppBase::g_ptr->run();
+
+		delete AppBase::g_ptr;
 	}
 
 	return 0;

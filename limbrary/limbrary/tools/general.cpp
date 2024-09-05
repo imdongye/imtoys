@@ -22,8 +22,8 @@ namespace lim {
 		} catch( std::ifstream::failure& e ) {
 			log::err("fail read : %s, what? %s\n", path.data(), e.what());
 		}
-		if( text.length()<1 ) {
-			log::err("length<1 : %s\n",path.data());
+		if( text.empty() ) {
+			log::warn("empty : %s\n",path.data());
 		}
 		return text;
 	}

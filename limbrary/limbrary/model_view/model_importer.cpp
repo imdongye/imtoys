@@ -486,22 +486,24 @@ static void convertRdTree(RdNode& dstParent, const aiNode* src, int depth)
 	}
 
 	// transform node( parent )
-	RdNode& tfNd = dstParent.addChild(src->mName.C_Str(), nullptr, nullptr);
-	tfNd.tf = tf;
+	if( src->mNumChildren > 0 ) {
+		RdNode& tfNd = dstParent.addChild(src->mName.C_Str(), nullptr, nullptr);
+		tfNd.tf = tf;
 
-	tfNd.childs.reserve(src->mNumChildren);
-	for( size_t i=0; i< src->mNumChildren; i++ ) {
-		aiNode* aiChild = src->mChildren[i];
-		if( g_is_ms_has_bone && isBoneNode(aiChild) ) {
-			// assume that model has only one bone tree
-			assert(g_animator->nr_bones==0);
-			assert(g_model->depth_of_bone_root_in_rdtree<1); // normaly bone root in first node
+		tfNd.childs.reserve(src->mNumChildren);
+		for( size_t i=0; i< src->mNumChildren; i++ ) {
+			aiNode* aiChild = src->mChildren[i];
+			if( g_is_ms_has_bone && isBoneNode(aiChild) ) {
+				// assume that model has only one bone tree
+				assert(g_animator->nr_bones==0);
+				assert(g_model->depth_of_bone_root_in_rdtree<1); // normaly bone root in first node
 
-			g_model->depth_of_bone_root_in_rdtree = depth;
-			addBoneNode( -1, mat4(1), aiChild );
-			continue;
+				g_model->depth_of_bone_root_in_rdtree = depth;
+				addBoneNode( -1, mat4(1), aiChild );
+				continue;
+			}
+			convertRdTree( tfNd, aiChild, depth+1 );
 		}
-		convertRdTree( tfNd, aiChild, depth+1 );
 	}
 }
 
@@ -650,6 +652,9 @@ bool lim::Model::importFromFile(
 	root.updateGlobalTransform();
 
 	root.dfsAll([&](const RdNode& nd) {
+		if( nd.ms==nullptr ) {
+			return true;
+		}
 		total_verts += nd.ms->poss.size();
 		total_tris += nd.ms->tris.size();
 		for(glm::vec3 p : nd.ms->poss) {

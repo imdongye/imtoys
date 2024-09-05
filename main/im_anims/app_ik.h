@@ -15,7 +15,7 @@ namespace lim
 	public:
 		inline static constexpr CStr APP_NAME = "inverse kinematics";
 		inline static constexpr CStr APP_DIR  = "im_anims";
-		inline static constexpr CStr APP_DESCRIPTION = "hello, world";
+		inline static constexpr CStr APP_INFO = "hello, world";
 
 	public:
 		AppIK();

@@ -5,7 +5,7 @@
 #include <limbrary/model_view/mesh_maked.h>
 #include <limbrary/tools/log.h>
 #include <limbrary/tools/limgui.h>
-#include <limbrary/tools/asset_lib.h>
+#include <limbrary/tools/s_asset_lib.h>
 #include <functional>
 
 using namespace lim;
@@ -44,10 +44,9 @@ void AppSkeletal::makeScene(const char* path) {
 
 	// floor
 	md = new Model();
-	Mesh* ms = md->addOwn(new MeshPlane(30.f, 30.f));
-	ms->initGL(true);
-	Material* mat = md->addOwn(new Material());
-	md->root.addMsMat(ms, mat);
+	md->root.ms = md->addOwn(new MeshPlane(30.f, 30.f));
+	md->own_meshes.back()->initGL(true);
+	md->root.mat = md->addOwn(new Material());
 	md->setProgToAllMat(&prog_static);
 	scene.addOwn(md);
 }
@@ -102,7 +101,7 @@ void lim::AppSkeletal::update()
 	// 		if( drawOffset ) {
 	// 			if( bone.idx_weighted_bone<0 )
 	// 				return;
-	// 			glm::mat4 local = glm::inverse(mdview.md_data->weighted_bone_offsets[bone.idx_weighted_bone]);
+	// 			glm::mat4 local = glm::inverse(mdview.src_md->weighted_bone_offsets[bone.idx_weighted_bone]);
 	// 			prog.setUniform("mtx_Model", globalMtx * local);
 	// 		}
 	// 		else {

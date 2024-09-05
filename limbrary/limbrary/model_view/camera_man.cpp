@@ -1,5 +1,4 @@
 #include <limbrary/model_view/camera_man.h>
-#include <limbrary/tools/asset_lib.h>
 #include <limbrary/application.h>
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include <imgui.h>
@@ -185,7 +184,7 @@ void CameraManWin::initCallbacks()
 	if(app)
 		deinitCallbacks();
 
-	app = AssetLib::get().app;
+	app = AppBase::g_ptr;
 
 	aspect = app->win_width/(float)app->win_height;
 	updateProjMat();
@@ -212,7 +211,7 @@ void CameraManWin::initCallbacks()
 		if( (!ImGui::GetIO().WantCaptureMouse) && (!ImGui::GetIO().WantCaptureKeyboard) ) {
 			input_status |= IST_FOCUSED;
 		}
-		mouse_off = AssetLib::get().app->mouse_off;
+		mouse_off = app->mouse_off;
 		updateFromInput();
 		scroll_off = {0,0};
 	};

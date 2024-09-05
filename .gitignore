@@ -27,7 +27,7 @@ main/exports/
 
 main/imgui.ini
 
-main/app_pref.json
+main/app_save.json
 
 
 main/im_shadertoy/temp/temp.fs

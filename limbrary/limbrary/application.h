@@ -21,18 +21,26 @@ Todo:
 #include <glm/glm.hpp>
 #include <GLFW/glfw3.h>
 #include "containers/types.h"
+#include "tools/mecro.h"
 
 
 namespace lim
 {
-	class AppBase
+	class AppBase : public NoCopyAndMove
 	{
 	public:
 		inline static std::function<void()> draw_appselector = [](){};
+		inline static AppBase* g_ptr = nullptr;
+		inline static const char* g_app_name = nullptr;
+		inline static const char* g_app_dir = nullptr;
+		inline static const char* g_app_info = nullptr;
+		inline static int g_max_ms_samples = -1;
+		inline static int monitor_max_fps = 60;
+
 	public:
 		GLFWwindow *window;
 		
-		float delta_time = 0.; // sec
+		float delta_time = 0.f; // sec
 
 		// relative to ratina or window monitor setting
 		int win_width = 0;
@@ -42,7 +50,6 @@ namespace lim
 		int fb_height = 0;
 		float aspect_ratio = 1.f; // width/height;
 		float pixel_ratio = 1.f;    // (DPI)
-		int monitor_max_fps = 60;
 		int max_fps = -1;
 		glm::vec2 mouse_pos = {0,0};
 		glm::vec2 mouse_off = {0,0};
@@ -57,16 +64,10 @@ namespace lim
 		Callbacks<void(int count, const char **paths)>				 dnd_callbacks;
 
 	public:
-		AppBase(const AppBase&) = delete;
-		AppBase(AppBase&&) = delete;
-		AppBase& operator=(const AppBase&) = delete;
-		AppBase& operator=(AppBase&&) = delete;
-	
-		/* init */
 		AppBase(int winWidth=1280, int winHeight=720, const char* title="nonamed", bool vsync=true);
-		/* destroy */
 		virtual ~AppBase();
 		void run();
+
 	protected:
 		virtual void update()=0;
 		virtual void updateImGui()=0;

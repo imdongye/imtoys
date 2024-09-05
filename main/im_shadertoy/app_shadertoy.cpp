@@ -1,6 +1,6 @@
 #include "app_shadertoy.h"
 #include <imgui.h>
-#include <limbrary/tools/asset_lib.h>
+#include <limbrary/tools/s_asset_lib.h>
 #include <limbrary/tools/log.h>
 #include <fstream>
 
