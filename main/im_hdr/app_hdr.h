@@ -23,7 +23,7 @@ namespace lim
 	{
 	public: 
 		inline static constexpr CStr APP_NAME = "color aware image viewer";
-		inline static constexpr CStr APP_DIR  = "im_hdr";
+		inline static constexpr CStr APP_DIR  = "im_hdr/";
 		inline static constexpr CStr APP_INFO = "loader/display";
 	private:
 		std::vector<ColorAwareImage*> imgs;

@@ -32,7 +32,7 @@ namespace lim
 	{
 	public:
 		inline static constexpr CStr APP_NAME = "real-time hatching";
-		inline static constexpr CStr APP_DIR  = "im_npr";
+		inline static constexpr CStr APP_DIR  = "im_npr/";
 		inline static constexpr CStr APP_INFO = "aplicate real-time hatching paper";
 	private:
 		bool start_dragging = false;
@@ -41,7 +41,6 @@ namespace lim
 		Program h_prog;
 
 		ViewportWithCamera viewport;
-		LightDirectional light;
 		Scene scene;
 
 		

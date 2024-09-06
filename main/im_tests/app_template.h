@@ -14,7 +14,7 @@ namespace lim
 	{
 	public:
 		inline static constexpr CStr APP_NAME = "template";
-		inline static constexpr CStr APP_DIR  = "im_tests";
+		inline static constexpr CStr APP_DIR  = "im_tests/";
 		inline static constexpr CStr APP_INFO = "limbrary template application";
 
 

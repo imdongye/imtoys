@@ -81,7 +81,7 @@ static Texture* loadTexture(string texPath, bool convertLinear, const char* msg)
 
 	// assimp가 mtl의 뒤에오는 옵션을 읽지 않음 (ex: eye.png -bm 0.4) 그래서 아래와 같이 필터링한다.
 	texPath = texPath.substr(0, texPath.find_first_of(' '));
-	texPath = g_model_dir + "/" + texPath;
+	texPath = g_model_dir + texPath;
 
 	for( size_t i = 0; i < loadedTexs.size(); i++ ) {
 		if( texPath.compare(loadedTexs[i]->file_path)==0 ) {
@@ -531,10 +531,8 @@ bool lim::Model::importFromFile(
 
 	g_model = this;
 	path = modelPath;
-	const size_t lastSlashPos = path.find_last_of("/\\");
-	const size_t dotPos = path.find_last_of('.');
-	name = path.substr(lastSlashPos + 1, dotPos - lastSlashPos - 1);
-	g_model_dir = (lastSlashPos == 0) ? "" : path.substr(0, lastSlashPos);
+	name = getFileNameWithoutExt(path.c_str());
+	g_model_dir = getDirectory(path);
 
 
 	/* Assimp 설정 */

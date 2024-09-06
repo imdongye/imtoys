@@ -53,7 +53,7 @@ void AppPhy2d::update()
 void AppPhy2d::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
-	log::drawViewer("logger##phy2d");
+	log::drawViewer();
 
 
 

@@ -94,7 +94,7 @@ AppSimplification::~AppSimplification()
 }
 void AppSimplification::addEmptyViewport()
 {
-	auto vp = new ViewportWithCamera(fmtStrToBuf("viewport%d##simp", nr_viewports), new FramebufferMs);
+	auto vp = new ViewportWithCamera(new FramebufferMs, fmtStrToBuf("Viewport%d", nr_viewports));
 	vp->camera.moveShift({0,1,-1.6f});
 	vp->camera.updateViewMat();
 	viewports.push_back(vp);
@@ -367,7 +367,7 @@ void AppSimplification::updateImGui()
 		}
 	}
 
-	log::drawViewer("log viwer##simplification");
+	log::drawViewer();
 
 	if( ImGui::Begin("Simplify Options##simp") )
 	{

@@ -24,7 +24,7 @@ using namespace glm;
 namespace
 {
 	struct BrdfTestInfo {
-		std::string ctrl_name = "##modelview";
+		std::string ctrl_name = "filename ctrl";
 		bool is_rotate_md = false;
 		bool is_draw_floor = true;
 		int idx_Brdf = 2;
@@ -73,10 +73,10 @@ namespace
 
 
 lim::AppModelViewer::AppModelViewer() : AppBase(1373, 780, APP_NAME, false)
-	, vp_light_map("light map", new FramebufferNoDepth(3,32))
-	, vp_irr_map("irr map", new FramebufferNoDepth(3,32))
-	, vp_pfenv_map("pf env map", new FramebufferNoDepth(3,32))
-	, vp_pfbrdf_map("pf brdf map", new FramebufferNoDepth(3,32))
+	, vp_light_map(new FramebufferNoDepth(3,32), "light map")
+	, vp_irr_map(new FramebufferNoDepth(3,32), "irr map")
+	, vp_pfenv_map(new FramebufferNoDepth(3,32), "pf env map")
+	, vp_pfbrdf_map(new FramebufferNoDepth(3,32), "pf brdf map")
 	, ib_light("assets/images/ibls/artist_workshop_4k.hdr")
 {
 	viewports.reserve(5);
@@ -126,6 +126,10 @@ lim::AppModelViewer::~AppModelViewer()
 
 void lim::AppModelViewer::addModelViewer(const char* path) 
 {
+	static int vpId = 0; vpId++;
+
+	const char* winName;
+
 	Model* md = new Model();
 	// if path then findModelInDirectory return path
 	// if dir then findModelInDirectory return model path
@@ -142,7 +146,8 @@ void lim::AppModelViewer::addModelViewer(const char* path)
 	lit->setShadowEnabled(true);
 
 	brdf_test_infos.push_back({});
-	brdf_test_infos.back().ctrl_name = md->name+" ctrl ##modelviewer";
+	winName = fmtStrToBuf("%s ctrl###mdvr%dct", md->name.c_str(), vpId);
+	brdf_test_infos.back().ctrl_name = winName;
 	brdf_test_infos.back().is_draw_floor = true;
 
 	brdf_test_infos.back().setup(*md);
@@ -157,8 +162,8 @@ void lim::AppModelViewer::addModelViewer(const char* path)
 	scn->ib_light = &ib_light;
 	scenes.push_back(scn);
 
-	const char* vpName = fmtStrToBuf("%s##model_view", md->name.c_str());
-	auto vp = new ViewportWithCamera(vpName, new FramebufferMs(8));
+	winName = fmtStrToBuf("%s###mdvr%dvp", md->name.c_str(), vpId);
+	auto vp = new ViewportWithCamera(new FramebufferMs(8), winName);
 	vp->camera.setViewMode(CameraManVp::VM_PIVOT);
 	vp->camera.moveShift({0,1.f,0});
 	vp->camera.updateViewMat();
@@ -207,7 +212,7 @@ void lim::AppModelViewer::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
 
-	// log::drawViewer("logger##model_viewer");
+	// log::drawViewer();
 
 	LimGui::LightDirectionalEditor(*scenes[selected_vp_idx]->own_dir_lits[0]);
 

@@ -22,7 +22,7 @@ namespace lim
 	class SaveFile : public SingletonDynamic<SaveFile>
 	{
 	private:
-		inline static const char* const FILE_PATH = "app_save.json";
+		std::string file_path = "app_dir/app_save.json";
 		mutable nlohmann::json jfile;
 
 	public:

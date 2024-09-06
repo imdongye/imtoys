@@ -183,7 +183,7 @@ static void makeClothDataAndInitGL() {
 
 AppClothGPU::AppClothGPU()
 	: AppBase(900, 600, APP_NAME, false)
-	, viewport("viewport##gpgpu", new FramebufferMs())
+	, viewport(new FramebufferMs())
 	, ground(1.f, 2.f)
 {
 	ground.initGL();
@@ -316,7 +316,7 @@ void AppClothGPU::update()
 void AppClothGPU::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
-	log::drawViewer("logger##gpgpu");
+	log::drawViewer();
 	viewport.drawImGui();
 
 

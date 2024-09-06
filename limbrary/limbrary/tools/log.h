@@ -32,9 +32,9 @@ namespace lim
 
         void glError(int line = -1);
 
-        void clear();
+        void reset();
         void exportToFile(const char* filename = "log.txt");
-        void drawViewer(const char* title, bool* pOpen = nullptr);
+        void drawViewer();
     }
 
     

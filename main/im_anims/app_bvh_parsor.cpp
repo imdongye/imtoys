@@ -358,7 +358,7 @@ void AppBvhParsor::canvasDraw() const
 
 void AppBvhParsor::canvasImGui()
 {
-	log::drawViewer("logger##ik");
+	log::drawViewer();
 
 	ImGui::Begin("test window##ik");
 	ImGui::Checkbox("pause", &is_paused);

@@ -13,7 +13,7 @@ namespace
 
 namespace lim
 {
-	AppFluid::AppFluid(): AppBase(1200, 780, APP_NAME), viewport("viewport##fluid", new FramebufferNoDepth)
+	AppFluid::AppFluid(): AppBase(1200, 780, APP_NAME), viewport(new FramebufferNoDepth)
 	{
 		canvas = new CanvasColor(viewport.getWidth(), viewport.getHeight());
 

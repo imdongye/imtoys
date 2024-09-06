@@ -31,7 +31,7 @@ namespace lim
 	}
 	void AppMovingWindow::updateImGui()
 	{
-		ImGui::Begin("test window");
+		ImGui::Begin("test window##movwin");
 		ImGui::Text("wasd to move window");
 		ImGui::Text("window pos: %d %d", (int)win_pos.x, (int)win_pos.y);
 		ImGui::End();

@@ -13,7 +13,7 @@ using namespace std;
 AppBaseCanvas3d::AppBaseCanvas3d(int winWidth, int winHeight, const char* title, bool vsync
     , int nrMaxQuads, int nrMaxSpheres, int nrMaxCylinders) 
     : AppBase(winWidth, winHeight, title, vsync)
-    , vp("canvas3d", new FramebufferMs())
+    , vp(new FramebufferMs(), "Canvas3d")
     , light()
     , max_nr_quads(nrMaxQuads)
     , max_nr_spheres(nrMaxSpheres)

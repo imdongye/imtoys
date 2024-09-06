@@ -24,7 +24,7 @@ void AppTemplate::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
 
-	log::drawViewer("logger##template");;
+	log::drawViewer();
 	
 
 	ImGui::Begin("test window##template");

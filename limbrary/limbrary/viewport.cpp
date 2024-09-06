@@ -9,11 +9,10 @@
 
 namespace lim 
 {
-	Viewport::Viewport(const char* _name, IFramebuffer* createdFB)
+	Viewport::Viewport(IFramebuffer* createdFB, const char* _name)
 	{
+		assert(createdFB);
 		name = fmtStrToBuf("%s##%s", _name, AppBase::g_app_name);
-		if( createdFB==nullptr )
-			return;
 		own_framebuffer = createdFB;
 		own_framebuffer->resize(256, 256); // default size
 	}

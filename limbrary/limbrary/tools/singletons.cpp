@@ -19,7 +19,7 @@ AssetLib::AssetLib()
 	, small_sphere(0.2f, 8, 4,true, false)
 	, thin_cylinder(0.1f)
 	, env_sphere(80.f)
-	, texture_viewer(fmtStrToBuf("TextureViewer##%s",AppBase::g_app_name), new FramebufferNoDepth(3,32))
+	, texture_viewer(new FramebufferNoDepth(3,32), fmtStrToBuf("TextureViewer"))
 {
 	screen_quad.initGL(true);
 	ground_quad.initGL(true);
@@ -67,7 +67,8 @@ AssetLib::~AssetLib()
 
 SaveFile::SaveFile()
 {
-	std::string text = readStrFromFile(FILE_PATH);
+	file_path = fmtStrToBuf("%sapp_save.json", AppBase::g_app_dir);
+	std::string text = readStrFromFile(file_path.c_str());
 	if( text.empty() == false ) {
 		jfile = Json::parse(text);
 
@@ -97,11 +98,11 @@ void SaveFile::saveToFile() const
 	jfile[appName] = data;
 	std::ofstream ofile;
 	try {
-		ofile.open(FILE_PATH);
+		ofile.open(file_path.c_str());
 		ofile << std::setw(4) << jfile << std::endl;
 		ofile.close();
 		log::pure("SaveFile: write app_save.json\n");
 	} catch( std::ofstream::failure& e ) {
-		log::err("fail write : %s, what? %s \n", FILE_PATH, e.what());
+		log::err("fail write : %s, what? %s \n", file_path.c_str(), e.what());
 	}
 }

@@ -19,7 +19,7 @@ namespace lim
 	{
 	public:
         inline static constexpr CStr APP_NAME = "ray tracer";
-		inline static constexpr CStr APP_DIR  = "im_ray";
+		inline static constexpr CStr APP_DIR  = "im_ray/";
 		inline static constexpr CStr APP_INFO = "compute shader ray tracer";
 	private:
 		Program prog;

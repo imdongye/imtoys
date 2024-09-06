@@ -44,7 +44,7 @@ void AppSoftbodyInModel::reloadModel(const char* path) {
 	scene.own_mds[0] = srcMd; // delete and change in OwnPtr
 }
 AppSoftbodyInModel::AppSoftbodyInModel() : AppBase(1480, 780, APP_NAME, false)
-	, viewport("viewport##skeletal", new FramebufferMs())
+	, viewport(new FramebufferMs())
 	, ib_light("assets/images/ibls/artist_workshop_4k.hdr")
 {
 
@@ -193,7 +193,7 @@ void AppSoftbodyInModel::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
 
-	log::drawViewer("logger##template");;
+	log::drawViewer();
 
 	viewport.drawImGui();
 

@@ -317,7 +317,7 @@ void AppMineSweeper::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
 #ifdef LIM_DEBUG 
-	log::drawViewer("logger##mine");
+	log::drawViewer();
 #endif
 	//
 	//	Board

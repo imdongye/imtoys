@@ -408,7 +408,7 @@ static void pickClosestPtclInRay(vec3 ray, vec3 rayO, vector<Particle>& ps) {
 
 void AppClothCPU::canvasImGui()
 {
-	log::drawViewer("logger##particle");
+	log::drawViewer();
 
 
 

@@ -16,7 +16,7 @@ namespace lim
 	{
 	public:
 		inline static constexpr CStr APP_NAME = "3d scene editor";
-		inline static constexpr CStr APP_DIR  = "im_tests";
+		inline static constexpr CStr APP_DIR  = "im_tests/";
 		inline static constexpr CStr APP_INFO = "3d scene editor";
 
 		Scene scene;

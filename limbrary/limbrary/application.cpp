@@ -16,7 +16,12 @@
 #include <algorithm>
 #include <cstdlib>
 
+#include <limbrary/using_in_cpp/std.h>
 using namespace lim;
+
+namespace {
+	string g_ini_file_path;
+}
 
 
 
@@ -24,6 +29,8 @@ AppBase::AppBase(int winWidth, int winHeight, const char* title, bool vsync)
 	:win_width(winWidth), win_height(winHeight)
 {
 	g_ptr = this;
+	log::reset();
+	
 	//
 	//	GLFW
 	//
@@ -186,6 +193,11 @@ AppBase::AppBase(int winWidth, int winHeight, const char* title, bool vsync)
 		ImGui::CreateContext();
 		//ImPlot::CreateContext();
 		ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+		// custom app path for imgui.ini
+		g_ini_file_path = fmtStrToBuf("%simgui.ini", g_app_dir);
+		io.IniFilename = g_ini_file_path.c_str();
+		
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
 		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
@@ -241,7 +253,6 @@ AppBase::~AppBase()
 	glfwTerminate();
 
 	log::pure("\n\n\n");
-	log::clear();
 
 	g_ptr = nullptr;
 }

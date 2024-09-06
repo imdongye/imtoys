@@ -37,7 +37,7 @@ namespace lim
 		vpHeight = (vpWidth==maxWidth)?maxWidth/imgs.back()->aspect_ratio : imgs.back()->height;
 
 		vpName = fmtStrToBuf("%s - color awared", imgs.back()->name.c_str());
-		vp = new Viewport(vpName, new FramebufferNoDepth());
+		vp = new Viewport(new FramebufferNoDepth(), vpName);
 		vp->resize(vpWidth, vpHeight);
 		vp->setClearColor({1,1,1,1});
 		vp->window_mode = Viewport::WM_FIXED_RATIO;
@@ -52,7 +52,7 @@ namespace lim
 		imgs.back()->chromatic_adaptation = glm::mat3(1);
 
 		vpName = fmtStrToBuf("%s - direct view", imgs.back()->name.c_str());
-		vp = new Viewport(vpName, new FramebufferNoDepth());
+		vp = new Viewport(new FramebufferNoDepth(), vpName);
 		vp->resize(vpWidth, vpHeight);
 		vp->window_mode = Viewport::WM_FIXED_RATIO;
 		viewports.push_back(vp);

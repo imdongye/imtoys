@@ -50,7 +50,7 @@ void AppSkeletal::makeScene(const char* path) {
 	scene.addOwn(md);
 }
 lim::AppSkeletal::AppSkeletal() : AppBase(1200, 780, APP_NAME, false)
-	, viewport("viewport##skeletal", new FramebufferTexDepth())
+	, viewport(new FramebufferTexDepth())
 {
 	LightDirectional* lit = new LightDirectional();
 	scene.addOwn(lit);
@@ -117,7 +117,7 @@ void lim::AppSkeletal::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
 
-	log::drawViewer("logger##template");;
+	log::drawViewer();
 
 	viewport.drawImGui();
 

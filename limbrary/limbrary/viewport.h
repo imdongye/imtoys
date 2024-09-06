@@ -70,7 +70,7 @@ namespace lim
 		Viewport& operator=(const Viewport&) = delete;
 		Viewport& operator=(Viewport&&) = delete;
 		
-		Viewport(const char* _name, IFramebuffer* createdFB);
+		Viewport(IFramebuffer* createdFB, const char* _name = "Viewport");
 		virtual ~Viewport();
 
 		bool drawImGui(std::function<void(const Viewport&)> guizmoFunc = nullptr);

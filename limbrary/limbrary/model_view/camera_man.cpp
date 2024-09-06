@@ -270,8 +270,8 @@ void CameraManVp::initCallbacks(Viewport* _vp)
 
 
 
-ViewportWithCamera::ViewportWithCamera(const char* _name, IFramebuffer* createdFB)
-	: Viewport(_name, createdFB), camera(this)
+ViewportWithCamera::ViewportWithCamera(IFramebuffer* createdFB, const char* _name)
+	: Viewport(createdFB, _name), camera(this)
 {
 }
 ViewportWithCamera::~ViewportWithCamera() noexcept

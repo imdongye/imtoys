@@ -8,7 +8,7 @@ using namespace lim;
 
 AppScene3d::AppScene3d() 
 	: AppBase(1200, 780, APP_NAME)
-	, viewport("viewport##scene3d", new FramebufferMs())
+	, viewport(new FramebufferMs())
 {
 	{
 		Model& md = *scene.addOwn(new Model("ground"));
@@ -43,7 +43,7 @@ void AppScene3d::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
 
-	log::drawViewer("logger##scene3d");;
+	log::drawViewer();
 
 	LimGui::SceneEditor(scene);
 

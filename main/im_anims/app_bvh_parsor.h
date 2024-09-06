@@ -13,7 +13,7 @@ namespace lim
 	{
 	public:
 		inline static constexpr CStr APP_NAME = "bvh parsor";
-		inline static constexpr CStr APP_DIR  = "im_anims";
+		inline static constexpr CStr APP_DIR  = "im_anims/";
 		inline static constexpr CStr APP_INFO = "hello, world";
 
 	public:

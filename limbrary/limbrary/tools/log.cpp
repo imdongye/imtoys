@@ -1,20 +1,21 @@
 #include <limbrary/tools/log.h>
 #include <glad/glad.h>
-#include <vector>
-#include <string>
 #include <stdarg.h>
 #include <stb_sprintf.h>
 #include <imgui.h>
 #include <fstream>
 #include <filesystem>
 #include <iostream>
-
+#include <limbrary/application.h>
+#include <limbrary/using_in_cpp/std.h>
+#include <limbrary/tools/general.h>
 
 using namespace std;
 
 
 namespace 
 {
+    string logger_window_name;
     string buf;
     char line_buf[512];
     vector<int> line_offsets = {0};
@@ -119,8 +120,9 @@ void lim::log::glError(int line) {
 }
 
 
-void lim::log::clear()
+void lim::log::reset()
 {
+    logger_window_name = fmtStrToBuf("Logger##%s", AppBase::g_app_name);
     buf.clear();
     buf.reserve(1024);
     line_offsets.clear();
@@ -141,13 +143,9 @@ void lim::log::exportToFile(const char* filename)
     }
     log::pure("export log to %s", path.c_str());
 }
-void lim::log::drawViewer(const char* title, bool* pOpen)
+void lim::log::drawViewer()
 {
-    if (!ImGui::Begin(title, pOpen))
-    {
-        ImGui::End();
-        return;
-    }
+    ImGui::Begin(logger_window_name.c_str());
 
     // Options menu
     if (ImGui::BeginPopup("Options"))
@@ -176,7 +174,7 @@ void lim::log::drawViewer(const char* title, bool* pOpen)
     if(ImGui::BeginChild("scrolling", ImVec2(0, 0), false, scrolViewFlags))
     {
         if (doClear)
-            log::clear();
+            log::reset();
 
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
         const char* bufStart = buf.c_str();
@@ -214,5 +212,6 @@ void lim::log::drawViewer(const char* title, bool* pOpen)
             ImGui::SetScrollHereY(1.0f);
     }
     ImGui::EndChild();
+    
     ImGui::End();
 }

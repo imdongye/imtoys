@@ -66,7 +66,7 @@ static void initScene() {
 }
 
 AppParticle::AppParticle()
-	: AppBase(1200, 780, APP_NAME, false), viewport("viewport##ptcl", new FramebufferRbDepth())
+	: AppBase(1200, 780, APP_NAME, false), viewport(new FramebufferRbDepth())
 {
 	initScene();
 }
@@ -107,7 +107,7 @@ void AppParticle::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
 
-	log::drawViewer("logger##ptcl");
+	log::drawViewer();
 
 	viewport.drawImGui();
 

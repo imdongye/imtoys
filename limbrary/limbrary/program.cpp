@@ -108,7 +108,7 @@ Program& Program::attatch(std::string path)
 {
 	// 파일이름만 들어왔을때 home_dir 상대경로로 설정
 	if( path.find('/')==std::string::npos && path.find('\\')==std::string::npos ) {
-		path = home_dir+"/shaders/"+path;
+		path = home_dir+"shaders/"+path;
 	}
 
 	GLenum type = getType(path);

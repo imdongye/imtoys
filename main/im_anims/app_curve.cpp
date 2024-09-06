@@ -455,7 +455,7 @@ void AppCurve::update()
 void AppCurve::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
-	log::drawViewer("logger##curve");
+	log::drawViewer();
 
 	static bool opt_enable_grid = true;
 	static bool opt_enable_points = false;
@@ -485,6 +485,7 @@ void AppCurve::updateImGui()
 	ImGui::End();
 
 
+	ImGui::SetNextWindowSizeConstraints({ 100, 100 }, { FLT_MAX, FLT_MAX });
 	ImGui::Begin("curve canvas");
 	static ImVec2 scrolling(0.0f, 0.0f);
 	ImVec2 canvas_p0 = ImGui::GetCursorScreenPos();      // ImDrawList API uses screen coordinates!

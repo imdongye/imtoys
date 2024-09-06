@@ -13,7 +13,7 @@ namespace lim
 	{
 	public:
 		inline static constexpr CStr APP_NAME = "code mesh viewer";
-		inline static constexpr CStr APP_DIR  = "im_tests";
+		inline static constexpr CStr APP_DIR  = "im_tests/";
 		inline static constexpr CStr APP_INFO = "test my code meshes";
 
 	private:

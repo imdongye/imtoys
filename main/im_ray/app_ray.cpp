@@ -5,7 +5,7 @@ using namespace glm;
 using namespace lim;
 
 AppRay::AppRay(): AppBase(1200, 780, APP_NAME)
-	, viewport("viewport##ray", new FramebufferMs())
+	, viewport(new FramebufferMs())
 {
 }
 AppRay::~AppRay()

@@ -144,7 +144,7 @@ namespace lim
 		ViewportWithCamera(const ViewportWithCamera&) = delete;
 		ViewportWithCamera& operator=(const ViewportWithCamera&) = delete;
 	public:
-		ViewportWithCamera(const char* _name, IFramebuffer* createdFB);
+		ViewportWithCamera(IFramebuffer* createdFB, const char* _name="Viewport");
 		virtual ~ViewportWithCamera();
 		glm::vec3 getMousePosRayDir() const;
 		void movePosFormMouse(glm::vec3& target ) const;

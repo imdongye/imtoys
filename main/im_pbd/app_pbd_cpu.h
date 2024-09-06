@@ -16,7 +16,7 @@ namespace lim
 	{
 	public:
 		inline static constexpr CStr APP_NAME = "PBD_CPU";
-		inline static constexpr CStr APP_DIR  = "im_pbd";
+		inline static constexpr CStr APP_DIR  = "im_pbd/";
 		inline static constexpr CStr APP_INFO = "pearlabyss summer internship";
 		Program prog_ms;
 		Texture texture;

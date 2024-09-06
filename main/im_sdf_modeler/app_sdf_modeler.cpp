@@ -12,7 +12,7 @@
 
 
 lim::AppSdfModeler::AppSdfModeler(): AppBase(1373, 783, APP_NAME, false)
-	, viewport("viewport", new FramebufferNoDepth()) // 멀티셈플링 동작 안함.
+	, viewport(new FramebufferNoDepth()) // 멀티셈플링 동작 안함.
 {
 	GLint tempInt;
 	glGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_VECTORS, &tempInt);

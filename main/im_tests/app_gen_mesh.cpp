@@ -20,7 +20,7 @@ void AppGenMesh::addMeshToScene(Mesh* ms) {
 
 
 AppGenMesh::AppGenMesh()
-	: AppBase(1200, 780, APP_NAME), viewport("viewport##gen_mesh", new FramebufferMs())
+	: AppBase(1200, 780, APP_NAME), viewport(new FramebufferMs())
 {
 	// glEnable(GL_CULL_FACE);
 	// glCullFace(GL_BACK);

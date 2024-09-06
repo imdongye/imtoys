@@ -10,10 +10,8 @@
 .DS_Store
 
 # assets
-!main/assets/
 main/assets/*
 !main/assets/shaders/
-!main/assets/imgui.ini
 
 # etc
 *ignored/
@@ -21,13 +19,5 @@ main/assets/*
 *todo/
 *result/
 main/exports/
-
 .$diagram.drawio.bkp
-
-
-main/imgui.ini
-
-main/app_save.json
-
-
 main/im_shadertoy/temp/temp.fs

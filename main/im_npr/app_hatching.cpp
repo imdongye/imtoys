@@ -78,7 +78,7 @@ lim::ArtMap::ArtMap(const char* _path, GLint _tone)
 
 
 lim::AppHatching::AppHatching(): AppBase(1200, 780, APP_NAME)
-	, viewport("viewport##hatching", new FramebufferMs(8))
+	, viewport(new FramebufferMs(8))
 {
 	glEnable(GL_CULL_FACE);
 	//glCullFace(GL_FRONT);
@@ -154,7 +154,7 @@ lim::AppHatching::AppHatching(): AppBase(1200, 780, APP_NAME)
 		tam.push_back(new ArtMap(filename.c_str(), 0));
 	}
 
-	scene.addOwn(&light);
+	scene.addOwn(new LightDirectional());
 }
 lim::AppHatching::~AppHatching()
 {
@@ -195,6 +195,7 @@ void lim::AppHatching::updateImGui()
 	const static float litThetaSpd = 70 * 0.001;
 	const static float litPhiSpd = 360 * 0.001;
 	static bool isLightDraged = false;
+	LightDirectional& light = *scene.own_dir_lits[0];
 	isLightDraged |= ImGui::DragFloat("light theta", &light.tf.theta, litPhiSpd, -FLT_MAX, +FLT_MAX, "%.3f");
 	isLightDraged |= ImGui::DragFloat("light phi",   &light.tf.phi, litThetaSpd, 0, 80, "%.3f");
 	if( isLightDraged ) {
