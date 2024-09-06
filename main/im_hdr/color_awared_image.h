@@ -354,10 +354,10 @@ namespace ICC
 			return gamma;
 		}
 	public:
-		bool initWithJPEG(std::string_view path, bool verbose=false)
+		bool initWithJPEG(const char* path, bool verbose=false)
 		{
 			printf("< Read profile in JPEG >\n");
-			FILE *file = fopen(path.data(), "rb");
+			FILE *file = fopen(path, "rb");
 			size_t iccSize;
 			uint8_t *iccData;
 			{ // find icc start
@@ -595,7 +595,7 @@ namespace lim
 		glm::mat3 chromatic_adaptation;
 		glm::vec3 output_gamma;
 	public:
-		ColorAwareImage(const std::string_view _path, glm::vec3 outputGamma = glm::vec3(2.4))
+		ColorAwareImage(const char* _path, glm::vec3 outputGamma = glm::vec3(2.4))
 			: Texture(), output_gamma(outputGamma)
 		{
 			internal_format = GL_RGB32F;
@@ -619,7 +619,7 @@ RAW bit :)");
 
 			// is JPEG
 			if( (strcmp(file_format, "jpg")==0||strcmp(file_format, "jpeg")==0) 
-				&& profile.initWithJPEG(file_path, true) ) {
+				&& profile.initWithJPEG(file_path.c_str(), true) ) {
 	
 			} 
 			// todo png

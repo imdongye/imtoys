@@ -153,7 +153,7 @@ static void saveRecentModelPath(const char* path)
 
 
 
-void AppSimplification::doImportModel(std::string_view path, int vpIdx)
+void AppSimplification::doImportModel(const char* path, int vpIdx)
 {
 	if( vpIdx<0||vpIdx>=nr_viewports ) {
 		log::err("wrong vpIdx in load model");
@@ -162,7 +162,7 @@ void AppSimplification::doImportModel(std::string_view path, int vpIdx)
 
 	Model& md = *(Model*)scenes[vpIdx]->own_mds[0].raw;
 
-	if( !md.importFromFile(path.data(), false, true) ) {
+	if( !md.importFromFile(path, false, true) ) {
 		return;
 	}
 
@@ -171,7 +171,7 @@ void AppSimplification::doImportModel(std::string_view path, int vpIdx)
 	vp->camera.pos.y = 1.5f;
 	vp->camera.updateViewMat();
 
-	saveRecentModelPath(path.data());
+	saveRecentModelPath(path);
 }
 void AppSimplification::doExportModel(size_t pIndex, int vpIdx)
 {
@@ -302,7 +302,7 @@ void AppSimplification::updateImGui()
 						{
 							if( ImGui::MenuItem((*iter).c_str()) )
 							{
-								doImportModel((*iter), i);
+								doImportModel((*iter).c_str(), i);
 								break;
 							}
 						}

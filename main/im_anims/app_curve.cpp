@@ -542,23 +542,23 @@ void AppCurve::updateImGui()
 	}
 	if( opt_enable_points ) {
 		for( const vec2& p : draw_pts ) {
-			draw_list->AddCircleFilled(toIG(ori+p), 2, IM_COL32(255, 255, 0, 255));
+			draw_list->AddCircleFilled(toIg(ori+p), 2, IM_COL32(255, 255, 0, 255));
 		}
 	}
 	else {
 		const int nrPts = (int)draw_pts.size();
 		for( int i = 0; i < nrPts-1; i++ ) {
-			draw_list->AddLine(toIG(ori+draw_pts[i]), toIG(ori+draw_pts[i+1]), IM_COL32(255, 255, 0, 255), 2.0f);
+			draw_list->AddLine(toIg(ori+draw_pts[i]), toIg(ori+draw_pts[i+1]), IM_COL32(255, 255, 0, 255), 2.0f);
 		}
 	}
 	
 	for( int i=0; i<nr_pts; i++ ) {
 		const vec2& p = src_pts[i];
 		if( i==idx_hovered ) {
-			draw_list->AddCircleFilled(toIG(ori+p), 4, IM_COL32(255, 0, 0, 255));
+			draw_list->AddCircleFilled(toIg(ori+p), 4, IM_COL32(255, 0, 0, 255));
 		}
 		else {
-			draw_list->AddCircleFilled(toIG(ori+p), 4, IM_COL32(0, 0, 255, 255));
+			draw_list->AddCircleFilled(toIg(ori+p), 4, IM_COL32(0, 0, 255, 255));
 		}
 	}
 	draw_list->PopClipRect();

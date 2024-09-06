@@ -59,7 +59,7 @@ namespace lim
 
 		bool updateFormat(int nrChannels = 3, int bitPerChannel = 8, bool convertLinear = false, bool verbose = false);
 		virtual void initGL(void* data = nullptr);
-		bool initFromFile(std::string_view path, bool convertLinear = false);
+		bool initFromFile(const char* path, bool convertLinear = false);
 		bool initFromMem(const unsigned char* pcData, int aWidth, int aHeight
 			, bool convertLinear=false, const char* implicitFilePath="");
 		void deinitGL();
@@ -75,7 +75,7 @@ namespace lim
 		GLint r_wrap_param = GL_CLAMP_TO_EDGE;
 
 	public:
-		bool initFromFile(std::string_view path, bool convertLinear = false) = delete;
+		bool initFromFile(const char* path, bool convertLinear = false) = delete;
 		Texture3d() = default;
 		virtual ~Texture3d() = default;
 

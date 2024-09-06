@@ -64,7 +64,7 @@ namespace lim
 		Program& operator=(const Program&) = delete;
 		Program& operator=(Program&&) = delete;
 
-		Program(std::string_view name="nonamed");
+		Program(const char* name="nonamed");
 		virtual ~Program();
 
 		inline GLuint getPid() const {
@@ -201,7 +201,7 @@ namespace lim
 	class ProgramReloadable: public Program
 	{
 	public:
-		ProgramReloadable(std::string_view name="nonamed");
+		ProgramReloadable(const char* name="nonamed");
 		// type : GL_VERTEX_SHADER, GL_FRAGMENT_SHADER ...
 		void reload(GLenum type);
 	};

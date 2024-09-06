@@ -33,6 +33,7 @@
 #include "im_anims/app_curve.h"
 #include "im_physics/app_phy2d.h"
 #include "im_pbd/app_softbody_in_model.h"
+#include "im_tests/app_scene3d.h"
 
 
 using namespace lim;
@@ -88,6 +89,7 @@ static void pushAppData()
 
 int main()
 {
+	pushAppData<AppScene3d>();
 	pushAppData<AppSkeletal>();
 	pushAppData<AppAstar>();
 	pushAppData<AppSoftbodyInModel>();

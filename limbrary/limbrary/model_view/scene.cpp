@@ -14,9 +14,9 @@ IBLight::IBLight(const char* path) {
     }
 }
 
-bool IBLight::setMapAndBake(std::string_view path) 
+bool IBLight::setMapAndBake(const char* path) 
 {
-    if(!strIsSame(getExtension(path.data()),"hdr")) {
+    if(!strIsSame(getExtension(path),"hdr")) {
         log::err("need hdr ext to load ibl\n");
         return false;
     }
@@ -148,6 +148,12 @@ void Scene::clear() {
 
 ModelView* Scene::addOwn(ModelView* md)  {
     own_mds.push_back(md);
+    return md;
+}
+Model* Scene::addOwn(Model* md)  {
+    assert( md->src_md == md );
+    own_mds.push_back((ModelView*)md);
+    src_mds.push_back(md);
     return md;
 }
 LightDirectional* Scene::addOwn(LightDirectional* lit) {

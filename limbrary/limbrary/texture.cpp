@@ -193,7 +193,7 @@ bool Texture::updateFormat(int nrChannels, int bitPerChannel, bool convertLinear
 	return true;
 }
 
-bool Texture::initFromFile(std::string_view filePath, bool convertLinear)
+bool Texture::initFromFile(const char* filePath, bool convertLinear)
 {
 	void* data = getDataAndPropsFromFile(filePath);
 	if(!data)

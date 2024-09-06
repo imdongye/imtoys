@@ -18,6 +18,7 @@ Todo:
 #define __application_h_
 
 #include "containers/callbacks.h"
+#include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <GLFW/glfw3.h>
 #include "containers/types.h"

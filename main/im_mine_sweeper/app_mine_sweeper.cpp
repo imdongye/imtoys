@@ -64,7 +64,7 @@ namespace {
 	vec2 toGlm(const ImVec2& v) {
 		return {v.x, v.y};
 	}
-	ImVec2 toIG(const vec2& v) {
+	ImVec2 toIg(const vec2& v) {
 		return {v.x, v.y};
 	}
 	
@@ -363,7 +363,7 @@ void AppMineSweeper::updateImGui()
 	ImDrawList* drawList = ImGui::GetWindowDrawList();
 	board.invokeAll([&](Cell& cell) {
 		bool isHovered = hoveredX==cell.x && hoveredY==cell.y;
-		ImVec2 tlPos = toIG(screenPos + cellPadding + vec2{cell.x, cell.y}*cellRegion);
+		ImVec2 tlPos = toIg(screenPos + cellPadding + vec2{cell.x, cell.y}*cellRegion);
 		ImVec2 brPos = {tlPos.x+cellSize.x, tlPos.y+cellSize.y};
 		ImColor col = boardColors[COL_CELL_IDX];
 

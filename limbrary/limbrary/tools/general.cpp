@@ -8,30 +8,30 @@
 
 
 namespace lim {
-	std::string readStrFromFile(std::string_view path)
+	std::string readStrFromFile(const char* path)
 	{
 		std::string text;
 		std::ifstream ifile;
 		std::stringstream ss;
 		//ifile.exceptions(std::ifstream::failbit|std::ifstream::badbit);
 		try {
-			ifile.open(path.data());
+			ifile.open(path);
 			ss<<ifile.rdbuf(); // stream buffer
 			ifile.close();
 			text = ss.str();
 		} catch( std::ifstream::failure& e ) {
-			log::err("fail read : %s, what? %s\n", path.data(), e.what());
+			log::err("fail read : %s, what? %s\n", path, e.what());
 		}
 		if( text.empty() ) {
-			log::warn("empty : %s\n",path.data());
+			log::warn("empty : %s\n",path);
 		}
 		return text;
 	}
-	void writeStrToFile(std::string_view path, std::string_view text)
+	void writeStrToFile(const char* path, const char* text)
 	{
 		std::ofstream ofile;
 		try {
-			ofile.open(path.data());
+			ofile.open(path);
 			ofile<<text;
 			ofile.close();
 		} catch( std::ifstream::failure& e ) {
@@ -39,7 +39,7 @@ namespace lim {
 		}
 	}
 
-	char* fmtStrToBuf(const char* format, ...)
+	const char* fmtStrToBuf(const char* format, ...)
 	{
 		static char buf[SPRINTF_BUF_SIZE];
 		va_list args;

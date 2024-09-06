@@ -19,19 +19,10 @@
 
 namespace lim
 {
-	constexpr int SPRINTF_BUF_SIZE = 128;
-
 	template<typename T>
 	inline void safeDel(T*& p) {
 		delete p; // delete nullptr is ok
 		p = nullptr;
-	}
-
-	inline const char* boolStr(bool b) {
-		return b ? "true" : "false";
-	}
-	inline const char* boolStrOX(bool b) {
-		return b ? "O" : "X";
 	}
 
 	// From: https://en.cppreference.com/w/cpp/algorithm/random_shuffle
@@ -43,10 +34,20 @@ namespace lim
 		std::shuffle(vec.begin(), vec.end(), g);
 	}
 
-	std::string readStrFromFile(std::string_view path);
-	void writeStrToFile(std::string_view path, std::string_view text);
+	template <typename T>
+	inline bool isIn( const std::vector<T>& arr, const T& value ) {
+		return arr.find(value) != arr.end();
+	}
+	
+	template <typename TK, typename TV>
+	inline bool isIn( const std::map<TK, TV>& map, const TK& key ) {
+		return map.find(key) != map.end();
+	}
 
-	char* fmtStrToBuf(const char* format, ...);
+	template <typename T>
+	inline typename std::vector<T>::iterator findIdxIt(const std::vector<T>& v, const T& value) {
+		return find(v.begin(), v.end(), value);
+	}
 
 	template <typename T>
 	inline int findIdx(const std::vector<T>& v, const T& value) {
@@ -56,27 +57,35 @@ namespace lim
 		}
 		return -1;
 	}
+}
 
-	template <typename T>
-	inline typename std::vector<T>::iterator findIdxIt(const std::vector<T>& v, const T& value) {
-		return find(v.begin(), v.end(), value);
-	}
+//
+//	text tools
+//
+namespace lim
+{
 
-	inline std::string strTolower( std::string_view str ) {
+	std::string readStrFromFile(const char* path);
+	
+	void writeStrToFile(const char* path, const char* text);
+	
+	constexpr int SPRINTF_BUF_SIZE = 128;
+	const char* fmtStrToBuf(const char* format, ...);
+
+	
+
+	inline std::string strTolower( const char* str ) {
 		std::string a(str);
 		std::transform( a.begin(), a.end(), a.begin(), [](auto c) { return std::tolower(c); });
 		return a;
 	}
 
-	inline bool strIsSame( std::string_view a, std::string_view b ) {
+	inline bool strIsSame( const char* a, const char* b ) {
 		return strTolower(a)==strTolower(b);
 	}
 
-	inline std::string getExtension( const std::string& filename ) {
-		size_t dotPos = filename.find_last_of('.');
-		if( dotPos == std::string::npos || dotPos == filename.length()-1 )
-			return "";
-		return filename.substr(dotPos+1);
+	inline const char* getExtension( const char* filename ) {
+		return strrchr(filename, '.');
 	}
 
 	inline std::string getName( const std::string& filename ) {
@@ -86,14 +95,11 @@ namespace lim
 		return filename.substr(0,dotPos);
 	}
 
-	template <typename T>
-	inline bool isIn( const std::vector<T>& arr, const T& value ) {
-		return arr.find(value) != arr.end();
+	inline const char* boolStr(bool b) {
+		return b ? "true" : "false";
 	}
-	
-	template <typename TK, typename TV>
-	inline bool isIn( const std::map<TK, TV>& map, const TK& key ) {
-		return map.find(key) != map.end();
+	inline const char* boolOX(bool b) {
+		return b ? "O" : "X";
 	}
 }
 #endif

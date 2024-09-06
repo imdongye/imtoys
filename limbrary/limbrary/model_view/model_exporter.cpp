@@ -297,7 +297,7 @@ namespace
 
 namespace lim
 {
-	bool Model::exportToFile(size_t pIndex, std::string_view exportDir)
+	bool Model::exportToFile(size_t pIndex, const char* exportDir)
 	{
 		namespace fs = std::filesystem;
 		const aiExportFormatDesc *format = g_formats[pIndex];

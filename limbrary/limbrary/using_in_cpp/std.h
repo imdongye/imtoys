@@ -1,6 +1,10 @@
 /*
     2024-09-04 / imdongye
 
+
+Note:
+    Do no use in header
+
 */
 
 #ifndef __using_in_cpp_std_h_

@@ -50,6 +50,7 @@ namespace lim
 
 	struct LightDirectional
 	{
+		std::string name = "DirLight";
 		TransformPivoted tf;
 		glm::vec3 Color = {1,1,1};
 		float Intensity = 120.f;
@@ -72,6 +73,7 @@ namespace lim
 
 	struct LightSpot
 	{
+		std::string name = "DirLight";
 		TransformPivoted tf;
 	};
 
@@ -85,8 +87,10 @@ namespace lim
 
 	struct LightOmni
 	{
-		OwnPtr<ShadowMap> shadow = nullptr;
+		std::string name = "OmniLight";
 		Transform tf;
+
+		OwnPtr<ShadowCubeMap> shadow = nullptr;
 	};
 }
 #endif

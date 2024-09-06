@@ -30,7 +30,7 @@ static ImVec2 worldToScnPos(const vec2& p) {
 	vec2 wLocalPos = p - view_point;
 	vec2 sLocalPos = wLocalPos*world_to_scn;
 	sLocalPos.y = scn_height - sLocalPos.y;
-	return toIG(scn_origin + sLocalPos);
+	return toIg(scn_origin + sLocalPos);
 }
 
 
@@ -78,13 +78,13 @@ void AppPhy2d::updateImGui()
 		const ImVec2 canvas_p0 = ImGui::GetCursorScreenPos();
 		const ImVec2 canvas_sz = ImGui::GetContentRegionAvail();
 		const ImVec2 canvas_p1 = ImVec2(canvas_p0.x + canvas_sz.x, canvas_p0.y + canvas_sz.y);
-		const vec2 screen_size = toGLM(canvas_sz);
+		const vec2 screen_size = toGlm(canvas_sz);
 		world_to_scn = zoom_scale * screen_size.x / world_width;
 		scn_to_world = 1.f/world_to_scn;
 		aspect = canvas_sz.y / canvas_sz.x;
 		world_height = world_width * aspect;
 		scn_height = canvas_sz.y;
-		scn_origin = toGLM(canvas_p0);
+		scn_origin = toGlm(canvas_p0);
 
 		// draw border and background color
 		ImGuiIO& io = ImGui::GetIO();

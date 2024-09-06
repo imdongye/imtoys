@@ -25,7 +25,7 @@ namespace lim
 		GLint tone;
 		std::string path;
 	public:
-		ArtMap(const std::string_view _path, GLint _tone);
+		ArtMap(const char* _path, GLint _tone);
 	};
 
 	class AppHatching: public AppBase

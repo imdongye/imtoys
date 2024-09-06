@@ -33,7 +33,7 @@ using glm::mat4;
 
 
 
-RdNode::RdNode(std::string_view _name, const  RdNode* _parent, const Mesh* _ms, const Material* _mat)
+RdNode::RdNode(const char* _name, const  RdNode* _parent, const Mesh* _ms, const Material* _mat)
 	: name(_name), parent(_parent), ms(_ms), mat(_mat)
 {
 	if( parent ) {
@@ -99,7 +99,7 @@ void RdNode::clear() noexcept
 }
 
 
-RdNode& RdNode::addChild(std::string_view _name, const Mesh* _ms, const Material* _mat)
+RdNode& RdNode::addChild(const char* _name, const Mesh* _ms, const Material* _mat)
 {
 	childs.emplace_back(_name, this, _ms, _mat);
 	return childs.back();
@@ -259,7 +259,7 @@ vec3 ModelView::getBoneWorldPos(int boneNodeIdx) const
 
 
 
-Model::Model(std::string_view _name): name(_name)
+Model::Model(const char* _name): name(_name)
 {
 	src_md = this;
 }
@@ -374,7 +374,7 @@ static void matchRdTree(RdNode& dst, const RdNode& src, const Model& dstMd, cons
  * copy model
  **************/
 Model::Model(const Model& src)
-{
+{	// 복사생성자는 자동으로 부모 복사 생성자 호출하지 않음.
 	operator=(src);
 }
 Model& Model::operator=(const Model& src)

@@ -3,6 +3,7 @@
 #include <limbrary/tools/general.h>
 #include <limbrary/tools/s_save_file.h>
 #include <limbrary/tools/s_asset_lib.h>
+#include <limbrary/tools/limgui.h>
 #include <limbrary/viewport.h>
 #include <glad/glad.h>
 #include <iostream>
@@ -81,6 +82,8 @@ AppBase::AppBase(int winWidth, int winHeight, const char* title, bool vsync)
 	}
 	
 
+	glClampColor(GL_CLAMP_READ_COLOR, GL_FALSE);
+	glGetIntegerv(GL_MAX_SAMPLES, &g_max_ms_samples);
 
 
 	//
@@ -108,9 +111,7 @@ AppBase::AppBase(int winWidth, int winHeight, const char* title, bool vsync)
 		glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &iTemp);
 		log::pure("#comp invocations    : %d\n", iTemp);
 
-		glGetIntegerv(GL_MAX_SAMPLES, &iTemp);
 		log::pure("#max ms samples    	: %d\n", iTemp);
-		g_max_ms_samples = iTemp;
 		
 		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &iTemp);
 		log::pure("#Texture Slots       : %d\n", iTemp);
@@ -118,13 +119,6 @@ AppBase::AppBase(int winWidth, int winHeight, const char* title, bool vsync)
 	}
 
 	
-
-	// init singleton
-	glClampColor(GL_CLAMP_READ_COLOR, GL_FALSE);
-	std::srand(time(0));
-	SaveFile::create();
-	AssetLib::create();
-
 
 	//
 	// Register callback after glad initialization
@@ -220,6 +214,12 @@ AppBase::AppBase(int winWidth, int winHeight, const char* title, bool vsync)
 		ImGui_ImplGlfw_InitForOpenGL(window, true);
 		ImGui_ImplOpenGL3_Init("#version 410");
 	}
+
+
+	std::srand(time(0));
+	SaveFile::create();
+	AssetLib::create();
+	LimGui::resetEditors();
 }
 
 

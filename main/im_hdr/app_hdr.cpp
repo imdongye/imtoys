@@ -1,6 +1,7 @@
 #include "app_hdr.h"
 #include <stb_image.h>
 #include <glm/gtx/extended_min_max.hpp>
+#include <limbrary/tools/general.h>
 #include <imgui.h>
 
 namespace
@@ -23,9 +24,9 @@ namespace lim
 		for( auto vp : viewports ) delete vp;
 		imgs.clear();
 	}
-	void AppHdr::addImage(std::string_view path)
+	void AppHdr::addImage(const char* path)
 	{
-		std::string vpName;
+		const char* vpName;
 		Viewport* vp;	
 		const int maxWidth = 800;
 		int vpWidth, vpHeight;
@@ -35,7 +36,7 @@ namespace lim
 		vpWidth = glm::min(maxWidth, imgs.back()->width);
 		vpHeight = (vpWidth==maxWidth)?maxWidth/imgs.back()->aspect_ratio : imgs.back()->height;
 
-		vpName = std::string(imgs.back()->name)+std::string(" - color awared");
+		vpName = fmtStrToBuf("%s - color awared", imgs.back()->name.c_str());
 		vp = new Viewport(vpName, new FramebufferNoDepth());
 		vp->resize(vpWidth, vpHeight);
 		vp->setClearColor({1,1,1,1});
@@ -50,7 +51,7 @@ namespace lim
 		imgs.back()->PCS2RGB = glm::mat3(1);
 		imgs.back()->chromatic_adaptation = glm::mat3(1);
 
-		vpName = std::string(imgs.back()->name)+std::string(" - direct view");
+		vpName = fmtStrToBuf("%s - direct view", imgs.back()->name.c_str());
 		vp = new Viewport(vpName, new FramebufferNoDepth());
 		vp->resize(vpWidth, vpHeight);
 		vp->window_mode = Viewport::WM_FIXED_RATIO;

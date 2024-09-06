@@ -54,7 +54,7 @@ static GLenum getType(std::string_view path)
 }
 
 
-Program::Program(std::string_view _name)
+Program::Program(const char* _name)
 	: name(_name)
 {
 	shaders.reserve(3);
@@ -78,7 +78,7 @@ Program& Program::deinitGL()
 
 bool Program::Shader::createAndCompile()
 {
-	std::string source = readStrFromFile(path);
+	std::string source = readStrFromFile(path.c_str());
 	if(source.size()<1) {
 		return false;
 	}
@@ -178,7 +178,7 @@ GLint Program::getUniformLocation(const std::string& vname) const
 }
 
 
-ProgramReloadable::ProgramReloadable(std::string_view _name)
+ProgramReloadable::ProgramReloadable(const char* _name)
 	: Program(_name)
 {
 	reloadable = true;

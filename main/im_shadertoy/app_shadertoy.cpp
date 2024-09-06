@@ -103,7 +103,7 @@ namespace lim
 
 namespace lim
 {
-	ProgramShaderToy::ProgramShaderToy(std::string_view glslPath)
+	ProgramShaderToy::ProgramShaderToy(const char* glslPath)
 		: ProgramReloadable("toy"), glsl_path(glslPath)
 	{
 		makeMergedFragmentShader();

@@ -40,20 +40,20 @@ namespace
 	const char* g_formats[32] = { nullptr, };
 
 
-	inline vec3 toGLM( const aiVector3D& v ) {
+	inline vec3 toGlm( const aiVector3D& v ) {
 		return { v.x, v.y, v.z };
 	}
-	inline quat toGLM( const aiQuaternion& q ) {
+	inline quat toGlm( const aiQuaternion& q ) {
 		quat tmp = { q.w, q.x, q.y, q.z };
 		return (tmp);
 	}
-	inline vec3 toGLM( const aiColor3D& c ) {
+	inline vec3 toGlm( const aiColor3D& c ) {
 		return { c.r, c.g, c.b };
 	}
-	inline vec4 toGLM( const aiColor4D& c ) {
+	inline vec4 toGlm( const aiColor4D& c ) {
 		return { c.r, c.g, c.b, c.a };
 	}
-	inline mat4 toGLM( const aiMatrix4x4& m ) {
+	inline mat4 toGlm( const aiMatrix4x4& m ) {
 		return mat4(m.a1, m.b1, m.c1, m.d1,
 					m.a2, m.b2, m.c2, m.d2,
 					m.a3, m.b3, m.c3, m.d3,
@@ -100,7 +100,7 @@ static Texture* loadTexture(string texPath, bool convertLinear, const char* msg)
 				, convertLinear, aTex->mFilename.C_Str());
 		}
 		else {
-			rst->initFromFile(texPath, convertLinear);
+			rst->initFromFile(texPath.c_str(), convertLinear);
 		}
 	}
 	return rst;
@@ -124,12 +124,12 @@ static Material* convertMaterial(aiMaterial* aiMat, bool verbose = false)
 	if( aiMat->Get(AI_MATKEY_COLOR_DIFFUSE, temp3d) == AI_SUCCESS ) {
 		if(verbose) log::pure("base color: %.1f %.1f %.1f\n", temp3d.r, temp3d.g, temp3d.b);
 		mat.factor_flags |= Material::FF_COLOR_BASE;
-		mat.BaseColor = toGLM(temp3d); 
+		mat.BaseColor = toGlm(temp3d); 
 	}
 	if( aiMat->Get(AI_MATKEY_COLOR_SPECULAR, temp3d) == AI_SUCCESS ) {
 		if(verbose) log::pure("specular color: %.1f %.1f %.1f\n", temp3d.r, temp3d.g, temp3d.b);
 		mat.factor_flags |= Material::FF_SPECULAR;
-		mat.SpecColor = toGLM(temp3d); 
+		mat.SpecColor = toGlm(temp3d); 
 	}
 	if( aiMat->Get(AI_MATKEY_SHININESS_STRENGTH, tempFloat ) != AI_SUCCESS ) {
 		if(verbose) log::pure("*pass wrong shininess strength: %.1f\n", tempFloat);
@@ -138,12 +138,12 @@ static Material* convertMaterial(aiMaterial* aiMat, bool verbose = false)
 	if( aiMat->Get(AI_MATKEY_COLOR_AMBIENT, temp3d) == AI_SUCCESS ) {
 		// log::pure("ambient color: %.1f %.1f %.1f\n", temp3d.r, temp3d.g, temp3d.b);
 		// mat.factor_Flags |= Material::FF_AMBIENT;
-		// mat.ambientColor = toGLM(temp3d); 
+		// mat.ambientColor = toGlm(temp3d); 
 	}
 	if( aiMat->Get(AI_MATKEY_COLOR_EMISSIVE, temp3d) == AI_SUCCESS ) {
 		if(verbose) log::pure("emissive color: %.1f %.1f %.1f\n", temp3d.r, temp3d.g, temp3d.b);
 		mat.factor_flags |= Material::FF_EMISSION;
-		mat.EmissionColor = toGLM(temp3d); 
+		mat.EmissionColor = toGlm(temp3d); 
 	}
 	if( aiMat->Get(AI_MATKEY_TRANSMISSION_FACTOR, tempFloat) == AI_SUCCESS ) {
 		if(verbose) log::pure("transmission: %.1f\n", tempFloat);
@@ -264,14 +264,14 @@ static Mesh* convertMesh(const aiMesh* aiMs)
 	{
 		ms.poss.resize( aiMs->mNumVertices );
 		for( GLuint i=0; i<aiMs->mNumVertices; i++ ) {
-			ms.poss[i] = toGLM( aiMs->mVertices[i] );
+			ms.poss[i] = toGlm( aiMs->mVertices[i] );
 		}
 	}
 
 	if( aiMs->HasNormals() ) {
 		ms.nors.resize( aiMs->mNumVertices );
 		for( GLuint i=0; i<aiMs->mNumVertices; i++ ) {
-			ms.nors[i] = toGLM( aiMs->mNormals[i] );
+			ms.nors[i] = toGlm( aiMs->mNormals[i] );
 		}
 	}
 
@@ -286,7 +286,7 @@ static Mesh* convertMesh(const aiMesh* aiMs)
 	if( aiMs->HasVertexColors(0) ) {
 		ms.cols.resize( aiMs->mNumVertices );
 		for( GLuint i=0; i<aiMs->mNumVertices; i++ ) {
-			ms.cols[i] = toGLM( aiMs->mColors[0][i] );
+			ms.cols[i] = toGlm( aiMs->mColors[0][i] );
 		}
 	}
 
@@ -294,8 +294,8 @@ static Mesh* convertMesh(const aiMesh* aiMs)
 		ms.tangents.resize( aiMs->mNumVertices );
 		ms.bitangents.resize( aiMs->mNumVertices );
 		for( GLuint i=0; i<aiMs->mNumVertices; i++ ) {
-			ms.tangents[i] = toGLM( aiMs->mTangents[i] );
-			ms.bitangents[i] = toGLM( aiMs->mBitangents[i] );
+			ms.tangents[i] = toGlm( aiMs->mTangents[i] );
+			ms.bitangents[i] = toGlm( aiMs->mBitangents[i] );
 		}
 	}
 
@@ -316,7 +316,7 @@ static Mesh* convertMesh(const aiMesh* aiMs)
 				boneIdx = g_model->nr_weighted_bones;
 				g_model->nr_weighted_bones++;
 				g_model->name_to_weighted_bone_idx[boneName] = boneIdx;
-				g_model->weighted_bone_offsets.push_back(toGLM(aiBone->mOffsetMatrix));
+				g_model->weighted_bone_offsets.push_back(toGlm(aiBone->mOffsetMatrix));
 			} else {
 				boneIdx = g_model->name_to_weighted_bone_idx[boneName];
 			}
@@ -382,19 +382,19 @@ static void convertAnim(Animation& dst, const aiAnimation& src) {
 		track.poss.reserve(track.nr_poss);
 		for( uint j=0; j<track.nr_poss; j++ ) {
 			const aiVectorKey& k = srcTrack.mPositionKeys[j];
-			track.poss.push_back({(float)k.mTime, toGLM(k.mValue)});
+			track.poss.push_back({(float)k.mTime, toGlm(k.mValue)});
 		}
 		track.nr_scales = srcTrack.mNumScalingKeys;
 		track.scales.reserve(track.nr_scales);
 		for( uint j=0; j<track.nr_scales; j++ ) {
 			const aiVectorKey& k = srcTrack.mScalingKeys[j];
-			track.scales.push_back({(float)k.mTime, toGLM(k.mValue)});
+			track.scales.push_back({(float)k.mTime, toGlm(k.mValue)});
 		}
 		track.nr_oris = srcTrack.mNumRotationKeys;
 		track.oris.reserve(track.nr_oris);
 		for( uint j=0; j<track.nr_oris; j++ ) {
 			const aiQuatKey& k = srcTrack.mRotationKeys[j];
-			track.oris.push_back({(float)k.mTime, toGLM(k.mValue)});
+			track.oris.push_back({(float)k.mTime, toGlm(k.mValue)});
 		}
 	}
 }
@@ -429,7 +429,7 @@ static void addBoneNode(int idxParent, const mat4 mtxParent, const aiNode* src) 
 		}
 	}
 
-	dst.tf.mtx = toGLM(src->mTransformation);
+	dst.tf.mtx = toGlm(src->mTransformation);
 	dst.tf.decomposeMtx();
 	dst.mtx_model_space = mtxParent * dst.tf.mtx;
 
@@ -472,7 +472,7 @@ static bool isBoneNode(aiNode* aiChild) {
 static void convertRdTree(RdNode& dstParent, const aiNode* src, int depth) 
 {
 	Transform tf;
-	tf.mtx = toGLM(src->mTransformation);
+	tf.mtx = toGlm(src->mTransformation);
 	tf.decomposeMtx();
 	// todo determine identity matrix
 
@@ -513,11 +513,11 @@ static void convertRdTree(RdNode& dstParent, const aiNode* src, int depth)
 
 
 bool lim::Model::importFromFile(
-	string_view modelPath, bool withAnims
+	const char* modelPath, bool withAnims
 	, bool scaleAndPivot, float maxSize, vec3 pivot	
 )
 {
-	const char* extension = strrchr(modelPath.data(), '.');
+	const char* extension = getExtension(modelPath);
 	if( !extension ) {
 		log::err("Please provide a file with a valid extension\n");
 		return false;
@@ -561,7 +561,7 @@ bool lim::Model::importFromFile(
 	Assimp::DefaultLogger::create("", Assimp::Logger::VERBOSE);
 	Assimp::DefaultLogger::get()->attachStream(new LimImportLogStream(), severity);
 
-	g_scn = aiImportFileExWithProperties(modelPath.data(), pFrags, nullptr, props);
+	g_scn = aiImportFileExWithProperties(modelPath, pFrags, nullptr, props);
 	if( !g_scn || g_scn->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !g_scn->mRootNode ) {
 		log::err("assimp_importer: %s\n\n", aiGetErrorString());
 		aiReleasePropertyStore(props);
@@ -720,7 +720,7 @@ const char* lim::getImportFormat(int idx)
 		return nullptr;
 	return g_formats[idx];
 }
-std::string lim::findModelInDirectory(std::string_view _path)
+std::string lim::findModelInDirectory(const char* _path)
 {
 	filesystem::path fpath(_path);  
 	if( filesystem::is_directory(fpath) ) {

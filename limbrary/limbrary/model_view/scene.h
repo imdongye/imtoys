@@ -59,7 +59,7 @@ namespace lim
         IBLight(const char* path = nullptr);
         virtual ~IBLight() = default;
 
-        bool setMapAndBake(std::string_view path);
+        bool setMapAndBake(const char* path);
         void deinitGL();
         GLuint getTexIdLight() const;
         GLuint getTexIdIrradiance() const;
@@ -75,6 +75,7 @@ namespace lim
 	{
   	public:
 		std::vector<OwnPtr<ModelView>> own_mds;
+        std::vector<Model*> src_mds;
         std::vector<OwnPtr<LightDirectional>> own_dir_lits;
         std::vector<OwnPtr<LightSpot>> own_spot_lits;
         std::vector<OwnPtr<LightOmni>> own_omni_lits;
@@ -94,6 +95,7 @@ namespace lim
         void clear();
 
         ModelView*          addOwn(ModelView* md);
+        Model*              addOwn(Model* md);
         LightDirectional*   addOwn(LightDirectional* lit);
         LightSpot*          addOwn(LightSpot* lit);
         LightOmni*          addOwn(LightOmni* lit);

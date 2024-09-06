@@ -22,7 +22,7 @@ namespace lim
 		std::string glsl_path;
 		void makeMergedFragmentShader();
 	public:
-		ProgramShaderToy(std::string_view glslPath="im_shadertoy/shaders/debug.glsl");
+		ProgramShaderToy(const char* glslPath="im_shadertoy/shaders/debug.glsl");
 		void reload(const char* glslPath = nullptr);
 	};
 

@@ -32,7 +32,6 @@ namespace {
 
 void AppSoftbodyInModel::reloadModel(const char* path) {
 	src_mesh = nullptr;
-	LimGui::ModelEditorReset();
 
 	Model* srcMd = new Model();
 	srcMd->importFromFile(path, true, true);

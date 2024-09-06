@@ -15,7 +15,6 @@ using namespace glm;
 void AppSkeletal::makeScene(const char* path) {
 	Model* md;
 	scene.clear();
-	LimGui::ModelEditorReset();
 
 	md = new Model();
 	md->importFromFile(path, true, true);

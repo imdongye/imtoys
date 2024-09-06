@@ -47,7 +47,7 @@ namespace lim
 			WM_FIXED_SIZE,
 		};
 	public:
-		std::string name = "nonamed";
+		std::string name = "Viewport##appname";
 		WindowMode window_mode = WM_FREE;
 		bool is_opened = true;
 		bool is_hovered = false;
@@ -70,7 +70,7 @@ namespace lim
 		Viewport& operator=(const Viewport&) = delete;
 		Viewport& operator=(Viewport&&) = delete;
 		
-		Viewport(std::string_view _name, IFramebuffer* createdFB);
+		Viewport(const char* _name, IFramebuffer* createdFB);
 		virtual ~Viewport();
 
 		bool drawImGui(std::function<void(const Viewport&)> guizmoFunc = nullptr);

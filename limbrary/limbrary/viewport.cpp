@@ -3,13 +3,15 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <limbrary/model_view/camera.h>
+#include <limbrary/application.h>
 #include <imguizmo/ImGuizmo.h>
+#include <limbrary/tools/general.h>
 
 namespace lim 
 {
-	Viewport::Viewport(std::string_view _name, IFramebuffer* createdFB)
-		:name(_name)
+	Viewport::Viewport(const char* _name, IFramebuffer* createdFB)
 	{
+		name = fmtStrToBuf("%s##%s", _name, AppBase::g_app_name);
 		if( createdFB==nullptr )
 			return;
 		own_framebuffer = createdFB;

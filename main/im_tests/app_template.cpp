@@ -1,6 +1,4 @@
 #include "app_template.h"
-#include <stb_image.h>
-#include <glad/glad.h>
 #include <limbrary/tools/log.h>
 #include <imgui.h>
 

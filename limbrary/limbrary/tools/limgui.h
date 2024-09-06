@@ -12,10 +12,9 @@
 
 #include <imgui.h>
 #include <glm/glm.hpp>
-#include <limbrary/model_view/model.h>
 #include <limbrary/framebuffer.h>
 #include <limbrary/model_view/camera.h>
-#include <limbrary/model_view/light.h>
+#include <limbrary/model_view/scene.h>
 
 namespace LimGui
 {
@@ -23,24 +22,29 @@ namespace LimGui
     IMGUI_API void Mat4(const glm::mat4& m);
     IMGUI_API void Vec3(const glm::vec3& v);
     
-	// only one in updateImGui
-    void ModelEditor(lim::ModelView& md);
-    void ModelEditorReset(const char* windowName = "Model Editor");
-    lim::RdNode*    getPickedRenderNode();
-    lim::BoneNode*  getPickedBoneNode();
-
-
-    void LightDirectionalEditor(lim::LightDirectional& lit);
-    void LightDirectionalEditorReset(const char* name="d_light editor", const char* smName="d_light shadow map");
-
     void PlotVal(const char* name, const char* postFix, float value, int bufSize=90);
     void PlotVal(const char* name, const char* postFix, int bufSize=90);
     void PlotValAddValue(const char* name, float value, int bufSize=90);
 }
+
+// only one in updateImGui
+namespace LimGui
+{
+    void resetEditors();
+
+    void ModelEditor(lim::ModelView& md);
+    lim::RdNode*    getPickedRenderNode();
+    lim::BoneNode*  getPickedBoneNode();
+
+    void LightDirectionalEditor(lim::LightDirectional& lit);
+
+
+    void SceneEditor(lim::Scene& scn);
+}
 namespace lim
 {
-    inline ImVec2 toIG(const glm::vec2& v) { return {v.x, v.y}; }
-    inline glm::vec2 toGLM(const ImVec2& v) { return {v.x, v.y}; }
+    inline ImVec2 toIg(const glm::vec2& v) { return {v.x, v.y}; }
+    inline glm::vec2 toGlm(const ImVec2& v) { return {v.x, v.y}; }
 }
 
 

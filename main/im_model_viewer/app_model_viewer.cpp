@@ -124,10 +124,12 @@ lim::AppModelViewer::~AppModelViewer()
 	brdf_test_infos.clear();
 }
 
-void lim::AppModelViewer::addModelViewer(string path) 
+void lim::AppModelViewer::addModelViewer(const char* path) 
 {
 	Model* md = new Model();
-	if( md->importFromFile(findModelInDirectory(path), false, true)==false ) {
+	// if path then findModelInDirectory return path
+	// if dir then findModelInDirectory return model path
+	if( md->importFromFile(findModelInDirectory(path).c_str(), false, true)==false ) {
 		delete md;
 		return;
 	}
@@ -155,7 +157,7 @@ void lim::AppModelViewer::addModelViewer(string path)
 	scn->ib_light = &ib_light;
 	scenes.push_back(scn);
 
-	char* vpName = fmtStrToBuf("%s##model_view", md->name.c_str());
+	const char* vpName = fmtStrToBuf("%s##model_view", md->name.c_str());
 	auto vp = new ViewportWithCamera(vpName, new FramebufferMs(8));
 	vp->camera.setViewMode(CameraManVp::VM_PIVOT);
 	vp->camera.moveShift({0,1.f,0});

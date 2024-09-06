@@ -270,7 +270,7 @@ void CameraManVp::initCallbacks(Viewport* _vp)
 
 
 
-ViewportWithCamera::ViewportWithCamera(std::string_view _name, IFramebuffer* createdFB)
+ViewportWithCamera::ViewportWithCamera(const char* _name, IFramebuffer* createdFB)
 	: Viewport(_name, createdFB), camera(this)
 {
 }

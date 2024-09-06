@@ -157,7 +157,7 @@ void sdf::Object::updateShaderData() {
     roundnesses[idx]    = roundness;
 }
 
-sdf::Node::Node(std::string_view _name, Group* _parent) {
+sdf::Node::Node(const char* _name, Group* _parent) {
     parent = _parent;
     name = _name;
 } 
@@ -206,7 +206,7 @@ float sdf::Node::getScaleFactor() {
     return parentFactor * glm::min(scale.x, glm::min(scale.y, scale.z));
 }
 
-sdf::Group::Group(std::string_view _name, Group* _parent)
+sdf::Group::Group(const char* _name, Group* _parent)
     : Node(_name, _parent)
 {
     is_group = true;
@@ -291,7 +291,7 @@ void sdf::Object::copyToGroup(Group* group) {
 
 
 
-sdf::Object::Object(std::string_view _name, Group* _parent, PrimitiveType pt)
+sdf::Object::Object(const char* _name, Group* _parent, PrimitiveType pt)
     : Node(_name, _parent) 
 {
     if( serialized_objs.size()==MAX_OBJS ) {
@@ -496,7 +496,7 @@ static void drawHierarchyView(sdf::Node* nod)
     }
 }
 
-extern void exportMesh(std::string_view dir, std::string_view modelName, int sampleRate);
+extern void exportMesh(const char* dir, const char* modelName, int sampleRate);
 
 void sdf::drawImGui() 
 {

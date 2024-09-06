@@ -33,7 +33,7 @@ namespace lim
 		AppHdr();
 		~AppHdr();
 	private:
-		void addImage(std::string_view path);
+		void addImage(const char* path);
 	private:
 		virtual void update() override;
 		virtual void updateImGui() override;

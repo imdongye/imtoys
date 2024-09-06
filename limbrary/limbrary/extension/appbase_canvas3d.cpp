@@ -56,7 +56,6 @@ AppBaseCanvas3d::AppBaseCanvas3d(int winWidth, int winHeight, const char* title,
     vp.camera.pos = vec3(0, 1.5, 3.4);
 	vp.camera.updateViewMat();
     light.setShadowEnabled(true);
-    LimGui::LightDirectionalEditorReset("d_light editor##canvas3d", "d_light shadow map##canvas3d");
 }
 AppBaseCanvas3d::~AppBaseCanvas3d()
 {

@@ -45,7 +45,7 @@ Model에 의존하지 않고 RdNode에 의존하는 Scene
 namespace lim
 {
 	struct RdNode {
-		std::string name = "nonamed node";
+		std::string name = "RdNode";
         Transform tf;
 		glm::mat4 mtx_global = glm::mat4(1); // update in render() also
 		const RdNode* parent = nullptr;
@@ -60,7 +60,7 @@ namespace lim
 		const Material* mat = nullptr;
 
 
-		RdNode(std::string_view _name, const RdNode* _parent, const Mesh* _ms, const Material* _mat);
+		RdNode(const char* _name, const RdNode* _parent, const Mesh* _ms, const Material* _mat);
 		RdNode(const RdNode& src);
 		RdNode& operator=(const RdNode&);
 		RdNode(RdNode&& src) noexcept;
@@ -68,7 +68,7 @@ namespace lim
 
 		void clear() noexcept;
 		
-		RdNode& addChild(std::string_view _name, const Mesh* _ms, const Material* _mat);
+		RdNode& addChild(const char* _name, const Mesh* _ms, const Material* _mat);
 
 		// if ModelView tf_prev to prevTf
 		void updateGlobalTransform(glm::mat4 prevTf=glm::mat4(1));
@@ -138,7 +138,7 @@ namespace lim
         std::vector<Animation> animations;
 
 
-		Model(std::string_view name="nonamed");
+		Model(const char* name="nonamed");
 		~Model();
 		void clear() noexcept;
 		// copy : now for model simplification
@@ -154,10 +154,10 @@ namespace lim
 		void setProgToAllMat(const Program* prog);
 		void setSetProgToAllMat(std::function<void(const Program&)> setProg);
 
-		bool importFromFile(std::string_view modelPath, bool withAnim = false
+		bool importFromFile(const char* modelPath, bool withAnim = false
 			, bool scaleAndPivot = false, float maxSize=2.f, glm::vec3 pivot={0,-1,0});
 		// render tree에서 사용하는 mesh와 material은 모두 own_에 포함되어있어야 export가능.
-		bool exportToFile(size_t pIndex, std::string_view exportDir); // dir without last slash
+		bool exportToFile(size_t pIndex, const char* exportDir); // dir without last slash
 	};
 }
 #endif

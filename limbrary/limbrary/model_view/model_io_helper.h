@@ -16,7 +16,8 @@ namespace lim
     // get format data
 	int getNrImportFormats();
 	const char* getImportFormat(int idx);
-	std::string findModelInDirectory(std::string_view path);
+	// for dnd model folder
+	std::string findModelInDirectory(const char* path);
 	int getNrExportFormats();
 	const aiExportFormatDesc* getExportFormatInfo(int idx);
 }

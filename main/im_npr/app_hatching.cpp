@@ -18,7 +18,7 @@
 #include <limbrary/model_view/scene.h>
 
 
-lim::ArtMap::ArtMap(const std::string_view _path, GLint _tone)
+lim::ArtMap::ArtMap(const char* _path, GLint _tone)
 	: Texture(), tone(_tone)
 {
 	path = _path;
@@ -151,7 +151,7 @@ lim::AppHatching::AppHatching(): AppBase(1200, 780, APP_NAME)
 	for( int tone=0; tone<nr_tones; tone++ ) {
 		std::string filename = basename;
 		filename.insert(filename.rfind('.'), 1, '0'+(char)tone);
-		tam.push_back(new ArtMap(filename, 0));
+		tam.push_back(new ArtMap(filename.c_str(), 0));
 	}
 
 	scene.addOwn(&light);

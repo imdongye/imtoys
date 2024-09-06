@@ -58,7 +58,7 @@ namespace lim
 	private:
 		void addEmptyViewport();
 		void subViewport(int vpIdx);
-		void doImportModel(std::string_view path, int vpIdx);
+		void doImportModel(const char* path, int vpIdx);
 		void doExportModel(size_t pIndex, int vpIdx);
 		void doSimplifyModel(float lived_pct = 0.8f, int version = 0, int agressiveness = 7, bool verbose = true);
 		void doBakeNormalMap(int texSize);
