@@ -41,8 +41,6 @@ cmake --build build --config Debug
 
 The program must run in the main folder.
 
-If you want to use the pre-maked imgui window settings, Copy main/exports/imgui.ini into the main folder.
-
 ```
 cd main; ../build/Debug/executable/imtoys_exe; cd ..
 ```
