@@ -5,8 +5,7 @@
 //  Product->schema->edit-schema->run->option->custom-working-dir
 //
 
-#include <imgui.h>
-
+#include <limbrary/tools/apps_selector.h>
 #include "im_tests/app_template.h"
 #include "im_tests/app_imgui_test.h"
 #include "im_tests/app_icp.h"
@@ -38,103 +37,51 @@
 
 using namespace lim;
 
-static int selected_app_idx;
-static std::vector<std::function<AppBase*()>> app_constructors;
-static std::vector<const char*> app_names;
-static std::vector<const char*> app_dirs;
-static std::vector<const char*> app_infos;
-
-
-static void drawAppSellector()
-{
-	static bool isSelectorOpened = false;
-	const AppBase& app = *AppBase::g_ptr;
-
-	// draw app selector
-	if( ImGui::IsKeyPressed(ImGuiKey_F1, false) ) {
-		if( !isSelectorOpened ) {
-			isSelectorOpened = true;
-			ImGui::OpenPopup("AppSelector");
-		}
-		else {
-			isSelectorOpened = false;
-		}
-	}
-
-	ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-	if( ImGui::BeginPopupModal("AppSelector", &isSelectorOpened, ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoResize) ) {
-		for( int i = 0; i<app_names.size(); i++ ) {
-			if( ImGui::Button(app_names[i]) ) {
-				selected_app_idx = i;
-				isSelectorOpened = false;
-				ImGui::CloseCurrentPopup();
-				glfwSetWindowShouldClose(app.window, true);
-			}
-		}
-		ImGui::EndPopup();
-	}	
-}
-
-
-
-template <typename TApp>
-static void pushAppData()
-{
-	app_constructors.push_back( [](){ return new TApp(); } );
-	app_names.push_back(TApp::APP_NAME);
-	app_dirs.push_back(TApp::APP_DIR);
-	app_infos.push_back( TApp::APP_INFO );
-}
 
 
 int main()
 {
-	pushAppData<AppScene3d>();
-	pushAppData<AppSkeletal>();
-	pushAppData<AppAstar>();
-	pushAppData<AppSoftbodyInModel>();
-	pushAppData<AppPbdCpu>();
-	pushAppData<AppPbdGpu>();
-	pushAppData<AppIK>();
-	pushAppData<AppClothCPU>();
-	pushAppData<AppClothGPU>();
-	pushAppData<AppParticle>();
-	pushAppData<AppCurve>();
-	pushAppData<AppBvhParsor>();
-	pushAppData<AppRay>();
-	pushAppData<AppMineSweeper>();
-	pushAppData<AppModelViewer>();
-	pushAppData<AppSdfModeler>();
-	pushAppData<AppTemplate>();
-	pushAppData<AppImGuiTest>();
-	pushAppData<AppICP>();
-	pushAppData<AppGenMesh>();
-	pushAppData<AppMovingWindow>();
-	pushAppData<AppSimplification>();
-	pushAppData<AppHatching>();
-	pushAppData<AppHdr>();
-	pushAppData<AppFluid>();
-	pushAppData<AppShaderToy>();
+	apps_selector::add<AppScene3d>();
+	apps_selector::add<AppSkeletal>();
+	apps_selector::add<AppAstar>();
+	apps_selector::add<AppSoftbodyInModel>();
+	apps_selector::add<AppPbdCpu>();
+	apps_selector::add<AppPbdGpu>();
+	apps_selector::add<AppIK>();
+	apps_selector::add<AppClothCPU>();
+	apps_selector::add<AppClothGPU>();
+	apps_selector::add<AppParticle>();
+	apps_selector::add<AppCurve>();
+	apps_selector::add<AppBvhParsor>();
+	apps_selector::add<AppRay>();
+	apps_selector::add<AppMineSweeper>();
+	apps_selector::add<AppModelViewer>();
+	apps_selector::add<AppSdfModeler>();
+	apps_selector::add<AppTemplate>();
+	apps_selector::add<AppImGuiTest>();
+	apps_selector::add<AppICP>();
+	apps_selector::add<AppGenMesh>();
+	apps_selector::add<AppMovingWindow>();
+	apps_selector::add<AppSimplification>();
+	apps_selector::add<AppHatching>();
+	apps_selector::add<AppHdr>();
+	apps_selector::add<AppFluid>();
+	apps_selector::add<AppShaderToy>();
 
-	selected_app_idx = 0;
+	apps_selector::selected_app_idx = 0;
 
-	if( app_names.size()>1 ) {
-		AppBase::draw_appselector = drawAppSellector;
-	}
+	apps_selector::run();
 
-	while( selected_app_idx>=0 )
-	{
-		AppBase::g_app_name = app_names[selected_app_idx];
-		AppBase::g_app_dir = app_dirs[selected_app_idx];
-		AppBase::g_app_info = app_infos[selected_app_idx];
-		AppBase::g_ptr = app_constructors[selected_app_idx]();
 
-		selected_app_idx = -1;
+	//
+	// without app selector ( for one app )
+	//
+	// AppBase::g_app_name = AppTemplate::APP_NAME;
+	// AppBase::g_app_dir =  AppTemplate::APP_DIR;
+	// AppBase::g_app_info = AppTemplate::APP_INFO;
+	// AppBase::g_ptr = new AppTemplate();
+	// AppBase::g_ptr->run();
 
-		AppBase::g_ptr->run();
-
-		delete AppBase::g_ptr;
-	}
 
 	return 0;
 }

@@ -316,7 +316,6 @@ void AppClothGPU::update()
 void AppClothGPU::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
-	log::drawViewer();
 	viewport.drawImGui();
 
 

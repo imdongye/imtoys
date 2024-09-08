@@ -107,8 +107,6 @@ void AppParticle::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
 
-	log::drawViewer();
-
 	viewport.drawImGui();
 
 	ImGui::Begin("controller##ptcl");

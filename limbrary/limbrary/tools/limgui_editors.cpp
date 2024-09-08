@@ -3,7 +3,7 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <limbrary/tools/s_asset_lib.h>
-#include <limbrary/tools/general.h>
+#include <limbrary/tools/text.h>
 #include <limbrary/using_in_cpp/std.h>
 #include <map>
 

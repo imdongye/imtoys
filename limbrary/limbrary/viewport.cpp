@@ -5,7 +5,7 @@
 #include <limbrary/model_view/camera.h>
 #include <limbrary/application.h>
 #include <imguizmo/ImGuizmo.h>
-#include <limbrary/tools/general.h>
+#include <limbrary/tools/text.h>
 
 namespace lim 
 {

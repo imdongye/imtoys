@@ -455,8 +455,7 @@ void AppCurve::update()
 void AppCurve::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
-	log::drawViewer();
-
+	
 	static bool opt_enable_grid = true;
 	static bool opt_enable_points = false;
 

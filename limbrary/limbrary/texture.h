@@ -83,6 +83,10 @@ namespace lim
 		void setDataWithDepth(int depth, void* data);
 	};
 
+	inline void* texIdToPtr(GLuint id) {
+		return (void*)(intptr_t)id;
+	}
+
 	void drawTexToQuad(const GLuint texId, float gamma = 2.2f, float bias = 0.f, float gain = 1.f);
 	void drawTex3dToQuad(const GLuint texId, float depth, float gamma = 2.2f, float bias = 0.f, float gain = 1.f);
 	// for same size

@@ -4,8 +4,8 @@
 #include <limbrary/model_view/mesh_maked.h>
 #include <limbrary/model_view/model.h>
 #include <limbrary/tools/glim.h>
+#include <limbrary/tools/etc.h>
 #include <limbrary/tools/s_asset_lib.h>
-#include <limbrary/tools/general.h>
 using namespace lim;
 using namespace glm;
 

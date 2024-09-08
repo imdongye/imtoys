@@ -4,7 +4,7 @@
 #include <filesystem>
 #include <stb_image_write.h>
 #include <limbrary/model_view/mesh.h>
-#include <limbrary/tools/general.h>
+#include <limbrary/tools/log.h>
 #include <unordered_map>
 #include <vector>
 #include <set>

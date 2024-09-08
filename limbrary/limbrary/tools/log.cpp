@@ -8,16 +8,15 @@
 #include <iostream>
 #include <limbrary/application.h>
 #include <limbrary/using_in_cpp/std.h>
-#include <limbrary/tools/general.h>
+#include <limbrary/tools/text.h>
 
-using namespace std;
-
+using namespace lim;
 
 namespace 
 {
+    bool is_viewer_visible = false;
     string logger_window_name;
-    string buf;
-    char line_buf[512];
+    string log_buf;
     vector<int> line_offsets = {0};
     ImGuiTextFilter filter;
 
@@ -25,77 +24,80 @@ namespace
     bool is_time_stamp_on = false;
 }
 
-static void appendHead(string_view level)
+static void appendHead(const char* level=nullptr)
 {
-    if(is_time_stamp_on)
-        stbsp_sprintf(line_buf, "[%05d] ", ImGui::GetFrameCount());
-    else
-        line_buf[0] = '\0';
-    strcat(line_buf, level.data());
-    
-    cout<<line_buf;
-    buf.append(line_buf);
+	const char* str;
+    if(is_time_stamp_on) {
+        str = fmtStrToBuf("%05d:", ImGui::GetFrameCount);
+		log_buf.append(str);
+		cout<<str;
+    }
+    if(level) {
+        log_buf.append(level);
+		cout<<level;
+    }
 }
 
 static void appendfv(const char* fmt, va_list args)
 {
-    stbsp_vsprintf(line_buf, fmt, args);
-
-    cout<<line_buf;
-    buf.append(line_buf);
+    static char buf[log::LOG_SPRINTF_BUF_SIZE];
+    stbsp_vsprintf(buf, fmt, args);
+    cout<<buf;
+    log_buf.append(buf);
 }
 
 static void addFindedOffsets(int start, int end)
 {
     for( int i=start; i<end; i++ ) {
-        if( buf[i] == '\n')
+        if( log_buf[i] == '\n') {
             line_offsets.push_back(i+1);
+		}
     }
 }
 
 
-void lim::log::pure(const char* fmt, ...)
+void log::pure(const char* fmt, ...)
 {
-    appendHead("");
-    int start = buf.size();
+    appendHead();
+    int start = log_buf.size();
     va_list args;
     va_start(args, fmt);
     appendfv(fmt, args);
     va_end(args);
-    addFindedOffsets(start, buf.size());
+    addFindedOffsets(start, log_buf.size());
 }
-void lim::log::info(const char* fmt, ...)
+void log::info(const char* fmt, ...)
 {
     appendHead("[info] ");
-    int start = buf.size();
+    int start = log_buf.size();
     va_list args;
     va_start(args, fmt);
     appendfv(fmt, args);
     va_end(args);
-    addFindedOffsets(start, buf.size());
+    addFindedOffsets(start, log_buf.size());
 }
-void lim::log::warn(const char* fmt, ...)
+void log::warn(const char* fmt, ...)
 {
     appendHead("[warn] ");
-    int start = buf.size();
+    int start = log_buf.size();
     va_list args;
     va_start(args, fmt);
     appendfv(fmt, args);
     va_end(args);
-    addFindedOffsets(start, buf.size());
+    addFindedOffsets(start, log_buf.size());
 }
-void lim::log::err(const char* fmt, ...)
+void log::err(const char* fmt, ...)
 {
     appendHead("[errr] ");
-    int start = buf.size();
+    int start = log_buf.size();
     va_list args;
     va_start(args, fmt);
     appendfv(fmt, args);
     va_end(args);
-    addFindedOffsets(start, buf.size());
+    addFindedOffsets(start, log_buf.size());
 }
 
-void lim::log::glError(int line) {
+void log::glError(int line) {
     GLenum err = glGetError();
     
     const char* msg = nullptr;
@@ -120,31 +122,46 @@ void lim::log::glError(int line) {
 }
 
 
-void lim::log::reset()
+void log::reset()
 {
+    is_viewer_visible = false;
     logger_window_name = fmtStrToBuf("Logger##%s", AppBase::g_app_name);
-    buf.clear();
-    buf.reserve(1024);
+    log_buf.clear();
+    log_buf.reserve(1024);
     line_offsets.clear();
     line_offsets.push_back(0);
 }
-void lim::log::exportToFile(const char* filename)
+
+
+void log::exportToFile(const char* filename)
 {
     string path = "exports/logs/";
 
-    filesystem::path createdPath(path);
+    std::filesystem::path createdPath(path);
     if (!std::filesystem::is_directory(createdPath))
-        filesystem::create_directories(createdPath);
+        std::filesystem::create_directories(createdPath);
 
     path += filename;
-    ofstream file(path.c_str());
+    std::ofstream file(path.c_str());
     if(file.is_open()){
-        file.write(buf.c_str(),buf.size());
+        file.write(log_buf.c_str(),log_buf.size());
     }
     log::pure("export log to %s", path.c_str());
 }
-void lim::log::drawViewer()
+
+
+void log::__drawViewerGui()
 {
+    static bool is_opened = false;
+
+    if( ImGui::IsKeyPressed(ImGuiKey_F2, false) ) {
+        is_opened = !is_opened;
+    }
+
+    if( !is_opened ){
+        return;
+    }
+    
     ImGui::Begin(logger_window_name.c_str());
 
     // Options menu
@@ -177,8 +194,8 @@ void lim::log::drawViewer()
             log::reset();
 
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
-        const char* bufStart = buf.c_str();
-        const char* bufEnd = bufStart + buf.size();
+        const char* bufStart = log_buf.c_str();
+        const char* bufEnd = bufStart + log_buf.size();
         int nrLines = line_offsets.size();
 
         if (filter.IsActive())

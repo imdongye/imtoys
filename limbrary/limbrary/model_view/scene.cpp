@@ -1,8 +1,8 @@
 #include <limbrary/model_view/scene.h>
 #include <limbrary/tools/s_asset_lib.h>
 #include <limbrary/tools/log.h>
-#include <limbrary/tools/general.h>
 #include <limbrary/tools/render.h>
+#include <limbrary/tools/text.h>
 
 using namespace std;
 using namespace lim;
@@ -211,7 +211,7 @@ void Scene::render( const IFramebuffer& fb, const Camera& cam, const bool isDraw
                 }
 
                 md->root.dfsRender([](const Mesh* ms, const Material* mat, const glm::mat4& mtxGlobal) {
-                    g_cur_prog->setUniform("mtx_Model", mtxGlobal);
+                    Program::g_cur_ptr->setUniform("mtx_Model", mtxGlobal);
                     ms->bindAndDrawGL();
                     return true;
                 });

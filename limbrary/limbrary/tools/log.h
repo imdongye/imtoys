@@ -16,15 +16,17 @@ Todo:
 
 */
 
-#ifndef __log_h_
-#define __log_h_
+#ifndef __tools_log_h_
+#define __tools_log_h_
 
+#include <string>
 
 
 namespace lim
 {
     namespace log
     {
+        constexpr int LOG_SPRINTF_BUF_SIZE = 512;
         void pure(const char* format, ...);
         void info(const char* format, ...);
         void warn(const char* format, ...);
@@ -34,10 +36,9 @@ namespace lim
 
         void reset();
         void exportToFile(const char* filename = "log.txt");
-        void drawViewer();
-    }
 
-    
+        void __drawViewerGui();
+    }
 }
 
 #endif

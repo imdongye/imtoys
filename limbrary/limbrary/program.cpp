@@ -1,10 +1,9 @@
 #include <limbrary/program.h>
 #include <limbrary/tools/log.h>
-#include <limbrary/tools/general.h>
+#include <limbrary/tools/text.h>
 
 using namespace lim;
 
-const lim::Program* lim::g_cur_prog = nullptr;
 
 static bool checkCompileErrors(GLuint shader, std::string_view path)
 {
@@ -14,7 +13,7 @@ static bool checkCompileErrors(GLuint shader, std::string_view path)
 	glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
 	if( !success ) {
 		glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-		lim::log::err("shader compile error in %s\n%s\n",path.data(), infoLog);
+		log::err("shader compile error in %s\n%s\n",path.data(), infoLog);
 		//std::abort();
 		return false;
 	}
@@ -28,7 +27,7 @@ static bool checkLinkingErrors(GLuint pid)
 	glGetProgramiv(pid, GL_LINK_STATUS, &success);
 	if( !success ) {
 		glGetProgramInfoLog(pid, 1024, NULL, infoLog);
-		lim::log::err("program linking error\n%s\n",infoLog);
+		log::err("program linking error\n%s\n",infoLog);
 
 		std::abort();
 		return false;
@@ -49,7 +48,7 @@ static GLenum getType(std::string_view path)
 	else if( ext=="comp"||ext=="cs" )
 		return GL_COMPUTE_SHADER;
 #endif
-	lim::log::err("%s extension is not supported.\n", ext.data());
+	log::err("%s extension is not supported.\n", ext.data());
 	return 0;
 }
 
@@ -162,7 +161,7 @@ const Program& Program::use() const
 	}
 	glUseProgram(pid);
 	cur_available_slot = 0;
-	g_cur_prog = this;
+	g_cur_ptr = this;
 	return *this;
 }
 // From: https://www.youtube.com/watch?v=nBB0LGSIm5Q

@@ -1,7 +1,8 @@
 #include <limbrary/tools/limgui.h>
 #include <imgui.h>
 #include <imgui_internal.h>
-#include <limbrary/tools/general.h>
+#include <limbrary/tools/apps_selector.h>
+#include <limbrary/tools/log.h>
 #include <map>
 
 
@@ -134,3 +135,9 @@ void LimGui::PlotValAddValue(const char* name, float value, int bufSize) {
 	}
 	pvd.data[pvd.insert_idx++] = value;
 }
+
+
+
+
+
+

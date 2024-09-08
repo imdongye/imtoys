@@ -2,8 +2,8 @@
 #include <limbrary/tools/s_save_file.h>
 
 #include <limbrary/application.h>
-#include <limbrary/tools/general.h>
 #include <limbrary/tools/log.h>
+#include <limbrary/tools/text.h>
 #include <limbrary/using_in_cpp/std.h>
 
 #include <fstream>

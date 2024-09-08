@@ -14,7 +14,7 @@ Todo:
 #include <limbrary/tools/s_asset_lib.h>
 #include <limbrary/tools/limgui.h>
 #include <limbrary/tools/glim.h>
-#include <limbrary/tools/general.h>
+#include <limbrary/tools/text.h>
 #include <glad/glad.h>
 
 using namespace lim;

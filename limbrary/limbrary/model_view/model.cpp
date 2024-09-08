@@ -21,7 +21,6 @@
 #include <limbrary/tools/glim.h>
 #include <assimp/material.h>
 #include <limbrary/tools/s_asset_lib.h>
-#include <limbrary/tools/general.h>
 #include <imgui.h>
 #include <stack>
 

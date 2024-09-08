@@ -193,8 +193,6 @@ void AppSoftbodyInModel::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
 
-	log::drawViewer();
-
 	viewport.drawImGui();
 
 

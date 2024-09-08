@@ -1,7 +1,7 @@
 #include "pbd.h"
 #include <algorithm>
 #include <limbrary/tools/glim.h>
-#include <limbrary/tools/general.h>
+#include <limbrary/tools/etc.h>
 #include <glm/gtx/norm.hpp>
 
 using namespace glm;

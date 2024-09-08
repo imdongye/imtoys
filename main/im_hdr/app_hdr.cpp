@@ -1,7 +1,7 @@
 #include "app_hdr.h"
 #include <stb_image.h>
 #include <glm/gtx/extended_min_max.hpp>
-#include <limbrary/tools/general.h>
+#include <limbrary/tools/text.h>
 #include <imgui.h>
 
 namespace

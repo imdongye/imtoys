@@ -1,8 +1,9 @@
 #include <limbrary/application.h>
 #include <limbrary/tools/log.h>
-#include <limbrary/tools/general.h>
+#include <limbrary/tools/text.h>
 #include <limbrary/tools/s_save_file.h>
 #include <limbrary/tools/s_asset_lib.h>
+#include <limbrary/tools/apps_selector.h>
 #include <limbrary/tools/limgui.h>
 #include <limbrary/viewport.h>
 #include <glad/glad.h>
@@ -284,7 +285,8 @@ void AppBase::run()
 		ImGuizmo::BeginFrame();
 
 		updateImGui();
-		draw_appselector();
+		apps_selector::__drawGui();
+		log::__drawViewerGui();
 		
 		ImGui::Render();
 

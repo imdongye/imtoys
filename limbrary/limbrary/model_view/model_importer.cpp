@@ -12,8 +12,9 @@
 #include <limbrary/model_view/model_io_helper.h>
 #include <limbrary/texture.h>
 #include <limbrary/tools/log.h>
-#include <limbrary/tools/general.h>
 #include <limbrary/tools/glim.h>
+#include <limbrary/tools/etc.h>
+#include <limbrary/tools/text.h>
 #include <assimp/cimport.h>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>

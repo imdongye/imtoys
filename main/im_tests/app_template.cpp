@@ -23,8 +23,6 @@ void AppTemplate::update()
 void AppTemplate::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
-
-	log::drawViewer();
 	
 
 	ImGui::Begin("test window##template");

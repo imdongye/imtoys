@@ -43,8 +43,6 @@ void AppScene3d::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
 
-	log::drawViewer();
-
 	LimGui::SceneEditor(scene);
 
 	viewport.drawImGui();

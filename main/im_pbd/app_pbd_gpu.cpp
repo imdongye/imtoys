@@ -2,8 +2,8 @@
 #include <limbrary/tools/limgui.h>
 #include <limbrary/tools/s_asset_lib.h>
 #include <limbrary/tools/glim.h>
-#include <limbrary/tools/general.h>
 #include <limbrary/tools/gl.h>
+#include <limbrary/tools/etc.h>
 
 using namespace lim;
 using namespace glm;

@@ -36,10 +36,11 @@ Todo:
 namespace lim
 {
 	class Program;
-	extern const Program* g_cur_prog;
 
 	class Program
 	{
+	public:
+		inline static const Program* g_cur_ptr = nullptr;
 	public:
 		std::string name = "nonamed";
 		std::string home_dir = "./assets/";

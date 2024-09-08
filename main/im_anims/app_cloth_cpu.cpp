@@ -408,10 +408,6 @@ static void pickClosestPtclInRay(vec3 ray, vec3 rayO, vector<Particle>& ps) {
 
 void AppClothCPU::canvasImGui()
 {
-	log::drawViewer();
-
-
-
 	ImGui::Begin("test window##particle");
 	LimGui::PlotVal("dt", "ms", delta_time*1000.f);
 	LimGui::PlotVal("fps", "", ImGui::GetIO().Framerate);

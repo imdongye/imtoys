@@ -40,6 +40,16 @@ namespace lim
         NoCopyAndMove() = default;
         ~NoCopyAndMove() = default;
     };
+
+    class OnlyStatic {
+    private:
+        OnlyStatic() = delete;
+        ~OnlyStatic() = delete;
+        OnlyStatic(const OnlyStatic&) = delete;
+        OnlyStatic& operator=(const OnlyStatic&) = delete;
+        OnlyStatic(OnlyStatic&&) noexcept  = delete;
+        OnlyStatic& operator=(OnlyStatic&&) noexcept = delete;
+    };
     
 
     template<typename T>

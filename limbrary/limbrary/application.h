@@ -30,7 +30,6 @@ namespace lim
 	class AppBase : public NoCopyAndMove
 	{
 	public:
-		inline static std::function<void()> draw_appselector = [](){};
 		inline static AppBase* g_ptr = nullptr;
 		inline static const char* g_app_name = nullptr;
 		inline static const char* g_app_dir = nullptr;

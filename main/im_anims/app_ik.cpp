@@ -202,7 +202,6 @@ void AppIK::canvasDraw() const {
 }
 
 void AppIK::canvasImGui() {
-	log::drawViewer();
 
 	ImGui::Begin("test window##ik");
 	LimGui::PlotVal("fps", "", ImGui::GetIO().Framerate);

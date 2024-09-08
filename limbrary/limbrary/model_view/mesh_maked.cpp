@@ -8,7 +8,7 @@
 #include <memory>
 #include <glad/glad.h>
 #include <limbrary/tools/glim.h>
-#include <limbrary/tools/general.h>
+#include <limbrary/tools/text.h>
 
 using namespace lim;
 using namespace glm;

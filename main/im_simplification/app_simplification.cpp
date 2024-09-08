@@ -10,7 +10,7 @@
 #include <stb_sprintf.h>
 #include <limbrary/tools/s_asset_lib.h>
 #include <limbrary/tools/s_save_file.h>
-#include <limbrary/tools/general.h>
+#include <limbrary/tools/text.h>
 #include <limbrary/model_view/mesh_maked.h>
 #include <imgui.h>
 #include <limbrary/model_view/scene.h>
@@ -367,8 +367,6 @@ void AppSimplification::updateImGui()
 		}
 	}
 
-	log::drawViewer();
-
 	if( ImGui::Begin("Simplify Options##simp") )
 	{
 		ImGui::Text("From viewport:");
@@ -656,7 +654,7 @@ void AppSimplification::updateImGui()
 		glm::vec2 rectSize{vMax.x - vMin.x, vMax.y - vMin.y};
 		// ImGui::Text("%f %f", rectSize.x, rectSize.y);
 		const float minLength = glm::min(rectSize.x, rectSize.y);
-		ImGui::Image(INT2VOIDP(light.shadow->map.getRenderedTexId()), ImVec2{minLength, minLength}, ImVec2{0, 1}, ImVec2{1, 0});
+		ImGui::Image(texIdToPtr(light.shadow->map.getRenderedTexId()), ImVec2{minLength, minLength}, ImVec2{0, 1}, ImVec2{1, 0});
 	}
 	ImGui::End();
 	ImGui::PopStyleVar();

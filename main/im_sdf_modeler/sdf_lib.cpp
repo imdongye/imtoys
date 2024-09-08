@@ -20,7 +20,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/color_space.hpp>
 #include <limbrary/tools/limgui.h>
-#include <limbrary/tools/general.h>
+#include <limbrary/tools/text.h>
 #include <misc/cpp/imgui_stdlib.h>
 #include <vector>
 #include <fstream>
