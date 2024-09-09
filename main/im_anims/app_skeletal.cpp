@@ -14,7 +14,7 @@ using namespace glm;
 
 void AppSkeletal::makeScene(const char* path) {
 	Model* md;
-	scene.clear();
+	scene.reset();
 
 	md = new Model();
 	md->importFromFile(path, true, true);
@@ -119,7 +119,7 @@ void lim::AppSkeletal::updateImGui()
 
 	viewport.drawImGui();
 
-	LimGui::ModelEditor(*scene.own_mds.front());
+	LimGui::ModelViewEditor(*scene.own_mds.front());
 
 	ImGui::Begin("skeletal ctrl");
 	LimGui::PlotVal("dt", "ms", delta_time);

@@ -409,11 +409,7 @@ void sdf::bindSdfData(const Program& prog)
 
     prog.setUniform("use_IBL", use_IBL);
     if( use_IBL ) {
-        int activeSlot = 0;
-        prog.setTexture("map_Light", ib_light->getTexIdLight());
-        prog.setTexture("map_Irradiance", ib_light->getTexIdIrradiance());
-        prog.setTexture3d("map_PreFilteredEnv", ib_light->getTexIdPreFilteredEnv());
-        prog.setTexture("map_PreFilteredBRDF", ib_light->getTexIdPreFilteredBRDF());
+        ib_light->setUniformTo(prog);
     }
 }
 

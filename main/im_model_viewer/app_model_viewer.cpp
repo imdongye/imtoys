@@ -230,24 +230,24 @@ void lim::AppModelViewer::updateImGui()
 		if( is_draw_light_map_vp ) {
 
 			vp_light_map.getFb().bind();
-			drawTexToQuad(ib_light.getTexIdLight(), 2.2f, 0.f, 1.f);
+			drawTexToQuad(ib_light.map_Light.tex_id, 2.2f, 0.f, 1.f);
 			vp_light_map.getFb().unbind();
 			vp_light_map.drawImGui();
 
 			ImGui::SliderFloat("pfenv depth", &pfenv_depth, 0.f, 1.f);
 				
 			vp_irr_map.getFb().bind();
-			drawTexToQuad(ib_light.getTexIdIrradiance(), 2.2f, 0.f, 1.f);
+			drawTexToQuad(ib_light.map_Irradiance.tex_id, 2.2f, 0.f, 1.f);
 			vp_irr_map.getFb().unbind();
 			vp_irr_map.drawImGui();
 
 			vp_pfenv_map.getFb().bind();
-			drawTex3dToQuad(ib_light.getTexIdPreFilteredEnv(), pfenv_depth, 2.2f, 0.f, 1.f);
+			drawTex3dToQuad(ib_light.map_PreFilteredEnv.tex_id, pfenv_depth, 2.2f, 0.f, 1.f);
 			vp_pfenv_map.getFb().unbind();
 			vp_pfenv_map.drawImGui();
 
 			vp_pfbrdf_map.getFb().bind();
-			drawTexToQuad(ib_light.getTexIdPreFilteredBRDF(), 2.2f, 0.f, 1.f);
+			drawTexToQuad(ib_light.map_PreFilteredBRDF.tex_id, 2.2f, 0.f, 1.f);
 			vp_pfbrdf_map.getFb().unbind();
 			vp_pfbrdf_map.drawImGui();
 		}

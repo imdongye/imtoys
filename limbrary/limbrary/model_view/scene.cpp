@@ -8,129 +8,6 @@ using namespace std;
 using namespace lim;
 
 
-IBLight::IBLight(const char* path) {
-    if( path ) {
-        setMapAndBake(path);
-    }
-}
-
-bool IBLight::setMapAndBake(const char* path) 
-{
-    if(!strIsSame(getExtension(path),"hdr")) {
-        log::err("need hdr ext to load ibl\n");
-        return false;
-    }
-    log::pure("loading ibl .. ");
-    /* map_Light */
-    map_Light.s_wrap_param = GL_REPEAT;
-    map_Light.t_wrap_param = GL_MIRRORED_REPEAT;
-    map_Light.mag_filter = GL_LINEAR;
-    map_Light.min_filter = GL_LINEAR_MIPMAP_NEAREST; // Todo: mipmap 쓰면 경계 검은색 나옴;;
-    if(!map_Light.initFromFile(path, false)) {
-        return false;
-    }
-
-
-
-    //
-    //  Bake Prefiltered Light Maps
-    //
-    FramebufferNoDepth fb(3, 32); // 3 channel, 32 bit
-    Program iblProg("ibl baker");
-
-
-    /* map_Irradiance */
-    fb.color_tex.s_wrap_param = GL_REPEAT;
-    fb.color_tex.t_wrap_param = GL_MIRRORED_REPEAT;
-    fb.color_tex.mag_filter = GL_LINEAR;
-    fb.color_tex.min_filter = GL_LINEAR; // Todo: mipmap 쓰면 경계 검은색 나옴;;
-	fb.resize(256, 128);
-	iblProg.attatch("canvas.vs").attatch("bake_irr.fs").link();
-
-	fb.bind();
-	iblProg.use();
-	iblProg.setTexture("map_Light", map_Light.tex_id);
-	AssetLib::get().screen_quad.bindAndDrawGL();
-	fb.unbind();
-
-    map_Irradiance = fb.color_tex; // !! 텍스쳐 복사되면서 mipmap도 생성됨.
-
-
-    /* map_PreFilteredEnv */
-    // win에서 *0.25, mac에서 /10은 해야 동작함.
-    const glm::vec2 pfenv_size = { map_Light.width/10.f,  map_Light.height/10.f }; 
-    map_PreFilteredEnv.width = pfenv_size.x;
-    map_PreFilteredEnv.height = pfenv_size.y;
-    map_PreFilteredEnv.nr_depth = nr_roughness_depth;
-    map_PreFilteredEnv.updateFormat(3, 32);
-    map_PreFilteredEnv.s_wrap_param = GL_REPEAT;
-    map_PreFilteredEnv.t_wrap_param = GL_MIRRORED_REPEAT;
-    map_PreFilteredEnv.r_wrap_param = GL_CLAMP_TO_EDGE;
-    map_PreFilteredEnv.mag_filter = GL_LINEAR;
-    map_PreFilteredEnv.min_filter = GL_LINEAR;
-    map_PreFilteredEnv.initGL();
-
-	fb.resize(pfenv_size.x, pfenv_size.y);
-    iblProg.deinitGL();
-    iblProg.attatch("canvas.vs").attatch("bake_pfenv.fs").link();
-
-    for(int i=0; i<nr_roughness_depth; i++) {
-        float roughness = (i+0.5)/nr_roughness_depth;// 0.05~0.95
-        fb.bind();
-        iblProg.use();
-        iblProg.setTexture("map_Light", map_Light.tex_id);
-        iblProg.setUniform("roughness", roughness);
-        AssetLib::get().screen_quad.bindAndDrawGL();
-        fb.unbind();
-
-        float* buf = fb.makeFloatPixelsBuf();
-        map_PreFilteredEnv.setDataWithDepth(i, buf); // !! 텍스쳐 복사되면서 mipmap도 생성됨.
-        delete buf;
-    }
-
-    /* map_PreFilteredBRDF */
-    fb.color_tex.s_wrap_param = GL_CLAMP_TO_EDGE;
-    fb.color_tex.t_wrap_param = GL_CLAMP_TO_EDGE;
-    fb.color_tex.mag_filter = GL_LINEAR;
-    fb.color_tex.min_filter = GL_LINEAR;
-	fb.resize(128, 128);
-    iblProg.deinitGL();
-	iblProg.attatch("canvas.vs").attatch("bake_brdf.fs").link();
-
-	fb.bind();
-	iblProg.use();
-	AssetLib::get().screen_quad.bindAndDrawGL();
-	fb.unbind();
-
-    map_PreFilteredBRDF = fb.color_tex; // !! 텍스쳐 복사되면서 mipmap도 생성됨.
-    is_baked = true;
-    return true;
-}
-
-void IBLight::deinitGL() {
-    map_Light.deinitGL();
-    map_Irradiance.deinitGL();
-    map_PreFilteredEnv.deinitGL();
-    map_PreFilteredBRDF.deinitGL();
-}
-GLuint IBLight::getTexIdLight() const {
-    return map_Light.tex_id;
-}
-GLuint IBLight::getTexIdIrradiance() const {
-    return map_Irradiance.tex_id;
-}
-GLuint IBLight::getTexIdPreFilteredEnv() const {
-    return map_PreFilteredEnv.tex_id;
-}
-GLuint IBLight::getTexIdPreFilteredBRDF() const {
-    return map_PreFilteredBRDF.tex_id;
-}
-void IBLight::setUniformTo(const Program& prg) const {
-    prg.setTexture("map_Light", getTexIdLight());
-    prg.setTexture("map_Irradiance", getTexIdIrradiance());
-    prg.setTexture("map_PreFilteredBRDF", getTexIdPreFilteredBRDF());
-    prg.setTexture3d("map_PreFilteredEnv", getTexIdPreFilteredEnv());
-}
 
 
 
@@ -138,12 +15,18 @@ void IBLight::setUniformTo(const Program& prg) const {
 
 
 
-Scene::~Scene() {
-    clear();
-}
-void Scene::clear() {
+void Scene::reset() {
     own_mds.clear();
     own_dir_lits.clear();
+    own_spot_lits.clear();
+    own_omni_lits.clear();
+    ib_light = nullptr;
+    is_draw_env_map = false;
+    idx_LitMod = -1;
+    
+    src_mds.clear();
+    own_progs.clear();
+    own_ib_lits.clear();
 }
 
 ModelView* Scene::addOwn(ModelView* md)  {
@@ -166,6 +49,18 @@ LightSpot* Scene::addOwn(LightSpot* lit) {
 }
 LightOmni* Scene::addOwn(LightOmni* lit) {
     own_omni_lits.push_back(lit);
+    return lit;
+}
+Program* Scene::addOwn(Program* prog) {
+    own_progs.push_back(prog);
+    return prog;
+}
+IBLight* Scene::addOwn(IBLight* lit, bool setUse) {
+    own_ib_lits.push_back(lit);
+    if( setUse ) {
+        ib_light = lit;
+        is_draw_env_map = true;
+    }
     return lit;
 }
 

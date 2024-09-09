@@ -32,15 +32,21 @@ namespace LimGui
 {
     void resetEditors();
 
-    void ModelEditor(lim::ModelView& md);
+    void ModelViewEditor(lim::ModelView& md);
+    void ModelDataEditor(lim::Model& md);
+    void RdNodeEditor(lim::RdNode& rd);
+    void BoneNodeEditor(lim::BoneNode& rd);
     lim::RdNode*    getPickedRenderNode();
     lim::BoneNode*  getPickedBoneNode();
 
     void LightDirectionalEditor(lim::LightDirectional& lit);
-
+    void LightSpotEditor(lim::LightSpot& lit);
+    void LightOmniEditor(lim::LightOmni& lit);
+    void IBLightEditor(lim::IBLight& lit);
 
     void SceneEditor(lim::Scene& scn);
 }
+
 namespace lim
 {
     inline ImVec2 toIg(const glm::vec2& v) { return {v.x, v.y}; }

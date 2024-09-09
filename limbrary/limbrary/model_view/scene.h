@@ -41,41 +41,11 @@ Todo:
 
 namespace lim
 {
-    // pre-filtered, split-sum
-    class IBLight
-    {
-    public:
-        static constexpr int nr_roughness_depth = 10;
-        Texture map_Light, map_Irradiance, map_PreFilteredBRDF;
-        Texture3d map_PreFilteredEnv;
-        bool is_baked = false;
-
-    public:
-        IBLight(const IBLight&)	           = delete;
-		IBLight(IBLight&&)			       = delete;
-		IBLight& operator=(const IBLight&) = delete;
-		IBLight& operator=(IBLight&&)      = delete;
-
-        IBLight(const char* path = nullptr);
-        virtual ~IBLight() = default;
-
-        bool setMapAndBake(const char* path);
-        void deinitGL();
-        GLuint getTexIdLight() const;
-        GLuint getTexIdIrradiance() const;
-        GLuint getTexIdPreFilteredEnv() const;
-        GLuint getTexIdPreFilteredBRDF() const;
-
-        void setUniformTo(const Program& prg) const;
-
-    };
-
-
-	class Scene final
+	class Scene final : public NoCopyAndMove
 	{
   	public:
+        // using in render
 		std::vector<OwnPtr<ModelView>> own_mds;
-        std::vector<Model*> src_mds;
         std::vector<OwnPtr<LightDirectional>> own_dir_lits;
         std::vector<OwnPtr<LightSpot>> own_spot_lits;
         std::vector<OwnPtr<LightOmni>> own_omni_lits;
@@ -83,22 +53,24 @@ namespace lim
         bool is_draw_env_map = false;
         int idx_LitMod = -1;
 
+        // only contained in scene
+        std::vector<Model*> src_mds;
+        std::vector<OwnPtr<Program>> own_progs;
+        std::vector<OwnPtr<IBLight>> own_ib_lits;
+
     public:
-		Scene(const Scene&)	           = delete;
-		Scene(Scene&&)			       = delete;
-		Scene& operator=(const Scene&) = delete;
-		Scene& operator=(Scene&&)      = delete;
-
         Scene() = default;
-        ~Scene();
+        ~Scene() = default;
 
-        void clear();
+        void reset();
 
         ModelView*          addOwn(ModelView* md);
         Model*              addOwn(Model* md);
         LightDirectional*   addOwn(LightDirectional* lit);
         LightSpot*          addOwn(LightSpot* lit);
         LightOmni*          addOwn(LightOmni* lit);
+        Program*            addOwn(Program* prog);
+        IBLight*            addOwn(IBLight* lit, bool setUse = true);
 
 
         // use prog in mat

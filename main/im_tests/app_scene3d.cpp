@@ -7,7 +7,7 @@
 using namespace lim;
 
 AppScene3d::AppScene3d() 
-	: AppBase(1200, 780, APP_NAME)
+	: AppBase(1400, 780, APP_NAME)
 	, viewport(new FramebufferMs())
 {
 	{
@@ -23,6 +23,14 @@ AppScene3d::AppScene3d()
 		mat.prog = &AssetLib::get().prog_ndv;
 		md.root.ms = &AssetLib::get().sphere;
 		md.root.mat = &mat;
+	}
+	{
+		Program& skined_prog = *scene.addOwn(new Program("skinned prog"));
+		skined_prog.attatch("mvp_skinned.vs").attatch("ndv.fs").link();
+
+		Model& md = *scene.addOwn(new Model("vam"));
+		md.importFromFile("assets/models/jump.fbx", true, true);
+		md.setProgToAllMat(&skined_prog);
 	}
 }
 AppScene3d::~AppScene3d()

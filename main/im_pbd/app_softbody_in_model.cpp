@@ -197,7 +197,7 @@ void AppSoftbodyInModel::updateImGui()
 
 
 	ModelView& md = *scene.own_mds[0];
-	LimGui::ModelEditor(md);
+	LimGui::ModelViewEditor(md);
 	
 
 	ImGui::Begin("Scene");
