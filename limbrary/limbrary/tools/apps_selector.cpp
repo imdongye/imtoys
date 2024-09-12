@@ -3,7 +3,8 @@
 
 using namespace lim;
 
-int apps_selector::selected_app_idx = 0;
+int apps_selector::wanted_app_idx = 0;
+int apps_selector::selected_app_idx = -1;
 int apps_selector::nr_apps = 0;
 std::vector<const char*> apps_selector::app_names;
 std::vector<const char*> apps_selector::app_dirs;
@@ -30,7 +31,7 @@ void apps_selector::__drawGui()
 	if( ImGui::BeginPopupModal("AppSelector", &is_opened, ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoResize) ) {
 		for( int i = 0; i<app_names.size(); i++ ) {
 			if( ImGui::Button(app_names[i]) ) {
-				selected_app_idx = i;
+				wanted_app_idx = i;
 				is_opened = false;
 				ImGui::CloseCurrentPopup();
 				glfwSetWindowShouldClose(app.window, true);

@@ -1,7 +1,10 @@
+
+#define IMGUI_DEFINE_MATH_OPERATORS
 #include <limbrary/tools/limgui.h>
-#include <limbrary/application.h>
-#include <imgui.h>
 #include <imgui_internal.h>
+#include <imguizmo/ImGuizmo.h>
+
+#include <limbrary/application.h>
 #include <limbrary/tools/s_asset_lib.h>
 #include <limbrary/tools/text.h>
 #include <limbrary/using_in_cpp/std.h>
@@ -342,11 +345,11 @@ void LimGui::LightDirectionalEditor(LightDirectional& lit)
 	ImGui::Checkbox("shadow enabled", &lit.shadow->Enabled);
 	ImGui::Checkbox("show shadow map", &is_draw_shadow_map_view);
 	if(is_draw_shadow_map_view && lit.shadow->Enabled) {
-		Viewport& vp = AssetLib::get().texture_viewer; // todo
+		lim::Viewport& vp = AssetLib::get().texture_viewer; // todo
 		vp.getFb().bind();
 		drawTexToQuad(lit.shadow->map.getRenderedTexId(), 2.2f, 0.f, 1.f);
 		vp.getFb().unbind();
-		vp.drawImGui();
+		LimGui::Viewport(vp);
 	}
 	ImGui::End();
 }
@@ -464,5 +467,123 @@ void LimGui::SceneEditor(Scene& scene)
 }
 
 
+
+
+
+
+//
+//	Viewport
+//
+
+namespace {
+	std::function<void(Viewport*)> guizmo_hook = nullptr;
+}
+
+void LimGui::Viewport(lim::Viewport& vp)
+{
+	const IFramebuffer& fb = vp.getFb();
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
+	ImGui::SetNextWindowSize(
+		{(float)fb.width, (float)fb.height+ImGui::GetFrameHeight()},
+		(vp.window_mode==Viewport::WM_FIXED_SIZE) ? ImGuiCond_Always : ImGuiCond_Once
+	);
+	ImGuiWindowFlags vpWinFlag = ImGuiWindowFlags_NoCollapse;
+	if( vp.window_mode==Viewport::WM_FIXED_RATIO ) {
+		ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), [](ImGuiSizeCallbackData *data) {
+			lim::Viewport& ivp = *(lim::Viewport*)(data->UserData);
+
+			float frameHeight = ImGui::GetFrameHeight();
+			float aspectedWidth = ivp.getAspect() * (data->DesiredSize.y - frameHeight);
+			float aspectedHeight = data->DesiredSize.x / ivp.getAspect() + frameHeight;
+
+			if( data->DesiredSize.x <= aspectedWidth )
+				data->DesiredSize.x = aspectedWidth;
+			else
+				data->DesiredSize.y = aspectedHeight;
+		}, (void*)&vp);
+		vpWinFlag |= ImGuiWindowFlags_NoDocking;
+	}
+	else if( vp.window_mode==Viewport::WM_FIXED_SIZE ) {
+		vpWinFlag |= ImGuiWindowFlags_NoResize;
+	}
+	ImGui::Begin(vp.name.c_str(), &vp.is_opened, vpWinFlag);
+	
+	// for ignore draging
+	bool isHoveredOnTitle = ImGui::IsItemHovered(); // when move window
+	bool isWindowActivated = ImGui::IsItemActive(); // when resize window
+
+	// update size
+	auto contentSize = ImGui::GetContentRegionAvail();
+	if( fb.width!=contentSize.x || fb.height !=contentSize.y ) {
+		if(contentSize.x>10&&contentSize.y>10) // This is sometimes negative
+			vp.resize(contentSize.x, contentSize.y);
+	}
+
+	ImGui::SetItemKeyOwner(ImGuiKey_MouseWheelY);
+	ImGui::SetItemKeyOwner(ImGuiKey_MouseWheelX);
+	GLuint texID = fb.getRenderedTexId();
+	if( texID!=0 ) {
+		ImGui::Image((void*)(intptr_t)texID, ImVec2{(float)fb.width, (float)fb.height}, ImVec2{0, 1}, ImVec2{1, 0});
+	}
+
+	vp.is_focused = ImGui::IsWindowFocused();
+	vp.is_hovered = ImGui::IsItemHovered();
+	vp.is_dragged = isWindowActivated && !isHoveredOnTitle && ImGui::IsMouseDown(0);
+	vp.is_dragged |= (vp.is_hovered||vp.is_focused)&&(ImGui::IsMouseDown(1)||ImGui::IsMouseDown(2));
+	vp.is_appearing = ImGui::IsWindowAppearing();
+
+	vp.prev_mouse_pos = vp.mouse_pos;
+	ImVec2 imMousePos = ImGui::GetMousePos() - ImGui::GetWindowPos() - ImVec2(0, ImGui::GetFrameHeight());
+	vp.mouse_pos = {imMousePos.x, imMousePos.y};
+	vp.mouse_uv_pos = {imMousePos.x/contentSize.x, imMousePos.y/contentSize.y};
+	vp.mouse_off = vp.mouse_pos - vp.prev_mouse_pos;
+	vp.prev_mouse_pos = vp.mouse_pos;
+
+	ImGuiIO io = ImGui::GetIO();
+	vp.is_scrolled =  vp.is_hovered&&(io.MouseWheel||io.MouseWheelH);
+	vp.scroll_off = {io.MouseWheelH, io.MouseWheel};
+	
+	if( guizmo_hook ) {
+		guizmo_hook(&vp);
+		vp.is_dragged &= !ImGuizmo::IsUsingAny();
+	}
+	if( vp.is_dragged ) ImGui::SetMouseCursor(7);
+
+	ImGui::End();
+	ImGui::PopStyleVar();
+
+	for( auto& cb : vp.update_callbacks ) {
+		cb(ImGui::GetIO().DeltaTime);
+	}
+}
+
+
+void LimGui::ViewportWithGuizmo(
+	ViewportWithCamera& vp
+	, std::function<void(lim::Viewport*)> guizmoHook
+)
+{
+	guizmo_hook = guizmoHook;
+	LimGui::Viewport(vp);
+	guizmo_hook = nullptr;
+}
+
+namespace {
+	std::function<void(lim::Viewport*)> inner_scene_guizmo_hook = nullptr;
+}
+static void sceneGuizmoHook(lim::Viewport* vp) {
+
+}
+
+void LimGui::ViewportWithSceneGuizmo(
+	lim::ViewportWithCamera& vp
+    , std::function<void(lim::Viewport*)> guizmoHook
+)
+{
+	inner_scene_guizmo_hook = guizmoHook;
+	guizmo_hook = sceneGuizmoHook;
+	LimGui::Viewport(vp);
+	guizmo_hook = nullptr;
+}
 
 

@@ -53,7 +53,7 @@ void AppScene3d::updateImGui()
 
 	LimGui::SceneEditor(scene);
 
-	viewport.drawImGui();
+	LimGui::ViewportWithGuizmo(viewport);
 }
 void AppScene3d::dndCallback(int count, const char **paths)
 {

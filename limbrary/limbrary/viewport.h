@@ -31,13 +31,15 @@ Todo:
 #include <glm/glm.hpp>
 #include <string>
 #include "containers/callbacks.h"
+#include "containers/own_ptr.h"
+#include "tools/mecro.h"
 
 
 namespace lim
 {
 	class Camera;
 
-	class Viewport
+	class Viewport : public NoCopyAndMove
 	{
 	public:
 		enum WindowMode : int
@@ -47,7 +49,7 @@ namespace lim
 			WM_FIXED_SIZE,
 		};
 	public:
-		std::string name = "Viewport##appname";
+		std::string name;
 		WindowMode window_mode = WM_FREE;
 		bool is_opened = true;
 		bool is_hovered = false;
@@ -56,30 +58,36 @@ namespace lim
 		bool is_scrolled = false;
 		bool is_appearing = false;
 		glm::vec2 mouse_pos = {0,0};
+		glm::vec2 prev_mouse_pos = {0,0};
 		glm::vec2 mouse_uv_pos = {0,0};
 		glm::vec2 mouse_off = {0,0};
 		glm::vec2 scroll_off = {0,0};
 		Callbacks<void(int, int)> resize_callbacks;
 		Callbacks<void(float dt)> update_callbacks;
 	protected:
-		glm::vec2 prev_mouse_pos = {0,0};
-		IFramebuffer* own_framebuffer = nullptr;
-	public:
-		Viewport(const Viewport&) = delete;
-		Viewport(Viewport&&) = delete;
-		Viewport& operator=(const Viewport&) = delete;
-		Viewport& operator=(Viewport&&) = delete;
-		
-		Viewport(IFramebuffer* createdFB, const char* _name = "Viewport");
-		virtual ~Viewport();
+		OwnPtr<IFramebuffer> own_framebuffer = nullptr;
 
-		bool drawImGui(std::function<void(const Viewport&)> guizmoFunc = nullptr);
+	public:
+		Viewport(IFramebuffer* createdFB, const char* _name = "Viewport##appname");
+		~Viewport() noexcept = default;
+
+		inline const IFramebuffer& getFb() {
+			return *own_framebuffer;
+		}
+		inline void setClearColor(const glm::vec4& color) {
+			own_framebuffer->clear_color = color;
+		}
+		inline int getWidth() const {
+			return own_framebuffer->width;
+		};
+		inline int getHeight() const {
+			return own_framebuffer->height;
+		}
+		float getAspect() const {
+			return own_framebuffer->aspect;
+		}
+		
 		void resize(GLuint _width, GLuint _height);
-		const IFramebuffer& getFb();
-		void setClearColor(glm::vec4 color);
-		int getWidth() const;
-		int getHeight() const;
-		float getAspect() const;
 	};
 }
 

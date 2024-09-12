@@ -117,7 +117,7 @@ void lim::AppSkeletal::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
 
-	viewport.drawImGui();
+	LimGui::Viewport(viewport);
 
 	LimGui::ModelViewEditor(*scene.own_mds.front());
 

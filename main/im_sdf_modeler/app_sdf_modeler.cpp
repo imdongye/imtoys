@@ -8,7 +8,7 @@
 #include "app_sdf_modeler.h"
 #include "sdf_bridge.h"
 #include <limbrary/tools/s_asset_lib.h>
-#include <imgui.h>
+#include <limbrary/tools/limgui.h>
 
 
 lim::AppSdfModeler::AppSdfModeler(): AppBase(1373, 783, APP_NAME, false)
@@ -64,9 +64,7 @@ void lim::AppSdfModeler::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
 
-	viewport.drawImGui([](const Viewport& vp){
-		sdf::drawGuizmo(vp);
-	});
+	LimGui::ViewportWithGuizmo(viewport, sdf::drawGuizmo);
 
 	sdf::drawImGui();
 }

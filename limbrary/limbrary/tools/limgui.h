@@ -12,9 +12,8 @@
 
 #include <imgui.h>
 #include <glm/glm.hpp>
-#include <limbrary/framebuffer.h>
-#include <limbrary/model_view/camera.h>
 #include <limbrary/model_view/scene.h>
+#include <limbrary/model_view/camera_man.h>
 
 namespace LimGui
 {
@@ -45,6 +44,13 @@ namespace LimGui
     void IBLightEditor(lim::IBLight& lit);
 
     void SceneEditor(lim::Scene& scn);
+
+    
+	void Viewport(lim::Viewport& vp);
+    void ViewportWithGuizmo(lim::ViewportWithCamera& vp
+        , std::function<void(lim::Viewport*)> guizmoHook = nullptr);
+    void ViewportWithSceneGuizmo(lim::ViewportWithCamera& vp
+        , std::function<void(lim::Viewport*)> guizmoHook = nullptr);
 }
 
 namespace lim

@@ -316,7 +316,7 @@ void AppClothGPU::update()
 void AppClothGPU::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
-	viewport.drawImGui();
+	LimGui::Viewport(viewport);
 
 
 

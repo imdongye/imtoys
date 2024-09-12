@@ -107,7 +107,8 @@ void AppParticle::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
 
-	viewport.drawImGui();
+	LimGui::Viewport(viewport);
+
 
 	ImGui::Begin("controller##ptcl");
 	LimGui::PlotVal("dt", "ms", delta_time*1000.f);

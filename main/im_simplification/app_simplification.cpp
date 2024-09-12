@@ -11,8 +11,8 @@
 #include <limbrary/tools/s_asset_lib.h>
 #include <limbrary/tools/s_save_file.h>
 #include <limbrary/tools/text.h>
+#include <limbrary/tools/limgui.h>
 #include <limbrary/model_view/mesh_maked.h>
-#include <imgui.h>
 #include <limbrary/model_view/scene.h>
 #include <limbrary/model_view/model_io_helper.h>
 
@@ -362,7 +362,8 @@ void AppSimplification::updateImGui()
 	// 실행후 겹쳤을때 그리는순서에 따라서 위로오는게 결정됨, 방금 생성한게 위에 오기하기위함.
 	for( int i=nr_viewports-1; i>=0; i-- )
 	{
-		if( viewports[i]->drawImGui() == false ) {
+		LimGui::Viewport(*viewports[i]);
+		if( viewports[i]->is_opened == false ) {
 			subViewport(i);
 		}
 	}

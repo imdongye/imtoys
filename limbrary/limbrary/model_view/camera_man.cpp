@@ -274,9 +274,6 @@ ViewportWithCamera::ViewportWithCamera(IFramebuffer* createdFB, const char* _nam
 	: Viewport(createdFB, _name), camera(this)
 {
 }
-ViewportWithCamera::~ViewportWithCamera() noexcept
-{
-}
 vec3 ViewportWithCamera::getMousePosRayDir() const {
 	return camera.screenPosToDir(mouse_uv_pos);
 }

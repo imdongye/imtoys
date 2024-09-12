@@ -193,7 +193,7 @@ void AppSoftbodyInModel::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
 
-	viewport.drawImGui();
+	LimGui::Viewport(viewport);
 
 
 	ModelView& md = *scene.own_mds[0];

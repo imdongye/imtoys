@@ -1,6 +1,6 @@
 #include "app_shadertoy.h"
-#include <imgui.h>
 #include <limbrary/tools/s_asset_lib.h>
+#include <limbrary/tools/limgui.h>
 #include <limbrary/tools/log.h>
 #include <fstream>
 
@@ -82,7 +82,7 @@ namespace lim
 		}
 		ImGui::End();
 
-		viewport.drawImGui();
+		LimGui::Viewport(viewport);
 	}
 	void AppShaderToy::cursorPosCallback(double xPos, double yPos)
 	{

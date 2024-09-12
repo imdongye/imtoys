@@ -157,7 +157,7 @@ void AppBaseCanvas3d::update()
 }
 void AppBaseCanvas3d::updateImGui() {
     ImGui::DockSpaceOverViewport();
-    vp.drawImGui();
+    LimGui::Viewport(vp);
     LimGui::LightDirectionalEditor(light);
     canvasImGui();
 }

@@ -787,7 +787,7 @@ void sdf::drawImGui()
 }
 
 
-void sdf::drawGuizmo(const Viewport& vp) {
+void sdf::drawGuizmo(lim::Viewport* vp) {
     Camera& cam = *camera;
     const auto& pos = ImGui::GetItemRectMin();
     const auto& size = ImGui::GetItemRectSize();

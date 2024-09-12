@@ -1,7 +1,7 @@
 #include "app_fluid.h"
 #include "canvas.h"
 #include <stb_image.h>
-#include <imgui.h>
+#include <limbrary/tools/limgui.h>
 #include <limbrary/tools/s_asset_lib.h>
 
 using namespace glm;
@@ -118,7 +118,7 @@ namespace lim
 			ImGui::Text("mouse pos : %4d, %4d", (int)points[0].x, (int)points[0].x);
 			ImGui::End();
 		}
-		viewport.drawImGui();
+		LimGui::Viewport(viewport);
 	}
 	void AppFluid::framebufferSizeCallback(int w, int h)
 	{

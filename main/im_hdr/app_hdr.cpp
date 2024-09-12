@@ -2,7 +2,7 @@
 #include <stb_image.h>
 #include <glm/gtx/extended_min_max.hpp>
 #include <limbrary/tools/text.h>
-#include <imgui.h>
+#include <limbrary/tools/limgui.h>
 
 namespace
 {
@@ -87,7 +87,7 @@ namespace lim
 		//ImGui::DockSpaceOverViewport();
 
 		for( int i = (int)viewports.size()-1; i>=0; i-- ) {
-			viewports[i]->drawImGui();
+			LimGui::Viewport(*viewports[i]);
 		}
 
 		ImGui::Begin("state##imhdr");

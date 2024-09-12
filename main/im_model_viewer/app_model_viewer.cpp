@@ -232,24 +232,24 @@ void lim::AppModelViewer::updateImGui()
 			vp_light_map.getFb().bind();
 			drawTexToQuad(ib_light.map_Light.tex_id, 2.2f, 0.f, 1.f);
 			vp_light_map.getFb().unbind();
-			vp_light_map.drawImGui();
+			LimGui::Viewport(vp_light_map);
 
 			ImGui::SliderFloat("pfenv depth", &pfenv_depth, 0.f, 1.f);
 				
 			vp_irr_map.getFb().bind();
 			drawTexToQuad(ib_light.map_Irradiance.tex_id, 2.2f, 0.f, 1.f);
 			vp_irr_map.getFb().unbind();
-			vp_irr_map.drawImGui();
+			LimGui::Viewport(vp_irr_map);
 
 			vp_pfenv_map.getFb().bind();
 			drawTex3dToQuad(ib_light.map_PreFilteredEnv.tex_id, pfenv_depth, 2.2f, 0.f, 1.f);
 			vp_pfenv_map.getFb().unbind();
-			vp_pfenv_map.drawImGui();
+			LimGui::Viewport(vp_pfenv_map);
 
 			vp_pfbrdf_map.getFb().bind();
 			drawTexToQuad(ib_light.map_PreFilteredBRDF.tex_id, 2.2f, 0.f, 1.f);
 			vp_pfbrdf_map.getFb().unbind();
-			vp_pfbrdf_map.drawImGui();
+			LimGui::Viewport(vp_pfbrdf_map);
 		}
 		
 		ImGui::End();
@@ -258,7 +258,7 @@ void lim::AppModelViewer::updateImGui()
 	for(int i=0; i<scenes.size(); i++) 
 	{
 		// /draw model view
-		viewports[i]->drawImGui();
+		LimGui::Viewport(*viewports[i]);
 
 		// draw brdf ctrl
 		if(selected_vp_idx != i)

@@ -15,6 +15,7 @@
 #include <limbrary/model_view/mesh_maked.h>
 #include <limbrary/tools/log.h>
 #include <limbrary/tools/s_asset_lib.h>
+#include <limbrary/tools/limgui.h>
 #include <limbrary/model_view/scene.h>
 
 
@@ -181,7 +182,7 @@ void lim::AppHatching::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
 
-	viewport.drawImGui();
+	LimGui::Viewport(viewport);
 
 	/* controller */
 	ImGui::Begin("controller##hatching");

@@ -68,19 +68,19 @@ int main()
 	apps_selector::add<AppFluid>();
 	apps_selector::add<AppShaderToy>();
 
-	apps_selector::selected_app_idx = 0;
+	apps_selector::wanted_app_idx = 0;
 
 	apps_selector::run();
 
 
 	//
-	// without app selector ( for one app )
+	// without apps_selector ( for one app )
 	//
 	// AppBase::g_app_name = AppTemplate::APP_NAME;
 	// AppBase::g_app_dir =  AppTemplate::APP_DIR;
 	// AppBase::g_app_info = AppTemplate::APP_INFO;
-	// AppBase::g_ptr = new AppTemplate();
-	// AppBase::g_ptr->run();
+	// AppTemplate app;
+	// app.run();
 
 
 	return 0;

@@ -3,8 +3,8 @@
 #include <limbrary/model_view/mesh_maked.h>
 #include <limbrary/model_view/scene.h>
 #include <glm/gtx/transform.hpp>
-#include <imgui.h>
 #include <limbrary/tools/s_asset_lib.h>
+#include <limbrary/tools/limgui.h>
 
 using namespace lim;
 
@@ -111,7 +111,7 @@ void AppGenMesh::updateImGui()
 	ImGui::DockSpaceOverViewport();
 
 
-	viewport.drawImGui();
+	LimGui::Viewport(viewport);
 	
 
 	/* controller */
