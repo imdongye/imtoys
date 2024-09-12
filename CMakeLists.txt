@@ -265,6 +265,13 @@ list(FILTER main_files   EXCLUDE REGEX "${main_dir}/assets/*")
 file(GLOB_RECURSE shader_files #CONFIGURE_DEPENDS 
     ${main_dir}/*.glsl ${main_dir}/*.vs ${main_dir}/*.vert ${main_dir}/*.fs ${main_dir}/*.frag
 )
+
+# using opengl4.6
+if(APPLE)
+    list(FILTER main_files   EXCLUDE REGEX "${main_dir}/im_pbd/*")
+    list(FILTER main_files   EXCLUDE REGEX "${main_dir}/im_anims/app_cloth_gpu.*")
+    list(FILTER main_files   EXCLUDE REGEX "${main_dir}/im_anims/app_particle.*")
+endif()
 list(FILTER main_files   EXCLUDE REGEX "${main_dir}/ignored/*")
 list(FILTER shader_files EXCLUDE REGEX "${main_dir}/ignored/*")
 list(FILTER main_files   EXCLUDE REGEX "${main_dir}/exports/*")
@@ -311,7 +318,7 @@ set_target_properties(update_mappings PROPERTIES FOLDER "vendor")
 if(WIN32)
     set_target_properties(UpdateAssimpLibsDebugSymbolsAndDLLs PROPERTIES FOLDER "vendor")
 endif()
-set_target_properties(zlibstatic PROPERTIES FOLDER "vendor")
+# set_target_properties(zlibstatic PROPERTIES FOLDER "vendor")
 
 
 

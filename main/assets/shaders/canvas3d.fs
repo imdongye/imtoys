@@ -5,7 +5,7 @@ const float PI = 3.1415926535;
 in vec3 wPos;
 in vec3 wNor;
 in vec4 lPos;
-in vec4 oColor;
+flat in vec4 oColor;
 
 
 uniform vec3 cam_Pos;

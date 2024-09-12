@@ -16,6 +16,7 @@ Note: callbacks
 #define __callbacks_h_
 #include <functional>
 #include <vector>
+#include "../tools/log.h"
 
 
 namespace lim

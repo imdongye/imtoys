@@ -7,8 +7,33 @@ using namespace lim;
 using namespace glm;
 using namespace std;
 
+static constexpr size_t pi_size = sizeof(vec4)*5;
 
+static void appendPrimInfoToVAO(GLuint vao)
+{
+    constexpr size_t vec4Size = sizeof(glm::vec4);
 
+    glBindVertexArray(vao);
+
+    glEnableVertexAttribArray(3); 
+    glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, pi_size, (void*)0);
+    glVertexAttribDivisor(3, 1);
+    glEnableVertexAttribArray(4); 
+    glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, pi_size, (void*)(1*vec4Size));
+    glVertexAttribDivisor(4, 1);
+    glEnableVertexAttribArray(5); 
+    glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, pi_size, (void*)(2*vec4Size));
+    glVertexAttribDivisor(5, 1);
+    glEnableVertexAttribArray(6); 
+    glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, pi_size, (void*)(3*vec4Size));
+    glVertexAttribDivisor(6, 1);
+
+    glEnableVertexAttribArray(7);
+    glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, pi_size, (void*)(4*vec4Size));
+    glVertexAttribDivisor(7, 1);
+
+    glBindVertexArray(0);
+}
 
 AppBaseCanvas3d::AppBaseCanvas3d(int winWidth, int winHeight, const char* title, bool vsync
     , int nrMaxQuads, int nrMaxSpheres, int nrMaxCylinders) 
@@ -30,22 +55,23 @@ AppBaseCanvas3d::AppBaseCanvas3d(int winWidth, int winHeight, const char* title,
     spheres.resize(max_nr_spheres);
     cylinders.resize(max_nr_cylinders);
 
-    GLsizeiptr bufSize;
+     
 
-    bufSize = max_nr_quads*sizeof(PrimInfo);
     glGenBuffers(1, &buf_quads);
     glBindBuffer(GL_ARRAY_BUFFER, buf_quads);
-    glBufferData(GL_ARRAY_BUFFER, bufSize, nullptr, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, max_nr_quads*pi_size, nullptr, GL_DYNAMIC_DRAW);
+    appendPrimInfoToVAO(ms_quad.vao);
 
-    bufSize = max_nr_spheres*sizeof(PrimInfo);
     glGenBuffers(1, &buf_spheres);
     glBindBuffer(GL_ARRAY_BUFFER, buf_spheres);
-    glBufferData(GL_ARRAY_BUFFER, bufSize, nullptr, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, max_nr_spheres*pi_size, nullptr, GL_DYNAMIC_DRAW);
+    appendPrimInfoToVAO(ms_sphere.vao);
 
-    bufSize = max_nr_cylinders*sizeof(PrimInfo);
     glGenBuffers(1, &buf_cylinders);
     glBindBuffer(GL_ARRAY_BUFFER, buf_cylinders);
-    glBufferData(GL_ARRAY_BUFFER, bufSize, nullptr, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, max_nr_cylinders*pi_size, nullptr, GL_DYNAMIC_DRAW);
+    appendPrimInfoToVAO(ms_cylinder.vao);
+
 
     prog.name = "canvas3d_render";
     prog.attatch("canvas3d.vs").attatch("canvas3d.fs").link();
@@ -102,20 +128,17 @@ void AppBaseCanvas3d::updateInstance() const
 }
 void AppBaseCanvas3d::drawInstance() const
 {
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, buf_quads);
     glBindVertexArray(ms_quad.vao);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ms_quad.buf_tris);
-	glDrawElementsInstanced(GL_TRIANGLES, ms_quad.tris.size()*3, GL_UNSIGNED_INT, nullptr, nr_quads);
+	glDrawElementsInstanced(GL_TRIANGLES, ms_quad.nr_tris*3, GL_UNSIGNED_INT, nullptr, nr_quads);
 
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, buf_spheres);
     glBindVertexArray(ms_sphere.vao);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ms_sphere.buf_tris);
-	glDrawElementsInstanced(GL_TRIANGLES, ms_sphere.tris.size()*3, GL_UNSIGNED_INT, nullptr, nr_spheres);
+	glDrawElementsInstanced(GL_TRIANGLES, ms_sphere.nr_tris*3, GL_UNSIGNED_INT, nullptr, nr_spheres);
 
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, buf_cylinders);
     glBindVertexArray(ms_cylinder.vao);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ms_cylinder.buf_tris);
-	glDrawElementsInstanced(GL_TRIANGLES, ms_cylinder.tris.size()*3, GL_UNSIGNED_INT, nullptr, nr_cylinders);
+	glDrawElementsInstanced(GL_TRIANGLES, ms_cylinder.nr_tris*3, GL_UNSIGNED_INT, nullptr, nr_cylinders);
 }
 
 void AppBaseCanvas3d::update()

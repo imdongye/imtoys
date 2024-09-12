@@ -116,9 +116,10 @@ AppBase::AppBase(int winWidth, int winHeight, const char* title, bool vsync)
 		glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &iTemp);
 		log::pure("#Vertex Attributes   : %d\n", iTemp);
 
+#ifndef __APPLE__
 		glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &iTemp);
 		log::pure("#comp invocations    : %d\n", iTemp);
-
+#endif
 		log::pure("#max ms samples    	: %d\n", iTemp);
 		
 		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &iTemp);

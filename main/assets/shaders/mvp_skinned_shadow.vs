@@ -1,4 +1,4 @@
-#version 460 core
+#version 410 core
 const int MAX_BONES = 200;
 const int MAX_BONE_PER_VERT = 4;
 

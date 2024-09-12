@@ -105,9 +105,11 @@ void log::glError(int line) {
         case GL_INVALID_ENUM:                   msg = "GL_INVALID_ENUM"; break;
         case GL_INVALID_VALUE:                  msg = "GL_INVALID_VALUE"; break;
         case GL_INVALID_OPERATION:              msg = "GL_INVALID_OPERATION"; break;
+        case GL_INVALID_FRAMEBUFFER_OPERATION:  msg = "INVALID_FRAMEBUFFER_OPERATION"; break;
+#ifndef __APPLE__
         case GL_STACK_OVERFLOW:                 msg = "GL_STACK_OVERFLOW"; break;
         case GL_STACK_UNDERFLOW:                msg = "GL_STACK_UNDERFLOW"; break;
-        case GL_INVALID_FRAMEBUFFER_OPERATION:  msg = "INVALID_FRAMEBUFFER_OPERATION"; break;
+#endif
         default:                                msg = "UNKNOWN"; break;
     }
     if( err == GL_NO_ERROR )
