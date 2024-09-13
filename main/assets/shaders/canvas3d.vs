@@ -6,7 +6,7 @@ layout(location=0) in vec3 aPos;
 layout(location=1) in vec3 aNor;
 layout(location=2) in vec2 aUv;
 // instance buffer
-layout(location=3) in vec4 aMtx;
+layout(location=3) in mat4 aMtx;
 layout(location=7) in vec4 aCol;
 
 out vec3 wPos;

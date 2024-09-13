@@ -34,12 +34,9 @@ namespace lim
         MeshQuad ms_quad;
 		MeshIcoSphere ms_sphere;
         MeshCylinder ms_cylinder;
-        const int max_nr_quads;
-        const int max_nr_spheres;
-        const int max_nr_cylinders;
-        mutable int nr_quads;
-        mutable int nr_spheres;
-        mutable int nr_cylinders;
+        mutable int nr_quads,       capacity_quads;
+        mutable int nr_spheres,     capacity_spheres;
+        mutable int nr_cylinders,   capacity_cylinders;
         mutable std::vector<PrimInfo> quads;
         mutable std::vector<PrimInfo> spheres;
         mutable std::vector<PrimInfo> cylinders;
@@ -52,7 +49,7 @@ namespace lim
         ViewportWithCamera vp;
     public:
         AppBaseCanvas3d(int winWidth=1280, int winHeight=720, const char* title="nonamed"
-            , bool vsync=true, int nrMaxQuads=10, int nrMaxSpheres=10000, int nrMaxCylinders=1000);
+            , bool vsync=true, int capacityQuads=10, int capacitySpheres=1000, int capacityCylinders=1000);
         virtual ~AppBaseCanvas3d();
 
         virtual void canvasUpdate() = 0;

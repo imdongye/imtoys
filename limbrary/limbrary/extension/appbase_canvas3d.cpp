@@ -9,13 +9,19 @@ using namespace std;
 
 static constexpr size_t pi_size = sizeof(vec4)*5;
 
-static void appendPrimInfoToVAO(GLuint vao)
+static void updatePrimBufSize(GLuint buf, GLsizeiptr capacity)
+{
+    glBindBuffer(GL_ARRAY_BUFFER, buf);
+    glBufferData(GL_ARRAY_BUFFER, capacity*pi_size, nullptr, GL_DYNAMIC_DRAW);
+}
+
+static void updatePrimInfoToVAO(GLuint vao)
 {
     constexpr size_t vec4Size = sizeof(glm::vec4);
 
     glBindVertexArray(vao);
 
-    glEnableVertexAttribArray(3); 
+    glEnableVertexAttribArray(3); // matrix
     glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, pi_size, (void*)0);
     glVertexAttribDivisor(3, 1);
     glEnableVertexAttribArray(4); 
@@ -28,7 +34,7 @@ static void appendPrimInfoToVAO(GLuint vao)
     glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, pi_size, (void*)(3*vec4Size));
     glVertexAttribDivisor(6, 1);
 
-    glEnableVertexAttribArray(7);
+    glEnableVertexAttribArray(7); // color
     glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, pi_size, (void*)(4*vec4Size));
     glVertexAttribDivisor(7, 1);
 
@@ -36,13 +42,13 @@ static void appendPrimInfoToVAO(GLuint vao)
 }
 
 AppBaseCanvas3d::AppBaseCanvas3d(int winWidth, int winHeight, const char* title, bool vsync
-    , int nrMaxQuads, int nrMaxSpheres, int nrMaxCylinders) 
+    , int capacityQuads, int capacitySpheres, int capacityCylinders) 
     : AppBase(winWidth, winHeight, title, vsync)
     , vp(new FramebufferMs(), "Canvas3d")
     , light()
-    , max_nr_quads(nrMaxQuads)
-    , max_nr_spheres(nrMaxSpheres)
-    , max_nr_cylinders(nrMaxCylinders)
+    , capacity_quads(capacityQuads)
+    , capacity_spheres(capacitySpheres)
+    , capacity_cylinders(capacityCylinders)
     , ms_quad(1.f, 1.f, true, false)
     , ms_sphere(1.f, 1, true, false)
     , ms_cylinder(1.f, 1.f, 8, true, false)
@@ -51,26 +57,23 @@ AppBaseCanvas3d::AppBaseCanvas3d(int winWidth, int winHeight, const char* title,
     ms_sphere.initGL(false);
     ms_cylinder.initGL(false);
 
-    quads.resize(max_nr_quads);
-    spheres.resize(max_nr_spheres);
-    cylinders.resize(max_nr_cylinders);
+    quads.reserve(capacity_quads);
+    spheres.reserve(capacity_spheres);
+    cylinders.reserve(capacity_cylinders);
 
      
 
     glGenBuffers(1, &buf_quads);
-    glBindBuffer(GL_ARRAY_BUFFER, buf_quads);
-    glBufferData(GL_ARRAY_BUFFER, max_nr_quads*pi_size, nullptr, GL_DYNAMIC_DRAW);
-    appendPrimInfoToVAO(ms_quad.vao);
+    updatePrimBufSize(buf_quads, capacity_quads);
+    updatePrimInfoToVAO(ms_quad.vao);
 
     glGenBuffers(1, &buf_spheres);
-    glBindBuffer(GL_ARRAY_BUFFER, buf_spheres);
-    glBufferData(GL_ARRAY_BUFFER, max_nr_spheres*pi_size, nullptr, GL_DYNAMIC_DRAW);
-    appendPrimInfoToVAO(ms_sphere.vao);
+    updatePrimBufSize(buf_spheres, capacity_spheres);
+    updatePrimInfoToVAO(ms_sphere.vao);
 
     glGenBuffers(1, &buf_cylinders);
-    glBindBuffer(GL_ARRAY_BUFFER, buf_cylinders);
-    glBufferData(GL_ARRAY_BUFFER, max_nr_cylinders*pi_size, nullptr, GL_DYNAMIC_DRAW);
-    appendPrimInfoToVAO(ms_cylinder.vao);
+    updatePrimBufSize(buf_cylinders, capacity_cylinders);
+    updatePrimInfoToVAO(ms_cylinder.vao);
 
 
     prog.name = "canvas3d_render";
@@ -95,34 +98,39 @@ void AppBaseCanvas3d::resetInstance()
     nr_quads=0;
     nr_spheres=0;
     nr_cylinders=0;
+    quads.clear();
+    spheres.clear();
+    cylinders.clear();
 }
 void AppBaseCanvas3d::updateInstance() const
 {
-    GLbitfield accessFlags = GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT;
-    PrimInfo* pMapped;
-    size_t bufSize;
-
     if( nr_quads>0 ) {
+        if( nr_quads > capacity_quads ) {
+            capacity_quads = glm::max(capacity_quads*2, nr_quads);
+            updatePrimBufSize(buf_quads, capacity_quads);
+        }
         glBindBuffer(GL_ARRAY_BUFFER, buf_quads);
-        bufSize = sizeof(PrimInfo)*nr_quads;
-        pMapped = (PrimInfo*)glMapBufferRange(GL_ARRAY_BUFFER, 0, bufSize, accessFlags);
-        memcpy(pMapped, quads.data(), bufSize);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, nr_quads*pi_size, quads.data());
         glUnmapBuffer(GL_ARRAY_BUFFER);
     }
 
     if( nr_spheres>0 ) {
+        if( nr_spheres > capacity_spheres ) {
+            capacity_spheres = glm::max(capacity_spheres*2, nr_spheres);
+            updatePrimBufSize(buf_spheres, nr_spheres);
+        }
         glBindBuffer(GL_ARRAY_BUFFER, buf_spheres);
-        bufSize = sizeof(PrimInfo)*nr_spheres;
-        pMapped = (PrimInfo*)glMapBufferRange(GL_ARRAY_BUFFER, 0, bufSize, accessFlags);
-        memcpy(pMapped, spheres.data(), bufSize);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, nr_spheres*pi_size, spheres.data());
         glUnmapBuffer(GL_ARRAY_BUFFER);
     }
 
     if( nr_cylinders>0 ) {
+        if( nr_cylinders > capacity_cylinders ) {
+            capacity_cylinders = glm::max(capacity_cylinders*2, nr_cylinders);
+            updatePrimBufSize(buf_cylinders, nr_cylinders);
+        }
         glBindBuffer(GL_ARRAY_BUFFER, buf_cylinders);
-        bufSize = sizeof(PrimInfo)*nr_cylinders;
-        pMapped = (PrimInfo*)glMapBufferRange(GL_ARRAY_BUFFER, 0, bufSize, accessFlags);
-        memcpy(pMapped, cylinders.data(), bufSize);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, nr_cylinders*pi_size, cylinders.data());
         glUnmapBuffer(GL_ARRAY_BUFFER);
     }
 }
@@ -198,7 +206,7 @@ void AppBaseCanvas3d::drawQuad(const vec3& p, const vec3& n, const vec2& sz, con
     else 
         mtx_Model = translate(p) * scale(s);
     
-    quads[nr_quads] = {mtx_Model, vec4(color, alpha)};
+    quads.push_back({mtx_Model, vec4(color, alpha)});
     nr_quads++;
 }
 
@@ -206,7 +214,7 @@ void AppBaseCanvas3d::drawQuad(const vec3& p, const vec3& n, const vec2& sz, con
 void AppBaseCanvas3d::drawSphere(const vec3& p, const float w, const vec3& color, const float alpha) const {
     mat4 mtx_Model = translate(p) * scale(vec3(w));
 
-    spheres[nr_spheres] = {mtx_Model, vec4(color, alpha)};
+    spheres.push_back({mtx_Model, vec4(color, alpha)});
     nr_spheres++;
 }
 
@@ -224,20 +232,20 @@ void AppBaseCanvas3d::drawCylinder( const vec3& p1, const vec3& p2, const float 
     else 
         mtx_Model = translate(mid) * scale(s);
     
-    cylinders[nr_cylinders] = {mtx_Model, vec4(color, alpha)};
+    cylinders.push_back({mtx_Model, vec4(color, alpha)});
     nr_cylinders++;
 }
 
 
 void AppBaseCanvas3d::drawQuad(const mat4& mtx, const vec3& color, const float alpha) const {
-    quads[nr_quads] = {mtx, vec4(color, alpha)};
+    quads.push_back({mtx, vec4(color, alpha)});
     nr_quads++;
 }
 void AppBaseCanvas3d::drawSphere(const mat4& mtx, const vec3& color, const float alpha) const {
-    spheres[nr_spheres] = {mtx, vec4(color, alpha)};
+    spheres.push_back({mtx, vec4(color, alpha)});
     nr_spheres++;
 }
 void AppBaseCanvas3d::drawCylinder( const mat4& mtx, const vec3& color, const float alpha ) const {
-    cylinders[nr_cylinders] = {mtx, vec4(color, alpha)};
+    cylinders.push_back({mtx, vec4(color, alpha)});
     nr_cylinders++;
 }
