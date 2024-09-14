@@ -282,7 +282,6 @@ void AppBase::run()
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
-		
 		ImGuizmo::BeginFrame();
 
 		updateImGui();
@@ -290,6 +289,7 @@ void AppBase::run()
 		log::__drawViewerGui();
 		
 		ImGui::Render();
+
 
 		// if update before updateImGui then black screen when resize viewport
 		// i don't know why

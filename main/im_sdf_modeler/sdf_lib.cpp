@@ -789,11 +789,6 @@ void sdf::drawImGui()
 
 void sdf::drawGuizmo(lim::Viewport* vp) {
     Camera& cam = *camera;
-    const auto& pos = ImGui::GetItemRectMin();
-    const auto& size = ImGui::GetItemRectSize();
-    ImGuizmo::SetDrawlist();
-    ImGuizmo::SetRect(pos.x, pos.y, size.x, size.y);
-
     ImGuizmo::SetOrthographic(false);
     if(selected_edit_mode_idx>0) {
         ImGuizmo::Manipulate( glm::value_ptr(cam.mtx_View), glm::value_ptr(cam.mtx_Proj)

@@ -544,6 +544,10 @@ void LimGui::Viewport(lim::Viewport& vp)
 	vp.scroll_off = {io.MouseWheelH, io.MouseWheel};
 	
 	if( guizmo_hook ) {
+		const auto& pos = ImGui::GetItemRectMin();
+		const auto& size = ImGui::GetItemRectSize();
+		ImGuizmo::SetDrawlist();
+		ImGuizmo::SetRect(pos.x, pos.y, size.x, size.y);
 		guizmo_hook(&vp);
 		vp.is_dragged &= !ImGuizmo::IsUsingAny();
 	}
@@ -570,9 +574,34 @@ void LimGui::ViewportWithGuizmo(
 
 namespace {
 	std::function<void(lim::Viewport*)> inner_scene_guizmo_hook = nullptr;
+	ImGuizmo::MODE gzmo_space = ImGuizmo::MODE::LOCAL;
+	constexpr ImGuizmo::OPERATION gzmo_edit_modes[] = { 
+		(ImGuizmo::OPERATION)0, ImGuizmo::TRANSLATE, 
+		ImGuizmo::SCALE, ImGuizmo::ROTATE, ImGuizmo::UNIVERSAL 
+	};
+	int selected_edit_mode_idx = 0;
 }
-static void sceneGuizmoHook(lim::Viewport* vp) {
-
+static void sceneGuizmoHook(lim::Viewport* vp)
+{
+	const auto& pos = ImGui::GetItemRectMin();
+		const auto& size = ImGui::GetItemRectSize();
+	Camera& cam = ((lim::ViewportWithCamera*)vp)->camera;
+	if( inner_scene_guizmo_hook ) {
+		inner_scene_guizmo_hook(vp);
+	}
+    ImGuizmo::SetOrthographic(false);
+	ImGuizmo::ViewManipulate( glm::value_ptr(cam.mtx_View), 8.0f, ImVec2{pos.x+size.x-128, pos.y}, ImVec2{128, 128}, (ImU32)0x10101010 );
+	if( picked_rd_node ) {
+		if( ImGuizmo::Manipulate( glm::value_ptr(cam.mtx_View), glm::value_ptr(cam.mtx_Proj)
+                            , gzmo_edit_modes[selected_edit_mode_idx], gzmo_space
+							, glm::value_ptr(picked_rd_node->mtx_global)
+                            , nullptr, nullptr, nullptr) )
+		{
+			picked_rd_node->tf.mtx = picked_rd_node->mtx_global;
+			picked_rd_node->tf.decomposeMtx();
+			picked_rd_node->updateGlobalTransform();
+		}
+	}
 }
 
 void LimGui::ViewportWithSceneGuizmo(
@@ -581,9 +610,8 @@ void LimGui::ViewportWithSceneGuizmo(
 )
 {
 	inner_scene_guizmo_hook = guizmoHook;
-	guizmo_hook = sceneGuizmoHook;
-	LimGui::Viewport(vp);
-	guizmo_hook = nullptr;
+	LimGui::ViewportWithGuizmo(vp, sceneGuizmoHook);
+	inner_scene_guizmo_hook = nullptr;
 }
 
 
