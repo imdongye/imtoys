@@ -69,6 +69,10 @@ void LimGui::Vec3(const glm::vec3& v) {
     ImGui::Text("%.2f %.2f %.2f", v.x, v.y, v.z);
 }
 
+bool LimGui::IsWindowHidden() {
+    ImGuiWindow* window = ImGui::GetCurrentWindowRead();
+    return window->Hidden;
+}
 
 
 

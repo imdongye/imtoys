@@ -10,7 +10,7 @@
 #include <imguizmo/ImGuizmo.h>
 #include <limbrary/model_view/light.h>
 #include <limbrary/model_view/scene.h>
-#include <limbrary/model_view/camera_man.h>
+#include <limbrary/model_view/viewport_with_cam.h>
 
 /************* glsl data **************/
 constexpr int MAX_MATS = 32;
@@ -68,7 +68,7 @@ extern int selected_edit_mode_idx;
 extern ImGuizmo::MODE gzmo_space;
 
 extern std::string model_name;
-extern lim::CameraController* camera;
+extern lim::CameraCtrl* camera;
 extern lim::LightDirectional* light;
 
 

@@ -7,7 +7,7 @@
 #define __app_softbody_in_model_h_
 
 #include <limbrary/application.h>
-#include <limbrary/model_view/camera_man.h>
+#include <limbrary/model_view/viewport_with_cam.h>
 #include <limbrary/model_view/scene.h>
 #include "pbd/pbd.h"
 
@@ -22,7 +22,7 @@ namespace lim
 
 		Program prog_skinned;
 		Program prog_static;
-		ViewportWithCamera viewport;
+		ViewportWithCam viewport;
 
 
 		IBLight ib_light;
@@ -37,7 +37,6 @@ namespace lim
 		virtual ~AppSoftbodyInModel();
 		virtual void update() override;
 		virtual void updateImGui() override;
-		virtual void dndCallback(int count, const char **paths) override;
 	};
 }
 

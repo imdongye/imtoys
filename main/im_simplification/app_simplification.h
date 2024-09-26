@@ -18,7 +18,7 @@
 #include <limbrary/program.h>
 #include <limbrary/model_view/light.h>
 #include <limbrary/model_view/model.h>
-#include <limbrary/model_view/camera_man.h>
+#include <limbrary/model_view/viewport_with_cam.h>
 #include <limbrary/model_view/scene.h>
 
 
@@ -47,7 +47,7 @@ namespace lim
 		Model ground;
 
 		int nr_viewports = 0;
-		std::vector<ViewportWithCamera*> viewports;
+		std::vector<ViewportWithCam*> viewports;
 		std::vector<Scene*> scenes;
 
 		const char* export_path = "exports/simp_rst";
@@ -66,9 +66,6 @@ namespace lim
 	private:
 		virtual void update() override;
 		virtual void updateImGui() override;
-		virtual void keyCallback(int key, int scancode, int action, int mods) override;
-		virtual void mouseBtnCallback(int button, int action, int mods) override;
-		virtual void dndCallback(int count, const char **paths) override;
 	};
 }
 

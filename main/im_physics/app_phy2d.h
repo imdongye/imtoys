@@ -7,7 +7,7 @@
 #define __app_phy2d_h__
 
 #include <limbrary/application.h>
-#include <limbrary/model_view/camera_man.h>
+#include <limbrary/model_view/viewport_with_cam.h>
 
 namespace lim
 {

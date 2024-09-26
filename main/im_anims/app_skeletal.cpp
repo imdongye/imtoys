@@ -65,7 +65,11 @@ lim::AppSkeletal::AppSkeletal() : AppBase(1200, 780, APP_NAME, false)
 	makeScene("assets/models/jump.fbx");
 
 	viewport.camera.moveShift(glm::vec3(0,1.4f,0));
-	viewport.camera.updateViewMat();
+	viewport.camera.updateViewMtx();
+
+	dnd_callbacks[this] = [this](int count, const char **paths) {
+		makeScene(paths[0]);
+	};
 }
 lim::AppSkeletal::~AppSkeletal()
 {
@@ -83,14 +87,11 @@ void lim::AppSkeletal::update()
 	scene.render(viewport.getFb(), viewport.camera);
 
 
-	const IFramebuffer& fb = viewport.getFb();
-	glBindFramebuffer(GL_FRAMEBUFFER, fb.fbo);
-	glViewport(0, 0, fb.width, fb.height);
-	glDisable(GL_DEPTH_TEST);
-	Program& prog = AssetLib::get().prog_color;
-	prog.use();
-	viewport.camera.setUniformTo(prog);
-
+	// viewport.getFb().bind();
+	// glDisable(GL_DEPTH_TEST);
+	// Program& prog = AssetLib::get().prog_color;
+	// prog.use();
+	// viewport.camera.setUniformTo(prog);
 	// todo when draw with cloth model getting to screen darker
 	//	draw bones 
 	// {
@@ -110,14 +111,14 @@ void lim::AppSkeletal::update()
 	// 		AssetLib::get().sphere.bindAndDrawGL();
 	// 	}
 	// }
-	glEnable(GL_DEPTH_TEST);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	// glEnable(GL_DEPTH_TEST);
+	// viewport.getFb().unbind();
 }
 void lim::AppSkeletal::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
 
-	LimGui::Viewport(viewport);
+	viewport.drawImGuiAndUpdateCam();
 
 	LimGui::ModelViewEditor(*scene.own_mds.front());
 
@@ -126,7 +127,4 @@ void lim::AppSkeletal::updateImGui()
 	LimGui::PlotVal("fps", "", ImGui::GetIO().Framerate);
 	ImGui::Checkbox("draw offset", &drawOffset);
 	ImGui::End();
-}
-void lim::AppSkeletal::dndCallback(int cnt, const char **paths) {
-	makeScene(paths[0]);
 }

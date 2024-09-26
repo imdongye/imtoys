@@ -97,7 +97,7 @@ static Texture* loadTexture(string texPath, bool convertLinear, const char* msg)
 		if( aTex ) {
 			// From: https://github.com/assimp/assimp/issues/408
 			log::pure("embbed tex fm hint: %s\n", aTex->achFormatHint);
-			rst->initFromMem((unsigned char*)aTex->pcData, aTex->mWidth, aTex->mHeight
+			rst->initFromMem((unsigned char*)aTex->pcData, {aTex->mWidth, aTex->mHeight}
 				, convertLinear, aTex->mFilename.C_Str());
 		}
 		else {

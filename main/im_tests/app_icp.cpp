@@ -175,7 +175,7 @@ namespace lim
 
         camera.pos = {0,0,5};
         camera.pivot = {0,0,0};
-        camera.updateViewMat();
+        camera.updateViewMtx();
 
         Material* mat = new Material();
         Model md;

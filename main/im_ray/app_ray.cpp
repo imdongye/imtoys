@@ -25,7 +25,7 @@ void AppRay::updateImGui()
 	ImGui::DockSpaceOverViewport();
 	
 	// draw getFb() on viewport gui
-	LimGui::Viewport(viewport);
+	viewport.drawImGuiAndUpdateCam();
 
 	ImGui::Begin("state##imray");
 	ImGui::Text("asdf");

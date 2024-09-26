@@ -7,7 +7,7 @@
 #define __app_skeletal_h_
 
 #include <limbrary/application.h>
-#include <limbrary/model_view/camera_man.h>
+#include <limbrary/model_view/viewport_with_cam.h>
 #include <limbrary/model_view/scene.h>
 
 namespace lim
@@ -21,7 +21,7 @@ namespace lim
 
 		Program prog_skinned;
 		Program prog_static;
-		ViewportWithCamera viewport;
+		ViewportWithCam viewport;
 		Scene scene;
 		void makeScene(const char* path);
 
@@ -30,7 +30,6 @@ namespace lim
 		~AppSkeletal();
 		virtual void update() override;
 		virtual void updateImGui() override;
-		virtual void dndCallback(int count, const char **paths) override;
 	};
 }
 

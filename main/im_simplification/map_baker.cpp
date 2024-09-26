@@ -23,7 +23,7 @@ namespace lim
         }
         FramebufferNoDepth srcNormalMap;
         srcNormalMap.clear_color = {0.5, 0.5, 1, 1};
-        srcNormalMap.resize(texSize);
+        srcNormalMap.resize({texSize, texSize});
 
         Program normalDrawProg;
         normalDrawProg.name = "normal to tex coord";
@@ -74,8 +74,7 @@ namespace lim
             srcNormalMap.unbind();
 
             /* 맵 베이킹 시작 */
-            dstMat.map_Bump->width = texSize;
-            dstMat.map_Bump->height = texSize;
+            dstMat.map_Bump->size = {texSize, texSize};
             dstMat.map_Bump->internal_format = GL_RGB8;
             dstMat.map_Bump->initGL();
             GLuint srcFbo = 0;
@@ -145,8 +144,8 @@ namespace lim
         for( auto& [bumpMatIdx, meshes] : mergeByNormalMap ) {
             Material& mat = *md.own_materials[bumpMatIdx];
             GLuint norTex;
-            GLsizei norWidth = mat.map_Bump->width;
-            GLsizei norHeight = mat.map_Bump->height;
+            GLsizei norWidth = mat.map_Bump->size.x;
+            GLsizei norHeight = mat.map_Bump->size.y;
             glGenTextures(1, &norTex);
             glBindTexture(GL_TEXTURE_2D, norTex);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, norWidth, norHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);

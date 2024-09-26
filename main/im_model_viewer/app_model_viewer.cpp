@@ -117,6 +117,28 @@ lim::AppModelViewer::AppModelViewer() : AppBase(1373, 780, APP_NAME, false)
 	addModelViewer("assets/models/objs/bunny.obj");
 	// addModelViewer("assets/models/objs/sphere20.obj");
 	// addModelViewer("assets/models/helmet/FlightHelmet/FlightHelmet.gltf");
+
+	key_callbacks[this] = [this](int key, int scancode, int action, int mods) {
+		// glFinish후 호출돼서 여기서 프로그램 리로드 해도됨.
+		if( action==GLFW_PRESS && GLFW_MOD_CONTROL== mods && key=='R' ) {
+			program.reload(GL_FRAGMENT_SHADER);
+		}
+	};
+
+	dnd_callbacks[this] = [this](int count, const char **paths) {
+		for( int i=0; i<count; i++ ) {
+			const char* path = paths[i];
+			if(strIsSame(getExtension(path),"hdr")) {
+				for(BrdfTestInfo& tInfo: brdf_test_infos) {
+					tInfo.idx_LitMod = 0;
+				}
+				ib_light.setMapAndBake(path);
+			}
+			else {
+				addModelViewer(path);
+			}
+		}
+	};
 }
 
 lim::AppModelViewer::~AppModelViewer()
@@ -163,10 +185,10 @@ void lim::AppModelViewer::addModelViewer(const char* path)
 	scenes.push_back(scn);
 
 	winName = fmtStrToBuf("%s###mdvr%dvp", md->name.c_str(), vpId);
-	auto vp = new ViewportWithCamera(new FramebufferMs(8), winName);
-	vp->camera.setViewMode(CameraManVp::VM_PIVOT);
+	auto vp = new ViewportWithCam(new FramebufferMs(8), winName);
+	vp->camera.viewing_mode = CameraManVp::VM_TRACKBALL_MOVE;
 	vp->camera.moveShift({0,1.f,0});
-	vp->camera.updateViewMat();
+	vp->camera.updateViewMtx();
 	viewports.push_back(vp);
 }
 void lim::AppModelViewer::rmModelViewer(int idx)
@@ -183,7 +205,7 @@ void lim::AppModelViewer::drawModelsToViewports()
 {
 	for(int i=0; i<viewports.size(); i++ )
 	{
-		ViewportWithCamera& vp = *viewports[i];
+		ViewportWithCam& vp = *viewports[i];
 		if( selected_vp_idx!=i && vp.is_focused )
 			selected_vp_idx = i;
 			
@@ -232,24 +254,24 @@ void lim::AppModelViewer::updateImGui()
 			vp_light_map.getFb().bind();
 			drawTexToQuad(ib_light.map_Light.tex_id, 2.2f, 0.f, 1.f);
 			vp_light_map.getFb().unbind();
-			LimGui::Viewport(vp_light_map);
+			vp_light_map.drawImGui();
 
 			ImGui::SliderFloat("pfenv depth", &pfenv_depth, 0.f, 1.f);
 				
 			vp_irr_map.getFb().bind();
 			drawTexToQuad(ib_light.map_Irradiance.tex_id, 2.2f, 0.f, 1.f);
 			vp_irr_map.getFb().unbind();
-			LimGui::Viewport(vp_irr_map);
+			vp_irr_map.drawImGui();
 
 			vp_pfenv_map.getFb().bind();
 			drawTex3dToQuad(ib_light.map_PreFilteredEnv.tex_id, pfenv_depth, 2.2f, 0.f, 1.f);
 			vp_pfenv_map.getFb().unbind();
-			LimGui::Viewport(vp_pfenv_map);
+			vp_pfenv_map.drawImGui();
 
 			vp_pfbrdf_map.getFb().bind();
 			drawTexToQuad(ib_light.map_PreFilteredBRDF.tex_id, 2.2f, 0.f, 1.f);
 			vp_pfbrdf_map.getFb().unbind();
-			LimGui::Viewport(vp_pfbrdf_map);
+			vp_pfbrdf_map.drawImGui();
 		}
 		
 		ImGui::End();
@@ -258,7 +280,7 @@ void lim::AppModelViewer::updateImGui()
 	for(int i=0; i<scenes.size(); i++) 
 	{
 		// /draw model view
-		LimGui::Viewport(*viewports[i]);
+		viewports[i]->drawImGuiAndUpdateCam();
 
 		// draw brdf ctrl
 		if(selected_vp_idx != i)
@@ -342,30 +364,5 @@ void lim::AppModelViewer::updateImGui()
 		}
 
 		ImGui::End();
-	}
-}
-void lim::AppModelViewer::keyCallback(int key, int scancode, int action, int mods)
-{
-	// glFinish후 호출돼서 여기서 프로그램 리로드 해도됨.
-	if( action==GLFW_PRESS && GLFW_MOD_CONTROL== mods && key=='R' ) {
-		program.reload(GL_FRAGMENT_SHADER);
-	}
-}
-void lim::AppModelViewer::cursorPosCallback(double xPos, double yPos)
-{
-}
-void lim::AppModelViewer::dndCallback(int count, const char **paths)
-{
-	for( int i=0; i<count; i++ ) {
-		const char* path = paths[i];
-		if(strIsSame(getExtension(path),"hdr")) {
-			for(BrdfTestInfo& tInfo: brdf_test_infos) {
-				tInfo.idx_LitMod = 0;
-			}
-			ib_light.setMapAndBake(path);
-		}
-		else {
-			addModelViewer(path);
-		}
 	}
 }

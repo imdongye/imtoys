@@ -1,286 +1,214 @@
 #include <limbrary/model_view/camera_man.h>
 #include <limbrary/application.h>
-#define IMGUI_DEFINE_MATH_OPERATORS
-#include <imgui.h>
+
+#include <limbrary/tools/limgui.h>
 #include <imgui_internal.h>
 #include <imguizmo/ImGuizmo.h>
 #include <limbrary/tools/log.h>
 #include <glm/gtx/transform.hpp>
 
-using namespace glm;
+#include <limbrary/tools/glim.h>
+#include <limbrary/using_in_cpp/glm.h>
 using namespace lim;
 
 
-CameraController::CameraController()
+CameraCtrl::CameraCtrl()
 {
+	max_fovy = 120.f;
+	min_fovy = 20.f;
+	max_dist = 17.f;
+	min_dist = 0.1f;
+#ifdef WIN32
+	spd_fovy = 1;
+	spd_dist = 6.f;
+#else
+	spd_fovy = 1;
+	spd_dist = 3.5f;
+#endif
+	spd_free_move = 2.f/1.f;    // m/sec
+	spd_free_move_fast = 4.f/1.f;    // m/sec
+	spd_free_rot = glim::pi2/2100.f;  // r/px
+	spd_tb_mouse_move = 1.f/120.f;  // m/px
+	spd_tb_mouse_rot = glim::pi2/1000.f; // r/px
+	spd_tb_scroll_move = 1.f/100.f; // m/scrollOff
+	spd_tb_scroll_rot = glim::pi2/400.f; // r/scrollOff
 }
-CameraController::~CameraController()
-{
-}
-void CameraController::setViewMode(ViewingMode vm)
-{
-	viewing_mode = vm%3;
-}
-CameraController::ViewingMode CameraController::getViewMode()
-{
-	return (ViewingMode)viewing_mode;
-}
-void CameraController::updateFreeMode()
+
+void CameraCtrl::updateFreeMode(const vec3& moveOff, const glm::vec2& rotOff, float fovyOff)
 {
 	// zoom
-	if( input_status&IST_SCROLLED ) {
-		fovy = fovy * pow(1.01f, scroll_off.y);
-		fovy = clamp(fovy, MIN_FOVY, MAX_FOVY);
-		updateProjMat();
+	if( fovyOff!=0.f ) {
+		fovy = fovy * pow(1.01f, fovyOff);
+		fovy = glm::clamp(fovy, min_fovy, max_fovy);
+		updateProjMtx();
 	}
-	if( input_status&IST_FOCUSED ) {
-		const vec3 diff = pivot - pos;
 
-		// move
-		const vec3 forwardDir = (1)?front:normalize(vec3{front.x, 0.f, front.z});
-		vec3 dir(0);
-		float moveSpd = spd_free_move;
-		if( ImGui::IsKeyDown(ImGuiKey_LeftShift) ) { moveSpd *= 2.f; }
-		if( ImGui::IsKeyDown(ImGuiKey_W) ) { dir += forwardDir; }
-		if( ImGui::IsKeyDown(ImGuiKey_S) ) { dir -= forwardDir; }
-		if( ImGui::IsKeyDown(ImGuiKey_E) ) { dir += global_up; }
-		if( ImGui::IsKeyDown(ImGuiKey_Q) ) { dir -= global_up; }
-		if( ImGui::IsKeyDown(ImGuiKey_A) ) {
-			if( !ImGui::IsKeyDown(ImGuiKey_D) ) {
-				dir -= right; is_left = true;
-			}
-			else if( !prev_is_left ) {
-				dir -= right; is_left = false;
-			}
-		}
-		if( ImGui::IsKeyDown(ImGuiKey_D) ) {
-			if( !ImGui::IsKeyDown(ImGuiKey_A) ) {
-				dir += right; is_left = false;
-			}
-			else if( prev_is_left ) {
-				dir += right; is_left = true;
-			}
-		}
-		if( dir!=vec3(0) ) {
-			moveShift(moveSpd*ImGui::GetIO().DeltaTime*normalize(dir));
-			prev_is_left = is_left; 
-		}
+	bool need_view_mtx_update = false;
 
-		// rotate
-		if( input_status&IST_DRAGGED && ImGui::IsMouseDown(0) ) {
-			vec2 step = spd_free_rot * mouse_off;
-			vec3 rotated = rotate(-step.x, up)*rotate(-step.y, right)*vec4(diff, 0);
-			pivot = rotated + pos;
-		}
-		updateViewMat();
+	if( glim::isNotZero(moveOff) ) {
+		moveShift(moveOff);
+		need_view_mtx_update = true;
+	}
+
+	// rotate
+	if( glim::isNotZero(rotOff) ) {
+		vec3 rotated = rotate(-rotOff.x, up)*rotate(-rotOff.y, right)*vec4(to_pivot, 0);
+		pivot = rotated + pos;
+		need_view_mtx_update = true;
+	}
+
+	if( need_view_mtx_update ) {
+		updateViewMtx();
 	}
 }
-void CameraController::updatePivotMode()
+
+
+void CameraCtrl::updateTrackballMode(const vec2& moveOff, const vec2& rotOff, float fovyOff, float distOff)
 {
-	// zoom
-	if( input_status&IST_SCROLLED ) {
-		const vec2 step = spd_zoom_dist * scroll_off;
-		const vec3 diff = pos - pivot;
-		float distance = glm::length(diff);
-		float newDist = distance * pow(1.01f, step.y);
-		newDist = clamp(newDist, MIN_DIST, MAX_DIST);
-		pos = newDist/distance * diff + pivot;
+	if( distOff!=0.f ) {
+		float newDist = distance * pow(1.01f, distOff);
+		newDist = glm::clamp(newDist, min_dist, max_dist);
+		pos = newDist/distance * to_pivot + pivot;
+		updateProjMtx();
+	}
+	else if( fovyOff!=0.f ) {
+		fovy = fovy * pow(1.01f, fovyOff);
+		fovy = glm::clamp(fovy, min_fovy, max_fovy);
+		updateProjMtx();
 	}
 
-	if( input_status&IST_DRAGGED ) {
-		const vec3 diff = pivot - pos;
-		const vec2 off = mouse_off;
 
-		// move tangent plane
-		if( ImGui::IsMouseDown(2) || ImGui::IsKeyDown(ImGuiKey_LeftShift) ) {
-			const vec3 step = spd_pivot_move * vec3(up*off.y -right*off.x);
-			moveShift(step);
-		}
-
-		// rotate
-		else if( ImGui::IsMouseDown(0) ) {
-			const vec2 step = off * spd_pivot_rot;
-			const vec3 rotated = rotate(-step.x, global_up)*rotate(step.y, -right)*vec4(-diff,0);
-			if( abs(rotated.y) < glm::length(rotated)*0.99f )
-				pos = pivot + rotated;
+	if( glim::isNotZero(rotOff) ) {
+		const vec3 rotated = glm::rotate(-rotOff.x, global_up)*glm::rotate(rotOff.y, -right)*vec4(-to_pivot,0);
+		if( abs(rotated.y) < glm::length(rotated)*0.99f ) {
+			pos = pivot + rotated;
 		}
 	}
-
-	if( input_status&(IST_SCROLLED|IST_DRAGGED) ) {
-		updateViewMat();
+	// move tangent plane
+	else if( glim::isNotZero(moveOff) ) {
+		const vec3 step = vec3(up*moveOff.y -right*moveOff.x);
+		moveShift(step);
 	}
 }
-void CameraController::updateScrollMode()
-{
-	if( input_status&IST_SCROLLED ) {
-		const vec3 diff = pivot - pos;
-		const vec2 off = scroll_off;
 
-		// zoom
-		if( ImGui::IsKeyDown(ImGuiKey_LeftAlt) ) {
-			const vec2 step = spd_zoom_dist * off;
-			float distance = glm::length(diff);
-			float newDist = distance * pow(1.01f, step.y);
-			newDist = clamp(newDist, MIN_DIST, MAX_DIST);
-			pos = -newDist/distance * diff + pivot;
-		}
-		// move tangent plane
-		else if( ImGui::IsKeyDown(ImGuiKey_LeftShift) ) {
-			const vec3 step = spd_pivot_move * vec3(-right*off.x + up*off.y); // todo up
-			moveShift(step);
-		}
-		// rotate
-		else {
-			const vec2 step = off * spd_scroll_rot;
-			const vec3 rotated = rotate(-step.x, global_up)*rotate(step.y, -right)*vec4(-diff,0);
-			if( abs(rotated.y) < glm::length(rotated)*0.9f )
-				pos = pivot + rotated;
-		}
-	}
 
-	if( input_status&(IST_SCROLLED|IST_DRAGGED) ) {
-		updateViewMat();
-	}
-}
-void CameraController::updateFromInput()
+void CameraCtrl::update(const vec2& dragOff, const vec2& scrollOff, bool wantCaptureKey)
 {
-	if( enabled == false )
+	if( !enabled ) {
 		return;
+	}
+	const ImGuiIO& io = ImGui::GetIO();
 
 	// switch view mode
-	if( ImGui::IsKeyPressed(ImGuiKey_Tab, false) ) {
-		setViewMode((ViewingMode)(viewing_mode+1));
+	if( wantCaptureKey && ImGui::IsKeyPressed(ImGuiKey_Tab, false) ) {
+		int ivm = (int(viewing_mode)+1)%nr_viewing_modes;
+		viewing_mode = (ViewingMode)ivm;
 	}
-	switch( viewing_mode ) {
-		case VM_PIVOT:  updatePivotMode(); break;
-		case VM_FREE:   updateFreeMode(); break;
-		case VM_SCROLL:	updateScrollMode(); break;
+
+	if( viewing_mode == VM_FREE )
+	{
+		const vec3 forwardDir = normalize(vec3{front.x, 0.f, front.z}); // move horizontally
+		float moveSpd = spd_free_move;
+		vec3 moveOff(0.f);
+		if( wantCaptureKey ) {
+			vec3 dir(0.f);
+			if( ImGui::IsKeyDown(ImGuiKey_LeftShift) ) { moveSpd = spd_free_move_fast; }
+			if( ImGui::IsKeyDown(ImGuiKey_W) ) { dir += forwardDir; }
+			if( ImGui::IsKeyDown(ImGuiKey_S) ) { dir -= forwardDir; }
+			if( ImGui::IsKeyDown(ImGuiKey_E) ) { dir += global_up; }
+			if( ImGui::IsKeyDown(ImGuiKey_Q) ) { dir -= global_up; }
+			if( ImGui::IsKeyDown(ImGuiKey_A) ) {
+				if( !ImGui::IsKeyDown(ImGuiKey_D) ) {
+					dir -= right; is_left = true;
+				}
+				else if( !prev_is_left ) {
+					dir -= right; is_left = false;
+				}
+			}
+			if( ImGui::IsKeyDown(ImGuiKey_D) ) {
+				if( !ImGui::IsKeyDown(ImGuiKey_A) ) {
+					dir += right; is_left = false;
+				}
+				else if( prev_is_left ) {
+					dir += right; is_left = true;
+				}
+			}
+			if( glim::isNotZero(dir) ) {
+				moveOff = normalize(dir)*moveSpd*io.DeltaTime;
+				prev_is_left = is_left;
+			}
+		}
+		updateFreeMode( moveOff, spd_free_rot*dragOff, spd_fovy*scrollOff.y );
 	}
-	input_status = IST_NONE;
-}
 
-
-
-
-
-CameraManWin::CameraManWin()
-{
-	initCallbacks();
-}
-CameraManWin::~CameraManWin()
-{
-	deinitCallbacks();
-}
-void CameraManWin::deinitCallbacks()
-{
-	if(app==nullptr)
-		return;
-	app->framebuffer_size_callbacks.erase(this);
-	app->scroll_callbacks.erase(this);
-	app->update_hooks.erase(this);
-}
-void CameraManWin::initCallbacks()
-{
-	if(app)
-		deinitCallbacks();
-
-	app = AppBase::g_ptr;
-
-	aspect = app->win_width/(float)app->win_height;
-	updateProjMat();
-
-	// register callbacks
-	app->framebuffer_size_callbacks[this] = [this](int w, int h) {
-		aspect = w/(float)h;
-		updateProjMat();
-	};
-	app->scroll_callbacks[this] = [this](double xOff, double yOff) {
-		if( ImGui::GetIO().WantCaptureMouse )
-			return;
-		scroll_off = {xOff, yOff};
-	};
-	app->update_hooks[this] = [this](float dt) {
-		if( scroll_off.x||scroll_off.y ) {
-			input_status |= IST_SCROLLED;
+	else if( viewing_mode == VM_TRACKBALL_MOVE )
+	{
+		if( ImGui::IsKeyDown(ImGuiKey_LeftShift) ) {
+			updateTrackballMode(
+				spd_tb_mouse_move * dragOff,
+				vec2(0.f),
+				spd_fovy * scrollOff.y,
+				0.f
+			);
 		}
-		if( (glfwGetMouseButton(app->window, GLFW_MOUSE_BUTTON_LEFT)==GLFW_PRESS)
-			|| (glfwGetMouseButton(app->window, GLFW_MOUSE_BUTTON_MIDDLE)==GLFW_PRESS)
-			|| (!ImGui::GetIO().WantCaptureMouse) ) {
-			input_status |= IST_DRAGGED;
+		else {
+			updateTrackballMode(
+				vec2(0.f),
+				spd_tb_mouse_rot * dragOff,
+				0.f,
+				spd_dist * scrollOff.y
+			);
 		}
-		if( (!ImGui::GetIO().WantCaptureMouse) && (!ImGui::GetIO().WantCaptureKeyboard) ) {
-			input_status |= IST_FOCUSED;
+	}
+
+	else if( viewing_mode == VM_TRACKBALL_SCROLL )
+	{
+		// Todo: pinch zoom
+		if( ImGui::IsKeyDown(ImGuiKey_LeftShift) ) {
+			updateTrackballMode(
+				spd_tb_scroll_move * scrollOff,
+				vec2(0.f), 0.f, 0.f
+			);
 		}
-		mouse_off = app->mouse_off;
-		updateFromInput();
-		scroll_off = {0,0};
-	};
-}
-
-
-
-
-CameraManVp::CameraManVp(Viewport* _vp)
-{
-	initCallbacks(_vp);
-}
-CameraManVp::~CameraManVp()
-{
-	deinitCallbacks();
-}
-void CameraManVp::deinitCallbacks()
-{
-	if( vp==nullptr )
-		return;
-	vp->resize_callbacks.erase(this);
-	vp->update_callbacks.erase(this);
-	vp = nullptr;
-}
-void CameraManVp::initCallbacks(Viewport* _vp)
-{
-	assert( _vp != nullptr );
-	if( vp )
-		deinitCallbacks();
-	vp = _vp;
-	
-	aspect = vp->getAspect();
-	updateProjMat();
-	
-	vp->resize_callbacks[this] = [this](int w, int h) {
-		aspect = vp->getAspect();
-		updateProjMat();
-	};
-	vp->update_callbacks[this] = [this](float dt) {
-		if( vp->is_scrolled ) {
-			input_status |= IST_SCROLLED;
+		else {
+			updateTrackballMode(
+				vec2(0.f),
+				spd_tb_mouse_rot * dragOff,
+				0.f, 0.f
+			);
 		}
-		if( vp->is_dragged ) {
-			input_status |= IST_DRAGGED;
-		}
-		if( vp->is_focused ) {
-			input_status |= IST_FOCUSED;
-		}
-		scroll_off = vp->scroll_off;
-		mouse_off = vp->mouse_off;
-		updateFromInput();
-	};
+	}
 }
 
 
 
 
-
-ViewportWithCamera::ViewportWithCamera(IFramebuffer* createdFB, const char* _name)
-	: Viewport(createdFB, _name), camera(this)
+void CameraManWin::updateFrom(AppBase& app)
 {
+	const ImGuiIO& io = ImGui::GetIO();
+	if( app.is_size_changed ) {
+		aspect = app.aspect_ratio;
+		updateProjMtx();
+	}
+	if( app.is_focused )
+	{
+		vec2 dragOff = (io.MouseDown[0]) ? toGlm(io.MouseDelta) : vec2(0.f);
+		update({io.MouseWheelH, io.MouseWheel}, dragOff, true);
+	}
 }
-vec3 ViewportWithCamera::getMousePosRayDir() const {
-	return camera.screenPosToDir(mouse_uv_pos);
-}
-void ViewportWithCamera::movePosFormMouse(vec3& target) const {
-	const vec3 mouseRay = getMousePosRayDir();
-	const vec3 toTarget = target - camera.pos;
-	float depth = dot(camera.front, toTarget)/dot(camera.front, mouseRay);
-	depth += scroll_off.y*0.1f;
-	target = depth*mouseRay+camera.pos;
+
+
+
+
+
+void CameraManVp::updateFrom(Viewport& vp)
+{
+	if( vp.is_size_changed ) {
+		aspect = vp.getFb().aspect;
+		updateProjMtx();
+	}
+	const ImGuiIO& io = ImGui::GetIO();
+	vec2 dragOff = vp.is_dragged ? toGlm(io.MouseDelta) : vec2(0.f);
+	vec2 scrollOff = vp.is_hovered ? vec2(io.MouseWheelH, io.MouseWheel) : vec2(0.f);
+	update(dragOff, scrollOff, vp.is_focused);
 }

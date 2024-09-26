@@ -3,20 +3,21 @@
 #include <limbrary/tools/log.h>
 #include <limbrary/application.h>
 
+#include <limbrary/using_in_cpp/glm.h>
 using namespace lim;
 
 
 
-bool IFramebuffer::resize(int _width, int _height)
+void IFramebuffer::resize(const ivec2& _size)
 {
-	_height = (_height<0)?_width:_height;
-	if( width==(GLuint)_width && height==(GLuint)_height )
-		return false;
-	width = _width; height = _height;
-	aspect = width/(float)height;
+	if( size == _size ) {
+		return;
+	}
+	size = _size;
+	aspect = size.x/float(size.y);
 	initGL();
-	glFinish();
-	return true;
+	// glFinish(); Todo
+	return;
 }
 void IFramebuffer::initGL()
 {
@@ -42,7 +43,7 @@ void IFramebuffer::bind() const
 {
 	// prevState.capture();
 	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-	glViewport(0, 0, width, height);
+	glViewport(0, 0, size.x, size.y);
 	glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
 	myBind();
 	if(blendable) {
@@ -73,13 +74,13 @@ FramebufferNoDepth::~FramebufferNoDepth()
 	deinitGL();
 }
 float* FramebufferNoDepth::makeFloatPixelsBuf() const {
-	float* buf = new float[ width * height * color_tex.nr_channels ];
+	float* buf = new float[ size.x * size.y * color_tex.nr_channels ];
 	GLuint format = color_tex.src_format;
 	GLint readFbo;// backup
 	glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &readFbo);
 
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
-	glReadPixels(0,0,width, height, format, GL_FLOAT, buf);
+	glReadPixels(0,0, size.x, size.y, format, GL_FLOAT, buf);
 
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, readFbo);
 	return buf;
@@ -91,8 +92,7 @@ GLuint FramebufferNoDepth::getRenderedTexId() const
 }
 void FramebufferNoDepth::myInitGL() 
 {
-	color_tex.width = width;
-	color_tex.height = height;
+	color_tex.size = size;
 	color_tex.initGL();
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, color_tex.tex_id, 0);
 
@@ -133,8 +133,7 @@ GLuint FramebufferOnlyDepth::getRenderedTexId() const
 }
 void FramebufferOnlyDepth::myInitGL() 
 {
-	depth_tex.width = width;
-	depth_tex.height = height;
+	depth_tex.size = size;
 	depth_tex.initGL();
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_tex.tex_id, 0);
 	glDrawBuffer(GL_NONE);
@@ -178,13 +177,11 @@ GLuint FramebufferTexDepth::getRenderedTexId() const
 }
 void FramebufferTexDepth::myInitGL()
 {
-	color_tex.width = width;
-	color_tex.height = height;
+	color_tex.size = size;
 	color_tex.initGL();
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, color_tex.tex_id, 0);
 
-	depth_tex.width = width;
-	depth_tex.height = height;
+	depth_tex.size = size;
 	depth_tex.initGL();
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_tex.tex_id, 0);
 
@@ -223,15 +220,14 @@ GLuint FramebufferRbDepth::getRenderedTexId() const
 }
 void FramebufferRbDepth::myInitGL()
 {
-	color_tex.width = width;
-	color_tex.height = height;
+	color_tex.size = size;
 	color_tex.initGL();
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, color_tex.tex_id, 0);
 	
-	if( depth_rbo_id>0 ) { log::err("myDeinitGL이 먼저 호출돼서 절대 들어올수 없음\n"); }
+	assert( depth_rbo_id>0 ); // myDeinitGL이 먼저 호출돼서 절대 들어올수 없음
 	glGenRenderbuffers(1, &depth_rbo_id);
 	glBindRenderbuffer(GL_RENDERBUFFER, depth_rbo_id);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, size.x, size.y);
 	glBindRenderbuffer(GL_RENDERBUFFER, 0);
 	// GL_DEPTH_ATTACHMENT32F 나중에 문제될수있음. 테스트
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rbo_id);
@@ -258,9 +254,11 @@ void FramebufferRbDepth::myUnbind() const
 
 
 FramebufferMs::FramebufferMs(int _samples, int nrChannels, int bitPerChannel)
-	: IFramebuffer(), samples(glm::min(AppBase::g_max_ms_samples,_samples))
-	, intermediate_fb(nrChannels, bitPerChannel)
+	: IFramebuffer(), intermediate_fb(nrChannels, bitPerChannel)
 {
+	int maxMsSamples;
+	glGetIntegerv(GL_MAX_SAMPLES, &maxMsSamples);
+	samples = glm::min(maxMsSamples,_samples);
 }
 FramebufferMs::~FramebufferMs()
 {
@@ -276,12 +274,12 @@ void FramebufferMs::myInitGL()
 	if( ms_color_tex_id>0 ) { glDeleteTextures(1, &ms_color_tex_id); ms_color_tex_id=0; }
 	glGenTextures(1, &ms_color_tex_id);
 	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, ms_color_tex_id);
-	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, interFormat, width, height, GL_TRUE);
+	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, interFormat, size.x, size.y, GL_TRUE);
 
 	if( ms_depth_rbo_id>0 ) { glDeleteRenderbuffers(1, &ms_depth_rbo_id); ms_depth_rbo_id=0; }
 	glGenRenderbuffers(1, &ms_depth_rbo_id);
 	glBindRenderbuffer(GL_RENDERBUFFER, ms_depth_rbo_id);
-	glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, GL_DEPTH_COMPONENT, width, height);
+	glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, GL_DEPTH_COMPONENT, size.x, size.y);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, ms_color_tex_id, 0);
@@ -298,7 +296,7 @@ void FramebufferMs::myInitGL()
 	if( status != GL_FRAMEBUFFER_COMPLETE )
 		log::err("MsFramebuffer is not completed!! (%d)\n", status);
 
-	intermediate_fb.resize(width, height);
+	intermediate_fb.resize(size);
 }
 void FramebufferMs::myDeinitGL()
 {
@@ -320,7 +318,7 @@ void FramebufferMs::myUnbind() const
 
 	glDisable(GL_MULTISAMPLE);
 
-	glBlitFramebuffer(0, 0, width, height, 0, 0, width, height
+	glBlitFramebuffer(0, 0, size.x, size.y, 0, 0, size.x, size.y
 						, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);

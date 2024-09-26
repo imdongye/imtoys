@@ -80,7 +80,7 @@ int selected_edit_mode_idx = 1;
 ImGuizmo::MODE gzmo_space = ImGuizmo::MODE::LOCAL;
 
 std::string model_name = "Untitled";
-CameraController* camera = nullptr;
+CameraCtrl* camera = nullptr;
 
 LightDirectional* light = nullptr;
 IBLight* ib_light = nullptr;
@@ -316,7 +316,7 @@ sdf::Object::~Object() {
 
 /******************************** sdf_bridge.h **********************************/
 static void resetData();
-void sdf::init(CameraController* cam) {
+void sdf::init(CameraCtrl* cam) {
     camera = cam;
     resetData();
 }
@@ -353,7 +353,7 @@ static void resetData() {
 
     camera->pivot = glm::vec3(0,0,0);
     camera->pos = glm::vec3(0,1,5);
-    camera->updateViewMat();
+    camera->updateViewMtx();
 
     
     root = new sdf::Group("root", nullptr);
@@ -733,7 +733,7 @@ void sdf::drawImGui()
         static int viewingMode = 0;
         static const char* viewingModeNames[] = {"Free", "Pivoted"};
         if( ImGui::Combo("Mode",  &viewingMode, viewingModeNames, 3) ) {
-            camera->setViewMode((CameraController::ViewingMode)viewingMode);
+            camera->viewing_mode = (CameraCtrl::ViewingMode)viewingMode;
         }
         
         ImGui::PopItemWidth();
@@ -787,7 +787,9 @@ void sdf::drawImGui()
 }
 
 
-void sdf::drawGuizmo(lim::Viewport* vp) {
+void sdf::drawGuizmo(lim::ViewportWithCam& vp) {
+    ImGuizmo::SetDrawlist();
+	ImGuizmo::SetRect(vp.content_pos.x, vp.content_pos.y, vp.content_size.x, vp.content_size.y);
     Camera& cam = *camera;
     ImGuizmo::SetOrthographic(false);
     if(selected_edit_mode_idx>0) {

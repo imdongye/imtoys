@@ -25,11 +25,8 @@ using namespace lim;
 
 Camera::Camera()
 {
-	updateViewMat();
-	updateProjMat();
-}
-Camera::~Camera()
-{
+	updateViewMtx();
+	updateProjMtx();
 }
 vec3 Camera::screenPosToDir(const vec2& uv) const {
 	// vec4 ndcP = vec4(2.f*uv.x-1, 2.f*uv.y-1, -1, 0);
@@ -45,11 +42,11 @@ void Camera::moveShift(const glm::vec3& off) {
 	pos += off;
 	pivot += off;
 }
-void Camera::updateViewMat()
+void Camera::updateViewMtx()
 {
-	const vec3 diff = pivot - pos;
-	length = glm::length(diff);
-	front = normalize(diff);
+	to_pivot = pivot - pos;
+	distance = glm::length(to_pivot);
+	front = normalize(to_pivot);
 	right = normalize(cross(front, global_up));
 	up = cross(right, front);
 
@@ -70,7 +67,7 @@ void Camera::updateViewMat()
 	mtx_View[2][3] = 0.f; 
 	mtx_View[3][3] = 1.f;
 }
-void Camera::updateProjMat()
+void Camera::updateProjMtx()
 {
 	mtx_Proj = perspective(radians(fovy), aspect, z_near, z_far);
 }

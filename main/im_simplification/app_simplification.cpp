@@ -84,7 +84,48 @@ AppSimplification::AppSimplification() : AppBase(1200, 780, APP_NAME, false)
 	addEmptyViewport();
 	doImportModel("assets/models/dwarf/Dwarf_2_Low.obj", 0);
 	addEmptyViewport();
+
+	key_callbacks[this] = [this](int key, int scancode, int action, int mods) {
+		if( (GLFW_MOD_CONTROL == mods) && (GLFW_KEY_S == key) )
+		{
+			simplify_trigger = true;
+			bake_trigger = true;
+		}
+		if( (GLFW_MOD_CONTROL == mods) && (GLFW_KEY_E == key) )
+		{
+			doExportModel(3, last_focused_vp_idx);
+		}
+		if( key == GLFW_KEY_ESCAPE && action == GLFW_PRESS )
+		{
+			glfwSetWindowShouldClose(window, GL_TRUE);
+		}
+	};
+
+	mouse_btn_callbacks[this] = [this](int button, int action, int mods) {
+		// 이전에 선택된 viewport 저장
+		if( viewports[last_focused_vp_idx]->is_hovered == false )
+		{
+			for( int i = 0; i < nr_viewports; i++ )
+			{
+				if( last_focused_vp_idx == i )
+					continue;
+				// 새로운 viewport를 선택하면
+				if( viewports[i]->is_hovered ) {
+					if( is_same_camera ) {
+						viewports[i]->camera.copyFrom(viewports[last_focused_vp_idx]->camera);
+						viewports[i]->camera.viewing_mode = viewports[last_focused_vp_idx]->camera.viewing_mode;
+					}
+					last_focused_vp_idx = i;
+				}
+			}
+		}
+	};
+	dnd_callbacks[this] = [this](int count, const char **paths) {
+		addEmptyViewport();
+		doImportModel(paths[0], nr_viewports-1);
+	};
 }
+
 AppSimplification::~AppSimplification()
 {
 	SaveFile::get().data["recentModelPaths"] = recent_model_paths;
@@ -94,9 +135,9 @@ AppSimplification::~AppSimplification()
 }
 void AppSimplification::addEmptyViewport()
 {
-	auto vp = new ViewportWithCamera(new FramebufferMs, fmtStrToBuf("Viewport%d", nr_viewports));
+	auto vp = new ViewportWithCam(new FramebufferMs, fmtStrToBuf("Viewport%d", nr_viewports));
 	vp->camera.moveShift({0,1,-1.6f});
-	vp->camera.updateViewMat();
+	vp->camera.updateViewMtx();
 	viewports.push_back(vp);
 
 	Scene* scn = new Scene();
@@ -169,7 +210,7 @@ void AppSimplification::doImportModel(const char* path, int vpIdx)
 	auto& vp = viewports[vpIdx];
 	vp->camera.pivot.y = 1.f;
 	vp->camera.pos.y = 1.5f;
-	vp->camera.updateViewMat();
+	vp->camera.updateViewMtx();
 
 	saveRecentModelPath(path);
 }
@@ -194,7 +235,7 @@ void AppSimplification::doSimplifyModel(float lived_pct, int version, int agress
 	dstMd.name += "_"+std::to_string(pct)+"_pct";
 
 	viewports[dst_vp_idx]->camera.pivot = dstMd.root.tf.pos;
-	viewports[dst_vp_idx]->camera.updateViewMat();
+	viewports[dst_vp_idx]->camera.updateViewMtx();
 }
 void AppSimplification::doBakeNormalMap(int texSize)
 {
@@ -267,11 +308,11 @@ void AppSimplification::update()
 		float backupAspect = cam.aspect;
 		for( int i=0; i<nr_viewports; i++ ) {
 			cam.aspect = (i==last_focused_vp_idx)? backupAspect : viewports[i]->camera.aspect;
-			cam.updateProjMat();
+			cam.updateProjMtx();
 			scenes[i]->render(viewports[i]->getFb(), cam);
 		}
 		cam.aspect = backupAspect;
-		cam.updateProjMat();
+		cam.updateProjMtx();
 	}
 	else
 	{
@@ -326,7 +367,7 @@ void AppSimplification::updateImGui()
 					if( ImGui::BeginMenu(("Viewport" + std::to_string(i)).c_str()) )
 					{
 						int nr_formats = getNrExportFormats();
-						for( size_t pIndex = 0; pIndex < nr_formats; pIndex++ )
+						for( int pIndex = 0; pIndex < nr_formats; pIndex++ )
 						{
 							const aiExportFormatDesc* format = getExportFormatInfo(pIndex);
 							if( ImGui::MenuItem(format->id) )
@@ -362,7 +403,7 @@ void AppSimplification::updateImGui()
 	// 실행후 겹쳤을때 그리는순서에 따라서 위로오는게 결정됨, 방금 생성한게 위에 오기하기위함.
 	for( int i=nr_viewports-1; i>=0; i-- )
 	{
-		LimGui::Viewport(*viewports[i]);
+		viewports[i]->drawImGuiAndUpdateCam();
 		if( viewports[i]->is_opened == false ) {
 			subViewport(i);
 		}
@@ -442,17 +483,7 @@ void AppSimplification::updateImGui()
 	if( ImGui::Begin("Viewing Options##simp") )
 	{
 		ImGui::Text("<camera>");
-		static int focusedCameraIdx = 0;
-		static const char *vmode_strs[] = {"free", "pivot", "scroll"};
-		int viewMode = 0;
-		if( ImGui::Combo("mode", &viewMode, vmode_strs, sizeof(vmode_strs) / sizeof(char *)) ) {
-			viewports[last_focused_vp_idx]->camera.setViewMode((CameraController::ViewingMode)viewMode);
-		}
 		ImGui::Checkbox("use same camera", &is_same_camera);
-		static float cameraMoveSpeed = 4.0f;
-		if(ImGui::SliderFloat("move speed", &cameraMoveSpeed, 2.0f, 6.0f)) {
-			viewports[last_focused_vp_idx]->camera.spd_free_move = cameraMoveSpeed;
-		}
 		ImGui::Text("camera fov: %f", viewports[last_focused_vp_idx]->camera.fovy);
 		ImGui::Dummy(ImVec2(0.0f, 8.0f));
 		ImGui::Separator();
@@ -490,7 +521,7 @@ void AppSimplification::updateImGui()
 			}
 		}
 		static float texDelta = 0.00001f;
-		if( ImGui::SliderFloat("texDelta", &texDelta, 0.000001, 0.0001, "%f") ) {
+		if( ImGui::SliderFloat("texDelta", &texDelta, 0.000001f, 0.0001f, "%f") ) {
 			for( Scene* scn : scenes ) {
 				Model& md = *(Model*)scn->own_mds[0].raw;
 				for( auto& mat : md.own_materials ) {
@@ -655,50 +686,8 @@ void AppSimplification::updateImGui()
 		glm::vec2 rectSize{vMax.x - vMin.x, vMax.y - vMin.y};
 		// ImGui::Text("%f %f", rectSize.x, rectSize.y);
 		const float minLength = glm::min(rectSize.x, rectSize.y);
-		ImGui::Image(texIdToPtr(light.shadow->map.getRenderedTexId()), ImVec2{minLength, minLength}, ImVec2{0, 1}, ImVec2{1, 0});
+		ImGui::Image(texIdToIg(light.shadow->map.getRenderedTexId()), ImVec2{minLength, minLength}, ImVec2{0, 1}, ImVec2{1, 0});
 	}
 	ImGui::End();
 	ImGui::PopStyleVar();
-}
-
-void AppSimplification::keyCallback(int key, int scancode, int action, int mods)
-{
-	if( (GLFW_MOD_CONTROL == mods) && (GLFW_KEY_S == key) )
-	{
-		simplify_trigger = true;
-		bake_trigger = true;
-	}
-	if( (GLFW_MOD_CONTROL == mods) && (GLFW_KEY_E == key) )
-	{
-		doExportModel(3, last_focused_vp_idx);
-	}
-	if( key == GLFW_KEY_ESCAPE && action == GLFW_PRESS )
-	{
-		glfwSetWindowShouldClose(window, GL_TRUE);
-	}
-}
-void AppSimplification::mouseBtnCallback(int button, int action, int mods)
-{
-	// 이전에 선택된 viewport 저장
-	if( viewports[last_focused_vp_idx]->is_hovered == false )
-	{
-		for( int i = 0; i < nr_viewports; i++ )
-		{
-			if( last_focused_vp_idx == i )
-				continue;
-			// 새로운 viewport를 선택하면
-			if( viewports[i]->is_hovered ) {
-				if( is_same_camera ) {
-					viewports[i]->camera.copyFrom(viewports[last_focused_vp_idx]->camera);
-					viewports[i]->camera.viewing_mode = viewports[last_focused_vp_idx]->camera.viewing_mode;
-				}
-				last_focused_vp_idx = i;
-			}
-		}
-	}
-}
-void AppSimplification::dndCallback(int count, const char **paths)
-{
-	addEmptyViewport();
-	doImportModel(paths[0], nr_viewports-1);
 }

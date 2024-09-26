@@ -159,7 +159,7 @@ static void resetApp() {
 
 AppPbdGpu::AppPbdGpu() : AppBaseCanvas3d(1200, 780, APP_NAME, false, 10, 100, 100)
 {
-	max_fps = 1000;
+	custom_max_fps = 1000;
 	prog_ms.attatch("mvp.vs").attatch("im_pbd/shaders/ndl_tex.fs").link();
 
 	texture.s_wrap_param = GL_REPEAT;
@@ -317,7 +317,7 @@ void AppPbdGpu::canvasImGui()
 		ImGui::Checkbox("enable tex", &enable_tex);
 		ImGui::Checkbox("draw edges", &draw_edges);
 		ImGui::SliderInt("# steps", &cur_body->nr_steps, 1, 50);
-		ImGui::SliderInt("max fps", &max_fps, 20, 1000);
+		ImGui::SliderInt("max fps", &custom_max_fps, 20, 1000);
 		ImGui::SliderFloat("time speed", &time_speed, 0.1f, 2.f);
 	}
 

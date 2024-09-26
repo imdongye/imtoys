@@ -107,7 +107,7 @@ void AppParticle::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
 
-	LimGui::Viewport(viewport);
+	viewport.drawImGuiAndUpdateCam();
 
 
 	ImGui::Begin("controller##ptcl");

@@ -11,7 +11,7 @@
 
 #include <limbrary/application.h>
 #include <limbrary/program.h>
-#include <limbrary/model_view/camera_man.h>
+#include <limbrary/model_view/viewport_with_cam.h>
 #include <limbrary/model_view/model.h>
 #include <glad/glad.h>
 #include <limbrary/model_view/scene.h>
@@ -40,7 +40,7 @@ namespace lim
 		Material h_mat;
 		Program h_prog;
 
-		ViewportWithCamera viewport;
+		ViewportWithCam viewport;
 		Scene scene;
 
 		

@@ -83,7 +83,7 @@ AppBaseCanvas3d::AppBaseCanvas3d(int winWidth, int winHeight, const char* title,
 
     vp.camera.pivot = vec3(0, 1.0, 0);
     vp.camera.pos = vec3(0, 1.5, 3.4);
-	vp.camera.updateViewMat();
+	vp.camera.updateViewMtx();
     light.setShadowEnabled(true);
 }
 AppBaseCanvas3d::~AppBaseCanvas3d()
@@ -188,7 +188,7 @@ void AppBaseCanvas3d::update()
 }
 void AppBaseCanvas3d::updateImGui() {
     ImGui::DockSpaceOverViewport();
-    LimGui::Viewport(vp);
+    vp.drawImGuiAndUpdateCam();
     LimGui::LightDirectionalEditor(light);
     canvasImGui();
 }

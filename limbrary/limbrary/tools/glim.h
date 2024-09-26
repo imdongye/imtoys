@@ -105,9 +105,23 @@ namespace glim {
         return glm::dot(v1, glm::cross(v2, v3));
     }
 
-
-	inline bool isZero(float a) {
-		return glm::epsilonEqual(a, 0.f, glm::epsilon<float>());
+	inline bool isZeroNear(float z) {
+		return glm::abs(z) < feps;
+	}
+	inline bool isZeroNear(const glm::vec2& z) {
+		return glm::abs(z.x) < feps && glm::abs(z.y) < feps;
+	}
+	inline bool isZeroNear(const glm::vec3& z) {
+		return glm::abs(z.x) < feps && glm::abs(z.y) < feps && glm::abs(z.z) < feps;
+	}
+	inline bool isNotZero(float z) {
+		return z!=0.f;
+	}
+	inline bool isNotZero(const glm::vec2& z) {
+		return z.x!=0.f || z.y!=0.f;
+	}
+	inline bool isNotZero(const glm::vec3& z) {
+		return z.x!=0.f || z.y!=0.f || z.z!=0.f;
 	}
 
 

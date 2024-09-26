@@ -32,6 +32,9 @@ AppScene3d::AppScene3d()
 		md.importFromFile("assets/models/jump.fbx", true, true);
 		md.setProgToAllMat(&skined_prog);
 	}
+	dnd_callbacks[this] = [](int count, const char **paths) {
+		
+	};
 }
 AppScene3d::~AppScene3d()
 {
@@ -51,10 +54,5 @@ void AppScene3d::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
 
-	LimGui::SceneEditor(scene);
-
-	LimGui::ViewportWithSceneGuizmo(viewport);
-}
-void AppScene3d::dndCallback(int count, const char **paths)
-{
+	LimGui::SceneEditor(scene, viewport);
 }

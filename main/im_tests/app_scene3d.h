@@ -8,7 +8,7 @@
 
 #include <limbrary/application.h>
 #include <limbrary/model_view/scene.h>
-#include <limbrary/model_view/camera_man.h>
+#include <limbrary/model_view/viewport_with_cam.h>
 
 namespace lim
 {
@@ -20,17 +20,13 @@ namespace lim
 		inline static constexpr CStr APP_INFO = "3d scene editor";
 
 		Scene scene;
-		ViewportWithCamera viewport;
+		ViewportWithCam viewport;
 
 	public:
 		AppScene3d();
 		~AppScene3d();
 		virtual void update() override;
 		virtual void updateImGui() override;
-		virtual void dndCallback(int count, const char **paths) override;
-
-
-		
 	};
 }
 

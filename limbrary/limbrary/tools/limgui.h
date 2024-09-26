@@ -2,6 +2,11 @@
 
 2024-06-15 / im dong ye
 
+imgui for limbrary
+
+Note:
+    Exception viewport draws as a member function
+
 
 */
 
@@ -13,7 +18,7 @@
 #include <imgui.h>
 #include <glm/glm.hpp>
 #include <limbrary/model_view/scene.h>
-#include <limbrary/model_view/camera_man.h>
+#include <limbrary/model_view/viewport_with_cam.h>
 
 namespace LimGui
 {
@@ -24,6 +29,8 @@ namespace LimGui
     void PlotVal(const char* name, const char* postFix, float value, int bufSize=90);
     void PlotVal(const char* name, const char* postFix, int bufSize=90);
     void PlotValAddValue(const char* name, float value, int bufSize=90);
+
+    bool IsWindowHidden();
 }
 
 // only one in updateImGui
@@ -43,20 +50,16 @@ namespace LimGui
     void LightOmniEditor(lim::LightOmni& lit);
     void IBLightEditor(lim::IBLight& lit);
 
-    void SceneEditor(lim::Scene& scn);
-
-    
-	void Viewport(lim::Viewport& vp);
-    void ViewportWithGuizmo(lim::ViewportWithCamera& vp
-        , std::function<void(lim::Viewport*)> guizmoHook = nullptr);
-    void ViewportWithSceneGuizmo(lim::ViewportWithCamera& vp
-        , std::function<void(lim::Viewport*)> guizmoHook = nullptr);
+    void SceneEditor(lim::Scene& scn, lim::ViewportWithCam& vp);
 }
 
 namespace lim
 {
     inline ImVec2 toIg(const glm::vec2& v) { return {v.x, v.y}; }
+    inline ImVec2 toIg(const glm::ivec2& v) { return {float(v.x), float(v.y)}; }
     inline glm::vec2 toGlm(const ImVec2& v) { return {v.x, v.y}; }
+    inline ImTextureID texIdToIg(GLuint texId) { return (void*)(intptr_t)texId; }
+    inline bool isSame(const ImVec2& v1, const ImVec2& v2) { return v1.x == v2.x && v1.y == v2.y; }
 }
 
 

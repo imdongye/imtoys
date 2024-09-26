@@ -37,7 +37,6 @@ namespace lim
 	private:
 		virtual void update() override;
 		virtual void updateImGui() override;
-		virtual void dndCallback(int count, const char **paths) override;
 	};
 }
 

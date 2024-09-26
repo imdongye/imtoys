@@ -7,7 +7,7 @@
 #define __app_model_viewer_h_
 
 #include <limbrary/application.h>
-#include <limbrary/model_view/camera_man.h>
+#include <limbrary/model_view/viewport_with_cam.h>
 #include <limbrary/program.h>
 #include <limbrary/model_view/scene.h>
 
@@ -20,7 +20,7 @@ namespace lim
 		inline static constexpr CStr APP_DIR  = "im_model_viewer/";
 		inline static constexpr CStr APP_INFO = "model viewer for test materials";
 	private:
-		std::vector<ViewportWithCamera*> viewports;
+		std::vector<ViewportWithCam*> viewports;
 		Viewport vp_light_map, vp_irr_map, vp_pfenv_map, vp_pfbrdf_map;
 		std::vector<Scene*> scenes;
 		IBLight ib_light;
@@ -38,9 +38,6 @@ namespace lim
 
 		virtual void update() override;
 		virtual void updateImGui() override;
-		virtual void keyCallback(int key, int scancode, int action, int mods) override;
-		virtual void cursorPosCallback(double xPos, double yPos) override;
-		virtual void dndCallback(int count, const char **paths) override;
 	};
 }
 

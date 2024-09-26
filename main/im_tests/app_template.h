@@ -7,6 +7,7 @@
 #define __app_template_h_
 
 #include <limbrary/application.h>
+#include <limbrary/model_view/viewport_with_cam.h>
 
 namespace lim
 {
@@ -17,16 +18,13 @@ namespace lim
 		inline static constexpr CStr APP_DIR  = "im_tests/";
 		inline static constexpr CStr APP_INFO = "limbrary template application";
 
+		Viewport viewport;
 
 	public:
 		AppTemplate();
 		~AppTemplate();
 		virtual void update() override;
 		virtual void updateImGui() override;
-		virtual void keyCallback(int key, int scancode, int action, int mods) override;
-		virtual void cursorPosCallback(double xPos, double yPos) override;
-
-		
 	};
 }
 

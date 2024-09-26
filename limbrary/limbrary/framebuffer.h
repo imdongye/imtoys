@@ -37,33 +37,27 @@ IFramebuffer 상속깊이는 무조건 한번이여야하고
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <functional>
-
+#include <limbrary/tools/mecro.h>
 
 namespace lim
 {
-	class IFramebuffer
+	class IFramebuffer : public NoCopyAndMove
 	{
 	public:
 		GLuint fbo = 0;
-		int width = 0;
-		int height = 0;
+		glm::ivec2 size;
 		float aspect = 1.f;
 		glm::vec4 clear_color = {0.05f, 0.09f, 0.11f, 1.0f};
 		bool blendable = false;
 
 	protected:
-		IFramebuffer(const IFramebuffer&) 			 = delete;
-		IFramebuffer(IFramebuffer&&) 				 = delete;
-		IFramebuffer& operator=(const IFramebuffer&) = delete;
-		IFramebuffer& operator=(IFramebuffer&&) 	 = delete;
-
 		IFramebuffer() = default;
 	public:		
 		// 자식 소멸자에서 deinit호출해줘야함.
 		virtual ~IFramebuffer() = default;
 
 		// height -1 is square
-		bool resize(int _width, int _height=-1);
+		void resize(const glm::ivec2& _size);
 
 		void initGL();
 		void deinitGL();

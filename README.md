@@ -48,7 +48,17 @@ cd main; ../build/Debug/executable/imtoys_exe; cd ..
 F1 key to open app selector
 
 ## Dependency
+in Core
+* c++17
+* [glad](https://glad.dav1d.de), gl4.1core by default, but use 4.6 core when using compute shader or ssbo. e.g. PBD
+* [glm - 240927](https://github.com/g-truc/glm),
+* [eigen - 240927](https://eigen.tuxfamily.org),
+* [stb - 240927](https://github.com/nothings/stb),
+* [imgui docking branch - 240927](https://github.com/ocornut/imgui),
+* [imguizmo - 240927](https://github.com/CedricGuillemet/ImGuizmo),
+* [assimp - 240927](https://github.com/assimp/assimp), 
+* [nlohmann/json - 240927](https://github.com/nlohmann/json),
 
-c++17, glfw, glad, [stb(image, write, truetype)](https://github.com/nothings/stb), [imgui](https://github.com/ocornut/imgui), [assimp](https://github.com/assimp/assimp), [nlohmann/json](https://github.com/nlohmann/json), [fqms](https://github.com/sp4cerat/Fast-Quadric-Mesh-Simplification)
+in Apps
+* [fqms](https://github.com/sp4cerat/Fast-Quadric-Mesh-Simplification)
 
-Use gl4.1core by default, but use 4.6 core when using compute shader or ssbo. (PBD, canvas3d)

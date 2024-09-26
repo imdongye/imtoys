@@ -7,7 +7,7 @@
 #define __app_sdf_modeler_h_
 
 #include <limbrary/application.h>
-#include <limbrary/model_view/camera_man.h>
+#include <limbrary/model_view/viewport_with_cam.h>
 
 namespace lim
 {
@@ -20,7 +20,7 @@ namespace lim
 
 	private:
 		ProgramReloadable prog;
-		ViewportWithCamera viewport;
+		ViewportWithCam viewport;
 
 	public:
 		AppSdfModeler();
@@ -28,9 +28,6 @@ namespace lim
 		
 		virtual void update() final;
 		virtual void updateImGui() final;
-		virtual void keyCallback(int key, int scancode, int action, int mods) override;
-		virtual void dndCallback(int count, const char **paths) override;
-		virtual void mouseBtnCallback(int button, int action, int mods) override;
 	};
 }
 

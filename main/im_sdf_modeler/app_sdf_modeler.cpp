@@ -31,12 +31,29 @@ lim::AppSdfModeler::AppSdfModeler(): AppBase(1373, 783, APP_NAME, false)
 
 	viewport.camera.pivot = glm::vec3(0,1,0);
 	viewport.camera.pos = glm::vec3(0,1,5);
-	viewport.camera.updateViewMat();
+	viewport.camera.updateViewMtx();
 	prog.name = "sdf and ray marching";
 	prog.attatch("canvas.vs").attatch("im_sdf_modeler/shaders/shader.fs").link();
 
 
 	sdf::init(&viewport.camera);
+
+	key_callbacks[this] = [this](int key, int scancode, int action, int mods) {
+		if( action==GLFW_PRESS && GLFW_MOD_CONTROL== mods && key=='R' ) {
+		prog.reload(GL_FRAGMENT_SHADER);
+		}
+		else {
+			sdf::keyCallback(key, scancode, action, mods);
+		}
+	};
+	dnd_callbacks[this] = [this](int count, const char **paths) {
+		sdf::importJson(paths[0]);
+	};
+	mouse_btn_callbacks[this] = [this](int button, int action, int mods) {
+		if(viewport.is_hovered&& action==GLFW_PRESS) {
+			sdf::clickCallback(button, viewport.mouse_uv_pos);
+		}
+	};
 }
 lim::AppSdfModeler::~AppSdfModeler()
 {
@@ -50,13 +67,11 @@ void lim::AppSdfModeler::update()
 	glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	Camera& cam = viewport.camera;
 	viewport.getFb().bind();
 	prog.use();
 
 	sdf::bindSdfData(prog);
-
-
+	
 	AssetLib::get().screen_quad.bindAndDrawGL();
 	viewport.getFb().unbind();
 }
@@ -64,23 +79,7 @@ void lim::AppSdfModeler::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
 
-	LimGui::ViewportWithGuizmo(viewport, sdf::drawGuizmo);
+	viewport.drawImGuiAndUpdateCam(sdf::drawGuizmo);
 
 	sdf::drawImGui();
-}
-void lim::AppSdfModeler::keyCallback(int key, int scancode, int action, int mods) {
-	if( action==GLFW_PRESS && GLFW_MOD_CONTROL== mods && key=='R' ) {
-		prog.reload(GL_FRAGMENT_SHADER);
-	}
-	else {
-		sdf::keyCallback(key, scancode, action, mods);
-	}
-}
-void lim::AppSdfModeler::dndCallback(int count, const char **paths) {
-	sdf::importJson(paths[0]);
-}
-void lim::AppSdfModeler::mouseBtnCallback(int button, int action, int mods) {
-	if(viewport.is_hovered&& action==GLFW_PRESS) {
-		sdf::clickCallback(button, viewport.mouse_uv_pos);
-	}
 }

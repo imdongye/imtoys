@@ -29,7 +29,7 @@ ShadowMap::ShadowMap(TransformPivoted& tf)
 	map.color_tex.s_wrap_param = GL_CLAMP_TO_BORDER; 
 	map.color_tex.t_wrap_param = GL_CLAMP_TO_BORDER; 
 	map.color_tex.border_color = glm::vec4(1.f); 
-	map.resize(map_size, map_size);
+	map.resize(ivec2(map_size));
 
 	const float halfW = OrthoSize.x*0.5f;
 	const float halfH = OrthoSize.y*0.5f;
@@ -152,7 +152,7 @@ bool IBLight::setMapAndBake(const char* path)
     fb.color_tex.t_wrap_param = GL_MIRRORED_REPEAT;
     fb.color_tex.mag_filter = GL_LINEAR;
     fb.color_tex.min_filter = GL_LINEAR; // Todo: mipmap 쓰면 경계 검은색 나옴;;
-	fb.resize(256, 128);
+	fb.resize({256, 128});
 	iblProg.attatch("canvas.vs").attatch("bake_irr.fs").link();
 
 	fb.bind();
@@ -166,9 +166,8 @@ bool IBLight::setMapAndBake(const char* path)
 
     /* map_PreFilteredEnv */
     // win에서 *0.25, mac에서 /10은 해야 동작함.
-    const glm::vec2 pfenv_size = { map_Light.width/10.f,  map_Light.height/10.f }; 
-    map_PreFilteredEnv.width = pfenv_size.x;
-    map_PreFilteredEnv.height = pfenv_size.y;
+    const ivec2 pfenvSize = map_Light.size/10;
+    map_PreFilteredEnv.size = pfenvSize;
     map_PreFilteredEnv.nr_depth = nr_roughness_depth;
     map_PreFilteredEnv.updateFormat(3, 32);
     map_PreFilteredEnv.s_wrap_param = GL_REPEAT;
@@ -178,7 +177,7 @@ bool IBLight::setMapAndBake(const char* path)
     map_PreFilteredEnv.min_filter = GL_LINEAR;
     map_PreFilteredEnv.initGL();
 
-	fb.resize(pfenv_size.x, pfenv_size.y);
+	fb.resize(pfenvSize);
     iblProg.deinitGL();
     iblProg.attatch("canvas.vs").attatch("bake_pfenv.fs").link();
 
@@ -201,7 +200,7 @@ bool IBLight::setMapAndBake(const char* path)
     fb.color_tex.t_wrap_param = GL_CLAMP_TO_EDGE;
     fb.color_tex.mag_filter = GL_LINEAR;
     fb.color_tex.min_filter = GL_LINEAR;
-	fb.resize(128, 128);
+	fb.resize(ivec2(128));
     iblProg.deinitGL();
 	iblProg.attatch("canvas.vs").attatch("bake_brdf.fs").link();
 

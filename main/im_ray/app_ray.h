@@ -8,7 +8,7 @@
 #define __app_ray_h_
 
 #include <limbrary/application.h>
-#include <limbrary/model_view/camera_man.h>
+#include <limbrary/model_view/viewport_with_cam.h>
 #include <limbrary/model_view/mesh_maked.h>
 #include <limbrary/program.h>
 #include <limbrary/model_view/model.h>
@@ -23,7 +23,7 @@ namespace lim
 		inline static constexpr CStr APP_INFO = "compute shader ray tracer";
 	private:
 		Program prog;
-        ViewportWithCamera viewport;
+        ViewportWithCam viewport;
 
 	public:
 		AppRay();

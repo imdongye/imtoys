@@ -51,9 +51,9 @@ lim::ArtMap::ArtMap(const char* _path, GLint _tone)
 			return;
 		}
 		if( lv==0 ) {
-			width = w; height = h; nr_channels = ch;
+			size = {w,h}; nr_channels = ch;
 		}
-		aspect_ratio = width/(float)height;
+		aspect_ratio = w/(float)h;
 
 		switch( ch ) {
 			case 1: src_format = GL_RED; break;
@@ -108,7 +108,7 @@ lim::AppHatching::AppHatching(): AppBase(1200, 780, APP_NAME)
 	h_mat.prog = &h_prog;
 	h_mat.set_prog = setProg;
 	
-	viewport.setClearColor({0.1f, 0.1f, 0.1f, 1.0f});
+	viewport.getFb().clear_color = {0.1f, 0.1f, 0.1f, 1.0f};
 
 	Model* md = new Model();
 	md->importFromFile("assets/models/dwarf/Dwarf_2_Low.obj", false, true);
@@ -182,7 +182,7 @@ void lim::AppHatching::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
 
-	LimGui::Viewport(viewport);
+	viewport.drawImGuiAndUpdateCam();
 
 	/* controller */
 	ImGui::Begin("controller##hatching");

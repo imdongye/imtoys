@@ -1,4 +1,3 @@
-
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include <limbrary/tools/limgui.h>
 #include <imgui_internal.h>
@@ -8,6 +7,7 @@
 #include <limbrary/tools/s_asset_lib.h>
 #include <limbrary/tools/text.h>
 #include <limbrary/using_in_cpp/std.h>
+#include <limbrary/using_in_cpp/glm.h>
 #include <map>
 
 using namespace lim;
@@ -349,7 +349,7 @@ void LimGui::LightDirectionalEditor(LightDirectional& lit)
 		vp.getFb().bind();
 		drawTexToQuad(lit.shadow->map.getRenderedTexId(), 2.2f, 0.f, 1.f);
 		vp.getFb().unbind();
-		LimGui::Viewport(vp);
+		vp.drawImGui();
 	}
 	ImGui::End();
 }
@@ -380,7 +380,47 @@ void LimGui::IBLightEditor(IBLight& lit)
 //
 //	SceneEditor
 //
-void LimGui::SceneEditor(Scene& scene)
+
+namespace
+{
+	ImGuizmo::MODE gzmo_space = ImGuizmo::MODE::LOCAL;
+	constexpr ImGuizmo::OPERATION gzmo_edit_modes[] = { 
+		(ImGuizmo::OPERATION)0, ImGuizmo::TRANSLATE, 
+		ImGuizmo::SCALE, ImGuizmo::ROTATE, ImGuizmo::UNIVERSAL 
+	};
+	int selected_edit_mode_idx = 0;
+}
+
+static void sceneGuizmoHook(ViewportWithCam& vp)
+{
+	Camera& cam = vp.camera;
+
+	ImGuizmo::SetDrawlist();
+	ImGuizmo::SetRect(vp.content_pos.x, vp.content_pos.y, vp.content_size.x, vp.content_size.y);
+
+    ImGuizmo::SetOrthographic(false);
+
+	static const ImVec2 view_mani_size = { 128, 128 };
+	ImVec2 view_mani_pos = toIg(vp.content_pos);
+	view_mani_pos.x += vp.content_size.x - view_mani_size.x;
+
+	ImGuizmo::ViewManipulate( glm::value_ptr(cam.mtx_View), 8.0f, view_mani_pos, view_mani_size, (ImU32)0x10101010 );
+
+
+	if( picked_rd_node ) {
+		if( ImGuizmo::Manipulate( glm::value_ptr(cam.mtx_View), glm::value_ptr(cam.mtx_Proj)
+                            , gzmo_edit_modes[selected_edit_mode_idx], gzmo_space
+							, glm::value_ptr(picked_rd_node->mtx_global)
+                            , nullptr, nullptr, nullptr) )
+		{
+			picked_rd_node->tf.mtx = picked_rd_node->mtx_global;
+			picked_rd_node->tf.decomposeMtx();
+			picked_rd_node->updateGlobalTransform();
+		}
+	}
+}
+
+void LimGui::SceneEditor(Scene& scene, ViewportWithCam& vp)
 {
 	ImGui::Begin(scene_editor_window_name.c_str());
 
@@ -464,154 +504,7 @@ void LimGui::SceneEditor(Scene& scene)
 	else if( picked_ib_light ) {
 		IBLightEditor(*picked_ib_light);
 	}
+
+
+	vp.drawImGuiAndUpdateCam(sceneGuizmoHook);
 }
-
-
-
-
-
-
-//
-//	Viewport
-//
-
-namespace {
-	std::function<void(Viewport*)> guizmo_hook = nullptr;
-}
-
-void LimGui::Viewport(lim::Viewport& vp)
-{
-	const IFramebuffer& fb = vp.getFb();
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
-	ImGui::SetNextWindowSize(
-		{(float)fb.width, (float)fb.height+ImGui::GetFrameHeight()},
-		(vp.window_mode==Viewport::WM_FIXED_SIZE) ? ImGuiCond_Always : ImGuiCond_Once
-	);
-	ImGuiWindowFlags vpWinFlag = ImGuiWindowFlags_NoCollapse;
-	if( vp.window_mode==Viewport::WM_FIXED_RATIO ) {
-		ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), [](ImGuiSizeCallbackData *data) {
-			lim::Viewport& ivp = *(lim::Viewport*)(data->UserData);
-
-			float frameHeight = ImGui::GetFrameHeight();
-			float aspectedWidth = ivp.getAspect() * (data->DesiredSize.y - frameHeight);
-			float aspectedHeight = data->DesiredSize.x / ivp.getAspect() + frameHeight;
-
-			if( data->DesiredSize.x <= aspectedWidth )
-				data->DesiredSize.x = aspectedWidth;
-			else
-				data->DesiredSize.y = aspectedHeight;
-		}, (void*)&vp);
-		vpWinFlag |= ImGuiWindowFlags_NoDocking;
-	}
-	else if( vp.window_mode==Viewport::WM_FIXED_SIZE ) {
-		vpWinFlag |= ImGuiWindowFlags_NoResize;
-	}
-	ImGui::Begin(vp.name.c_str(), &vp.is_opened, vpWinFlag);
-	
-	// for ignore draging
-	bool isHoveredOnTitle = ImGui::IsItemHovered(); // when move window
-	bool isWindowActivated = ImGui::IsItemActive(); // when resize window
-
-	// update size
-	auto contentSize = ImGui::GetContentRegionAvail();
-	if( fb.width!=contentSize.x || fb.height !=contentSize.y ) {
-		if(contentSize.x>10&&contentSize.y>10) // This is sometimes negative
-			vp.resize(contentSize.x, contentSize.y);
-	}
-
-	ImGui::SetItemKeyOwner(ImGuiKey_MouseWheelY);
-	ImGui::SetItemKeyOwner(ImGuiKey_MouseWheelX);
-	GLuint texID = fb.getRenderedTexId();
-	if( texID!=0 ) {
-		ImGui::Image((void*)(intptr_t)texID, ImVec2{(float)fb.width, (float)fb.height}, ImVec2{0, 1}, ImVec2{1, 0});
-	}
-
-	vp.is_focused = ImGui::IsWindowFocused();
-	vp.is_hovered = ImGui::IsItemHovered();
-	vp.is_dragged = isWindowActivated && !isHoveredOnTitle && ImGui::IsMouseDown(0);
-	vp.is_dragged |= (vp.is_hovered||vp.is_focused)&&(ImGui::IsMouseDown(1)||ImGui::IsMouseDown(2));
-	vp.is_appearing = ImGui::IsWindowAppearing();
-
-	vp.prev_mouse_pos = vp.mouse_pos;
-	ImVec2 imMousePos = ImGui::GetMousePos() - ImGui::GetWindowPos() - ImVec2(0, ImGui::GetFrameHeight());
-	vp.mouse_pos = {imMousePos.x, imMousePos.y};
-	vp.mouse_uv_pos = {imMousePos.x/contentSize.x, imMousePos.y/contentSize.y};
-	vp.mouse_off = vp.mouse_pos - vp.prev_mouse_pos;
-	vp.prev_mouse_pos = vp.mouse_pos;
-
-	ImGuiIO io = ImGui::GetIO();
-	vp.is_scrolled =  vp.is_hovered&&(io.MouseWheel||io.MouseWheelH);
-	vp.scroll_off = {io.MouseWheelH, io.MouseWheel};
-	
-	if( guizmo_hook ) {
-		const auto& pos = ImGui::GetItemRectMin();
-		const auto& size = ImGui::GetItemRectSize();
-		ImGuizmo::SetDrawlist();
-		ImGuizmo::SetRect(pos.x, pos.y, size.x, size.y);
-		guizmo_hook(&vp);
-		vp.is_dragged &= !ImGuizmo::IsUsingAny();
-	}
-	if( vp.is_dragged ) ImGui::SetMouseCursor(7);
-
-	ImGui::End();
-	ImGui::PopStyleVar();
-
-	for( auto& cb : vp.update_callbacks ) {
-		cb(ImGui::GetIO().DeltaTime);
-	}
-}
-
-
-void LimGui::ViewportWithGuizmo(
-	ViewportWithCamera& vp
-	, std::function<void(lim::Viewport*)> guizmoHook
-)
-{
-	guizmo_hook = guizmoHook;
-	LimGui::Viewport(vp);
-	guizmo_hook = nullptr;
-}
-
-namespace {
-	std::function<void(lim::Viewport*)> inner_scene_guizmo_hook = nullptr;
-	ImGuizmo::MODE gzmo_space = ImGuizmo::MODE::LOCAL;
-	constexpr ImGuizmo::OPERATION gzmo_edit_modes[] = { 
-		(ImGuizmo::OPERATION)0, ImGuizmo::TRANSLATE, 
-		ImGuizmo::SCALE, ImGuizmo::ROTATE, ImGuizmo::UNIVERSAL 
-	};
-	int selected_edit_mode_idx = 0;
-}
-static void sceneGuizmoHook(lim::Viewport* vp)
-{
-	const auto& pos = ImGui::GetItemRectMin();
-		const auto& size = ImGui::GetItemRectSize();
-	Camera& cam = ((lim::ViewportWithCamera*)vp)->camera;
-	if( inner_scene_guizmo_hook ) {
-		inner_scene_guizmo_hook(vp);
-	}
-    ImGuizmo::SetOrthographic(false);
-	ImGuizmo::ViewManipulate( glm::value_ptr(cam.mtx_View), 8.0f, ImVec2{pos.x+size.x-128, pos.y}, ImVec2{128, 128}, (ImU32)0x10101010 );
-	if( picked_rd_node ) {
-		if( ImGuizmo::Manipulate( glm::value_ptr(cam.mtx_View), glm::value_ptr(cam.mtx_Proj)
-                            , gzmo_edit_modes[selected_edit_mode_idx], gzmo_space
-							, glm::value_ptr(picked_rd_node->mtx_global)
-                            , nullptr, nullptr, nullptr) )
-		{
-			picked_rd_node->tf.mtx = picked_rd_node->mtx_global;
-			picked_rd_node->tf.decomposeMtx();
-			picked_rd_node->updateGlobalTransform();
-		}
-	}
-}
-
-void LimGui::ViewportWithSceneGuizmo(
-	lim::ViewportWithCamera& vp
-    , std::function<void(lim::Viewport*)> guizmoHook
-)
-{
-	inner_scene_guizmo_hook = guizmoHook;
-	LimGui::ViewportWithGuizmo(vp, sceneGuizmoHook);
-	inner_scene_guizmo_hook = nullptr;
-}
-
-

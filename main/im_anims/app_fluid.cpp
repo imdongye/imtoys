@@ -15,12 +15,7 @@ namespace lim
 {
 	AppFluid::AppFluid(): AppBase(1200, 780, APP_NAME), viewport(new FramebufferNoDepth)
 	{
-		canvas = new CanvasColor(viewport.getWidth(), viewport.getHeight());
-
-		// 람다에서 전체 캡쳐를 해두어도 컴파일타임에 사용하는 변수만 복사 및 레퍼런싱한다.
-		viewport.resize_callbacks[this] = [this](int w, int h) { 
-			canvas->resize(w, h); 
-		};
+		canvas = new CanvasColor(viewport.fb_size);
 		points.push_back({0,0});
 	}
 	AppFluid::~AppFluid()
@@ -30,14 +25,14 @@ namespace lim
 	void AppFluid::update()
 	{
 		points[0].x = viewport.mouse_pos.x;
-		points[0].y = viewport.getHeight()-viewport.mouse_pos.y;
+		points[0].y = viewport.content_size.y-viewport.mouse_pos.y;
 
 		const float radius = 50.f;
 		const float threshold = 0.5f;
 
 		canvas->clear();
 
-		for( int x=0; x<viewport.getWidth(); x++ ) for( int y=0; y<viewport.getHeight(); y++ ) {
+		for( int x=0; x<viewport.fb_size.x; x++ ) for( int y=0; y<viewport.fb_size.y; y++ ) {
 			glm::vec2 pix = {x, y};
 			float sum = 0.f;
 
@@ -118,18 +113,14 @@ namespace lim
 			ImGui::Text("mouse pos : %4d, %4d", (int)points[0].x, (int)points[0].x);
 			ImGui::End();
 		}
-		LimGui::Viewport(viewport);
-	}
-	void AppFluid::framebufferSizeCallback(int w, int h)
-	{
-	}
-	void AppFluid::mouseBtnCallback(int button, int action, int mods)
-	{
-		if( glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
-			points.push_back({viewport.mouse_pos.x, viewport.getHeight()-viewport.mouse_pos.y});
+		viewport.drawImGui();
+
+		if( viewport.is_size_changed ) {
+			canvas->resize(viewport.fb_size); 
 		}
-	}
-	void AppFluid::cursorPosCallback(double xPos, double yPos)
-	{
+
+		if( ImGui::IsMouseClicked(0) && viewport.is_hovered ) {
+			points.push_back({viewport.mouse_pos.x, viewport.content_size.y-viewport.mouse_pos.y});
+		}
 	}
 }

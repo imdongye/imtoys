@@ -18,6 +18,7 @@
 #include <cstdlib>
 
 #include <limbrary/using_in_cpp/std.h>
+#include <limbrary/using_in_cpp/glm.h>
 using namespace lim;
 
 namespace {
@@ -30,6 +31,7 @@ AppBase::AppBase(int winWidth, int winHeight, const char* title, bool vsync)
 	:win_width(winWidth), win_height(winHeight)
 {
 	g_ptr = this;
+	std::srand(time(0));
 	log::reset();
 	
 	//
@@ -37,6 +39,7 @@ AppBase::AppBase(int winWidth, int winHeight, const char* title, bool vsync)
 	//
 	glfwSetErrorCallback([](int error, const char *description) {
 		log::err("Glfw Error %d: %s\n", error, description);
+		assert(true);
 	});
 
 	if( !glfwInit() ) {
@@ -52,7 +55,6 @@ AppBase::AppBase(int winWidth, int winHeight, const char* title, bool vsync)
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 	glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_FALSE);
 #endif
-	//glfwWindowHint(GLFW_SAMPLES, 4); // MSAA
 	glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 	window = glfwCreateWindow(win_width, win_height, title, NULL, NULL);
 	if( !window ) {
@@ -70,14 +72,14 @@ AppBase::AppBase(int winWidth, int winHeight, const char* title, bool vsync)
 		glfwShowWindow(window);
 	}
 
-	
-
 	glfwGetFramebufferSize(window, &fb_width, &fb_height);
 	aspect_ratio = fb_width/(float)fb_height;
 	pixel_ratio =  fb_width/(float)win_width;
 
 	glfwMakeContextCurrent(window);
 	glfwSwapInterval((vsync)?1:0);
+
+
 
 
 
@@ -90,29 +92,36 @@ AppBase::AppBase(int winWidth, int winHeight, const char* title, bool vsync)
 	}
 	
 
-	glClampColor(GL_CLAMP_READ_COLOR, GL_FALSE);
-	glGetIntegerv(GL_MAX_SAMPLES, &g_max_ms_samples);
+
+
+	// OpenGL settings
+	{
+		// for hdr, ibl, post processing
+		glClampColor(GL_CLAMP_READ_COLOR, GL_FALSE);
+	}
+
+
 
 
 	//
 	// print opengl status
 	//
 	{
-		const GLubyte *renderer = glGetString(GL_RENDERER);
-		const GLubyte *vendor = glGetString(GL_VENDOR);
-		const GLubyte *version = glGetString(GL_VERSION);
-		const GLubyte *glslVersion = glGetString(GL_SHADING_LANGUAGE_VERSION);
-
-		GLint major, minor;
-		glGetIntegerv(GL_MAJOR_VERSION, &major);
-		glGetIntegerv(GL_MINOR_VERSION, &minor);
+		const GLubyte* strTemp;
+		int iTemp, iTemp2;
 
 		log::pure("Frame size           : %d x %d\n", win_width, win_height);
-		log::pure("GL Vendor            : %s\n", vendor);
-		log::pure("GL Renderer          : %s\n", renderer);
-		log::pure("GL Version (string)  : %s\n", version);
-		log::pure("GLSL Version         : %s\n", glslVersion);
-		int iTemp;
+		strTemp = glGetString(GL_VENDOR);
+		log::pure("GL Vendor            : %s\n", strTemp);
+		strTemp = glGetString(GL_RENDERER);
+		log::pure("GL Renderer          : %s\n", strTemp);
+		strTemp = glGetString(GL_VERSION);
+		log::pure("GL Version (string)  : %s\n", strTemp);
+		glGetIntegerv(GL_MAJOR_VERSION, &iTemp);
+		glGetIntegerv(GL_MINOR_VERSION, &iTemp2);
+		log::pure("Major, Minor         : %d.%d\n", iTemp, iTemp2);
+		strTemp = glGetString(GL_SHADING_LANGUAGE_VERSION);
+		log::pure("GLSL Version         : %s\n", strTemp);
 		glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &iTemp);
 		log::pure("#Vertex Attributes   : %d\n", iTemp);
 
@@ -120,52 +129,34 @@ AppBase::AppBase(int winWidth, int winHeight, const char* title, bool vsync)
 		glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &iTemp);
 		log::pure("#comp invocations    : %d\n", iTemp);
 #endif
-		log::pure("#max ms samples    	: %d\n", iTemp);
-		
 		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &iTemp);
 		log::pure("#Texture Slots       : %d\n", iTemp);
+		glGetIntegerv(GL_MAX_SAMPLES, &iTemp);
+		log::pure("#max ms samples    	: %d\n", iTemp);
+		log::pure("#monitor max fps    	: %d\n", monitor_max_fps);
+		
 		log::pure("Current Path : %s\n\n", std::filesystem::current_path().string().c_str());
 	}
 
 	
 
+
 	//
 	// Register callback after glad initialization
 	//
 	{
-		//glfwSetWindowUserPointer(window, this);
-
 		// lambda is better then std::bind
 		// first call framebuffer resize, next window resize  when resize window
-		framebuffer_size_callbacks[this] = [this](int w, int h) {
-			framebufferSizeCallback(w, h);
-		};
-		key_callbacks[this] = [this](int key, int scancode, int action, int mods) {
-			keyCallback(key, scancode, action, mods); 
-		};
-		mouse_btn_callbacks[this] = [this](int button, int action, int mods) {
-			mouseBtnCallback(button, action, mods); 
-		};
-		scroll_callbacks[this] = [this](double xOff, double yOff) {
-			scrollCallback(xOff, yOff); 
-		};
-		cursor_pos_callbacks[this] = [this](double x, double y) {
-			mouse_pos = {x,y};
-			cursorPosCallback(x, y); 
-		};
-		dnd_callbacks[this] = [this](int count, const char **path) {
-			dndCallback(count, path); 
-		};
-
+		glfwSetFramebufferSizeCallback(window, [](GLFWwindow* _, int width, int height) {
+			g_ptr->is_size_changed = true;
+			g_ptr->fb_width = width; g_ptr->fb_height = height;
+			g_ptr->aspect_ratio = width/(float)height;
+			for( auto& cb : g_ptr->framebuffer_size_callbacks ) cb(width, height);
+		});
 		glfwSetWindowSizeCallback(window, [](GLFWwindow* _, int width, int height) {
 			g_ptr->win_width = width; g_ptr->win_height = height;
-			g_ptr->aspect_ratio = width/(float)height;
 			g_ptr->pixel_ratio = g_ptr->fb_width/(float)g_ptr->win_width;
 			for(auto& cb : g_ptr->win_size_callbacks ) cb(width, height);
-		});
-		glfwSetFramebufferSizeCallback(window, [](GLFWwindow* _, int width, int height) {
-			g_ptr->fb_width = width; g_ptr->fb_height = height;
-			for( auto& cb : g_ptr->framebuffer_size_callbacks ) cb(width, height);
 		});
 		glfwSetKeyCallback(window, [](GLFWwindow* _, int key, int scancode, int action, int mods) {
 			for( auto& cb : g_ptr->key_callbacks ) cb(key, scancode, action, mods);
@@ -174,10 +165,12 @@ AppBase::AppBase(int winWidth, int winHeight, const char* title, bool vsync)
 			for( auto& cb : g_ptr->mouse_btn_callbacks ) cb(button, action, mods);
 		});
 		glfwSetScrollCallback(window, [](GLFWwindow* _, double xOff, double yOff) {
-			for( auto& cb : g_ptr->scroll_callbacks) cb(xOff, yOff);
+			vec2 scrollOff = vec2(float(xOff), float(yOff));
+			for( auto& cb : g_ptr->scroll_callbacks) cb(scrollOff);
 		});
 		glfwSetCursorPosCallback(window, [](GLFWwindow* _, double xPos, double yPos) {
-			for( auto& cb : g_ptr->cursor_pos_callbacks) cb(xPos, yPos);
+			vec2 curPos = vec2(float(xPos), float(yPos));
+			for( auto& cb : g_ptr->cursor_pos_callbacks) cb(curPos);
 		});
 		glfwSetDropCallback(window, [](GLFWwindow* _, int count, const char **paths) {
 			for( auto& cb : g_ptr->dnd_callbacks ) cb(count, paths);
@@ -226,11 +219,14 @@ AppBase::AppBase(int winWidth, int winHeight, const char* title, bool vsync)
 
 		// Setup Platform/Renderer backends
 		ImGui_ImplGlfw_InitForOpenGL(window, true);
+#ifndef __APPLE__
+		ImGui_ImplOpenGL3_Init("#version 460");
+#else
 		ImGui_ImplOpenGL3_Init("#version 410");
+#endif
 	}
 
 
-	std::srand(time(0));
 	SaveFile::create();
 	AssetLib::create();
 	LimGui::resetEditors();
@@ -265,19 +261,15 @@ AppBase::~AppBase()
 
 void AppBase::run()
 {
-	ImGuiIO& io = ImGui::GetIO();
+	const ImGuiIO& io = ImGui::GetIO();
 
 	while( !glfwWindowShouldClose(window) )
 	{
-		double nextTime =  glfwGetTime() + 1.0/max_fps;
+		double nextTime =  glfwGetTime() + 1.0/custom_max_fps;
 
 		delta_time = io.DeltaTime;
 
-		glfwPollEvents();
-		static glm::vec2 prevPos(0);
-		mouse_off = mouse_pos - prevPos;
-		prevPos = mouse_pos;
-
+		glfwPollEvents(); // call callbacks
 
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
@@ -290,16 +282,18 @@ void AppBase::run()
 		
 		ImGui::Render();
 
+		is_focused = !io.WantCaptureMouse && !io.WantCaptureKeyboard;
 
-		// if update before updateImGui then black screen when resize viewport
-		// i don't know why
 		update();
-		for( auto& cb : update_hooks ) 
+		for( auto& cb : update_hooks ) {
 			cb(delta_time);
-		
+		}
+
+		// reset state
+		is_size_changed = false;
 		
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+		if( io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable ) 
 		{
 			GLFWwindow* backup_current_context = glfwGetCurrentContext();
 			ImGui::UpdatePlatformWindows();
@@ -309,8 +303,9 @@ void AppBase::run()
 
 		glfwSwapBuffers(window);
 
-		if( max_fps<1 )
+		if( custom_max_fps<1 ) {
 			continue;
-		while( glfwGetTime() < nextTime ) {}
+		}
+		while( glfwGetTime() < nextTime ) {} // todo sleep
 	}
 }

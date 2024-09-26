@@ -320,7 +320,7 @@ AppBvhParsor::AppBvhParsor()
 	vp.camera.pos.z += 1.f;
 	vp.camera.pos.y = 2.f;
 	vp.camera.pivot.y -= 0.5f;
-	vp.camera.updateViewMat();
+	vp.camera.updateViewMtx();
 	parceBvh(&g_body, &g_motion, "assets/bvhs/smoothWalk.bvh");
 }
 AppBvhParsor::~AppBvhParsor()

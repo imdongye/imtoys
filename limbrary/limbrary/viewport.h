@@ -2,24 +2,23 @@
 
 2022-08-24 / im dong ye
 
-imgui framebuffer viewer
 
 Note:
-* Framebuffer은 Dependent Injection으로 외부에서 생성돼서 들어오지만 
-  viewport에 종속돼서 viewport와 같이 삭제된다.
-* dragging with left or middle button
+	viewport is additional information for framebuffer,
 
+	and can viewing framebuffer with imgui.
 
-Todo:
-0. template화하는게 더 좋을까?(부모클래스 탬플릿조건)
-1. initial framebuffer size setting
-2. drag imgui demo 참고해서 다시짜기
-3. https://github.com/ocornut/imgui/issues/3152
+	constructor have dependent injection with framebuffer.
+
+	you can get framebuffer information with getFb()
+		ex) getFb().aspect
+
+Ref:
+	https://github.com/ocornut/imgui/issues/3152
 	https://github.com/ocornut/imgui/issues/3492
 	https://jamssoft.tistory.com/234
 	https://github.com/ocornut/imgui/blob/master/docs/FAQ.md
 	https://github.com/ocornut/imgui/issues/270
-	로 앱별 tag부여해서 ini 윈도우 설정 겹치지 않게
 
 */
 
@@ -37,8 +36,6 @@ Todo:
 
 namespace lim
 {
-	class Camera;
-
 	class Viewport : public NoCopyAndMove
 	{
 	public:
@@ -48,46 +45,46 @@ namespace lim
 			WM_FIXED_RATIO,
 			WM_FIXED_SIZE,
 		};
-	public:
-		std::string name;
 		WindowMode window_mode = WM_FREE;
+		float fixed_aspect = 1.0f; // for WM_FIXED_RATIO
+
+		std::string name = "Viewport##appname";
 		bool is_opened = true;
+		bool is_hidden = false;
 		bool is_hovered = false;
 		bool is_focused = false;
 		bool is_dragged = false;
-		bool is_scrolled = false;
-		bool is_appearing = false;
-		glm::vec2 mouse_pos = {0,0};
-		glm::vec2 prev_mouse_pos = {0,0};
-		glm::vec2 mouse_uv_pos = {0,0};
-		glm::vec2 mouse_off = {0,0};
-		glm::vec2 scroll_off = {0,0};
-		Callbacks<void(int, int)> resize_callbacks;
-		Callbacks<void(float dt)> update_callbacks;
+		bool is_size_changed = true;
+
+		glm::ivec2 fb_size;
+
+		// for guizmo
+		glm::vec2 	content_pos;
+		glm::vec2 	content_size;
+
+		// screen space
+		glm::vec2 	mouse_pos = {0,0}; 
+		glm::vec2 	mouse_uv_pos = {0,0};
+
 	protected:
 		OwnPtr<IFramebuffer> own_framebuffer = nullptr;
 
 	public:
-		Viewport(IFramebuffer* createdFB, const char* _name = "Viewport##appname");
-		~Viewport() noexcept = default;
+		Viewport(IFramebuffer* createdFB, const char* _name = "Viewport");
+		virtual ~Viewport() noexcept = default;
 
-		inline const IFramebuffer& getFb() {
+		void drawImGui();
+
+		inline void resize(const glm::ivec2& _size) {
+			fixed_aspect = float(_size.x) / float(_size.y);
+			fb_size = _size;
+			content_size = glm::vec2(_size);
+			own_framebuffer->resize(_size);
+		}
+
+		inline IFramebuffer& getFb() {
 			return *own_framebuffer;
 		}
-		inline void setClearColor(const glm::vec4& color) {
-			own_framebuffer->clear_color = color;
-		}
-		inline int getWidth() const {
-			return own_framebuffer->width;
-		};
-		inline int getHeight() const {
-			return own_framebuffer->height;
-		}
-		float getAspect() const {
-			return own_framebuffer->aspect;
-		}
-		
-		void resize(GLuint _width, GLuint _height);
 	};
 }
 

@@ -15,50 +15,42 @@
 #include <stb_image.h>
 #include <glm/gtc/type_ptr.hpp>
 
-
+#include <limbrary/using_in_cpp/glm.h>
 using namespace lim;
 
-namespace
-{
-	void copyTexBaseProps(const lim::Texture& src, lim::Texture& dst) {
-		dst.name 				= src.name;
-		dst.width 				= src.width;
-		dst.height 				= src.height;
-		dst.internal_format 	= src.internal_format;
-		dst.mag_filter 			= src.mag_filter;
-		dst.min_filter 			= src.min_filter;
-		dst.s_wrap_param 			= src.s_wrap_param;
-		dst.mipmap_max_level 	= src.mipmap_max_level;
-		dst.src_format 			= src.src_format;
-		dst.src_chanel_type 	= src.src_chanel_type;
 
-		dst.aspect_ratio 		= src.aspect_ratio;
+static void copyTexBaseProps(const lim::Texture& src, lim::Texture& dst) {
+	dst.name 				= src.name;
+	dst.size 				= src.size;
+	dst.internal_format 	= src.internal_format;
+	dst.mag_filter 			= src.mag_filter;
+	dst.min_filter 			= src.min_filter;
+	dst.s_wrap_param 			= src.s_wrap_param;
+	dst.mipmap_max_level 	= src.mipmap_max_level;
+	dst.src_format 			= src.src_format;
+	dst.src_chanel_type 	= src.src_chanel_type;
 
-		dst.file_path			= src.file_path;
-		dst.file_format			= dst.file_path.c_str() + (src.file_format - src.file_path.c_str());
-		dst.nr_channels     	= src.nr_channels;
-		dst.bit_per_channel		= src.bit_per_channel;
-	}
+	dst.aspect_ratio 		= src.aspect_ratio;
+
+	dst.file_path			= src.file_path;
+	dst.file_format			= dst.file_path.c_str() + (src.file_format - src.file_path.c_str());
+	dst.nr_channels     	= src.nr_channels;
+	dst.bit_per_channel		= src.bit_per_channel;
 }
-
-
-Texture::Texture()
-{
-}
-Texture::Texture(const Texture& src)
-{
+Texture::Texture(const Texture& src) {
 	*this = src;
 }
-Texture& lim::Texture::operator=(const Texture& src) 
+Texture& Texture::operator=(const Texture& src) 
 {
-	if(this != &src) {
-		deinitGL();
-		copyTexBaseProps(src, *this);
-		initGL();
-		copyTexToTex(src.tex_id, *this);
-	}
+	assert(this != &src);
+
+	deinitGL();
+	copyTexBaseProps(src, *this);
+	initGL();
+	copyTexToTex(src.tex_id, *this);
 	return *this;
 }
+
 Texture::~Texture()
 {
 	deinitGL();
@@ -73,7 +65,7 @@ void Texture::deinitGL()
 void Texture::initGL(void* data)
 {
 	deinitGL();
-	aspect_ratio = width/(float)height;
+	aspect_ratio = size.x/(float)size.y;
 
 	glGenTextures(1, &tex_id);
 	glBindTexture(GL_TEXTURE_2D, tex_id);
@@ -86,7 +78,7 @@ void Texture::initGL(void* data)
 	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(border_color)); 
 	//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 8); // todo
 
-	glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, src_format, src_chanel_type, data);
+	glTexImage2D(GL_TEXTURE_2D, 0, internal_format, size.x, size.y, 0, src_format, src_chanel_type, data);
 	
 	glGenerateMipmap(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -104,7 +96,7 @@ void* Texture::getDataAndPropsFromFile(std::string_view filePath)
 
 	// hdr loading
 	if( stbi_is_hdr(file_path.c_str()) ) {
-		data=stbi_loadf(file_path.c_str(), &width, &height, &nr_channels, 0);
+		data=stbi_loadf(file_path.c_str(), &size.x, &size.y, &nr_channels, 0);
 		if( stbi_is_16_bit(file_path.c_str()) ) {
 			bit_per_channel = 16;
 		}
@@ -113,7 +105,7 @@ void* Texture::getDataAndPropsFromFile(std::string_view filePath)
 		}
 	}
 	else {
-		data=stbi_load(file_path.c_str(), &width, &height, &nr_channels, 0);
+		data=stbi_load(file_path.c_str(), &size.x, &size.y, &nr_channels, 0);
 		
 		bit_per_channel = 8;
 	}
@@ -208,15 +200,15 @@ bool Texture::initFromFile(const char* filePath, bool convertLinear)
 	initGL(data);
 	stbi_image_free(data);
 
-	log::pure("%s(%dx%dx%dx%dbits)\n", name.c_str(), width, height, nr_channels, bit_per_channel);
+	log::pure("%s(%dx%dx%dx%dbits)\n", name.c_str(), size.x, size.y, nr_channels, bit_per_channel);
 	return true;
 }
 
-bool Texture::initFromMem(const unsigned char* pcData, int aWidth, int aHeight
+bool Texture::initFromMem(const unsigned char* pcData, ivec2 _size
 	, bool convertLinear, const char* implicitFilePath)
 {
-	int length = (aHeight==0) ? aWidth : aWidth*aHeight;
-	void* data = stbi_load_from_memory(pcData, length, &width, &height, &nr_channels, 0);
+	int length = (_size.y==0) ? _size.x : _size.x*_size.y;
+	void* data = stbi_load_from_memory(pcData, length, &size.x, &size.y, &nr_channels, 0);
 	file_path = implicitFilePath;
 	file_format = file_path.c_str()+file_path.rfind('.')+1;
 	name = std::string(file_path.c_str()+file_path.find_last_of("/\\")+1);
@@ -236,7 +228,7 @@ bool Texture::initFromMem(const unsigned char* pcData, int aWidth, int aHeight
 	initGL(data);
 	stbi_image_free(data);
 
-	log::pure("%s(%dx%dx%dx%dbits)\n", name.c_str(), width, height, nr_channels, bit_per_channel);
+	log::pure("%s(%dx%dx%dx%dbits)\n", name.c_str(), size.x, size.y, nr_channels, bit_per_channel);
 	return true;
 }
 
@@ -254,7 +246,7 @@ void Texture3d::initGL(void* data) {
 		return;
 	}
 	deinitGL();
-	aspect_ratio = width/(float)height;
+	aspect_ratio = size.x/(float)size.y;
 
 	glGenTextures(1, &tex_id);
 	glBindTexture(GL_TEXTURE_3D, tex_id);
@@ -268,13 +260,13 @@ void Texture3d::initGL(void* data) {
 	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, mipmap_max_level);
 	// glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 8);
 
-	glTexImage3D(GL_TEXTURE_3D, 0, internal_format, width, height, nr_depth, 0, src_format, src_chanel_type, nullptr);
+	glTexImage3D(GL_TEXTURE_3D, 0, internal_format, size.x, size.y, nr_depth, 0, src_format, src_chanel_type, nullptr);
 	glGenerateMipmap(GL_TEXTURE_3D);
 	glBindTexture(GL_TEXTURE_3D, 0);
 }
 void Texture3d::setDataWithDepth(int depth, void* data) {
 	glBindTexture( GL_TEXTURE_3D, tex_id );
-	glTexSubImage3D( GL_TEXTURE_3D, 0, 0, 0, depth, width, height, 1, src_format, src_chanel_type, data);
+	glTexSubImage3D( GL_TEXTURE_3D, 0, 0, 0, depth, size.x, size.y, 1, src_format, src_chanel_type, data);
 	
 	glGenerateMipmap( GL_TEXTURE_3D );
 	glBindTexture( GL_TEXTURE_3D, 0 );
@@ -323,7 +315,7 @@ void lim::copyTexToTex(const GLuint srcTexId, Texture& dstTex)
 	glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, srcTexId, 0 );
 
 	glBindTexture(GL_TEXTURE_2D, dstTex.tex_id);
-	glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, dstTex.width, dstTex.height);
+	glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, dstTex.size.x, dstTex.size.y);
 	glGenerateMipmap(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -353,7 +345,7 @@ void lim::copyTexToTex(const Texture& srcTex, Texture& dstTex)
 
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, srcFbo);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dstFbo);
-	glBlitFramebuffer(0, 0, srcTex.width, srcTex.height, 0, 0, dstTex.width, dstTex.height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+	glBlitFramebuffer(0, 0, srcTex.size.x, srcTex.size.y, 0, 0, dstTex.size.x, dstTex.size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);

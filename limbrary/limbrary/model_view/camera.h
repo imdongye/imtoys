@@ -20,44 +20,41 @@
 
 #include <glm/glm.hpp>
 #include <limbrary/program.h>
+#include <limbrary/tools/mecro.h>
 
 namespace lim
 {
 	// copyable
-	class Camera
+	class Camera : public NoCopyAndMove
 	{
 	public:
 		// <editable camera options>
-		// if you edit then must call updateProjMat();
+		// if you edit then must call updateProjMtx();
 		float aspect=1;
 		float fovy = 46.f; // 50mm, feild of view y axis dir
 		float z_near=0.1f;
 		float z_far=100;
 		
 		// todo: TransformPivoted
-		// if you edit then must call updateViewMat();
+		// if you edit then must call updateViewMtx();
 		glm::vec3 pos = {0,0,5};
 		glm::vec3 pivot = {0,0,0};
 		glm::vec3 global_up = {0,1,0};
 
-		// result
-		float length;
+		// result of updateViewMtx
+		glm::vec3 to_pivot;
+		float distance;
 		glm::vec3 front, up, right;
 		glm::mat4 mtx_View;
 		glm::mat4 mtx_Proj;
-	public:
-		Camera(const Camera&)	         = delete;
-		Camera(Camera&&)			     = delete;
-		Camera& operator=(const Camera&) = delete;
-		Camera& operator=(Camera&&)      = delete;
 
 		Camera();
-		virtual ~Camera();
+		virtual ~Camera() noexcept = default;
 		glm::vec3 screenPosToDir(const glm::vec2& uv) const;
 		void moveShift(const glm::vec3& off);
 		// with pos and pivot
-		void updateViewMat();
-		void updateProjMat();
+		void updateViewMtx(); // and result
+		void updateProjMtx();
 		void setUniformTo(const Program& prg) const;
 		void copyFrom(const Camera& src);
 	};

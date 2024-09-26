@@ -15,7 +15,7 @@
 #include <limbrary/application.h>
 #include <limbrary/model_view/mesh_maked.h>
 #include <limbrary/model_view/light.h>
-#include <limbrary/model_view/camera_man.h>
+#include <limbrary/model_view/viewport_with_cam.h>
 
 namespace lim
 {
@@ -46,7 +46,7 @@ namespace lim
         GLuint buf_cylinders;
 
     protected:
-        ViewportWithCamera vp;
+        ViewportWithCam vp;
     public:
         AppBaseCanvas3d(int winWidth=1280, int winHeight=720, const char* title="nonamed"
             , bool vsync=true, int capacityQuads=10, int capacitySpheres=1000, int capacityCylinders=1000);

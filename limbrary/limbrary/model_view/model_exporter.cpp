@@ -356,18 +356,18 @@ namespace lim
 				fs::create_directories(newTexDir);
 
 
-			GLubyte* fileData = new GLubyte[3 * tex->width * tex->height ];
+			GLubyte* fileData = new GLubyte[3 * tex->size.x * tex->size.y ];
 			GLuint srcFbo;
 			glGenFramebuffers(1, &srcFbo);
 			glBindFramebuffer(GL_FRAMEBUFFER, srcFbo);
 			glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex->tex_id, 0 );
 
 			glPixelStorei(GL_PACK_ALIGNMENT, 1);
-            glReadPixels(0, 0,  tex->width, tex->height, GL_RGB, GL_UNSIGNED_BYTE, fileData);
+            glReadPixels(0, 0,  tex->size.x, tex->size.y, GL_RGB, GL_UNSIGNED_BYTE, fileData);
 
 			stbi_flip_vertically_on_write(true);
 			// Todo: base color texture srgb로 변환
-            stbi_write_png(newTexPath.c_str(), tex->width, tex->height, 3, fileData, tex->width * 3);
+            stbi_write_png(newTexPath.c_str(), tex->size.x, tex->size.y, 3, fileData, tex->size.x * 3);
 
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 			glDeleteFramebuffers(1, &srcFbo);

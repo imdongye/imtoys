@@ -42,9 +42,6 @@ namespace lim
 	private:
 		virtual void update() override;
 		virtual void updateImGui() override;
-		virtual void keyCallback(int key, int scancode, int action, int mods) override;
-		virtual void cursorPosCallback(double xPos, double yPos) override;
-		virtual void dndCallback(int count, const char **paths) override;
 	};
 }
 

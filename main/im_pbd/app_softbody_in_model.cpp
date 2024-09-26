@@ -105,7 +105,11 @@ AppSoftbodyInModel::AppSoftbodyInModel() : AppBase(1480, 780, APP_NAME, false)
 
 
 	viewport.camera.moveShift(glm::vec3(0,1.4f,0));
-	viewport.camera.updateViewMat();
+	viewport.camera.updateViewMtx();
+
+	dnd_callbacks[this] = [this](int count, const char **paths) {
+		reloadModel(paths[0]);
+	};
 }
 AppSoftbodyInModel::~AppSoftbodyInModel()
 {
@@ -193,7 +197,7 @@ void AppSoftbodyInModel::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
 
-	LimGui::Viewport(viewport);
+	viewport.drawImGuiAndUpdateCam();
 
 
 	ModelView& md = *scene.own_mds[0];
@@ -246,7 +250,7 @@ void AppSoftbodyInModel::updateImGui()
 			LimGui::PlotVal("fps", "", ImGui::GetIO().Framerate);
 			ImGui::TreePop();
 		}
-		ImGui::SliderInt("max fps", &max_fps, 20, 1000);
+		ImGui::SliderInt("max fps", &custom_max_fps, 20, 1000);
 		ImGui::SliderFloat("time speed", &time_speed, 0.1f, 2.f);
 	}
 
@@ -370,10 +374,4 @@ void AppSoftbodyInModel::updateImGui()
 			gl::safeDelBufs(&cur_body->buf_c_points);
 		}	
 	}
-}
-
-
-
-void AppSoftbodyInModel::dndCallback(int _, const char **paths) {
-	reloadModel(paths[0]);
 }

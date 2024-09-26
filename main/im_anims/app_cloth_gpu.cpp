@@ -190,7 +190,7 @@ AppClothGPU::AppClothGPU()
 	g_app = this;
 	viewport.camera.pivot = vec3(0, 1.0, 0);
     viewport.camera.pos = vec3(0, 1.5, 3.4);
-	viewport.camera.updateViewMat();
+	viewport.camera.updateViewMtx();
 
 	prog_render.attatch("im_anims/shaders/cloth.vs").attatch("im_anims/shaders/cloth.fs").link();
 	prog_skin.attatch("mvp_skinned.vs").attatch("ndv.fs").link();
@@ -316,7 +316,8 @@ void AppClothGPU::update()
 void AppClothGPU::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
-	LimGui::Viewport(viewport);
+	
+	viewport.drawImGuiAndUpdateCam();
 
 
 

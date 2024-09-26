@@ -4,7 +4,7 @@
 #include <limbrary/application.h>
 #include <limbrary/program.h>
 #include <limbrary/model_view/model.h>
-#include <limbrary/model_view/camera_man.h>
+#include <limbrary/model_view/viewport_with_cam.h>
 #include <limbrary/model_view/scene.h>
 
 namespace lim
@@ -23,7 +23,7 @@ namespace lim
 
 		Program program;
 		Material default_mat;
-		ViewportWithCamera viewport;
+		ViewportWithCam viewport;
 		Texture debugging_tex;
 		Scene scene;
 

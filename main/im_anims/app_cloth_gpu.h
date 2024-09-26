@@ -8,7 +8,7 @@
 
 #include <limbrary/application.h>
 #include <limbrary/model_view/mesh_maked.h>
-#include <limbrary/model_view/camera_man.h>
+#include <limbrary/model_view/viewport_with_cam.h>
 #include <limbrary/model_view/transform.h>
 #include <limbrary/model_view/model.h>
 #include <limbrary/model_view/light.h>
@@ -28,7 +28,7 @@ namespace lim
 		Program prog_comp;
 		Program prog_comp_nor;
 		MeshPlane ground;
-		ViewportWithCamera viewport;
+		ViewportWithCam viewport;
 		Model model;
 		LightDirectional light;
 

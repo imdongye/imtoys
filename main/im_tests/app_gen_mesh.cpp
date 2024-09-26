@@ -111,7 +111,7 @@ void AppGenMesh::updateImGui()
 	ImGui::DockSpaceOverViewport();
 
 
-	LimGui::Viewport(viewport);
+	viewport.drawImGuiAndUpdateCam();
 	
 
 	/* controller */
