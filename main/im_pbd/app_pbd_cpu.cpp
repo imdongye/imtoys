@@ -6,8 +6,11 @@
 #include <limbrary/tools/glim.h>
 #include <limbrary/tools/etc.h>
 #include <limbrary/tools/s_asset_lib.h>
+
+#include <glm/gtx/transform.hpp>
+
+#include <limbrary/using_in_cpp/glm.h>
 using namespace lim;
-using namespace glm;
 
 
 namespace {
@@ -100,47 +103,47 @@ static void resetApp() {
 			break;
 		}
 		case MT_CUBE: {
-			nr_ms_slices = min(4, nr_ms_slices);
+			nr_ms_slices = glm::min(4, nr_ms_slices);
 			ms = new MeshCube(1.f, true, true);
 			ms->subdivide(nr_ms_slices);
 			break;
 		}
 		case MT_SHARED_CUBE: {
-			nr_ms_slices = min(4, nr_ms_slices);
+			nr_ms_slices = glm::min(4, nr_ms_slices);
 			ms = new MeshCube(1.f, false, false);
 			ms->subdivide(nr_ms_slices);
 			break;
 		}
 		case MT_SPHERE: {
-			int nrSlices = max(6, nr_ms_slices);
+			int nrSlices = glm::max(6, nr_ms_slices);
 			int nrStacks = nrSlices/2;
 			ms = new MeshSphere(1.f, nrSlices, nrStacks, true, true);
 			break;
 		}
 		case MT_ICO_SPHERE: {
-			nr_ms_slices = min(2, nr_ms_slices);
+			nr_ms_slices = glm::min(2, nr_ms_slices);
 			ms = new MeshIcoSphere(1.f, nr_ms_slices, true, true);
 			break;
 		}
 		case MT_PLANE: {
-			nr_ms_slices = max(1, nr_ms_slices);
+			nr_ms_slices = glm::max(1, nr_ms_slices);
 			ms = new MeshPlane(1.f, 1.f, nr_ms_slices, nr_ms_slices, true, true);
 			break;
 		}
 		case MT_CLOTH: {
-			nr_ms_slices = max(1, nr_ms_slices);
+			nr_ms_slices = glm::max(1, nr_ms_slices);
 			ms = new MeshCloth(1.f, 1.f, nr_ms_slices, nr_ms_slices, true, true);
 			break;
 		}
 		case MT_DONUT: {
-			int nrSlices = max(10, nr_ms_slices);
+			int nrSlices = glm::max(10, nr_ms_slices);
 			int nrRingVerts = nrSlices/2;
 			ms = new MeshDonut(2.f, 0.7f, nrSlices, nrRingVerts, true, true);
 			break;
 		}
 	}
 
-	tf = translate(vec3(0,2,0)) * glim::rotateX(glim::pi90*0.1f)* glim::rotateY(glim::pi90*0.2f) * scale(vec3(size_scale))* tf;
+	tf = glm::translate(vec3(0,2,0)) * glim::rotateX(glim::pi90*0.1f)* glim::rotateY(glim::pi90*0.2f) * glm::scale(vec3(size_scale))* tf;
 	for( vec3& p : ms->poss ) {
 		p = vec3(tf*vec4(p,1));
 	}

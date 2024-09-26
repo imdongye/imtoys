@@ -35,9 +35,6 @@ project(
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     set(CMAKE_GENERATOR_PLATFORM x64)
-
-    #add_compile_options(/wd4819) # 코드페이지 949 경고
-    add_compile_options(/utf-8)
 endif()
 
 
@@ -164,7 +161,11 @@ file(GLOB_RECURSE lib_files "${lib_dir}/*.*")
 add_library(${lib_name} INTERFACE ${lib_files})
 source_group(TREE "${lib_dir}/glm" FILES ${lib_files})
 target_include_directories(${lib_name} INTERFACE ${lib_dir})
-target_compile_definitions(${lib_name} INTERFACE GLM_FORCE_SILENT_WARNINGS)
+target_compile_definitions(${lib_name} 
+    INTERFACE
+        GLM_FORCE_SILENT_WARNINGS
+        GLM_ENABLE_EXPERIMENTAL # for transform and norm
+)
 set_target_properties(${lib_name} PROPERTIES FOLDER "vendor")
 list(APPEND dep_libs ${lib_name})
 
@@ -186,8 +187,8 @@ list(APPEND dep_libs ${lib_name})
 
 ### json (header only) ###
 set(lib_name "json")
-set(lib_dir ${CMAKE_SOURCE_DIR}/vendor/json-3.4.0)
-file(GLOB_RECURSE lib_files "${lib_dir}/*.*")
+set(lib_dir ${CMAKE_SOURCE_DIR}/vendor/json-3.11.3)
+file(GLOB_RECURSE lib_files "${lib_dir}/nlohmann/json.hpp")
 add_library(${lib_name} INTERFACE ${lib_files})
 source_group(TREE ${lib_dir} FILES ${lib_files})
 target_include_directories(${lib_name} INTERFACE ${lib_dir})
@@ -215,6 +216,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     target_compile_options(${lib_name} 
         PUBLIC
             /MD$<$<CONFIG:Debug>:d>
+            /utf-8
         PRIVATE
             /W4
             /wd4100 # 참조되지않은 매개변수
@@ -223,6 +225,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
             /wd4018 # < : signed, unsinged
             /wd4702 # program.cpp 접근할수없는 코드
             #/WX
+            #/wd4819 # 코드페이지 949 경고
     )
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     target_compile_definitions(${lib_name} 

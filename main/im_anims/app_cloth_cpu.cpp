@@ -4,8 +4,10 @@
 #include <limbrary/tools/limgui.h>
 #include <limbrary/tools/glim.h>
 
-using namespace glm;
-using namespace std;
+#include <glm/gtx/transform.hpp>
+
+#include <limbrary/using_in_cpp/glm.h>
+#include <limbrary/using_in_cpp/std.h>
 using namespace lim;
 
 #include "app_cloth_coef.h"
@@ -88,6 +90,7 @@ struct ICollider {
 	vec3 p = vec3{0};
 	vec3 old_p = vec3{0};
 	vec3 color = vec3(1.f);
+	virtual ~ICollider() = default;
 	virtual void applyCollision(vector<Particle>& ptcls) const = 0;
 	virtual void draw() = 0;
 };
@@ -234,7 +237,7 @@ struct Cloth {
 
 		Transform ctf;
 		ctf.pos = {0,2,0};
-		ctf.ori = quat(rotate(0.0f, vec3{1,0,0}));
+		ctf.ori = quat(glm::rotate(0.0f, vec3{1,0,0}));
 		ctf.scale = vec3(cloth_size.x, 1, cloth_size.y);
 		ctf.scale *= 0.5f;
 		ctf.update();

@@ -7,9 +7,8 @@
 #include <limbrary/tools/s_asset_lib.h>
 #include <limbrary/tools/text.h>
 #include <limbrary/tools/log.h>
-#include <glm/gtx/transform.hpp>
 
-using namespace glm;
+#include <limbrary/using_in_cpp/glm.h>
 using namespace lim;
 
 

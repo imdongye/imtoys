@@ -11,7 +11,6 @@ Todo: mat to pos ori scale
 #define __transform_h_
 
 #include <glm/glm.hpp>
-#include <glm/gtx/transform.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <functional>
 

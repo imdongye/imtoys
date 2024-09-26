@@ -12,7 +12,7 @@
 #include "sdf_global.h"
 #include "sdf_bridge.h"
 #include <fstream>
-#include <nlohmann/json.h>
+#include <nlohmann/json.hpp>
 using Json = nlohmann::json;
 
 

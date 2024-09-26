@@ -8,7 +8,6 @@ parent는 계층관계나 pivot으로 쓴다.
 
 
 #include "transform.h"
-#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/matrix_decompose.hpp>
 #include <glm/gtx/orthonormalize.hpp>
 

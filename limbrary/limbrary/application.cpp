@@ -12,8 +12,8 @@
 #include <imgui.h>
 //#include <implot/implot.h>
 #include <imguizmo/ImGuizmo.h>
-#include <backend/imgui_impl_glfw.h>
-#include <backend/imgui_impl_opengl3.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_opengl3.h>
 #include <algorithm>
 #include <cstdlib>
 

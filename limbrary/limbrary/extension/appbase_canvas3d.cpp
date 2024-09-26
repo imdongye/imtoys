@@ -2,10 +2,10 @@
 #include "appbase_canvas3d.h"
 #include <limbrary/tools/limgui.h>
 #include <imgui.h>
-
+#include <glm/gtx/transform.hpp>
+#include <limbrary/using_in_cpp/glm.h>
+#include <limbrary/using_in_cpp/std.h>
 using namespace lim;
-using namespace glm;
-using namespace std;
 
 static constexpr size_t pi_size = sizeof(vec4)*5;
 
@@ -202,9 +202,9 @@ void AppBaseCanvas3d::drawQuad(const vec3& p, const vec3& n, const vec2& sz, con
     float angle = atan2f(l, n.z);
     mat4 mtx_Model;
     if( l>0.0000001 )
-        mtx_Model = translate(p) * rotate(angle, axis) * scale(s);
+        mtx_Model = glm::translate(p) * glm::rotate(angle, axis) * glm::scale(s);
     else 
-        mtx_Model = translate(p) * scale(s);
+        mtx_Model = glm::translate(p) * glm::scale(s);
     
     quads.push_back({mtx_Model, vec4(color, alpha)});
     nr_quads++;
@@ -212,7 +212,7 @@ void AppBaseCanvas3d::drawQuad(const vec3& p, const vec3& n, const vec2& sz, con
 
 
 void AppBaseCanvas3d::drawSphere(const vec3& p, const float w, const vec3& color, const float alpha) const {
-    mat4 mtx_Model = translate(p) * scale(vec3(w));
+    mat4 mtx_Model = glm::translate(p) * glm::scale(vec3(w));
 
     spheres.push_back({mtx_Model, vec4(color, alpha)});
     nr_spheres++;
@@ -228,9 +228,9 @@ void AppBaseCanvas3d::drawCylinder( const vec3& p1, const vec3& p2, const float 
     float angle = atan2f(l, diff.y);
     mat4 mtx_Model;
     if( l>0.0000001f )
-        mtx_Model = translate(mid) * rotate(angle, axis) * scale(s);
+        mtx_Model = glm::translate(mid) * glm::rotate(angle, axis) * glm::scale(s);
     else 
-        mtx_Model = translate(mid) * scale(s);
+        mtx_Model = glm::translate(mid) * glm::scale(s);
     
     cylinders.push_back({mtx_Model, vec4(color, alpha)});
     nr_cylinders++;
