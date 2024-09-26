@@ -51,6 +51,7 @@ F1 key to open app selector
 in Core
 * c++17
 * [glad](https://glad.dav1d.de), gl4.1core by default, but use 4.6 core when using compute shader or ssbo. e.g. PBD
+* [glfw](https://github.com/glfw/glfw)
 * [glm - 240927](https://github.com/g-truc/glm),
 * [eigen - 240927](https://eigen.tuxfamily.org),
 * [stb - 240927](https://github.com/nothings/stb),

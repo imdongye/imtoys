@@ -43,16 +43,15 @@ endif()
 
 
 
-
-
 set(dep_libs)
+
 ### glfw ###
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
-add_subdirectory(vendor/glfw)
+add_subdirectory(vendor/glfw-3.4)
 set_target_properties(glfw PROPERTIES CONFIG Release)
 target_compile_definitions(glfw INTERFACE GLFW_INCLUDE_NONE) # Todo?: glad include 순서 무시하기위함
 set_target_properties(glfw PROPERTIES FOLDER "vendor")
@@ -74,7 +73,7 @@ option(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT OFF)
     set(ASSIMP_BUILD_OBJ_EXPORTER ON CACHE BOOL "" FORCE)
     set(ASSIMP_BUILD_FBX_EXPORTER ON CACHE BOOL "" FORCE)
     # set(ASSIMP_BUILD_GLTF_EXPORTER ON CACHE BOOL "" FORCE)
-add_subdirectory(vendor/assimp)
+add_subdirectory(vendor/assimp-5.4.3)
 set_target_properties(assimp PROPERTIES CONFIG Release) # release 빌드
 option(BUILD_SHARED_LIBS OFF)
 set_target_properties(assimp PROPERTIES FOLDER "vendor")
@@ -87,11 +86,10 @@ list(APPEND dep_libs assimp)
 # opengl function pointers (replaced by glad)
 set(lib_name "glad")
 if(WIN32)
-    set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/glad-gl4.6-core")
+    set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/glad-4.6-core")
+else()
+    set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/glad-4.1-core")
 endif(WIN32)
-if(APPLE)
-    set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/glad-gl4.1-core")
-endif(APPLE)
 file(GLOB_RECURSE lib_files "${lib_dir}/*.*")
 add_library(${lib_name} STATIC ${lib_files})
 source_group(TREE ${lib_dir} FILES ${lib_files})
@@ -103,25 +101,26 @@ list(APPEND dep_libs ${lib_name})
 
 
 ### stb ### C
-set(lib_name "stb")
-set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/stb")
-file(GLOB_RECURSE lib_files "${lib_dir}/*.*")
+set(lib_name stb)
+set(lib_dir ${CMAKE_SOURCE_DIR}/vendor/stb)
+file(GLOB_RECURSE lib_files ${lib_dir}/*.c ${lib_dir}/*.h)
 add_library(${lib_name} STATIC ${lib_files})
 source_group(TREE ${lib_dir} FILES ${lib_files})
 target_include_directories(${lib_name} PUBLIC ${lib_dir})
-set_target_properties(${lib_name} PROPERTIES FOLDER "vendor")
+set_target_properties(${lib_name} PROPERTIES FOLDER vendor)
 list(APPEND dep_libs ${lib_name})
 
 
 
 
 ### imgui ###
-set(lib_name "imgui")
-set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/imgui-docking-1.90")
-file(GLOB_RECURSE lib_files "${lib_dir}/*.*")
-list(REMOVE_ITEM lib_files "${lib_dir}/misc/freetype/imgui_freetype.cpp")
-list(REMOVE_ITEM lib_files "${lib_dir}/examples/example_glfw_opengl3/main.cpp")
-list(REMOVE_ITEM lib_files "${lib_dir}/misc/freetype/imgui_freetype.h")
+set(lib_name imgui)
+set(lib_dir ${CMAKE_SOURCE_DIR}/vendor/imgui-docking-1.91.2)
+file(GLOB_RECURSE lib_files ${lib_dir}/*.h ${lib_dir}/*.cpp)
+list(REMOVE_ITEM lib_files ${lib_dir}/example_glfw_opengl3/main.cpp)
+list(REMOVE_ITEM lib_files ${lib_dir}/misc/freetype/imgui_freetype.h)
+list(REMOVE_ITEM lib_files ${lib_dir}/misc/freetype/imgui_freetype.cpp)
+list(REMOVE_ITEM lib_files ${lib_dir}/misc/fonts/binary_to_compressed_c.cpp)
 add_library(${lib_name} STATIC ${lib_files})
 source_group(TREE ${lib_dir} FILES ${lib_files})
 target_include_directories(${lib_name} PUBLIC ${lib_dir})
@@ -134,38 +133,25 @@ target_compile_definitions(${lib_name}
         IMGUI_DISABLE_STB_RECT_PACK_IMPLEMENTATION
         IMGUI_STB_RECT_PACK_FILENAME="../stb/stb_rect_pack.h"
 )
-set_target_properties(${lib_name} PROPERTIES FOLDER "vendor")
+set_target_properties(${lib_name} PROPERTIES FOLDER vendor)
 list(APPEND dep_libs ${lib_name})
 
 
 
 
-set(lib_name "imguizmo")
-set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/imguizmo")
-file(GLOB_RECURSE lib_files "${lib_dir}/*.*")
-list(REMOVE_ITEM lib_files "${lib_dir}/imguizmo/example.cpp")
+set(lib_name imguizmo)
+set(lib_dir ${CMAKE_SOURCE_DIR}/vendor/imguizmo-1.83)
+file(GLOB_RECURSE lib_files ${lib_dir}/*.h ${lib_dir}/*.cpp)
+list(REMOVE_ITEM lib_files ${lib_dir}/imguizmo/example.cpp)
 add_library(${lib_name} STATIC ${lib_files})
 source_group(TREE ${lib_dir} FILES ${lib_files})
 target_include_directories(${lib_name} PUBLIC ${lib_dir})
 target_link_libraries(${lib_name} PUBLIC imgui)
 add_dependencies(${lib_name} imgui)
 target_compile_definitions(${lib_name} PRIVATE USE_IMGUI_API)
-set_target_properties(${lib_name} PROPERTIES FOLDER "vendor")
+set_target_properties(${lib_name} PROPERTIES FOLDER vendor)
 list(APPEND dep_libs ${lib_name})
 
-
-
-
-set(lib_name "implot")
-set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/implot")
-file(GLOB_RECURSE lib_files "${lib_dir}/*.*")
-add_library(${lib_name} STATIC ${lib_files})
-source_group(TREE ${lib_dir} FILES ${lib_files})
-target_include_directories(${lib_name} PUBLIC ${lib_dir})
-target_link_libraries(${lib_name} PUBLIC imgui)
-add_dependencies(${lib_name} imgui)
-set_target_properties(${lib_name} PROPERTIES FOLDER "vendor")
-list(APPEND dep_libs ${lib_name})
 
 
 
@@ -173,7 +159,7 @@ list(APPEND dep_libs ${lib_name})
 
 ### glm (header only) ###
 set(lib_name "glm")
-set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/glm-0.9.9.8")
+set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/glm-1.0.1")
 file(GLOB_RECURSE lib_files "${lib_dir}/*.*")
 add_library(${lib_name} INTERFACE ${lib_files})
 source_group(TREE "${lib_dir}/glm" FILES ${lib_files})
@@ -200,7 +186,7 @@ list(APPEND dep_libs ${lib_name})
 
 ### json (header only) ###
 set(lib_name "json")
-set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/json")
+set(lib_dir ${CMAKE_SOURCE_DIR}/vendor/json-3.4.0)
 file(GLOB_RECURSE lib_files "${lib_dir}/*.*")
 add_library(${lib_name} INTERFACE ${lib_files})
 source_group(TREE ${lib_dir} FILES ${lib_files})
