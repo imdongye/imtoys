@@ -82,8 +82,7 @@ void Viewport::drawImGui()
 			dstContentSize.y -= frameHeight;
 			
 			if( cursorId == ImGuiMouseCursor_ResizeNWSE ) {
-				const float newAspect = dstContentSize.x / dstContentSize.y;
-				if( ivp.fixed_aspect > newAspect ) {
+				if( ivp.fixed_aspect > dstContentSize.x / dstContentSize.y ) {
 					dstContentSize.x = ivp.fixed_aspect * dstContentSize.y;
 				}
 				else {

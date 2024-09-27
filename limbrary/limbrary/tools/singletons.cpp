@@ -6,6 +6,7 @@
 #include <limbrary/tools/text.h>
 #include <limbrary/using_in_cpp/std.h>
 
+#include <iomanip>
 #include <fstream>
 
 using Json = nlohmann::json;
