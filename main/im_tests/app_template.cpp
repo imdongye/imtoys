@@ -45,6 +45,7 @@ void AppTemplate::updateImGui()
 
 
 	ImGui::SliderInt("window mode", (int*)&viewport.window_mode, Viewport::WM_FREE, Viewport::WM_FIXED_SIZE);
+	ImGui::SliderFloat("fixed_aspect", &viewport.fixed_aspect, 0.5f, 2.0f);
 	ImGui::Text("name %s", viewport.name.c_str());
 	ImGui::Text("is_open %d", viewport.is_opened);
 	ImGui::Text("is_hovered %d", viewport.is_hovered);

@@ -67,8 +67,6 @@ void Viewport::drawImGui()
 
 
 	if( window_mode==Viewport::WM_FIXED_RATIO ) {
-		static bool is_resize_with_corner = false;
-		
 		vpWinFlag |= ImGuiWindowFlags_NoDocking;
 		ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), [](ImGuiSizeCallbackData *data) {
 			if( isSame(data->CurrentSize, data->DesiredSize) ) {
@@ -81,20 +79,16 @@ void Viewport::drawImGui()
 			vec2 dstContentSize = toGlm(data->DesiredSize);
 			dstContentSize.y -= frameHeight;
 			
-			if( cursorId == ImGuiMouseCursor_ResizeNWSE ) {
-				if( ivp.fixed_aspect > dstContentSize.x / dstContentSize.y ) {
+			if( cursorId == ImGuiMouseCursor_ResizeNWSE || cursorId == ImGuiMouseCursor_ResizeNESW ) {
+				if( ivp.fixed_aspect > dstContentSize.x / dstContentSize.y )
 					dstContentSize.x = ivp.fixed_aspect * dstContentSize.y;
-				}
-				else {
+				else
 					dstContentSize.y = dstContentSize.x / ivp.fixed_aspect;
-				}
 			}
-			else if( cursorId == ImGuiMouseCursor_ResizeNS ) {
+			else if( cursorId == ImGuiMouseCursor_ResizeNS )
 				dstContentSize.x = ivp.fixed_aspect * dstContentSize.y;
-			}
-			else { // ImGuiMouseCursor_ResizeEW
+			else if( cursorId == ImGuiMouseCursor_ResizeEW )
 				dstContentSize.y = dstContentSize.x / ivp.fixed_aspect;
-			}
 
 			dstContentSize.y += frameHeight;
 			data->DesiredSize = toIg(dstContentSize);

@@ -53,7 +53,6 @@ in Core
 * [glad](https://glad.dav1d.de), gl4.1core by default, but use 4.6 core when using compute shader or ssbo. e.g. PBD
 * [glfw - 240927](https://github.com/glfw/glfw)
 * [glm - 240927](https://github.com/g-truc/glm),
-* [eigen - 240927](https://eigen.tuxfamily.org),
 * [stb - 240927](https://github.com/nothings/stb),
 * [imgui docking branch - 240927](https://github.com/ocornut/imgui),
 * [imguizmo - 240927](https://github.com/CedricGuillemet/ImGuizmo),
@@ -62,4 +61,5 @@ in Core
 
 in Apps
 * [fqms](https://github.com/sp4cerat/Fast-Quadric-Mesh-Simplification)
+* [eigen - 240927](https://eigen.tuxfamily.org),
 

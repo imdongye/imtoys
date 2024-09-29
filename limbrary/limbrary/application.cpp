@@ -107,21 +107,16 @@ AppBase::AppBase(int winWidth, int winHeight, const char* title, bool vsync)
 	// print opengl status
 	//
 	{
-		const GLubyte* strTemp;
 		int iTemp, iTemp2;
 
-		log::pure("Frame size           : %d x %d\n", win_width, win_height);
-		strTemp = glGetString(GL_VENDOR);
-		log::pure("GL Vendor            : %s\n", strTemp);
-		strTemp = glGetString(GL_RENDERER);
-		log::pure("GL Renderer          : %s\n", strTemp);
-		strTemp = glGetString(GL_VERSION);
-		log::pure("GL Version (string)  : %s\n", strTemp);
+		log::pure("Window size          : %d x %d\n", win_width, win_height);
+		log::pure("GL Vendor            : %s\n", glGetString(GL_VENDOR));
+		log::pure("GL Renderer          : %s\n", glGetString(GL_RENDERER));
+		log::pure("GL Version (string)  : %s\n", glGetString(GL_VERSION));
 		glGetIntegerv(GL_MAJOR_VERSION, &iTemp);
 		glGetIntegerv(GL_MINOR_VERSION, &iTemp2);
 		log::pure("Major, Minor         : %d.%d\n", iTemp, iTemp2);
-		strTemp = glGetString(GL_SHADING_LANGUAGE_VERSION);
-		log::pure("GLSL Version         : %s\n", strTemp);
+		log::pure("GLSL Version         : %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
 		glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &iTemp);
 		log::pure("#Vertex Attributes   : %d\n", iTemp);
 
@@ -132,8 +127,8 @@ AppBase::AppBase(int winWidth, int winHeight, const char* title, bool vsync)
 		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &iTemp);
 		log::pure("#Texture Slots       : %d\n", iTemp);
 		glGetIntegerv(GL_MAX_SAMPLES, &iTemp);
-		log::pure("#max ms samples    	: %d\n", iTemp);
-		log::pure("#monitor max fps    	: %d\n", monitor_max_fps);
+		log::pure("#max ms samples      : %d\n", iTemp);
+		log::pure("#monitor max fps     : %d\n", monitor_max_fps);
 		
 		log::pure("Current Path : %s\n\n", std::filesystem::current_path().string().c_str());
 	}
