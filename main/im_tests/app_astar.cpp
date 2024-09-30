@@ -30,24 +30,15 @@ namespace lim
 	{
 		delete path_finder;
 	}
-	void AppAstar::update()
-	{
-		// clear backbuffer
-		glEnable(GL_DEPTH_TEST);
-		glDisable(GL_MULTISAMPLE);
-
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glViewport(0, 0, fb_width, fb_height);
-		glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	}
+	
 	void AppAstar::drawMap()
 	{
+		const ImGuiIO& io = ImGui::GetIO();
 		ImGui::SetNextWindowSize({850.f, 850.f}, ImGuiCond_Once);
 		ImGui::PushItemWidth(-ImGui::GetFontSize() * 15);
 		ImGui::Begin("map");
 
-		const float paddingRadio = 0.06;
+		const float paddingRadio = 0.06f;
 		const ImVec2 contentSize = ImGui::GetContentRegionAvail();
 
 		const ImVec2 nodeRegion ={contentSize.x/(float)width,
@@ -61,11 +52,21 @@ namespace lim
 		ImDrawList* drawList = ImGui::GetWindowDrawList();
 
 		const ImVec2 screenPos = ImGui::GetCursorScreenPos();
-		ImVec2 mousePos = ImGui::GetMousePos();
-		mousePos ={mousePos.x-screenPos.x, mousePos.y-screenPos.y};
-		hover_pos ={(int)(mousePos.x/nodeRegion.x), (int)(mousePos.y/nodeRegion.y)};
-		ImVec2 drawPos = screenPos;
 
+		if( ImGui::IsWindowHovered() ) {
+			ImVec2 mousePos = ImGui::GetMousePos();
+			mousePos ={mousePos.x-screenPos.x, mousePos.y-screenPos.y};
+			hover_pos ={(int)(mousePos.x/nodeRegion.x), (int)(mousePos.y/nodeRegion.y)};
+			static glm::ivec2 prevHoverPos={-1,-1};
+			const bool isDragged = hover_pos!=prevHoverPos && io.MouseDown[0];
+			if( isDragged || io.MouseClicked[0] ) {
+				path_finder->setMapPos(hover_pos.x, hover_pos.y, draw_mode);
+				prevHoverPos = hover_pos;
+			}
+		}
+		
+
+		ImVec2 drawPos = screenPos;
 		for( int i=0; i<height; i++ ) {
 			drawPos.x = screenPos.x;
 			for( int j=0; j<width; j++ ) {
@@ -96,7 +97,6 @@ namespace lim
 			}
 			drawPos.y += nodeRegion.y;
 		}
-
 		ImGui::End();
 	}
 	void AppAstar::drawController()
@@ -127,21 +127,15 @@ namespace lim
 		drawMap();
 		drawController();
 	}
-	void AppAstar::keyCallback(int key, int scancode, int action, int mods)
+	void AppAstar::update()
 	{
-	}
-	void AppAstar::cursorPosCallback(double xPos, double yPos)
-	{
-		static glm::ivec2 prevHoverPos={-1,-1};
-		if( hover_pos!=prevHoverPos && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)==GLFW_PRESS ) {
-			path_finder->setMapPos(hover_pos.x, hover_pos.y, draw_mode);
-		}
-		prevHoverPos=hover_pos;
-	}
-	void AppAstar::mouseBtnCallback(int button, int action, int mods)
-	{
-		if( button==GLFW_MOUSE_BUTTON_LEFT && action==GLFW_PRESS ) {
-			path_finder->setMapPos(hover_pos.x, hover_pos.y, draw_mode);
-		}
+		// clear backbuffer
+		glEnable(GL_DEPTH_TEST);
+		glDisable(GL_MULTISAMPLE);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glViewport(0, 0, fb_width, fb_height);
+		glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	}
 }

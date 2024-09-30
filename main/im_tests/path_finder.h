@@ -143,7 +143,7 @@ namespace lim
 			
 			map[y][x].state = ns;
 
-			if( start_pos!=end_pos && start_pos.x>0 && end_pos.x>0 ) {
+			if( start_pos!=end_pos && start_pos.x>=0 && end_pos.x>=0 ) {
 				updatePath();
 			}
 			return true;
