@@ -44,6 +44,7 @@ using namespace lim;
 
 int main()
 {
+	apps_selector::add<AppModelViewer>();
 	apps_selector::add<AppAstar>();
 	apps_selector::add<AppSkeletal>();
 	apps_selector::add<AppTemplate>();
@@ -54,7 +55,6 @@ int main()
 	apps_selector::add<AppBvhParsor>();
 	apps_selector::add<AppRay>();
 	apps_selector::add<AppMineSweeper>();
-	apps_selector::add<AppModelViewer>();
 	apps_selector::add<AppSdfModeler>();
 	apps_selector::add<AppImGuiTest>();
 	apps_selector::add<AppICP>();

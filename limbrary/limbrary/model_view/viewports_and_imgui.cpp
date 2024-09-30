@@ -22,7 +22,7 @@ Viewport::Viewport(IFramebuffer* createdFB, const char* _name)
 	assert(createdFB);
 	name = fmtStrToBuf("%s##%s", _name, AppBase::g_app_name);
 	own_framebuffer = createdFB;
-	own_framebuffer->resize({256, 256}); // default size
+	resize({256, 256}); // default size
 }
 
 
@@ -78,8 +78,10 @@ void Viewport::drawImGui()
 
 			vec2 dstContentSize = toGlm(data->DesiredSize);
 			dstContentSize.y -= frameHeight;
+			if( dstContentSize.y<1.f ) dstContentSize.y = 1.f;
 			
 			if( cursorId == ImGuiMouseCursor_ResizeNWSE || cursorId == ImGuiMouseCursor_ResizeNESW ) {
+				log::pure("%f %f\n", dstContentSize.x, dstContentSize.y);
 				if( ivp.fixed_aspect > dstContentSize.x / dstContentSize.y )
 					dstContentSize.x = ivp.fixed_aspect * dstContentSize.y;
 				else

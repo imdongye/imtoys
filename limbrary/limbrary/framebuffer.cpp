@@ -224,7 +224,7 @@ void FramebufferRbDepth::myInitGL()
 	color_tex.initGL();
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, color_tex.tex_id, 0);
 	
-	assert( depth_rbo_id>0 ); // myDeinitGL이 먼저 호출돼서 절대 들어올수 없음
+	assert( depth_rbo_id==0 ); // myDeinitGL이 먼저 호출돼서 0이여야함.
 	glGenRenderbuffers(1, &depth_rbo_id);
 	glBindRenderbuffer(GL_RENDERBUFFER, depth_rbo_id);
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, size.x, size.y);

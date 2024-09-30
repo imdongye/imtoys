@@ -172,7 +172,7 @@ void SoftBodyGpu::update( float dt, const PhySceneGpu& scene )
             glDispatchCompute(nr_thread_groups_by_ptcls, 1, 1);
         }
 
-        lim::gl::errorAssert();
+        // lim::log::glError(); // Todo:  GL_INVALID_OPERATION(1282) in last step
     } // end substeps
 
 

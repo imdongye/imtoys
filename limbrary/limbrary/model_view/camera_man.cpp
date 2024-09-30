@@ -65,11 +65,13 @@ void CameraCtrl::updateFreeMode(const vec3& moveOff, const glm::vec2& rotOff, fl
 
 void CameraCtrl::updateTrackballMode(const vec2& moveOff, const vec2& rotOff, float fovyOff, float distOff)
 {
+	bool need_view_mtx_update = false;
+
 	if( distOff!=0.f ) {
 		float newDist = distance * pow(1.01f, distOff);
 		newDist = glm::clamp(newDist, min_dist, max_dist);
-		pos = newDist/distance * to_pivot + pivot;
-		updateProjMtx();
+		pos = -newDist/distance * to_pivot + pivot;
+		need_view_mtx_update = true;
 	}
 	else if( fovyOff!=0.f ) {
 		fovy = fovy * pow(1.01f, fovyOff);
@@ -82,12 +84,18 @@ void CameraCtrl::updateTrackballMode(const vec2& moveOff, const vec2& rotOff, fl
 		const vec3 rotated = glm::rotate(-rotOff.x, global_up)*glm::rotate(rotOff.y, -right)*vec4(-to_pivot,0);
 		if( abs(rotated.y) < glm::length(rotated)*0.99f ) {
 			pos = pivot + rotated;
+			need_view_mtx_update = true;
 		}
 	}
 	// move tangent plane
 	else if( glim::isNotZero(moveOff) ) {
 		const vec3 step = vec3(up*moveOff.y -right*moveOff.x);
 		moveShift(step);
+		need_view_mtx_update = true;
+	}
+
+	if( need_view_mtx_update ) {
+		updateViewMtx();
 	}
 }
 

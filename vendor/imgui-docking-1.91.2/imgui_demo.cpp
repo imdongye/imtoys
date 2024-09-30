@@ -9195,6 +9195,9 @@ static void ShowExampleAppConstrainedResize(bool* p_open)
         {
             float aspect_ratio = *(float*)data->UserData;
             int current_cursor = ImGui::GetMouseCursor();
+            if( data->DesiredSize.y < 1.f) {
+                data->DesiredSize.y = 1.f;
+            }
             if(current_cursor == ImGuiMouseCursor_ResizeNWSE || current_cursor == ImGuiMouseCursor_ResizeNESW)
             {
 				if(aspect_ratio > data->DesiredSize.x / data->DesiredSize.y)
@@ -9210,6 +9213,9 @@ static void ShowExampleAppConstrainedResize(bool* p_open)
         static void Square(ImGuiSizeCallbackData* data)
         {
             int current_cursor = ImGui::GetMouseCursor();
+            if( data->DesiredSize.y < 1.f) {
+                data->DesiredSize.y = 1.f;
+            }
             if(current_cursor == ImGuiMouseCursor_ResizeNWSE || current_cursor == ImGuiMouseCursor_ResizeNESW)
             {
 				if(1.f > data->DesiredSize.x / data->DesiredSize.y)
