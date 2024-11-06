@@ -10,9 +10,22 @@
 	c. 버니는 0.1 정도의 바운더리, 치아는 10정도의 바운더리를 가진다.
 	d. 100배차이로 치아모델의 기대오차값이 커져서 중복버텍스로 인식안되는듯.
 2 해결:
-
 	b. threashold를 따로 설정할수있는 옵션을 못찾음
-	c. 
+	c. 디버깅
+		1. postprocessing옵션에 따라 process set가 정해져있음 JoinIdenticalVertces는
+			1. ComputeSpatialSortProcess
+			2. JoinVerticesProcess
+			3. DestroySpatialSortProcess
+			으로 실행됨.
+		2. 두번째 과정에서 threashold가 사용될거로 예상됨.
+		3. 확인해보니 단순 상수 threashold를 사용하여 버텍스 속성들로 비교하며 값을 가지고 있었음
+			bool areVerticesEqual(...) in JoinVerticesProcess.cpp line102
+		4. 내 생각에 바운더리에 비례해서 threashold값을 수정하거나 사용자가 직접 입력해야 좋을것같음
+			Todo: 이슈, PR등록
+		5. 우선 핵심 문제가 아니므로 상수값을 100배 높여 테스트해보자. 100배로 부족해다
+		6. 10프로대로 줄여질때까지 수동으로 맞추었더니 기존 1-e5f 에서 0.09f로 올라갔다.
+
+
 */
 
 #include "app_curvature.h"
@@ -36,7 +49,7 @@ AppCurvature::AppCurvature() : AppBase(1200, 780, APP_NAME)
 	Model md;
 	GLuint pFlags = 0;
 	// pFlags |= aiProcess_Triangulate;
-	// pFlags |= aiProcess_GenSmoothNormals;
+	pFlags |= aiProcess_GenSmoothNormals;
 	pFlags |= aiProcess_JoinIdenticalVertices;
 	// pFlags |= aiProcess_CalcTangentSpace;
 

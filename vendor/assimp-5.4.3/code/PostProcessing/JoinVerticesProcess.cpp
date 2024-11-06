@@ -106,7 +106,10 @@ bool areVerticesEqual(
     unsigned numColorChannels) {
     // A little helper to find locally close vertices faster.
     // Try to reuse the lookup table from the last step.
-    const static float epsilon = 1e-5f;
+    
+    const static float epsilon = 0.09f; // TODO(LIM) : relative boundary or mean diff
+    // const static float epsilon = 1e-5f; // original from up
+
     // Squared because we check against squared length of the vector difference
     static const float squareEpsilon = epsilon * epsilon;
 
