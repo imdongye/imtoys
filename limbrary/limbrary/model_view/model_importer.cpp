@@ -515,7 +515,7 @@ static void convertRdTree(RdNode& dstParent, const aiNode* src, int depth)
 
 bool lim::Model::importFromFile(
 	const char* modelPath, bool withAnims
-	, bool scaleAndPivot, float maxSize, vec3 pivot	
+	, bool scaleAndPivot, float maxSize, vec3 pivot, GLuint aiPostProcessFlags
 )
 {
 	const char* extension = getExtension(modelPath);
@@ -536,21 +536,8 @@ bool lim::Model::importFromFile(
 	g_model_dir = getDirectory(path);
 
 
-	/* Assimp 설정 */
-	GLuint pFrags = 0;
-	pFrags |= aiProcess_Triangulate; // 다각형이 있다면 삼각형으로
-	// pFrags |= aiProcess_GenNormals;  // 노멀이 없으면 생성
-	pFrags |= aiProcess_GenSmoothNormals; // 생성하고 보간
-	// pFrags |= aiProcess_FlipUVs; // opengl 텍스쳐 밑에서 읽는문제 or stbi_set_flip_vertically_on_load(true)
-	// pFrags |= aiProcess_CalcTangentSpace;
-	pFrags |= aiProcess_JoinIdenticalVertices; // shared vertex
-	// pFrags |= aiProcess_SplitLargeMeshes : 큰 mesh를 작은 sub mesh로 나눠줌
-	// pFrags |= aiProcess_OptimizeMeshes : mesh를 합쳐서 draw call을 줄인다. batching?
-	// pFrags |= aiProcessPreset_TargetRealtime_MaxQuality; // Todo: Tangent 생성해서 사용하는게 좋을까
-	pFrags |= aiProcess_LimitBoneWeights;
-	aiPropertyStore* props = aiCreatePropertyStore();
-	
 	// bone node $AssimpFbx$ PreRotation Translation 추가 노드 생성
+	aiPropertyStore* props = aiCreatePropertyStore();
 	aiSetImportPropertyInteger(props, AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, 0);
 
 
@@ -560,7 +547,7 @@ bool lim::Model::importFromFile(
 	Assimp::DefaultLogger::create("", Assimp::Logger::VERBOSE);
 	Assimp::DefaultLogger::get()->attachStream(new LimImportLogStream(), severity);
 
-	g_scn = aiImportFileExWithProperties(modelPath, pFrags, nullptr, props);
+	g_scn = aiImportFileExWithProperties(modelPath, aiPostProcessFlags, nullptr, props);
 	if( !g_scn || g_scn->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !g_scn->mRootNode ) {
 		log::err("assimp_importer: %s\n\n", aiGetErrorString());
 		aiReleasePropertyStore(props);
