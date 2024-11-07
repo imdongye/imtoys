@@ -163,14 +163,17 @@ namespace lim
 
 		onothor option list:
 		* aiProcess_FlipUVs
-		* aiProcess_CalcTangentSpace 	Todo: Tangent 생성해서 사용하는게 좋을까?
 		* aiProcessPreset_TargetRealtime_MaxQuality
 		* aiProcess_SplitLargeMeshes 	큰 mesh를 작은 sub mesh로 나눠줌
 		* aiProcess_OptimizeMeshes		mesh를 합쳐서 draw call을 줄인다. batching?
+
+		pass2 option(aiPostProcessFlags2) list:
+		* aiProcess_CalcTangentSpace 	Todo: Tangent 생성해서 사용하는게 좋을까?
 	*/
 		bool importFromFile(const char* modelPath, bool withAnim = false
 			, bool scaleAndPivot = false, float maxSize=2.f, glm::vec3 pivot={0,-1,0}
-			, GLuint aiPostProcessFlags = 586);
+			, GLuint aiPostProcessFlags = 586, GLuint aiPostProcessFlags2 = 0
+			, bool makeMeshBuf = true);
 		// render tree에서 사용하는 mesh와 material은 모두 own_에 포함되어있어야 export가능.
 		bool exportToFile(size_t pIndex, const char* exportDir); // dir without last slash
 	};

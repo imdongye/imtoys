@@ -40,6 +40,7 @@ namespace
 	const int g_nr_formats = (int)aiGetImportFormatCount();
 	const char* g_formats[32] = { nullptr, };
 
+	bool g_is_make_mesh_buf = true;
 
 	inline vec3 toGlm( const aiVector3D& v ) {
 		return { v.x, v.y, v.z };
@@ -361,7 +362,9 @@ static Mesh* convertMesh(const aiMesh* aiMs)
 		log::err("find not tri face : nr %d\n", nrNotTriFace);
 	}
 
-	ms.initGL();
+	if( g_is_make_mesh_buf ) {
+		ms.initGL();
+	}
 
 	return rst;
 }
@@ -515,7 +518,9 @@ static void convertRdTree(RdNode& dstParent, const aiNode* src, int depth)
 
 bool lim::Model::importFromFile(
 	const char* modelPath, bool withAnims
-	, bool scaleAndPivot, float maxSize, vec3 pivot, GLuint aiPostProcessFlags
+	, bool scaleAndPivot, float maxSize, vec3 pivot
+	, GLuint aiPostProcessFlags, GLuint aiPostProcessFlags2
+	, bool makeMeshBuf
 )
 {
 	const char* extension = getExtension(modelPath);
@@ -535,6 +540,7 @@ bool lim::Model::importFromFile(
 	name = getFileNameWithoutExt(path.c_str());
 	g_model_dir = getDirectory(path);
 
+	g_is_make_mesh_buf = makeMeshBuf;
 
 	// bone node $AssimpFbx$ PreRotation Translation 추가 노드 생성
 	aiPropertyStore* props = aiCreatePropertyStore();
@@ -554,6 +560,23 @@ bool lim::Model::importFromFile(
 		Assimp::DefaultLogger::kill();
 		return false;
 	}
+	// tangent generation need 2pass 
+	// From: https://stackoverflow.com/questions/17796445/is-it-possible-to-use-assimp-to-generate-tangents-if-you-also-use-it-to-generate
+	if( aiPostProcessFlags2 != 0 ) {
+		const aiScene* rstPass2 = aiApplyPostProcessing(g_scn, aiPostProcessFlags2);
+		if( rstPass2 ) {
+			log::pure("done pass2 postprocessing\n");
+
+			aiReleaseImport(g_scn);
+			g_scn = rstPass2;
+		}
+		else {
+			log::err("pass2 postprocessing is failed: %s\n\n", aiGetErrorString());
+		}
+	} else {
+		log::pure("pass2 postprocessing is skipped\n");
+	}
+
 	aiReleasePropertyStore(props);
 	Assimp::DefaultLogger::kill();
 	ai_backup_flags = g_scn->mFlags;

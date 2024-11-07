@@ -25,7 +25,39 @@
 		5. 우선 핵심 문제가 아니므로 상수값을 100배 높여 테스트해보자. 100배로 부족해다
 		6. 10프로대로 줄여질때까지 수동으로 맞추었더니 기존 1-e5f 에서 0.09f로 올라갔다.
 
+2 Curvature ref:
+	https://en.wikipedia.org/wiki/Mean_curvature
+	주principal곡률 k1최대, k2최소
+	평균은 곡면이 
 
+	a. 필터링 옵션
+		Method : Quadric
+		Quality/Color mapping : mean curvature
+		curvature scale : 1.76(world unit), 10(perc on)
+	b. 필터링 부분은 vtk라이브러리 내용
+		UpdateCurvatureFitting::computeCurvature // quadric
+			CompactVertexVector
+			RequireCompactness
+			RequireVFAdjacency
+			Eigen::SelfAdjointEigenSolver<Eigen::Matrix2d>
+			요약
+				인접정보 생성하고
+				Eigen으로 k1 k2구함
+		UpdateQuality::VertexMeanFromCurvatureDir // mean curvature
+			k1 k2평균으로 곡률업데이트
+		2변수 2차함수 quadric
+			a*x*x + b*x*y + c*y*y + d*x + e*y
+			상수값 없음
+		CMeshO::CoordType는 vec3
+		computeCurvature에서 버텍스순회 안에서
+			computeReferenceFrames // 첫번째 인접삼각형 다음버텍스로 인접버텍스를 찾고
+
+3. 문제점:
+	MeshLab의 
+	tri::UpdateCurvatureFitting<CMeshO>::computeCurvature(m.cm) // quadric meshod
+	tri::UpdateQuality<CMeshO>::VertexMeanFromCurvatureDir(m.cm)
+	위 두개의 함수의 구현부가 소스코드에 없음
+	VertexMeanFromCurvatureDir, 
 */
 
 #include "app_curvature.h"
@@ -44,20 +76,25 @@ AppCurvature::AppCurvature() : AppBase(1200, 780, APP_NAME)
 
 	program.name = "debugging";
 	program.home_dir = APP_DIR;
-	program.attatch("assets/shaders/mvp.vs").attatch("debug.fs").link();
+	program.attatch("debug.vs").attatch("debug.fs").link();
 
 	Model md;
 	GLuint pFlags = 0;
 	// pFlags |= aiProcess_Triangulate;
-	pFlags |= aiProcess_GenSmoothNormals;
+	// pFlags |= aiProcess_GenNormals;
+	// pFlags |= aiProcess_GenSmoothNormals;
 	pFlags |= aiProcess_JoinIdenticalVertices;
-	// pFlags |= aiProcess_CalcTangentSpace;
+	GLuint pFlags2 = 0;
+	// stl doesn't have uv so we can't calc tangent
+	// pFlags2 |= aiProcess_CalcTangentSpace;
 
-	// md.importFromFile("assets/models/objs/bunny.obj", false, true, 2.f, vec3(0), pFlags);
-	md.importFromFile("im_curvature/models/Model0.stl", false, true, 2.f, vec3(0), pFlags);
+	// md.importFromFile("assets/models/objs/bunny.obj", false, true, 2.f, vec3(0), pFlags, pFlags2);
+	md.importFromFile("im_curvature/models/Model0.stl", false, true, 2.f, vec3(0), pFlags, pFlags2, false);
 	assert(md.own_meshes.size() == 1);
 	transform = md.root.childs[0].tf;
 	mesh = std::move(md.own_meshes[0]);
+	mesh->cols.resize(mesh->poss.size(), vec3(1,0,0));
+	mesh->initGL();
 }
 AppCurvature::~AppCurvature()
 {
