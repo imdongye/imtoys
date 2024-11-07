@@ -13,6 +13,8 @@
 
 #include <set>
 
+#include <limbrary/tools/log.h>
+
 
 #include <limbrary/using_in_cpp/glm.h>
 #include <limbrary/using_in_cpp/std.h>
@@ -23,8 +25,10 @@ namespace {
     {
         vec3 p;
         vec3 n;
+        // 1: max, 2: min
+        vec3 cdir1, cdir2;
         float k1, k2;
-        float q; // mean curvature
+        float q = 0; // mean curvature
     };
     struct AFace
     {
@@ -64,7 +68,7 @@ void curv::uploadMesh(const Mesh& ms)
 
 
     for( int i=0; i<nr_verts; i++ ) {
-        vs.push_back({ms.poss[i], glm::normalize(ms.nors[i]), 0.f});
+        vs.push_back({ms.poss[i], glm::normalize(ms.nors[i])});
     }
     for( int i=0; i<ms.nr_tris; i++ ) {
         const ivec3& idxs = ms.tris[i];
@@ -128,9 +132,9 @@ void curv::computeCurvature()
         // fitQuadric
         float a, b, c, d, e; 
         if( adj_verts.size()>=5 ) {
+            qPs.clear();
             for(const AVert* av : adj_verts) {
                 vec3 vTang = av->p - v.p;
-                qPs.clear();
                 qPs.push_back({
                     dot(vTang, ref[0]), 
                     dot(vTang, ref[1]), 
@@ -138,6 +142,7 @@ void curv::computeCurvature()
                 });
             }
             
+            // Quadric::fit
             Eigen::MatrixXf A(qPs.size(),5);
             Eigen::MatrixXf bb(qPs.size(),1);
             Eigen::MatrixXf sol(qPs.size(),1);
@@ -153,7 +158,7 @@ void curv::computeCurvature()
                 A(c,3) = u;
                 A(c,4) = v;
 
-                bb(c,2) = n;
+                bb(c,0) = n;
             }
             sol = ((A.transpose()*A).inverse()*A.transpose())*bb;
             a = sol(0,0);
@@ -171,8 +176,46 @@ void curv::computeCurvature()
         float G = 1.f + e*e;   
 
         vec3 n = glm::normalize(vec3{-d, -e, 1.f});
-        v.n = ref[0] * n[0] + ref[1] * n[1] + ref[2] * n[2];
+        v.n = ref[0]*n[0] + ref[1]*n[1] + ref[2]*n[2]; // Todo mat
+        
+        float L = 2.f * a * n.z;
+        float M = b * n.z;
+        float N = 2.f * c * n.z;
 
+        Eigen::Matrix2d m;
+        m << L*G - M*F, M*E-L*F, M*E-L*F, N*E-M*F;
+        m = m / (E*G - F*F);
+        Eigen::SelfAdjointEigenSolver<Eigen::Matrix2d> eig(m);
+
+        Eigen::Vector2d c_val = -eig.eigenvalues();
+        Eigen::Matrix2d c_vec = eig.eigenvectors();
+
+        vec3 v1(c_vec(0,0), c_vec(0,1), 0);
+        vec3 v2(c_vec(1,0), c_vec(1,1), 0);
+        v1 = glm::normalize(v1) * float(c_val[0]);
+        v2 = glm::normalize(v2) * float(c_val[1]);
+
+        vec3 v1global = ref[0]*v1[0] + ref[1]*v1[1] + ref[2]*v1[2]; // todo mat
+        vec3 v2global = ref[0]*v2[0] + ref[1]*v2[1] + ref[2]*v2[2]; // todo mat
+        v1global = glm::normalize(v1global);
+        v2global = glm::normalize(v2global);
+
+        if( c_val[0] > c_val[1] ) {
+            v.cdir1 = v1global;
+            v.cdir2 = v2global;
+            v.k1 = c_val[0];
+            v.k2 = c_val[1];
+        } else {
+            v.cdir1 = v2global;
+            v.cdir2 = v1global;
+            v.k1 = c_val[1];
+            v.k2 = c_val[0];
+        }
+
+
+        // mean curvature : VertexMeanFromCurvatureDir
+        v.q = (v.k1+v.k2) / 2.f;
+        lim::log::pure("%.2f, %.2f, %.2f\n", v.k1, v.k2, v.q);
     }
 }
 

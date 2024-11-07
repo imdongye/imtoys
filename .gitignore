@@ -21,3 +21,4 @@ main/assets/*
 main/exports/
 .$diagram.drawio.bkp
 main/im_shadertoy/temp/temp.fs
+main/im_curvature/models/
