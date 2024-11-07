@@ -171,7 +171,7 @@ void curv::computeCurvature()
         float G = 1.f + e*e;   
 
         vec3 n = glm::normalize(vec3{-d, -e, 1.f});
-        v.n = ref
+        v.n = ref[0] * n[0] + ref[1] * n[1] + ref[2] * n[2];
 
     }
 }
