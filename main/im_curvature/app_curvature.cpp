@@ -1,4 +1,5 @@
 /*
+day 1
 1 문제점:
 	a. aiProcess_JoinIdenticalVertices가 작동하지 않아서 shared vertex구조를 만들수없음
 	b. obj의 bunny에서는 병합 잘되는데 Model0.stl에서 안됨
@@ -25,10 +26,12 @@
 		5. 우선 핵심 문제가 아니므로 상수값을 100배 높여 테스트해보자. 100배로 부족해다
 		6. 10프로대로 줄여질때까지 수동으로 맞추었더니 기존 1-e5f 에서 0.09f로 올라갔다.
 
+day 2
 2 Curvature ref:
 	https://en.wikipedia.org/wiki/Mean_curvature
+	https://www.youtube.com/watch?v=9C_6TCRS13Q&t=53s
+	https://www.youtube.com/watch?v=3fZia2qSk-o&t=16s
 	주principal곡률 k1최대, k2최소
-	평균은 곡면이 
 
 	a. 필터링 옵션
 		Method : Quadric
@@ -52,12 +55,9 @@
 		computeCurvature에서 버텍스순회 안에서
 			computeReferenceFrames // 첫번째 인접삼각형 다음버텍스로 인접버텍스를 찾고
 
-3. 문제점:
-	MeshLab의 
-	tri::UpdateCurvatureFitting<CMeshO>::computeCurvature(m.cm) // quadric meshod
-	tri::UpdateQuality<CMeshO>::VertexMeanFromCurvatureDir(m.cm)
-	위 두개의 함수의 구현부가 소스코드에 없음
-	VertexMeanFromCurvatureDir, 
+k1, k2구할때 quadric method
+	computeReferenceFrames
+		vert face iterator로 
 */
 
 #include "app_curvature.h"
