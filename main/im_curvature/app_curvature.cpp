@@ -65,6 +65,7 @@
 #include <limbrary/model_view/model.h>
 #include <imgui.h>
 #include <assimp/postprocess.h>
+#include "curvature.h"
 
 #include <limbrary/using_in_cpp/glm.h>
 using namespace lim;
@@ -93,8 +94,10 @@ AppCurvature::AppCurvature() : AppBase(1200, 780, APP_NAME)
 	assert(md.own_meshes.size() == 1);
 	transform = md.root.childs[0].tf;
 	mesh = std::move(md.own_meshes[0]);
-	mesh->cols.resize(mesh->poss.size(), vec3(1,0,0));
+	mesh->cols.resize(mesh->poss.size(), vec3(-1,0,0));
 	mesh->initGL();
+
+	curv::uploadMesh(*mesh);
 }
 AppCurvature::~AppCurvature()
 {
@@ -127,8 +130,10 @@ void AppCurvature::updateImGui()
 	ImGui::Text("#nors:  %6d", mesh->nors.size());
 	ImGui::Text("#tans:  %6d", mesh->tangents.size());
 	ImGui::Text("#tris:  %6d", mesh->tris.size());
-	if(ImGui::Button("asdf")) {
-		log::pure("asdf");
+	if(ImGui::Button("update curvature")) {
+		curv::computeCurvature();
+		curv::downloadCurvature(*mesh);
+		mesh->initGL();
 	}
 	ImGui::End();
 }

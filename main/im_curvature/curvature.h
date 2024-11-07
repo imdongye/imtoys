@@ -10,11 +10,14 @@
 
 namespace lim
 {
+    namespace curv
+    {
     void uploadMesh(const Mesh& ms);
 
     void computeCurvature();
 
     void downloadCurvature(Mesh& ms); // in color attrib
+    }
 
 }
 

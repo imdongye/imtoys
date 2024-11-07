@@ -13,7 +13,7 @@ vec3 getValueColor(float value) {
     float w_g = 0;
     float w_r = 0;
     if(value<0 || value>1) {
-        return vec3(0,0,0);
+        return vec3(1);
     }
 
     if( value < 0.3333333 ) {
@@ -43,7 +43,7 @@ void main()
     vec3 outColor = vec3(max(dot(N, V),0));
 
     float value = wCol.r;
-    value = sin(wPos.x*2.f);
+    // value = sin(wPos.x*2.f);
     outColor *= getValueColor(value);
 
     // debug
