@@ -7,6 +7,7 @@ in vec3 wCol;
 
 uniform vec3 cam_Pos;
 uniform float gamma = 2.2;
+uniform bool is_Gizmo = false;
 
 vec3 getValueColor(float value) {
     float w_r = 0;
@@ -38,10 +39,15 @@ vec3 getValueColor(float value) {
 
 void main()
 {    
+    if(is_Gizmo) {
+        FragColor = vec4(1,0,1,1);
+        return;
+    }
+
     vec3 V = cam_Pos - wPos; 
     V = normalize(V);
-    // vec3 N = normalize (cross (dFdx(wPos.xyz), dFdy(wPos.xyz)));
-	vec3 N = normalize(wNor);
+    vec3 N = normalize(cross (dFdx(wPos.xyz), dFdy(wPos.xyz)));
+	// vec3 N = normalize(wNor);
 
     vec3 outColor = vec3(max(dot(N, V),0));
 

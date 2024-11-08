@@ -23,6 +23,8 @@ namespace lim
 		inline static constexpr CStr APP_INFO = "high curvature group detection";
 
 		Program program;
+		int picked_t_idx = -1;
+		int picked_v_idx = -1;
 		OwnPtr<Mesh> mesh;
 		Transform transform;
 		ViewportWithCam viewport;
@@ -32,6 +34,9 @@ namespace lim
 		~AppCurvature();
 		virtual void update() override;
 		virtual void updateImGui() override;
+	private:
+		int pickVertIdx(glm::vec3 rayOri, const glm::vec3 &rayDir);
+		std::pair<int, glm::vec3> pickTri(glm::vec3 rayOri, const glm::vec3 &rayDir);
 	};
 }
 

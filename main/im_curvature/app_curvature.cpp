@@ -27,7 +27,7 @@ day 1
 		6. 10프로대로 줄여질때까지 수동으로 맞추었더니 기존 1-e5f 에서 0.09f로 올라갔다.
 
 day 2
-2 Curvature ref:
+2 Curvature:
 	https://en.wikipedia.org/wiki/Mean_curvature
 	https://www.youtube.com/watch?v=9C_6TCRS13Q&t=53s
 	https://www.youtube.com/watch?v=3fZia2qSk-o&t=16s
@@ -55,16 +55,37 @@ day 2
 		computeCurvature에서 버텍스순회 안에서
 			computeReferenceFrames // 첫번째 인접삼각형 다음버텍스로 인접버텍스를 찾고
 
-k1, k2구할때 quadric method
-	computeReferenceFrames
-		vert face iterator로 
+	k1, k2구할때 quadric method
+		computeReferenceFrames
+			vert face iterator로
+
+	vcg라이브러리 참고해서 quadric method로 주곡률방향과 값구하고 평균곡률구해서 렌더링했다.
+	중간중간 튀는값이 있는데 shared vertex가 잘안잡힌건지 디버깅이 잘안되어서 일단 패스
+
+day 3
+3 Picking:
+	현제 Mesh의 모델공간에서 월드공간의[-1, 1]로 정규화해서 그리고있다.
+	피킹할때 우선 마우스위치, 카메라 위치, 방향을 가지고 클릭한 레이을 알아내고
+	모든버텍스를 순회하는데, 월드공간에서 거리를 측정하면 공간변환연산이 o(n)번발생하므로
+	카메라를 모델공간으로 옮겨 측정한다. 우선 레이직선과 버텍스사이거리로 걸러내고 카메라와의 깊이중 가장 가까운것을 찾는다.
+	이때 threshold를 mesh의 모델공간에 비례해서 설정해줘야한다. Todo
+	
+	Triangle Picking도 일단 구현해두었다.
+
+5. mean curvature 기준 클러스터링 및 Mesh추출
+
+6. 표면에서 화살표 기즈모
+
 */
 
 #include "app_curvature.h"
 #include <limbrary/tools/log.h>
 #include <limbrary/model_view/model.h>
+#include <limbrary/tools/s_asset_lib.h>
+#include <limbrary/tools/glim.h>
 #include <imgui.h>
 #include <assimp/postprocess.h>
+#include <glm/gtx/transform.hpp>
 #include "curvature.h"
 
 #include <limbrary/using_in_cpp/glm.h>
@@ -102,13 +123,31 @@ AppCurvature::AppCurvature() : AppBase(1200, 780, APP_NAME)
 AppCurvature::~AppCurvature()
 {
 }
+
 void AppCurvature::update() 
 {
 	viewport.getFb().bind();
 	program.use();
 	viewport.camera.setUniformTo(program);
+
+	program.setUniform("is_Gizmo", false);
 	program.setUniform("mtx_Model", transform.mtx);
 	mesh->bindAndDrawGL();
+
+	if(picked_v_idx >= 0) {
+		vec3 pos = mesh->poss[picked_v_idx];
+		mat4 gizmoMtx = transform.mtx * glm::translate(pos);
+		program.setUniform("is_Gizmo", true);
+		program.setUniform("mtx_Model", gizmoMtx);
+		AssetLib::get().small_sphere.bindAndDrawGL();
+	} else if(picked_t_idx >= 0) {
+		vec3 pos = mesh->poss[mesh->tris[picked_t_idx].x];
+		mat4 gizmoMtx = transform.mtx * glm::translate(pos);
+		program.setUniform("is_Gizmo", true);
+		program.setUniform("mtx_Model", gizmoMtx);
+		AssetLib::get().small_sphere.bindAndDrawGL();
+	}
+
 	viewport.getFb().unbind();
 
 
@@ -117,13 +156,82 @@ void AppCurvature::update()
 	glViewport(0, 0, fb_width, fb_height);
 	glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 }
+
+int AppCurvature::pickVertIdx(glm::vec3 rayOri, const glm::vec3 &rayDir) 
+{
+	float minDepth = FLT_MAX;
+	int rst = -1;
+
+	// rot없어서 dir수정안함
+	// uniform scale이라 연산 더 줄일수있긴함
+	rayOri = glm::inverse(transform.mtx) * vec4(rayOri, 1.f);
+	log::pure(rayOri);
+	log::pure(rayDir);
+
+	for (int i = 0; i < mesh->nr_verts; i++) {
+		const vec3 toObj = mesh->poss[i] - rayOri;
+		float distFromLine = glm::length(glm::cross(rayDir, toObj));
+		if( distFromLine < 0.2f ) {
+			float distProjLine = glm::dot(rayDir, toObj);
+			if( distProjLine > 0 && distProjLine < minDepth ) {
+				minDepth = distProjLine;
+				rst = i;
+			}
+		}
+	}
+
+	return rst;
+}
+
+std::pair<int, vec3> AppCurvature::pickTri(glm::vec3 rayOri, const glm::vec3& rayDir) {
+	const float searchDepth = 500.f;
+	float minDepth = FLT_MAX;
+	int rst = -1;
+
+	rayOri = glm::inverse(transform.mtx) * vec4(rayOri, 1.f);
+
+
+	for(int i=0; i<mesh->nr_tris; i++) {
+		const ivec3& tri = mesh->tris[i];
+		const vec3& v1 = mesh->poss[tri.x];
+		const vec3& v2 = mesh->poss[tri.y];
+		const vec3& v3 = mesh->poss[tri.z];
+		
+		float depth = glim::intersectTriAndRayBothFaces(rayOri, rayDir, v1, v2, v3);
+		if( depth<0 || depth>searchDepth || depth>minDepth )
+			continue;
+		minDepth = depth;
+		rst = i;
+	}
+
+	return {rst, minDepth*rayDir + rayOri};
+}
+
 void AppCurvature::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
 
 	viewport.drawImGuiAndUpdateCam();
+
+	if( ImGui::IsMouseClicked(ImGuiMouseButton_Left, false) ) {
+		const vec3 mouseRay = viewport.getMousePosRayDir();
+		int idx = pickVertIdx(viewport.camera.pos, mouseRay);
+		if( idx >= 0 ) {
+			picked_v_idx = idx;
+			picked_t_idx = -1;
+			log::pure("%d\n", picked_v_idx);
+		}
+	}
+	else if( ImGui::IsMouseClicked(ImGuiMouseButton_Right, false) ) {
+		const vec3 mouseRay = viewport.getMousePosRayDir();
+		auto [idx,p] = pickTri(viewport.camera.pos, mouseRay);
+		if( idx >= 0 ) {
+			picked_t_idx = idx;
+			picked_v_idx = -1;
+			log::pure("%d\n", picked_t_idx);
+		}
+	}
 
 	ImGui::Begin("test window##curvature");
 	ImGui::Text("#verts: %6d", mesh->poss.size());
