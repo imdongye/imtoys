@@ -166,8 +166,8 @@ int AppCurvature::pickVertIdx(glm::vec3 rayOri, const glm::vec3 &rayDir)
 	// rot없어서 dir수정안함
 	// uniform scale이라 연산 더 줄일수있긴함
 	rayOri = glm::inverse(transform.mtx) * vec4(rayOri, 1.f);
-	log::pure(rayOri);
-	log::pure(rayDir);
+	// log::pure(rayOri);
+	// log::pure(rayDir);
 
 	for (int i = 0; i < mesh->nr_verts; i++) {
 		const vec3 toObj = mesh->poss[i] - rayOri;
@@ -220,7 +220,7 @@ void AppCurvature::updateImGui()
 		if( idx >= 0 ) {
 			picked_v_idx = idx;
 			picked_t_idx = -1;
-			log::pure("%d\n", picked_v_idx);
+			// log::pure("%d\n", picked_v_idx);
 		}
 	}
 	else if( ImGui::IsMouseClicked(ImGuiMouseButton_Right, false) ) {
@@ -229,19 +229,45 @@ void AppCurvature::updateImGui()
 		if( idx >= 0 ) {
 			picked_t_idx = idx;
 			picked_v_idx = -1;
-			log::pure("%d\n", picked_t_idx);
+			// log::pure("%d\n", picked_t_idx);
 		}
 	}
 
 	ImGui::Begin("test window##curvature");
-	ImGui::Text("#verts: %6d", mesh->poss.size());
-	ImGui::Text("#nors:  %6d", mesh->nors.size());
-	ImGui::Text("#tans:  %6d", mesh->tangents.size());
-	ImGui::Text("#tris:  %6d", mesh->tris.size());
-	if(ImGui::Button("update curvature")) {
-		curv::computeCurvature();
-		curv::downloadCurvature(*mesh);
-		mesh->initGL();
+	
+	ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+	if( ImGui::CollapsingHeader("Mesh info") ) {
+		ImGui::Text("#verts: %6d", mesh->poss.size());
+		ImGui::Text("#nors:  %6d", mesh->nors.size());
+		ImGui::Text("#tans:  %6d", mesh->tangents.size());
+		ImGui::Text("#tris:  %6d", mesh->tris.size());
 	}
+	ImGui::Spacing();
+	ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+	if( ImGui::CollapsingHeader("Functions") ) {
+		if(ImGui::Button("1. update curvature")) {
+			curv::computeCurvature();
+			curv::downloadCurvature(*mesh);
+			mesh->initGL();
+		}
+		if( picked_v_idx < 0 ) {
+			ImGui::Text("2. pick vertex with left click ");
+		}
+		else {
+			ImGui::Text("2. pick vertex: %d", picked_v_idx);
+			if(ImGui::Button("3. separate mesh")) {
+
+			}
+		}
+	}
+	ImGui::Spacing();
+	ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+	if( picked_v_idx>=0 && ImGui::CollapsingHeader("Pick info") ) {
+		vec3 info = mesh->cols[picked_v_idx];
+		ImGui::Text("vert idx: %d", picked_v_idx);
+		ImGui::Text("mean curvature: %f", info.r);
+		ImGui::Text("k1, k2: %f, %f", info.g, info.b);
+	}
+	
 	ImGui::End();
 }

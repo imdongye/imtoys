@@ -17,6 +17,8 @@ namespace lim
     void computeCurvature();
 
     void downloadCurvature(Mesh& ms); // in color attrib
+
+    Mesh* getClusteredMesh(int vIdx);
     }
 
 }

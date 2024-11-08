@@ -215,13 +215,13 @@ void curv::computeCurvature()
 
         // mean curvature : VertexMeanFromCurvatureDir
         v.q = (v.k1+v.k2) / 2.f;
-        lim::log::pure("%.2f, %.2f, %.2f\n", v.k1, v.k2, v.q);
+        // lim::log::pure("%.2f, %.2f, %.2f\n", v.k1, v.k2, v.q);
     }
 }
 
 void curv::downloadCurvature(Mesh& ms)
 {
     for(int i=0; i<ms.nr_verts; i++) {
-        ms.cols[i].r = vs[i].q;
+        ms.cols[i] = {vs[i].q, vs[i].k1, vs[i].k2};
     }
 }
