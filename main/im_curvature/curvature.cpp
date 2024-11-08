@@ -12,6 +12,7 @@
 #include <Eigen/Eigenvalues>
 
 #include <set>
+#include <queue>
 
 #include <limbrary/tools/log.h>
 
@@ -21,14 +22,30 @@
 using namespace lim;
 
 namespace {
+    enum V_FLAG : int 
+    {
+        VF_NONE         = 0b000,
+        VF_BAD          = 0b001,
+        VF_GOOD         = 0b010,
+        VF_USED_IN_TRI  = 0b100, 
+        VF_CHECKING_TRI = 0b110
+    };
     struct AVert
     {
         vec3 p;
         vec3 n;
+
         // 1: max, 2: min
         vec3 cdir1, cdir2;
         float k1, k2;
-        float q = 0; // mean curvature
+        
+        // mean curvature
+        float q = 0; 
+        
+        // for clustering 
+        int depth = 0; // from VS_PASS
+        V_FLAG state = VF_NONE;
+        int new_idx = -1;
     };
     struct AFace
     {
@@ -37,9 +54,9 @@ namespace {
     };
     struct HEdge
     {
-        const AVert* v1;
-        const AVert* v2;
-        const AFace* f;
+        int v1;
+        int v2;
+        int f;
     };
     
     // Mesh 
@@ -51,11 +68,14 @@ namespace {
     vector< vector<const HEdge*> > es_per_vs;
 
     constexpr int max_adj_verts = 12;
+    bool is_computed_curv = false;
 }
 
 
 void curv::uploadMesh(const Mesh& ms)
 {
+    is_computed_curv = false;
+
     nr_verts = ms.nr_verts;
     nr_tris = ms.nr_tris;
     vs.reserve(nr_verts);
@@ -78,11 +98,11 @@ void curv::uploadMesh(const Mesh& ms)
         const vec3 n = normalize(cross(p2-p1, p3-p1));
         fs.push_back({idxs, n});
 
-        es.push_back({&vs[idxs.x], &vs[idxs.y], &fs[i]});
+        es.push_back({idxs.x, idxs.y, i});
         es_per_vs[idxs.x].push_back(&es.back());
-        es.push_back({&vs[idxs.y], &vs[idxs.z], &fs[i]});
+        es.push_back({idxs.y, idxs.z, i});
         es_per_vs[idxs.y].push_back(&es.back());
-        es.push_back({&vs[idxs.z], &vs[idxs.x], &fs[i]});
+        es.push_back({idxs.z, idxs.x, i});
         es_per_vs[idxs.z].push_back(&es.back());
     }
     for( auto& esPerV : es_per_vs ) {
@@ -105,7 +125,7 @@ namespace {
 // Copy: computeCurvature in vcglib/curvature_fitting.h
 void curv::computeCurvature()
 {
-    vector<const AVert*> adj_verts(max_adj_verts);
+    vector<int> adj_verts(max_adj_verts);
     vec3 ref[3]; // Todo mat3
 
     // using in fitQuadric
@@ -122,7 +142,7 @@ void curv::computeCurvature()
         // make vert local space axis in first face by computeReferenceFrames
         {
             const HEdge* e1 = es_per_vs[i][0];
-            const AVert& v2 = *e1->v2;
+            const AVert& v2 = vs[e1->v2];
             vec3 projToVn = v2.p - dot(v.n, v2.p-v.p) * v.n; // Todo
             ref[0] = glm::normalize(projToVn - v.p);
             ref[1] = glm::normalize(glm::cross(v.n, ref[0]));
@@ -133,8 +153,8 @@ void curv::computeCurvature()
         float a, b, c, d, e; 
         if( adj_verts.size()>=5 ) {
             qPs.clear();
-            for(const AVert* av : adj_verts) {
-                vec3 vTang = av->p - v.p;
+            for(int adjIdx : adj_verts) {
+                vec3 vTang = vs[adjIdx].p - v.p;
                 qPs.push_back({
                     dot(vTang, ref[0]), 
                     dot(vTang, ref[1]), 
@@ -217,11 +237,94 @@ void curv::computeCurvature()
         v.q = (v.k1+v.k2) / 2.f;
         // lim::log::pure("%.2f, %.2f, %.2f\n", v.k1, v.k2, v.q);
     }
+    is_computed_curv = true;
 }
+bool curv::isComputedCurv() { return is_computed_curv; }
+
+
 
 void curv::downloadCurvature(Mesh& ms)
 {
     for(int i=0; i<ms.nr_verts; i++) {
         ms.cols[i] = {vs[i].q, vs[i].k1, vs[i].k2};
     }
+}
+
+
+Mesh* curv::getClusteredMesh(int vIdx, float threshold, int maxFalseDepth)
+{
+    // reset flags
+    for(int i=0; i<nr_verts; i++) {
+        vs[i].new_idx = -1;
+        vs[i].state = VF_NONE;
+        vs[i].depth = 0;
+    }
+    
+    // float base_mean_curv = vs[vIdx].q; // Todo: relative threshold
+    std::queue<int> bfs; // idx for search neighbors
+    bfs.push(vIdx);
+    vs[vIdx].state = VF_GOOD;
+    vs[vIdx].depth = 0;
+
+    while(!bfs.empty()) {
+        int vidx = bfs.front(); bfs.pop();
+        for(const HEdge* e : es_per_vs[vidx]) {
+            int v2Idx = e->v2;
+            AVert& v2 = vs[v2Idx];
+
+            if( v2.state != VF_NONE)
+                continue;
+
+            if( v2.q > threshold ) {
+                v2.state = VF_GOOD;
+                v2.depth = 0;
+                bfs.push(v2Idx);
+            } else {
+                v2.state = VF_BAD;
+                v2.depth = vs[vidx].depth+1;
+                if(v2.depth <= maxFalseDepth) {
+                    bfs.push(v2Idx);
+                }
+            }
+        }
+    }
+
+
+    Mesh* rst = new Mesh();
+
+    for(int i=0; i<nr_tris; i++) {
+        const ivec3& tri = fs[i].idxs;
+        if( vs[tri.x].state & VF_CHECKING_TRI && 
+            vs[tri.y].state & VF_CHECKING_TRI && 
+            vs[tri.z].state & VF_CHECKING_TRI )
+        {
+            vs[tri.x].state = VF_USED_IN_TRI;
+            vs[tri.y].state = VF_USED_IN_TRI;
+            vs[tri.z].state = VF_USED_IN_TRI;
+            rst->tris.push_back({tri.x, tri.y, tri.z});
+        }
+    }
+
+    int newIdx = 0;
+
+    for(int i=0; i<nr_verts; i++) {
+        AVert& v = vs[i];
+        if( v.state == VF_USED_IN_TRI ) {
+            v.new_idx = newIdx++;
+
+            rst->poss.push_back(v.p);
+            rst->nors.push_back(v.n);
+            rst->cols.push_back({vs[i].q, vs[i].k1, vs[i].k2});
+        }
+    }
+
+    for(ivec3& tri: rst->tris) {
+        tri.x = vs[tri.x].new_idx;
+        tri.y = vs[tri.y].new_idx;
+        tri.z = vs[tri.z].new_idx;
+    }
+
+    rst->initGL();
+    
+    return rst;
 }

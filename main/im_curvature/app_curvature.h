@@ -26,6 +26,7 @@ namespace lim
 		int picked_t_idx = -1;
 		int picked_v_idx = -1;
 		OwnPtr<Mesh> mesh;
+		OwnPtr<Mesh> rst_ms = nullptr;
 		Transform transform;
 		ViewportWithCam viewport;
 

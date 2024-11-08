@@ -130,10 +130,19 @@ void AppCurvature::update()
 	program.use();
 	viewport.camera.setUniformTo(program);
 
-	program.setUniform("is_Gizmo", false);
-	program.setUniform("mtx_Model", transform.mtx);
-	mesh->bindAndDrawGL();
+	// model
+	if( rst_ms==nullptr ) {
+		program.setUniform("is_Gizmo", false);
+		program.setUniform("mtx_Model", transform.mtx);
+		mesh->bindAndDrawGL();
+	}
+	else {
+		program.setUniform("is_Gizmo", false);
+		program.setUniform("mtx_Model", transform.mtx);
+		rst_ms->bindAndDrawGL();
+	}
 
+	// picking gizmo
 	if(picked_v_idx >= 0) {
 		vec3 pos = mesh->poss[picked_v_idx];
 		mat4 gizmoMtx = transform.mtx * glm::translate(pos);
@@ -172,7 +181,7 @@ int AppCurvature::pickVertIdx(glm::vec3 rayOri, const glm::vec3 &rayDir)
 	for (int i = 0; i < mesh->nr_verts; i++) {
 		const vec3 toObj = mesh->poss[i] - rayOri;
 		float distFromLine = glm::length(glm::cross(rayDir, toObj));
-		if( distFromLine < 0.2f ) {
+		if( distFromLine < 0.1f ) {
 			float distProjLine = glm::dot(rayDir, toObj);
 			if( distProjLine > 0 && distProjLine < minDepth ) {
 				minDepth = distProjLine;
@@ -242,7 +251,9 @@ void AppCurvature::updateImGui()
 		ImGui::Text("#tans:  %6d", mesh->tangents.size());
 		ImGui::Text("#tris:  %6d", mesh->tris.size());
 	}
-	ImGui::Spacing();
+	ImGui::Dummy({0.f, 20.f});
+
+
 	ImGui::SetNextItemOpen(true, ImGuiCond_Once);
 	if( ImGui::CollapsingHeader("Functions") ) {
 		if(ImGui::Button("1. update curvature")) {
@@ -250,23 +261,27 @@ void AppCurvature::updateImGui()
 			curv::downloadCurvature(*mesh);
 			mesh->initGL();
 		}
-		if( picked_v_idx < 0 ) {
+		ImGui::Dummy({0.f, 10.f});
+
+		if( picked_v_idx < 0 || !curv::isComputedCurv() ) {
 			ImGui::Text("2. pick vertex with left click ");
 		}
 		else {
 			ImGui::Text("2. pick vertex: %d", picked_v_idx);
+			vec3 info = mesh->cols[picked_v_idx];
+			ImGui::Text("vert idx: %d", picked_v_idx);
+			ImGui::Text("mean curvature: %f", info.r);
+			ImGui::Text("k1, k2: %f, %f", info.g, info.b);
+			ImGui::Dummy({0.f, 10.f});
+			
+			static float cluster_threshold = 0.8f;
+			static int max_false_depth = 2;
+			ImGui::SliderInt("max false depth", &max_false_depth, 0, 5);
+			ImGui::SliderFloat("threshold", &cluster_threshold, 0.2f, 1.f);
 			if(ImGui::Button("3. separate mesh")) {
-
+				rst_ms = curv::getClusteredMesh(picked_v_idx, cluster_threshold, max_false_depth);
 			}
 		}
-	}
-	ImGui::Spacing();
-	ImGui::SetNextItemOpen(true, ImGuiCond_Once);
-	if( picked_v_idx>=0 && ImGui::CollapsingHeader("Pick info") ) {
-		vec3 info = mesh->cols[picked_v_idx];
-		ImGui::Text("vert idx: %d", picked_v_idx);
-		ImGui::Text("mean curvature: %f", info.r);
-		ImGui::Text("k1, k2: %f, %f", info.g, info.b);
 	}
 	
 	ImGui::End();

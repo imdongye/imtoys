@@ -15,10 +15,11 @@ namespace lim
     void uploadMesh(const Mesh& ms);
 
     void computeCurvature();
+    bool isComputedCurv();
 
     void downloadCurvature(Mesh& ms); // in color attrib
 
-    Mesh* getClusteredMesh(int vIdx);
+    Mesh* getClusteredMesh(int vIdx, float threshold, int maxFalseDepth);
     }
 
 }
