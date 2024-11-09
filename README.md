@@ -4,9 +4,9 @@
 
 and there are several toys that use limbrary
 
--   SDF modeler [report](https://drive.google.com/file/d/1fsZAitytSMygLGITExE0Y6ucwJFRNriO/view?usp=sharing) [presentation](https://youtu.be/KKeihZ03pAs) [demo](https://youtu.be/l02dHs1q9Jo)
+-   SDF modeler [report](https://drive.google.com/file/d/1fsZAitytSMygLGITExE0Y6ucwJFRNriO/view?usp=sharing) , [presentation](https://youtu.be/KKeihZ03pAs) , [demo](https://youtu.be/l02dHs1q9Jo)
 
--   model simplifier, normal map baker [report link](https://imdongye.notion.site/Simplification-d21e692652104cb39ce3befde034fcd2?pvs=4) [demo](https://youtu.be/wZzI8Hjm5jQ)
+-   model simplifier, normal map baker [report link](https://imdongye.notion.site/Simplification-d21e692652104cb39ce3befde034fcd2?pvs=4) , [demo](https://youtu.be/wZzI8Hjm5jQ)
 
 -   PBR with IBL [demo](https://youtu.be/Yxrlhfb-fXo)
 
@@ -50,16 +50,16 @@ F1 key to open app selector
 ## Dependency
 in Core
 * c++17
-* [glad](https://glad.dav1d.de), gl4.1core by default, but use 4.6 core when using compute shader or ssbo. e.g. PBD
-* [glfw - 240927](https://github.com/glfw/glfw)
-* [glm - 240927](https://github.com/g-truc/glm),
-* [stb - 240927](https://github.com/nothings/stb),
-* [imgui docking branch - 240927](https://github.com/ocornut/imgui),
-* [imguizmo - 240927](https://github.com/CedricGuillemet/ImGuizmo),
-* [assimp - 240927](https://github.com/assimp/assimp), 
-* [nlohmann/json - 240927](https://github.com/nlohmann/json),
+* [glad(0.1.36)](https://glad.dav1d.de) in 240927, gl4.1core by default, but use 4.6 core when using compute shader or ssbo. e.g. PBD
+* [glfw(3.4)](https://github.com/glfw/glfw) in 240927
+* [glm(1.0.1)](https://github.com/g-truc/glm) in 240927
+* [stb](https://github.com/nothings/stb) in 240927
+* [imgui(1.91.5) docking branch](https://github.com/ocornut/imgui) in 241109
+* [imguizmo(1.83)](https://github.com/CedricGuillemet/ImGuizmo) in 240927
+* [assimp(5.4.3)](https://github.com/assimp/assimp) in 240927
+* [nlohmann/json(3.11.3)](https://github.com/nlohmann/json) in 240927
 
 in Apps
+* [eigen(3.4.0)](https://eigen.tuxfamily.org) in 240927
 * [fqms](https://github.com/sp4cerat/Fast-Quadric-Mesh-Simplification)
-* [eigen - 240927](https://eigen.tuxfamily.org),
 

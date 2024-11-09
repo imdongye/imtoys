@@ -73,7 +73,11 @@ day 3
 	Triangle Picking도 일단 구현해두었다.
 
 5. mean curvature 기준 클러스터링 및 Mesh추출
-
+	bfs로 선택한 버텍스부터 주변 버텍스를 탐색하며 플레그를 설정하고
+		false depth로 연속된 threshold 탈락을 몇번까지 허용할지 옵션을 줬다.
+	face index정보로 플레그를 수정하며 face를 선택하고
+	새로운 버텍스 배열을 생성하고
+	선택된 face들의 인덱스를 수정한다.
 6. 표면에서 화살표 기즈모
 
 */
@@ -83,6 +87,7 @@ day 3
 #include <limbrary/model_view/model.h>
 #include <limbrary/tools/s_asset_lib.h>
 #include <limbrary/tools/glim.h>
+#include <limbrary/tools/limgui.h>
 #include <imgui.h>
 #include <assimp/postprocess.h>
 #include <glm/gtx/transform.hpp>
@@ -221,7 +226,13 @@ void AppCurvature::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
 
-	viewport.drawImGuiAndUpdateCam();
+	viewport.drawImGuiAndUpdateCam([](ViewportWithCam& vp) {
+		ImVec2 window_pos = ImGui::GetWindowPos();
+		ImVec2 window_size = ImGui::GetWindowSize();
+		ImVec2 window_center = ImVec2(window_pos.x + window_size.x * 0.5f, window_pos.y + window_size.y * 0.5f);
+		ImGui::GetWindowDrawList()->AddCircle(ImGui::GetMousePos(), window_size.y * 0.6f, IM_COL32(0, 255, 0, 200), 0, 10);
+		// ImGui::GetWindowDrawList()->AddConvexPolyFilled
+	});
 
 	if( ImGui::IsMouseClicked(ImGuiMouseButton_Left, false) ) {
 		const vec3 mouseRay = viewport.getMousePosRayDir();

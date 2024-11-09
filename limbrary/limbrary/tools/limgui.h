@@ -58,7 +58,7 @@ namespace lim
     inline ImVec2 toIg(const glm::vec2& v) { return {v.x, v.y}; }
     inline ImVec2 toIg(const glm::ivec2& v) { return {float(v.x), float(v.y)}; }
     inline glm::vec2 toGlm(const ImVec2& v) { return {v.x, v.y}; }
-    inline ImTextureID texIdToIg(GLuint texId) { return (void*)(intptr_t)texId; }
+    inline ImTextureID texIdToIg(GLuint texId) { return (ImTextureID)(intptr_t)(texId); }
     inline bool isSame(const ImVec2& v1, const ImVec2& v2) { return v1.x == v2.x && v1.y == v2.y; }
 }
 

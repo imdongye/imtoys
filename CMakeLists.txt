@@ -48,10 +48,10 @@ set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
-add_subdirectory(vendor/glfw-3.4)
+add_subdirectory(vendor/glfw)
 set_target_properties(glfw PROPERTIES CONFIG Release)
 target_compile_definitions(glfw INTERFACE GLFW_INCLUDE_NONE) # Todo?: glad include 순서 무시하기위함
-set_target_properties(glfw PROPERTIES FOLDER "vendor")
+set_target_properties(glfw PROPERTIES FOLDER vendor)
 set(dep_libs ${dep_libs} glfw)
 
 
@@ -72,10 +72,10 @@ option(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT OFF)
     set(ASSIMP_BUILD_FBX_EXPORTER ON CACHE BOOL "" FORCE)
     set(ASSIMP_BUILD_STL_EXPORTER ON CACHE BOOL "" FORCE)
     # set(ASSIMP_BUILD_GLTF_EXPORTER ON CACHE BOOL "" FORCE)
-add_subdirectory(vendor/assimp-5.4.3)
+add_subdirectory(vendor/assimp)
 set_target_properties(assimp PROPERTIES CONFIG Release) # release 빌드
 option(BUILD_SHARED_LIBS OFF)
-set_target_properties(assimp PROPERTIES FOLDER "vendor")
+set_target_properties(assimp PROPERTIES FOLDER vendor)
 list(APPEND dep_libs assimp)
 
 
@@ -83,17 +83,17 @@ list(APPEND dep_libs assimp)
 
 ### glad ### C
 # opengl function pointers (replaced by glad)
-set(lib_name "glad")
+set(lib_name glad)
 if(WIN32)
-    set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/glad-4.6-core")
+    set(lib_dir ${CMAKE_SOURCE_DIR}/vendor/glad-4.6-core)
 else()
-    set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/glad-4.1-core")
+    set(lib_dir ${CMAKE_SOURCE_DIR}/vendor/glad-4.1-core)
 endif(WIN32)
-file(GLOB_RECURSE lib_files "${lib_dir}/*.*")
+file(GLOB_RECURSE lib_files ${lib_dir}/*.*)
 add_library(${lib_name} STATIC ${lib_files})
 source_group(TREE ${lib_dir} FILES ${lib_files})
-target_include_directories(${lib_name} PUBLIC "${lib_dir}/include")
-set_target_properties(${lib_name} PROPERTIES FOLDER "vendor")
+target_include_directories(${lib_name} PUBLIC ${lib_dir}/include)
+set_target_properties(${lib_name} PROPERTIES FOLDER vendor)
 list(APPEND dep_libs ${lib_name})
 
 
@@ -114,7 +114,7 @@ list(APPEND dep_libs ${lib_name})
 
 ### imgui ###
 set(lib_name imgui)
-set(lib_dir ${CMAKE_SOURCE_DIR}/vendor/imgui-docking-1.91.2)
+set(lib_dir ${CMAKE_SOURCE_DIR}/vendor/imgui-docking)
 file(GLOB_RECURSE lib_files ${lib_dir}/*.h ${lib_dir}/*.cpp)
 list(REMOVE_ITEM lib_files ${lib_dir}/example_glfw_opengl3/main.cpp)
 list(REMOVE_ITEM lib_files ${lib_dir}/misc/freetype/imgui_freetype.h)
@@ -139,7 +139,7 @@ list(APPEND dep_libs ${lib_name})
 
 
 set(lib_name imguizmo)
-set(lib_dir ${CMAKE_SOURCE_DIR}/vendor/imguizmo-1.83)
+set(lib_dir ${CMAKE_SOURCE_DIR}/vendor/imguizmo)
 file(GLOB_RECURSE lib_files ${lib_dir}/*.h ${lib_dir}/*.cpp)
 list(REMOVE_ITEM lib_files ${lib_dir}/imguizmo/example.cpp)
 add_library(${lib_name} STATIC ${lib_files})
@@ -157,55 +157,55 @@ list(APPEND dep_libs ${lib_name})
 
 
 ### glm (header only) ###
-set(lib_name "glm")
-set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/glm-1.0.1")
-file(GLOB_RECURSE lib_files "${lib_dir}/*.*")
+set(lib_name glm)
+set(lib_dir ${CMAKE_SOURCE_DIR}/vendor/glm)
+file(GLOB_RECURSE lib_files ${lib_dir}/*.*)
 add_library(${lib_name} INTERFACE ${lib_files})
-source_group(TREE "${lib_dir}/glm" FILES ${lib_files})
+source_group(TREE ${lib_dir}/glm FILES ${lib_files})
 target_include_directories(${lib_name} INTERFACE ${lib_dir})
 target_compile_definitions(${lib_name} 
     INTERFACE
         GLM_FORCE_SILENT_WARNINGS
         GLM_ENABLE_EXPERIMENTAL # for transform and norm
 )
-set_target_properties(${lib_name} PROPERTIES FOLDER "vendor")
+set_target_properties(${lib_name} PROPERTIES FOLDER vendor)
 list(APPEND dep_libs ${lib_name})
 
 
 
 
 ### eigen (header only) ###
-set(lib_name "eigen")
-set(lib_dir "${CMAKE_SOURCE_DIR}/vendor/eigen-3.4.0")
-file(GLOB_RECURSE lib_files "${lib_dir}/*.*")
+set(lib_name eigen)
+set(lib_dir ${CMAKE_SOURCE_DIR}/vendor/eigen)
+file(GLOB_RECURSE lib_files ${lib_dir}/*.*)
 add_library(${lib_name} INTERFACE ${lib_files})
-source_group(TREE "${lib_dir}/Eigen" FILES ${lib_files})
+source_group(TREE ${lib_dir}/Eigen FILES ${lib_files})
 target_include_directories(${lib_name} INTERFACE ${lib_dir})
-set_target_properties(${lib_name} PROPERTIES FOLDER "vendor")
+set_target_properties(${lib_name} PROPERTIES FOLDER vendor)
 list(APPEND dep_libs ${lib_name})
 
 
 
 
 ### json (header only) ###
-set(lib_name "json")
-set(lib_dir ${CMAKE_SOURCE_DIR}/vendor/json-3.11.3)
-file(GLOB_RECURSE lib_files "${lib_dir}/nlohmann/json.hpp")
+set(lib_name json)
+set(lib_dir ${CMAKE_SOURCE_DIR}/vendor/json)
+file(GLOB_RECURSE lib_files ${lib_dir}/nlohmann/json.hpp)
 add_library(${lib_name} INTERFACE ${lib_files})
 source_group(TREE ${lib_dir} FILES ${lib_files})
 target_include_directories(${lib_name} INTERFACE ${lib_dir})
-set_target_properties(${lib_name} PROPERTIES FOLDER "vendor")
+set_target_properties(${lib_name} PROPERTIES FOLDER vendor)
 list(APPEND dep_libs ${lib_name})
 
 
 
 
 ### limbrary ###
-set(lib_name "limbrary")
-set(lib_dir "${CMAKE_SOURCE_DIR}/limbrary")
-file(GLOB_RECURSE lib_files CONFIGURE_DEPENDS "${lib_dir}/*.*")
+set(lib_name limbrary)
+set(lib_dir ${CMAKE_SOURCE_DIR}/limbrary)
+file(GLOB_RECURSE lib_files CONFIGURE_DEPENDS ${lib_dir}/*.*)
 add_library(${lib_name} STATIC ${lib_files})
-source_group(TREE "${lib_dir}" FILES ${lib_files})
+source_group(TREE ${lib_dir} FILES ${lib_files})
 target_include_directories(${lib_name} PUBLIC ${lib_dir})
 target_link_libraries(${lib_name} PUBLIC ${dep_libs})
 add_dependencies(${lib_name} ${dep_libs})
@@ -247,26 +247,26 @@ endif()
 
 
 ### main proj ###
-set(exe_name "imtoys_exe")
-set(main_dir "${CMAKE_SOURCE_DIR}/main")
+set(exe_name imtoys_exe)
+set(main_dir ${CMAKE_SOURCE_DIR}/main)
 file(GLOB_RECURSE main_files CONFIGURE_DEPENDS 
     ${main_dir}/*.c ${main_dir}/*.cpp ${main_dir}/*.h ${main_dir}/*.hpp ${main_dir}/*.ipp
 )
-list(FILTER main_files   EXCLUDE REGEX "${main_dir}/assets/*")
+list(FILTER main_files   EXCLUDE REGEX ${main_dir}/assets/*)
 file(GLOB_RECURSE shader_files #CONFIGURE_DEPENDS 
     ${main_dir}/*.glsl ${main_dir}/*.vs ${main_dir}/*.vert ${main_dir}/*.fs ${main_dir}/*.frag
 )
 
 # using opengl4.6
 if(APPLE)
-    list(FILTER main_files   EXCLUDE REGEX "${main_dir}/im_pbd/*")
-    list(FILTER main_files   EXCLUDE REGEX "${main_dir}/im_anims/app_cloth_gpu.*")
-    list(FILTER main_files   EXCLUDE REGEX "${main_dir}/im_anims/app_particle.*")
+    list(FILTER main_files   EXCLUDE REGEX ${main_dir}/im_pbd/*)
+    list(FILTER main_files   EXCLUDE REGEX ${main_dir}/im_anims/app_cloth_gpu.*)
+    list(FILTER main_files   EXCLUDE REGEX ${main_dir}/im_anims/app_particle.*)
 endif()
-list(FILTER main_files   EXCLUDE REGEX "${main_dir}/ignored/*")
-list(FILTER shader_files EXCLUDE REGEX "${main_dir}/ignored/*")
-list(FILTER main_files   EXCLUDE REGEX "${main_dir}/exports/*")
-list(FILTER shader_files EXCLUDE REGEX "${main_dir}/exports/*")
+list(FILTER main_files   EXCLUDE REGEX ${main_dir}/ignored/*)
+list(FILTER shader_files EXCLUDE REGEX ${main_dir}/ignored/*)
+list(FILTER main_files   EXCLUDE REGEX ${main_dir}/exports/*)
+list(FILTER shader_files EXCLUDE REGEX ${main_dir}/exports/*)
 
 add_executable(${exe_name} ${main_files} ${shader_files})
 source_group(TREE ${main_dir} FILES ${main_files} ${shader_files})
