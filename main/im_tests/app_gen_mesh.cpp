@@ -22,7 +22,7 @@ void AppGenMesh::addMeshToScene(Mesh* ms) {
 AppGenMesh::AppGenMesh()
 	: AppBase(1200, 780, APP_NAME), viewport(new FramebufferMs())
 {
-	// glEnable(GL_CULL_FACE);
+	glEnable(GL_CULL_FACE);
 	// glCullFace(GL_BACK);
 	// glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	viewport.camera.spd_free_move = 4.f;
@@ -41,7 +41,7 @@ AppGenMesh::AppGenMesh()
 	/* gen models */
 	addMeshToScene(new MeshQuad());
 	addMeshToScene(new MeshCube());
-	addMeshToScene(new MeshSphere(1.f, 10, 4, 5));
+	addMeshToScene(new MeshSphere(1.f, 10, 4, false, false ));
 	addMeshToScene(new MeshEnvSphere(1.f, 10));
 	addMeshToScene(new MeshIcoSphere(1.f, 0));
 	addMeshToScene(new MeshIcoSphere(1.f, 1));
@@ -49,6 +49,7 @@ AppGenMesh::AppGenMesh()
 	addMeshToScene(new MeshIcoSphere(1.f, 3));
 	addMeshToScene(new MeshCubeSphere(1.f, 3));
 	addMeshToScene(new MeshCubeSphereSmooth(1.f, 3));
+	addMeshToScene(new MeshCone(1.f, 1.f, 8, true, true));
 	addMeshToScene(new MeshCylinder());
 	addMeshToScene(new MeshCapsule(1.f, 2.f, 8, 5, true, false));
 	addMeshToScene(new MeshDonut(0.5f, 0.2f, 50, 25));
@@ -99,7 +100,7 @@ void AppGenMesh::update()
 
 	// clear backbuffer
 	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
+	// glEnable(GL_CULL_FACE);
 	glDisable(GL_MULTISAMPLE);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(0, 0, fb_width, fb_height);

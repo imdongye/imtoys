@@ -28,12 +28,12 @@ uniform ShadowDirectional shadow;
 uniform sampler2D map_Shadow;
 
 void main() {
-	vec3 FaceN = normalize(cross(dFdx(wPos), dFdy(wPos)));
+	// vec3 N = normalize(cross(dFdx(wPos), dFdy(wPos)));
 	vec3 N = normalize(wNor);
 	vec3 L = normalize(lit.Pos-wPos);
 	vec3 V = normalize(cam_Pos-wPos);
 	float ndotv = max(0, dot(N, V));
-	float lambertian = max(0,dot(FaceN,L));
+	float lambertian = max(0,dot(N,L));
 	vec2 scaledUv = uvScale * (mUv-vec2(.5f)) + vec2(.5f);
 	vec3 outColor = vec3(0);
 
@@ -42,7 +42,7 @@ void main() {
 	//outColor = texture(uvgridTex, scaledUv).rgb;
 	// outColor = vec3(scaledUv, 0);
 	outColor = texture(uvgridTex, scaledUv).rgb*vec3(lambertian*0.7+0.3);
-	//outColor = vec3(max(0, dot(FaceN, L)));
+	//outColor = vec3(max(0, dot(N, L)));
 	//outColor = vec3(mUv, 1.0);
 	//outColor = vec3(1);
 

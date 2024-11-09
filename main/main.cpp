@@ -45,6 +45,7 @@ using namespace lim;
 
 int main()
 {
+	apps_selector::add<AppGenMesh>();
 	apps_selector::add<AppCurvature>();
 	apps_selector::add<AppModelViewer>();
 	apps_selector::add<AppAstar>();
@@ -60,7 +61,6 @@ int main()
 	apps_selector::add<AppSdfModeler>();
 	apps_selector::add<AppImGuiTest>();
 	apps_selector::add<AppICP>();
-	apps_selector::add<AppGenMesh>();
 	apps_selector::add<AppMovingWindow>();
 	apps_selector::add<AppSimplification>();
 	apps_selector::add<AppHatching>();

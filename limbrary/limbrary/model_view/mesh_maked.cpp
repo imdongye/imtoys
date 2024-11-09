@@ -917,6 +917,79 @@ MeshCubeSphereSmooth::MeshCubeSphereSmooth(float width, int nrSlices, bool genNo
 
 
 
+MeshCone::MeshCone(float width, float height, int nrSlices, bool genNors, bool genUvs)
+{
+	const float radius = width*0.5f;
+	name = fmtStrToBuf("cone_s%d", nrSlices);
+	
+	const float half = height*0.5f;
+
+	// idx0 : bot center
+	poss.push_back({ 0,-half,0 }); // bot 0
+	if( genNors )
+		nors.push_back({ 0,-1,0 });
+	if( genUvs )
+		uvs.push_back({ .5f, .5f });
+
+	// idx1 or 1~ : top center
+	if( !genUvs && !genUvs ) {
+		poss.push_back({ 0,half,0 }); // top 1
+		for(int i=0; i<=nrSlices; i++) {
+			float pct = i/float(nrSlices);
+			float phi = glim::pi2 * pct;
+			poss.push_back({ radius*cos(phi), -half, radius*sin(phi) }); // bot outside ring
+		}
+
+		for(int i=0; i<nrSlices; i++) {
+			int ringIdx = i+2;
+			tris.push_back({ 1, ringIdx+1, ringIdx   }); // side
+			tris.push_back({ 0, ringIdx  , ringIdx+1 }); // bot
+		}
+
+		return;
+	}
+
+	// else have uv or nor
+
+	float theta = glm::atan(height/radius);
+
+	for(int i=0; i<=nrSlices; i++) {
+		float pct = i/float(nrSlices);
+		float phi = glim::pi2 * pct;
+		vec3 temp = { radius*cos(phi), -half, radius*sin(phi) };
+		poss.push_back({ 0,half,0 }); // top 1 + 3*i
+		poss.push_back( temp ); // side ring for side tris
+		poss.push_back( temp ); // side ring for bot
+		if( genNors ) {
+			// 직삼각형으로 만든 정사각형의 내부도 정사각형
+			// temp.y += 2.f*half;
+			// vec3 nor = glm::normalize(temp);
+			// 구면좌표계
+			vec3 nor = { cos(theta) * cos(phi), sin(theta), cos(theta) * sin(phi) };
+			nors.push_back( nor );
+			nors.push_back( nor );
+			nors.push_back( {0, -1, 0} );
+		}
+		if( genUvs ) {
+			vec2 ring = 0.5f*vec2(cos(phi), sin(phi)) + vec2(0.5f, 0.5f);
+			uvs.push_back({ pct, 1.f });
+			uvs.push_back({ pct, 0.f });
+			uvs.push_back( ring );
+		}
+	}
+	for(int i=0; i<nrSlices; i++) {
+		int curIdx = i*3;
+		int nextIdx = (i+1)*3;
+
+		tris.push_back({ 1+curIdx, 2+nextIdx, 2+curIdx }); // side
+		tris.push_back({ 0, 3+curIdx, 3+nextIdx }); // bot
+	}
+}
+
+
+
+
+
 
 MeshCylinder::MeshCylinder(float width, float height, int nrSlices, bool genNors, bool genUvs)
 {

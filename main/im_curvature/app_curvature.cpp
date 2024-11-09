@@ -79,7 +79,19 @@ day 3
 	새로운 버텍스 배열을 생성하고
 	선택된 face들의 인덱스를 수정한다.
 6. 표면에서 화살표 기즈모
-
+	imgui gizmo라이브러리 두개의 코드를 비교해보았는데
+	1. imguizmo: 2d화면공간으로 좌표로 옮겨서 imgui draw list에 커맨드를 추가한다.
+		문제점: 3d가아니라 화면을 회전해보지 않고 정확한 방향을 인지하기 어렵다.
+		장점: 드래그입력
+	2. imguizmo.quat: ndc에 큐브 실린더 스피어 콘 등 버텍스정보를 만들어두고
+		draw호출마다 쿼터니언으로 돌리고 스크린스페이스로 옮긴다음 imgui draw list의 PrimVtx에 추가한다. 이때 쉐이딩도 cpu에서 버텍스별로한다.
+		쿼터니언으로 연산줄인 부분이 신기한데 메번 버텍스를 cpu에서 계산해서 추가하는 방법이 복잡하고
+		뒤에 가렸을때 등을 처리하지 못함. 그리고 기본도형 버텍스위치 계산하는 코드등 중복코드가 생긴다.
+	limbrary의 codemesh를 사용해서 model matrix를 계산해서 인스턴스 드로잉하는게 더 빠를것같아 limgizmo를 만들어보려고함
+		목표: 
+			1.가려진부분 투명처리
+			2.스케일은 화면공간에서 고정
+			3.drawArrowGizmo(wpos, wdir, slen) // screen space length
 */
 
 #include "app_curvature.h"

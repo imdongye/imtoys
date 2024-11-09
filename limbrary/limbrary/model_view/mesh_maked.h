@@ -44,6 +44,7 @@ namespace lim
 	struct MeshCubeSphere : public Mesh { MeshCubeSphere(float width = 1.f, int nrSlices = 1, bool genNors = true, bool genUvs = true); };
 	struct MeshCubeSphereSmooth : public Mesh { MeshCubeSphereSmooth(float width = 1.f, int nrSlices = 1, bool genNors = true, bool genUvs = true); };
 
+	struct MeshCone : public Mesh { MeshCone(float width = 1.f, float height = 1.f, int nrSlices = 50, bool genNors = true, bool genUvs = true); };
 
 	struct MeshCylinder : public Mesh { MeshCylinder(float width = 1.f, float height = 1.f, int nrSlices = 50, bool genNors = true, bool genUvs = true); }; // vertical
 	struct MeshCapsule : public Mesh { MeshCapsule(float width = 1.f, float height = 2.f,  int nrSlices = 50, int nrStacks = 25, bool genNors = true, bool genUvs = true); }; // vertical
@@ -52,6 +53,7 @@ namespace lim
 	struct MeshDonut : public Mesh { MeshDonut(float width = 1.f, float height = 0.4f, int nrSlices = 50, int nrRingVerts = 10, bool genNors = true, bool genUvs = true); };
 	struct MeshDonutWithRadius : public MeshDonut { MeshDonutWithRadius(float outerRadius = 1.f, float innerRadius = 0.4f, int nrSlices = 50, int nrRingVerts = 10, bool genNors = true, bool genUvs = true); };
 	struct MeshDonutWithRadius2 : public MeshDonut { MeshDonutWithRadius2(float donutRadius = 1.f, float thickRadius = 0.4f, int nrSlices = 50, int nrRingVerts = 10, bool genNors = true, bool genUvs = true); };
+
 }
 
 #endif
