@@ -7,7 +7,9 @@ in vec3 wCol;
 
 uniform vec3 cam_Pos;
 uniform float gamma = 2.2;
-uniform bool is_Gizmo = false;
+uniform vec4 color = vec4(1);
+uniform bool is_DrawFaceNor = false;
+uniform bool is_DrawValue = false;
 
 vec3 getValueColor(float value) {
     float w_r = 0;
@@ -38,29 +40,23 @@ vec3 getValueColor(float value) {
 }
 
 void main()
-{    
-    if(is_Gizmo) {
-        FragColor = vec4(1,0,1,1);
-        return;
-    }
-
+{     
     vec3 V = cam_Pos - wPos; 
     V = normalize(V);
-    vec3 N = normalize(cross (dFdx(wPos.xyz), dFdy(wPos.xyz)));
-	// vec3 N = normalize(wNor);
+    vec3 N = (is_DrawFaceNor) ? normalize(cross (dFdx(wPos.xyz), dFdy(wPos.xyz))) : normalize(wNor);
+    float shading = max(dot(N, V),0);
 
-    vec3 outColor = vec3(max(dot(N, V),0));
-
-    float value = wCol.r;
+    vec3 outColor;
     
-    // value = wPos.x*0.8+0.6;
-
-
-    outColor *= getValueColor(value);
+    if(is_DrawValue) {
+        outColor = getValueColor(wCol.r)*shading;
+    }
+    else {
+        outColor = color.xyz * shading;
+    }
 
     // debug
     // outColor = N*0.5+0.5;
-
     
     FragColor = vec4(pow(outColor, vec3(1/gamma)), 1);
 }

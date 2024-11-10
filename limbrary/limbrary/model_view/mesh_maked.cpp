@@ -932,7 +932,7 @@ MeshCone::MeshCone(float width, float height, int nrSlices, bool genNors, bool g
 		uvs.push_back({ .5f, .5f });
 
 	// idx1 or 1~ : top center
-	if( !genUvs && !genUvs ) {
+	if( !genNors && !genUvs ) {
 		poss.push_back({ 0,half,0 }); // top 1
 		for(int i=0; i<=nrSlices; i++) {
 			float pct = i/float(nrSlices);

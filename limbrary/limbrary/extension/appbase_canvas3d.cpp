@@ -223,7 +223,7 @@ void AppBaseCanvas3d::drawCylinder( const vec3& p1, const vec3& p2, const float 
     vec3 diff = p1 - p2;
     vec3 mid = (p1 + p2) * 0.5f;
     vec3 s = {w, length(diff), w};
-    vec3 axis = cross(vec3{0,1,0}, diff);
+    vec3 axis = cross(vec3{0,1,0}, diff); // rotate 내부에서 normalize함
     float l = length(axis);
     float angle = atan2f(l, diff.y);
     mat4 mtx_Model;

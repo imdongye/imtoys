@@ -11,7 +11,6 @@
 #include <limbrary/model_view/viewport_with_cam.h>
 #include <limbrary/program.h>
 #include <limbrary/model_view/mesh.h>
-#include <limbrary/model_view/transform.h>
 
 namespace lim
 {
@@ -23,11 +22,8 @@ namespace lim
 		inline static constexpr CStr APP_INFO = "high curvature group detection";
 
 		Program program;
-		int picked_t_idx = -1;
-		int picked_v_idx = -1;
 		OwnPtr<Mesh> mesh;
 		OwnPtr<Mesh> rst_ms = nullptr;
-		Transform transform;
 		ViewportWithCam viewport;
 
 	public:

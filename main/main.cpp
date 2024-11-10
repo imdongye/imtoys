@@ -45,8 +45,8 @@ using namespace lim;
 
 int main()
 {
-	apps_selector::add<AppGenMesh>();
 	apps_selector::add<AppCurvature>();
+	apps_selector::add<AppGenMesh>();
 	apps_selector::add<AppModelViewer>();
 	apps_selector::add<AppAstar>();
 	apps_selector::add<AppSkeletal>();

@@ -92,14 +92,17 @@ day 3
 			1.가려진부분 투명처리
 			2.스케일은 화면공간에서 고정
 			3.drawArrowGizmo(wpos, wdir, slen) // screen space length
+		스케일고정은 모델행렬에서 스케일을 동적으로 fov랑 거리 비례해서
 */
 
 #include "app_curvature.h"
 #include <limbrary/tools/log.h>
 #include <limbrary/model_view/model.h>
+#include <limbrary/model_view/transform.h>
 #include <limbrary/tools/s_asset_lib.h>
 #include <limbrary/tools/glim.h>
 #include <limbrary/tools/limgui.h>
+#include <limbrary/tools/gizmo.h>
 #include <imgui.h>
 #include <assimp/postprocess.h>
 #include <glm/gtx/transform.hpp>
@@ -108,9 +111,28 @@ day 3
 #include <limbrary/using_in_cpp/glm.h>
 using namespace lim;
 
+
+namespace {
+	Transform ms_tf;
+
+	int picked_t_idx;
+	int picked_v_idx;
+	bool is_draw_face_nor = true;
+
+	struct ArrowGizmo {
+		int idx;
+		vec3 wpos, wdir;
+	};
+	std::vector<ArrowGizmo> arrow_gizmos(10);
+}
+
 AppCurvature::AppCurvature() : AppBase(1200, 780, APP_NAME)
 	, viewport(new FramebufferMs(), "Viewport")
 {
+	picked_t_idx = -1;
+	picked_v_idx = -1;
+	arrow_gizmos.clear();
+
 	viewport.camera.viewing_mode = CameraCtrl::ViewingMode::VM_TRACKBALL_MOVE;
 
 	program.name = "debugging";
@@ -130,15 +152,18 @@ AppCurvature::AppCurvature() : AppBase(1200, 780, APP_NAME)
 	// md.importFromFile("assets/models/objs/bunny.obj", false, true, 2.f, vec3(0), pFlags, pFlags2);
 	md.importFromFile("im_curvature/models/Model0.stl", false, true, 2.f, vec3(0), pFlags, pFlags2, false);
 	assert(md.own_meshes.size() == 1);
-	transform = md.root.childs[0].tf;
+	ms_tf = md.root.childs[0].tf;
 	mesh = std::move(md.own_meshes[0]);
 	mesh->cols.resize(mesh->poss.size(), vec3(-1,0,0));
 	mesh->initGL();
 
 	curv::uploadMesh(*mesh);
+
+	gizmo::init();
 }
 AppCurvature::~AppCurvature()
 {
+	gizmo::deinit();
 }
 
 void AppCurvature::update() 
@@ -148,31 +173,27 @@ void AppCurvature::update()
 	viewport.camera.setUniformTo(program);
 
 	// model
+	program.setUniform("color", vec4(1));
+	program.setUniform("is_DrawValue", curv::isComputedCurv());
+	program.setUniform("is_DrawFaceNor", is_draw_face_nor);
+	program.setUniform("mtx_Model", ms_tf.mtx);
 	if( rst_ms==nullptr ) {
-		program.setUniform("is_Gizmo", false);
-		program.setUniform("mtx_Model", transform.mtx);
 		mesh->bindAndDrawGL();
 	}
 	else {
-		program.setUniform("is_Gizmo", false);
-		program.setUniform("mtx_Model", transform.mtx);
 		rst_ms->bindAndDrawGL();
 	}
 
 	// picking gizmo
 	if(picked_v_idx >= 0) {
-		vec3 pos = mesh->poss[picked_v_idx];
-		mat4 gizmoMtx = transform.mtx * glm::translate(pos);
-		program.setUniform("is_Gizmo", true);
-		program.setUniform("mtx_Model", gizmoMtx);
-		AssetLib::get().small_sphere.bindAndDrawGL();
+		gizmo::drawPoint(ms_tf.mtx*vec4(mesh->poss[picked_v_idx],1), vec4(1,0,1,1), 0.05f, viewport.camera, false);
 	} else if(picked_t_idx >= 0) {
-		vec3 pos = mesh->poss[mesh->tris[picked_t_idx].x];
-		mat4 gizmoMtx = transform.mtx * glm::translate(pos);
-		program.setUniform("is_Gizmo", true);
-		program.setUniform("mtx_Model", gizmoMtx);
-		AssetLib::get().small_sphere.bindAndDrawGL();
 	}
+
+	for(auto& gm : arrow_gizmos) {
+		gizmo::drawArrow(gm.wpos, gm.wdir, vec4(1,0,0,1), 0.5f, 0.05f, viewport.camera, true);
+	}
+
 
 	viewport.getFb().unbind();
 
@@ -191,7 +212,7 @@ int AppCurvature::pickVertIdx(glm::vec3 rayOri, const glm::vec3 &rayDir)
 
 	// rot없어서 dir수정안함
 	// uniform scale이라 연산 더 줄일수있긴함
-	rayOri = glm::inverse(transform.mtx) * vec4(rayOri, 1.f);
+	rayOri = glm::inverse(ms_tf.mtx) * vec4(rayOri, 1.f);
 	// log::pure(rayOri);
 	// log::pure(rayDir);
 
@@ -215,7 +236,7 @@ std::pair<int, vec3> AppCurvature::pickTri(glm::vec3 rayOri, const glm::vec3& ra
 	float minDepth = FLT_MAX;
 	int rst = -1;
 
-	rayOri = glm::inverse(transform.mtx) * vec4(rayOri, 1.f);
+	rayOri = glm::inverse(ms_tf.mtx) * vec4(rayOri, 1.f);
 
 
 	for(int i=0; i<mesh->nr_tris; i++) {
@@ -264,7 +285,27 @@ void AppCurvature::updateImGui()
 			// log::pure("%d\n", picked_t_idx);
 		}
 	}
-
+	else if( ImGui::IsMouseClicked(ImGuiMouseButton_Middle, false) ) {
+		const vec3 mouseRay = viewport.getMousePosRayDir();
+		int idx = pickVertIdx(viewport.camera.pos, mouseRay);
+		if( idx >= 0 ) {
+			int gIdx = -1; // dup gizmo idx
+			for(int i=0; i<arrow_gizmos.size(); i++) {
+				if( arrow_gizmos[i].idx == idx ) {
+					gIdx = i;
+					break;
+				}
+			}
+			vec3 dir = -viewport.camera.front;
+			if( gIdx >= 0 ) {
+				arrow_gizmos[gIdx].wdir = dir;
+			}
+			else {
+				vec3 pos = ms_tf.mtx * vec4(mesh->poss[idx], 1.f);
+				arrow_gizmos.push_back({idx, pos, dir});
+			}
+		}
+	}
 	ImGui::Begin("test window##curvature");
 	
 	ImGui::SetNextItemOpen(true, ImGuiCond_Once);
@@ -279,6 +320,9 @@ void AppCurvature::updateImGui()
 
 	ImGui::SetNextItemOpen(true, ImGuiCond_Once);
 	if( ImGui::CollapsingHeader("Functions") ) {
+		ImGui::Checkbox("draw face nor", &is_draw_face_nor);
+		ImGui::Dummy({0.f, 10.f});
+
 		if(ImGui::Button("1. update curvature")) {
 			curv::computeCurvature();
 			curv::downloadCurvature(*mesh);
