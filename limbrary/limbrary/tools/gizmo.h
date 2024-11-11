@@ -19,7 +19,7 @@ namespace lim
 	void init();
 	void deinit();
 	void drawPoint(const glm::vec3& wPos, const glm::vec4& col, float scale, const Camera& cam, bool screenScaling = true);
-	void drawArrow(const glm::vec3& wPos, const glm::vec3 wDir, const glm::vec4& col, float width, float scale, const Camera& cam, bool screenScaling = true); // w world, s screen
+	void drawArrow(const glm::vec3& wPos, const glm::vec3 wDir, const glm::vec4& col, float length, float width, const Camera& cam, bool screenScaling = true); // w world, s screen
     }
 }
 

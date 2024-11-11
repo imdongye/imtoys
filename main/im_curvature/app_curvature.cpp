@@ -191,7 +191,8 @@ void AppCurvature::update()
 	}
 
 	for(auto& gm : arrow_gizmos) {
-		gizmo::drawArrow(gm.wpos, gm.wdir, vec4(1,0,0,1), 0.5f, 0.05f, viewport.camera, true);
+		float len = 5*ms_tf.scale.x;
+		gizmo::drawArrow(gm.wpos, gm.wdir, vec4(1,0,0,1), len, 0.05f, viewport.camera, false);
 	}
 
 
@@ -260,10 +261,10 @@ void AppCurvature::updateImGui()
 	ImGui::DockSpaceOverViewport();
 
 	viewport.drawImGuiAndUpdateCam([](ViewportWithCam& vp) {
-		ImVec2 window_pos = ImGui::GetWindowPos();
-		ImVec2 window_size = ImGui::GetWindowSize();
-		ImVec2 window_center = ImVec2(window_pos.x + window_size.x * 0.5f, window_pos.y + window_size.y * 0.5f);
-		ImGui::GetWindowDrawList()->AddCircle(ImGui::GetMousePos(), window_size.y * 0.6f, IM_COL32(0, 255, 0, 200), 0, 10);
+		// ImVec2 window_pos = ImGui::GetWindowPos();
+		// ImVec2 window_size = ImGui::GetWindowSize();
+		// ImVec2 window_center = ImVec2(window_pos.x + window_size.x * 0.5f, window_pos.y + window_size.y * 0.5f);
+		// ImGui::GetWindowDrawList()->AddCircle(ImGui::GetMousePos(), window_size.y * 0.6f, IM_COL32(0, 255, 0, 200), 0, 10);
 		// ImGui::GetWindowDrawList()->AddConvexPolyFilled
 	});
 
@@ -347,6 +348,9 @@ void AppCurvature::updateImGui()
 			ImGui::SliderFloat("threshold", &cluster_threshold, 0.2f, 1.f);
 			if(ImGui::Button("3. separate mesh")) {
 				rst_ms = curv::getClusteredMesh(picked_v_idx, cluster_threshold, max_false_depth);
+			}
+			if(ImGui::Button("4. reset")) {
+				rst_ms = nullptr;
 			}
 		}
 	}
