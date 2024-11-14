@@ -108,6 +108,9 @@ day 3
 #include <glm/gtx/transform.hpp>
 #include "curvature.h"
 
+#include <fstream>
+#include <filesystem>
+
 #include <limbrary/using_in_cpp/glm.h>
 using namespace lim;
 
@@ -125,6 +128,62 @@ namespace {
 	};
 	std::vector<ArrowGizmo> arrow_gizmos(10);
 }
+
+namespace abut{
+	GLuint abut_vbo, abut_vao;
+	std::vector<vec3> abut_verts;
+	Program* abut_prog;
+
+	void init()
+	{
+		abut_prog = new Program("line");
+		abut_prog->home_dir = AppCurvature::APP_DIR;
+		abut_prog->attatch("line.vs").attatch("line.fs").link();
+
+		abut_verts.reserve(278);
+
+		std::ifstream input("im_curvature/models/abutvertex.xyz");
+		assert(input.is_open());
+		while(!input.eof()) {
+			vec3 v;
+			input >> v.x >> v.y >> v.z;
+			abut_verts.emplace_back(v);
+		}
+		glGenVertexArrays(1, &abut_vao);
+		glBindVertexArray(abut_vao);
+
+		glGenBuffers(1, &abut_vbo);
+		glBindBuffer(GL_ARRAY_BUFFER, abut_vbo);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vec3)*abut_verts.size(), abut_verts.data(), GL_STATIC_DRAW);
+		
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+		glBindBuffer(GL_ARRAY_BUFFER, 0); 
+        glBindVertexArray(0); 
+	}
+
+	void deinit()
+	{
+		glDeleteVertexArrays(1, &abut_vao);
+		glDeleteBuffers(1, &abut_vbo);
+		delete abut_prog;
+	}
+
+	void draw(const lim::Camera& cam, const mat4& model)
+	{
+		abut_prog->use();
+		cam.setUniformTo(*abut_prog);
+		abut_prog->setUniform("mtx_Model", model);
+		abut_prog->setUniform("color", vec4(1,0,1,1));
+		glBindVertexArray(abut_vao);
+		glDrawArrays(GL_LINE_STRIP, 0, abut_verts.size());
+	}
+}
+
+
+
+
 
 AppCurvature::AppCurvature() : AppBase(1200, 780, APP_NAME)
 	, viewport(new FramebufferMs(), "Viewport")
@@ -160,10 +219,14 @@ AppCurvature::AppCurvature() : AppBase(1200, 780, APP_NAME)
 	curv::uploadMesh(*mesh);
 
 	gizmo::init();
+
+	abut::init();
 }
 AppCurvature::~AppCurvature()
 {
 	gizmo::deinit();
+
+	abut::deinit();
 }
 
 void AppCurvature::update() 
@@ -183,6 +246,7 @@ void AppCurvature::update()
 	else {
 		rst_ms->bindAndDrawGL();
 	}
+	abut::draw(viewport.camera, ms_tf.mtx);
 
 	// picking gizmo
 	if(picked_v_idx >= 0) {
