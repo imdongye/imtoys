@@ -1,12 +1,14 @@
 /*
-
-2023-01-17 / im dong ye
-for generate mesh of general shape
-
-uv : upper left
-st : down left
+imdongye@naver.com
+	fst: 2023-01-17
+	lst: 2023-01-17
 
 Note:
+	for generate mesh of general shape
+
+	uv : upper left
+	st : down left
+
 	texture wrap repeat가정
 	after construction, you should call inigGL();
 	nrStacks is nr Row face lines not verts lines

@@ -1,6 +1,9 @@
 /*
-    imdongye / 2024.07.09
+	imdongye@naver.com
+	fst: 2022-07-09
+	lst: 2024-07-09
 
+Note:
     glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CCW);

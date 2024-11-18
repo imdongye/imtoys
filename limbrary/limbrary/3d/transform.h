@@ -1,9 +1,7 @@
 /*
-
-2023-11-02 / im dong ye
-
-Todo: mat to pos ori scale
-
+    imdongye@naver.com
+	fst: 2023-11-02
+	lst: 2023-11-02
 */
 
 

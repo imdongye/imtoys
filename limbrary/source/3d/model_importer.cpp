@@ -1,13 +1,11 @@
-//
-//  2022-09-27 / im dong ye
-//  edit learnopengl code
-//
-//	Assimp는 namespace도 없고 자료형의 이름이 camelCase이므로
-//	Assimp에 한해서 지역변수 이름을 snake_case로 작성한다.
-//
-//  Todo:
-//  1. model path texture path 그냥 하나로 합치기
-//
+/*
+	imdongye@naver.com
+	fst: 2022-09-27
+	lst: 2022-09-27
+
+Todo:
+	1. model path texture path 그냥 하나로 합치기
+*/
 #include <limbrary/3d/model.h>
 #include <limbrary/3d/model_io_helper.h>
 #include <limbrary/texture.h>

@@ -1,7 +1,10 @@
 /*
+	imdongye@naver.com
+	fst: 2022-07-20
+	lst: 2022-07-20
 
-rapping and capsulation assimp data
-
+Note:
+	rapping and capsulation assimp data
 */
 
 

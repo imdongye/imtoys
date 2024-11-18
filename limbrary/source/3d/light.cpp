@@ -1,8 +1,3 @@
-/*
-	2024-04-24 / im dong ye
-
-
-*/
 #include <limbrary/3d/light.h>
 #include <limbrary/tools/asset_lib.h>
 #include <limbrary/tools/text.h>

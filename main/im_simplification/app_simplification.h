@@ -2,7 +2,7 @@
 //  for test simplification and normal map baking.
 //	2022-08-26 / im dong ye
 //
-//	TODO list:
+//	Todo:
 //	1. crtp로 참조 줄이기,
 //	2. 헤더파일include 중복관리
 //	3. dnd 여러개들어왔을때 모델파일만 골라서 입력받게 조건처리

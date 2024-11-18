@@ -1,17 +1,17 @@
 /*
-
-2023-09-07 / im dongye
+imdongye@naver.com
+	fst: 2023-09-07
+	lst: 2023-09-07
 
 Note:
-Program과 Texture은 material에 종속되지 않음. 생명주기 따로 관리해줘야함.
+    Program과 Texture은 material에 종속되지 않음. 생명주기 따로 관리해줘야함.
 
-Ambient Roughness Metalness (MF_ARM) => map_Roughness
-Shininess (MF_SHININESS)             => map_Roughness
-Shininess (MF_SHININESS)             => map_Roughness
+    Ambient Roughness Metalness (MF_ARM) => map_Roughness
+    Shininess (MF_SHININESS)             => map_Roughness
+    Shininess (MF_SHININESS)             => map_Roughness
 
-
-From mtl format: https://paulbourke.net/dataformats/mtl/
-                 https://people.sc.fsu.edu/~jburkardt/data/mtl/mtl.html
+    From mtl format: https://paulbourke.net/dataformats/mtl/
+                    https://people.sc.fsu.edu/~jburkardt/data/mtl/mtl.html
 */
 
 #ifndef __material_h_

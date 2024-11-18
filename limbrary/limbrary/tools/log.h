@@ -1,18 +1,19 @@
 /*
-
-2023-09-05 / im dong ye
+	imdongye@naver.com
+	fst: 2023-09-05
+	lst: 2023-09-05
 
 Usage:
-lim::log::pure("hello, world! %05d\n", 123);
+    lim::log::pure("hello, world! %05d\n", 123);
 
 Ref:
-ExampleAppLog in imgui_demo.cpp
+    ExampleAppLog in imgui_demo.cpp
 
 Todo:
-1. err callback
-2. ,comma operator 출력
-3. 다른쓰레드에서 포메팅
-4. 가변길이 템플릿?
+    1. err callback
+    2. ,comma operator 출력
+    3. 다른쓰레드에서 포메팅
+    4. 가변길이 템플릿?
 
 */
 
@@ -37,7 +38,7 @@ namespace lim
         void reset();
         void exportToFile(const char* filename = "log.txt");
 
-        void __drawViewerGui();
+        void drawImGui();
     }
 }
 

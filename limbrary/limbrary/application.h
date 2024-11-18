@@ -1,7 +1,7 @@
 /*
-
-2022-08-26 / im dong ye
-
+	imdongye@naver.com
+	fst: 2022-08-26
+	lst: 2022-08-26
 
 Note:
 	lifecycle of application

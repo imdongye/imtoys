@@ -1,9 +1,10 @@
 /*
-
-	2022-07-20 / im dong ye
-	shared vertex triangle mesh
-
+	imdongye@naver.com
+	fst: 2022-07-20
+	lst: 2022-07-20
+	
 Note:
+	shared vertex triangle mesh
 	Material은 Mesh에 종속적이지 않음.
 	vertex is SOA not AOS
 	nr_verts, nr_tris update in initGL()
@@ -21,7 +22,6 @@ Note:
 
 namespace lim
 {
-	// clone able
 	struct Mesh
 	{
 		static constexpr int MAX_BONE_PER_VERT = 4;

@@ -4,7 +4,7 @@
 // 
 //	ref: http://regex.info/blog/photo-tech/color-spaces-page2
 //
-//	TODO list:
+//	Todo:
 //
 //
 

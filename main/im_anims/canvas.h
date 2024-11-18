@@ -1,7 +1,7 @@
 //
 //	2022-03-13 / im dong ye
 //
-//	TODO list:
+//	Todo:
 //
 
 #ifndef __canvas_h_

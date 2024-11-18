@@ -1,14 +1,17 @@
 /*
-	simple static mesh canvas app template
-	2024-07-01 / im dong ye
+    imdongye@naver.com
+	fst: 2024-07-01
+	lst: 2024-07-01
 
-    todo:
-    1. ssbo to VBO for opengl4.1(for mac), From https://www.youtube.com/watch?v=TOPvFvL_GRY
-
-    note:
+Note:
     update      -> render
     updateImGui -> renderImGui
+
+Todo:
+	simple static mesh canvas app template
+    1. ssbo to VBO for opengl4.1(for mac), From https://www.youtube.com/watch?v=TOPvFvL_GRY
 */
+
 #ifndef __appbase_canvas3d_h_
 #define __appbase_canvas3d_h_
 

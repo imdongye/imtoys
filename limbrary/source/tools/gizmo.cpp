@@ -1,9 +1,3 @@
-/*
-Todo:
-    최적화: 변환행렬케싱후
-    마지막에 한번에 인스턴스드로잉
-*/
-
 #include <limbrary/tools/gizmo.h>
 #include <limbrary/3d/mesh_maked.h>
 #include <glm/gtx/transform.hpp>

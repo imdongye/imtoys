@@ -1,6 +1,7 @@
 /*
-    2024-09-04 / imdongye
-
+	imdongye@naver.com
+	fst: 2024-09-04
+	lst: 2024-09-04
 
 Note:
     Do no use in header

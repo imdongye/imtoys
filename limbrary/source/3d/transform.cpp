@@ -1,12 +1,3 @@
-/*
-
-2023-11-02 / im dong ye
-
-parent는 계층관계나 pivot으로 쓴다.
-
-*/
-
-
 #include <limbrary/3d/transform.h>
 #include <glm/gtx/matrix_decompose.hpp>
 #include <glm/gtx/orthonormalize.hpp>

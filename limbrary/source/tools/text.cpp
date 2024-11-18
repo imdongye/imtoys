@@ -1,4 +1,5 @@
 /*
+Note:
 	combine text and log for share text_buffer
 */
 #include <limbrary/tools/text.h>

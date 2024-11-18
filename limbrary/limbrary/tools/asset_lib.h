@@ -2,10 +2,13 @@
 	imdongye@naver.com
 	fst: 2022-12-30
 	lst: 2024-11-19
+
+Note:
+	common assets
 */
 
-#ifndef __s_asset_lib_h_
-#define __s_asset_lib_h_
+#ifndef __asset_lib_h_
+#define __asset_lib_h_
 
 #include <glad/glad.h>
 #include "../3d/mesh.h"

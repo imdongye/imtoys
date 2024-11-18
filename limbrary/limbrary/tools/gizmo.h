@@ -1,9 +1,15 @@
 /*
-	imdongye
-	fst 2024-11-10
-	end 2024-11-11
+	imdongye@naver.com
+	fst: 2024-11-10
+	lst: 2024-11-11
 
-	Note: draw function must called after draw scene
+Note:
+	draw function must called after draw scene
+
+Todo:
+	alpha draw for behind obj
+    최적화: 변환행렬케싱후
+    마지막에 한번에 인스턴스드로잉
 */
 
 #ifndef __lim_gizmo_h_

@@ -1,6 +1,8 @@
 /*
-    2024-07-23 / im dong ye
-
+	imdongye@naver.com
+	fst: 2024-07-23
+	lst: 2024-07-23
+Note:
 	glim = glm + lim
 */
 

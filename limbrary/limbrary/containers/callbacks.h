@@ -1,6 +1,8 @@
 /*
-	2024-08-07 / im dongye
-
+    imdongye@naver.com
+	fst: 2024-08-07
+	lst: 2024-08-07
+	
 Note:
 	객체의 포인터를 키로한 callbacks를 map대신 unordered_map을 사용하는 이유:
 	callbacks은 매 프레임 호출될수도 있기 때문에 메모리를 많이 써도 순회 하는 속도는 빨라야한다.

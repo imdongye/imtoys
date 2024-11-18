@@ -8,13 +8,6 @@ using namespace std;
 using namespace lim;
 
 
-
-
-
-
-
-
-
 void Scene::reset() {
     own_mds.clear();
     own_dir_lits.clear();

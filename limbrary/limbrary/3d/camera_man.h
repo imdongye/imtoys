@@ -1,6 +1,7 @@
 /*
-
-2023-02-28 / im dongye
+	imdongye@naver.com
+	fst: 2023-02-28
+	lst: 2023-02-28
 
 Note:
 	camera ctrl with three modes
@@ -8,7 +9,6 @@ Note:
 	1. free mode
 	2. track ball mode
 	3. scroll track ball mode
-
 
 	camera man have to 
 

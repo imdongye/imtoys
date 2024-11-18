@@ -1,13 +1,3 @@
-//
-//  2022-11-14 / im dong ye
-//	edit HDRView by pf Hyun Joon Shin
-//
-//	Todo:
-//	1. ARB 확장이 뭐지 어셈블리?
-//  2. GL_TEXTURE_MAX_ANISOTROPY_EXT
-//	3. texture loading 분리
-//
-
 #include <limbrary/texture.h>
 #include <limbrary/program.h>
 #include <limbrary/tools/asset_lib.h>

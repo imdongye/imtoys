@@ -1,13 +1,12 @@
 /*
-
-2024-06-15 / im dong ye
-
-imgui for limbrary
+	imdongye@naver.com
+	fst: 2024-06-15
+	lst: 2024-06-15
 
 Note:
+    imgui for limbrary
+    
     Exception viewport draws as a member function
-
-
 */
 
 

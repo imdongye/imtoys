@@ -1,6 +1,7 @@
 /*
-	general tools
-	2024-08-07 / im dongye
+	imdongye@naver.com
+	fst: 2024-08-07
+	lst: 2024-08-07
 */
 #ifndef __tools_text_h_
 #define __tools_text_h_

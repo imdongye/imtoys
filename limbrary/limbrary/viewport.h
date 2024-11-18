@@ -1,7 +1,7 @@
 /*
-
-2022-08-24 / im dong ye
-
+	imdongye@naver.com
+	fst: 2022-08-24
+	lst: 2022-08-24
 
 Note:
 	viewport is additional information for framebuffer,

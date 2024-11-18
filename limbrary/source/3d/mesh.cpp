@@ -1,10 +1,3 @@
-//
-//  2022-07-20 / im dong ye
-//  edit learnopengl code
-//
-//	todo :
-//	1. bumpmap normalmap확인
-
 #include <limbrary/3d/mesh.h>
 #include <limbrary/tools/gl.h>
 #include <limbrary/tools/log.h>

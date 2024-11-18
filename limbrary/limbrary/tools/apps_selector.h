@@ -1,6 +1,7 @@
 /*
-    2024-09-08 / imdongye
-
+    imdongye@naver.com
+	fst: 2024-09-08
+	lst: 2024-09-08
 */
 
 #ifndef __apps_selector_h_

@@ -1,9 +1,10 @@
 /*
-    2024-08-21 / imdongye
-
-    skinned mesh for caching in gpu
+    imdongye@naver.com
+	fst: 2024-08-21
+	lst: 2024-08-21
 
 Note!!
+    skinned mesh for caching in gpu
     individual only poss and nors
     other buffer are shared
 */

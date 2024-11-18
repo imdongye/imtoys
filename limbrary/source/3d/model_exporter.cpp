@@ -1,12 +1,12 @@
 /*
+	imdongye@naver.com
+	fst: 2022-09-27
+	lst: 2022-09-27
 
-2022-09-27 / im dong ye
+Note:
+	edit from : https://github.com/assimp/assimp/issues/203
 
-edit from : https://github.com/assimp/assimp/issues/203
-
-출력될때 texture의 path는 모델위치의 마지막 슬레쉬 위치로 잘려서 출력된다.
-
-
+	출력될때 texture의 path는 모델위치의 마지막 슬레쉬 위치로 잘려서 출력된다.
 */
 #include <algorithm>
 #include <limbrary/3d/model.h>

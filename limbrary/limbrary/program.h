@@ -1,23 +1,23 @@
 /*
-
-Program v2.0
-2023-10-08 / im dong ye
-
-Program은 쉐이더를 프로그램 링크후 삭제하고
-Reloadable은 남겨두었다가 리로드할때 특정 쉐이더만 다시 컴파일한다.
+	imdongye@naver.com
+	fst: 2023-10-08
+	lst: 2023-10-08
 
 Usage:
-1. Auto Pathing 파일 이름만 있다면 설정해둔 home_dir에서 정해진 shader경로로 포맷에 맞춰 읽어온다.
-   경로로 입력되면 Auto Pathing하지 않는다.
-2. Chaining : shadowProgram.attatch("sp_shadow.vert").attatch("shadow.frag")
-					 .attach("shadow.geom").link();
+	1. Auto Pathing 파일 이름만 있다면 설정해둔 home_dir에서 정해진 shader경로로 포맷에 맞춰 읽어온다.
+	경로로 입력되면 Auto Pathing하지 않는다.
+	2. Chaining : shadowProgram.attatch("sp_shadow.vert").attatch("shadow.frag")
+						.attach("shadow.geom").link();
 
 Note:
-glDeleteShader은 모든 Progrma에 detach 되어야만 동작함.
-texture slot은 use할때 0부터 시작해서 setTexture할때마다 올라간다.
+	Program은 쉐이더를 프로그램 링크후 삭제하고
+	Reloadable은 남겨두었다가 리로드할때 특정 쉐이더만 다시 컴파일한다.
+
+	glDeleteShader은 모든 Progrma에 detach 되어야만 동작함.
+	texture slot은 use할때 0부터 시작해서 setTexture할때마다 올라간다.
 
 Todo:
-1. include 기능 pre processor
+	1. include 기능 pre processor
 
 */
 

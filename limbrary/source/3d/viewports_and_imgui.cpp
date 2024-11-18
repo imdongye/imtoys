@@ -1,10 +1,3 @@
-/*
-    2024-09-21 / imdongye
-
-    small size implimantations
-
-*/
-
 #include <limbrary/3d/viewport_with_cam.h>
 #include <limbrary/application.h>
 #include <limbrary/tools/text.h>

@@ -152,7 +152,7 @@ void log::exportToFile(const char* filename)
 }
 
 
-void log::__drawViewerGui()
+void log::drawImGui()
 {
     static bool is_opened = false;
 

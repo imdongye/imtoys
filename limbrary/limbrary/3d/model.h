@@ -1,25 +1,24 @@
 /*
-
-2023-09-11 / im dong ye
-edit learnopengl code
+	imdongye@naver.com
+	fst: 2022-07-20
+	lst: 2023-09-11
 
 Note:
-Model은 실제 Mesh데이터, Material(Texture) 데이터와 root node를 소유하는 객체이다.
-Node는 Model의 데이터(또는 공용 asset)를 참조하는 객체이고 트리구조를 만들고 mesh가 사용하는 material을 명시한다.
-Material은 Model의 texture데이터를 참조한다.
-Model을 normalize하면 root 노드의 Transform에 크기와 위치를 노멀라이즈하는 변환행렬이 들어가고 메쉬와 변환은 그 다음 노드부터 시작된다.
+	edit learnopengl code
+	Model은 실제 Mesh데이터, Material(Texture) 데이터와 root node를 소유하는 객체이다.
+	Node는 Model의 데이터(또는 공용 asset)를 참조하는 객체이고 트리구조를 만들고 mesh가 사용하는 material을 명시한다.
+	Material은 Model의 texture데이터를 참조한다.
+	Model을 normalize하면 root 노드의 Transform에 크기와 위치를 노멀라이즈하는 변환행렬이 들어가고 메쉬와 변환은 그 다음 노드부터 시작된다.
 
-TODO list:
-1. Transfrom.h
-2. rigging
-3. not gl_static으로 실시간 vert변화
-4. width, height, depth 찾아서 -1~1공간으로 scaling
-5. load model 이 모델안에 있는데 따로 빼야될까
-6. 언제 어디서 업데이트해줘야하는지 규칙정하기
-7. reload normal map 외부로 빼기
-8. export animations
-
-Model에 의존하지 않고 RdNode에 의존하는 Scene
+Todo:
+	1. Transfrom.h
+	2. rigging
+	3. not gl_static으로 실시간 vert변화
+	4. width, height, depth 찾아서 -1~1공간으로 scaling
+	5. load model 이 모델안에 있는데 따로 빼야될까
+	6. 언제 어디서 업데이트해줘야하는지 규칙정하기
+	7. reload normal map 외부로 빼기
+	8. export animations
 
 */
 

@@ -1,21 +1,24 @@
 /*
-
-2024-06-14 / im dong ye
-edit learnopengl code
+    imdongye@naver.com
+	fst: 2024-06-14
+	lst: 2024-06-14
 
 Note:
-nr_weighted_bones(mesh) != nr_tracks != nr_bone_nodes
-animations를 model(data)에서 공유하면 Track에 BoneNode를 
+    edit learnopengl code
+    
+    nr_weighted_bones(mesh) != nr_tracks != nr_bone_nodes
+    animations를 model(data)에서 공유하면 Track에 BoneNode를 
 
+    animation key 선택 O(N)을 줄이기 위한 방법
+    1. 이전 index값을 가지고 사용. O(1)
+        Animation은 View마다 공유되기때문에 캐릭터마다 저장해야한다.
+        캐릭터수 * 블랜딩할 애니메이션수 * 애니메이션의 트랙개수 의 크기로 가변길이로 저장된다. 
+        캐릭터가 10개라고하면 118kb정도가 들고 가변길이라 관리에도 불편하다.
+        그리고 액션게임에서 타임라인점프가 많은경우 이득을 보기 어렵다.
+    2. tick을 키로 BST로 저장해서 엣지에 해당하는 키두개를 사용. O(logN)
 
-animation key 선택 O(N)을 줄이기 위한 방법
-1. 이전 index값을 가지고 사용. O(1)
-    Animation은 View마다 공유되기때문에 캐릭터마다 저장해야한다.
-    캐릭터수 * 블랜딩할 애니메이션수 * 애니메이션의 트랙개수 의 크기로 가변길이로 저장된다. 
-    캐릭터가 10개라고하면 118kb정도가 들고 가변길이라 관리에도 불편하다.
-    그리고 액션게임에서 타임라인점프가 많은경우 이득을 보기 어렵다.
-2. tick을 키로 BST로 저장해서 엣지에 해당하는 키두개를 사용. O(logN)
-
+Todo:
+    고정 tick 키배열로 O(1)에 캐시프렌들리
         
 
 */

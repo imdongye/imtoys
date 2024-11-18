@@ -1,5 +1,7 @@
 /*
-    2024-08-20 / imdongye
+    imdongye@naver.com
+	fst: 2024-08-20
+	lst: 2024-08-20
 */
 
 #ifndef __types_h_

@@ -1,6 +1,7 @@
 /*
-    2024-08-27 / imdongye
-
+	imdongye@naver.com
+	fst: 2024-08-27
+	lst: 2024-08-27
 */
 #ifndef __mecro_h_
 #define __mecro_h_

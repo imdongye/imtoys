@@ -2,7 +2,7 @@
 //  for aplicate real-time hatching paper
 //	2023-1-17 / im dong ye
 //
-//	TODO list:
+//	Todo:
 //	
 //
 

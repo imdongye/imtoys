@@ -1,7 +1,7 @@
 //
 //	2022-08-07 / im dong ye
 //
-//	TODO list:
+//	Todo:
 //  1. fix with half edge data structure
 //
 //

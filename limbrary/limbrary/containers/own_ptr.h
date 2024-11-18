@@ -1,6 +1,9 @@
 /*
-    2024-08-24 / imdongye
+    imdongye@naver.com
+	fst: 2024-08-24
+	lst: 2024-08-24
 
+Note:
     OwnPtr is a my smart pointer
     when copy then object copied
     when delete then object deleted

@@ -2,7 +2,7 @@
 //  for astar visualize
 //	2023-03-03 / im dong ye
 //
-//	TODO list:
+//	Todo:
 //
 //
 

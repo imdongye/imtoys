@@ -1,6 +1,7 @@
 /*
-	2024-08-07 / im dongye
-
+	imdongye@naver.com
+	fst: 2024-08-07
+	lst: 2024-08-07
 */
 
 #ifndef __g_tools_h_

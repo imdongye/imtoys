@@ -1,11 +1,13 @@
 /*
-	2022-11-14 / im dong ye
-	From: https://registry.khronos.org/OpenGL-Refpages/gl4/html/glTexImage2D.xhtml
+	imdongye@naver.com
+	fst: 2022-11-14
+	lst: 2022-11-14
 
-	Note:
+Note:
+	From: https://registry.khronos.org/OpenGL-Refpages/gl4/html/glTexImage2D.xhtml
 	opengl srgb변환은 8bit 이미지에만 적용할수있음.
 
-	Todo:
+Todo:
 	1. ARB 확장이 뭐지 어셈블리?
 	2. GL_TEXTURE_MAX_ANISOTROPY_EXT
 	3. data memory에 저장 옵션, safeDel

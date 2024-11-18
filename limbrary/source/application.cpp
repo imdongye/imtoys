@@ -269,7 +269,7 @@ void AppBase::run()
 
 		updateImGui();
 		apps_selector::__drawGui();
-		log::__drawViewerGui();
+		log::drawImGui();
 		
 		ImGui::Render();
 

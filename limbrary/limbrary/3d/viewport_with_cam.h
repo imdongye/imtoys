@@ -1,8 +1,7 @@
 /*
-    2024-09-23 / imdongye
-
-Note:
-
+    imdongye@naver.com
+	fst: 2024-09-23
+	lst: 2024-09-23
 */
 
 #ifndef __viewport_with_cam_h_
