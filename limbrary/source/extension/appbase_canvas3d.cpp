@@ -1,5 +1,5 @@
 
-#include "appbase_canvas3d.h"
+#include <limbrary/extension/appbase_canvas3d.h>
 #include <limbrary/tools/limgui.h>
 #include <imgui.h>
 #include <glm/gtx/transform.hpp>
