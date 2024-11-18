@@ -1,4 +1,4 @@
-#include <limbrary/model_view/camera_man.h>
+#include <limbrary/3d/camera_man.h>
 #include <limbrary/application.h>
 
 #include <limbrary/tools/limgui.h>

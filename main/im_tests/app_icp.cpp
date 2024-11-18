@@ -5,7 +5,7 @@
 #include <imgui.h>
 #include <Eigen/Eigen>
 #include <numeric>
-#include <limbrary/tools/s_asset_lib.h>
+#include <limbrary/tools/asset_lib.h>
 
 using namespace lim;
 using namespace Eigen;

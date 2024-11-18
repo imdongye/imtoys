@@ -1,4 +1,4 @@
-#include <limbrary/model_view/mesh_skinned.h>
+#include <limbrary/3d/mesh_skinned.h>
 #include <limbrary/tools/gl.h>
 
 using namespace lim;

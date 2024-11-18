@@ -2,7 +2,7 @@
  	2023-01-17 / im dong ye
 */
 
-#include <limbrary/model_view/mesh_maked.h>
+#include <limbrary/3d/mesh_maked.h>
 #include <limbrary/texture.h>
 #include <vector>
 #include <memory>

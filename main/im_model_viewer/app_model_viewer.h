@@ -7,9 +7,9 @@
 #define __app_model_viewer_h_
 
 #include <limbrary/application.h>
-#include <limbrary/model_view/viewport_with_cam.h>
+#include <limbrary/3d/viewport_with_cam.h>
 #include <limbrary/program.h>
-#include <limbrary/model_view/scene.h>
+#include <limbrary/3d/scene.h>
 
 namespace lim
 {

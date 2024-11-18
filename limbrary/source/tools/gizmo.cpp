@@ -5,7 +5,7 @@ Todo:
 */
 
 #include <limbrary/tools/gizmo.h>
-#include <limbrary/model_view/mesh_maked.h>
+#include <limbrary/3d/mesh_maked.h>
 #include <glm/gtx/transform.hpp>
 
 #include <limbrary/using_in_cpp/glm.h>

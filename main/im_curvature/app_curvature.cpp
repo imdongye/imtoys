@@ -97,9 +97,9 @@ day 3
 
 #include "app_curvature.h"
 #include <limbrary/tools/log.h>
-#include <limbrary/model_view/model.h>
-#include <limbrary/model_view/transform.h>
-#include <limbrary/tools/s_asset_lib.h>
+#include <limbrary/3d/model.h>
+#include <limbrary/3d/transform.h>
+#include <limbrary/tools/asset_lib.h>
 #include <limbrary/tools/glim.h>
 #include <limbrary/tools/limgui.h>
 #include <limbrary/tools/gizmo.h>

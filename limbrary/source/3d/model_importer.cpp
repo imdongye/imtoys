@@ -8,8 +8,8 @@
 //  Todo:
 //  1. model path texture path 그냥 하나로 합치기
 //
-#include <limbrary/model_view/model.h>
-#include <limbrary/model_view/model_io_helper.h>
+#include <limbrary/3d/model.h>
+#include <limbrary/3d/model_io_helper.h>
 #include <limbrary/texture.h>
 #include <limbrary/tools/log.h>
 #include <limbrary/tools/glim.h>

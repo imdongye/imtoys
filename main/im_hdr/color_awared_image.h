@@ -20,7 +20,7 @@
 #include <limbrary/texture.h>
 #include <limbrary/framebuffer.h>
 #include <limbrary/program.h>
-#include <limbrary/tools/s_asset_lib.h>
+#include <limbrary/tools/asset_lib.h>
 
 
 namespace ICC
@@ -212,8 +212,8 @@ namespace ICC
 			float sum1=0, sum2=0, sum3=0, sum4=0;
 			for( int i = offset; i<count; i+=4 ) {
 				n++;
-				float x = log(0.948f*i/(count-1.f)+0.052f);
-				float y = log(gammaTable[i]/65535.f);
+				float x = glm::log(0.948f*i/(count-1.f)+0.052f);
+				float y = glm::log(gammaTable[i]/65535.f);
 				sum1+= x*y;
 				sum2+=x;
 				sum3+=y;
@@ -228,8 +228,8 @@ namespace ICC
 			float sum1=0, sum2=0, sum3=0, sum4=0;
 			for( int i = 0; i<count; i+=8 ) {
 				n++;
-				float x = log(i/(count-1.f));
-				float y = log(gammaTable[i]/65535.f);
+				float x = glm::log(i/(count-1.f));
+				float y = glm::log(gammaTable[i]/65535.f);
 				sum1+= x*y;
 				sum2+=x;
 				sum3+=y;
@@ -658,7 +658,7 @@ RAW bit :)");
 			prog.setUniform("chromaticAdaptation", chromatic_adaptation);
 			prog.setUniform("PCS2RGB", PCS2RGB);
 
-			AssetLib::get().screen_quad.bindAndDrawGL();
+			asset_lib::screen_quad->bindAndDrawGL();
 
 			fb.unbind();
 		}

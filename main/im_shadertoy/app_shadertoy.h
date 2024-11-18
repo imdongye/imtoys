@@ -12,7 +12,7 @@ offline shadertoy
 #include <limbrary/viewport.h>
 #include <limbrary/program.h>
 #include <limbrary/texture.h>
-#include <limbrary/model_view/mesh_maked.h>
+#include <limbrary/3d/mesh_maked.h>
 
 namespace lim
 {

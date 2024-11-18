@@ -3,8 +3,8 @@
 
 
 */
-#include <limbrary/model_view/light.h>
-#include <limbrary/tools/s_asset_lib.h>
+#include <limbrary/3d/light.h>
+#include <limbrary/tools/asset_lib.h>
 #include <limbrary/tools/text.h>
 #include <limbrary/tools/log.h>
 
@@ -157,7 +157,7 @@ bool IBLight::setMapAndBake(const char* path)
 	fb.bind();
 	iblProg.use();
 	iblProg.setTexture("map_Light", map_Light.tex_id);
-	AssetLib::get().screen_quad.bindAndDrawGL();
+	asset_lib::screen_quad->bindAndDrawGL();
 	fb.unbind();
 
     map_Irradiance = fb.color_tex; // !! 텍스쳐 복사되면서 mipmap도 생성됨.
@@ -186,7 +186,7 @@ bool IBLight::setMapAndBake(const char* path)
         iblProg.use();
         iblProg.setTexture("map_Light", map_Light.tex_id);
         iblProg.setUniform("roughness", roughness);
-        AssetLib::get().screen_quad.bindAndDrawGL();
+        asset_lib::screen_quad->bindAndDrawGL();
         fb.unbind();
 
         float* buf = fb.makeFloatPixelsBuf();
@@ -205,7 +205,7 @@ bool IBLight::setMapAndBake(const char* path)
 
 	fb.bind();
 	iblProg.use();
-	AssetLib::get().screen_quad.bindAndDrawGL();
+	asset_lib::screen_quad->bindAndDrawGL();
 	fb.unbind();
 
     map_PreFilteredBRDF = fb.color_tex; // !! 텍스쳐 복사되면서 mipmap도 생성됨.

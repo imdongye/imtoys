@@ -10,7 +10,7 @@
 
 #include <limbrary/texture.h>
 #include <limbrary/program.h>
-#include <limbrary/tools/s_asset_lib.h>
+#include <limbrary/tools/asset_lib.h>
 #include <limbrary/tools/log.h>
 #include <stb_image.h>
 #include <glm/gtc/type_ptr.hpp>
@@ -279,30 +279,26 @@ void Texture3d::setDataWithDepth(int depth, void* data) {
 
 void lim::drawTexToQuad(const GLuint texId, float gamma, float bias, float gain) 
 {
-	const Program& prog = AssetLib::get().prog_tex_to_quad;
-
-	prog.use();
+	const Program& prog = asset_lib::prog_tex_to_quad->use();
 	prog.setTexture("tex", texId);
 	prog.setUniform("gamma", gamma);
 	prog.setUniform("bias", bias);
 	prog.setUniform("gain", gain);
 
-	AssetLib::get().screen_quad.bindAndDrawGL();
+	asset_lib::screen_quad->bindAndDrawGL();
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 void lim::drawTex3dToQuad(const GLuint texId, float depth, float gamma, float bias, float gain) 
 {
-	const Program& prog = AssetLib::get().prog_tex3d_to_quad;
-
-	prog.use();
+	const Program& prog = asset_lib::prog_tex3d_to_quad->use();
 	prog.setTexture3d("tex", texId);
 	prog.setUniform("gamma", gamma);
 	prog.setUniform("bias", bias);
 	prog.setUniform("gain", gain);
 	prog.setUniform("depth", depth);
 
-	AssetLib::get().screen_quad.bindAndDrawGL();
+	asset_lib::screen_quad->bindAndDrawGL();
 
 	glBindTexture(GL_TEXTURE_3D, 0);
 }

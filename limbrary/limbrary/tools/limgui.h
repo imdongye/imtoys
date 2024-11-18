@@ -17,8 +17,8 @@ Note:
 
 #include <imgui.h>
 #include <glm/glm.hpp>
-#include <limbrary/model_view/scene.h>
-#include <limbrary/model_view/viewport_with_cam.h>
+#include <limbrary/3d/scene.h>
+#include <limbrary/3d/viewport_with_cam.h>
 
 namespace LimGui
 {

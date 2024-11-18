@@ -6,7 +6,7 @@
 
 #ifndef __curvature_h_
 #define __curvature_h_
-#include <limbrary/model_view/mesh.h>
+#include <limbrary/3d/mesh.h>
 
 namespace lim
 {

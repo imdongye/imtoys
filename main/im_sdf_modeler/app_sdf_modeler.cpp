@@ -7,7 +7,7 @@
 
 #include "app_sdf_modeler.h"
 #include "sdf_bridge.h"
-#include <limbrary/tools/s_asset_lib.h>
+#include <limbrary/tools/asset_lib.h>
 #include <limbrary/tools/limgui.h>
 
 
@@ -72,7 +72,7 @@ void lim::AppSdfModeler::update()
 
 	sdf::bindSdfData(prog);
 	
-	AssetLib::get().screen_quad.bindAndDrawGL();
+	asset_lib::screen_quad->bindAndDrawGL();
 	viewport.getFb().unbind();
 }
 void lim::AppSdfModeler::updateImGui()

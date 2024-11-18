@@ -15,7 +15,7 @@
 //  1. quaternion
 //
 
-#include <limbrary/model_view/camera.h>
+#include <limbrary/3d/camera.h>
 #include <limbrary/tools/log.h>
 
 using namespace glm;

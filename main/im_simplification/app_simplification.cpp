@@ -8,13 +8,13 @@
 #include "simplify.h"
 #include <stb_image.h>
 #include <stb_sprintf.h>
-#include <limbrary/tools/s_asset_lib.h>
-#include <limbrary/tools/s_save_file.h>
+#include <limbrary/tools/asset_lib.h>
+#include <limbrary/tools/save_file.h>
 #include <limbrary/tools/text.h>
 #include <limbrary/tools/limgui.h>
-#include <limbrary/model_view/mesh_maked.h>
-#include <limbrary/model_view/scene.h>
-#include <limbrary/model_view/model_io_helper.h>
+#include <limbrary/3d/mesh_maked.h>
+#include <limbrary/3d/scene.h>
+#include <limbrary/3d/model_io_helper.h>
 
 #include <limbrary/using_in_cpp/std.h>
 using namespace lim;
@@ -27,9 +27,10 @@ namespace
 
 AppSimplification::AppSimplification() : AppBase(1200, 780, APP_NAME, false)
 {
+	save_file::init();
 	recent_model_paths.clear();
-	if( SaveFile::get().data.empty() == false ) {
-		recent_model_paths = SaveFile::get().data["recentModelPaths"];
+	if( save_file::data.empty() == false ) {
+		recent_model_paths = save_file::data["recentModelPaths"];
 	}
 
 
@@ -128,7 +129,8 @@ AppSimplification::AppSimplification() : AppBase(1200, 780, APP_NAME, false)
 
 AppSimplification::~AppSimplification()
 {
-	SaveFile::get().data["recentModelPaths"] = recent_model_paths;
+	save_file::data["recentModelPaths"] = recent_model_paths;
+	save_file::deinit();
 	for( auto prog : programs )	delete prog;
 	for( auto vp : viewports ) delete vp;
 	for( auto scn : scenes ) delete scn;

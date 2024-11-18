@@ -16,10 +16,10 @@
 
 #include <limbrary/application.h>
 #include <limbrary/program.h>
-#include <limbrary/model_view/light.h>
-#include <limbrary/model_view/model.h>
-#include <limbrary/model_view/viewport_with_cam.h>
-#include <limbrary/model_view/scene.h>
+#include <limbrary/3d/light.h>
+#include <limbrary/3d/model.h>
+#include <limbrary/3d/viewport_with_cam.h>
+#include <limbrary/3d/scene.h>
 
 
 namespace lim

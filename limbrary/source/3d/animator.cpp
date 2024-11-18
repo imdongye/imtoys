@@ -1,8 +1,8 @@
-#include <limbrary/model_view/animator.h>
+#include <limbrary/3d/animator.h>
 #include <limbrary/application.h>
 #include <limbrary/tools/log.h>
 #include <limbrary/application.h>
-#include <limbrary/model_view/model.h>
+#include <limbrary/3d/model.h>
 #include <algorithm>
 
 using namespace lim;

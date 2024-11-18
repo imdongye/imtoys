@@ -7,7 +7,7 @@
 #define __app_template_h_
 
 #include <limbrary/application.h>
-#include <limbrary/model_view/viewport_with_cam.h>
+#include <limbrary/3d/viewport_with_cam.h>
 
 namespace lim
 {

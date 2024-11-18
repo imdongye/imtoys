@@ -4,7 +4,7 @@
 #include <imguizmo/ImGuizmo.h>
 
 #include <limbrary/application.h>
-#include <limbrary/tools/s_asset_lib.h>
+#include <limbrary/tools/asset_lib.h>
 #include <limbrary/tools/text.h>
 #include <limbrary/using_in_cpp/std.h>
 #include <limbrary/using_in_cpp/glm.h>
@@ -345,7 +345,7 @@ void LimGui::LightDirectionalEditor(LightDirectional& lit)
 	ImGui::Checkbox("shadow enabled", &lit.shadow->Enabled);
 	ImGui::Checkbox("show shadow map", &is_draw_shadow_map_view);
 	if(is_draw_shadow_map_view && lit.shadow->Enabled) {
-		lim::Viewport& vp = AssetLib::get().texture_viewer; // todo
+		lim::Viewport& vp = *asset_lib::texture_viewer; // todo
 		vp.getFb().bind();
 		drawTexToQuad(lit.shadow->map.getRenderedTexId(), 2.2f, 0.f, 1.f);
 		vp.getFb().unbind();

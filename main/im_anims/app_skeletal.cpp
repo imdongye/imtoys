@@ -2,10 +2,10 @@
 #include <stb_image.h>
 #include <glad/glad.h>
 #include <imgui.h>
-#include <limbrary/model_view/mesh_maked.h>
+#include <limbrary/3d/mesh_maked.h>
 #include <limbrary/tools/log.h>
 #include <limbrary/tools/limgui.h>
-#include <limbrary/tools/s_asset_lib.h>
+#include <limbrary/tools/asset_lib.h>
 #include <functional>
 
 using namespace lim;
@@ -89,7 +89,7 @@ void lim::AppSkeletal::update()
 
 	// viewport.getFb().bind();
 	// glDisable(GL_DEPTH_TEST);
-	// Program& prog = AssetLib::get().prog_color;
+	// Program& prog = asset_lib::prog_color;
 	// prog.use();
 	// viewport.camera.setUniformTo(prog);
 	// todo when draw with cloth model getting to screen darker
@@ -108,7 +108,7 @@ void lim::AppSkeletal::update()
 	// 			prog.setUniform("mtx_Model", globalMtx * bone.mtx_model_space);
 	// 		}
 	// 		prog.setUniform("color", (LimGui::getPickedBoneNode() == &bone) ? glm::vec3(1, 0, 0) : glm::vec3(0, 0, 1));
-	// 		AssetLib::get().sphere.bindAndDrawGL();
+	// 		asset_lib::sphere.bindAndDrawGL();
 	// 	}
 	// }
 	// glEnable(GL_DEPTH_TEST);

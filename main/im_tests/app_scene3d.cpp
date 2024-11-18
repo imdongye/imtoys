@@ -1,7 +1,7 @@
 #include "app_scene3d.h"
 #include <limbrary/tools/log.h>
 #include <imgui.h>
-#include <limbrary/tools/s_asset_lib.h>
+#include <limbrary/tools/asset_lib.h>
 #include <limbrary/tools/limgui.h>
 
 using namespace lim;
@@ -13,15 +13,15 @@ AppScene3d::AppScene3d()
 	{
 		Model& md = *scene.addOwn(new Model("ground"));
 		Material& mat = *md.addOwn(new Material());
-		mat.prog = &AssetLib::get().prog_ndv;
-		md.root.ms = &AssetLib::get().ground_quad;
+		mat.prog = asset_lib::prog_ndv;
+		md.root.ms = asset_lib::big_plane;
 		md.root.mat = &mat;
 	}
 	{
 		Model& md = *scene.addOwn(new Model("sphere"));
 		Material& mat = *md.addOwn(new Material());
-		mat.prog = &AssetLib::get().prog_ndv;
-		md.root.ms = &AssetLib::get().sphere;
+		mat.prog = asset_lib::prog_ndv;
+		md.root.ms = asset_lib::sphere;
 		md.root.mat = &mat;
 	}
 	{

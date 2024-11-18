@@ -9,9 +9,10 @@ Todo:
 
 #include "app_model_viewer.h"
 #include <imgui.h>
-#include <limbrary/model_view/model_io_helper.h>
-#include <limbrary/model_view/scene.h>
-#include <limbrary/tools/s_asset_lib.h>
+#include <limbrary/3d/model_io_helper.h>
+#include <limbrary/3d/scene.h>
+#include <limbrary/3d/mesh_maked.h>
+#include <limbrary/tools/asset_lib.h>
 #include <limbrary/tools/limgui.h>
 #include <limbrary/tools/glim.h>
 #include <limbrary/tools/text.h>

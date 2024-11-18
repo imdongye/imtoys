@@ -1,11 +1,11 @@
 #include "app_pbd_cpu.h"
 #include <limbrary/tools/limgui.h>
 #include "pbd/pbd.h"
-#include <limbrary/model_view/mesh_maked.h>
-#include <limbrary/model_view/model.h>
+#include <limbrary/3d/mesh_maked.h>
+#include <limbrary/3d/model.h>
 #include <limbrary/tools/glim.h>
 #include <limbrary/tools/etc.h>
-#include <limbrary/tools/s_asset_lib.h>
+#include <limbrary/tools/asset_lib.h>
 
 #include <glm/gtx/transform.hpp>
 
@@ -218,7 +218,7 @@ void AppPbdCpu::customDrawShadow(const mat4& mtx_View, const mat4& mtx_Proj) con
 {
 	if( !draw_mesh )
 		return;
-	Program& sProg = AssetLib::get().prog_shadow_static;
+	const Program& sProg = asset_lib::prog_shadow_static->use();
 	sProg.use();
 	sProg.setUniform("mtx_View", mtx_View);
 	sProg.setUniform("mtx_Proj", mtx_Proj);

@@ -12,11 +12,11 @@
 #include "app_hatching.h"
 #include <stb_image.h>
 #include <imgui.h>
-#include <limbrary/model_view/mesh_maked.h>
+#include <limbrary/3d/mesh_maked.h>
 #include <limbrary/tools/log.h>
-#include <limbrary/tools/s_asset_lib.h>
+#include <limbrary/tools/asset_lib.h>
 #include <limbrary/tools/limgui.h>
-#include <limbrary/model_view/scene.h>
+#include <limbrary/3d/scene.h>
 
 
 lim::ArtMap::ArtMap(const char* _path, GLint _tone)
@@ -116,7 +116,7 @@ lim::AppHatching::AppHatching(): AppBase(1200, 780, APP_NAME)
 	scene.addOwn(md);
 	
 	md = new Model("sphere");
-	md->root.ms = &AssetLib::get().sphere;
+	md->root.ms = asset_lib::sphere;
 	md->root.mat = &h_mat;
 	scene.addOwn(md);
 

@@ -16,11 +16,11 @@
 	7. reload normal map 외부로 빼기
 */
 
-#include <limbrary/model_view/model.h>
+#include <limbrary/3d/model.h>
 #include <limbrary/tools/log.h>
 #include <limbrary/tools/glim.h>
 #include <assimp/material.h>
-#include <limbrary/tools/s_asset_lib.h>
+#include <limbrary/tools/asset_lib.h>
 #include <imgui.h>
 #include <stack>
 

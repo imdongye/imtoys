@@ -7,9 +7,9 @@
 #define __app_icp_h_
 
 #include <limbrary/application.h>
-#include <limbrary/model_view/viewport_with_cam.h>
+#include <limbrary/3d/viewport_with_cam.h>
 #include <limbrary/program.h>
-#include <limbrary/model_view/model.h>
+#include <limbrary/3d/model.h>
 
 namespace lim
 {

@@ -7,11 +7,11 @@
 #define __app_cloth_gpu_
 
 #include <limbrary/application.h>
-#include <limbrary/model_view/mesh_maked.h>
-#include <limbrary/model_view/viewport_with_cam.h>
-#include <limbrary/model_view/transform.h>
-#include <limbrary/model_view/model.h>
-#include <limbrary/model_view/light.h>
+#include <limbrary/3d/mesh_maked.h>
+#include <limbrary/3d/viewport_with_cam.h>
+#include <limbrary/3d/transform.h>
+#include <limbrary/3d/model.h>
+#include <limbrary/3d/light.h>
 
 namespace lim
 {

@@ -8,9 +8,9 @@
 #define __app_curvature_h_
 
 #include <limbrary/application.h>
-#include <limbrary/model_view/viewport_with_cam.h>
+#include <limbrary/3d/viewport_with_cam.h>
 #include <limbrary/program.h>
-#include <limbrary/model_view/mesh.h>
+#include <limbrary/3d/mesh.h>
 
 namespace lim
 {

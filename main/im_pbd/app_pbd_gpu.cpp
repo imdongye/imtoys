@@ -1,6 +1,6 @@
 #include "app_pbd_gpu.h"
 #include <limbrary/tools/limgui.h>
-#include <limbrary/tools/s_asset_lib.h>
+#include <limbrary/tools/asset_lib.h>
 #include <limbrary/tools/glim.h>
 #include <limbrary/tools/gl.h>
 #include <limbrary/tools/etc.h>
@@ -189,8 +189,7 @@ void AppPbdGpu::canvasUpdate()
 
 void AppPbdGpu::customDrawShadow(const mat4& mtx_View, const mat4& mtx_Proj) const
 {
-	Program& sProg = lim::AssetLib::get().prog_shadow_static;
-	sProg.use();
+	const Program& sProg = lim::asset_lib::prog_shadow_static->use();
 	sProg.setUniform("mtx_View", mtx_View);
 	sProg.setUniform("mtx_Proj", mtx_Proj);
 	sProg.setUniform("mtx_Model", glm::mat4(1));

@@ -9,8 +9,8 @@
 #include <vector>
 #include <fstream>
 #include <filesystem>
-#include <limbrary/model_view/model.h>
-#include <limbrary/model_view/model_io_helper.h>
+#include <limbrary/3d/model.h>
+#include <limbrary/3d/model_io_helper.h>
 #include <limbrary/tools/log.h>
 #include <GLFW/glfw3.h>
 using namespace glm;

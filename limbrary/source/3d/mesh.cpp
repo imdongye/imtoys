@@ -5,7 +5,7 @@
 //	todo :
 //	1. bumpmap normalmap확인
 
-#include <limbrary/model_view/mesh.h>
+#include <limbrary/3d/mesh.h>
 #include <limbrary/tools/gl.h>
 #include <limbrary/tools/log.h>
 

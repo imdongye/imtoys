@@ -8,10 +8,10 @@
 #define __app_ray_h_
 
 #include <limbrary/application.h>
-#include <limbrary/model_view/viewport_with_cam.h>
-#include <limbrary/model_view/mesh_maked.h>
+#include <limbrary/3d/viewport_with_cam.h>
+#include <limbrary/3d/mesh_maked.h>
 #include <limbrary/program.h>
-#include <limbrary/model_view/model.h>
+#include <limbrary/3d/model.h>
 
 namespace lim
 {

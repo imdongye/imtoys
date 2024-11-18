@@ -22,9 +22,9 @@ Todo:
 #define __app_pbd_h_
 
 #include <limbrary/tools/glim.h>
-#include <limbrary/model_view/model.h>
+#include <limbrary/3d/model.h>
 #include <limbrary/program.h>
-#include <limbrary/model_view/transform.h>
+#include <limbrary/3d/transform.h>
 #include <vector>
 
 

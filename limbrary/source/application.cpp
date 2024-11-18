@@ -1,8 +1,7 @@
 #include <limbrary/application.h>
 #include <limbrary/tools/log.h>
 #include <limbrary/tools/text.h>
-#include <limbrary/tools/s_save_file.h>
-#include <limbrary/tools/s_asset_lib.h>
+#include <limbrary/tools/asset_lib.h>
 #include <limbrary/tools/apps_selector.h>
 #include <limbrary/tools/limgui.h>
 #include <limbrary/viewport.h>
@@ -221,9 +220,7 @@ AppBase::AppBase(int winWidth, int winHeight, const char* title, bool vsync)
 #endif
 	}
 
-
-	SaveFile::create();
-	AssetLib::create();
+	asset_lib::init();
 	LimGui::resetEditors();
 }
 
@@ -239,8 +236,7 @@ AppBase::~AppBase()
 	//ImPlot::DestroyContext();
 	ImGui::DestroyContext();
 
-	SaveFile::destroy();
-	AssetLib::destroy();
+	asset_lib::deinit();
 
 	glfwDestroyWindow(window);
 	glfwTerminate();

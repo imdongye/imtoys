@@ -13,9 +13,9 @@
 #define __appbase_canvas3d_h_
 
 #include <limbrary/application.h>
-#include <limbrary/model_view/mesh_maked.h>
-#include <limbrary/model_view/light.h>
-#include <limbrary/model_view/viewport_with_cam.h>
+#include <limbrary/3d/mesh_maked.h>
+#include <limbrary/3d/light.h>
+#include <limbrary/3d/viewport_with_cam.h>
 
 namespace lim
 {

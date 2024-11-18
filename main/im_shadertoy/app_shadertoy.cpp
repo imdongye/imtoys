@@ -1,5 +1,5 @@
 #include "app_shadertoy.h"
-#include <limbrary/tools/s_asset_lib.h>
+#include <limbrary/tools/asset_lib.h>
 #include <limbrary/tools/limgui.h>
 #include <limbrary/tools/log.h>
 #include <fstream>
@@ -76,7 +76,7 @@ void AppShaderToy::update()
 	// program.setUniform("iSampleRate", iSampleRate);
 
 		
-	AssetLib::get().screen_quad.bindAndDrawGL();
+	asset_lib::screen_quad->bindAndDrawGL();
 	viewport.getFb().unbind();
 }
 

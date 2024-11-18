@@ -10,7 +10,7 @@
 #define __lim_gizmo_h_
 
 #include <glm/glm.hpp>
-#include <limbrary/model_view/camera.h>
+#include <limbrary/3d/camera.h>
 
 namespace lim
 {

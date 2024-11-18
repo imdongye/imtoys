@@ -1,9 +1,9 @@
 #include "app_gen_mesh.h"
 #include <stb_image.h>
-#include <limbrary/model_view/mesh_maked.h>
-#include <limbrary/model_view/scene.h>
+#include <limbrary/3d/mesh_maked.h>
+#include <limbrary/3d/scene.h>
 #include <glm/gtx/transform.hpp>
-#include <limbrary/tools/s_asset_lib.h>
+#include <limbrary/tools/asset_lib.h>
 #include <limbrary/tools/limgui.h>
 
 using namespace lim;

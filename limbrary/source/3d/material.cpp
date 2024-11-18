@@ -1,8 +1,8 @@
-#include <limbrary/model_view/material.h>
-#include <limbrary/tools/s_asset_lib.h>
+#include <limbrary/3d/material.h>
+#include <limbrary/tools/asset_lib.h>
 
 lim::Material::Material() {
-    prog = &AssetLib::get().prog_ndv;
+    prog = asset_lib::prog_ndv;
 }
 
 void lim::Material::setUniformTo(const Program& prg) const

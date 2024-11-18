@@ -1,5 +1,5 @@
-#include <limbrary/model_view/scene.h>
-#include <limbrary/tools/s_asset_lib.h>
+#include <limbrary/3d/scene.h>
+#include <limbrary/tools/asset_lib.h>
 #include <limbrary/tools/log.h>
 #include <limbrary/tools/render.h>
 #include <limbrary/tools/text.h>
@@ -81,8 +81,8 @@ mesh바뀌면 1.ms바인딩
 */
 void Scene::render( const IFramebuffer& fb, const Camera& cam, const bool isDrawLight )
 {
-    const Program& shadowStatic = AssetLib::get().prog_shadow_static;
-    const Program& shadowSkinned = AssetLib::get().prog_shadow_skinned;
+    const Program& shadowStatic = *asset_lib::prog_shadow_static;
+    const Program& shadowSkinned = *asset_lib::prog_shadow_skinned;
 
     // todo: update menually
     for( auto& md : own_mds ) {
@@ -181,15 +181,14 @@ void Scene::render( const IFramebuffer& fb, const Camera& cam, const bool isDraw
     }
 
     if( isDrawLight ) {
-        const Program& prog = AssetLib::get().prog_ndv;
-        prog.use();
+        const Program& prog = asset_lib::prog_ndv->use();
         cam.setUniformTo(prog);
 
         // todo: diff color
         for( const auto& lit : own_dir_lits ) {
             prog.setUniform("mtx_Model", lit->tf.mtx);
             // todo: draw dir with line
-            AssetLib::get().small_sphere.bindAndDrawGL();
+            asset_lib::small_sphere->bindAndDrawGL();
         }
     }
 
