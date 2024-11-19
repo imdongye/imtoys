@@ -20,7 +20,7 @@ using namespace lim;
 
 AppImGuiTest::AppImGuiTest() : AppBase(1200, 780, APP_NAME)
 {
-	
+
 }
 AppImGuiTest::~AppImGuiTest()
 {
@@ -50,6 +50,8 @@ void AppImGuiTest::updateImGui()
 		ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
 
 		ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
+		ImGui::Text("한글 테스트 안녕하세요");               // Display some text (you can use a format strings too)
+
 		ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
 		ImGui::Checkbox("Another Window", &show_another_window);
 

@@ -35,7 +35,9 @@ namespace LimGui
 // only one in updateImGui
 namespace LimGui
 {
-    void resetEditors();
+    extern ImFont* icons;
+
+    void initEditors();
 
     void ModelViewEditor(lim::ModelView& md);
     void ModelDataEditor(lim::Model& md);

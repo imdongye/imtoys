@@ -12,13 +12,14 @@
 
 using namespace lim;
 
-
+ImFont* LimGui::icons = nullptr;
 
 namespace {
 	Model*              picked_md_data = nullptr;
 	ModelView*          picked_md_view = nullptr;
 	RdNode*	            picked_rd_node = nullptr;
 	BoneNode*           picked_bone_node = nullptr;
+
     LightDirectional*   picked_dir_lit = nullptr;
     LightSpot*          picked_spot_lit = nullptr;
     LightOmni*          picked_omni_lit = nullptr;
@@ -32,15 +33,17 @@ namespace {
 	string scene_editor_window_name = "Scene##appname____";
 }
 
-void LimGui::resetEditors()
+void LimGui::initEditors()
 {
 	picked_md_data = nullptr;
     picked_md_view = nullptr;
     picked_rd_node = nullptr;
     picked_bone_node = nullptr;
+
     picked_dir_lit = nullptr;
     picked_spot_lit = nullptr;
     picked_omni_lit = nullptr;
+	picked_ib_light = nullptr;
 
     md_view_editor_win_name = fmtStrToBuf("ModelView##%s", AppBase::g_app_name);
     md_data_editor_win_name = fmtStrToBuf("ModelData##%s", AppBase::g_app_name);
@@ -48,6 +51,11 @@ void LimGui::resetEditors()
     bone_node_editor_win_name = fmtStrToBuf("BoneNode##%s", AppBase::g_app_name);
 	light_editor_window_name = fmtStrToBuf("Light##%s", AppBase::g_app_name);
 	scene_editor_window_name = fmtStrToBuf("Scene##%s", AppBase::g_app_name);
+
+	ImFontConfig config;
+    config.GlyphMinAdvanceX = 13.0f;
+    static ImWchar lIconRanges[] = { 0xE800, 0xE840, 0 };
+	icons = ImGui::GetIO().Fonts->AddFontFromFileTTF("assets/fonts/fontello/font/icons.ttf", 20.f, &config, lIconRanges);
 }
 
 
@@ -394,6 +402,7 @@ namespace
 static void sceneGuizmoHook(ViewportWithCam& vp)
 {
 	Camera& cam = vp.camera;
+	vp.camera.enabled = false;
 
 	ImGuizmo::SetDrawlist();
 	ImGuizmo::SetRect(vp.content_pos.x, vp.content_pos.y, vp.content_size.x, vp.content_size.y);
@@ -406,7 +415,6 @@ static void sceneGuizmoHook(ViewportWithCam& vp)
 
 	ImGuizmo::ViewManipulate( glm::value_ptr(cam.mtx_View), 8.0f, view_mani_pos, view_mani_size, (ImU32)0x10101010 );
 
-
 	if( picked_rd_node ) {
 		if( ImGuizmo::Manipulate( glm::value_ptr(cam.mtx_View), glm::value_ptr(cam.mtx_Proj)
                             , gzmo_edit_modes[selected_edit_mode_idx], gzmo_space
@@ -418,13 +426,67 @@ static void sceneGuizmoHook(ViewportWithCam& vp)
 			picked_rd_node->updateGlobalTransform();
 		}
 	}
+
+	/* Edit option */
+    {
+		constexpr ImVec2 btn_size = {30,30};
+        ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoMove;
+        const float PAD = 10.0f;
+        ImVec2 workPos = ImGui::GetWindowPos();
+        ImVec2 windowPos = {workPos.x+PAD, workPos.y+PAD+PAD*2.3f};
+        
+        //ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
+        //ImGui::SetNextWindowSizeConstraints(ImVec2(30.f, 120.f));
+        ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, {0.5f, 0.5f});
+        ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, {2.f, 2.f});
+        ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, {0.5f, 0.7f});
+		ImGui::PushFont(LimGui::icons);
+
+
+        ImGui::SetNextWindowViewport(ImGui::GetMainViewport()->ID); // 뷰포트가 안되도록
+        ImGui::SetNextWindowBgAlpha(0.35f); // Transparent background
+        ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always);
+        if( ImGui::Begin("edit mode selector", nullptr, window_flags) )
+        {
+            static const char* editModeStrs[] = {  u8"\uE820", u8"\uE806", u8"\uE807", u8"\uE811", u8"\uE805" };
+            for(int i=0; i<5; i++) {
+                if( ImGui::Selectable(editModeStrs[i], selected_edit_mode_idx==i, 0, btn_size) ) {
+                    selected_edit_mode_idx = i;
+                }
+            }
+            ImGui::End();
+        }
+        if( selected_edit_mode_idx!=0 && selected_edit_mode_idx!=2 ) {
+            ImGui::SetNextWindowViewport(ImGui::GetMainViewport()->ID); // 뷰포트가 안되도록
+            ImGui::SetNextWindowBgAlpha(0.35f); // Transparent background
+            ImGui::SetNextWindowPos({windowPos.x, windowPos.y+180}, ImGuiCond_Always);
+            if( ImGui::Begin("edit space selector", nullptr, window_flags) )
+            {
+                if( ImGui::Selectable(u8"\uE832", gzmo_space==ImGuizmo::WORLD, 0, btn_size) ) {
+                    gzmo_space = ImGuizmo::WORLD;
+                }
+                if( ImGui::Selectable(u8"\uE808", gzmo_space==ImGuizmo::LOCAL, 0, btn_size) ) {
+                    gzmo_space = ImGuizmo::LOCAL;
+                }
+                ImGui::End();
+            }
+        }
+		ImGui::PopFont();
+        ImGui::PopStyleVar();
+        ImGui::PopStyleVar();
+        ImGui::PopStyleVar();
+    }
+
+	vp.camera.enabled = !(ImGuizmo::IsUsingAny());
 }
 
 void LimGui::SceneEditor(Scene& scene, ViewportWithCam& vp)
 {
-	ImGui::Begin(scene_editor_window_name.c_str());
-
 	int i;
+	ImGui::Begin(scene_editor_window_name.c_str());
+	ImGui::Text("안녕하세요 한글테스트 입니다 감사합니다.");
+	ImGui::Text("안녕하세2요 한글테스트2 입니다 감사합니다.");
+	ImGui::SetNextItemOpen(true, ImGuiCond_Once);
 	if( ImGui::CollapsingHeader("Model views") ) {
 		i=0;
 		for( auto& md : scene.own_mds ) {

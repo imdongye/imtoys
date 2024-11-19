@@ -181,7 +181,7 @@ AppBase::AppBase(int winWidth, int winHeight, const char* title, bool vsync)
 		IMGUI_CHECKVERSION();
 		ImGui::CreateContext();
 		//ImPlot::CreateContext();
-		ImGuiIO& io = ImGui::GetIO(); (void)io;
+		ImGuiIO& io = ImGui::GetIO();
 
 		// custom app path for imgui.ini
 		g_ini_file_path = fmtStrToBuf("%simgui.ini", g_app_dir);
@@ -205,10 +205,11 @@ AppBase::AppBase(int winWidth, int winHeight, const char* title, bool vsync)
 
 		// When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
 		ImGuiStyle& style = ImGui::GetStyle();
-		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+		if( io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable )
 		{
 			style.WindowRounding = 0.0f;
 			style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+			// style.FramePadding.y = 5.f;
 		}
 
 		// Setup Platform/Renderer backends
@@ -218,10 +219,20 @@ AppBase::AppBase(int winWidth, int winHeight, const char* title, bool vsync)
 #else
 		ImGui_ImplOpenGL3_Init("#version 410");
 #endif
+		// io.Fonts->AddFontFromFileTTF("assets/fonts/ChosunGu.ttf", 16.0f);
+		// io.Fonts->AddFontDefault();
+		ImFontConfig config;
+		config.RasterizerDensity = 1.f; 
+		// config.GlyphMinAdvanceX = 13.0f;
+		io.Fonts->AddFontFromFileTTF("assets/fonts/SpoqaHanSansNeo-Medium.ttf",  16.f, &config, io.Fonts->GetGlyphRangesKorean());
+		config.MergeMode = true;
+		// io.Fonts->AddFontFromFileTTF("assets/fonts/ChosunGu.ttf",  16.f, &config, io.Fonts->GetGlyphRangesKorean());
+		// io.Fonts->AddFontFromFileTTF("assets/fonts/NotoSansKR-Medium.ttf",  19.f, &config, io.Fonts->GetGlyphRangesKorean());
 	}
+	
 
 	asset_lib::init();
-	LimGui::resetEditors();
+	LimGui::initEditors();
 }
 
 
