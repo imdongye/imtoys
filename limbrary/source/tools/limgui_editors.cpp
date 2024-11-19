@@ -476,7 +476,13 @@ static void sceneGuizmoHook(ViewportWithCam& vp)
         ImGui::PopStyleVar();
         ImGui::PopStyleVar();
     }
-
+	// static bool is_using_vm = false;
+	// bool is_next_using_vm = ImGuizmo::IsUsingViewManipulate();
+	// if(is_next_using_vm==false && is_using_vm==true) {
+	// is_using_vm = is_next_using_vm;
+	if( ImGuizmo::IsUsingViewManipulate() ) {
+		vp.camera.viewMtxToPos();
+	}
 	vp.camera.enabled = !(ImGuizmo::IsUsingAny());
 }
 

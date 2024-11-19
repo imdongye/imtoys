@@ -1,5 +1,6 @@
 #include <limbrary/3d/camera.h>
 #include <limbrary/tools/log.h>
+#include <glm/gtc/matrix_inverse.hpp>
 
 using namespace glm;
 using namespace lim;
@@ -48,6 +49,15 @@ void Camera::updateViewMtx()
 	mtx_View[1][3] = 0.f; 
 	mtx_View[2][3] = 0.f; 
 	mtx_View[3][3] = 1.f;
+}
+void Camera::viewMtxToPos()
+{
+	log::pure("test\n");
+	mat4 invView = glm::affineInverse(mtx_View);
+	pos.x = invView[3][0];
+    pos.y = invView[3][1];
+    pos.z = invView[3][2];
+	updateViewMtx();
 }
 void Camera::updateProjMtx()
 {

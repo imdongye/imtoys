@@ -54,6 +54,7 @@ namespace lim
 		glm::vec3 screenPosToDir(const glm::vec2& uv) const;
 		void moveShift(const glm::vec3& off);
 		// with pos and pivot
+		void viewMtxToPos();
 		void updateViewMtx(); // and result
 		void updateProjMtx();
 		void setUniformTo(const Program& prg) const;
