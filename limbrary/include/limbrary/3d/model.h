@@ -80,7 +80,7 @@ namespace lim
 	};
 
 
-	struct Model;
+	struct ModelData;
 
 	// view of model data
 	struct ModelView : public NoMove
@@ -91,7 +91,7 @@ namespace lim
 		std::vector<RdNode*> skinned_mesh_nodes; // for update skinned own mesh buffer
 
 		const Transform* tf_prev = nullptr;
-		Model* src_md = nullptr;
+		ModelData* src_md = nullptr;
 
 
 		ModelView();
@@ -110,7 +110,7 @@ namespace lim
 
 
 	// model data
-	struct Model: public ModelView
+	struct ModelData: public ModelView
 	{
 		std::string name = "nonamed model";
 		std::string path = "nodir";
@@ -137,12 +137,12 @@ namespace lim
         std::vector<Animation> animations;
 
 
-		Model(const char* name="nonamed");
-		~Model();
+		ModelData(const char* name="nonamed");
+		~ModelData();
 		void clear() noexcept;
 		// copy : now for model simplification
-		Model(const Model& src);
-		Model& operator=(const Model& src);
+		ModelData(const ModelData& src);
+		ModelData& operator=(const ModelData& src);
 
 
 		Material* addOwn(Material* md);

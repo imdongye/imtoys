@@ -240,15 +240,15 @@ vec3 ModelView::getBoneWorldPos(int boneNodeIdx) const
 
 
 
-Model::Model(const char* _name): name(_name)
+ModelData::ModelData(const char* _name): name(_name)
 {
 	src_md = this;
 }
-Model::~Model()
+ModelData::~ModelData()
 {
 	clear();
 }
-void Model::clear() noexcept
+void ModelData::clear() noexcept
 {
 	ModelView::clear();
 	src_md = this;
@@ -264,17 +264,17 @@ void Model::clear() noexcept
 
 
 
-Material* Model::addOwn(Material* md)
+Material* ModelData::addOwn(Material* md)
 {
 	own_materials.push_back(md);
 	return md;
 }
-Texture* Model::addOwn(Texture* tex)
+Texture* ModelData::addOwn(Texture* tex)
 {
 	own_textures.push_back(tex);
 	return tex;
 }
-Mesh* Model::addOwn(Mesh* ms)
+Mesh* ModelData::addOwn(Mesh* ms)
 {
 	own_meshes.push_back(ms);
 	return ms;
@@ -282,19 +282,19 @@ Mesh* Model::addOwn(Mesh* ms)
 
 
 
-void Model::setProgToAllMat(const Program* prog)
+void ModelData::setProgToAllMat(const Program* prog)
 {
 	for( auto& mat : own_materials ) {
 		mat->prog = prog;
 	}
 }
-void Model::setSetProgToAllMat(std::function<void(const Program&)> setProg)
+void ModelData::setSetProgToAllMat(std::function<void(const Program&)> setProg)
 {
 	for( auto& mat : own_materials ) {
 		mat->set_prog = setProg;
 	}
 }
-void Model::setSameMat(const Material* mat)
+void ModelData::setSameMat(const Material* mat)
 {
 	root.dfsAll([&](RdNode& nd) {
 		if( nd.ms || nd.mat ) {
@@ -337,7 +337,7 @@ static void correctMatTexLink(
 		dst.map_Opacity = dstTexs[findIdx(srcTexs, src.map_Opacity)].raw;
 	}
 }
-static void matchRdTree(RdNode& dst, const RdNode& src, const Model& dstMd, const Model& srcMd)
+static void matchRdTree(RdNode& dst, const RdNode& src, const ModelData& dstMd, const ModelData& srcMd)
 {
 	if( src.ms ) {
 		const int msIdx = findIdx(srcMd.own_meshes, (Mesh*)src.ms);
@@ -354,11 +354,11 @@ static void matchRdTree(RdNode& dst, const RdNode& src, const Model& dstMd, cons
 /**************
  * copy model
  **************/
-Model::Model(const Model& src)
+ModelData::ModelData(const ModelData& src)
 {	// 복사생성자는 자동으로 부모 복사 생성자 호출하지 않음.
 	operator=(src);
 }
-Model& Model::operator=(const Model& src)
+ModelData& ModelData::operator=(const ModelData& src)
 {
 	log::warn("copy model data\n");
 	clear();

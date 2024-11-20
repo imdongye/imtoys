@@ -33,7 +33,7 @@ namespace {
 void AppSoftbodyInModel::reloadModel(const char* path) {
 	src_mesh = nullptr;
 
-	Model* srcMd = new Model();
+	ModelData* srcMd = new ModelData();
 	srcMd->importFromFile(path, true, true);
 	for(auto& mat : srcMd->own_materials) {
 		mat->Roughness = 0.519f;
@@ -70,7 +70,7 @@ AppSoftbodyInModel::AppSoftbodyInModel() : AppBase(1480, 780, APP_NAME, false)
 
 	// floor
 	{
-		Model* floorMd = new Model();
+		ModelData* floorMd = new ModelData();
 		Material* flMat = floorMd->addOwn(new Material());
 		floorMd->name = "floor";
 		floorMd->root.ms = floorMd->addOwn(new MeshPlane(2.f, 2.f));

@@ -26,7 +26,7 @@ ModelView* Scene::addOwn(ModelView* md)  {
     own_mds.push_back(md);
     return md;
 }
-Model* Scene::addOwn(Model* md)  {
+ModelData* Scene::addOwn(ModelData* md)  {
     assert( md->src_md == md );
     own_mds.push_back((ModelView*)md);
     src_mds.push_back(md);

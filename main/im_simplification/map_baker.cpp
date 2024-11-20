@@ -15,7 +15,7 @@ using namespace std;
 
 namespace lim
 {
-    void bakeNormalMap(const Model& src, Model& dst, int texSize)
+    void bakeNormalMap(const ModelData& src, ModelData& dst, int texSize)
     {
         if(src.own_meshes.size() != dst.own_meshes.size()) {
 			log::err("not mached model in bake normal map\n\n");
@@ -106,7 +106,7 @@ namespace lim
         }
     }
 
-    void convertBumpMapToNormalMap(Model& md)
+    void convertBumpMapToNormalMap(ModelData& md)
     {
         Program bumpToNorProg;
         bumpToNorProg.name = "bump to nor";

@@ -74,13 +74,13 @@ namespace lim
         Transform tf; // bone space
         glm::mat4 mtx_model_space;
         int idx_parent_bone_node = -1; // for bones in animator
-        // for mtx_Bones in ModelView, weighted_bone_offsets in Model
+        // for mtx_Bones in ModelView, weighted_bone_offsets in ModelData
         // if not used in skinning then -1
         int idx_weighted_bone = -1;
         int nr_childs;
     };
 
-    struct Model;
+    struct ModelData;
     struct Animator : public NoMove
     {
         enum State : int
@@ -95,7 +95,7 @@ namespace lim
         std::vector<BoneNode> bones; // bone tree
         std::vector<glm::mat4> mtx_Bones; // nr_weighted_bones
         const Animation* cur_anim = nullptr;
-        const Model* src_md = nullptr;
+        const ModelData* src_md = nullptr;
         double elapsed_sec, duration_sec;
         float cur_tick = 0.f;
         bool is_loop = true;
@@ -108,7 +108,7 @@ namespace lim
         Animator(const Animator& src);
 		Animator& operator=(const Animator& src); // todo default
         ~Animator();
-        void init(const Model* md);
+        void init(const ModelData* md);
         void clear();
         
         void setAnim(const Animation* anim);

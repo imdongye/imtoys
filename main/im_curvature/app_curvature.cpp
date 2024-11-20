@@ -198,7 +198,7 @@ AppCurvature::AppCurvature() : AppBase(1200, 780, APP_NAME)
 	program.home_dir = APP_DIR;
 	program.attatch("debug.vs").attatch("debug.fs").link();
 
-	Model md;
+	ModelData md;
 	GLuint pFlags = 0;
 	// pFlags |= aiProcess_Triangulate;
 	// pFlags |= aiProcess_GenNormals;

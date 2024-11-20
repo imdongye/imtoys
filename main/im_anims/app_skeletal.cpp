@@ -13,10 +13,10 @@ using namespace glm;
 
 
 void AppSkeletal::makeScene(const char* path) {
-	Model* md;
+	ModelData* md;
 	scene.reset();
 
-	md = new Model();
+	md = new ModelData();
 	md->importFromFile(path, true, true);
 	md->setProgToAllMat(&prog_skinned);
 	scene.addOwn(md);
@@ -42,7 +42,7 @@ void AppSkeletal::makeScene(const char* path) {
 
 
 	// floor
-	md = new Model();
+	md = new ModelData();
 	md->root.ms = md->addOwn(new MeshPlane(30.f, 30.f));
 	md->own_meshes.back()->initGL(true);
 	md->root.mat = md->addOwn(new Material());

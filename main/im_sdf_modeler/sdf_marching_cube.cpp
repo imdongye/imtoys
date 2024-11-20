@@ -341,7 +341,7 @@ static int getCubeInfoIdx(vec3 wPos, vec3 radius) {
 
 
 void exportMesh(const char* dir, const char* modelName,  int sampleRate) {
-    lim::Model model;
+    lim::ModelData model;
     model.name = modelName;
     model.root.ms = model.addOwn(new lim::Mesh());
     model.root.mat = model.addOwn(new lim::Material());

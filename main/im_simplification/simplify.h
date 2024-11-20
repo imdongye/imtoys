@@ -35,11 +35,11 @@ namespace lim
 	//		   1 : lossless
 	//		   2 : max_consider_thresold
 	//
-	void simplifyModel(lim::Model& model, float lived_pct = 0.8f, int version = 0, int agressiveness=7, bool verbose=true);
+	void simplifyModel(lim::ModelData& model, float lived_pct = 0.8f, int version = 0, int agressiveness=7, bool verbose=true);
 
-	void bakeNormalMap(const Model& src, Model& dst, int texSize);
+	void bakeNormalMap(const ModelData& src, ModelData& dst, int texSize);
 
-	void convertBumpMapToNormalMap(Model& md);
+	void convertBumpMapToNormalMap(ModelData& md);
 }
 
 #endif

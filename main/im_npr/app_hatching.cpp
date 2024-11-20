@@ -110,17 +110,17 @@ lim::AppHatching::AppHatching(): AppBase(1200, 780, APP_NAME)
 	
 	viewport.getFb().clear_color = {0.1f, 0.1f, 0.1f, 1.0f};
 
-	Model* md = new Model();
+	ModelData* md = new ModelData();
 	md->importFromFile("assets/models/dwarf/Dwarf_2_Low.obj", false, true);
 	md->setSameMat(&h_mat);
 	scene.addOwn(md);
 	
-	md = new Model("sphere");
+	md = new ModelData("sphere");
 	md->root.ms = asset_lib::sphere;
 	md->root.mat = &h_mat;
 	scene.addOwn(md);
 
-	md = new Model();
+	md = new ModelData();
 	md->importFromFile("assets/models/dwarf/Dwarf_2_Low.obj", false, true);
 	md->setSameMat(&h_mat);
 	scene.addOwn(md);
@@ -136,7 +136,7 @@ lim::AppHatching::AppHatching(): AppBase(1200, 780, APP_NAME)
 
 
 	/* ground */
-	md = new Model("ground");
+	md = new ModelData("ground");
 	md->addOwn(new MeshPlane());
 	md->own_meshes.back()->initGL();
 	md->root.ms = md->own_meshes.back().raw;

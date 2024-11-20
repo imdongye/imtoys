@@ -52,7 +52,6 @@ void Camera::updateViewMtx()
 }
 void Camera::viewMtxToPos()
 {
-	log::pure("test\n");
 	mat4 invView = glm::affineInverse(mtx_View);
 	pos.x = invView[3][0];
     pos.y = invView[3][1];

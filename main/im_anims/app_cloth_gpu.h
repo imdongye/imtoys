@@ -29,7 +29,7 @@ namespace lim
 		Program prog_comp_nor;
 		MeshPlane ground;
 		ViewportWithCam viewport;
-		Model model;
+		ModelData model;
 		LightDirectional light;
 
 	public:

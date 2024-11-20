@@ -39,7 +39,7 @@ namespace
         float roughness = 0.3f;  // brdf param
 		float metalness = 0.f;
 		float ambient_int = 0.008f;
-		void setup(Model& md) {
+		void setup(ModelData& md) {
 			for(auto& mat : md.own_materials) {
 				mat->Shininess = shininess;
 			}
@@ -153,7 +153,7 @@ void lim::AppModelViewer::addModelViewer(const char* path)
 
 	const char* winName;
 
-	Model* md = new Model();
+	ModelData* md = new ModelData();
 	// if path then findModelInDirectory return path
 	// if dir then findModelInDirectory return model path
 	if( md->importFromFile(findModelInDirectory(path).c_str(), false, true)==false ) {
@@ -337,7 +337,7 @@ void lim::AppModelViewer::updateImGui()
 			if( ImGui::Combo("F", &tInfo.idx_F, fStrs, IM_ARRAYSIZE(fStrs)) ) { isInfoChanged = true; }
 		}
 		if( isInfoChanged ) {
-			((Model*)(md.src_md))->setSetProgToAllMat(makeSetProg(tInfo));
+			((ModelData*)(md.src_md))->setSetProgToAllMat(makeSetProg(tInfo));
 		}
 		if( tInfo.idx_Brdf<2 ) { // phong, blinn phong
 			if( ImGui::SliderFloat("shininess", &tInfo.shininess, 0.5f, 300) ) {

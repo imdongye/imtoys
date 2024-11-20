@@ -11,7 +11,7 @@ using namespace lim;
 
 void AppGenMesh::addMeshToScene(Mesh* ms) {
 	ms->initGL(false);
-	Model* md = new Model("sphere");
+	ModelData* md = new ModelData("sphere");
 	md->root.ms = md->addOwn(ms);
 	md->root.mat = &default_mat;
 	scene.addOwn(md);
@@ -54,13 +54,13 @@ AppGenMesh::AppGenMesh()
 	addMeshToScene(new MeshCapsule(1.f, 2.f, 8, 5, true, false));
 	addMeshToScene(new MeshDonut(0.5f, 0.2f, 50, 25));
 
-	Model* md = new Model();
+	ModelData* md = new ModelData();
 	md->importFromFile("assets/models/objs/spot.obj", false, true, 1.f, glm::vec3(0));
 	md->setSameMat(&default_mat);
 
 	scene.addOwn(md);
 
-	md = new Model();
+	md = new ModelData();
 	md->importFromFile("assets/models/objs/Wooden Crate.obj", false, true, 1.f, glm::vec3(0));
 	md->setSameMat(&default_mat);
 	scene.addOwn(md);

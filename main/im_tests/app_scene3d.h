@@ -20,7 +20,7 @@ namespace lim
 		inline static constexpr CStr APP_INFO = "3d scene editor";
 
 		Scene scene;
-		ViewportWithCam viewport;
+		ViewportWithCam vp;
 
 	public:
 		AppScene3d();

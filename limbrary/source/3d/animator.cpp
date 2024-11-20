@@ -11,7 +11,7 @@ using namespace glm;
 
 Animator::Animator() {
 }
-void Animator::init(const Model* md) {
+void Animator::init(const ModelData* md) {
     if( !md )
         return;
     src_md = md;

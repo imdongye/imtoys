@@ -40,7 +40,7 @@ namespace LimGui
     void initEditors();
 
     void ModelViewEditor(lim::ModelView& md);
-    void ModelDataEditor(lim::Model& md);
+    void ModelDataEditor(lim::ModelData& md);
     void RdNodeEditor(lim::RdNode& rd);
     void BoneNodeEditor(lim::BoneNode& rd);
     lim::RdNode*    getPickedRenderNode();

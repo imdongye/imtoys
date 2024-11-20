@@ -79,7 +79,7 @@ static void resetApp() {
 
 	switch(cur_mesh_type) {
 		case MT_BUNNY: {
-			Model md;
+			ModelData md;
 			md.importFromFile("assets/models/pbd_test/bunny.obj", false, true, 1.f, vec3(0));
 			ms = md.own_meshes[0].raw;
 			md.own_meshes[0] = nullptr;
@@ -87,7 +87,7 @@ static void resetApp() {
 			break;
 		}
 		case MT_CHEEMS: {
-			Model md;
+			ModelData md;
 			md.importFromFile("assets/models/pbd_test/cheems.obj", false, true, 1.f, vec3(0));
 			ms = md.own_meshes[0].raw;
 			md.own_meshes[0] = nullptr;
@@ -95,7 +95,7 @@ static void resetApp() {
 			break;
 		}
 		case MT_BUFF: {
-			Model md;
+			ModelData md;
 			md.importFromFile("assets/models/pbd_test/buff-doge.obj", false, true, 1.f, vec3(0));
 			ms = md.own_meshes[0].raw;
 			md.own_meshes[0] = nullptr;

@@ -44,7 +44,7 @@ namespace lim
 		int dst_vp_idx = 1;
 		int last_focused_vp_idx = 0;
 		
-		Model ground;
+		ModelData ground;
 
 		int nr_viewports = 0;
 		std::vector<ViewportWithCam*> viewports;

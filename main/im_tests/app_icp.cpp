@@ -178,7 +178,7 @@ namespace lim
         camera.updateViewMtx();
 
         Material* mat = new Material();
-        Model md;
+        ModelData md;
         md.importFromFile("assets/models/objs/woody.obj", false, true);
         md.setSameMat(mat);
         md.addOwn(mat);

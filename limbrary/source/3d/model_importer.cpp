@@ -29,7 +29,7 @@ using namespace glm;
 
 namespace 
 {
-	Model* g_model = nullptr; // temp model
+	ModelData* g_model = nullptr; // temp model
 	Animator* g_animator = nullptr;
 	bool g_is_ms_has_bone = false;
 	const aiScene* g_scn;
@@ -514,7 +514,7 @@ static void convertRdTree(RdNode& dstParent, const aiNode* src, int depth)
 
 
 
-bool lim::Model::importFromFile(
+bool lim::ModelData::importFromFile(
 	const char* modelPath, bool withAnims
 	, bool scaleAndPivot, float maxSize, vec3 pivot
 	, GLuint aiPostProcessFlags, GLuint aiPostProcessFlags2

@@ -14,7 +14,7 @@ Note:
 
 
     Application 소유권 : Program, IBLight, Scene
-    Scene의 소유권 : Model, Light
+    Scene의 소유권 : ModelData, Light
     Model의 소유권 : Texture, Material, Mesh
 
     Scene에서 alpha블랜딩이 없을때 가까운 물체를 배열의 앞에 배치해야 fs가 덜 호출되어 성능상 이득.
@@ -54,7 +54,7 @@ namespace lim
         int idx_LitMod = -1;
 
         // only contained in scene
-        std::vector<Model*> src_mds;
+        std::vector<ModelData*> src_mds;
         std::vector<OwnPtr<Program>> own_progs;
         std::vector<OwnPtr<IBLight>> own_ib_lits;
 
@@ -65,7 +65,7 @@ namespace lim
         void reset();
 
         ModelView*          addOwn(ModelView* md);
-        Model*              addOwn(Model* md);
+        ModelData*              addOwn(ModelData* md);
         LightDirectional*   addOwn(LightDirectional* lit);
         LightSpot*          addOwn(LightSpot* lit);
         LightOmni*          addOwn(LightOmni* lit);

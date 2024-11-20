@@ -143,7 +143,7 @@ void AppSimplification::addEmptyViewport()
 	viewports.push_back(vp);
 
 	Scene* scn = new Scene();
-	scn->addOwn(new Model());
+	scn->addOwn(new ModelData());
 	scn->addOwn(new ModelView(ground));
 	scn->addOwn(new LightDirectional())->setShadowEnabled(true);
 
@@ -203,7 +203,7 @@ void AppSimplification::doImportModel(const char* path, int vpIdx)
 		return;
 	}
 
-	Model& md = *(Model*)scenes[vpIdx]->own_mds[0].raw;
+	ModelData& md = *(ModelData*)scenes[vpIdx]->own_mds[0].raw;
 
 	if( !md.importFromFile(path, false, true) ) {
 		return;
@@ -218,7 +218,7 @@ void AppSimplification::doImportModel(const char* path, int vpIdx)
 }
 void AppSimplification::doExportModel(size_t pIndex, int vpIdx)
 {
-	Model& md = *(Model*)scenes[vpIdx]->own_mds[0].raw;
+	ModelData& md = *(ModelData*)scenes[vpIdx]->own_mds[0].raw;
 	if( md.own_meshes.empty() ) {
 		log::err("export\n");
 		return;
@@ -227,8 +227,8 @@ void AppSimplification::doExportModel(size_t pIndex, int vpIdx)
 }
 void AppSimplification::doSimplifyModel(float lived_pct, int version, int agressiveness, bool verbose)
 {
-	Model& srcMd = *(Model*)scenes[src_vp_idx]->own_mds[0].raw;
-	Model& dstMd = *(Model*)scenes[dst_vp_idx]->own_mds[0].raw;
+	ModelData& srcMd = *(ModelData*)scenes[src_vp_idx]->own_mds[0].raw;
+	ModelData& dstMd = *(ModelData*)scenes[dst_vp_idx]->own_mds[0].raw;
 
 	dstMd = srcMd; // copy
 
@@ -241,8 +241,8 @@ void AppSimplification::doSimplifyModel(float lived_pct, int version, int agress
 }
 void AppSimplification::doBakeNormalMap(int texSize)
 {
-	Model& srcMd = *(Model*)scenes[src_vp_idx]->own_mds[0].raw;
-	Model& dstMd = *(Model*)scenes[dst_vp_idx]->own_mds[0].raw;
+	ModelData& srcMd = *(ModelData*)scenes[src_vp_idx]->own_mds[0].raw;
+	ModelData& dstMd = *(ModelData*)scenes[dst_vp_idx]->own_mds[0].raw;
 	if( srcMd.own_meshes.empty() || dstMd.own_meshes.empty() )
 		log::err("You Must to simplify before baking\n");
 	else
@@ -250,7 +250,7 @@ void AppSimplification::doBakeNormalMap(int texSize)
 }
 void AppSimplification::setProg(int idx) {
 	for(Scene* scn: scenes) {
-		Model& md = *(Model*)scn->own_mds[0].raw;
+		ModelData& md = *(ModelData*)scn->own_mds[0].raw;
 		md.setProgToAllMat(programs[idx]);
 	}
 	ground.setProgToAllMat(programs[idx]);
@@ -284,7 +284,7 @@ void AppSimplification::update()
 			fb.bind();
 			prog.use();
 
-			Model& md = *(Model*)scenes[i]->own_mds[0].raw;
+			ModelData& md = *(ModelData*)scenes[i]->own_mds[0].raw;
 
 			md.root.dfsRender([&](const Mesh* ms, const Material* mat, const glm::mat4& _) {
 				if( curMat != mat ) {
@@ -324,8 +324,8 @@ void AppSimplification::update()
 }
 void AppSimplification::updateImGui()
 {
-	Model& srcMd = *(Model*)scenes[src_vp_idx]->own_mds[0].raw;
-	Model& dstMd = *(Model*)scenes[dst_vp_idx]->own_mds[0].raw;
+	ModelData& srcMd = *(ModelData*)scenes[src_vp_idx]->own_mds[0].raw;
+	ModelData& dstMd = *(ModelData*)scenes[dst_vp_idx]->own_mds[0].raw;
 
 	ImGui::DockSpaceOverViewport();
 
@@ -362,7 +362,7 @@ void AppSimplification::updateImGui()
 			{
 				for( int i = 0; i < nr_viewports; i++ )
 				{
-					const Model& md = *(Model*)scenes[i]->own_mds[0].raw;
+					const ModelData& md = *(ModelData*)scenes[i]->own_mds[0].raw;
 					if( md.own_meshes.empty() )
 						continue;
 
@@ -416,7 +416,7 @@ void AppSimplification::updateImGui()
 		ImGui::Text("From viewport:");
 		for( int i=0; i<nr_viewports; i++ )
 		{
-			Model& md = *(Model*)scenes[i]->own_mds[0].raw;
+			ModelData& md = *(ModelData*)scenes[i]->own_mds[0].raw;
 			if( md.own_meshes.empty() )
 				continue;
 			ImGui::SameLine();
@@ -476,7 +476,7 @@ void AppSimplification::updateImGui()
 		}
 		if( ImGui::Button("BumpMap To Normal Map") )
 		{
-			Model& md = *(Model*)scenes[src_vp_idx]->own_mds[0].raw;
+			ModelData& md = *(ModelData*)scenes[src_vp_idx]->own_mds[0].raw;
 			convertBumpMapToNormalMap(md);
 		}
 	}
@@ -516,7 +516,7 @@ void AppSimplification::updateImGui()
 		static float bumpHeight = 100;
 		if( ImGui::SliderFloat("bumpHeight", &bumpHeight, 0.0, 300.0) ) {
 			for( Scene* scn : scenes ) {
-				Model& md = *(Model*)scn->own_mds[0].raw;
+				ModelData& md = *(ModelData*)scn->own_mds[0].raw;
 				for( auto& mat : md.own_materials ) {
 					mat->BumpHeight = bumpHeight;
 				}
@@ -525,7 +525,7 @@ void AppSimplification::updateImGui()
 		static float texDelta = 0.00001f;
 		if( ImGui::SliderFloat("texDelta", &texDelta, 0.000001f, 0.0001f, "%f") ) {
 			for( Scene* scn : scenes ) {
-				Model& md = *(Model*)scn->own_mds[0].raw;
+				ModelData& md = *(ModelData*)scn->own_mds[0].raw;
 				for( auto& mat : md.own_materials ) {
 					mat->TexDelta = texDelta;
 				}
@@ -553,7 +553,7 @@ void AppSimplification::updateImGui()
 			if( ImGui::TableSetColumnIndex(column++) )
 				ImGui::Text("name");
 			for( Scene* scn : scenes ) {
-				Model& md = *(Model*)scn->own_mds[0].raw;
+				ModelData& md = *(ModelData*)scn->own_mds[0].raw;
 				if( ImGui::TableSetColumnIndex(column++) )
 				{
 					if( md.own_meshes.empty() )
@@ -567,7 +567,7 @@ void AppSimplification::updateImGui()
 			if( ImGui::TableSetColumnIndex(column++) )
 				ImGui::Text("#verticies");
 			for( Scene* scn : scenes ) {
-				Model& md = *(Model*)scn->own_mds[0].raw;
+				ModelData& md = *(ModelData*)scn->own_mds[0].raw;
 				if( ImGui::TableSetColumnIndex(column++) )
 				{
 					if( md.own_meshes.empty() )
@@ -581,7 +581,7 @@ void AppSimplification::updateImGui()
 			if( ImGui::TableSetColumnIndex(column++) )
 				ImGui::Text("#triangles");
 			for( Scene* scn : scenes ) {
-				Model& md = *(Model*)scn->own_mds[0].raw;
+				ModelData& md = *(ModelData*)scn->own_mds[0].raw;
 				if( ImGui::TableSetColumnIndex(column++) )
 				{
 					if( md.own_meshes.empty() )
@@ -595,7 +595,7 @@ void AppSimplification::updateImGui()
 			if( ImGui::TableSetColumnIndex(column++) )
 				ImGui::Text("boundary_x");
 			for( Scene* scn : scenes ) {
-				Model& md = *(Model*)scn->own_mds[0].raw;
+				ModelData& md = *(ModelData*)scn->own_mds[0].raw;
 				if( ImGui::TableSetColumnIndex(column++) )
 				{
 					if( md.own_meshes.empty() )
@@ -609,7 +609,7 @@ void AppSimplification::updateImGui()
 			if( ImGui::TableSetColumnIndex(column++) )
 				ImGui::Text("boundary_y");
 			for( Scene* scn : scenes ) {
-				Model& md = *(Model*)scn->own_mds[0].raw;
+				ModelData& md = *(ModelData*)scn->own_mds[0].raw;
 				if( ImGui::TableSetColumnIndex(column++) )
 				{
 					if( md.own_meshes.empty() )
@@ -624,7 +624,7 @@ void AppSimplification::updateImGui()
 			if( ImGui::TableSetColumnIndex(column++) )
 				ImGui::Text("#meshes");
 			for( Scene* scn : scenes ) {
-				Model& md = *(Model*)scn->own_mds[0].raw;
+				ModelData& md = *(ModelData*)scn->own_mds[0].raw;
 				if( ImGui::TableSetColumnIndex(column++) )
 				{
 					if( md.own_meshes.empty() )
@@ -638,7 +638,7 @@ void AppSimplification::updateImGui()
 			if( ImGui::TableSetColumnIndex(column++) )
 				ImGui::Text("#textures");
 			for( Scene* scn : scenes ) {
-				Model& md = *(Model*)scn->own_mds[0].raw;
+				ModelData& md = *(ModelData*)scn->own_mds[0].raw;
 				if( ImGui::TableSetColumnIndex(column++) )
 				{
 					if( md.own_meshes.empty() )

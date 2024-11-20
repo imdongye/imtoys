@@ -108,7 +108,7 @@ namespace lim
 	//		   1 : lossless
 	//		   2 : max_consider_thresold
 	//
-	void simplifyModel(lim::Model& model, float lived_pct, int version, int agressiveness, bool verbose)
+	void simplifyModel(lim::ModelData& model, float lived_pct, int version, int agressiveness, bool verbose)
 	{
 		model.total_verts = 0;
 		model.total_tris = 0;

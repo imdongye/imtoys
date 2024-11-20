@@ -36,7 +36,7 @@ namespace
 
 	const aiExportFormatDesc* g_formats[32] = { nullptr, };
 
-	const Model* g_src_md = nullptr;
+	const ModelData* g_src_md = nullptr;
 
 	std::vector<std::pair<const Mesh*, const Material*>> g_materialed_meshes;
 
@@ -250,7 +250,7 @@ namespace
 	}
 	
 
-	aiScene* makeScene(const Model& md)
+	aiScene* makeScene(const ModelData& md)
 	{
 		aiScene* scn = new aiScene();
 
@@ -297,7 +297,7 @@ namespace
 
 namespace lim
 {
-	bool Model::exportToFile(size_t pIndex, const char* exportDir)
+	bool ModelData::exportToFile(size_t pIndex, const char* exportDir)
 	{
 		namespace fs = std::filesystem;
 		const aiExportFormatDesc *format = g_formats[pIndex];

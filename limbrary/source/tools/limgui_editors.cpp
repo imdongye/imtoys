@@ -15,7 +15,7 @@ using namespace lim;
 ImFont* LimGui::icons = nullptr;
 
 namespace {
-	Model*              picked_md_data = nullptr;
+	ModelData*              picked_md_data = nullptr;
 	ModelView*          picked_md_view = nullptr;
 	RdNode*	            picked_rd_node = nullptr;
 	BoneNode*           picked_bone_node = nullptr;
@@ -219,7 +219,7 @@ RdNode* LimGui::getPickedRenderNode() {
 //
 //	ModelDataEditor
 //
-void LimGui::ModelDataEditor(Model& md)
+void LimGui::ModelDataEditor(ModelData& md)
 {
 	ImGui::Begin(md_data_editor_win_name.c_str());
 
@@ -396,7 +396,7 @@ namespace
 		(ImGuizmo::OPERATION)0, ImGuizmo::TRANSLATE, 
 		ImGuizmo::SCALE, ImGuizmo::ROTATE, ImGuizmo::UNIVERSAL 
 	};
-	int selected_edit_mode_idx = 0;
+	int selected_edit_mode_idx = 1;
 }
 
 static void sceneGuizmoHook(ViewportWithCam& vp)
@@ -415,7 +415,7 @@ static void sceneGuizmoHook(ViewportWithCam& vp)
 
 	ImGuizmo::ViewManipulate( glm::value_ptr(cam.mtx_View), 8.0f, view_mani_pos, view_mani_size, (ImU32)0x10101010 );
 
-	if( picked_rd_node ) {
+	if( picked_rd_node && selected_edit_mode_idx>0 ) {
 		if( ImGuizmo::Manipulate( glm::value_ptr(cam.mtx_View), glm::value_ptr(cam.mtx_Proj)
                             , gzmo_edit_modes[selected_edit_mode_idx], gzmo_space
 							, glm::value_ptr(picked_rd_node->mtx_global)
@@ -501,11 +501,14 @@ void LimGui::SceneEditor(Scene& scene, ViewportWithCam& vp)
             if( ImGui::Selectable(md->root.name.c_str(), md == picked_md_view) ) {
 				picked_md_view = md.raw;
 				picked_md_data = nullptr;
-				picked_rd_node = nullptr;
+				picked_rd_node = &md->root;
 				picked_bone_node = nullptr;
 			};
 			ImGui::PopID();
         }
+		ImGui::Dummy({0, 5});
+
+		// Todo add code mesh button
     }
     if( ImGui::CollapsingHeader("Lights") ) {
 		i=0;
@@ -538,7 +541,7 @@ void LimGui::SceneEditor(Scene& scene, ViewportWithCam& vp)
     }
     if( ImGui::CollapsingHeader("Model datas") ) {
 		i=0;
-        for( Model* md : scene.src_mds ) {
+        for( ModelData* md : scene.src_mds ) {
 			ImGui::PushID(i++);
 			ImGui::Bullet();
             if( ImGui::Selectable(md->name.c_str(), md == picked_md_data) ) {
