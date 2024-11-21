@@ -126,12 +126,12 @@ lim::AppHatching::AppHatching(): AppBase(1200, 780, APP_NAME)
 	scene.addOwn(md);
 
 	const float interModels = 2.f;
-	const float biasModels = -interModels*(scene.own_mds.size()-1)*0.5f;
+	const float biasModels = -interModels*(scene.own_mdvs.size()-1)*0.5f;
 
-	for( int i = 0; i<scene.own_mds.size(); i++ ) {
-		scene.own_mds[i]->root.tf.pos ={biasModels + interModels*i, 0, 0};
-		scene.own_mds[i]->root.tf.update();
-		scene.own_mds[i]->root.updateGlobalTransform();
+	for( int i = 0; i<scene.own_mdvs.size(); i++ ) {
+		scene.own_mdvs[i]->root.tf.pos ={biasModels + interModels*i, 0, 0};
+		scene.own_mdvs[i]->root.tf.update();
+		scene.own_mdvs[i]->root.updateGlobalTransform();
 	}
 
 

@@ -41,7 +41,7 @@ void AppSoftbodyInModel::reloadModel(const char* path) {
 	}
 	srcMd->setProgToAllMat(&prog_skinned);
 
-	scene.own_mds[0] = srcMd; // delete and change in OwnPtr
+	scene.own_mdvs[0] = srcMd; // delete and change in OwnPtr
 }
 AppSoftbodyInModel::AppSoftbodyInModel() : AppBase(1480, 780, APP_NAME, false)
 	, viewport(new FramebufferMs())
@@ -58,13 +58,12 @@ AppSoftbodyInModel::AppSoftbodyInModel() : AppBase(1480, 780, APP_NAME, false)
 	scene.ib_light = &ib_light;
 	scene.is_draw_env_map = true;
 	scene.idx_LitMod = 0;
-	scene.addOwn(new LightDirectional());
-	scene.own_dir_lits.back()->setShadowEnabled(true);
+	scene.addOwn(new LightDirectional(true));
 
 
-	scene.own_mds.resize(2);
+	scene.own_mdvs.resize(2);
 
-	scene.own_mds[0] = nullptr;
+	scene.own_mdvs[0] = nullptr;
 	reloadModel("assets/models/my/color.fbx");
 
 
@@ -100,7 +99,7 @@ AppSoftbodyInModel::AppSoftbodyInModel() : AppBase(1480, 780, APP_NAME, false)
 		flMat->map_Flags |= Material::MF_NOR;
 		flMat->map_Bump = flTex;
 
-		scene.own_mds[1] = floorMd;
+		scene.own_mdvs[1] = floorMd;
 	}
 
 
@@ -200,7 +199,7 @@ void AppSoftbodyInModel::updateImGui()
 	viewport.drawImGuiAndUpdateCam();
 
 
-	ModelView& md = *scene.own_mds[0];
+	ModelView& md = *scene.own_mdvs[0];
 	LimGui::ModelViewEditor(md);
 	
 

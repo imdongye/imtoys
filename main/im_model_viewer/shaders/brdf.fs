@@ -74,7 +74,6 @@ uniform LightDirectional lit;
 
 struct ShadowDirectional {
 	bool Enabled;
-	float ZNear;
 	float ZFar;
 	vec2 TexelSize;
 	vec2 OrthoSize;
@@ -202,7 +201,8 @@ float zTexToZView(float zTex) { // [0,1] -> [near, far]
 	// [-1,1](non linear) -> [near, far](linear)
 	//return -2.0*light_z_Far*light_z_Near / ( zNdc*(light_z_Far-light_z_Near) + light_z_Far+light_z_Near );
 	// [0,1] -> [near, far]
-	return shadow.ZFar*shadow.ZNear / ( (shadow.ZNear-shadow.ZFar)*zTex-shadow.ZNear ); // 왜 안되지
+	// return shadow.ZFar*shadow.ZNear / ( (shadow.ZNear-shadow.ZFar)*zTex-shadow.ZNear ); // 왜 안되지
+	return shadow.ZFar*zTex;
 }
 // float zClipToZView(float zClip) { // [-near, far] -> [near, far]
 // 	return ((light_z_Far-light_z_Near)*zClip + 2.0*light_z_Near*light_z_Far) / (light_z_Far+light_z_Near);
@@ -250,7 +250,7 @@ float shadowing()
 	// Using similar triangles from the surface point to the area light
 	// (샘플링 콘의 비율을 일정하게 하기위함.)
 	vec2 sRadiusTUv = shadow.RadiusUv*shadow.TexelSize;
-	vec2 searchRegionRadiusUV = sRadiusTUv * (lDepth - shadow.ZNear) / lDepth;
+	vec2 searchRegionRadiusUV = sRadiusTUv * (lDepth) / lDepth;
 	findBlocker( avgBlockerDepth, nrBlockers, shadowTexCoord, searchRegionRadiusUV);
 	// return nrBlockers/float(NR_FIND_BLOCKER_SAMPLE);
 	if( nrBlockers == 0 ) return 1.0;
@@ -262,7 +262,7 @@ float shadowing()
 	// Using similar triangles between the area light, the blocking plane and the surface point
 	vec2 wPenumbraUv = (lDepth - avgBlockerDepthWorld)*sRadiusTUv / avgBlockerDepthWorld;
 	// Project UV size to the near plane of the light
-	vec2 filterRadiusUv = wPenumbraUv*shadow.ZNear/lDepth;
+	vec2 filterRadiusUv = wPenumbraUv/lDepth;
 
 
 	// STEP 3: filtering

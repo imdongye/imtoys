@@ -44,7 +44,7 @@ AppBaseCanvas3d::AppBaseCanvas3d(int winWidth, int winHeight, const char* title,
     , int capacityQuads, int capacitySpheres, int capacityCylinders) 
     : AppBase(winWidth, winHeight, title, vsync)
     , vp(new FramebufferMs(), "Canvas3d")
-    , light()
+    , light(true)
     , capacity_quads(capacityQuads)
     , capacity_spheres(capacitySpheres)
     , capacity_cylinders(capacityCylinders)
@@ -83,7 +83,6 @@ AppBaseCanvas3d::AppBaseCanvas3d(int winWidth, int winHeight, const char* title,
     vp.camera.pivot = vec3(0, 1.0, 0);
     vp.camera.pos = vec3(0, 1.5, 3.4);
 	vp.camera.updateViewMtx();
-    light.setShadowEnabled(true);
 }
 AppBaseCanvas3d::~AppBaseCanvas3d()
 {

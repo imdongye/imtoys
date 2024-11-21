@@ -12,7 +12,7 @@ AppScene3d::AppScene3d()
 {
 	{
 		Program& prog = *scene.addOwn(new Program("pcss prog"));
-		prog.attatch("mvp.vs").attatch("ndl.fs").link();
+		prog.attatch("mvp_shadow.vs").attatch("pcss.fs").link();
 
 		ModelData& md = *scene.addOwn(new ModelData("ground"));
 		Material& mat = *md.addOwn(new Material());
@@ -21,24 +21,24 @@ AppScene3d::AppScene3d()
 		md.root.mat = &mat;
 	}
 	{
-		ModelData& md = *scene.addOwn(new ModelData("sphere"));
+		ModelData& md = *scene.addOwn(new ModelData("cylinder"));
 		Material& mat = *md.addOwn(new Material());
 		mat.prog = scene.own_progs[0].raw;
-		md.root.ms = asset_lib::sphere;
+		md.root.ms = asset_lib::thin_cylinder;
 		md.root.tf.pos.x = -1.f;
 		md.root.tf.update();
 		md.root.mat = &mat;
 	}
 	{
 		Program& skined_prog = *scene.addOwn(new Program("skinned prog"));
-		skined_prog.attatch("mvp_skinned.vs").attatch("ndv.fs").link();
+		skined_prog.attatch("mvp_skinned_shadow.vs").attatch("pcss.fs").link();
 
 		ModelData& md = *scene.addOwn(new ModelData("vam"));
 		md.importFromFile("assets/models/jump.fbx", true, true);
 		md.setProgToAllMat(&skined_prog);
 	}
 	{
-		LightDirectional& lit = *scene.addOwn(new LightDirectional());
+		LightDirectional& lit = *scene.addOwn(new LightDirectional(true));
 	}
 
 	vp.camera.pos.y = 1.f;
@@ -60,7 +60,7 @@ void AppScene3d::update()
 	glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	scene.render(vp.getFb(), vp.camera);
+	scene.render(vp.getFb(), vp.camera, true);
 }
 void AppScene3d::updateImGui()
 {

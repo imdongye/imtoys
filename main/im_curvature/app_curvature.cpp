@@ -218,14 +218,10 @@ AppCurvature::AppCurvature() : AppBase(1200, 780, APP_NAME)
 
 	curv::uploadMesh(*mesh);
 
-	gizmo::init();
-
 	abut::init();
 }
 AppCurvature::~AppCurvature()
 {
-	gizmo::deinit();
-
 	abut::deinit();
 }
 

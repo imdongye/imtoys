@@ -45,7 +45,7 @@ namespace lim
 	{
   	public:
         // using in render
-		std::vector<OwnPtr<ModelView>> own_mds;
+		std::vector<OwnPtr<ModelView>> own_mdvs;
         std::vector<OwnPtr<LightDirectional>> own_dir_lits;
         std::vector<OwnPtr<LightSpot>> own_spot_lits;
         std::vector<OwnPtr<LightOmni>> own_omni_lits;
@@ -65,7 +65,7 @@ namespace lim
         void reset();
 
         ModelView*          addOwn(ModelView* md);
-        ModelData*              addOwn(ModelData* md);
+        ModelData*          addOwn(ModelData* md);
         LightDirectional*   addOwn(LightDirectional* lit);
         LightSpot*          addOwn(LightSpot* lit);
         LightOmni*          addOwn(LightOmni* lit);

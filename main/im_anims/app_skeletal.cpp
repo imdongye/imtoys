@@ -30,12 +30,12 @@ void AppSkeletal::makeScene(const char* path) {
 	// 	for(int i=0; i<nrWidth; i++) for(int j=0; j<nrWidth; j++)  {
 	// 		scene.addOwn(new ModelView(*md));
 	// 		vec2 targetPos = startPos+stepSize*vec2{i, j};
-	// 		scene.own_mds.back()->root.tf.pos.x = targetPos.x;
-	// 		scene.own_mds.back()->root.tf.pos.z = targetPos.y;
-	// 		scene.own_mds.back()->root.tf.update();
-	// 		scene.own_mds.back()->animator.is_loop = true;
-	// 		scene.own_mds.back()->animator.play();
-	// 		scene.own_mds.back()->animator.setTimeline(glim::randFloat(), true);
+	// 		scene.own_mdvs.back()->root.tf.pos.x = targetPos.x;
+	// 		scene.own_mdvs.back()->root.tf.pos.z = targetPos.y;
+	// 		scene.own_mdvs.back()->root.tf.update();
+	// 		scene.own_mdvs.back()->animator.is_loop = true;
+	// 		scene.own_mdvs.back()->animator.play();
+	// 		scene.own_mdvs.back()->animator.setTimeline(glim::randFloat(), true);
 	// 	}
 	// }
 
@@ -95,7 +95,7 @@ void lim::AppSkeletal::update()
 	// todo when draw with cloth model getting to screen darker
 	//	draw bones 
 	// {
-	// 	const ModelView& mdview = *scene.own_mds[0];
+	// 	const ModelView& mdview = *scene.own_mdvs[0];
 	// 	glm::mat4 globalMtx = mdview.getLocalToBoneRootMtx();
 	// 	for( const BoneNode& bone : mdview.animator.bones ) {
 	// 		if( drawOffset ) {
@@ -120,7 +120,7 @@ void lim::AppSkeletal::updateImGui()
 
 	viewport.drawImGuiAndUpdateCam();
 
-	LimGui::ModelViewEditor(*scene.own_mds.front());
+	LimGui::ModelViewEditor(*scene.own_mdvs.front());
 
 	ImGui::Begin("skeletal ctrl");
 	LimGui::PlotVal("dt", "ms", delta_time);

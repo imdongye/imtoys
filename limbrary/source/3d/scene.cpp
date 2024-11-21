@@ -3,13 +3,14 @@
 #include <limbrary/tools/log.h>
 #include <limbrary/tools/render.h>
 #include <limbrary/tools/text.h>
+#include <limbrary/tools/gizmo.h>
 
 using namespace std;
 using namespace lim;
 
 
 void Scene::reset() {
-    own_mds.clear();
+    own_mdvs.clear();
     own_dir_lits.clear();
     own_spot_lits.clear();
     own_omni_lits.clear();
@@ -23,12 +24,12 @@ void Scene::reset() {
 }
 
 ModelView* Scene::addOwn(ModelView* md)  {
-    own_mds.push_back(md);
+    own_mdvs.push_back(md);
     return md;
 }
 ModelData* Scene::addOwn(ModelData* md)  {
     assert( md->src_md == md );
-    own_mds.push_back((ModelView*)md);
+    own_mdvs.push_back((ModelView*)md);
     src_mds.push_back(md);
     return md;
 }
@@ -78,14 +79,14 @@ void Scene::render( const IFramebuffer& fb, const Camera& cam, const bool isDraw
     const Program& shadowSkinned = *asset_lib::prog_shadow_skinned;
 
     // todo: update menually
-    for( auto& md : own_mds ) {
+    for( auto& md : own_mdvs ) {
         md->root.updateGlobalTransform(getMtxTf(md->tf_prev));
     }
 
     // bake shadow map
     for( auto& lit : own_dir_lits ) {
         lit->bakeShadowMap([&](const glm::mat4& mtx_View, const glm::mat4& mtx_Proj) {
-            for( auto& md : own_mds ) {
+            for( auto& md : own_mdvs ) {
                 if( md->own_animator && md->own_animator->is_enabled ) {
                     shadowSkinned.use();
                     md->own_animator->setUniformTo(shadowSkinned);
@@ -121,7 +122,7 @@ void Scene::render( const IFramebuffer& fb, const Camera& cam, const bool isDraw
     bool isMeshChanged = true;
     bool isModelChanged = true;
 
-    for( const auto& md : own_mds ) {
+    for( const auto& md : own_mdvs ) {
         isModelChanged = true;
         md->root.dfsRender([&](const Mesh* ms, const Material* mat, const glm::mat4& mtxGlobal) {
             if( curMat != mat ) {
@@ -174,14 +175,8 @@ void Scene::render( const IFramebuffer& fb, const Camera& cam, const bool isDraw
     }
 
     if( isDrawLight ) {
-        const Program& prog = asset_lib::prog_ndv->use();
-        cam.setUniformTo(prog);
-
-        // todo: diff color
         for( const auto& lit : own_dir_lits ) {
-            prog.setUniform("mtx_Model", lit->tf.mtx);
-            // todo: draw dir with line
-            asset_lib::small_sphere->bindAndDrawGL();
+            gizmo::drawPoint(lit->tf.pos, {1,0,0,1}, 0.5f, cam, false);
         }
     }
 

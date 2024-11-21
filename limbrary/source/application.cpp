@@ -4,6 +4,7 @@
 #include <limbrary/tools/asset_lib.h>
 #include <limbrary/tools/apps_selector.h>
 #include <limbrary/tools/limgui.h>
+#include <limbrary/tools/gizmo.h>
 #include <limbrary/viewport.h>
 #include <glad/glad.h>
 #include <iostream>
@@ -233,6 +234,7 @@ AppBase::AppBase(int winWidth, int winHeight, const char* title, bool vsync)
 
 	asset_lib::init();
 	LimGui::initEditors();
+	gizmo::init();
 }
 
 
@@ -248,6 +250,7 @@ AppBase::~AppBase()
 	ImGui::DestroyContext();
 
 	asset_lib::deinit();
+	gizmo::deinit();
 
 	glfwDestroyWindow(window);
 	glfwTerminate();

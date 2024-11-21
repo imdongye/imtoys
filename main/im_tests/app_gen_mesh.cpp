@@ -67,20 +67,20 @@ AppGenMesh::AppGenMesh()
 
 
 	const float interModels = 1.2f;
-	const float biasModels = -interModels * scene.own_mds.size() / 2.f;
+	const float biasModels = -interModels * scene.own_mdvs.size() / 2.f;
 
-	for( int i = 0; i < scene.own_mds.size(); i++ )
+	for( int i = 0; i < scene.own_mdvs.size(); i++ )
 	{
-		scene.own_mds[i]->root.tf.pos = {biasModels + interModels * i, 0, 0};
-		scene.own_mds[i]->root.tf.update();
-		scene.own_mds[i]->root.updateGlobalTransform();
+		scene.own_mdvs[i]->root.tf.pos = {biasModels + interModels * i, 0, 0};
+		scene.own_mdvs[i]->root.tf.update();
+		scene.own_mdvs[i]->root.updateGlobalTransform();
 	}
 
 	addMeshToScene(new MeshPlane());
-	scene.own_mds.back()->root.tf.pos = {0, -1.f, 0};
-	scene.own_mds.back()->root.tf.scale = glm::vec3{20.f};
-	scene.own_mds.back()->root.tf.update();
-	scene.own_mds.back()->root.updateGlobalTransform();
+	scene.own_mdvs.back()->root.tf.pos = {0, -1.f, 0};
+	scene.own_mdvs.back()->root.tf.scale = glm::vec3{20.f};
+	scene.own_mdvs.back()->root.tf.update();
+	scene.own_mdvs.back()->root.updateGlobalTransform();
 
 	scene.addOwn(new LightDirectional());
 

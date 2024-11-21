@@ -31,21 +31,22 @@ namespace lim
 	// Todo: dinamic OrthoSize
 	struct ShadowMap final : public NoCopyAndMove
 	{
-		inline static const int map_size = 1024;
-
 		bool Enabled;
-		float ZNear;
 		float ZFar;
 		glm::mat4 mtx_View;
 		glm::mat4 mtx_Proj;
 		glm::mat4 mtx_ShadowVp;
 
-		FramebufferRbDepth map; // map_Shadow 
-		glm::vec2 TexelSize; // ortho_width/height 고려해야하나
+		int tex_size;
+		glm::vec2 TexelSize; // menualy depend on tex_size
 		glm::vec2 OrthoSize;
 		glm::vec2 RadiusUv; // world space
 
+		FramebufferRbDepth map; // map_Shadow 
+
 		ShadowMap(TransformPivoted& tf);
+		void applyMapSize();
+		void applyProjMtx();
 	};
 
 	struct LightDirectional final : public NoCopyAndMove
@@ -57,9 +58,8 @@ namespace lim
 
 		OwnPtr<ShadowMap> shadow = nullptr;
 
-		LightDirectional();
+		LightDirectional(bool withShadow = false);
 		~LightDirectional();
-		void setShadowEnabled(bool enabled);
 		void bakeShadowMap(std::function<void(const glm::mat4& mtx_View, const glm::mat4& mtx_Proj)> draw) const;
 		void setUniformTo(const Program& prog) const;
 	};

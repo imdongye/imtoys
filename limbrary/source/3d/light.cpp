@@ -8,26 +8,22 @@ using namespace lim;
 
 
 
-ShadowMap::ShadowMap(TransformPivoted& tf) 
+ShadowMap::ShadowMap(TransformPivoted& tf)
 	: map(3, 32)
+    , tex_size(1024)
 	, Enabled(true)
-	, ZNear(0.f)
 	, ZFar(30.f)
-	, TexelSize(vec2(1/map_size))
-	, OrthoSize(vec2(8,16))
+	, OrthoSize(vec2(8,16)*0.5f)
 	, RadiusUv(vec2(0.001f))
 {
-	TexelSize = glm::vec2(1.f/map_size);
-
 	map.clear_color = glm::vec4(1);
 	map.color_tex.s_wrap_param = GL_CLAMP_TO_BORDER; 
 	map.color_tex.t_wrap_param = GL_CLAMP_TO_BORDER; 
 	map.color_tex.border_color = glm::vec4(1.f); 
-	map.resize(ivec2(map_size));
+	applyMapSize();
 
-	const float halfW = OrthoSize.x*0.5f;
-	const float halfH = OrthoSize.y*0.5f;
-	mtx_Proj = glm::ortho(-halfW, halfW, -halfH, halfH, ZNear, ZFar);
+
+	applyProjMtx();
 	
 	tf.update_callback = [this](const Transform* tf) {
 		const TransformPivoted* ptf = (const TransformPivoted*)tf;
@@ -36,25 +32,31 @@ ShadowMap::ShadowMap(TransformPivoted& tf)
 	};
 	tf.update();
 }
+void ShadowMap::applyProjMtx() {
+    const vec2 half = OrthoSize*0.5f;
+    mtx_Proj = glm::ortho(-half.x, half.x, -half.y, half.y, 0.f, ZFar);
+    mtx_ShadowVp = mtx_Proj * mtx_View;
+}
+void ShadowMap::applyMapSize() {
+	map.resize(ivec2(tex_size));
+    TexelSize = glm::vec2(1.f/tex_size);
+}
 
 
 
 
-LightDirectional::LightDirectional()
+LightDirectional::LightDirectional(bool withShadow)
 {
 	tf.theta = 35.f;
 	tf.phi =  -35.f;
 	tf.dist = 7.f;
 	tf.updateWithRotAndDist();
+    if( withShadow ) {
+        shadow = new ShadowMap(tf);
+    }
 }
 LightDirectional::~LightDirectional()
 {
-}
-void LightDirectional::setShadowEnabled(bool enabled) {
-	if( shadow == nullptr ) {
-		shadow = new ShadowMap(tf);
-	}
-	shadow->Enabled = enabled;
 }
 
 void LightDirectional::bakeShadowMap(std::function<void(const glm::mat4& mtx_View, const glm::mat4& mtx_Proj)> draw) const
@@ -86,7 +88,6 @@ void LightDirectional::setUniformTo(const Program& prog) const
 		prog.setUniform("mtx_ShadowVp", shadow->mtx_ShadowVp);
 
 		prog.setUniform("shadow.Enabled", true);
-		prog.setUniform("shadow.ZNear", shadow->ZNear);
 		prog.setUniform("shadow.ZFar", shadow->ZFar);
 		prog.setUniform("shadow.TexelSize", shadow->TexelSize );
 		prog.setUniform("shadow.OrthoSize", shadow->OrthoSize );

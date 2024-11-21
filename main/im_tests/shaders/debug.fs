@@ -17,7 +17,6 @@ struct LightDirectional {
 };
 struct ShadowDirectional {
 	bool Enabled;
-	float ZNear;
 	float ZFar;
 	vec2 TexelSize;
 	vec2 OrthoSize;

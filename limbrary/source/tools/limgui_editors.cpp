@@ -349,15 +349,43 @@ void LimGui::LightDirectionalEditor(LightDirectional& lit)
 	}
 	ImGui::Text("pos: %.1f %.1f %.1f", lit.tf.pos.x, lit.tf.pos.y, lit.tf.pos.z);
 	ImGui::SliderFloat("intencity", &lit.Intensity, 0.5f, 200.f, "%.1f");
-	ImGui::SliderFloat2("light radius", &lit.shadow->RadiusUv.x, 0.f, 0.1f, "%.3f");
-	ImGui::Checkbox("shadow enabled", &lit.shadow->Enabled);
-	ImGui::Checkbox("show shadow map", &is_draw_shadow_map_view);
-	if(is_draw_shadow_map_view && lit.shadow->Enabled) {
-		lim::Viewport& vp = *asset_lib::texture_viewer; // todo
-		vp.getFb().bind();
-		drawTexToQuad(lit.shadow->map.getRenderedTexId(), 2.2f, 0.f, 1.f);
-		vp.getFb().unbind();
-		vp.drawImGui();
+	if( lit.shadow ) {
+		ImGui::SliderFloat2("light radius", &lit.shadow->RadiusUv.x, 0.f, 0.1f, "%.3f");
+		if( ImGui::Checkbox("shadow enabled", &lit.shadow->Enabled) && !lit.shadow->Enabled ) {
+			is_draw_shadow_map_view = false;
+		}
+		ImGui::Checkbox("show shadow map", &is_draw_shadow_map_view);
+		if(is_draw_shadow_map_view && lit.shadow->Enabled) {
+			// Todo
+			// lim::Viewport& vp = *asset_lib::texture_viewer; 
+			// vp.getFb().bind();
+			// drawTexToQuad(lit.shadow->map.getRenderedTexId(), 2.2f, 0.f, 1.f);
+			// vp.getFb().unbind();
+			// vp.drawImGui();
+			ImGui::Image(texIdToIg(lit.shadow->map.getRenderedTexId()), ImVec2{200, 200}, ImVec2{0, 1}, ImVec2{1, 0});
+		}
+		ImGui::Separator();
+		bool dirty = false;
+		dirty |= ImGui::SliderFloat("ZFar", &lit.shadow->ZFar, 1.f, 50.f, "%.3f");
+		dirty |= ImGui::SliderFloat2("OrthoSize", &lit.shadow->OrthoSize.x, 8, 20, "%.1f");
+		if( dirty ) {
+			lit.shadow->applyProjMtx();
+		}
+		
+		int texSizeIdx = 0;
+		switch(lit.shadow->tex_size) {
+		case 256: texSizeIdx = 0; break;
+		case 512: texSizeIdx = 1; break;
+		case 1024: texSizeIdx = 2; break;
+		case 2048: texSizeIdx = 3; break;
+		case 4096: texSizeIdx = 4; break;
+		}
+		static const char* items[] = {"256x256", "512x512", "1024x1024", "2048x2048", "4096x4096"};
+		if(ImGui::Combo("tex size", &texSizeIdx, items, IM_ARRAYSIZE(items))) {
+			lit.shadow->tex_size = 1<<(8+texSizeIdx);
+			lit.shadow->applyMapSize();
+		}
+
 	}
 	ImGui::End();
 }
@@ -495,7 +523,7 @@ void LimGui::SceneEditor(Scene& scene, ViewportWithCam& vp)
 	ImGui::SetNextItemOpen(true, ImGuiCond_Once);
 	if( ImGui::CollapsingHeader("Model views") ) {
 		i=0;
-		for( auto& md : scene.own_mds ) {
+		for( auto& md : scene.own_mdvs ) {
 			ImGui::PushID(i++);
 			ImGui::Bullet();
             if( ImGui::Selectable(md->root.name.c_str(), md == picked_md_view) ) {
@@ -517,6 +545,8 @@ void LimGui::SceneEditor(Scene& scene, ViewportWithCam& vp)
 			ImGui::Bullet();
             if( ImGui::Selectable(lit->name.c_str(), lit == picked_dir_lit) ) {
 				picked_dir_lit = lit.raw;
+				picked_md_data = nullptr;
+				picked_rd_node = nullptr;
 			}
 			ImGui::PopID();
         }
@@ -526,6 +556,8 @@ void LimGui::SceneEditor(Scene& scene, ViewportWithCam& vp)
 			ImGui::Bullet();
             if( ImGui::Selectable(lit->name.c_str(), lit == picked_spot_lit) ) {
 				picked_spot_lit = lit.raw;
+				picked_md_data = nullptr;
+				picked_rd_node = nullptr;
 			}
 			ImGui::PopID();
         }
@@ -535,6 +567,8 @@ void LimGui::SceneEditor(Scene& scene, ViewportWithCam& vp)
 			ImGui::Bullet();
             if( ImGui::Selectable(lit->name.c_str(), lit == picked_omni_lit) ) {
 				picked_omni_lit = lit.raw;
+				picked_md_data = nullptr;
+				picked_rd_node = nullptr;
 			}
 			ImGui::PopID();
         }

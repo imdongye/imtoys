@@ -7,7 +7,7 @@ using namespace lim;
 
 namespace
 {
-    Mesh* ms_sphere;
+    Mesh* ms_sphere = nullptr;
     Mesh* ms_cone;
     Mesh* ms_cylinder;
     Program* prog_gizmo;
@@ -15,6 +15,8 @@ namespace
 
 void gizmo::init()
 {
+    assert(ms_sphere==nullptr);
+
     ms_sphere = new MeshIcoSphere(1.f, 0, true, false);
     ms_sphere->initGL();
     ms_cone = new MeshCone(1.f, 1.f, 8, true, false);
@@ -28,7 +30,9 @@ void gizmo::init()
 
 void gizmo::deinit()
 {
-    delete ms_sphere;
+    assert(ms_sphere);
+    
+    delete ms_sphere; ms_sphere = nullptr;
     delete ms_cone;
     delete ms_cylinder;
     delete prog_gizmo;

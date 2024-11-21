@@ -160,13 +160,12 @@ void lim::AppModelViewer::addModelViewer(const char* path)
 		delete md;
 		return;
 	}
-	LightDirectional* lit = new LightDirectional();
+	LightDirectional* lit = new LightDirectional(true);
 	lit->tf.theta = 35.f;
 	lit->tf.phi =  -35.f;
 	lit->tf.dist = 7.f;
 	lit->tf.updateWithRotAndDist();
 	lit->Intensity = 55.f;
-	lit->setShadowEnabled(true);
 
 	brdf_test_infos.push_back({});
 	winName = fmtStrToBuf("%s ctrl###mdvr%dct", md->name.c_str(), vpId);
@@ -286,7 +285,7 @@ void lim::AppModelViewer::updateImGui()
 		// draw brdf ctrl
 		if(selected_vp_idx != i)
 			continue;
-		ModelView& md = *scenes[i]->own_mds[0]; 
+		ModelView& md = *scenes[i]->own_mdvs[0]; 
 		BrdfTestInfo& tInfo = brdf_test_infos[i];
 
 		ImGui::Begin(tInfo.ctrl_name.c_str());
@@ -300,10 +299,10 @@ void lim::AppModelViewer::updateImGui()
 		
 		if( ImGui::Checkbox("floor", &tInfo.is_draw_floor) ) {
 			if(tInfo.is_draw_floor) {
-				scenes[i]->own_mds[1]->root.enabled = true;
+				scenes[i]->own_mdvs[1]->root.enabled = true;
 			}
 			else {
-				scenes[i]->own_mds[1]->root.enabled = false;
+				scenes[i]->own_mdvs[1]->root.enabled = false;
 			}
 		}
 
