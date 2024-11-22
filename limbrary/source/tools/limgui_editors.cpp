@@ -350,21 +350,8 @@ void LimGui::LightDirectionalEditor(LightDirectional& lit)
 	ImGui::Text("pos: %.1f %.1f %.1f", lit.tf.pos.x, lit.tf.pos.y, lit.tf.pos.z);
 	ImGui::SliderFloat("intencity", &lit.Intensity, 0.5f, 200.f, "%.1f");
 	if( lit.shadow ) {
-		ImGui::SliderFloat2("light radius", &lit.shadow->RadiusUv.x, 0.f, 0.1f, "%.3f");
-		if( ImGui::Checkbox("shadow enabled", &lit.shadow->Enabled) && !lit.shadow->Enabled ) {
-			is_draw_shadow_map_view = false;
-		}
-		ImGui::Checkbox("show shadow map", &is_draw_shadow_map_view);
-		if(is_draw_shadow_map_view && lit.shadow->Enabled) {
-			// Todo
-			// lim::Viewport& vp = *asset_lib::texture_viewer; 
-			// vp.getFb().bind();
-			// drawTexToQuad(lit.shadow->map.getRenderedTexId(), 2.2f, 0.f, 1.f);
-			// vp.getFb().unbind();
-			// vp.drawImGui();
-			ImGui::Image(texIdToIg(lit.shadow->map.getRenderedTexId()), ImVec2{200, 200}, ImVec2{0, 1}, ImVec2{1, 0});
-		}
-		ImGui::Separator();
+		ImGui::SliderFloat2("light radius", &lit.shadow->RadiusUv.x, 0.f, 1.1f, "%.3f");
+		
 		bool dirty = false;
 		dirty |= ImGui::SliderFloat("ZFar", &lit.shadow->ZFar, 1.f, 50.f, "%.3f");
 		dirty |= ImGui::SliderFloat2("OrthoSize", &lit.shadow->OrthoSize.x, 8, 20, "%.1f");
@@ -385,7 +372,20 @@ void LimGui::LightDirectionalEditor(LightDirectional& lit)
 			lit.shadow->tex_size = 1<<(8+texSizeIdx);
 			lit.shadow->applyMapSize();
 		}
+		if( ImGui::Checkbox("shadow enabled", &lit.shadow->Enabled) && !lit.shadow->Enabled ) {
+			is_draw_shadow_map_view = false;
+		}
 
+		ImGui::Checkbox("show shadow map", &is_draw_shadow_map_view);
+		if(is_draw_shadow_map_view && lit.shadow->Enabled) {
+			// Todo
+			// lim::Viewport& vp = *asset_lib::texture_viewer; 
+			// vp.getFb().bind();
+			// drawTexToQuad(lit.shadow->map.getRenderedTexId(), 2.2f, 0.f, 1.f);
+			// vp.getFb().unbind();
+			// vp.drawImGui();
+			ImGui::Image(texIdToIg(lit.shadow->map.getRenderedTexId()), ImVec2{200, 200}, ImVec2{0, 1}, ImVec2{1, 0});
+		}
 	}
 	ImGui::End();
 }
@@ -518,8 +518,6 @@ void LimGui::SceneEditor(Scene& scene, ViewportWithCam& vp)
 {
 	int i;
 	ImGui::Begin(scene_editor_window_name.c_str());
-	ImGui::Text("안녕하세요 한글테스트 입니다 감사합니다.");
-	ImGui::Text("안녕하세2요 한글테스트2 입니다 감사합니다.");
 	ImGui::SetNextItemOpen(true, ImGuiCond_Once);
 	if( ImGui::CollapsingHeader("Model views") ) {
 		i=0;

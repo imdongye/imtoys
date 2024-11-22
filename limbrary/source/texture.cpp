@@ -63,7 +63,7 @@ void Texture::initGL(void* data)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, s_wrap_param);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, s_wrap_param);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, t_wrap_param);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, mipmap_max_level);
 	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(border_color)); 
 	//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 8); // todo

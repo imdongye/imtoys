@@ -17,7 +17,7 @@ void gizmo::init()
 {
     assert(ms_sphere==nullptr);
 
-    ms_sphere = new MeshIcoSphere(1.f, 0, true, false);
+    ms_sphere = new MeshSphere(1.f, 20, 8, true, false);
     ms_sphere->initGL();
     ms_cone = new MeshCone(1.f, 1.f, 8, true, false);
     ms_cone->initGL();

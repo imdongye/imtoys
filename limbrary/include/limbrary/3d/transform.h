@@ -37,7 +37,7 @@ namespace lim
         float theta, phi; // degree
         float dist = 0;
 
-        glm::vec3 dir; // out rst
+        glm::vec3 dir; // out rst pivot to pos
         
         void updateWithRotAndDist();
         // void updateOrientation(); // todo

@@ -5,7 +5,7 @@
 #include <limbrary/tools/text.h>
 #include <limbrary/tools/gizmo.h>
 
-using namespace std;
+#include <limbrary/using_in_cpp/glm.h>
 using namespace lim;
 
 
@@ -85,7 +85,7 @@ void Scene::render( const IFramebuffer& fb, const Camera& cam, const bool isDraw
 
     // bake shadow map
     for( auto& lit : own_dir_lits ) {
-        lit->bakeShadowMap([&](const glm::mat4& mtx_View, const glm::mat4& mtx_Proj) {
+        lit->bakeShadowMap([&](const mat4& mtx_View, const mat4& mtx_Proj) {
             for( auto& md : own_mdvs ) {
                 if( md->own_animator && md->own_animator->is_enabled ) {
                     shadowSkinned.use();
@@ -99,7 +99,7 @@ void Scene::render( const IFramebuffer& fb, const Camera& cam, const bool isDraw
                     shadowStatic.setUniform("mtx_Proj", mtx_Proj);
                 }
 
-                md->root.dfsRender([](const Mesh* ms, const Material* mat, const glm::mat4& mtxGlobal) {
+                md->root.dfsRender([](const Mesh* ms, const Material* mat, const mat4& mtxGlobal) {
                     Program::g_cur_ptr->setUniform("mtx_Model", mtxGlobal);
                     ms->bindAndDrawGL();
                     return true;
@@ -124,7 +124,7 @@ void Scene::render( const IFramebuffer& fb, const Camera& cam, const bool isDraw
 
     for( const auto& md : own_mdvs ) {
         isModelChanged = true;
-        md->root.dfsRender([&](const Mesh* ms, const Material* mat, const glm::mat4& mtxGlobal) {
+        md->root.dfsRender([&](const Mesh* ms, const Material* mat, const mat4& mtxGlobal) {
             if( curMat != mat ) {
                 curMat = mat;
                 isMatChanged = true;
@@ -176,7 +176,8 @@ void Scene::render( const IFramebuffer& fb, const Camera& cam, const bool isDraw
 
     if( isDrawLight ) {
         for( const auto& lit : own_dir_lits ) {
-            gizmo::drawPoint(lit->tf.pos, {1,0,0,1}, 0.5f, cam, false);
+            gizmo::drawPoint(lit->tf.pos, {1,0,0,1}, 0.2f, cam, false);
+            gizmo::drawArrow(lit->tf.pos, -lit->tf.dir, {1,0,0,1}, 0.5f, 0.1f, cam, false);
         }
     }
 

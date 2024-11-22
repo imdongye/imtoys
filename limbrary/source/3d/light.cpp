@@ -19,27 +19,28 @@ ShadowMap::ShadowMap(TransformPivoted& tf)
 	map.clear_color = glm::vec4(1);
 	map.color_tex.s_wrap_param = GL_CLAMP_TO_BORDER; 
 	map.color_tex.t_wrap_param = GL_CLAMP_TO_BORDER; 
-	map.color_tex.border_color = glm::vec4(1.f); 
+	map.color_tex.border_color = glm::vec4(100.f); 
 	applyMapSize();
 
-
-	applyProjMtx();
-	
 	tf.update_callback = [this](const Transform* tf) {
 		const TransformPivoted* ptf = (const TransformPivoted*)tf;
 		mtx_View = lookAt(vec3(ptf->pos), ptf->pivot, {0,1,0});
 		mtx_ShadowVp = mtx_Proj * mtx_View;
 	};
 	tf.update();
+
+	applyProjMtx();
 }
-void ShadowMap::applyProjMtx() {
+void ShadowMap::applyMapSize()
+{
+	map.resize(ivec2(tex_size));
+    TexelSize = glm::vec2(1.f/tex_size);
+}
+void ShadowMap::applyProjMtx()
+{
     const vec2 half = OrthoSize*0.5f;
     mtx_Proj = glm::ortho(-half.x, half.x, -half.y, half.y, 0.f, ZFar);
     mtx_ShadowVp = mtx_Proj * mtx_View;
-}
-void ShadowMap::applyMapSize() {
-	map.resize(ivec2(tex_size));
-    TexelSize = glm::vec2(1.f/tex_size);
 }
 
 
