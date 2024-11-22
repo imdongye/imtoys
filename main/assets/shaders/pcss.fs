@@ -21,12 +21,16 @@ struct ShadowDirectional {
 	vec2 TexelSize;
 	vec2 OrthoSize;
 	vec2 RadiusUv;
+	float Bias;
 };
 uniform ShadowDirectional shadow;
 uniform sampler2D map_Shadow;
 
 uniform float gamma = 2.2;
 
+vec3 N, L;
+float NDL;
+float NDDL;
 
 
 const int nr_poisson = 32;
@@ -69,14 +73,16 @@ float shadowing01() // Soft Shadow
 	if(!shadow.Enabled) 
 		return 1.f;
 	vec3 shadow_clip_pos = lPos.xyz/lPos.w;
-	vec3 shadow_tex_pos = (shadow_clip_pos+1)*0.5f;
+	vec3 shadow_tex_pos = (shadow_clip_pos+1.0)*0.5f;
 	float cur_depth = shadow_tex_pos.z;
-	float bias = 0.001; // Todo adaptive
+	// From: https://cwyman.org/papers/i3d14_adaptiveBias.pdf
+	float bias = shadow.Bias*(1.0-NDDL) + shadow.RadiusUv.y*0.001;
+	bias = max(bias, 0.0001);
 	int nr_front = 0;
 	for( int i=0; i<nr_poisson; i++ ) {
 		vec2 off = 0.01 * shadow.RadiusUv * shadow.OrthoSize * poisson32[i];
 		float front_depth = texture(map_Shadow, shadow_tex_pos.xy+off).r;
-		if( cur_depth < front_depth+0.001 || front_depth>0.999 ) {
+		if( cur_depth < front_depth + bias || front_depth==1.0 ) {
 			nr_front++;
 		}
 	}
@@ -88,10 +94,12 @@ float shadowing01() // Soft Shadow
 
 void main()
 {    
-    vec3 L = normalize(lit.Pos - wPos);
+    L = normalize(lit.Pos - wPos);
     // vec3 N = normalize (cross (dFdx(wPos.xyz), dFdy(wPos.xyz)));
-	vec3 N = normalize(wNor);
-	float shading = shadowing01()*max(dot(N, L),0);
+	N = normalize(wNor);
+	NDL = max(dot(N, L),0);
+	NDDL = max(dot(N, lit.Dir), 0);
+	float shading = shadowing01() * NDL;
     vec3 outColor = vec3(shading);
     
     outColor = pow(outColor, vec3(1/gamma));

@@ -10,6 +10,7 @@ using namespace lim;
 
 ShadowMap::ShadowMap(TransformPivoted& tf)
 	: map(3, 32)
+    , Bias(0.005f)
     , tex_size(1024)
 	, Enabled(true)
 	, ZFar(30.f)
@@ -90,6 +91,7 @@ void LightDirectional::setUniformTo(const Program& prog) const
 
 		prog.setUniform("shadow.Enabled", true);
 		prog.setUniform("shadow.ZFar", shadow->ZFar);
+		prog.setUniform("shadow.Bias", shadow->Bias);
 		prog.setUniform("shadow.TexelSize", shadow->TexelSize );
 		prog.setUniform("shadow.OrthoSize", shadow->OrthoSize );
 		prog.setUniform("shadow.RadiusUv", shadow->RadiusUv );

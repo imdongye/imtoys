@@ -350,8 +350,8 @@ void LimGui::LightDirectionalEditor(LightDirectional& lit)
 	ImGui::Text("pos: %.1f %.1f %.1f", lit.tf.pos.x, lit.tf.pos.y, lit.tf.pos.z);
 	ImGui::SliderFloat("intencity", &lit.Intensity, 0.5f, 200.f, "%.1f");
 	if( lit.shadow ) {
-		ImGui::SliderFloat2("light radius", &lit.shadow->RadiusUv.x, 0.f, 1.1f, "%.3f");
-		
+		ImGui::SliderFloat2("light radius", &lit.shadow->RadiusUv.x, 0.f, 0.15f, "%.3f");
+		ImGui::SliderFloat("Bias", &lit.shadow->Bias, 0.f, 0.01f, "%.4f");
 		bool dirty = false;
 		dirty |= ImGui::SliderFloat("ZFar", &lit.shadow->ZFar, 1.f, 50.f, "%.3f");
 		dirty |= ImGui::SliderFloat2("OrthoSize", &lit.shadow->OrthoSize.x, 8, 20, "%.1f");

@@ -33,6 +33,7 @@ namespace lim
 	{
 		bool Enabled;
 		float ZFar;
+		float Bias;
 		glm::mat4 mtx_View;
 		glm::mat4 mtx_Proj;
 		glm::mat4 mtx_ShadowVp;
