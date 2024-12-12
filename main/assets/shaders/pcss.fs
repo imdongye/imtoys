@@ -29,8 +29,8 @@ uniform sampler2D map_Shadow;
 uniform float gamma = 2.2;
 
 vec3 N, L;
-float NDL;
-float NDDL;
+float NDL; // point lit
+float NDDL; // dir lit
 
 
 const int nr_poisson = 32;
@@ -68,6 +68,7 @@ const vec2 poisson32[] = {
 	{0.865413, 0.763726},
 	{0.872005, -0.927},
 };
+
 float shadowing01() // Soft Shadow
 {
 	if(!shadow.Enabled) 
@@ -75,9 +76,13 @@ float shadowing01() // Soft Shadow
 	vec3 shadow_clip_pos = lPos.xyz/lPos.w;
 	vec3 shadow_tex_pos = (shadow_clip_pos+1.0)*0.5f;
 	float cur_depth = shadow_tex_pos.z;
+
+	// Adaptive Bias
 	// From: https://cwyman.org/papers/i3d14_adaptiveBias.pdf
-	float bias = shadow.Bias*(1.0-NDDL) + shadow.RadiusUv.y*0.001;
+	// shadow.RadiusUv.y/0.12 => inv 0.12 => 8.333333
+	float bias = shadow.Bias * (1.0-NDDL) * shadow.RadiusUv.y*8.333333;
 	bias = max(bias, 0.0001);
+	
 	int nr_front = 0;
 	for( int i=0; i<nr_poisson; i++ ) {
 		vec2 off = 0.01 * shadow.RadiusUv * shadow.OrthoSize * poisson32[i];

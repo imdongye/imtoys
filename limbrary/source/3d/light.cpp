@@ -10,7 +10,7 @@ using namespace lim;
 
 ShadowMap::ShadowMap(TransformPivoted& tf)
 	: map(3, 32)
-    , Bias(0.005f)
+    , Bias(0.015f)
     , tex_size(1024)
 	, Enabled(true)
 	, ZFar(30.f)
