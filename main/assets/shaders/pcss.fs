@@ -20,6 +20,7 @@ struct ShadowDirectional {
 	float ZFar;
 	vec2 TexelSize;
 	vec2 OrthoSize;
+	bool Use_PCSS;
 	vec2 RadiusUv;
 	float Bias;
 };
@@ -73,25 +74,56 @@ float shadowing01() // Soft Shadow
 {
 	if(!shadow.Enabled) 
 		return 1.f;
+
 	vec3 shadow_clip_pos = lPos.xyz/lPos.w;
 	vec3 shadow_tex_pos = (shadow_clip_pos+1.0)*0.5f;
 	float cur_depth = shadow_tex_pos.z;
+
 
 	// Adaptive Bias
 	// From: https://cwyman.org/papers/i3d14_adaptiveBias.pdf
 	// shadow.RadiusUv.y/0.12 => inv 0.12 => 8.333333
 	float bias = shadow.Bias * (1.0-NDDL) * shadow.RadiusUv.y*8.333333;
 	bias = max(bias, 0.0001);
-	
-	int nr_front = 0;
+
+
+	//
+	// PCSS for dir lit
+	//
+
+	// STEP 1: blocker search
+	int nr_blocker = 0;
+	float blocker_depth = 0.0;
 	for( int i=0; i<nr_poisson; i++ ) {
 		vec2 off = 0.01 * shadow.RadiusUv * shadow.OrthoSize * poisson32[i];
+		float front_depth = texture(map_Shadow, shadow_tex_pos.xy+off).r;
+
+		if( cur_depth < front_depth + bias || front_depth==1.0 )
+			continue;
+
+		nr_blocker++;
+		blocker_depth += front_depth;
+	}
+	blocker_depth /= float(nr_blocker);
+
+
+	if( nr_blocker == 0 )
+		return 1.0;
+
+	// STEP 2: penumbra size
+	float penumbra_ratio = (cur_depth - blocker_depth) / blocker_depth;
+	// return penumbra_ratio;
+
+	// STEP 3 : filtering
+	int nr_front = 0;
+	for( int i=0; i<nr_poisson; i++ ) {
+		vec2 off = 0.01 * shadow.RadiusUv * shadow.OrthoSize * poisson32[i] * penumbra_ratio;
 		float front_depth = texture(map_Shadow, shadow_tex_pos.xy+off).r;
 		if( cur_depth < front_depth + bias || front_depth==1.0 ) {
 			nr_front++;
 		}
 	}
-	// return texture(map_Shadow, shadow_tex_pos.xy).r;
+
 	return float(nr_front)/float(nr_poisson);
 }
 

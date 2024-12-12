@@ -39,8 +39,9 @@ namespace lim
 		glm::mat4 mtx_ShadowVp;
 
 		int tex_size;
-		glm::vec2 TexelSize; // menualy depend on tex_size
+		glm::vec2 TexelSize; // menualy depend on tex_size (currently not used)
 		glm::vec2 OrthoSize;
+		bool Use_PCSS;
 		glm::vec2 RadiusUv; // world space
 
 		FramebufferRbDepth map; // map_Shadow 

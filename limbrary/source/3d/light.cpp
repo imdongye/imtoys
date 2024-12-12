@@ -15,6 +15,7 @@ ShadowMap::ShadowMap(TransformPivoted& tf)
 	, Enabled(true)
 	, ZFar(30.f)
 	, OrthoSize(vec2(8,16)*0.5f)
+    , Use_PCSS(false)
 	, RadiusUv(vec2(0.001f))
 {
 	map.clear_color = glm::vec4(1);
@@ -94,6 +95,7 @@ void LightDirectional::setUniformTo(const Program& prog) const
 		prog.setUniform("shadow.Bias", shadow->Bias);
 		prog.setUniform("shadow.TexelSize", shadow->TexelSize );
 		prog.setUniform("shadow.OrthoSize", shadow->OrthoSize );
+		prog.setUniform("shadow.Use_PCSS", shadow->Use_PCSS );
 		prog.setUniform("shadow.RadiusUv", shadow->RadiusUv );
 		prog.setTexture("map_Shadow", shadow->map.getRenderedTexId());
 	}

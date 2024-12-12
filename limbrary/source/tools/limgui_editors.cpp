@@ -350,7 +350,13 @@ void LimGui::LightDirectionalEditor(LightDirectional& lit)
 	ImGui::Text("pos: %.1f %.1f %.1f", lit.tf.pos.x, lit.tf.pos.y, lit.tf.pos.z);
 	ImGui::SliderFloat("intencity", &lit.Intensity, 0.5f, 200.f, "%.1f");
 	if( lit.shadow ) {
-		ImGui::SliderFloat2("light radius", &lit.shadow->RadiusUv.x, 0.f, 0.12f, "%.3f");
+		ImGui::Checkbox("use pcss(area light)", &lit.shadow->Use_PCSS);
+		if( lit.shadow->Use_PCSS ) {
+			ImGui::SliderFloat2("area radius", &lit.shadow->RadiusUv.x, 0.f, 0.6f, "%.3f");
+		}
+		else {
+			ImGui::SliderFloat2("PCF radius", &lit.shadow->RadiusUv.x, 0.f, 0.12f, "%.3f");
+		}
 		ImGui::SliderFloat("Bias", &lit.shadow->Bias, 0.f, 0.1f, "%.4f");
 		ImGui::Text("%f", 1.f-glm::dot({0,1,0}, lit.tf.dir));
 		ImGui::Text("%f", lit.shadow->RadiusUv.y*6.6666f);
