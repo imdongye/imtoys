@@ -80,7 +80,7 @@ void Scene::render( const IFramebuffer& fb, const Camera& cam, const bool isDraw
 
     // todo: update menually
     for( auto& md : own_mdvs ) {
-        md->root.updateGlobalTransform(getMtxTf(md->tf_prev));
+        md->root.updateGlobalTransform( md->tf_prev ? md->tf_prev->mtx : glm::mat4(1) );
     }
 
     // bake shadow map

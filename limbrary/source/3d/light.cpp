@@ -9,14 +9,18 @@ using namespace lim;
 
 
 ShadowMap::ShadowMap(TransformPivoted& tf)
-	: map(3, 32)
+	: Enabled(true)
     , Bias(0.015f)
-    , tex_size(1024)
-	, Enabled(true)
-	, ZFar(30.f)
+	, ZNear(0.1f)
+    , ZFar(30.f)
+    , IsOrtho(true)
 	, OrthoSize(vec2(8,16)*0.5f)
-    , Use_PCSS(false)
+    , Fov(45.f)
+    , Aspect(1.f)
+    , UsePCSS(false)
 	, RadiusUv(vec2(0.001f))
+	, map(3, 32)
+    , tex_size(1024)
 {
 	map.clear_color = glm::vec4(1);
 	map.color_tex.s_wrap_param = GL_CLAMP_TO_BORDER; 
@@ -40,8 +44,13 @@ void ShadowMap::applyMapSize()
 }
 void ShadowMap::applyProjMtx()
 {
-    const vec2 half = OrthoSize*0.5f;
-    mtx_Proj = glm::ortho(-half.x, half.x, -half.y, half.y, 0.f, ZFar);
+    if( IsOrtho ) {
+        const vec2 half = OrthoSize*0.5f;
+        mtx_Proj = glm::ortho(-half.x, half.x, -half.y, half.y, ZNear, ZFar);
+    }
+    else {
+        mtx_Proj = glm::perspective(glm::radians(Fov), Aspect, ZNear, ZFar);
+    }
     mtx_ShadowVp = mtx_Proj * mtx_View;
 }
 
@@ -95,7 +104,7 @@ void LightDirectional::setUniformTo(const Program& prog) const
 		prog.setUniform("shadow.Bias", shadow->Bias);
 		prog.setUniform("shadow.TexelSize", shadow->TexelSize );
 		prog.setUniform("shadow.OrthoSize", shadow->OrthoSize );
-		prog.setUniform("shadow.Use_PCSS", shadow->Use_PCSS );
+		prog.setUniform("shadow.UsePCSS", shadow->UsePCSS );
 		prog.setUniform("shadow.RadiusUv", shadow->RadiusUv );
 		prog.setTexture("map_Shadow", shadow->map.getRenderedTexId());
 	}

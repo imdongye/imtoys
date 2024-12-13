@@ -343,32 +343,46 @@ void LimGui::LightDirectionalEditor(LightDirectional& lit)
 	ImGui::Begin(light_editor_window_name.c_str());
 	is_light_draged |= ImGui::DragFloat("phi", &lit.tf.phi, lit_phi_spd, -FLT_MAX, +FLT_MAX, "%.3f");
 	is_light_draged |= ImGui::DragFloat("theta", &lit.tf.theta, lit_theta_spd, 0, 80, "%.3f");
-	is_light_draged |= ImGui::DragFloat("dist", &lit.tf.dist, lit_dist_spd, 5.f, 50.f, "%.3f");
+	is_light_draged |= ImGui::DragFloat("dist", &lit.tf.dist, lit_dist_spd, 2.f, 50.f, "%.3f");
 	if( is_light_draged ) {
 		lit.tf.updateWithRotAndDist();
 	}
 	ImGui::Text("pos: %.1f %.1f %.1f", lit.tf.pos.x, lit.tf.pos.y, lit.tf.pos.z);
 	ImGui::SliderFloat("intencity", &lit.Intensity, 0.5f, 200.f, "%.1f");
-	if( lit.shadow ) {
-		ImGui::Checkbox("use pcss(area light)", &lit.shadow->Use_PCSS);
-		if( lit.shadow->Use_PCSS ) {
-			ImGui::SliderFloat2("area radius", &lit.shadow->RadiusUv.x, 0.f, 0.6f, "%.3f");
+
+
+	if( lit.shadow )
+	{
+		ShadowMap& smap = *lit.shadow;
+		ImGui::Checkbox("use pcss(area light)", &smap.UsePCSS);
+		if( smap.UsePCSS ) {
+			ImGui::SliderFloat2("area radius", &smap.RadiusUv.x, 0.f, 0.6f, "%.3f");
 		}
 		else {
-			ImGui::SliderFloat2("PCF radius", &lit.shadow->RadiusUv.x, 0.f, 0.12f, "%.3f");
+			ImGui::SliderFloat2("PCF radius", &smap.RadiusUv.x, 0.f, 0.12f, "%.3f");
 		}
-		ImGui::SliderFloat("Bias", &lit.shadow->Bias, 0.f, 0.1f, "%.4f");
+		ImGui::SliderFloat("Bias", &smap.Bias, 0.f, 0.1f, "%.4f");
 		ImGui::Text("%f", 1.f-glm::dot({0,1,0}, lit.tf.dir));
-		ImGui::Text("%f", lit.shadow->RadiusUv.y*6.6666f);
+		ImGui::Text("%f", smap.RadiusUv.y*6.6666f);
 		bool dirty = false;
-		dirty |= ImGui::SliderFloat("ZFar", &lit.shadow->ZFar, 1.f, 50.f, "%.3f");
-		dirty |= ImGui::SliderFloat2("OrthoSize", &lit.shadow->OrthoSize.x, 8, 20, "%.1f");
+
+		dirty |= ImGui::Checkbox("is ortho", &smap.IsOrtho);
+		dirty |= ImGui::SliderFloat("ZNear", &smap.ZNear, 0.f, 1.f, "%.3f");
+		dirty |= ImGui::SliderFloat("ZFar", &smap.ZFar, 1.f, 50.f, "%.3f");
+		if( smap.IsOrtho ) {
+			dirty |= ImGui::SliderFloat2("OrthoSize", &smap.OrthoSize.x, 8, 20, "%.1f");
+			ImGui::NewLine();
+		}
+		else {
+			dirty |= ImGui::SliderFloat("FOV", &smap.Fov, 30, 120, "%.1f");
+			dirty |= ImGui::SliderFloat("aspect", &smap.Aspect, 0.1f, 2.f, "%.2f");
+		}
 		if( dirty ) {
-			lit.shadow->applyProjMtx();
+			smap.applyProjMtx();
 		}
 		
 		int texSizeIdx = 0;
-		switch(lit.shadow->tex_size) {
+		switch(smap.tex_size) {
 		case 256: texSizeIdx = 0; break;
 		case 512: texSizeIdx = 1; break;
 		case 1024: texSizeIdx = 2; break;
@@ -377,22 +391,22 @@ void LimGui::LightDirectionalEditor(LightDirectional& lit)
 		}
 		static const char* items[] = {"256x256", "512x512", "1024x1024", "2048x2048", "4096x4096"};
 		if(ImGui::Combo("tex size", &texSizeIdx, items, IM_ARRAYSIZE(items))) {
-			lit.shadow->tex_size = 1<<(8+texSizeIdx);
-			lit.shadow->applyMapSize();
+			smap.tex_size = 1<<(8+texSizeIdx);
+			smap.applyMapSize();
 		}
-		if( ImGui::Checkbox("shadow enabled", &lit.shadow->Enabled) && !lit.shadow->Enabled ) {
+		if( ImGui::Checkbox("shadow enabled", &smap.Enabled) && !smap.Enabled ) {
 			is_draw_shadow_map_view = false;
 		}
 
 		ImGui::Checkbox("show shadow map", &is_draw_shadow_map_view);
-		if(is_draw_shadow_map_view && lit.shadow->Enabled) {
+		if(is_draw_shadow_map_view && smap.Enabled) {
 			// Todo
 			// lim::Viewport& vp = *asset_lib::texture_viewer; 
 			// vp.getFb().bind();
-			// drawTexToQuad(lit.shadow->map.getRenderedTexId(), 2.2f, 0.f, 1.f);
+			// drawTexToQuad(smap.map.getRenderedTexId(), 2.2f, 0.f, 1.f);
 			// vp.getFb().unbind();
 			// vp.drawImGui();
-			ImGui::Image(texIdToIg(lit.shadow->map.getRenderedTexId()), ImVec2{200, 200}, ImVec2{0, 1}, ImVec2{1, 0});
+			ImGui::Image(texIdToIg(smap.map.getRenderedTexId()), ImVec2{200, 200}, ImVec2{0, 1}, ImVec2{1, 0});
 		}
 	}
 	ImGui::End();

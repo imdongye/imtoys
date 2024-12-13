@@ -17,12 +17,13 @@ uniform LightDirectional lit;
 
 struct ShadowDirectional {
 	bool Enabled;
+	float ZNear;
 	float ZFar;
-	vec2 TexelSize;
-	vec2 OrthoSize;
-	bool Use_PCSS;
-	vec2 RadiusUv;
 	float Bias;
+	vec2 OrthoSize;
+	vec2 TexelSize;
+	bool UsePCSS;
+	vec2 RadiusUv;
 };
 uniform ShadowDirectional shadow;
 uniform sampler2D map_Shadow;

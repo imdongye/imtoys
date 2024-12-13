@@ -22,6 +22,7 @@ namespace lim
 
         glm::mat4 mtx = glm::mat4(1);
 
+        // pointer for TransformPivoted
         std::function<void(const Transform* tf)> update_callback = nullptr;
         void update();
         void decomposeMtx();
@@ -49,10 +50,6 @@ namespace lim
 
         void update();
     };
-
-    inline glm::mat4 getMtxTf(const Transform* tf) {
-		return (tf==nullptr) ? glm::mat4(1.f) : tf->mtx;
-	}
 }
 
 #endif

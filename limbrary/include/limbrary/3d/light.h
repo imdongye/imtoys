@@ -28,23 +28,38 @@ Todo:
 
 namespace lim
 {
-	// Todo: dinamic OrthoSize
 	struct ShadowMap final : public NoCopyAndMove
 	{
-		bool Enabled;
-		float ZFar;
-		float Bias;
+		//
+		// vert shader
+		//
 		glm::mat4 mtx_View;
 		glm::mat4 mtx_Proj;
 		glm::mat4 mtx_ShadowVp;
 
-		int tex_size;
-		glm::vec2 TexelSize; // menualy depend on tex_size (currently not used)
-		glm::vec2 OrthoSize;
-		bool Use_PCSS;
-		glm::vec2 RadiusUv; // world space
+		//
+		// frag shader
+		//
+		bool Enabled;
+		float Bias;
+		float ZNear;
+		float ZFar;
 
+		bool IsOrtho;
+		glm::vec2 OrthoSize;
+		float Fov; // (degree) if Fov is 0 then use ortho or perspective
+		float Aspect;
+		
+		glm::vec2 TexelSize; // menualy depend on tex_size (currently not used)
+		bool UsePCSS;
+		glm::vec2 RadiusUv; // if UsePCSS area radius or PCF radius. and world space unit
+
+		//
+		// application
+		//
 		FramebufferRbDepth map; // map_Shadow 
+		int tex_size;
+
 
 		ShadowMap(TransformPivoted& tf);
 		void applyMapSize();
