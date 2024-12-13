@@ -29,6 +29,7 @@
 #include "im_physics/app_phy2d.h"
 #include "im_tests/app_scene3d.h"
 #include "im_curvature/app_curvature.h"
+#include "im_tests/app_walkie.h"
 
 #ifndef __APPLE__
 #include "im_anims/app_particle.h"
@@ -45,6 +46,7 @@ using namespace lim;
 
 int main()
 {
+	apps_selector::add<AppWalkie>();
 	apps_selector::add<AppScene3d>();
 	apps_selector::add<AppCurvature>();
 	apps_selector::add<AppGenMesh>();

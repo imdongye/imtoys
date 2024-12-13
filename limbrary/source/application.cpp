@@ -226,6 +226,7 @@ AppBase::AppBase(int winWidth, int winHeight, const char* title, bool vsync)
 		config.RasterizerDensity = 1.f; 
 		// config.GlyphMinAdvanceX = 13.0f;
 		io.Fonts->AddFontFromFileTTF("assets/fonts/SpoqaHanSansNeo-Medium.ttf",  16.f, &config, io.Fonts->GetGlyphRangesKorean());
+		// io.Fonts->AddFontFromFileTTF("assets/fonts/NanumGothic.ttf",  16.f, &config, io.Fonts->GetGlyphRangesKorean());
 		config.MergeMode = true;
 		// io.Fonts->AddFontFromFileTTF("assets/fonts/ChosunGu.ttf",  16.f, &config, io.Fonts->GetGlyphRangesKorean());
 		// io.Fonts->AddFontFromFileTTF("assets/fonts/NotoSansKR-Medium.ttf",  19.f, &config, io.Fonts->GetGlyphRangesKorean());
