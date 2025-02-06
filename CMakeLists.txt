@@ -24,6 +24,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DLIM_DEBUG")
 
+set(CMAKE_CONFIGURATION_TYPES "Debug;Release")
+set(CMAKE_DEBUG_POSTFIX "_d")
+
 set(CMAKE_VERBOSE_MAKEFILE true)
 
 project(
@@ -52,7 +55,7 @@ add_subdirectory(vendor/glfw)
 set_target_properties(glfw PROPERTIES CONFIG Release)
 target_compile_definitions(glfw INTERFACE GLFW_INCLUDE_NONE) # Todo?: glad include 순서 무시하기위함
 set_target_properties(glfw PROPERTIES FOLDER vendor)
-set(dep_libs ${dep_libs} glfw)
+set(dep_libs ${dep_libs} glfw) # must first
 
 
 
@@ -77,6 +80,20 @@ set_target_properties(assimp PROPERTIES CONFIG Release) # release 빌드
 option(BUILD_SHARED_LIBS OFF)
 set_target_properties(assimp PROPERTIES FOLDER vendor)
 list(APPEND dep_libs assimp)
+
+
+
+### opencv ###
+# set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+# set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+# set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+# set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+# set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
+# add_subdirectory(vendor/opencv)
+# set_target_properties(opencv PROPERTIES CONFIG Release)
+# set_target_properties(opencv PROPERTIES FOLDER vendor)
+# set(dep_libs ${dep_libs} opencv) # must first
+
 
 
 

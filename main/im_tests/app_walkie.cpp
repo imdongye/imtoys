@@ -1,3 +1,9 @@
+/*
+
+Todo:
+	ignore IME preview
+
+*/
 #include "app_walkie.h"
 #include <limbrary/tools/log.h>
 #include <imgui.h>
@@ -24,6 +30,37 @@ void AppWalkie::update()
 	glClearColor(0.05f, 0.09f, 0.11f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
+
+
+static char text[128] = "";
+
+int MyInputTextCallback(ImGuiInputTextCallbackData* data)
+{
+    // Add the new character to our buffer
+    char* buf = (char*)data->UserData;
+	log::pure("%s\n", data->EventChar);
+    int offset = data->CursorPos;
+    memmove(buf + offset + 1, buf + offset, data->BufSize - offset - 1);
+    buf[offset] = data->EventChar;
+
+    return 0;
+}
+
+bool MyInputText(const char* label, char* buf, int buf_size)
+{
+    ImGuiInputTextFlags flags = ImGuiInputTextFlags_CallbackEdit;
+    flags |= ImGuiInputTextFlags_CallbackResize;
+
+    static ImGuiInputTextCallbackData cb;
+    cb.UserData = (void*)text;
+    cb.Buf = buf;
+    cb.BufSize = buf_size;
+
+    bool ret = ImGui::InputText(label, buf, buf_size, flags, MyInputTextCallback, (void*)&cb);
+    return ret;
+}
+
+
 void AppWalkie::updateImGui()
 {
 	ImGui::DockSpaceOverViewport();
@@ -50,7 +87,15 @@ void AppWalkie::updateImGui()
 	// ImGui::CheckboxFlags("ImGuiInputTextFlags_CtrlEnterForNewLine", &flags, ImGuiInputTextFlags_CtrlEnterForNewLine);
 	ImGui::InputTextMultiline("##source", text, IM_ARRAYSIZE(text), ImVec2(-FLT_MIN, ImGui::GetTextLineHeight() * 16), flags);
 
+
+	static char buf[32] = "\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e";
+	//static char buf[32] = u8"NIHONGO"; // <- this is how you would write it with C++11, using real kanjis
+	// ImGui::InputText("UTF-8 input", buf, IM_ARRAYSIZE(buf));
+
+	MyInputText("test", buf, IM_ARRAYSIZE(buf));
+
 	ImGui::Text(text);
+	ImGui::Text(buf);
 
 	ImGui::End();
 }

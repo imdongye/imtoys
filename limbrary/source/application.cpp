@@ -80,9 +80,6 @@ AppBase::AppBase(int winWidth, int winHeight, const char* title, bool vsync)
 	glfwSwapInterval((vsync)?1:0);
 
 
-
-
-
 	//
 	//	GLAD
 	//
