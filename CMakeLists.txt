@@ -261,6 +261,17 @@ endif()
 
 
 
+### opencv ###
+set(opencv_path "C:/lim/library/opencv/build")
+set(lib_name opencv)
+file(GLOB_RECURSE lib_files "${opencv_path}/include/*.*")
+add_library(${lib_name} INTERFACE ${lib_files})
+target_include_directories(${lib_name} INTERFACE "${opencv_path}/include")
+target_link_directories(${lib_name} INTERFACE "${opencv_path}/x64/vc16/lib")
+target_link_libraries(${lib_name} INTERFACE "opencv_world4110$<$<CONFIG:Debug>:d>.lib")
+set_target_properties(${lib_name} PROPERTIES FOLDER vendor)
+
+
 
 
 ### main proj ###
@@ -288,7 +299,7 @@ list(FILTER shader_files EXCLUDE REGEX ${main_dir}/exports/*)
 add_executable(${exe_name} ${main_files} ${shader_files})
 source_group(TREE ${main_dir} FILES ${main_files} ${shader_files})
 target_include_directories(${exe_name} PRIVATE ${main_dir})
-target_link_libraries(${exe_name} PRIVATE limbrary)
+target_link_libraries(${exe_name} PRIVATE limbrary opencv)
 add_dependencies(${exe_name} limbrary)
 if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     target_compile_options(${exe_name} PRIVATE

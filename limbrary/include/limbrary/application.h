@@ -44,6 +44,7 @@ namespace lim
 		int monitor_max_fps;
 		int custom_max_fps = -1; // -1 = unlimited
 
+		bool is_vsync = true;
 		bool is_focused = true;
 		bool is_size_changed = true;
 		int win_width = 0; // relative to ratina or window monitor setting

@@ -28,7 +28,7 @@ namespace {
 
 
 AppBase::AppBase(int winWidth, int winHeight, const char* title, bool vsync)
-	:win_width(winWidth), win_height(winHeight)
+	:win_width(winWidth), win_height(winHeight), is_vsync(vsync)
 {
 	g_ptr = this;
 	std::srand(time(0));
@@ -222,7 +222,7 @@ AppBase::AppBase(int winWidth, int winHeight, const char* title, bool vsync)
 		ImFontConfig config;
 		config.RasterizerDensity = 1.f; 
 		// config.GlyphMinAdvanceX = 13.0f;
-		io.Fonts->AddFontFromFileTTF("assets/fonts/SpoqaHanSansNeo-Medium.ttf",  16.f, &config, io.Fonts->GetGlyphRangesKorean());
+		io.Fonts->AddFontFromFileTTF("assets/fonts/SpoqaHanSansNeo-Medium.ttf",  15.f, &config, io.Fonts->GetGlyphRangesKorean());
 		// io.Fonts->AddFontFromFileTTF("assets/fonts/NanumGothic.ttf",  16.f, &config, io.Fonts->GetGlyphRangesKorean());
 		config.MergeMode = true;
 		// io.Fonts->AddFontFromFileTTF("assets/fonts/ChosunGu.ttf",  16.f, &config, io.Fonts->GetGlyphRangesKorean());
@@ -294,6 +294,12 @@ void AppBase::run()
 
 		// reset state
 		is_size_changed = false;
+
+		// Lag when dragging child windows
+		// From: https://github.com/ocornut/imgui/issues/1805
+		if( is_vsync ) {
+			glfwSwapInterval(ImGui::IsMouseDragging(ImGuiMouseButton_Left) ? 0 : 1);
+		}
 		
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 		if( io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable ) 
