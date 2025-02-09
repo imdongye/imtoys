@@ -56,7 +56,7 @@ in Core
 * [stb](https://github.com/nothings/stb) in 240927
 * [imgui(1.91.5) docking branch](https://github.com/ocornut/imgui) in 241109
 * [imguizmo(1.83)](https://github.com/CedricGuillemet/ImGuizmo) in 240927
-* [assimp(5.4.3)](https://github.com/assimp/assimp) in 240927
+* [assimp(5.4.3)](https://github.com/assimp/assimp) in 250209
 * [nlohmann/json(3.11.3)](https://github.com/nlohmann/json) in 240927
 
 in Apps

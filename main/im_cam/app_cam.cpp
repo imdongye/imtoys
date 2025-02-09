@@ -15,6 +15,8 @@ AppCam::AppCam() : AppBase(1200, 780, APP_NAME)
 		// log::err("%d\n", key);
 	};
 
+	cv::utils::logging::setLogLevel(cv::utils::logging::LogLevel::LOG_LEVEL_WARNING);
+
 	cv::Mat image = cv::imread("assets/images/RedFlower-sRGB-yes.jpg"); 
     assert(!image.empty());
     cv::imshow("image", image);

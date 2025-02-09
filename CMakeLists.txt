@@ -45,6 +45,10 @@ endif()
 
 set(dep_libs)
 
+
+
+
+
 ### glfw ###
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
@@ -64,6 +68,8 @@ set(dep_libs ${dep_libs} glfw) # must first
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(ASSIMP_INSTALL OFF CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_ASSIMP_VIEW OFF CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "" FORCE)
 option(ASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT OFF)
     set(ASSIMP_BUILD_OBJ_IMPORTER ON CACHE BOOL "" FORCE)
     set(ASSIMP_BUILD_GLTF_IMPORTER ON CACHE BOOL "" FORCE)
@@ -262,7 +268,8 @@ endif()
 
 
 ### opencv ###
-set(opencv_path "C:/lim/library/opencv/build")
+# set(opencv_path "C:/lim/library/opencv/build")
+set(opencv_path "D:/library/opencv/build")
 set(lib_name opencv)
 file(GLOB_RECURSE lib_files "${opencv_path}/include/*.*")
 add_library(${lib_name} INTERFACE ${lib_files})
