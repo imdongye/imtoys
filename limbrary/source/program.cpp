@@ -129,6 +129,30 @@ Program& Program::attatch(std::string path)
 
 	return *this;
 }
+Program& Program::attatchCode(GLenum type, const char* srcCode)
+{
+	assert(!reloadable);
+	GLuint sid = glCreateShader(type);
+	glShaderSource(sid, 1, &srcCode, nullptr);
+	glCompileShader(sid);
+	if( !checkCompileErrors(sid, "inner src code string") ) {
+		deinitGL();
+		assert(0);
+	}
+	bool isExist = false;
+	for(auto& shader : shaders) {
+		if(shader.type==type) {
+			shader.deinitGL();
+			shader.sid = sid;
+			shader.path.clear();
+			isExist = true;
+		}
+	}
+	if( !isExist ) {
+		shaders.push_back({sid, type, ""});
+	}
+	return *this;
+}
 Program& Program::link()
 {
 	if( pid ) { 

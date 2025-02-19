@@ -76,6 +76,7 @@ namespace lim
 		Program& deinitGL();
 		Program& operator+=(const char *path);
 		Program& attatch(std::string path);
+		Program& attatchCode(GLenum type, const char* srcCode);
 		Program& link();
 		const Program& use() const;
 
